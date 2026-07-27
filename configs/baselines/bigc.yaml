@@ -1,0 +1,13 @@
+schema_version: 1
+key: bigc
+paper_name: BIGC
+status: blocked_unimplemented
+implementation: clean_room_pending
+protocols:
+  source_faithful: ucfrep_pose_110_source
+  fair_target: ucfrep_pose_110_fair
+modality: pose_graph
+eligible_for_comparison: false
+reason: Inter-part and intra-part graph branches require clean-room implementation.
+sources:
+  - https://doi.org/10.1016/j.engappai.2025.110996

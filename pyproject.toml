@@ -1,0 +1,76 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pams-rac-reproduction"
+version = "0.1.0"
+description = "Independent, auditable reproduction of PAMS for repetitive action counting"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10,<3.13"
+authors = [{ name = "PAMS Reproduction Contributors" }]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+  "numpy>=1.26,<3",
+  "pydantic>=2.7,<3",
+  "PyYAML>=6.0,<7",
+  "scikit-learn>=1.4,<2",
+  "scipy>=1.11,<2",
+  "torch>=2.2,<3",
+  "typer>=0.12,<1",
+]
+
+[project.optional-dependencies]
+pose = [
+  "mediapipe==0.10.14",
+  "opencv-python-headless>=4.9,<5",
+]
+countllm = [
+  "accelerate>=0.33,<2",
+  "bitsandbytes>=0.43,<1; platform_system == 'Linux'",
+  "peft>=0.12,<1",
+  "transformers>=4.44,<5",
+]
+dev = [
+  "mypy>=1.10,<2",
+  "pytest>=8.2,<9",
+  "pytest-cov>=5,<7",
+  "ruff>=0.5,<1",
+]
+
+[project.scripts]
+pams = "pams.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pams"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_configs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["yaml", "scipy.*"]
+ignore_missing_imports = true

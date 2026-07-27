@@ -1,0 +1,276 @@
+"""Period estimation from pose or embedding sequences.
+
+PAMS states that the period is obtained through an FFT over an autocorrelation
+signal, but does not publish implementation details.  The routines here are a
+deterministic, mask-aware implementation of that description.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import torch
+from torch import Tensor
+
+
+@dataclass(frozen=True)
+class PeriodEstimate:
+    """One sequence's bounded period estimate and diagnostic information."""
+
+    period: int
+    confidence: float
+    frequency: float
+    valid_length: int
+
+
+def _as_batch_signal(signal: Tensor) -> tuple[Tensor, bool]:
+    if signal.ndim == 1:
+        return signal.unsqueeze(0), True
+    if signal.ndim != 2:
+        raise ValueError("signal must have shape [time] or [batch, time]")
+    return signal, False
+
+
+def _validated_mask(signal: Tensor, valid_mask: Tensor | None) -> Tensor:
+    if valid_mask is None:
+        return torch.ones_like(signal, dtype=torch.bool)
+    if valid_mask.shape != signal.shape:
+        raise ValueError(
+            f"valid_mask must have shape {tuple(signal.shape)}, got {tuple(valid_mask.shape)}"
+        )
+    return valid_mask.to(device=signal.device, dtype=torch.bool)
+
+
+def temporal_component(
+    sequence: Tensor,
+    valid_mask: Tensor | None = None,
+) -> Tensor:
+    """Extract a signed one-dimensional activity proxy.
+
+    The highest-variance signed coordinate preserves cycle phase, unlike a
+    squared velocity magnitude which can halve the apparent period.  Selection
+    is performed on detached values because period selection is intentionally
+    non-gradient.  Inputs may be ``[time, features]`` or
+    ``[batch, time, ...]``.
+    """
+
+    if sequence.ndim < 2:
+        raise ValueError("sequence must have a time and feature dimension")
+    unbatched = sequence.ndim == 2
+    values = sequence.unsqueeze(0) if unbatched else sequence
+    if values.ndim < 3:
+        raise ValueError("sequence must have shape [time, features] or [batch, time, ...]")
+    batch, time = values.shape[:2]
+    flat = values.detach().to(dtype=torch.float32).reshape(batch, time, -1)
+
+    if valid_mask is None:
+        mask = torch.ones((batch, time), dtype=torch.bool, device=flat.device)
+    else:
+        expected = (time,) if unbatched else (batch, time)
+        if valid_mask.shape != expected:
+            raise ValueError(
+                f"valid_mask must have shape {expected}, got {tuple(valid_mask.shape)}"
+            )
+        mask = valid_mask.unsqueeze(0) if unbatched else valid_mask
+        mask = mask.to(device=flat.device, dtype=torch.bool)
+
+    weights = mask.to(flat.dtype).unsqueeze(-1)
+    counts = weights.sum(dim=1, keepdim=True).clamp_min(1.0)
+    means = (flat * weights).sum(dim=1, keepdim=True) / counts
+    centered = torch.nan_to_num((flat - means) * weights)
+    coordinate_energy = centered.square().sum(dim=1)
+    coordinates = coordinate_energy.argmax(dim=1)
+    gather_indices = coordinates.view(batch, 1, 1).expand(batch, time, 1)
+    result = centered.gather(dim=2, index=gather_indices).squeeze(-1)
+    usable = (mask.sum(dim=1) >= 2) & (coordinate_energy.max(dim=1).values > 1e-12)
+    result = result.masked_fill(~mask, 0.0)
+    result = result * usable.to(result.dtype).unsqueeze(-1)
+    return result[0] if unbatched else result
+
+
+def pose_energy(poses: Tensor, valid_mask: Tensor | None = None) -> Tensor:
+    """Return the deterministic pose-activity proxy used during warm-up."""
+
+    if poses.ndim not in (3, 4):
+        raise ValueError("poses must have shape [time, K, C] or [batch, time, K, C]")
+    if poses.ndim == 3:
+        return temporal_component(poses.flatten(start_dim=1), valid_mask)
+    return temporal_component(poses.flatten(start_dim=2), valid_mask)
+
+
+def embedding_energy(
+    embeddings: Tensor,
+    valid_mask: Tensor | None = None,
+) -> Tensor:
+    """Return a stop-gradient activity proxy from frame embeddings."""
+
+    if embeddings.ndim not in (2, 3):
+        raise ValueError("embeddings must have shape [time, dim] or [batch, time, dim]")
+    return temporal_component(embeddings, valid_mask)
+
+
+def autocorrelation_fft(
+    signal: Tensor,
+    valid_mask: Tensor | None = None,
+) -> Tensor:
+    """Compute a mask-normalized, non-circular autocorrelation using FFT."""
+
+    batched, unbatched = _as_batch_signal(signal)
+    if batched.dtype not in (torch.float32, torch.float64):
+        batched = batched.float()
+    batched = torch.nan_to_num(batched)
+    mask = _validated_mask(
+        batched, valid_mask.unsqueeze(0) if unbatched and valid_mask is not None else valid_mask
+    )
+    weights = mask.to(dtype=batched.dtype)
+    count = weights.sum(dim=1, keepdim=True).clamp_min(1.0)
+    mean = (batched * weights).sum(dim=1, keepdim=True) / count
+    centered = (batched - mean) * weights
+
+    time = batched.shape[1]
+    fft_length = 1 << max(1, (2 * time - 1).bit_length())
+    spectrum = torch.fft.rfft(centered, n=fft_length, dim=1)
+    numerator = torch.fft.irfft(spectrum.conj() * spectrum, n=fft_length, dim=1)[:, :time]
+    mask_spectrum = torch.fft.rfft(weights, n=fft_length, dim=1)
+    pair_count = torch.fft.irfft(
+        mask_spectrum.conj() * mask_spectrum,
+        n=fft_length,
+        dim=1,
+    )[:, :time]
+    autocorrelation = numerator / pair_count.clamp_min(1.0)
+    lag_zero = autocorrelation[:, :1].abs()
+    autocorrelation = torch.where(
+        lag_zero > 1e-12,
+        autocorrelation / lag_zero.clamp_min(1e-12),
+        torch.zeros_like(autocorrelation),
+    )
+    return autocorrelation[0] if unbatched else autocorrelation
+
+
+def estimate_period_batch(
+    signal: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> tuple[Tensor, Tensor]:
+    """Estimate integer periods through the spectrum of autocorrelation.
+
+    Returns:
+        Integer periods and confidence scores, both shaped ``[batch]``.  The
+        confidence is the selected bin's share of non-DC power in the allowed
+        frequency band.
+    """
+
+    if minimum < 2:
+        raise ValueError("minimum period must be at least 2")
+    if maximum <= minimum:
+        raise ValueError("maximum must be greater than minimum")
+    batched, unbatched = _as_batch_signal(signal)
+    if batched.dtype not in (torch.float32, torch.float64):
+        batched = batched.float()
+    mask = _validated_mask(
+        batched,
+        valid_mask.unsqueeze(0) if unbatched and valid_mask is not None else valid_mask,
+    )
+    autocorrelation = autocorrelation_fft(batched, mask)
+    if autocorrelation.ndim == 1:
+        autocorrelation = autocorrelation.unsqueeze(0)
+
+    periods: list[int] = []
+    confidences: list[Tensor] = []
+    for sample_ac, sample_signal, sample_mask in zip(autocorrelation, batched, mask, strict=True):
+        valid_length = int(sample_mask.sum())
+        upper_period = min(maximum, max(minimum, valid_length - 1))
+        if valid_length < minimum * 2:
+            periods.append(minimum)
+            confidences.append(sample_signal.new_tensor(0.0))
+            continue
+
+        # Windowing reduces leakage when the video contains a partial cycle.
+        window = torch.hann_window(
+            sample_ac.numel(),
+            periodic=False,
+            dtype=sample_ac.dtype,
+            device=sample_ac.device,
+        )
+        power = torch.fft.rfft(sample_ac * window).abs().square()
+        frequencies = torch.fft.rfftfreq(
+            sample_ac.numel(),
+            d=1.0,
+            device=sample_ac.device,
+        )
+        allowed = (frequencies >= 1.0 / upper_period) & (frequencies <= 1.0 / minimum)
+        allowed[0] = False
+        band = power.masked_fill(~allowed, 0.0)
+        total = band.sum()
+        if not torch.isfinite(total) or float(total) <= 1e-12:
+            periods.append(upper_period)
+            confidences.append(sample_signal.new_tensor(0.0))
+            continue
+
+        index = int(torch.argmax(band))
+        frequency = float(frequencies[index])
+        estimate = int(round(1.0 / frequency))
+        estimate = min(max(estimate, minimum), upper_period)
+        periods.append(estimate)
+        confidences.append((band[index] / total.clamp_min(1e-12)).clamp(0.0, 1.0))
+
+    period_tensor = torch.tensor(periods, dtype=torch.long, device=batched.device)
+    confidence_tensor = torch.stack(confidences).to(device=batched.device)
+    if unbatched:
+        return period_tensor[:1], confidence_tensor[:1]
+    return period_tensor, confidence_tensor
+
+
+def estimate_period(
+    signal: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> PeriodEstimate:
+    """Return a scalar diagnostic estimate for one activity signal."""
+
+    if signal.ndim != 1:
+        raise ValueError("estimate_period expects a one-dimensional signal")
+    periods, confidences = estimate_period_batch(
+        signal,
+        minimum=minimum,
+        maximum=maximum,
+        valid_mask=valid_mask,
+    )
+    mask = (
+        torch.ones_like(signal, dtype=torch.bool)
+        if valid_mask is None
+        else valid_mask.to(dtype=torch.bool)
+    )
+    period = int(periods[0])
+    return PeriodEstimate(
+        period=period,
+        confidence=float(confidences[0]),
+        frequency=1.0 / period,
+        valid_length=int(mask.sum()),
+    )
+
+
+def estimate_period_from_pose(
+    poses: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> tuple[Tensor, Tensor]:
+    """Estimate periods from the warm-up pose proxy."""
+
+    energy = pose_energy(poses, valid_mask)
+    return estimate_period_batch(energy, minimum, maximum, valid_mask)
+
+
+def estimate_period_from_embeddings(
+    embeddings: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> tuple[Tensor, Tensor]:
+    """Estimate periods from stop-gradient encoder embeddings."""
+
+    energy = embedding_energy(embeddings, valid_mask)
+    return estimate_period_batch(energy, minimum, maximum, valid_mask)

@@ -1,0 +1,12 @@
+schema_version: 1
+key: repnet
+paper_name: RepNet
+status: blocked_unimplemented
+implementation: clean_room_pending
+protocol: ucfrep_526_fair
+modality: rgb
+eligible_for_comparison: false
+reason: Converted-weight parity and the fair UCFRep-526 adapter are not yet validated.
+sources:
+  - https://sites.google.com/view/repnet
+  - https://github.com/materight/RepNet-pytorch

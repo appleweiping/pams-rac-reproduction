@@ -1,0 +1,26 @@
+schema_version: 1
+key: countllm-lite
+paper_name: CountLLM-Lite (reduced-resource recipe)
+status: dynamic_resource_gate
+implementation: resource_gated_recipe
+protocol: ucfrep_526_countllm_lite
+modality: rgb_and_language_model
+eligible_for_original_countllm_column: false
+hardware:
+  cuda_required: true
+  minimum_gpu_count: 1
+  minimum_gpu_memory_gib: 48
+model:
+  language_model: Vicuna-7B
+  frames: 32
+  quantization: 4-bit NF4
+  lora_rank: 16
+training:
+  batch_size: 1
+  gradient_accumulation: 32
+  webvid_stage_1: omitted
+  ucfrep_stage_2_epochs: 50
+  ucfrep_stage_3_epochs: 50
+reason: Below the hardware gate only import/config smoke tests are permitted.
+sources:
+  - https://arxiv.org/abs/2503.17690

@@ -1,0 +1,11 @@
+schema_version: 1
+key: poserac-iconip24
+paper_name: PoseRAC-ICONIP24 (standard-protocol target)
+status: blocked_unimplemented
+implementation: clean_room_pending
+protocol: ucfrep_526_fair
+modality: pose_33x3
+eligible_for_comparison: false
+reason: Protocol identity and the independent UCFRep-526 adaptation need verification.
+sources:
+  - https://github.com/MiracleDance/PoseRAC

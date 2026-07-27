@@ -1,0 +1,11 @@
+schema_version: 1
+key: ivac-p2l
+paper_name: IVAC-P2L
+status: blocked_unimplemented
+implementation: clean_room_pending
+protocol: ucfrep_526_fair
+modality: rgb
+eligible_for_comparison: false
+reason: Fair zero-shot adapter and artifact checks are not implemented.
+sources:
+  - https://github.com/hwang-cs-ime/IVAC-P2L

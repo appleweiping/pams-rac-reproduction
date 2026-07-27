@@ -1,0 +1,45 @@
+# Local papers and reference material
+*.pdf
+recommend paper/
+
+# Datasets, checkpoints, and generated artifacts
+data/*
+!data/splits/
+data/splits/*
+!data/splits/README.md
+!data/splits/ucfrep_526_*.txt
+artifacts/
+checkpoints/
+runs/
+outputs/
+*.pt
+*.pth
+*.ckpt
+*.npz
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

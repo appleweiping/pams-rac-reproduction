@@ -1,0 +1,14 @@
+schema_version: 1
+key: poserac-v1
+paper_name: PoseRAC-v1 (released five-class pose protocol)
+status: blocked_unimplemented
+implementation: clean_room_pending
+protocols:
+  source_faithful: ucfrep_pose_110_poserac_v1_oracle
+  fair_target: ucfrep_pose_110_fair
+modality: pose_33x3
+eligible_for_comparison: false
+reason: Released evaluation selects a candidate using test ground-truth count.
+sources:
+  - https://arxiv.org/abs/2303.08450
+  - https://github.com/MiracleDance/PoseRAC
