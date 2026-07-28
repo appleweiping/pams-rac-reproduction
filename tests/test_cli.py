@@ -14,7 +14,13 @@ from typer.testing import CliRunner
 from pams import cli as cli_module
 from pams import ucfrep as ucfrep_module
 from pams.cli import app
-from pams.data import write_pose_cache
+from pams.data import (
+    PoseInputCommitment,
+    PoseInputManifest,
+    UnlabeledVideoRecord,
+    pose_input_identity_sha256,
+    write_pose_cache,
+)
 from pams.training import CheckpointProvenance
 from pams.types import PoseSequence
 
@@ -72,6 +78,16 @@ class _FakeManifest:
             return (SimpleNamespace(video_id="dev-a"),)
         return (SimpleNamespace(video_id="test-a", count=4, action="action"),)
 
+    def training_records(
+        self,
+        *,
+        include_dev: bool = False,
+    ) -> tuple[SimpleNamespace, ...]:
+        records = self.records_for("train")
+        if include_dev:
+            records = (*records, *self.records_for("dev"))
+        return records
+
 
 class _FakePoseSnapshot:
     fingerprint = "c" * 64
@@ -126,6 +142,138 @@ def test_config_validate_outputs_fingerprint() -> None:
     assert payload["protocol"] == "ucfrep_526"
     assert len(str(payload["fingerprint"])) == 64
     assert len(str(payload["pose_fingerprint"])) == 64
+
+
+@pytest.mark.parametrize("command", ["encoder", "sshead", "dev-evaluate"])
+def test_formal_training_and_dev_evaluation_reject_legacy_manifest_before_loader(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    command: str,
+) -> None:
+    manifest = tmp_path / "labeled.json"
+    manifest.write_text('{"count": 999, "action": "sealed"}', encoding="utf-8")
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    output_dir = tmp_path / f"output-{command}"
+    checkpoint = tmp_path / "checkpoint.pt"
+    checkpoint.write_bytes(b"placeholder")
+    progress = tmp_path / "progress.jsonl"
+    progress.write_text("{}\n", encoding="utf-8")
+    loader_calls = 0
+
+    def forbidden_loader(*_args: object, **_kwargs: object) -> None:
+        nonlocal loader_calls
+        loader_calls += 1
+        raise AssertionError("legacy labeled loader must not be called")
+
+    monkeypatch.setenv("PAMS_AUDIT_MODE", "sealed")
+    monkeypatch.setattr(cli_module, "load_ucfrep_manifest", forbidden_loader)
+    if command == "encoder":
+        arguments = [
+            "train",
+            "encoder",
+            str(manifest),
+            str(cache_dir),
+            str(output_dir),
+        ]
+    elif command == "sshead":
+        arguments = [
+            "train",
+            "sshead",
+            str(checkpoint),
+            str(manifest),
+            str(cache_dir),
+            str(output_dir),
+            "--encoder-progress",
+            str(progress),
+        ]
+    else:
+        arguments = [
+            "evaluate",
+            "checkpoint",
+            str(checkpoint),
+            str(manifest),
+            str(cache_dir),
+            str(output_dir),
+            "--variant",
+            "literal",
+            "--split",
+            "dev",
+        ]
+
+    result = runner.invoke(app, arguments)
+
+    assert result.exit_code == 2, result.output
+    assert "requires --label-free-inputs" in _plain_text(result.output)
+    assert loader_calls == 0
+
+
+def test_formal_label_free_protocol_loader_never_calls_labeled_loader(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    split_files = {
+        "train": "ucfrep_526_train_337.txt",
+        "dev": "ucfrep_526_dev_84.txt",
+        "test": "ucfrep_526_test_105.txt",
+    }
+    sidecars: dict[str, Path] = {}
+    commitments: dict[str, Path] = {}
+    for split, filename in split_files.items():
+        identifiers = (
+            REPOSITORY / "data" / "splits" / filename
+        ).read_text(encoding="utf-8").splitlines()
+        pose_inputs = PoseInputManifest(
+            protocol="ucfrep_526",
+            split=split,
+            records=tuple(
+                UnlabeledVideoRecord(
+                    video_id=video_id,
+                    video_path=f"videos/{video_id}.avi",
+                    video_sha256=hashlib.sha256(video_id.encode("utf-8")).hexdigest(),
+                )
+                for video_id in identifiers
+            ),
+        )
+        sidecar_path = tmp_path / f"{split}.inputs.json"
+        sidecar_path.write_text(
+            json.dumps(pose_inputs.to_dict(), sort_keys=True),
+            encoding="utf-8",
+        )
+        sidecar_sha256 = hashlib.sha256(sidecar_path.read_bytes()).hexdigest()
+        commitment = PoseInputCommitment(
+            protocol="ucfrep_526",
+            split=split,
+            record_total=len(pose_inputs.records),
+            identity_sha256=pose_input_identity_sha256(pose_inputs.records),
+            sidecar_sha256=sidecar_sha256,
+            sidecar_fingerprint=pose_inputs.fingerprint,
+        )
+        commitment_path = tmp_path / f"{split}.commitment.json"
+        commitment_path.write_text(
+            json.dumps(commitment.to_dict(), sort_keys=True),
+            encoding="utf-8",
+        )
+        sidecars[split] = sidecar_path
+        commitments[split] = commitment_path
+
+    monkeypatch.setattr(
+        cli_module,
+        "load_ucfrep_manifest",
+        lambda *_args, **_kwargs: pytest.fail("labeled loader crossed the firewall"),
+    )
+    bundle = cli_module._load_label_free_protocol_inputs(
+        sidecars["train"],
+        train_commitment_path=commitments["train"],
+        dev_inputs_path=sidecars["dev"],
+        dev_commitment_path=commitments["dev"],
+        test_identity_inputs_path=sidecars["test"],
+        test_identity_commitment_path=commitments["test"],
+    )
+
+    assert bundle.inputs.split_counts == {"train": 337, "dev": 84, "test": 105}
+    assert len(bundle.inputs.training_records(include_dev=True)) == 421
+    assert len(bundle.artifacts) == len(bundle.artifact_sha256) == 6
 
 
 def test_json_output_creation_is_concurrency_exclusive(tmp_path: Path) -> None:

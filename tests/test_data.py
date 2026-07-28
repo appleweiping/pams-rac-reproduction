@@ -6,7 +6,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+import pams.data as data_module
 from pams.data import (
+    DevTargetManifest,
+    DevTargetRecord,
+    LabelFreeProtocolInputs,
     PoseInputCommitment,
     PoseInputManifest,
     TrainingPoseDataset,
@@ -15,6 +19,7 @@ from pams.data import (
     UnlabeledVideoRecord,
     assert_split_disjoint,
     deterministic_stratified_split,
+    load_dev_target_manifest,
     load_pose_cache,
     load_pose_input_manifest,
     load_ucfrep_manifest,
@@ -216,6 +221,27 @@ def test_pose_input_manifest_rejects_noncanonical_test_membership() -> None:
         manifest.validate_exact_membership()
 
 
+@pytest.mark.parametrize(
+    ("encoded_key", "sentinel"),
+    [
+        ('"count"', ""),
+        ('"action"', ""),
+        ('"co\\u0075nt"', "NaN"),
+        ('"act\\u0069on"', "{malformed"),
+    ],
+)
+def test_pose_input_loader_rejects_privileged_key_before_value_deserialization(
+    tmp_path: Path,
+    encoded_key: str,
+    sentinel: str,
+) -> None:
+    path = tmp_path / "privileged.json"
+    path.write_text(f"{{{encoded_key}: {sentinel}}}", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="forbidden privileged field"):
+        load_pose_input_manifest(path, validate_exact=False)
+
+
 def test_pose_input_identity_commitment_is_sorted_and_path_free() -> None:
     records = (
         UnlabeledVideoRecord("video-b", "root-b/video.avi", "b" * 64),
@@ -392,12 +418,9 @@ def test_pose_cache_hash_guards_and_training_dataset_no_label_leak(
     with pytest.raises(ValueError, match="fingerprint"):
         load_pose_cache(cache_path, expected_pose_fingerprint="c" * 64)
 
-    record = UCFRepRecord(
+    record = UnlabeledVideoRecord(
         video_id="cached",
         video_path="cached.mp4",
-        split="train",
-        action="jump",
-        count=999,
         video_sha256=video_hash,
     )
     dataset = TrainingPoseDataset(
@@ -430,10 +453,14 @@ def test_pose_cache_hash_guards_and_training_dataset_no_label_leak(
     assert changed_snapshot.fingerprint != snapshot.fingerprint
 
 
-def test_training_dataset_rejects_test_and_dev_by_default(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="sealed"):
+@pytest.mark.parametrize("split", ["train", "dev", "test"])
+def test_training_dataset_rejects_every_label_bearing_record(
+    tmp_path: Path,
+    split: str,
+) -> None:
+    with pytest.raises(TypeError, match="only UnlabeledVideoRecord"):
         TrainingPoseDataset(
-            [_record(1, split="test")],
+            [_record(1, split=split)],
             cache_dir=tmp_path,
             pose_fingerprint="a" * 64,
         )
@@ -442,16 +469,106 @@ def test_training_dataset_rejects_test_and_dev_by_default(tmp_path: Path) -> Non
 def test_training_dataset_requires_source_content_hash(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="content-hashed.*video_sha256"):
         TrainingPoseDataset(
-            [UCFRepRecord("train", "train.avi", "train", "jump", 5)],
+            [UnlabeledVideoRecord("train", "train.avi", None)],
             cache_dir=tmp_path,
             pose_fingerprint="a" * 64,
         )
-    with pytest.raises(ValueError, match="disallowed"):
-        TrainingPoseDataset(
-            [UCFRepRecord("dev", "dev.mp4", "dev", "jump", 5)],
-            cache_dir=tmp_path,
-            pose_fingerprint="a" * 64,
+
+
+def test_label_free_protocol_identity_preserves_checkpoint_training_fingerprint() -> None:
+    split_files = {
+        "train": "ucfrep_526_train_337.txt",
+        "dev": "ucfrep_526_dev_84.txt",
+        "test": "ucfrep_526_test_105.txt",
+    }
+    sidecars: dict[str, PoseInputManifest] = {}
+    labeled_records: list[UCFRepRecord] = []
+    for split, filename in split_files.items():
+        identifiers = (
+            REPOSITORY / "data" / "splits" / filename
+        ).read_text(encoding="utf-8").splitlines()
+        unlabeled: list[UnlabeledVideoRecord] = []
+        for video_id in identifiers:
+            digest = hashlib.sha256(video_id.encode("utf-8")).hexdigest()
+            locator = f"videos/{video_id}.avi"
+            unlabeled.append(UnlabeledVideoRecord(video_id, locator, digest))
+            action = video_id.removeprefix("v_").split("_g", 1)[0]
+            labeled_records.append(
+                UCFRepRecord(
+                    video_id,
+                    locator,
+                    split,
+                    action,
+                    1,
+                    digest,
+                )
+            )
+        sidecars[split] = PoseInputManifest(
+            protocol="ucfrep_526",
+            split=split,
+            records=tuple(unlabeled),
         )
+    label_free = LabelFreeProtocolInputs(
+        protocol="ucfrep_526",
+        train=sidecars["train"],
+        dev=sidecars["dev"],
+        test=sidecars["test"],
+    )
+    legacy = UCFRepManifest("ucfrep_526", tuple(labeled_records))
+
+    assert label_free.split_counts == {"train": 337, "dev": 84, "test": 105}
+    assert len(label_free.training_records(include_dev=True)) == 421
+    assert label_free.training_fingerprint() == legacy.training_fingerprint()
+    assert label_free.training_fingerprint(
+        include_dev=True
+    ) == legacy.training_fingerprint(include_dev=True)
+
+
+def test_dev_target_manifest_is_exactly_dev_only_and_strictly_loaded(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    identifiers = (
+        REPOSITORY / "data" / "splits" / "ucfrep_526_dev_84.txt"
+    ).read_text(encoding="utf-8").splitlines()
+    records = tuple(
+        DevTargetRecord(
+            video_id=video_id,
+            action=video_id.removeprefix("v_").split("_g", 1)[0],
+            count=index + 1,
+        )
+        for index, video_id in enumerate(identifiers)
+    )
+    monkeypatch.setattr(
+        data_module,
+        "_UCFREP_526_DEV_ANNOTATION_SHA256",
+        data_module._dev_target_annotation_sha256(records),
+    )
+    targets = DevTargetManifest(
+        protocol="ucfrep_526",
+        records=records,
+        source_annotation_sha256=(
+            "d371f9f4609730d6484efc337413b444ed73752ad5e994366d02fb79a9960452"
+        ),
+    )
+    path = tmp_path / "dev-targets.json"
+    path.write_text(json.dumps(targets.to_dict()), encoding="utf-8")
+
+    assert load_dev_target_manifest(path) == targets
+    with pytest.raises(ValueError, match="training-family"):
+        DevTargetRecord("v_BenchPress_g21_c01", "BenchPress", 1)
+
+    payload = targets.to_dict()
+    payload["records"][0]["video_path"] = "forbidden.avi"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="record 0 fields mismatch"):
+        load_dev_target_manifest(path)
+
+    payload = targets.to_dict()
+    payload["records"][0]["count"] += 1
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="counts/actions"):
+        load_dev_target_manifest(path)
 
 
 def test_training_fingerprint_cannot_read_labels_or_sealed_test_rows() -> None:

@@ -130,9 +130,11 @@ class PAMSEncoder(nn.Module):
             inputs = inputs.float()
         return inputs
 
-    def forward(self, inputs: Tensor, valid_mask: Tensor | None = None) -> Tensor:
-        """Encode pose frames and L2-normalize every valid embedding."""
-
+    def _validated_inputs_and_mask(
+        self,
+        inputs: Tensor,
+        valid_mask: Tensor | None,
+    ) -> tuple[Tensor, Tensor]:
         inputs = self._flatten_pose(inputs)
         batch, time, _ = inputs.shape
         if valid_mask is None:
@@ -143,6 +145,21 @@ class PAMSEncoder(nn.Module):
                     f"valid_mask must have shape {(batch, time)}, got {tuple(valid_mask.shape)}"
                 )
             valid = valid_mask.to(device=inputs.device, dtype=torch.bool)
+        return inputs, valid
+
+    def _project_pre_pe(self, inputs: Tensor) -> Tensor:
+        projected = self.input_projection(inputs)
+        if self.input_projection_scale == "sqrt_model_dim":
+            projected = projected * math.sqrt(self.model_dim)
+        return projected
+
+    def _forward_with_pre_pe(
+        self,
+        inputs: Tensor,
+        valid_mask: Tensor | None,
+    ) -> tuple[Tensor, Tensor]:
+        inputs, valid = self._validated_inputs_and_mask(inputs, valid_mask)
+        _, time, _ = inputs.shape
 
         # Avoid NaNs for samples in which pose extraction failed on every frame.
         attention_valid = valid.clone()
@@ -150,17 +167,42 @@ class PAMSEncoder(nn.Module):
         if fully_invalid.any() and time:
             attention_valid[fully_invalid, 0] = True
 
-        hidden = self.input_projection(inputs)
-        if self.input_projection_scale == "sqrt_model_dim":
-            hidden = hidden * math.sqrt(self.model_dim)
-        hidden = self.position_encoding(hidden)
+        projected = self._project_pre_pe(inputs)
+        hidden = self.position_encoding(projected)
         hidden = self.transformer(
             hidden,
             src_key_padding_mask=~attention_valid,
         )
         embeddings = self.output_projection(hidden)
         embeddings = F.normalize(embeddings, p=2, dim=-1, eps=1e-12)
-        return embeddings.masked_fill(~valid.unsqueeze(-1), 0.0)
+        invalid = ~valid.unsqueeze(-1)
+        return (
+            embeddings.masked_fill(invalid, 0.0),
+            projected.masked_fill(invalid, 0.0),
+        )
+
+    def forward(self, inputs: Tensor, valid_mask: Tensor | None = None) -> Tensor:
+        """Encode pose frames and L2-normalize every valid embedding."""
+
+        embeddings, _ = self._forward_with_pre_pe(inputs, valid_mask)
+        return embeddings
+
+    def forward_with_pre_pe(
+        self,
+        inputs: Tensor,
+        valid_mask: Tensor | None = None,
+    ) -> tuple[Tensor, Tensor]:
+        """Return embeddings and the projected features immediately before PE.
+
+        This opt-in interface reuses the exact forward computation.  Calling
+        :meth:`forward` remains numerically unchanged, while inferred
+        diagnostics can inspect pose-content projection features without
+        positional encoding or Transformer context.  Invalid projected rows
+        are exact zero and must still be accompanied by ``valid_mask`` when
+        used for temporal differences.
+        """
+
+        return self._forward_with_pre_pe(inputs, valid_mask)
 
 
 class PeriodHead(nn.Module):

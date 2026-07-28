@@ -85,6 +85,10 @@ class PeriodConfig(StrictModel):
     minimum: int = Field(default=4, ge=2)
     maximum: int = Field(default=128, ge=3)
     pose_energy_epochs: int = Field(default=10, ge=0)
+    post_warmup_source: Literal[
+        "embedding_velocity_coordinate",
+        "projected_pose_velocity_vector_acf",
+    ] = "embedding_velocity_coordinate"
 
     @model_validator(mode="after")
     def validate_period_bounds(self) -> PeriodConfig:
@@ -98,6 +102,7 @@ class LossConfig(StrictModel):
     temperature: float = Field(default=0.1, gt=0)
     kmeans_clusters: int = Field(default=8, ge=2)
     kmeans_refresh_epochs: int = Field(default=5, ge=1)
+    exclude_other_scale_positives_from_denominator: bool = False
 
 
 class TrainingConfig(StrictModel):
@@ -166,6 +171,17 @@ class PAMSConfig(StrictModel):
             # their original fingerprint, while every opt-in scale remains an
             # explicit, fingerprint-changing experiment choice.
             model.pop("input_projection_scale")
+        period = payload["period"]
+        if period["post_warmup_source"] == "embedding_velocity_coordinate":
+            # Preserve every historical f99 config/checkpoint fingerprint.
+            # Only the opt-in inferred vector-ACF route changes method
+            # identity; the explicit default names the existing implementation.
+            period.pop("post_warmup_source")
+        loss = payload["loss"]
+        if not loss["exclude_other_scale_positives_from_denominator"]:
+            # Preserve historical fingerprints for the literal denominator.
+            # The opt-in inferred union repair is identity-changing.
+            loss.pop("exclude_other_scale_positives_from_denominator")
         return payload
 
     def nonseed_canonical_dict(self) -> dict[str, Any]:

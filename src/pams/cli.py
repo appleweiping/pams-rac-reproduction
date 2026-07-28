@@ -10,7 +10,7 @@ import os
 import stat
 import sys
 import tempfile
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Annotated, Any, Literal, cast
 
@@ -20,13 +20,18 @@ from pydantic import ValidationError
 from pams.baselines import BaselineUnavailableError, create_baseline, list_baselines
 from pams.config import PAMSConfig, load_config
 from pams.data import (
+    DevTargetManifest,
+    DevTargetRecord,
+    LabelFreeProtocolInputs,
     PoseCacheSetSnapshot,
     PoseInputCommitment,
     PoseInputManifest,
     TrainingPoseDataset,
     UCFRepManifest,
+    UCFRepRecord,
     UnlabeledVideoRecord,
     assert_split_disjoint,
+    load_dev_target_manifest,
     load_pose_cache,
     load_pose_cache_set,
     load_pose_input_commitment,
@@ -37,6 +42,7 @@ from pams.data import (
     split_ucfrep_pose_train_dev,
     split_ucfrep_train_dev,
     validate_canonical_split_membership,
+    validate_pose_input_binding,
 )
 from pams.metrics import compute_count_metrics
 from pams.reproducibility import durable_mkdir, fsync_directory
@@ -84,6 +90,25 @@ _FROZEN_PAMS_NONSEED_FINGERPRINT = (
     "2c995b374bc8cf97df3568d745dabd94f111aa54224c86ece51468cbe419b47b"
 )
 _FROZEN_PAMS_SEEDS = frozenset({42, 2026, 3407})
+_FORMAL_AUDIT_MODES = frozenset({"formal", "sealed"})
+
+
+def _formal_label_firewall_required() -> bool:
+    return os.environ.get("PAMS_AUDIT_MODE", "").strip().lower() in _FORMAL_AUDIT_MODES
+
+
+def _require_formal_label_free_inputs(
+    *,
+    label_free_inputs: bool,
+    operation: str,
+) -> None:
+    """Fail before any label-bearing manifest loader can be reached."""
+
+    if _formal_label_firewall_required() and not label_free_inputs:
+        raise ValueError(
+            f"{operation} in formal/sealed audit mode requires --label-free-inputs; "
+            "a full count/action manifest is forbidden at this process boundary"
+        )
 
 
 def _normalize_checkpoint_variant(value: str) -> Literal["literal", "sshead"]:
@@ -506,6 +531,114 @@ def _load_manifest(path: Path, *, protocol: str | None, exact: bool) -> UCFRepMa
     return load_ucfrep_manifest(path, protocol=protocol, validate_exact=exact)
 
 
+@dataclass(frozen=True, slots=True)
+class _LabelFreeInputBundle:
+    inputs: LabelFreeProtocolInputs
+    artifacts: dict[str, Path]
+    artifact_sha256: dict[str, str]
+
+
+def _load_bound_pose_inputs(
+    sidecar_path: Path,
+    commitment_path: Path,
+    *,
+    expected_split: str,
+) -> tuple[PoseInputManifest, str, str]:
+    """Load and byte-bind one count/action-free split without TOCTOU ambiguity."""
+
+    sidecar_sha256 = _sha256_file(sidecar_path)
+    commitment_sha256 = _sha256_file(commitment_path)
+    sidecar = load_pose_input_manifest(sidecar_path, validate_exact=True)
+    commitment = load_pose_input_commitment(commitment_path)
+    validate_pose_input_binding(
+        sidecar,
+        commitment,
+        sidecar_sha256=sidecar_sha256,
+    )
+    if sidecar.split != expected_split:
+        raise ValueError(
+            f"expected {expected_split!r} pose inputs, received {sidecar.split!r}"
+        )
+    if _sha256_file(sidecar_path) != sidecar_sha256:
+        raise RuntimeError("pose-input sidecar changed while it was being loaded")
+    if _sha256_file(commitment_path) != commitment_sha256:
+        raise RuntimeError("pose-input commitment changed while it was being loaded")
+    return sidecar, sidecar_sha256, commitment_sha256
+
+
+def _load_label_free_protocol_inputs(
+    train_inputs_path: Path,
+    *,
+    train_commitment_path: Path | None,
+    dev_inputs_path: Path | None,
+    dev_commitment_path: Path | None,
+    test_identity_inputs_path: Path | None,
+    test_identity_commitment_path: Path | None,
+) -> _LabelFreeInputBundle:
+    """Assemble the frozen 337/84/105 identity using label-free files only."""
+
+    required = {
+        "--input-commitment": train_commitment_path,
+        "--dev-inputs": dev_inputs_path,
+        "--dev-input-commitment": dev_commitment_path,
+        "--test-identity-inputs": test_identity_inputs_path,
+        "--test-identity-commitment": test_identity_commitment_path,
+    }
+    missing = sorted(option for option, path in required.items() if path is None)
+    if missing:
+        raise ValueError(
+            "--label-free-inputs requires the frozen 337/84/105 identity sidecars; "
+            f"missing {', '.join(missing)}"
+        )
+    assert train_commitment_path is not None
+    assert dev_inputs_path is not None
+    assert dev_commitment_path is not None
+    assert test_identity_inputs_path is not None
+    assert test_identity_commitment_path is not None
+    train, train_sha256, train_commitment_sha256 = _load_bound_pose_inputs(
+        train_inputs_path,
+        train_commitment_path,
+        expected_split="train",
+    )
+    dev, dev_sha256, dev_commitment_sha256 = _load_bound_pose_inputs(
+        dev_inputs_path,
+        dev_commitment_path,
+        expected_split="dev",
+    )
+    test, test_sha256, test_commitment_sha256 = _load_bound_pose_inputs(
+        test_identity_inputs_path,
+        test_identity_commitment_path,
+        expected_split="test",
+    )
+    inputs = LabelFreeProtocolInputs(
+        protocol=train.protocol,
+        train=train,
+        dev=dev,
+        test=test,
+    )
+    artifacts = {
+        "input_train_pose_inputs": train_inputs_path,
+        "input_train_pose_input_commitment": train_commitment_path,
+        "input_dev_pose_inputs": dev_inputs_path,
+        "input_dev_pose_input_commitment": dev_commitment_path,
+        "input_test_identity_pose_inputs": test_identity_inputs_path,
+        "input_test_identity_pose_input_commitment": test_identity_commitment_path,
+    }
+    artifact_sha256 = {
+        "input_train_pose_inputs": train_sha256,
+        "input_train_pose_input_commitment": train_commitment_sha256,
+        "input_dev_pose_inputs": dev_sha256,
+        "input_dev_pose_input_commitment": dev_commitment_sha256,
+        "input_test_identity_pose_inputs": test_sha256,
+        "input_test_identity_pose_input_commitment": test_commitment_sha256,
+    }
+    return _LabelFreeInputBundle(
+        inputs=inputs,
+        artifacts=artifacts,
+        artifact_sha256=artifact_sha256,
+    )
+
+
 def _validate_experiment_split(manifest: UCFRepManifest) -> None:
     """Validate official or frozen train/dev/test sizes without relabelling rows."""
 
@@ -529,7 +662,10 @@ def _validate_experiment_split(manifest: UCFRepManifest) -> None:
     validate_canonical_split_membership(manifest)
 
 
-def _assert_protocol_match(config: PAMSConfig, manifest: UCFRepManifest) -> None:
+def _assert_protocol_match(
+    config: PAMSConfig,
+    manifest: UCFRepManifest | LabelFreeProtocolInputs,
+) -> None:
     if config.protocol != manifest.protocol:
         raise ValueError(
             f"config/manifest protocol mismatch: {config.protocol!r} != {manifest.protocol!r}"
@@ -537,18 +673,16 @@ def _assert_protocol_match(config: PAMSConfig, manifest: UCFRepManifest) -> None
 
 
 def _training_video_ids(
-    manifest: UCFRepManifest,
+    manifest: UCFRepManifest | LabelFreeProtocolInputs,
     *,
     include_dev: bool,
 ) -> tuple[str, ...]:
-    records = manifest.records_for("train")
-    if include_dev:
-        records = (*records, *manifest.records_for("dev"))
+    records = manifest.training_records(include_dev=include_dev)
     return tuple(sorted(record.video_id for record in records))
 
 
 def _validate_final_training_pool(
-    manifest: UCFRepManifest,
+    manifest: UCFRepManifest | LabelFreeProtocolInputs,
     *,
     include_dev: bool,
 ) -> None:
@@ -562,7 +696,7 @@ def _validate_final_training_pool(
 
 
 def _make_checkpoint_provenance(
-    manifest: UCFRepManifest,
+    manifest: UCFRepManifest | LabelFreeProtocolInputs,
     config: PAMSConfig,
     *,
     include_dev: bool,
@@ -637,7 +771,7 @@ def _validate_cli_progress_destination(path: Path, *, resume: bool) -> None:
 
 
 def _cached_sequences(
-    manifest: UCFRepManifest,
+    manifest: UCFRepManifest | LabelFreeProtocolInputs,
     *,
     split: str,
     cache_dir: Path,
@@ -666,20 +800,17 @@ def _cached_sequences(
 
 
 def _training_pose_cache_snapshot(
-    manifest: UCFRepManifest,
+    manifest: UCFRepManifest | LabelFreeProtocolInputs,
     *,
     include_dev: bool,
     cache_dir: Path,
     pose_fingerprint: str,
 ) -> PoseCacheSetSnapshot:
-    records = manifest.records_for("train")
-    if include_dev:
-        records = (*records, *manifest.records_for("dev"))
+    records = manifest.training_records(include_dev=include_dev)
     dataset = TrainingPoseDataset(
         records,
         cache_dir=cache_dir,
         pose_fingerprint=pose_fingerprint,
-        include_dev=include_dev,
     )
     return dataset.cache_snapshot()
 
@@ -1126,7 +1257,7 @@ def data_pose_inputs(
         if _sha256_file(manifest_path) != source_manifest_file_sha256:
             raise RuntimeError("source dataset manifest changed while pose inputs were compiled")
         commitment_sha256 = _sha256_file(commitment_path)
-    except (OSError, RuntimeError, ValueError) as exc:
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
         _abort(str(exc))
     _emit(
         {
@@ -1142,6 +1273,66 @@ def data_pose_inputs(
             "fingerprint": pose_inputs.fingerprint,
             "contains_count_field": False,
             "contains_action_field": False,
+        }
+    )
+
+
+@data_app.command("dev-targets")
+def data_dev_targets(
+    manifest_path: Annotated[Path, typer.Argument(exists=True, dir_okay=False, readable=True)],
+    output: Annotated[Path, typer.Option("--output", "-o", dir_okay=False)],
+    overwrite: Annotated[bool, typer.Option("--overwrite")] = False,
+) -> None:
+    """Privileged migration: isolate only the frozen 84 dev labels."""
+
+    try:
+        if output.suffix.lower() != ".json":
+            raise ValueError("dev-target output path must end in .json")
+        if output.resolve(strict=False) == manifest_path.resolve(strict=True):
+            raise ValueError("dev-target output must not overwrite its source manifest")
+        source_sha256 = _sha256_file(manifest_path)
+        manifest = load_ucfrep_manifest(manifest_path, validate_exact=False)
+        _validate_experiment_split(manifest)
+        if manifest.protocol != "ucfrep_526" or manifest.split_counts != {
+            "train": 337,
+            "dev": 84,
+            "test": 105,
+        }:
+            raise ValueError(
+                "dev-target migration requires the frozen ucfrep_526 337/84/105 manifest"
+            )
+        dev_records = manifest.records_for("dev")
+        targets = DevTargetManifest(
+            protocol=manifest.protocol,
+            records=tuple(
+                DevTargetRecord(
+                    video_id=record.video_id,
+                    action=record.action,
+                    count=record.count,
+                )
+                for record in dev_records
+            ),
+            source_annotation_sha256=manifest.sealed_dataset_fingerprint,
+        )
+        _write_json_exclusive(output, targets.to_dict(), overwrite=overwrite)
+        persisted = load_dev_target_manifest(output)
+        if persisted != targets:
+            raise RuntimeError("persisted dev-target manifest changed during serialization")
+        if _sha256_file(manifest_path) != source_sha256:
+            raise RuntimeError("source dataset manifest changed during dev-target migration")
+        output_sha256 = _sha256_file(output)
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(
+        {
+            "output": str(output.resolve()),
+            "output_sha256": output_sha256,
+            "protocol": targets.protocol,
+            "split": targets.split,
+            "records": len(targets.records),
+            "fingerprint": targets.fingerprint,
+            "source_annotation_sha256": targets.source_annotation_sha256,
+            "contains_test_targets": False,
         }
     )
 
@@ -1510,7 +1701,7 @@ def pose_extract(
             # immutable unless --overwrite was explicitly selected.
             overwrite=overwrite or skip_existing,
         )
-    except (OSError, RuntimeError, ValueError) as exc:
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
         _abort(str(exc))
     _emit(
         {
@@ -1548,17 +1739,49 @@ def _training_inputs(
     manifest = load_ucfrep_manifest(manifest_path, validate_exact=False)
     _assert_protocol_match(config, manifest)
     _validate_experiment_split(manifest)
-    records = manifest.records_for("train")
-    if include_dev:
-        records = (*records, *manifest.records_for("dev"))
+    records = manifest.training_records(include_dev=include_dev)
     dataset = TrainingPoseDataset(
         records,
         cache_dir=cache_dir,
         pose_fingerprint=config.pose_fingerprint,
-        include_dev=include_dev,
     )
     sequences, pose_snapshot = dataset.materialize_snapshot()
     return manifest, sequences, pose_snapshot
+
+
+def _label_free_training_inputs(
+    manifest_path: Path,
+    cache_dir: Path,
+    config: PAMSConfig,
+    *,
+    include_dev: bool,
+    input_commitment: Path | None,
+    dev_inputs: Path | None,
+    dev_input_commitment: Path | None,
+    test_identity_inputs: Path | None,
+    test_identity_commitment: Path | None,
+) -> tuple[
+    LabelFreeProtocolInputs,
+    tuple[Any, ...],
+    PoseCacheSetSnapshot,
+    _LabelFreeInputBundle,
+]:
+    bundle = _load_label_free_protocol_inputs(
+        manifest_path,
+        train_commitment_path=input_commitment,
+        dev_inputs_path=dev_inputs,
+        dev_commitment_path=dev_input_commitment,
+        test_identity_inputs_path=test_identity_inputs,
+        test_identity_commitment_path=test_identity_commitment,
+    )
+    _assert_protocol_match(config, bundle.inputs)
+    dataset = TrainingPoseDataset(
+        bundle.inputs.training_records(include_dev=include_dev),
+        cache_dir=cache_dir,
+        pose_fingerprint=config.pose_fingerprint,
+    )
+    sequences, pose_snapshot = dataset.materialize_snapshot()
+    return bundle.inputs, sequences, pose_snapshot, bundle
 
 
 @train_app.command("encoder")
@@ -1594,12 +1817,48 @@ def train_encoder_command(
         ),
     ] = None,
     include_dev: Annotated[bool, typer.Option("--include-dev")] = False,
+    label_free_inputs: Annotated[
+        bool,
+        typer.Option(
+            "--label-free-inputs",
+            help="Treat MANIFEST_PATH as the strict count/action-free train sidecar.",
+        ),
+    ] = False,
+    input_commitment: Annotated[
+        Path | None,
+        typer.Option("--input-commitment", exists=True, dir_okay=False, readable=True),
+    ] = None,
+    dev_inputs: Annotated[
+        Path | None,
+        typer.Option("--dev-inputs", exists=True, dir_okay=False, readable=True),
+    ] = None,
+    dev_input_commitment: Annotated[
+        Path | None,
+        typer.Option("--dev-input-commitment", exists=True, dir_okay=False, readable=True),
+    ] = None,
+    test_identity_inputs: Annotated[
+        Path | None,
+        typer.Option("--test-identity-inputs", exists=True, dir_okay=False, readable=True),
+    ] = None,
+    test_identity_commitment: Annotated[
+        Path | None,
+        typer.Option(
+            "--test-identity-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ] = None,
 ) -> None:
     """Train the PAMS encoder from label-free cached poses."""
 
     try:
         from pams.training import train_encoder
 
+        _require_formal_label_free_inputs(
+            label_free_inputs=label_free_inputs,
+            operation="encoder training",
+        )
         config_file_sha256 = _sha256_file(config_path)
         dataset_manifest_sha256 = _sha256_file(manifest_path)
         config = load_config(config_path)
@@ -1609,13 +1868,52 @@ def train_encoder_command(
             )
         if not resume and (resume_checkpoint is not None or resume_progress is not None):
             raise ValueError("resume input options require --resume")
-        manifest, sequences, pose_snapshot = _training_inputs(
-            manifest_path, cache_dir, config, include_dev=include_dev
-        )
+        label_free_bundle: _LabelFreeInputBundle | None = None
+        manifest: UCFRepManifest | LabelFreeProtocolInputs
+        if label_free_inputs:
+            manifest, sequences, pose_snapshot, label_free_bundle = (
+                _label_free_training_inputs(
+                    manifest_path,
+                    cache_dir,
+                    config,
+                    include_dev=include_dev,
+                    input_commitment=input_commitment,
+                    dev_inputs=dev_inputs,
+                    dev_input_commitment=dev_input_commitment,
+                    test_identity_inputs=test_identity_inputs,
+                    test_identity_commitment=test_identity_commitment,
+                )
+            )
+        else:
+            unexpected_label_free_options = {
+                "--input-commitment": input_commitment,
+                "--dev-inputs": dev_inputs,
+                "--dev-input-commitment": dev_input_commitment,
+                "--test-identity-inputs": test_identity_inputs,
+                "--test-identity-commitment": test_identity_commitment,
+            }
+            supplied = sorted(
+                option
+                for option, value in unexpected_label_free_options.items()
+                if value is not None
+            )
+            if supplied:
+                raise ValueError(
+                    f"{', '.join(supplied)} require --label-free-inputs"
+                )
+            manifest, sequences, pose_snapshot = _training_inputs(
+                manifest_path, cache_dir, config, include_dev=include_dev
+            )
         if _sha256_file(config_path) != config_file_sha256:
             raise RuntimeError("configuration changed while it was being loaded")
         if _sha256_file(manifest_path) != dataset_manifest_sha256:
             raise RuntimeError("dataset manifest changed while it was being loaded")
+        if label_free_bundle is not None:
+            for role, path in label_free_bundle.artifacts.items():
+                if _sha256_file(path) != label_free_bundle.artifact_sha256[role]:
+                    raise RuntimeError(
+                        f"label-free protocol artifact changed while loading: {role}"
+                    )
         from pams.reproducibility import clean_git_revision
 
         source_git_sha = clean_git_revision(Path.cwd())
@@ -1655,6 +1953,11 @@ def train_encoder_command(
             dataset_sha256=provenance.dataset_fingerprint,
             notes=[
                 "count and action labels are not exposed to the training dataset",
+                (
+                    "formal 337/84/105 label-free identity sidecars"
+                    if label_free_bundle is not None
+                    else "legacy labeled-manifest compatibility path"
+                ),
                 f"pose cache set: {pose_snapshot.fingerprint}",
                 (
                     "fresh run"
@@ -1717,6 +2020,9 @@ def train_encoder_command(
             "output_encoder_checkpoint": checkpoint_sha256,
             "progress_log": progress_sha256,
         }
+        if label_free_bundle is not None:
+            completion_artifacts.update(label_free_bundle.artifacts)
+            completion_expected_sha256.update(label_free_bundle.artifact_sha256)
         if resume_checkpoint is not None:
             assert resume_checkpoint_sha256 is not None
             completion_artifacts["input_resume_checkpoint"] = resume_checkpoint
@@ -1738,7 +2044,7 @@ def train_encoder_command(
         )
     except ImportError as exc:
         _abort(f"encoder training module is unavailable: {exc}")
-    except (OSError, RuntimeError, ValueError) as exc:
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
         _abort(str(exc))
     _emit(
         {
@@ -1807,12 +2113,48 @@ def train_sshead_command(
         ),
     ] = None,
     include_dev: Annotated[bool, typer.Option("--include-dev")] = False,
+    label_free_inputs: Annotated[
+        bool,
+        typer.Option(
+            "--label-free-inputs",
+            help="Treat MANIFEST_PATH as the strict count/action-free train sidecar.",
+        ),
+    ] = False,
+    input_commitment: Annotated[
+        Path | None,
+        typer.Option("--input-commitment", exists=True, dir_okay=False, readable=True),
+    ] = None,
+    dev_inputs: Annotated[
+        Path | None,
+        typer.Option("--dev-inputs", exists=True, dir_okay=False, readable=True),
+    ] = None,
+    dev_input_commitment: Annotated[
+        Path | None,
+        typer.Option("--dev-input-commitment", exists=True, dir_okay=False, readable=True),
+    ] = None,
+    test_identity_inputs: Annotated[
+        Path | None,
+        typer.Option("--test-identity-inputs", exists=True, dir_okay=False, readable=True),
+    ] = None,
+    test_identity_commitment: Annotated[
+        Path | None,
+        typer.Option(
+            "--test-identity-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ] = None,
 ) -> None:
     """Train the inferred self-supervised head with a frozen encoder."""
 
     try:
         from pams.training import train_sshead, validate_terminal_checkpoint
 
+        _require_formal_label_free_inputs(
+            label_free_inputs=label_free_inputs,
+            operation="SSHead training",
+        )
         config_file_sha256 = _sha256_file(config_path)
         dataset_manifest_sha256 = _sha256_file(manifest_path)
         config = load_config(config_path)
@@ -1822,13 +2164,52 @@ def train_sshead_command(
             )
         if not resume and (resume_checkpoint is not None or resume_progress is not None):
             raise ValueError("resume input options require --resume")
-        manifest, sequences, pose_snapshot = _training_inputs(
-            manifest_path, cache_dir, config, include_dev=include_dev
-        )
+        label_free_bundle: _LabelFreeInputBundle | None = None
+        manifest: UCFRepManifest | LabelFreeProtocolInputs
+        if label_free_inputs:
+            manifest, sequences, pose_snapshot, label_free_bundle = (
+                _label_free_training_inputs(
+                    manifest_path,
+                    cache_dir,
+                    config,
+                    include_dev=include_dev,
+                    input_commitment=input_commitment,
+                    dev_inputs=dev_inputs,
+                    dev_input_commitment=dev_input_commitment,
+                    test_identity_inputs=test_identity_inputs,
+                    test_identity_commitment=test_identity_commitment,
+                )
+            )
+        else:
+            unexpected_label_free_options = {
+                "--input-commitment": input_commitment,
+                "--dev-inputs": dev_inputs,
+                "--dev-input-commitment": dev_input_commitment,
+                "--test-identity-inputs": test_identity_inputs,
+                "--test-identity-commitment": test_identity_commitment,
+            }
+            supplied = sorted(
+                option
+                for option, value in unexpected_label_free_options.items()
+                if value is not None
+            )
+            if supplied:
+                raise ValueError(
+                    f"{', '.join(supplied)} require --label-free-inputs"
+                )
+            manifest, sequences, pose_snapshot = _training_inputs(
+                manifest_path, cache_dir, config, include_dev=include_dev
+            )
         if _sha256_file(config_path) != config_file_sha256:
             raise RuntimeError("configuration changed while it was being loaded")
         if _sha256_file(manifest_path) != dataset_manifest_sha256:
             raise RuntimeError("dataset manifest changed while it was being loaded")
+        if label_free_bundle is not None:
+            for role, path in label_free_bundle.artifacts.items():
+                if _sha256_file(path) != label_free_bundle.artifact_sha256[role]:
+                    raise RuntimeError(
+                        f"label-free protocol artifact changed while loading: {role}"
+                    )
         from pams.reproducibility import clean_git_revision
 
         source_git_sha = clean_git_revision(Path.cwd())
@@ -1891,6 +2272,11 @@ def train_sshead_command(
             dataset_sha256=provenance.dataset_fingerprint,
             notes=[
                 "PAMS-SSHead is an inferred reproduction completion, not author-disclosed",
+                (
+                    "formal 337/84/105 label-free identity sidecars"
+                    if label_free_bundle is not None
+                    else "legacy labeled-manifest compatibility path"
+                ),
                 f"pose cache set: {pose_snapshot.fingerprint}",
                 (
                     "fresh run"
@@ -1966,6 +2352,9 @@ def train_sshead_command(
             "output_sshead_checkpoint": checkpoint_sha256,
             "progress_log": progress_sha256,
         }
+        if label_free_bundle is not None:
+            completion_artifacts.update(label_free_bundle.artifacts)
+            completion_expected_sha256.update(label_free_bundle.artifact_sha256)
         if resume_checkpoint is not None:
             assert resume_checkpoint_sha256 is not None
             completion_artifacts["input_resume_checkpoint"] = resume_checkpoint
@@ -1987,7 +2376,7 @@ def train_sshead_command(
         )
     except ImportError as exc:
         _abort(f"SSHead training module is unavailable: {exc}")
-    except (OSError, RuntimeError, ValueError) as exc:
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
         _abort(str(exc))
     _emit(
         {
@@ -2091,6 +2480,48 @@ def evaluate_checkpoint_command(
         ),
     ] = None,
     overwrite: Annotated[bool, typer.Option("--overwrite")] = False,
+    label_free_inputs: Annotated[
+        bool,
+        typer.Option(
+            "--label-free-inputs",
+            help="Use strict 337/84/105 identity sidecars for dev evaluation.",
+        ),
+    ] = False,
+    input_commitment: Annotated[
+        Path | None,
+        typer.Option("--input-commitment", exists=True, dir_okay=False, readable=True),
+    ] = None,
+    dev_inputs: Annotated[
+        Path | None,
+        typer.Option("--dev-inputs", exists=True, dir_okay=False, readable=True),
+    ] = None,
+    dev_input_commitment: Annotated[
+        Path | None,
+        typer.Option("--dev-input-commitment", exists=True, dir_okay=False, readable=True),
+    ] = None,
+    test_identity_inputs: Annotated[
+        Path | None,
+        typer.Option("--test-identity-inputs", exists=True, dir_okay=False, readable=True),
+    ] = None,
+    test_identity_commitment: Annotated[
+        Path | None,
+        typer.Option(
+            "--test-identity-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ] = None,
+    dev_targets: Annotated[
+        Path | None,
+        typer.Option(
+            "--dev-targets",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Strict 84-row dev-only target file; required with --label-free-inputs.",
+        ),
+    ] = None,
 ) -> None:
     """Evaluate a stage-bound variant; labels are passed only to evaluation."""
 
@@ -2101,20 +2532,83 @@ def evaluate_checkpoint_command(
             validate_terminal_checkpoint,
         )
 
+        evaluation_split = split.strip().lower()
+        if evaluation_split not in {"dev", "test"}:
+            raise ValueError("checkpoint evaluation split must be 'dev' or 'test'")
+        if evaluation_split == "dev":
+            _require_formal_label_free_inputs(
+                label_free_inputs=label_free_inputs,
+                operation="dev checkpoint evaluation",
+            )
+        if label_free_inputs and evaluation_split != "dev":
+            raise ValueError(
+                "--label-free-inputs is the dev-only firewall path; "
+                "sealed test evaluation retains its dedicated label-unsealing protocol"
+            )
         config_file_sha256 = _sha256_file(config_path)
         dataset_manifest_sha256 = _sha256_file(manifest_path)
         config = load_config(config_path)
-        manifest = load_ucfrep_manifest(manifest_path, validate_exact=False)
+        label_free_bundle: _LabelFreeInputBundle | None = None
+        dev_target_manifest: DevTargetManifest | None = None
+        dev_targets_sha256: str | None = None
+        manifest: UCFRepManifest | LabelFreeProtocolInputs
+        if label_free_inputs:
+            label_free_bundle = _load_label_free_protocol_inputs(
+                manifest_path,
+                train_commitment_path=input_commitment,
+                dev_inputs_path=dev_inputs,
+                dev_commitment_path=dev_input_commitment,
+                test_identity_inputs_path=test_identity_inputs,
+                test_identity_commitment_path=test_identity_commitment,
+            )
+            manifest = label_free_bundle.inputs
+            if dev_targets is None:
+                raise ValueError("--dev-targets is required with --label-free-inputs")
+            dev_targets_sha256 = _sha256_file(dev_targets)
+            dev_target_manifest = load_dev_target_manifest(dev_targets)
+            if dev_target_manifest.protocol != manifest.protocol:
+                raise ValueError("dev-target/protocol identity mismatch")
+            dev_ids = tuple(record.video_id for record in manifest.records_for("dev"))
+            target_ids = tuple(record.video_id for record in dev_target_manifest.records)
+            if target_ids != dev_ids:
+                raise ValueError(
+                    "dev-target order/identity does not exactly match the dev pose inputs"
+                )
+            if _sha256_file(dev_targets) != dev_targets_sha256:
+                raise RuntimeError("dev-target manifest changed while it was being loaded")
+        else:
+            unexpected_label_free_options = {
+                "--input-commitment": input_commitment,
+                "--dev-inputs": dev_inputs,
+                "--dev-input-commitment": dev_input_commitment,
+                "--test-identity-inputs": test_identity_inputs,
+                "--test-identity-commitment": test_identity_commitment,
+                "--dev-targets": dev_targets,
+            }
+            supplied = sorted(
+                option
+                for option, value in unexpected_label_free_options.items()
+                if value is not None
+            )
+            if supplied:
+                raise ValueError(
+                    f"{', '.join(supplied)} require --label-free-inputs"
+                )
+            manifest = load_ucfrep_manifest(manifest_path, validate_exact=False)
         if _sha256_file(config_path) != config_file_sha256:
             raise RuntimeError("configuration changed while it was being loaded")
         if _sha256_file(manifest_path) != dataset_manifest_sha256:
             raise RuntimeError("dataset manifest changed while it was being loaded")
+        if label_free_bundle is not None:
+            for role, path in label_free_bundle.artifacts.items():
+                if _sha256_file(path) != label_free_bundle.artifact_sha256[role]:
+                    raise RuntimeError(
+                        f"label-free protocol artifact changed while loading: {role}"
+                    )
         _assert_protocol_match(config, manifest)
-        _validate_experiment_split(manifest)
+        if not label_free_inputs:
+            _validate_experiment_split(cast(UCFRepManifest, manifest))
         checkpoint_variant = _normalize_checkpoint_variant(variant)
-        evaluation_split = split.strip().lower()
-        if evaluation_split not in {"dev", "test"}:
-            raise ValueError("checkpoint evaluation split must be 'dev' or 'test'")
         if evaluation_split == "test" and manifest.protocol != "ucfrep_526":
             raise ValueError(
                 "sealed evaluation is disabled for ucfrep_pose_110 until its "
@@ -2273,6 +2767,11 @@ def evaluate_checkpoint_command(
             dataset_sha256=manifest.fingerprint,
             notes=[
                 f"evaluation split: {evaluation_split}",
+                (
+                    "formal dev-only targets plus 337/84/105 label-free identity sidecars"
+                    if label_free_bundle is not None
+                    else "legacy labeled-manifest compatibility path"
+                ),
                 f"variant: {checkpoint_variant}",
                 f"method_id: {sealed_method_id}",
                 f"checkpoint stage: {expected_stage}",
@@ -2316,6 +2815,7 @@ def evaluate_checkpoint_command(
         sealed_attempt_path: Path | None = None
         sealed_attempt_sha256: str | None = None
         if evaluation_split == "test":
+            labeled_manifest = cast(UCFRepManifest, manifest)
             if _sha256_file(checkpoint_path) != checkpoint_sha256:
                 raise RuntimeError("checkpoint changed during label-free prediction")
             if _sha256_file(config_path) != config_file_sha256:
@@ -2351,7 +2851,7 @@ def evaluate_checkpoint_command(
             sealed_attempt_path, sealed_attempt_sha256 = _reserve_cli_sealed_attempt(
                 registry,
                 protocol=manifest.protocol,
-                full_dataset_sha256=manifest.sealed_dataset_fingerprint,
+                full_dataset_sha256=labeled_manifest.sealed_dataset_fingerprint,
                 config_sha256=config.fingerprint,
                 method_id=sealed_method_id,
                 experiment_seed=config.seed,
@@ -2359,7 +2859,13 @@ def evaluate_checkpoint_command(
                 input_artifact_sha256=checkpoint_sha256,
             )
 
-        evaluation_records = manifest.records_for(evaluation_split)
+        evaluation_records: tuple[UCFRepRecord | DevTargetRecord, ...]
+        if dev_target_manifest is None:
+            evaluation_records = cast(UCFRepManifest, manifest).records_for(
+                evaluation_split
+            )
+        else:
+            evaluation_records = dev_target_manifest.records
         if tuple(record.video_id for record in evaluation_records) != tuple(identifiers):
             raise RuntimeError("evaluation records changed after label-free prediction")
         ground_truths = {record.video_id: record.count for record in evaluation_records}
@@ -2380,7 +2886,9 @@ def evaluate_checkpoint_command(
             "checkpoint_progress_sha256": checkpoint_progress_sha256,
             "dataset_fingerprint": manifest.fingerprint,
             "sealed_dataset_fingerprint": (
-                manifest.sealed_dataset_fingerprint if evaluation_split == "test" else None
+                cast(UCFRepManifest, manifest).sealed_dataset_fingerprint
+                if evaluation_split == "test"
+                else None
             ),
             "config_fingerprint": config.fingerprint,
             "pose_fingerprint": config.pose_fingerprint,
@@ -2412,6 +2920,13 @@ def evaluate_checkpoint_command(
             "input_evaluation_pose_cache_snapshot": evaluation_pose_snapshot_sha256,
             "evaluation": evaluation_sha256,
         }
+        if label_free_bundle is not None:
+            completion_artifacts.update(label_free_bundle.artifacts)
+            completion_expected_sha256.update(label_free_bundle.artifact_sha256)
+            assert dev_targets is not None
+            assert dev_targets_sha256 is not None
+            completion_artifacts["input_dev_targets"] = dev_targets
+            completion_expected_sha256["input_dev_targets"] = dev_targets_sha256
         if checkpoint_progress is not None:
             assert checkpoint_progress_sha256 is not None
             completion_artifacts["input_checkpoint_progress"] = checkpoint_progress
@@ -2459,7 +2974,7 @@ def evaluate_checkpoint_command(
         )
     except ImportError as exc:
         _abort(f"checkpoint evaluation module is unavailable: {exc}")
-    except (OSError, RuntimeError, ValueError) as exc:
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
         _abort(str(exc))
     _emit(payload)
 

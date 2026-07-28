@@ -15,6 +15,8 @@ def test_default_config_matches_disclosed_dimensions() -> None:
     assert len(config.pose_fingerprint) == 64
     assert config.pose.model_id == "mediapipe-pose-0.10.14"
     assert config.pose.preprocessing_revision == "detected-span-minmax-zero-span-invalid-v2"
+    assert config.period.post_warmup_source == "embedding_velocity_coordinate"
+    assert config.loss.exclude_other_scale_positives_from_denominator is False
 
 
 def test_config_rejects_dimension_mismatch() -> None:
@@ -53,10 +55,88 @@ def test_inferred_pe_scale_experiment_changes_only_projection_scale() -> None:
     assert experiment_payload == formal.model_dump()
 
 
+def test_inferred_projected_vector_period_changes_only_post_warmup_source() -> None:
+    root = Path(__file__).parents[1]
+    formal = load_config(root / "configs" / "pams.yaml")
+    experiment = load_config(
+        root
+        / "configs"
+        / "experiments"
+        / "pams_projected_vector_period_v3.yaml"
+    )
+
+    assert experiment.seed == 2026
+    assert experiment.model.input_projection_scale == "none"
+    assert (
+        experiment.period.post_warmup_source
+        == "projected_pose_velocity_vector_acf"
+    )
+    assert experiment.fingerprint != formal.fingerprint
+    assert experiment.nonseed_fingerprint != formal.nonseed_fingerprint
+    experiment_payload = experiment.model_dump()
+    experiment_payload["period"][
+        "post_warmup_source"
+    ] = "embedding_velocity_coordinate"
+    assert experiment_payload == formal.model_dump()
+
+
+def test_explicit_default_period_source_preserves_historical_fingerprint() -> None:
+    implicit = PAMSConfig()
+    payload = implicit.model_dump()
+    payload["period"].pop("post_warmup_source")
+    explicit = PAMSConfig.model_validate(implicit.model_dump())
+    reconstructed_implicit = PAMSConfig.model_validate(payload)
+
+    assert explicit.fingerprint == reconstructed_implicit.fingerprint
+    assert explicit.nonseed_fingerprint == reconstructed_implicit.nonseed_fingerprint
+
+
+def test_inferred_union_repair_changes_only_cross_scale_denominator() -> None:
+    root = Path(__file__).parents[1]
+    vector_period = load_config(
+        root
+        / "configs"
+        / "experiments"
+        / "pams_projected_vector_period_v3.yaml"
+    )
+    union = load_config(
+        root
+        / "configs"
+        / "experiments"
+        / "pams_projected_vector_period_union_v4.yaml"
+    )
+
+    assert vector_period.loss.exclude_other_scale_positives_from_denominator is False
+    assert union.loss.exclude_other_scale_positives_from_denominator is True
+    assert union.fingerprint != vector_period.fingerprint
+    assert union.nonseed_fingerprint != vector_period.nonseed_fingerprint
+    union_payload = union.model_dump()
+    union_payload["loss"]["exclude_other_scale_positives_from_denominator"] = False
+    assert union_payload == vector_period.model_dump()
+
+
+def test_explicit_default_union_repair_preserves_historical_fingerprint() -> None:
+    implicit = PAMSConfig()
+    payload = implicit.model_dump()
+    payload["loss"].pop("exclude_other_scale_positives_from_denominator")
+    explicit = PAMSConfig.model_validate(implicit.model_dump())
+    reconstructed_implicit = PAMSConfig.model_validate(payload)
+
+    assert explicit.fingerprint == reconstructed_implicit.fingerprint
+    assert explicit.nonseed_fingerprint == reconstructed_implicit.nonseed_fingerprint
+
+
 def test_config_rejects_unknown_input_projection_scale() -> None:
     with pytest.raises(ValidationError, match="input_projection_scale"):
         PAMSConfig.model_validate(
             {"model": {"input_projection_scale": "sqrt_input_dim"}}
+        )
+
+
+def test_config_rejects_unknown_post_warmup_period_source() -> None:
+    with pytest.raises(ValidationError, match="post_warmup_source"):
+        PAMSConfig.model_validate(
+            {"period": {"post_warmup_source": "transformer_coordinate"}}
         )
 
 

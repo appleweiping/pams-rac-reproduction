@@ -11,6 +11,9 @@ from pams.period import (
     estimate_period_batch,
     estimate_period_from_embeddings,
     estimate_period_from_pose,
+    estimate_period_from_projected_pose,
+    estimate_period_from_vectors,
+    vector_autocorrelation_fft,
 )
 
 
@@ -166,4 +169,128 @@ def test_embedding_velocity_resists_absolute_position_encoding(period: int) -> N
     )
 
     assert periods.tolist() == [period]
+    assert confidence.item() > 0
+
+
+@pytest.mark.parametrize("period", [4, 5, 8, 16, 32, 64, 128])
+def test_vector_acf_recovers_signed_periods_across_frozen_bounds(period: int) -> None:
+    time = torch.arange(512, dtype=torch.float64)
+    angle = 2.0 * math.pi * time / period
+    vectors = torch.stack(
+        (
+            torch.sin(angle),
+            torch.cos(angle),
+            0.4 * torch.sin(angle + 0.37),
+        ),
+        dim=-1,
+    )
+
+    autocorrelation = vector_autocorrelation_fft(vectors)
+    periods, confidence = estimate_period_from_vectors(
+        vectors,
+        minimum=4,
+        maximum=128,
+    )
+
+    assert periods.item() == pytest.approx(float(period), rel=0.011)
+    assert confidence.item() > 0
+    if period >= 8:
+        assert autocorrelation[period // 2].item() < 0
+        assert autocorrelation[period].item() > 0
+
+
+def test_vector_acf_zero_and_constant_inputs_have_no_period_evidence() -> None:
+    for sequence in (
+        torch.zeros(256, 7),
+        torch.full((256, 7), 3.5),
+    ):
+        autocorrelation = vector_autocorrelation_fft(sequence)
+        _, confidence = estimate_period_from_vectors(
+            sequence,
+            minimum=4,
+            maximum=128,
+        )
+
+        assert torch.count_nonzero(autocorrelation) == 0
+        assert confidence.tolist() == [0.0]
+
+
+def test_vector_acf_is_mask_aware_and_ignores_invalid_corruption() -> None:
+    time = torch.arange(256, dtype=torch.float32)
+    angle = 2.0 * math.pi * time / 20.0
+    clean = torch.stack((torch.sin(angle), torch.cos(angle)), dim=-1)
+    corrupted = clean.clone()
+    mask = torch.ones(256, dtype=torch.bool)
+    mask[80:120] = False
+    corrupted[~mask] = torch.randn_like(corrupted[~mask]) * 100_000.0
+
+    clean_period, clean_confidence = estimate_period_from_vectors(
+        clean,
+        minimum=4,
+        maximum=64,
+        valid_mask=mask,
+    )
+    corrupted_period, corrupted_confidence = estimate_period_from_vectors(
+        corrupted,
+        minimum=4,
+        maximum=64,
+        valid_mask=mask,
+    )
+
+    assert torch.equal(clean_period, corrupted_period)
+    assert torch.equal(clean_confidence, corrupted_confidence)
+    assert corrupted_period.item() == pytest.approx(20.0, rel=0.03)
+
+
+def test_vector_acf_period_and_confidence_are_orthogonal_basis_invariant() -> None:
+    generator = torch.Generator().manual_seed(3407)
+    time = torch.arange(256, dtype=torch.float64)
+    angle = 2.0 * math.pi * time / 16.0
+    sequence = torch.stack(
+        (
+            torch.sin(angle),
+            torch.cos(angle),
+            0.7 * torch.sin(angle + 0.2),
+            0.3 * torch.cos(angle - 0.4),
+        ),
+        dim=-1,
+    )
+    orthogonal, _ = torch.linalg.qr(
+        torch.randn(4, 4, dtype=torch.float64, generator=generator)
+    )
+
+    base_period, base_confidence = estimate_period_from_vectors(
+        sequence,
+        minimum=4,
+        maximum=128,
+    )
+    rotated_period, rotated_confidence = estimate_period_from_vectors(
+        sequence @ orthogonal,
+        minimum=4,
+        maximum=128,
+    )
+
+    assert torch.equal(base_period, rotated_period)
+    assert torch.allclose(base_confidence, rotated_confidence, rtol=1e-12, atol=1e-12)
+
+
+def test_projected_pose_velocity_vector_acf_preserves_fundamental_period() -> None:
+    time = torch.arange(256, dtype=torch.float32)
+    angle = 2.0 * math.pi * time / 32.0
+    projected_pose = torch.stack(
+        (
+            torch.sin(angle),
+            torch.cos(angle),
+            torch.sin(angle + 0.5),
+        ),
+        dim=-1,
+    )
+
+    periods, confidence = estimate_period_from_projected_pose(
+        projected_pose,
+        minimum=4,
+        maximum=128,
+    )
+
+    assert periods.tolist() == [32]
     assert confidence.item() > 0

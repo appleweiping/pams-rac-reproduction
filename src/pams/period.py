@@ -31,6 +31,21 @@ def _as_batch_signal(signal: Tensor) -> tuple[Tensor, bool]:
     return signal, False
 
 
+def _as_batch_vectors(sequence: Tensor) -> tuple[Tensor, bool]:
+    if sequence.ndim == 2:
+        if sequence.shape[-1] < 1:
+            raise ValueError("vector sequence feature dimension must be positive")
+        return sequence.unsqueeze(0), True
+    if sequence.ndim != 3:
+        raise ValueError(
+            "vector sequence must have shape [time, features] or "
+            "[batch, time, features]"
+        )
+    if sequence.shape[-1] < 1:
+        raise ValueError("vector sequence feature dimension must be positive")
+    return sequence, False
+
+
 def _validated_mask(signal: Tensor, valid_mask: Tensor | None) -> Tensor:
     if valid_mask is None:
         return torch.ones_like(signal, dtype=torch.bool)
@@ -188,6 +203,67 @@ def autocorrelation_fft(
     return autocorrelation[0] if unbatched else autocorrelation
 
 
+def vector_autocorrelation_fft(
+    sequence: Tensor,
+    valid_mask: Tensor | None = None,
+) -> Tensor:
+    """Compute an orthogonal-basis-invariant vector autocorrelation.
+
+    The input is centered per feature over valid frames.  Every lag then uses
+    the sum of signed cross-time dot products over all feature dimensions,
+    computed as a zero-padded FFT correlation and divided by the exact number
+    of valid frame pairs.  Unlike selecting one high-variance coordinate, this
+    quantity is unchanged by an orthogonal change of feature basis.
+
+    This is an independently inferred diagnostic primitive; it is not claimed
+    as an author-disclosed PAMS component.
+    """
+
+    batched, unbatched = _as_batch_vectors(sequence)
+    if batched.dtype not in (torch.float32, torch.float64):
+        batched = batched.float()
+    batched = torch.nan_to_num(batched.detach())
+    batch, time, _ = batched.shape
+    if valid_mask is None:
+        mask = torch.ones((batch, time), dtype=torch.bool, device=batched.device)
+    else:
+        expected = (time,) if unbatched else (batch, time)
+        if valid_mask.shape != expected:
+            raise ValueError(
+                f"valid_mask must have shape {expected}, got {tuple(valid_mask.shape)}"
+            )
+        mask = valid_mask.unsqueeze(0) if unbatched else valid_mask
+        mask = mask.to(device=batched.device, dtype=torch.bool)
+
+    weights = mask.to(dtype=batched.dtype)
+    feature_weights = weights.unsqueeze(-1)
+    counts = weights.sum(dim=1, keepdim=True).clamp_min(1.0)
+    means = (batched * feature_weights).sum(dim=1, keepdim=True) / counts.unsqueeze(-1)
+    centered = torch.nan_to_num((batched - means) * feature_weights)
+
+    fft_length = 1 << max(1, (2 * time - 1).bit_length())
+    spectrum = torch.fft.rfft(centered, n=fft_length, dim=1)
+    # Parseval/Wiener-Khinchin over every feature at once.  Summed squared
+    # spectral magnitudes are exactly the FFT representation of cross-time
+    # vector dot products.
+    cross_power = (spectrum.conj() * spectrum).sum(dim=-1)
+    numerator = torch.fft.irfft(cross_power, n=fft_length, dim=1)[:, :time]
+    mask_spectrum = torch.fft.rfft(weights, n=fft_length, dim=1)
+    pair_count = torch.fft.irfft(
+        mask_spectrum.conj() * mask_spectrum,
+        n=fft_length,
+        dim=1,
+    )[:, :time]
+    autocorrelation = numerator / pair_count.clamp_min(1.0)
+    lag_zero = autocorrelation[:, :1].abs()
+    autocorrelation = torch.where(
+        lag_zero > 1e-12,
+        autocorrelation / lag_zero.clamp_min(1e-12),
+        torch.zeros_like(autocorrelation),
+    )
+    return autocorrelation[0] if unbatched else autocorrelation
+
+
 def estimate_period_batch(
     signal: Tensor,
     minimum: int = 4,
@@ -266,6 +342,96 @@ def estimate_period_batch(
     return period_tensor, confidence_tensor
 
 
+def estimate_period_from_vectors(
+    sequence: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> tuple[Tensor, Tensor]:
+    """Estimate periods from the full signed vector autocorrelation.
+
+    This follows the same bounded ACF-spectrum rule as
+    :func:`estimate_period_batch`, but its evidence is the cross-dimensional
+    dot-product sum rather than a selected scalar coordinate.  Zero or
+    constant valid inputs have exactly zero confidence.
+    """
+
+    if minimum < 2:
+        raise ValueError("minimum period must be at least 2")
+    if maximum <= minimum:
+        raise ValueError("maximum must be greater than minimum")
+    batched, unbatched = _as_batch_vectors(sequence)
+    if batched.dtype not in (torch.float32, torch.float64):
+        batched = batched.float()
+    batch, time, _ = batched.shape
+    if valid_mask is None:
+        mask = torch.ones((batch, time), dtype=torch.bool, device=batched.device)
+    else:
+        expected = (time,) if unbatched else (batch, time)
+        if valid_mask.shape != expected:
+            raise ValueError(
+                f"valid_mask must have shape {expected}, got {tuple(valid_mask.shape)}"
+            )
+        mask = valid_mask.unsqueeze(0) if unbatched else valid_mask
+        mask = mask.to(device=batched.device, dtype=torch.bool)
+
+    autocorrelation = vector_autocorrelation_fft(batched, mask)
+    if autocorrelation.ndim == 1:
+        autocorrelation = autocorrelation.unsqueeze(0)
+
+    periods: list[float] = []
+    confidences: list[Tensor] = []
+    for sample_ac, sample_mask in zip(autocorrelation, mask, strict=True):
+        valid_length = int(sample_mask.sum())
+        upper_period = min(maximum, max(minimum, valid_length - 1))
+        if valid_length < minimum * 2:
+            periods.append(float(minimum))
+            confidences.append(sample_ac.new_tensor(0.0))
+            continue
+
+        window = torch.hann_window(
+            sample_ac.numel(),
+            periodic=False,
+            dtype=sample_ac.dtype,
+            device=sample_ac.device,
+        )
+        power = torch.fft.rfft(sample_ac * window).abs().square()
+        frequencies = torch.fft.rfftfreq(
+            sample_ac.numel(),
+            d=1.0,
+            device=sample_ac.device,
+        )
+        allowed = (frequencies >= 1.0 / upper_period) & (
+            frequencies <= 1.0 / minimum
+        )
+        allowed[0] = False
+        band = power.masked_fill(~allowed, 0.0)
+        total = band.sum()
+        if not torch.isfinite(total) or float(total) <= 1e-12:
+            periods.append(float(upper_period))
+            confidences.append(sample_ac.new_tensor(0.0))
+            continue
+
+        index = int(torch.argmax(band))
+        frequency = index / sample_ac.numel()
+        estimate = min(
+            max(1.0 / frequency, float(minimum)),
+            float(upper_period),
+        )
+        periods.append(estimate)
+        confidences.append((band[index] / total.clamp_min(1e-12)).clamp(0.0, 1.0))
+
+    period_tensor = torch.tensor(
+        periods,
+        dtype=batched.dtype,
+        device=batched.device,
+    )
+    confidence_tensor = torch.stack(confidences).to(device=batched.device)
+    if unbatched:
+        return period_tensor[:1], confidence_tensor[:1]
+    return period_tensor, confidence_tensor
+
+
 def estimate_period(
     signal: Tensor,
     minimum: int = 4,
@@ -319,3 +485,26 @@ def estimate_period_from_embeddings(
     velocities, velocity_valid = _embedding_velocity(embeddings, valid_mask)
     energy = temporal_component(velocities, velocity_valid)
     return estimate_period_batch(energy, minimum, maximum, velocity_valid)
+
+
+def estimate_period_from_projected_pose(
+    projected_pose: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> tuple[Tensor, Tensor]:
+    """Estimate period from pre-position-encoding projected-pose velocity.
+
+    The linear projection is intentionally sampled before positional encoding
+    and the Transformer.  First differences remove a constant projection bias,
+    and the full vector ACF avoids the historical selected-coordinate shortcut.
+    This route is inferred and must remain opt-in.
+    """
+
+    velocities, velocity_valid = _embedding_velocity(projected_pose, valid_mask)
+    return estimate_period_from_vectors(
+        velocities,
+        minimum=minimum,
+        maximum=maximum,
+        valid_mask=velocity_valid,
+    )

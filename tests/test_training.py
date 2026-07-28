@@ -71,6 +71,14 @@ def _tiny_config(*, encoder_epochs: int = 2, head_epochs: int = 1) -> PAMSConfig
     )
 
 
+def _with_projected_vector_period(config: PAMSConfig) -> PAMSConfig:
+    payload = config.model_dump()
+    payload["period"][
+        "post_warmup_source"
+    ] = "projected_pose_velocity_vector_acf"
+    return PAMSConfig.model_validate(payload)
+
+
 def _sequence(identifier: str, *, phase: float = 0.0, frames: int = 16) -> PoseSequence:
     time = np.arange(frames, dtype=np.float32)
     wave = np.sin(2.0 * math.pi * time / 4.0 + phase)
@@ -104,6 +112,29 @@ def _provenance(
     )
 
 
+@pytest.mark.parametrize("stage", ["encoder", "sshead"])
+def test_public_training_boundary_rejects_objects_containing_test_labels(
+    stage: str,
+) -> None:
+    label_bearing_test_object = {
+        "video_id": "v_BenchPress_g21_c01",
+        "split": "test",
+        "action": "BenchPress",
+        "count": 7,
+    }
+    config = _tiny_config()
+
+    with pytest.raises(TypeError, match="only PoseSequence"):
+        if stage == "encoder":
+            train_encoder([label_bearing_test_object], config)  # type: ignore[list-item]
+        else:
+            train_sshead(  # type: ignore[list-item]
+                [label_bearing_test_object],
+                config,
+                model=object(),  # type: ignore[arg-type]
+            )
+
+
 def _write_terminal_encoder_fixture(
     tmp_path: Path,
     config: PAMSConfig,
@@ -132,7 +163,14 @@ def _write_terminal_encoder_fixture(
             loss=1.0 / epoch,
             learning_rate=1e-3,
             period_source=(
-                "pose" if epoch <= config.period.pose_energy_epochs else "embedding"
+                "pose"
+                if epoch <= config.period.pose_energy_epochs
+                else (
+                    "embedding"
+                    if config.period.post_warmup_source
+                    == "embedding_velocity_coordinate"
+                    else "projected_pose_velocity_vector_acf"
+                )
             ),
             period_confidence_mean=0.8,
             period_valid_fraction=1.0,
@@ -284,6 +322,163 @@ def test_train_api_is_label_free_and_resume_is_bitwise_deterministic(
         assert isinstance(stats.cross_cluster_shortfall, int)
     for name, expected in uninterrupted.model.state_dict().items():
         assert torch.equal(expected, resumed.model.state_dict()[name]), name
+
+
+def test_projected_vector_period_routes_encoder_and_sshead_to_same_source(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    config = _with_projected_vector_period(
+        _tiny_config(encoder_epochs=2, head_epochs=1)
+    )
+    calls: list[tuple[int, int]] = []
+
+    def projected_vector_period(
+        projected_pose: torch.Tensor,
+        minimum: int,
+        maximum: int,
+        valid_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        del maximum
+        assert projected_pose.shape[:2] == valid_mask.shape
+        assert projected_pose.shape[-1] == config.model.model_dim
+        assert not projected_pose.requires_grad
+        calls.append((projected_pose.shape[0], projected_pose.shape[1]))
+        return (
+            torch.full(
+                (projected_pose.shape[0],),
+                float(minimum),
+                dtype=projected_pose.dtype,
+                device=projected_pose.device,
+            ),
+            torch.full(
+                (projected_pose.shape[0],),
+                0.75,
+                dtype=projected_pose.dtype,
+                device=projected_pose.device,
+            ),
+        )
+
+    def forbidden_embedding_period(*args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        raise AssertionError("vector-period config routed through embedding coordinate")
+
+    monkeypatch.setattr(
+        training_module,
+        "estimate_period_from_projected_pose",
+        projected_vector_period,
+    )
+    monkeypatch.setattr(
+        training_module,
+        "estimate_period_from_embeddings",
+        forbidden_embedding_period,
+    )
+    items = (_sequence("a"), _sequence("b", phase=0.4))
+    encoder_checkpoint = tmp_path / "encoder.pt"
+    encoder_progress = tmp_path / "encoder.jsonl"
+    partial = train_encoder(
+        items,
+        config,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=encoder_checkpoint,
+        progress_path=encoder_progress,
+        stop_after_epoch=1,
+    )
+    assert [row.period_source for row in partial.history] == ["pose"]
+    tampered_resume = tmp_path / "encoder-wrong-source.pt"
+    tampered_payload = torch.load(
+        encoder_checkpoint,
+        map_location="cpu",
+        weights_only=False,
+    )
+    tampered_payload["history"][0][
+        "period_source"
+    ] = "projected_pose_velocity_vector_acf"
+    torch.save(tampered_payload, tampered_resume)
+    with pytest.raises(ValueError, match="period-source schedule mismatch"):
+        train_encoder(
+            items,
+            config,
+            device="cpu",
+            microbatch_size=2,
+            checkpoint_path=tampered_resume,
+            resume=True,
+        )
+    encoder_result = train_encoder(
+        tuple(reversed(items)),
+        config,
+        model=partial.model,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=encoder_checkpoint,
+        progress_path=encoder_progress,
+        resume=True,
+    )
+
+    head_checkpoint = tmp_path / "head.pt"
+    head_progress = tmp_path / "head.jsonl"
+    head_result = train_sshead(
+        items,
+        config,
+        model=encoder_result.model,
+        device="cpu",
+        microbatch_size=1,
+        checkpoint_path=head_checkpoint,
+        progress_path=head_progress,
+    )
+
+    assert [row.period_source for row in encoder_result.history] == [
+        "pose",
+        "projected_pose_velocity_vector_acf",
+    ]
+    assert head_result.completed_epochs == 1
+    assert len(calls) == 3
+    progress_row = json.loads(head_progress.read_text(encoding="utf-8"))
+    assert (
+        progress_row["stats"]["period_source"]
+        == "projected_pose_velocity_vector_acf"
+    )
+
+
+def test_encoder_routes_cross_scale_denominator_switch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    payload = _tiny_config(encoder_epochs=1).model_dump()
+    payload["loss"]["exclude_other_scale_positives_from_denominator"] = True
+    config = PAMSConfig.model_validate(payload)
+    observed: list[bool] = []
+    real_loss = training_module.PAMSTCCLoss
+
+    class CapturingLoss(real_loss):
+        def __init__(
+            self,
+            *args: Any,
+            exclude_other_scale_positives_from_denominator: bool = False,
+            **kwargs: Any,
+        ) -> None:
+            observed.append(exclude_other_scale_positives_from_denominator)
+            super().__init__(
+                *args,
+                exclude_other_scale_positives_from_denominator=(
+                    exclude_other_scale_positives_from_denominator
+                ),
+                **kwargs,
+            )
+
+    monkeypatch.setattr(training_module, "PAMSTCCLoss", CapturingLoss)
+    train_encoder(
+        (_sequence("a"), _sequence("b", phase=0.4)),
+        config,
+        device="cpu",
+        microbatch_size=2,
+    )
+
+    assert observed == [True]
 
 
 def test_encoder_rejects_gradient_accumulation_as_contrastive_batch_substitute() -> None:
@@ -936,6 +1131,50 @@ def test_terminal_sshead_binds_exact_upstream_encoder_tensors(
     torch.save(altered_payload, altered)
     with pytest.raises(ValueError, match="differs from upstream"):
         validate_sshead_encoder_binding(altered, encoder)
+
+
+def test_terminal_encoder_strictly_validates_projected_vector_period_source(
+    tmp_path: Path,
+) -> None:
+    payload = _with_projected_vector_period(
+        _tiny_config(encoder_epochs=11, head_epochs=1)
+    ).model_dump()
+    payload["period"]["pose_energy_epochs"] = 10
+    config = PAMSConfig.model_validate(payload)
+    checkpoint, progress, provenance, _ = _write_terminal_encoder_fixture(
+        tmp_path,
+        config,
+    )
+
+    validate_terminal_checkpoint(
+        checkpoint,
+        config,
+        expected_stage="encoder",
+        expected_provenance=provenance,
+        progress_path=progress,
+    )
+    rows = [
+        json.loads(line)
+        for line in progress.read_text(encoding="utf-8").splitlines()
+    ]
+    assert [row["stats"]["period_source"] for row in rows[:10]] == ["pose"] * 10
+    assert (
+        rows[10]["stats"]["period_source"]
+        == "projected_pose_velocity_vector_acf"
+    )
+
+    tampered = tmp_path / "tampered-period-source.pt"
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    payload["history"][-1]["period_source"] = "embedding"
+    torch.save(payload, tampered)
+    with pytest.raises(ValueError, match="period-source schedule mismatch"):
+        validate_terminal_checkpoint(
+            tampered,
+            config,
+            expected_stage="encoder",
+            expected_provenance=provenance,
+            progress_path=progress,
+        )
 
 
 def test_resume_rejects_provenance_mismatch(tmp_path: Path) -> None:

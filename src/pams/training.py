@@ -35,6 +35,7 @@ from pams.period import (
     estimate_period_batch,
     estimate_period_from_embeddings,
     estimate_period_from_pose,
+    estimate_period_from_projected_pose,
 )
 from pams.reproducibility import durable_mkdir, fsync_directory, seed_everything
 from pams.types import CountResult, PoseSequence
@@ -44,6 +45,12 @@ _PROGRESS_SCHEMA_VERSION = 2
 _SHA256_HEX_LENGTH = 64
 _GIT_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 _IMAGE_ID_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+
+PeriodHistorySource = Literal[
+    "pose",
+    "embedding",
+    "projected_pose_velocity_vector_acf",
+]
 
 
 def _canonical_sha256(value: str, name: str) -> str:
@@ -311,6 +318,55 @@ def build_pams_model(config: PAMSConfig) -> PAMSModel:
     return PAMSModel(encoder=encoder, period_head=head)
 
 
+def _post_warmup_period_history_source(config: PAMSConfig) -> PeriodHistorySource:
+    source = config.period.post_warmup_source
+    if source == "embedding_velocity_coordinate":
+        # Preserve the exact historical receipt label for the default route.
+        return "embedding"
+    if source == "projected_pose_velocity_vector_acf":
+        return "projected_pose_velocity_vector_acf"
+    raise AssertionError(f"unreachable validated period source: {source!r}")
+
+
+def _encoder_period_history_source(
+    config: PAMSConfig,
+    *,
+    epoch: int,
+) -> PeriodHistorySource:
+    if epoch <= config.period.pose_energy_epochs:
+        return "pose"
+    return _post_warmup_period_history_source(config)
+
+
+def _estimate_post_warmup_periods(
+    *,
+    config: PAMSConfig,
+    embeddings: Tensor,
+    projected_pose: Tensor | None,
+    valid_mask: Tensor,
+) -> tuple[Tensor, Tensor, PeriodHistorySource]:
+    source = _post_warmup_period_history_source(config)
+    if source == "embedding":
+        periods, confidences = estimate_period_from_embeddings(
+            embeddings.detach(),
+            minimum=config.period.minimum,
+            maximum=config.period.maximum,
+            valid_mask=valid_mask,
+        )
+        return periods, confidences, source
+    if projected_pose is None:
+        raise RuntimeError(
+            "projected-pose period source requires pre-PE encoder features"
+        )
+    periods, confidences = estimate_period_from_projected_pose(
+        projected_pose.detach(),
+        minimum=config.period.minimum,
+        maximum=config.period.maximum,
+        valid_mask=valid_mask,
+    )
+    return periods, confidences, source
+
+
 @dataclass(frozen=True, slots=True)
 class VideoPrototypeBank:
     """Frozen full-training-set video prototypes refreshed with KMeans."""
@@ -406,7 +462,7 @@ class EncoderEpochStats:
     epoch: int
     loss: float
     learning_rate: float
-    period_source: Literal["pose", "embedding"]
+    period_source: PeriodHistorySource
     period_confidence_mean: float
     period_valid_fraction: float
     optimizer_steps: int
@@ -439,6 +495,19 @@ class SSHeadEpochStats:
     zero_grad_steps: int
     learning_rate: float
     optimizer_steps: int
+
+
+def _validate_encoder_period_history(
+    history: Sequence[EncoderEpochStats],
+    config: PAMSConfig,
+) -> None:
+    for statistics in history:
+        expected_period_source = _encoder_period_history_source(
+            config,
+            epoch=statistics.epoch,
+        )
+        if statistics.period_source != expected_period_source:
+            raise ValueError("encoder history period-source schedule mismatch")
 
 
 @dataclass(frozen=True, slots=True)
@@ -958,6 +1027,15 @@ def _progress_row(
 ) -> dict[str, Any]:
     statistics = asdict(stats)
     epoch = int(statistics.pop("epoch"))
+    if (
+        stage == "sshead"
+        and config.period.post_warmup_source
+        == "projected_pose_velocity_vector_acf"
+    ):
+        # SSHead history predates configurable period evidence. Keep the
+        # historical default artifact schema intact, while making every
+        # inferred vector-ACF progress row explicit and terminally auditable.
+        statistics["period_source"] = _post_warmup_period_history_source(config)
     return {
         "schema_version": _PROGRESS_SCHEMA_VERSION,
         "stage": stage,
@@ -1126,6 +1204,11 @@ def _checkpoint_payload(
         for expected_epoch, item in enumerate(typed_history, start=1)
     ):
         raise ValueError("checkpoint history epochs must be consecutive from 1")
+    if stage == "encoder":
+        _validate_encoder_period_history(
+            cast(Sequence[EncoderEpochStats], history),
+            config,
+        )
     return {
         "schema_version": _CHECKPOINT_SCHEMA_VERSION,
         "stage": stage,
@@ -1389,14 +1472,8 @@ def validate_terminal_checkpoint(
 
     if expected_stage == "encoder":
         encoder_history = cast(list[EncoderEpochStats], history)
+        _validate_encoder_period_history(encoder_history, config)
         for statistics in encoder_history:
-            expected_period_source = (
-                "pose"
-                if statistics.epoch <= config.period.pose_energy_epochs
-                else "embedding"
-            )
-            if statistics.period_source != expected_period_source:
-                raise ValueError("encoder history period-source schedule mismatch")
             if (
                 statistics.cross_cluster_requested
                 != statistics.cross_cluster_actual + statistics.cross_cluster_shortfall
@@ -1588,6 +1665,9 @@ def train_encoder(
     objective = PAMSTCCLoss(
         scales=config.loss.scales,
         temperature=config.loss.temperature,
+        exclude_other_scale_positives_from_denominator=(
+            config.loss.exclude_other_scale_positives_from_denominator
+        ),
     )
     history: list[EncoderEpochStats] = []
     cluster_assignments: dict[str, int] = {}
@@ -1608,6 +1688,7 @@ def train_encoder(
         )
         completed_epochs = int(payload["completed_epochs"])
         history = [EncoderEpochStats(**row) for row in payload["history"]]
+        _validate_encoder_period_history(history, config)
         historical_shortfall = sum(stats.cross_cluster_shortfall for stats in history)
         if historical_shortfall and not allow_negative_shortfall:
             raise RuntimeError(
@@ -1687,7 +1768,18 @@ def train_encoder(
                 raise RuntimeError(
                     "encoder loader produced an incomplete physical contrastive batch"
                 )
-            embeddings = trained_model.encoder(batch.poses, batch.valid_mask)
+            projected_pose: Tensor | None = None
+            if (
+                epoch_index >= config.period.pose_energy_epochs
+                and config.period.post_warmup_source
+                == "projected_pose_velocity_vector_acf"
+            ):
+                embeddings, projected_pose = trained_model.encoder.forward_with_pre_pe(
+                    batch.poses,
+                    batch.valid_mask,
+                )
+            else:
+                embeddings = trained_model.encoder(batch.poses, batch.valid_mask)
             if epoch_index < config.period.pose_energy_epochs:
                 periods, period_confidences = estimate_period_from_pose(
                     batch.poses,
@@ -1695,15 +1787,18 @@ def train_encoder(
                     maximum=config.period.maximum,
                     valid_mask=batch.valid_mask,
                 )
-                period_source: Literal["pose", "embedding"] = "pose"
+                period_source: PeriodHistorySource = "pose"
             else:
-                periods, period_confidences = estimate_period_from_embeddings(
-                    embeddings.detach(),
-                    minimum=config.period.minimum,
-                    maximum=config.period.maximum,
+                (
+                    periods,
+                    period_confidences,
+                    period_source,
+                ) = _estimate_post_warmup_periods(
+                    config=config,
+                    embeddings=embeddings,
+                    projected_pose=projected_pose,
                     valid_mask=batch.valid_mask,
                 )
-                period_source = "embedding"
             batch_clusters = torch.tensor(
                 [cluster_assignments[identifier] for identifier in batch.video_ids],
                 dtype=torch.long,
@@ -1933,11 +2028,25 @@ def train_sshead(
                 raise TypeError("pose collator returned an unexpected batch type")
             batch = raw_batch.to(resolved_device)
             with torch.no_grad():
-                embeddings = model.encoder(batch.poses, batch.valid_mask)
-                periods, period_confidences = estimate_period_from_embeddings(
-                    embeddings,
-                    minimum=config.period.minimum,
-                    maximum=config.period.maximum,
+                if (
+                    config.period.post_warmup_source
+                    == "projected_pose_velocity_vector_acf"
+                ):
+                    embeddings, projected_pose = model.encoder.forward_with_pre_pe(
+                        batch.poses,
+                        batch.valid_mask,
+                    )
+                else:
+                    embeddings = model.encoder(batch.poses, batch.valid_mask)
+                    projected_pose = None
+                (
+                    periods,
+                    period_confidences,
+                    _,
+                ) = _estimate_post_warmup_periods(
+                    config=config,
+                    embeddings=embeddings,
+                    projected_pose=projected_pose,
                     valid_mask=batch.valid_mask,
                 )
             stream = model.period_head(embeddings.detach())

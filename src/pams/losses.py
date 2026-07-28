@@ -113,6 +113,7 @@ class PAMSTCCLoss(nn.Module):
         self,
         scales: tuple[float, ...] = (0.5, 1.0, 1.5),
         temperature: float = 0.1,
+        exclude_other_scale_positives_from_denominator: bool = False,
     ) -> None:
         super().__init__()
         if not scales or any(scale <= 0 for scale in scales):
@@ -121,6 +122,9 @@ class PAMSTCCLoss(nn.Module):
             raise ValueError("temperature must be positive")
         self.scales = tuple(float(scale) for scale in scales)
         self.temperature = float(temperature)
+        self.exclude_other_scale_positives_from_denominator = (
+            exclude_other_scale_positives_from_denominator
+        )
 
     def compute(
         self,
@@ -240,7 +244,10 @@ class PAMSTCCLoss(nn.Module):
         actual_counts_by_scale: list[Tensor] = []
         shortfall_counts_by_scale: list[Tensor] = []
 
-        for scale in self.scales:
+        identity = torch.eye(time, dtype=torch.bool, device=embeddings.device).unsqueeze(0)
+        within_candidate_mask = valid.unsqueeze(1) & valid.unsqueeze(2) & ~identity
+
+        def positive_mask_for_scale(scale: float) -> Tensor:
             correspondences = _correspondences_from_similarities(
                 within_logits.detach(),
                 periods,
@@ -266,14 +273,31 @@ class PAMSTCCLoss(nn.Module):
                     selected[batch_grid, time_grid],
                 ] = True
             positive_mask &= valid.unsqueeze(1) & valid.unsqueeze(2)
-            identity = torch.eye(time, dtype=torch.bool, device=embeddings.device).unsqueeze(0)
-            within_candidate_mask = valid.unsqueeze(1) & valid.unsqueeze(2) & ~identity
             positive_mask &= within_candidate_mask
+            return positive_mask
+
+        positive_masks: tuple[Tensor, ...] | None = None
+        all_scale_positive_mask: Tensor | None = None
+        if self.exclude_other_scale_positives_from_denominator:
+            positive_masks = tuple(positive_mask_for_scale(scale) for scale in self.scales)
+            all_scale_positive_mask = torch.stack(positive_masks, dim=0).any(dim=0)
+
+        for scale_index, scale in enumerate(self.scales):
+            if positive_masks is None:
+                positive_mask = positive_mask_for_scale(scale)
+            else:
+                positive_mask = positive_masks[scale_index]
             positive_counts = positive_mask.sum(dim=-1)
             valid_anchors = valid & (positive_counts > 0)
 
+            scale_within_candidate_mask = within_candidate_mask
+            if all_scale_positive_mask is not None:
+                other_scale_only_positives = all_scale_positive_mask & ~positive_mask
+                scale_within_candidate_mask = (
+                    within_candidate_mask & ~other_scale_only_positives
+                )
             denominator_parts = [
-                within_logits.masked_fill(~within_candidate_mask, negative_infinity),
+                within_logits.masked_fill(~scale_within_candidate_mask, negative_infinity),
                 cross_video_logits.masked_fill(~other_video_mask, negative_infinity),
             ]
 

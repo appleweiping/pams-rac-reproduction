@@ -42,6 +42,9 @@ _UCFREP_526_CANONICAL_ID_SHA256: Mapping[str, str] = {
 _UCFREP_526_CANONICAL_ANNOTATION_SHA256 = (
     "d371f9f4609730d6484efc337413b444ed73752ad5e994366d02fb79a9960452"
 )
+_UCFREP_526_DEV_ANNOTATION_SHA256 = (
+    "f86d2ffe5ae7500907ae4cffcfab3c9ede6ca538537e7a3e87023f0a1a61c349"
+)
 
 
 def _canonical_split(value: str) -> str:
@@ -59,6 +62,57 @@ def _validate_sha256(value: str | None, name: str) -> str | None:
     if not _SHA256_PATTERN.fullmatch(digest):
         raise ValueError(f"{name} must be a 64-character hexadecimal SHA-256")
     return digest
+
+
+def _reject_json_object_keys_before_deserialization(
+    encoded: str,
+    *,
+    forbidden: frozenset[str],
+    document_name: str,
+) -> None:
+    """Reject privileged JSON keys without decoding any of their values.
+
+    This deliberately runs before :func:`json.loads`.  A formal label-free
+    input must therefore fail at its raw-text boundary if any object contains
+    ``count`` or ``action``; those values are never materialized as Python
+    objects even for a malformed or adversarial input.
+    """
+
+    index = 0
+    length = len(encoded)
+    while index < length:
+        if encoded[index] != '"':
+            index += 1
+            continue
+        start = index
+        index += 1
+        escaped = False
+        while index < length:
+            character = encoded[index]
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                index += 1
+                break
+            index += 1
+        else:
+            # The normal JSON decoder will provide the precise syntax error.
+            return
+        cursor = index
+        while cursor < length and encoded[cursor] in " \t\r\n":
+            cursor += 1
+        if cursor >= length or encoded[cursor] != ":":
+            continue
+        try:
+            key = json.loads(encoded[start:index])
+        except json.JSONDecodeError:
+            return
+        if isinstance(key, str) and key in forbidden:
+            raise ValueError(
+                f"{document_name} contains forbidden privileged field {key!r}"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -348,6 +402,306 @@ class PoseInputCommitment:
         }
 
 
+def validate_pose_input_binding(
+    manifest: PoseInputManifest,
+    commitment: PoseInputCommitment,
+    *,
+    sidecar_sha256: str,
+) -> None:
+    """Verify one exact label-free sidecar/commitment pair."""
+
+    observed_sidecar_sha256 = _validate_sha256(sidecar_sha256, "sidecar_sha256")
+    if observed_sidecar_sha256 is None:
+        raise ValueError("sidecar_sha256 is required")
+    identity_sha256 = pose_input_identity_sha256(manifest.records)
+    if (
+        commitment.protocol != manifest.protocol
+        or commitment.split != manifest.split
+        or commitment.record_total != len(manifest.records)
+        or commitment.identity_sha256 != identity_sha256
+        or commitment.sidecar_sha256 != observed_sidecar_sha256
+        or commitment.sidecar_fingerprint != manifest.fingerprint
+    ):
+        raise ValueError(
+            "pose-input commitment does not bind this exact label-free sidecar"
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class LabelFreeProtocolInputs:
+    """Canonical protocol identity assembled only from label-free sidecars."""
+
+    protocol: str
+    train: PoseInputManifest
+    test: PoseInputManifest
+    dev: PoseInputManifest | None = None
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        protocol = str(self.protocol).strip()
+        if protocol != "ucfrep_526":
+            raise ValueError(
+                "label-free protocol inputs are frozen only for ucfrep_526"
+            )
+        if self.schema_version != 1:
+            raise ValueError("only label-free protocol input schema_version=1 is supported")
+        if not isinstance(self.train, PoseInputManifest) or not isinstance(
+            self.test,
+            PoseInputManifest,
+        ):
+            raise TypeError("train and test inputs must be PoseInputManifest instances")
+        if self.dev is not None and not isinstance(self.dev, PoseInputManifest):
+            raise TypeError("dev inputs must be a PoseInputManifest or None")
+        split_manifests = {
+            "train": self.train,
+            "test": self.test,
+            **({} if self.dev is None else {"dev": self.dev}),
+        }
+        for expected_split, manifest in split_manifests.items():
+            if manifest.protocol != protocol:
+                raise ValueError("label-free sidecar protocol mismatch")
+            if manifest.split != expected_split:
+                raise ValueError(
+                    f"expected a {expected_split!r} pose-input sidecar, "
+                    f"received {manifest.split!r}"
+                )
+            manifest.validate_exact_membership()
+        expected_counts = (
+            {"train": 421, "test": 105}
+            if self.dev is None
+            else {"train": 337, "dev": 84, "test": 105}
+        )
+        if self.split_counts != expected_counts:
+            raise ValueError(
+                "label-free ucfrep_526 inputs require canonical 421/105 or "
+                "337/84/105 split totals"
+            )
+
+        identifiers: dict[str, str] = {}
+        locators: dict[str, str] = {}
+        digests: dict[str, str] = {}
+        for split in ("train", "dev", "test"):
+            for record in self.records_for(split):
+                previous_split = identifiers.setdefault(record.video_id, split)
+                if previous_split != split:
+                    raise ValueError(
+                        f"video_id {record.video_id!r} occurs in both "
+                        f"{previous_split} and {split}"
+                    )
+                locator = os.path.normcase(os.path.normpath(record.video_path))
+                previous_locator_split = locators.setdefault(locator, split)
+                if previous_locator_split != split:
+                    raise ValueError(
+                        f"video locator {record.video_path!r} occurs in both "
+                        f"{previous_locator_split} and {split}"
+                    )
+                assert record.video_sha256 is not None
+                previous_digest_split = digests.setdefault(record.video_sha256, split)
+                if previous_digest_split != split:
+                    raise ValueError(
+                        "source-video SHA-256 occurs in more than one protocol split"
+                    )
+        object.__setattr__(self, "protocol", protocol)
+
+    @property
+    def split_counts(self) -> dict[str, int]:
+        return {
+            split: len(records)
+            for split in ("train", "dev", "test")
+            if (records := self.records_for(split))
+        }
+
+    def records_for(self, split: str) -> tuple[UnlabeledVideoRecord, ...]:
+        canonical = _canonical_split(split)
+        if canonical == "train":
+            return self.train.records
+        if canonical == "dev":
+            return () if self.dev is None else self.dev.records
+        return self.test.records
+
+    def training_records(
+        self,
+        *,
+        include_dev: bool = False,
+    ) -> tuple[UnlabeledVideoRecord, ...]:
+        records = self.train.records
+        if include_dev:
+            if self.dev is None:
+                raise ValueError("include_dev requires a canonical dev sidecar")
+            records = (*records, *self.dev.records)
+        return tuple(records)
+
+    def training_fingerprint(self, *, include_dev: bool = False) -> str:
+        """Match the historical label-free checkpoint identity exactly."""
+
+        records = sorted(
+            self.training_records(include_dev=include_dev),
+            key=lambda record: record.video_id,
+        )
+        encoded = json.dumps(
+            {
+                "schema_version": 1,
+                "protocol": self.protocol,
+                "records": [
+                    {
+                        "video_id": record.video_id,
+                        "video_sha256": record.video_sha256,
+                    }
+                    for record in records
+                ],
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    @property
+    def fingerprint(self) -> str:
+        encoded = json.dumps(
+            {
+                "schema_version": self.schema_version,
+                "protocol": self.protocol,
+                "records": [
+                    {
+                        "video_id": record.video_id,
+                        "split": split,
+                        "video_sha256": record.video_sha256,
+                    }
+                    for split in ("train", "dev", "test")
+                    for record in self.records_for(split)
+                ],
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class DevTargetRecord:
+    """One explicitly dev-only evaluation target."""
+
+    video_id: str
+    action: str
+    count: int
+
+    def __post_init__(self) -> None:
+        video_id = str(self.video_id).strip()
+        action = str(self.action).strip()
+        match = _UCF101_VIDEO_ID_PATTERN.fullmatch(video_id)
+        if match is None:
+            raise ValueError(f"invalid canonical UCF101 video_id: {video_id!r}")
+        group = int(match.group("group"))
+        if not 1 <= group <= 20:
+            raise ValueError("dev targets may contain only official training-family IDs")
+        if action != match.group("action"):
+            raise ValueError("dev target action does not match its canonical video_id")
+        if isinstance(self.count, bool | np.bool_):
+            raise TypeError("dev target count must be a positive integer, not bool")
+        count = int(self.count)
+        if count != self.count or count <= 0:
+            raise ValueError("dev target count must be a positive integer")
+        object.__setattr__(self, "video_id", video_id)
+        object.__setattr__(self, "action", action)
+        object.__setattr__(self, "count", count)
+
+    def to_dict(self) -> dict[str, str | int]:
+        return {
+            "video_id": self.video_id,
+            "action": self.action,
+            "count": self.count,
+        }
+
+
+def _dev_target_annotation_sha256(
+    records: Iterable[DevTargetRecord],
+) -> str:
+    """Commit to the exact dev-only ID/action/count annotations."""
+
+    stable_records = sorted(tuple(records), key=lambda record: record.video_id)
+    encoded = json.dumps(
+        [record.to_dict() for record in stable_records],
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class DevTargetManifest:
+    """Strict 84-row dev label boundary with no test records or paths."""
+
+    protocol: str
+    records: tuple[DevTargetRecord, ...]
+    source_annotation_sha256: str
+    split: str = "dev"
+    schema_version: int = 1
+    manifest_type: str = "dev_targets"
+
+    def __post_init__(self) -> None:
+        protocol = str(self.protocol).strip()
+        if protocol != "ucfrep_526":
+            raise ValueError("dev-target manifests are frozen only for ucfrep_526")
+        if self.schema_version != 1:
+            raise ValueError("only dev-target schema_version=1 is supported")
+        if self.manifest_type != "dev_targets":
+            raise ValueError("dev-target manifest_type must be 'dev_targets'")
+        if _canonical_split(self.split) != "dev":
+            raise ValueError("dev-target split must be 'dev'")
+        records = tuple(self.records)
+        if len(records) != 84:
+            raise ValueError("ucfrep_526 dev targets require exactly 84 records")
+        if not all(isinstance(record, DevTargetRecord) for record in records):
+            raise TypeError("dev-target records must all be DevTargetRecord instances")
+        identifiers = [record.video_id for record in records]
+        if len(set(identifiers)) != len(identifiers):
+            raise ValueError("dev-target video_id values must be unique")
+        observed_ids_sha256 = _canonical_unlabeled_id_list_sha256(records)
+        if observed_ids_sha256 != _UCFREP_526_CANONICAL_ID_SHA256["dev"]:
+            raise ValueError("dev-target IDs do not match the frozen 84-video split")
+        source_digest = _validate_sha256(
+            self.source_annotation_sha256,
+            "source_annotation_sha256",
+        )
+        if source_digest != _UCFREP_526_CANONICAL_ANNOTATION_SHA256:
+            raise ValueError("dev targets are not bound to the frozen official annotations")
+        if _dev_target_annotation_sha256(records) != _UCFREP_526_DEV_ANNOTATION_SHA256:
+            raise ValueError(
+                "dev target counts/actions do not match the frozen official annotations"
+            )
+        object.__setattr__(self, "protocol", protocol)
+        object.__setattr__(self, "split", "dev")
+        object.__setattr__(self, "records", records)
+        object.__setattr__(self, "source_annotation_sha256", source_digest)
+
+    @property
+    def fingerprint(self) -> str:
+        encoded = json.dumps(
+            self.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "manifest_type": self.manifest_type,
+            "protocol": self.protocol,
+            "split": self.split,
+            "source_annotation_sha256": self.source_annotation_sha256,
+            "records": [record.to_dict() for record in self.records],
+        }
+
+
 @dataclass(frozen=True, slots=True)
 class UCFRepManifest:
     """Immutable manifest with uniqueness and split-disjointness guarantees."""
@@ -532,7 +886,7 @@ def assert_split_disjoint(records: Iterable[UCFRepRecord]) -> None:
 
 
 def _canonical_unlabeled_id_list_sha256(
-    records: Iterable[UCFRepRecord | UnlabeledVideoRecord],
+    records: Iterable[UCFRepRecord | UnlabeledVideoRecord | DevTargetRecord],
 ) -> str:
     identifiers = sorted(record.video_id for record in records)
     return hashlib.sha256(("\n".join(identifiers) + "\n").encode("utf-8")).hexdigest()
@@ -773,9 +1127,15 @@ def load_pose_input_manifest(
     source = Path(path)
     if source.suffix.lower() != ".json":
         raise ValueError("pose-input manifest path must end in .json")
+    encoded = source.read_text(encoding="utf-8")
+    _reject_json_object_keys_before_deserialization(
+        encoded,
+        forbidden=frozenset({"action", "count"}),
+        document_name="pose-input manifest",
+    )
     try:
         payload = json.loads(
-            source.read_text(encoding="utf-8"),
+            encoded,
             object_pairs_hook=reject_duplicate_fields,
             parse_constant=reject_non_finite,
         )
@@ -827,9 +1187,15 @@ def load_pose_input_commitment(path: str | Path) -> PoseInputCommitment:
     source = Path(path)
     if source.suffix.lower() != ".json":
         raise ValueError("pose-input commitment path must end in .json")
+    encoded = source.read_text(encoding="utf-8")
+    _reject_json_object_keys_before_deserialization(
+        encoded,
+        forbidden=frozenset({"action", "count"}),
+        document_name="pose-input commitment",
+    )
     try:
         payload = json.loads(
-            source.read_text(encoding="utf-8"),
+            encoded,
             object_pairs_hook=reject_duplicate_fields,
             parse_constant=lambda value: (_ for _ in ()).throw(
                 ValueError(f"non-finite JSON constant in pose-input commitment: {value}")
@@ -864,6 +1230,78 @@ def load_pose_input_commitment(path: str | Path) -> PoseInputCommitment:
         sidecar_fingerprint=str(payload["sidecar_fingerprint"]),
         schema_version=int(payload["schema_version"]),
         commitment_type=str(payload["commitment_type"]),
+    )
+
+
+def load_dev_target_manifest(path: str | Path) -> DevTargetManifest:
+    """Load the only label-bearing input permitted for formal dev evaluation."""
+
+    def reject_duplicate_fields(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"duplicate JSON field in dev-target manifest: {key!r}")
+            result[key] = value
+        return result
+
+    source = Path(path)
+    if source.suffix.lower() != ".json":
+        raise ValueError("dev-target manifest path must end in .json")
+    try:
+        payload = json.loads(
+            source.read_text(encoding="utf-8"),
+            object_pairs_hook=reject_duplicate_fields,
+            parse_constant=lambda value: (_ for _ in ()).throw(
+                ValueError(f"non-finite JSON constant in dev-target manifest: {value}")
+            ),
+        )
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"invalid dev-target manifest JSON: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("dev-target manifest root must be an object")
+    expected = {
+        "schema_version",
+        "manifest_type",
+        "protocol",
+        "split",
+        "source_annotation_sha256",
+        "records",
+    }
+    supplied = set(payload)
+    if supplied != expected:
+        raise ValueError(
+            "dev-target manifest fields mismatch; "
+            f"missing={sorted(expected - supplied)}, unknown={sorted(supplied - expected)}"
+        )
+    raw_records = payload["records"]
+    if not isinstance(raw_records, list):
+        raise ValueError("dev-target records must be a list")
+    records: list[DevTargetRecord] = []
+    record_fields = {"video_id", "action", "count"}
+    for index, item in enumerate(raw_records):
+        if not isinstance(item, Mapping):
+            raise ValueError("dev-target records must be JSON objects")
+        item_fields = set(item)
+        if item_fields != record_fields:
+            raise ValueError(
+                f"dev-target record {index} fields mismatch; "
+                f"missing={sorted(record_fields - item_fields)}, "
+                f"unknown={sorted(item_fields - record_fields)}"
+            )
+        records.append(
+            DevTargetRecord(
+                video_id=str(item["video_id"]),
+                action=str(item["action"]),
+                count=item["count"],
+            )
+        )
+    return DevTargetManifest(
+        protocol=str(payload["protocol"]),
+        records=tuple(records),
+        source_annotation_sha256=str(payload["source_annotation_sha256"]),
+        split=str(payload["split"]),
+        schema_version=int(payload["schema_version"]),
+        manifest_type=str(payload["manifest_type"]),
     )
 
 
@@ -1458,39 +1896,30 @@ def load_pose_cache_set(
 
 
 class TrainingPoseDataset(Sequence[PoseSequence]):
-    """Label-free cached-pose dataset that rejects all sealed-test records."""
+    """Cached-pose dataset whose public boundary accepts label-free records only."""
 
     def __init__(
         self,
-        records: Sequence[UCFRepRecord],
+        records: Sequence[UnlabeledVideoRecord],
         *,
         cache_dir: str | Path,
         pose_fingerprint: str,
-        include_dev: bool = False,
     ) -> None:
         source = tuple(records)
-        allowed = {"train", "dev"} if include_dev else {"train"}
-        forbidden = sorted({record.split for record in source if record.split not in allowed})
-        if forbidden:
-            raise ValueError(
-                f"training dataset cannot contain sealed or disallowed splits: {forbidden}"
-            )
         if not source:
             raise ValueError("training dataset must contain at least one record")
+        if not all(isinstance(record, UnlabeledVideoRecord) for record in source):
+            raise TypeError(
+                "training dataset accepts only UnlabeledVideoRecord; "
+                "label-bearing protocol records are forbidden"
+            )
         missing_hashes = sorted(record.video_id for record in source if record.video_sha256 is None)
         if missing_hashes:
             raise ValueError(
                 "training requires content-hashed videos; missing video_sha256 for "
                 f"{missing_hashes[:5]}"
             )
-        self._items = tuple(
-            UnlabeledVideoRecord(
-                video_id=record.video_id,
-                video_path=record.video_path,
-                video_sha256=record.video_sha256,
-            )
-            for record in source
-        )
+        self._items = source
         self._cache_dir = Path(cache_dir)
         validated = _validate_sha256(pose_fingerprint, "pose_fingerprint")
         if validated is None:

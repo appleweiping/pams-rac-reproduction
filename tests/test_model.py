@@ -175,6 +175,38 @@ def test_encoder_normalizes_valid_rows_and_zeros_invalid_rows() -> None:
     assert torch.allclose(norms, torch.ones_like(norms), atol=1e-6)
 
 
+def test_encoder_exposes_exact_pre_pe_projection_without_changing_forward() -> None:
+    torch.manual_seed(2026)
+    encoder = PAMSEncoder(
+        input_dim=6,
+        model_dim=8,
+        embedding_dim=8,
+        num_layers=1,
+        num_heads=2,
+        feedforward_dim=16,
+        dropout=0.0,
+    ).eval()
+    inputs = torch.randn(2, 7, 2, 3)
+    valid = torch.tensor(
+        [
+            [True, True, True, False, False, False, False],
+            [True, True, True, True, True, True, True],
+        ]
+    )
+    with torch.no_grad():
+        ordinary = encoder(inputs, valid)
+        exposed, pre_pe = encoder.forward_with_pre_pe(inputs, valid)
+        expected_projection = encoder.input_projection(inputs.flatten(start_dim=2))
+        expected_projection = expected_projection.masked_fill(
+            ~valid.unsqueeze(-1),
+            0.0,
+        )
+
+    assert torch.equal(ordinary, exposed)
+    assert torch.equal(pre_pe, expected_projection)
+    assert torch.count_nonzero(pre_pe[~valid]) == 0
+
+
 def test_encoder_handles_fully_missing_pose_without_nan() -> None:
     encoder = PAMSEncoder(
         input_dim=6,

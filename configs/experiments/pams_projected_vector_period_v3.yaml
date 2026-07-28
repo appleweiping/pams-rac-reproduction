@@ -1,3 +1,9 @@
+# INFERRED DIAGNOSTIC — not disclosed by the PAMS authors.
+# The only method change from configs/pams.yaml is post_warmup_source. It
+# estimates periods after the 10-epoch pose warm-up from the full vector ACF
+# of pre-positional-encoding projected-pose velocity. This experiment must not
+# be reported as PAMS-Literal or entered in the frozen sealed-test table
+# without a separately preregistered protocol.
 schema_version: 1
 protocol: ucfrep_526
 seed: 2026
@@ -29,13 +35,12 @@ period:
   minimum: 4
   maximum: 128
   pose_energy_epochs: 10
-  post_warmup_source: embedding_velocity_coordinate
+  post_warmup_source: projected_pose_velocity_vector_acf
 loss:
   scales: [0.5, 1.0, 1.5]
   temperature: 0.1
   kmeans_clusters: 8
   kmeans_refresh_epochs: 5
-  exclude_other_scale_positives_from_denominator: false
 training:
   epochs: 150
   effective_batch_size: 32
