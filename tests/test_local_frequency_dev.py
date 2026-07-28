@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
+import re
 from pathlib import Path
 
 import numpy as np
@@ -39,6 +40,7 @@ DEV_IDS = tuple(
     .splitlines()
 )
 RUNNER = CliRunner()
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
 def _write_dev_inputs(tmp_path: Path) -> tuple[Path, Path, PoseInputManifest]:
@@ -190,11 +192,14 @@ def test_cli_exposes_three_separated_boundaries() -> None:
     predict = RUNNER.invoke(app, ["local-frequency", "dev-predict", "--help"])
     replay = RUNNER.invoke(app, ["local-frequency", "synthetic-replay", "--help"])
     assert group.exit_code == predict.exit_code == replay.exit_code == 0
-    assert {"synthetic-replay", "dev-predict", "dev-score"} <= set(group.output.split())
-    assert "--dev-targets" not in predict.output
-    assert "--test-identity" not in predict.output
-    assert "--targets" not in replay.output
-    assert "--sequence" not in replay.output
+    group_output = ANSI_ESCAPE.sub("", group.output)
+    predict_output = ANSI_ESCAPE.sub("", predict.output)
+    replay_output = ANSI_ESCAPE.sub("", replay.output)
+    assert {"synthetic-replay", "dev-predict", "dev-score"} <= set(group_output.split())
+    assert "--dev-targets" not in predict_output
+    assert "--test-identity" not in predict_output
+    assert "--targets" not in replay_output
+    assert "--sequence" not in replay_output
 
 
 def _matching_synthetic_report() -> SyntheticFreezeReport:

@@ -11,7 +11,7 @@ import re
 import tempfile
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, replace
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, overload
 
 import numpy as np
@@ -234,8 +234,13 @@ class PoseInputManifest:
             locator = record.video_path
             if "\\" in locator:
                 raise ValueError("pose-input video locators must use portable '/' separators")
-            locator_path = Path(locator)
-            if locator_path.is_absolute() or locator_path.anchor:
+            posix_locator = PurePosixPath(locator)
+            windows_locator = PureWindowsPath(locator)
+            if (
+                posix_locator.is_absolute()
+                or windows_locator.is_absolute()
+                or bool(windows_locator.drive)
+            ):
                 raise ValueError("pose-input video locators must be relative")
             if any(part in {"", ".", ".."} for part in locator.split("/")):
                 raise ValueError(
