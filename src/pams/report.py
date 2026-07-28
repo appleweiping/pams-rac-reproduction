@@ -79,10 +79,11 @@ class ResultRow:
                 raise ValueError("nmae must be finite and non-negative")
             if not math.isfinite(self.obo) or not 0.0 <= self.obo <= 1.0:
                 raise ValueError("obo must be finite and in [0, 1]")
-            for name in ("mae", "rmse"):
-                value = getattr(self, name)
-                if value is not None and (not math.isfinite(value) or value < 0.0):
-                    raise ValueError(f"{name} must be finite and non-negative")
+            for metric_name, metric_value in (("mae", self.mae), ("rmse", self.rmse)):
+                if metric_value is not None and (
+                    not math.isfinite(metric_value) or metric_value < 0.0
+                ):
+                    raise ValueError(f"{metric_name} must be finite and non-negative")
         elif self.mae is not None or self.rmse is not None or self.sample_count is not None:
             raise ValueError("auxiliary metrics require nmae and obo")
 

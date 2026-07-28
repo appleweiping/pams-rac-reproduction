@@ -133,7 +133,7 @@ def _load_pose_dependencies() -> tuple[Any, Any]:
 
     try:
         import cv2  # type: ignore[import-not-found]
-        import mediapipe as mp  # type: ignore[import-not-found]
+        import mediapipe as mp  # type: ignore[import-not-found,import-untyped]
     except (ImportError, ModuleNotFoundError) as exc:
         raise PoseDependencyError(
             "pose extraction requires optional dependencies; install with "
