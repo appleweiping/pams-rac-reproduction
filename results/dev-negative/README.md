@@ -62,6 +62,47 @@ The compact metrics, mechanism measurements, artifact hashes, and
 container-provenance limitation are recorded in
 [`pe_scale_v2_seed2026.json`](pe_scale_v2_seed2026.json).
 
+## Strict-firewall projected-period diagnostics
+
+Two further inferred seed-2026 variants completed at source revision
+`375d8da`. Both trained for 150 encoder epochs and 30 SSHead epochs on all
+421 label-free training/development videos. These runs used independently
+committed `337/84/105` identity sidecars: the formal training and development
+commands did not deserialize the complete labeled manifest, and the sealed
+105-video test split received no predictions or evaluation.
+
+| Variant | Readout | NMAE | Raw MAE | RMSE | OBO |
+|---|---|---:|---:|---:|---:|
+| Projected-vector period v3 | Literal head | 3.966841 | 15.559524 | 17.993716 | 0.059524 |
+| Projected-vector period v3 | SSHead inferred | 2.074190 | 8.940476 | 11.842719 | 0.202381 |
+| Cross-scale-union v4 | Literal head | 2.422484 | 9.690476 | 12.093879 | 0.130952 |
+| Cross-scale-union v4 | SSHead inferred | 2.620294 | 11.416667 | 15.323107 | 0.107143 |
+
+All four rows fail the `NMAE <= 0.228` and `OBO >= 0.666` development
+diagnostic by a wide margin. The other two preregistered seeds were therefore
+not run. V4 materially improves the literal-head row relative to v3, while
+v3 SSHead is better than the f99 SSHead failure; neither observation rescues
+the method.
+
+The mechanism audit explains why changing the post-warmup period estimator
+does not directly repair counting: the option changes training
+correspondences, but checkpoint inference still counts the Period Head
+stream. Under the literal paper description that head has no disclosed loss
+or gradient path and remains random.
+
+Development-only readout exploration then tested 110 global spectral, 130
+cropped ACF, and 512 local-frequency settings. This exploration is
+permanently ineligible for a paper table because development labels selected
+the displayed settings. Its best-NMAE setting reached
+`0.347761 / 0.511905` NMAE/OBO; the best-OBO setting reached
+`0.361573 / 0.583333`. Both improve over f99 Literal in paired 10,000-sample
+bootstrap comparisons, but both still fail the frozen gate. The search was
+stopped rather than expanded.
+
+Exact metrics, confidence intervals, paired differences, commitments,
+checkpoint/evaluation hashes, and container provenance are recorded in
+[`projected_vector_v3_v4_seed2026.json`](projected_vector_v3_v4_seed2026.json).
+
 The operator-recorded source aggregate has SHA-256
 `c8f6a117ce635d91d7c4446b2f2aea156bb2f3ed0ae86460986685c16cdeb814`.
 The raw aggregate and per-video predictions are not published in this

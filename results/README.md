@@ -13,10 +13,12 @@ Three-seed training and evaluation on the fixed 84-video development split
 have now produced negative evidence for PAMS-Literal and the independently
 inferred PAMS-SSHead. Neither method meets the preregistered thresholds on
 development data. The 105-video test split has **not** received predictions or
-evaluation, and no test metric exists. The development CLI did load and
-deserialize the complete 337/84/105 manifest, so these development artifacts
-are not claimed as proof that test-label bytes were never parsed and are not
-eligible as a leak-free sealed result.
+evaluation, and no test metric exists. The original f99 three-seed
+development CLI did load and deserialize the complete 337/84/105 manifest, so
+those historical artifacts are not proof that test-label bytes were never
+parsed. The newer source revision `375d8da` adds committed label-free
+train/dev/test-identity sidecars; its v3/v4 diagnostic commands did not
+deserialize the complete labeled manifest.
 
 This repository is therefore a **partial reproduction**, not a completed or
 validated reproduction. Baselines and executable ablation variants remain
@@ -56,6 +58,19 @@ That directory also records the failed, independently inferred PE-scale v2
 seed-2026 diagnostic. It weakened one positional shortcut indicator but did
 not improve the literal-head development result and remained far outside the
 acceptance thresholds.
+
+The same directory now includes strict-firewall seed-2026 v3/v4 experiments.
+Projected-vector period v3 obtained `3.966841 / 0.059524` with the literal
+head and `2.074190 / 0.202381` with the inferred SSHead. Cross-scale-union v4
+obtained `2.422484 / 0.130952` and `2.620294 / 0.107143`, respectively. All
+four NMAE/OBO pairs fail the gate, so seeds 42 and 3407 were not expanded.
+
+A subsequent development-only local-frequency sweep found
+`0.347761 / 0.511905` at its best-NMAE setting and
+`0.361573 / 0.583333` at its best-OBO setting. These settings are explicitly
+ineligible because development labels selected them, and neither passes the
+gate. The exact paired-bootstrap intervals and artifact hashes are in
+[`projected_vector_v3_v4_seed2026.json`](dev-negative/projected_vector_v3_v4_seed2026.json).
 
 ## Standard UCFRep-526 fair table
 
