@@ -103,6 +103,36 @@ Exact metrics, confidence intervals, paired differences, commitments,
 checkpoint/evaluation hashes, and container provenance are recorded in
 [`projected_vector_v3_v4_seed2026.json`](projected_vector_v3_v4_seed2026.json).
 
+## Synthetic-frozen readout and official-current RepNet
+
+Two server-side development experiments completed at prediction revision
+`4d4d708` without running the sealed 105-video test split.
+
+The independently inferred local-frequency readout first exactly replayed its
+50-sample synthetic-only freeze: MAE/NMAE were `0.02 / 0.0025`, Exact was
+`0.98`, and OBO was `1.0`. On the fixed 84-video development split, however,
+it obtained NMAE `0.514566`, raw MAE `3.488095`, RMSE `4.905051`, OBO
+`0.333333`, and Exact `0.178571`. It therefore fails the frozen gate and is
+permanently ineligible for a paper table.
+
+The exact current Google Research RepNet notebook at commit `ec7c3d3462` and
+its published `ckpt-70` bundle were then restored in an isolated TensorFlow
+2.17.1 environment with an 8192 MiB logical GPU limit. All 84 videos decoded
+and produced predictions. The independently scored development result was
+NMAE `0.434505`, raw MAE `2.238095`, RMSE `3.670993`, OBO `0.583333`, and
+Exact `0.166667`. This also fails the gate. It is an
+`official-current-ckpt70` sanity result under our dev protocol, not a
+reconstruction of the original PAMS paper's RepNet cell.
+
+One-video and five-video repeats preserved every rounded count and chosen
+stride. Auxiliary floating values were not byte-identical: confidence varied
+slightly, and one sub-integer raw count changed without changing its rounded
+count. We therefore make no byte-determinism claim.
+
+Exact 10,000-sample paired bootstrap intervals, source/checkpoint/container
+hashes, repeat hashes, and output receipts are recorded in
+[`server_dev_readouts_repnet_4d4d708.json`](server_dev_readouts_repnet_4d4d708.json).
+
 The operator-recorded source aggregate has SHA-256
 `c8f6a117ce635d91d7c4446b2f2aea156bb2f3ed0ae86460986685c16cdeb814`.
 The raw aggregate and per-video predictions are not published in this

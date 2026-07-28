@@ -72,13 +72,23 @@ ineligible because development labels selected them, and neither passes the
 gate. The exact paired-bootstrap intervals and artifact hashes are in
 [`projected_vector_v3_v4_seed2026.json`](dev-negative/projected_vector_v3_v4_seed2026.json).
 
+A separate synthetic-only frozen local-frequency readout obtained
+`0.514566 / 0.333333` NMAE/OBO on the same 84-video development split. The
+current official Google Research RepNet notebook and published `ckpt-70`
+checkpoint were also run successfully on all 84 videos and obtained
+`0.434505 / 0.583333`. Both fail the frozen gate and neither is eligible for
+the original paper table. The RepNet row is explicitly an
+`official-current-ckpt70` sanity under our independent dev protocol. Exact
+confidence intervals and hashes are in
+[`server_dev_readouts_repnet_4d4d708.json`](dev-negative/server_dev_readouts_repnet_4d4d708.json).
+
 ## Standard UCFRep-526 fair table
 
 | Method | Protocol | Status | NMAE | OBO |
 |---|---|---|---:|---:|
 | PAMS-Literal | 421/105 | dev negative available; test not run | — | — |
 | PAMS-SSHead | 421/105 | dev negative available; test not run | — | — |
-| RepNet | 421/105 | parity/data blocked | — | — |
+| RepNet | 421/105 | official-current ckpt-70 dev sanity available; original parity/test blocked | — | — |
 | TransRAC | 421/105 | parity/data blocked | — | — |
 | ESCounts | 421/105 | parity/data blocked | — | — |
 | IVAC-P2L | 421/105 | parity/data blocked | — | — |
