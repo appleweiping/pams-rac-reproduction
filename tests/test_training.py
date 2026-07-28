@@ -369,6 +369,96 @@ def test_encoder_strict_mode_fails_on_prototype_bank_shortfall(
         assert torch.equal(expected, model.encoder.state_dict()[name])
 
 
+@pytest.mark.parametrize(
+    ("failure_case", "message"),
+    (
+        ("embedding", r"non-finite embeddings before optimizer\.step"),
+        ("loss", r"non-finite loss before optimizer\.step"),
+        (
+            "gradient",
+            r"non-finite gradient for parameter 'input_projection\.weight' "
+            r"before optimizer\.step",
+        ),
+    ),
+)
+def test_encoder_non_finite_values_are_blocked_before_step_or_artifact_write(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure_case: str,
+    message: str,
+) -> None:
+    from pams import training as training_module
+
+    config = _tiny_config(encoder_epochs=1)
+    model = build_pams_model(config)
+    encoder_before = {
+        name: value.detach().clone() for name, value in model.encoder.state_dict().items()
+    }
+
+    if failure_case == "embedding":
+        original_forward = model.encoder.forward
+        forward_calls = 0
+
+        def poisoned_forward(
+            inputs: torch.Tensor,
+            valid_mask: torch.Tensor | None = None,
+        ) -> torch.Tensor:
+            nonlocal forward_calls
+            forward_calls += 1
+            embeddings = original_forward(inputs, valid_mask)
+            if forward_calls > 1:
+                embeddings = embeddings.clone()
+                embeddings[0, 0, 0] = float("nan")
+            return embeddings
+
+        monkeypatch.setattr(model.encoder, "forward", poisoned_forward)
+    elif failure_case == "loss":
+        original_compute = training_module.PAMSTCCLoss.compute
+
+        def poisoned_compute(*args: Any, **kwargs: Any) -> Any:
+            details = original_compute(*args, **kwargs)
+            embeddings = args[1]
+            return replace(
+                details,
+                total=embeddings.sum() * embeddings.new_tensor(float("nan")),
+            )
+
+        monkeypatch.setattr(training_module.PAMSTCCLoss, "compute", poisoned_compute)
+    else:
+        parameter = dict(model.encoder.named_parameters())["input_projection.weight"]
+        parameter.register_hook(
+            lambda gradient: torch.full_like(gradient, float("nan"))
+        )
+
+    optimizer_step_called = False
+    original_step = training_module.AdamW.step
+
+    def tracking_step(*args: Any, **kwargs: Any) -> Any:
+        nonlocal optimizer_step_called
+        optimizer_step_called = True
+        return original_step(*args, **kwargs)
+
+    monkeypatch.setattr(training_module.AdamW, "step", tracking_step)
+    checkpoint = tmp_path / f"{failure_case}.pt"
+    progress = tmp_path / f"{failure_case}.jsonl"
+    with pytest.raises(RuntimeError, match=message):
+        train_encoder(
+            (_sequence("a"), _sequence("b", phase=0.4)),
+            config,
+            model=model,
+            device="cpu",
+            microbatch_size=2,
+            checkpoint_path=checkpoint,
+            progress_path=progress,
+        )
+
+    assert not optimizer_step_called
+    assert not checkpoint.exists()
+    assert not progress.exists()
+    for name, expected in encoder_before.items():
+        assert torch.equal(expected, model.encoder.state_dict()[name])
+
+
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is unavailable")
 def test_cuda_encoder_resume_loads_rng_on_cpu_before_device_migration(
     tmp_path: Path,

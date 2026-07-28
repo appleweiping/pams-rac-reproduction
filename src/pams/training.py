@@ -560,6 +560,46 @@ def _guard_sshead_optimizer_step(
         )
 
 
+def _require_finite_encoder_tensors(
+    named_tensors: Sequence[tuple[str, Tensor]],
+) -> None:
+    """Reject non-finite encoder state without altering any tensor."""
+
+    values = tuple(named_tensors)
+    if not values:
+        raise RuntimeError("encoder finite-value guard received no tensors")
+    finite = torch.stack(
+        [torch.isfinite(tensor.detach()).all() for _, tensor in values]
+    ).detach()
+    statuses = finite.to(device="cpu").tolist()
+    for (name, _), is_finite in zip(values, statuses, strict=True):
+        if not bool(is_finite):
+            raise RuntimeError(
+                f"encoder produced non-finite {name} before optimizer.step"
+            )
+
+
+def _guard_encoder_gradients_before_step(
+    named_parameters: Sequence[tuple[str, Tensor]],
+) -> None:
+    """Require one finite gradient for every trainable encoder parameter."""
+
+    gradients: list[tuple[str, Tensor]] = []
+    for name, parameter in named_parameters:
+        if not parameter.requires_grad:
+            continue
+        gradient = parameter.grad
+        if gradient is None:
+            raise RuntimeError(
+                "encoder trainable parameter "
+                f"{name!r} has no gradient before optimizer.step"
+            )
+        gradients.append((f"gradient for parameter {name!r}", gradient))
+    if not gradients:
+        raise RuntimeError("encoder has no trainable gradients before optimizer.step")
+    _require_finite_encoder_tensors(gradients)
+
+
 def _resolve_device(device: str | torch.device | None) -> torch.device:
     if device is None:
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -1692,7 +1732,18 @@ def train_encoder(
                     f"shortfall={batch_cross_cluster_shortfall}"
                 )
 
+            _require_finite_encoder_tensors(
+                (
+                    ("embeddings", embeddings),
+                    ("period estimates", periods),
+                    ("period confidences", period_confidences),
+                    ("loss", loss),
+                )
+            )
             loss.backward()
+            _guard_encoder_gradients_before_step(
+                tuple(trained_model.encoder.named_parameters())
+            )
             epoch_loss += float(loss.detach()) * batch.batch_size
             processed_samples += batch.batch_size
             confidence_sum += float(period_confidences.detach().sum())
