@@ -111,10 +111,12 @@
     },
     "cache_audit": {
       "status": "passed",
+      "execution_source_git_sha": "fb9b390e52cd3edc0877d848b033946b6fbc1cff",
+      "container_image_id": "sha256:4cbb20339a3681ccbc3a8e7eaeddc84076cbc3eb16fdfa84edace4dadf2d1791",
       "audit_script_sha256": "f4f4f7159e8485e5d09b2ab2a7bba93aba991754c85589d868d4bc6d47db02ca",
       "artifact": "pose421-cache-audit.json",
-      "artifact_sha256": "a8c458df24e182ffb84ada4cec7b2e4fa2319945ae5bdf42b9d53aec47ec06ff",
-      "raw_container_stdout_sha256": "533f9e6714e79dd1f39292df194df22c7be836000df223c65a6c602d2ac86ae7",
+      "artifact_sha256": "c4a6708592fd212d84e155d3f39dc11fea4649f8e020deb3eb74184f78e5cd5e",
+      "raw_container_stdout_sha256": "dd9df2d429821eaee0ae8eb4b4df76cab7c9072235df8cb9da1e127a5a1bffe3",
       "training_fingerprint": "0987ded86f4344f4669aa72fdf3baffb7a890340da7273b63ddfdb3cb1f05fca",
       "training_id_list_sha256": "776489ba3c556a105f96bd18788c527a9157dfaa451a0eb766c38faca27e416f",
       "pose_cache_set_sha256": "d248852c787204c4ce93c905629fdd5e7bd1bb640dd273f30811e4489e5e43dc",
@@ -178,7 +180,7 @@
   "benchmark_metrics": null,
   "limitations": [
     "This is an operator-recorded digest summary; the sanitized 421-cache audit and clean identity ledger are published, but raw videos, pose arrays, and raw server logs are not.",
-    "The initial extraction wrapper wrote a malformed status receipt; that receipt is excluded, and completion is instead supported by the clean 421/421 identity resume and cache audit.",
+    "The initial extraction wrapper wrote a malformed status receipt and is excluded; the clean resume supplies current-invocation counts, while the independent cache audit supplies manifest, source-video, and pose-fingerprint binding.",
     "No encoder or SSHead benchmark training is represented by this evidence.",
     "No sealed-test prediction or UCFRep NMAE/OBO measurement has been produced.",
     "Synthetic counter metrics are component diagnostics and are ineligible for comparison tables.",

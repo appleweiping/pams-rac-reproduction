@@ -23,12 +23,13 @@ Operator-recorded outcomes:
   and was uniformly cached to 256 valid frames. A second run returned
   `skipped=true` only after matching the video hash and pose fingerprint.
 - All 421 official training-pool caches were then materialized. A separate
-  identity-only resume matched all 421 source-video hashes and pose
-  fingerprints with zero extraction or failure.
-- The path-free cache audit found 421 unique cache byte streams, no missing or
-  extra cache, and an ordered cache-set digest. Across 107,776 cached frames,
-  83,376 were valid (77.36%); the per-video median was 98.83%. Thirteen
-  videos remained all-invalid and were retained as zero-valued masked samples.
+  identity-only resume reported 421 skips with zero extraction or failure.
+- Independently, the path-free cache audit matched all 421 source-video hashes
+  and pose fingerprints, found 421 unique cache byte streams, found no missing
+  or extra cache, and produced an ordered cache-set digest. Across 107,776
+  cached frames, 83,376 were valid (77.36%); the per-video median was 98.83%.
+  Thirteen videos remained all-invalid and were retained as zero-valued masked
+  samples.
 - Both 576-case counter gates passed. The SSHead collapse diagnostic retained
   its expected nonzero exit and known constant-stream failure.
 - The full 51-sample spectral-proxy stress run completed as a diagnostic only.

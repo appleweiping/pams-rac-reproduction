@@ -1,9 +1,9 @@
 {
   "execution_identity": {
     "audit_mode": "sealed",
-    "container_image_id": "sha256:6ebae4dfe79ff8f0bdc0634746a9f40b545a5d48262390efd011c5dd776b0dd2",
+    "container_image_id": "sha256:4cbb20339a3681ccbc3a8e7eaeddc84076cbc3eb16fdfa84edace4dadf2d1791",
     "environment_sha256": "506c735dd5751b05b809d980a45261140b67cc504cb44256ff542d8b4849b54a",
-    "source_git_sha": "5088cb14bafb95c24fead7d31422f0018571f928"
+    "source_git_sha": "fb9b390e52cd3edc0877d848b033946b6fbc1cff"
   },
   "identity_ledger": {
     "binds_manifest_or_pose_fingerprint": false,
