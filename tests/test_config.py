@@ -36,6 +36,17 @@ def test_repository_config_loads() -> None:
     assert config.pose.crop_to_detected_span is True
 
 
+def test_encoder_smoke_config_changes_only_training_epoch_count() -> None:
+    root = Path(__file__).parents[1]
+    formal = load_config(root / "configs" / "pams.yaml")
+    smoke = load_config(root / "configs" / "smoke" / "pams_encoder_1epoch.yaml")
+
+    assert smoke.training.epochs == 1
+    smoke_payload = smoke.model_dump()
+    smoke_payload["training"]["epochs"] = formal.training.epochs
+    assert smoke_payload == formal.model_dump()
+
+
 def test_pose_fingerprint_ignores_seed_and_training_hyperparameters() -> None:
     fingerprints = {PAMSConfig(seed=seed).pose_fingerprint for seed in (42, 2026, 3407)}
     assert len(fingerprints) == 1

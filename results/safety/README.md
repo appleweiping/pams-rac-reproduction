@@ -3,7 +3,8 @@
 These files are deterministic, label-free engineering diagnostics generated
 from the reviewed pre-publication worktree. They are not UCFRep results and
 cannot satisfy the repository's benchmark verification gate. The same
-commands are rerun in the committed server container before training.
+commands were rerun in the committed server container; that environment-bound
+summary is under [`results/server-smoke`](../server-smoke/README.md).
 
 ## Counter sign/phase gate
 

@@ -2,11 +2,14 @@
 
 **Verification status: `no_results`**
 
-No receipt-backed designated-server decode/pose smoke exists for the current
-pose preprocessing revision, and no UCFRep benchmark measurement has been
-produced. Full encoder/SSHead training for the three preregistered seeds and
-the sealed 105-video evaluation have not run. Earlier infrastructure or data
-observations, if any, are preliminary and are not evidence for this revision.
+A designated-server component smoke has been recorded by the operator for the
+current pose preprocessing revision, including a strict 526-video manifest
+and identity-audited pose caches for all 421 official training videos. The
+path-free audit, clean identity ledger, and digest summary are under
+[`results/server-smoke`](server-smoke/README.md). Thirteen training caches are
+all-invalid and remain masked rather than being dropped. No UCFRep benchmark
+measurement has been produced. Full encoder/SSHead training for the three
+preregistered seeds and the sealed 105-video evaluation have not run.
 
 This repository is therefore a **partial implementation**, not a completed or
 validated reproduction. Baselines and executable Table 2 variants also remain
@@ -16,8 +19,8 @@ incomplete. Inserting a numeric UCFRep result here would be fabrication.
 
 | Method | Protocol | Status | NMAE | OBO |
 |---|---|---|---:|---:|
-| PAMS-Literal | 421/105 | not run; current-pose server smoke pending | — | — |
-| PAMS-SSHead | 421/105 | not run; current-pose server smoke pending | — | — |
+| PAMS-Literal | 421/105 | not run; training/evaluation pending | — | — |
+| PAMS-SSHead | 421/105 | not run; training/evaluation pending | — | — |
 | RepNet | 421/105 | parity/data blocked | — | — |
 | TransRAC | 421/105 | parity/data blocked | — | — |
 | ESCounts | 421/105 | parity/data blocked | — | — |
@@ -45,4 +48,6 @@ never eligible for either paper-comparison table.
 
 The current label-free local safety evidence, including the intentionally
 failed SSHead collapse diagnostic, is published under
-[`results/safety`](safety/README.md).
+[`results/safety`](safety/README.md). Its designated-server rerun and real
+UCFRep preprocessing smoke are summarized separately under
+[`results/server-smoke`](server-smoke/README.md).

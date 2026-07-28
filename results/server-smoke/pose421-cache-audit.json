@@ -1,0 +1,68 @@
+{
+  "execution_identity": {
+    "audit_mode": "sealed",
+    "container_image_id": "sha256:6ebae4dfe79ff8f0bdc0634746a9f40b545a5d48262390efd011c5dd776b0dd2",
+    "environment_sha256": "506c735dd5751b05b809d980a45261140b67cc504cb44256ff542d8b4849b54a",
+    "source_git_sha": "5088cb14bafb95c24fead7d31422f0018571f928"
+  },
+  "identity_ledger": {
+    "binds_manifest_or_pose_fingerprint": false,
+    "completed": 421,
+    "extracted": 0,
+    "failed": 0,
+    "historical_scope": "current_invocation_only",
+    "schema_version": 1,
+    "selected": 421,
+    "skipped": 421
+  },
+  "pose_caches": {
+    "all_invalid_videos": 13,
+    "bytes": 29111819,
+    "files": 421,
+    "frames_total": 107776,
+    "unique_sha256": 421,
+    "valid_fraction_micro": 0.773604513064133,
+    "valid_fraction_per_video": {
+      "max": 1.0,
+      "min": 0.0,
+      "p05": 0.0546875,
+      "p25": 0.57421875,
+      "p50": 0.98828125,
+      "p75": 1.0,
+      "p95": 1.0
+    },
+    "valid_frames_total": 83376
+  },
+  "provenance": {
+    "config_file_sha256": "657622d6060b61fcc73a34f828e3b3060bac8347c5320c8aeff137d81eaf5391",
+    "identity_ledger_sha256": "8bd1d2e821f1ba07cdf768e8e2cfb6d7157eadd23246f5fd307417bbd30318d3",
+    "manifest_file_sha256": "67621bcacf58e85caefaf19425ca074686d00931e8d9c69e40ceb0388e7bec85",
+    "manifest_fingerprint": "f2ccbefa16787490f60c846d29ece2815198dadc7c5d91d1075d067ef3325d1e",
+    "pose_cache_set_sha256": "d248852c787204c4ce93c905629fdd5e7bd1bb640dd273f30811e4489e5e43dc",
+    "pose_fingerprint": "8ecb6c1384e1d6a088762322ed90bb6aa631683318e0ab7ed21c19541e5f6656",
+    "pose_model": "mediapipe-pose-0.10.14",
+    "sealed_dataset_fingerprint": "d371f9f4609730d6484efc337413b444ed73752ad5e994366d02fb79a9960452",
+    "training_fingerprint": "0987ded86f4344f4669aa72fdf3baffb7a890340da7273b63ddfdb3cb1f05fca",
+    "training_id_list_sha256": "776489ba3c556a105f96bd18788c527a9157dfaa451a0eb766c38faca27e416f"
+  },
+  "schema_version": 1,
+  "scope": {
+    "expected_records": 421,
+    "extra_pose_caches": 0,
+    "missing_pose_caches": 0,
+    "protocol": "ucfrep_526",
+    "split": "train"
+  },
+  "source_detection_frames": {
+    "available": false,
+    "coverage_videos": 0,
+    "reason": "not_stored_in_pose_cache_schema_v2_or_failure_ledger_schema_v1"
+  },
+  "source_videos": {
+    "bytes": 242535836,
+    "files": 421,
+    "unique_inodes": 421,
+    "unique_sha256": 421
+  },
+  "status": "passed"
+}

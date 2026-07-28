@@ -15,12 +15,16 @@ repository, command logs, or run manifests.
 
 ## Current execution status
 
-The current pose preprocessing revision has no receipt-backed designated-server
-decode/pose smoke and has produced no UCFRep metric. Encoder/SSHead training,
-sealed evaluation, baselines, and executable Table 2 variants remain
-incomplete. The repository is a partial implementation until the commands
-below complete and their receipts are published; preliminary infrastructure
-checks are not benchmark evidence.
+The operator has recorded a designated-server component smoke for the current
+pose preprocessing revision: the strict 526-video manifest, frozen 337/84/105
+split, one real-video MediaPipe extraction, exact cache-resume check,
+all 421 official training-pool pose caches, synthetic gates, and the CUDA test
+suite are summarized under `results/server-smoke`. The path-free 421-cache
+audit and clean identity ledger are published there; raw videos, pose arrays,
+and server logs are not. Thirteen training videos are all-invalid and remain
+present as zero-valued masked samples under the frozen failure policy. This has
+produced no UCFRep metric. Encoder/SSHead training, sealed evaluation, baselines,
+and executable Table 2 variants remain incomplete.
 
 ## Read-only inventory
 
@@ -146,6 +150,42 @@ point or near-collapse gradient spike. Its failure must be published, not
 suppressed. Actual SSHead training independently checks finite values and
 aborts before an optimizer step if its observed stream/gradient reaches those
 conditions.
+
+## GPU encoder integration smoke
+
+Before training, audit the canonical 421-cache pool against a clean
+`--skip-existing` identity ledger:
+
+```bash
+bash scripts/server/run_gpu1.sh --sealed -- \
+  python scripts/server/audit_pose_cache.py \
+    /pams/runs/manifests/ucfrep_526.json \
+    /pams/pose-cache \
+    configs/pams.yaml \
+    /pams/runs/audits/pose421-identity-ledger.json
+```
+
+The audit rejects missing or extra caches, source-video or pose-fingerprint
+mismatches, malformed NPZ arrays, and non-finite values. It emits only a
+path-free aggregate JSON summary.
+
+After that audit passes, exercise one complete physical
+batch/KMeans/PAMS-TCC epoch with the dedicated smoke configuration:
+
+```bash
+bash scripts/server/run_gpu1.sh --sealed -- \
+  pams train encoder \
+    /pams/runs/manifests/ucfrep_526.json \
+    /pams/pose-cache \
+    /pams/checkpoints/smoke/encoder-1epoch \
+    --config configs/smoke/pams_encoder_1epoch.yaml \
+    --device cuda:0 --microbatch-size 32
+```
+
+Inside the one-GPU container, `cuda:0` is the host GPU selected by the
+launcher. The smoke config differs from `configs/pams.yaml` only in
+`training.epochs=1`; its checkpoint is `smoke_only` and cannot enter any
+benchmark table.
 
 ## Training order
 

@@ -7,11 +7,15 @@ Period-Adaptive Multi-Scale Consistency for Self-Supervised Repetitive
 Action Counting** (CVPR Findings 2026).
 
 > **Current status: implementation / no verified benchmark claim.**
-> Core PAMS/data/audit paths have component tests, but the current
-> preprocessing revision has not yet produced a receipt-backed designated
-> server smoke run. Baselines, executable Table 2 variants, full
-> encoder/SSHead training, and sealed UCFRep evaluation remain incomplete.
-> This is a partial implementation scaffold, not a finished reproduction.
+> Core PAMS/data/audit paths pass the committed test suite and a
+> designated-server component smoke recorded in an operator digest summary.
+> The strict 526-video
+> UCFRep manifest and all 421 official training-pool MediaPipe pose caches
+> have also been reconstructed and identity-audited. Thirteen training videos
+> remain all-invalid under the frozen missing-pose policy. Full encoder/SSHead
+> training, baselines, executable Table 2 variants, and sealed UCFRep
+> evaluation remain incomplete. This is a partial implementation, not a
+> verified reproduction.
 
 ## Why this repository exists
 
@@ -95,6 +99,10 @@ to construct a checksummed local manifest and pose cache. Preparation accepts
 `UCF-101/<Action>/<video>.avi`, `<Action>/<video>.avi`, and
 `flat/<video>.avi` relative to the supplied root. Its default strict mode
 requires and hashes all 526 videos; duplicate candidates across layouts fail.
+The resolver contains one explicit audited directory alias:
+UCFRep's `HandStandPushups` identifiers map to the official UCF101
+`HandstandPushups` directory. It performs no recursive or case-insensitive
+fallback.
 
 ```bash
 pams data prepare-ucfrep /path/containing/UCF-101 \
