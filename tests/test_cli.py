@@ -184,7 +184,245 @@ def test_pose_extract_help_exposes_safe_resume_flag() -> None:
     result = runner.invoke(app, ["pose", "extract", "--help"])
     assert result.exit_code == 0, result.output
     assert "--skip-existing" in _plain_text(result.stdout)
+    assert "--label-free-manifest" in _plain_text(result.stdout)
     assert "--keep-full-timeline" not in result.stdout
+
+
+def test_pose_input_compiler_emits_no_count_or_action_fields(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    video = tmp_path / "video.json"
+    video.write_bytes(b"video")
+    source_manifest = tmp_path / "manifest.json"
+    source_manifest.write_text('{"fixture": true}\n', encoding="utf-8")
+    record = SimpleNamespace(
+        video_id="v_BenchPress_g21_c01",
+        video_path=str(video),
+        video_sha256=hashlib.sha256(video.read_bytes()).hexdigest(),
+    )
+    fake_manifest = SimpleNamespace(
+        protocol="ucfrep_526",
+        fingerprint="b" * 64,
+        sealed_dataset_fingerprint="d" * 64,
+        records_for=lambda split: (record,) if split == "test" else (),
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "load_ucfrep_manifest",
+        lambda *_args, **_kwargs: fake_manifest,
+    )
+    monkeypatch.setattr(cli_module, "_validate_experiment_split", lambda _manifest: None)
+    monkeypatch.setattr(
+        cli_module.PoseInputManifest,
+        "validate_exact_membership",
+        lambda _manifest: None,
+    )
+    output = tmp_path / "pose-inputs.json"
+
+    result = runner.invoke(
+        app,
+        [
+            "data",
+            "pose-inputs",
+            str(source_manifest),
+            "--output",
+            str(output),
+            "--split",
+            "test",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    persisted = json.loads(output.read_text(encoding="utf-8"))
+    assert persisted["manifest_type"] == "pose_inputs"
+    assert set(persisted["records"][0]) == {
+        "video_id",
+        "video_path",
+        "video_sha256",
+    }
+    sidecar_text = output.read_text(encoding="utf-8")
+    for forbidden in (
+        "source_manifest_file_sha256",
+        "source_manifest_fingerprint",
+        "sealed_dataset_fingerprint",
+        "count",
+        "action",
+    ):
+        assert forbidden not in sidecar_text
+    commitment = json.loads(
+        (tmp_path / "pose-inputs.commitment.json").read_text(encoding="utf-8")
+    )
+    assert commitment["sidecar_sha256"] == hashlib.sha256(output.read_bytes()).hexdigest()
+    assert commitment["record_total"] == 1
+    commitment_text = json.dumps(commitment, sort_keys=True)
+    for forbidden in (
+        "source_manifest_file_sha256",
+        "source_manifest_fingerprint",
+        "sealed_dataset_fingerprint",
+        "count",
+        "action",
+    ):
+        assert forbidden not in commitment_text
+    original_video = video.read_bytes()
+    aliases_video = runner.invoke(
+        app,
+        [
+            "data",
+            "pose-inputs",
+            str(source_manifest),
+            "--output",
+            str(video),
+            "--split",
+            "test",
+            "--overwrite",
+        ],
+    )
+    assert aliases_video.exit_code == 2
+    assert "aliases selected video" in aliases_video.output
+    assert video.read_bytes() == original_video
+
+
+def test_pose_input_compiler_rejects_non_json_and_input_alias_without_writing(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "manifest.json"
+    original = b'{"fixture": true}\n'
+    source.write_bytes(original)
+    non_json = runner.invoke(
+        app,
+        ["data", "pose-inputs", str(source), "--output", str(tmp_path / "sidecar.txt")],
+    )
+    assert non_json.exit_code == 2
+    assert "must end in .json" in non_json.output
+    alias = runner.invoke(
+        app,
+        [
+            "data",
+            "pose-inputs",
+            str(source),
+            "--output",
+            str(source),
+            "--overwrite",
+        ],
+    )
+    assert alias.exit_code == 2
+    assert "must not overwrite the source manifest" in alias.output
+    assert source.read_bytes() == original
+
+
+def test_pose_extract_label_free_path_never_loads_labelled_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sidecar = tmp_path / "pose-inputs.json"
+    sidecar.write_text("{}\n", encoding="utf-8")
+    (tmp_path / "pose-inputs.commitment.json").write_text("{}\n", encoding="utf-8")
+    video = tmp_path / "video.avi"
+    video.write_bytes(b"video")
+    record = SimpleNamespace(
+        video_id="opaque-video",
+        video_path="video.avi",
+        video_sha256=hashlib.sha256(video.read_bytes()).hexdigest(),
+    )
+    fake_inputs = SimpleNamespace(
+        protocol="ucfrep_526",
+        split="test",
+        records=(record,),
+        fingerprint="e" * 64,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "load_pose_input_manifest",
+        lambda *_args, **_kwargs: fake_inputs,
+    )
+    sidecar_sha256 = hashlib.sha256(sidecar.read_bytes()).hexdigest()
+    fake_commitment = SimpleNamespace(
+        protocol="ucfrep_526",
+        split="test",
+        record_total=1,
+        identity_sha256=cli_module.pose_input_identity_sha256((record,)),
+        sidecar_sha256=sidecar_sha256,
+        sidecar_fingerprint="e" * 64,
+        fingerprint="f" * 64,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "load_pose_input_commitment",
+        lambda *_args, **_kwargs: fake_commitment,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "load_pose_cache_set",
+        lambda *_args, **_kwargs: (
+            (),
+            SimpleNamespace(
+                to_dict=lambda: {
+                    "schema_version": 1,
+                    "pose_fingerprint": "a" * 64,
+                    "fingerprint": "b" * 64,
+                    "entry_count": 1,
+                    "entries": [],
+                }
+            ),
+        ),
+    )
+
+    def fail_labelled_loader(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("labelled manifest loader must not be called")
+
+    monkeypatch.setattr(cli_module, "load_ucfrep_manifest", fail_labelled_loader)
+    summary = SimpleNamespace(
+        video_id="opaque-video",
+        skipped=False,
+        to_dict=lambda: {"video_id": "opaque-video"},
+    )
+    monkeypatch.setattr(
+        "pams.pose.extract_many_with_failures",
+        lambda *_args, **_kwargs: ((summary,), ()),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "pose",
+            "extract",
+            str(sidecar),
+            str(tmp_path / "cache"),
+            "--config",
+            str(REPOSITORY / "configs" / "pams.yaml"),
+            "--label-free-manifest",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = _json_output(result.stdout)
+    assert payload["label_free_manifest"] is True
+    assert payload["input_manifest_fingerprint"] == "e" * 64
+    ledger = json.loads(
+        (tmp_path / "cache" / "failures.json").read_text(encoding="utf-8")
+    )
+
+    def nested_keys(value: object) -> set[str]:
+        if isinstance(value, dict):
+            return set(value) | {
+                key
+                for child in value.values()
+                for key in nested_keys(child)
+            }
+        if isinstance(value, list):
+            return {key for child in value for key in nested_keys(child)}
+        return set()
+
+    ledger_keys = nested_keys(ledger)
+    for forbidden in (
+        "source_manifest_file_sha256",
+        "source_manifest_fingerprint",
+        "sealed_dataset_fingerprint",
+        "count",
+        "action",
+    ):
+        assert forbidden not in ledger_keys
 
 
 def test_blocked_baseline_never_falls_back_to_proxy(tmp_path: Path) -> None:
@@ -619,6 +857,262 @@ def test_validate_run_uses_receipt_relative_locator_after_tree_move_and_safe_rem
     )
     assert unknown_role.exit_code != 0
     assert "not present in the receipt" in unknown_role.output
+
+
+def test_cli_completion_snapshots_external_artifacts_into_movable_run_tree(
+    tmp_path: Path,
+) -> None:
+    from pams.cli import _complete_cli_run_manifest
+    from pams.run_manifest import (
+        ArtifactReceipt,
+        CompletedRunReceipt,
+        create_run_manifest,
+        resolve_artifact_path,
+        validate_artifact_receipt,
+        write_manifest_exclusive,
+    )
+
+    run_root = tmp_path / "run"
+    started = create_run_manifest(
+        command=["pams", "fixture"],
+        config_sha256="1" * 64,
+        dataset_sha256="2" * 64,
+        seed=2026,
+        protocol="ucfrep_526",
+        cwd=REPOSITORY,
+    )
+    started_path = write_manifest_exclusive(
+        started,
+        run_root / "manifests" / f"{started.run_id}.started.json",
+    )
+    external = tmp_path / "sealed-attempt-registry" / "attempt.json"
+    external.parent.mkdir()
+    external.write_bytes(b"immutable external receipt")
+    digest = hashlib.sha256(external.read_bytes()).hexdigest()
+
+    completed_path, _ = _complete_cli_run_manifest(
+        started_path,
+        artifacts={"sealed_attempt_receipt": external},
+        expected_artifact_sha256={"sealed_attempt_receipt": digest},
+        metrics={},
+    )
+    completed = CompletedRunReceipt.model_validate_json(
+        completed_path.read_text(encoding="utf-8")
+    )
+    assert len(completed.artifacts) == 1
+    artifact = completed.artifacts[0]
+    assert isinstance(artifact, ArtifactReceipt)
+    assert artifact.locator.startswith("../inputs/receipt-artifacts/")
+    portable = resolve_artifact_path(completed_path, artifact)
+    assert portable.read_bytes() == b"immutable external receipt"
+
+    moved_root = tmp_path / "published-run"
+    run_root.rename(moved_root)
+    external.unlink()
+    moved_receipt = moved_root / "manifests" / completed_path.name
+    moved_completed = CompletedRunReceipt.model_validate_json(
+        moved_receipt.read_text(encoding="utf-8")
+    )
+    moved_artifact = moved_completed.artifacts[0]
+    moved_portable = resolve_artifact_path(moved_receipt, moved_artifact)
+    validate_artifact_receipt(moved_portable, moved_artifact)
+
+
+def test_cli_completion_isolates_same_role_across_runs_and_tree_move(
+    tmp_path: Path,
+) -> None:
+    from pams.cli import _complete_cli_run_manifest
+    from pams.run_manifest import (
+        CompletedRunReceipt,
+        create_run_manifest,
+        resolve_artifact_path,
+        write_manifest_exclusive,
+    )
+
+    run_root = tmp_path / "run-package"
+    completed_paths: list[Path] = []
+    expected_payloads = (b"first-run-artifact", b"second-run-artifact")
+    for index, payload in enumerate(expected_payloads):
+        started = create_run_manifest(
+            command=["pams", "fixture", str(index)],
+            config_sha256=f"{index + 1:x}" * 64,
+            dataset_sha256=f"{index + 3:x}" * 64,
+            seed=2026 + index,
+            protocol="ucfrep_526",
+            cwd=REPOSITORY,
+        )
+        started_path = write_manifest_exclusive(
+            started,
+            run_root / "manifests" / f"{started.run_id}.started.json",
+        )
+        external = tmp_path / "external" / f"attempt-{index}.json"
+        external.parent.mkdir(exist_ok=True)
+        external.write_bytes(payload)
+        digest = hashlib.sha256(payload).hexdigest()
+        completed_path, _ = _complete_cli_run_manifest(
+            started_path,
+            artifacts={"sealed_attempt_receipt": external},
+            expected_artifact_sha256={"sealed_attempt_receipt": digest},
+            metrics={},
+        )
+        completed_paths.append(completed_path)
+
+    receipts = [
+        CompletedRunReceipt.model_validate_json(path.read_text(encoding="utf-8"))
+        for path in completed_paths
+    ]
+    locators = [receipt.artifacts[0].locator for receipt in receipts]
+    assert len(set(locators)) == 2
+    assert all(
+        locator.startswith("../inputs/receipt-artifacts/") for locator in locators
+    )
+    assert [
+        resolve_artifact_path(path, receipt.artifacts[0]).read_bytes()
+        for path, receipt in zip(completed_paths, receipts, strict=True)
+    ] == list(expected_payloads)
+
+    moved_root = tmp_path / "published-package"
+    run_root.rename(moved_root)
+    for completed_path in completed_paths:
+        moved_receipt = moved_root / "manifests" / completed_path.name
+        validated = runner.invoke(
+            app,
+            ["data", "validate-run", str(moved_receipt)],
+        )
+        assert validated.exit_code == 0, validated.output
+
+
+def test_portable_receipt_snapshot_retry_reuses_only_exact_bytes(
+    tmp_path: Path,
+) -> None:
+    from pams.cli import _materialize_portable_receipt_artifacts
+    from pams.run_manifest import create_run_manifest, write_manifest_exclusive
+
+    run_root = tmp_path / "run-package"
+    started = create_run_manifest(
+        command=["pams", "fixture"],
+        config_sha256="1" * 64,
+        dataset_sha256="2" * 64,
+        seed=2026,
+        protocol="ucfrep_526",
+        cwd=REPOSITORY,
+    )
+    started_path = write_manifest_exclusive(
+        started,
+        run_root / "manifests" / f"{started.run_id}.started.json",
+    )
+    external = tmp_path / "external.json"
+    payload = b"retry-safe-artifact"
+    external.write_bytes(payload)
+    digest = hashlib.sha256(payload).hexdigest()
+
+    first = _materialize_portable_receipt_artifacts(
+        started_path,
+        artifacts={"sealed_attempt_receipt": external},
+        expected_artifact_sha256={"sealed_attempt_receipt": digest},
+    )
+    second = _materialize_portable_receipt_artifacts(
+        started_path,
+        artifacts={"sealed_attempt_receipt": external},
+        expected_artifact_sha256={"sealed_attempt_receipt": digest},
+    )
+
+    assert first == second
+    assert first["sealed_attempt_receipt"].read_bytes() == payload
+
+
+def test_portable_receipt_snapshot_rejects_corrupted_existing_target(
+    tmp_path: Path,
+) -> None:
+    from pams.cli import _materialize_portable_receipt_artifacts
+    from pams.run_manifest import create_run_manifest, write_manifest_exclusive
+
+    run_root = tmp_path / "run-package"
+    started = create_run_manifest(
+        command=["pams", "fixture"],
+        config_sha256="1" * 64,
+        dataset_sha256="2" * 64,
+        seed=2026,
+        protocol="ucfrep_526",
+        cwd=REPOSITORY,
+    )
+    started_path = write_manifest_exclusive(
+        started,
+        run_root / "manifests" / f"{started.run_id}.started.json",
+    )
+    external = tmp_path / "external.json"
+    payload = b"expected-artifact"
+    external.write_bytes(payload)
+    digest = hashlib.sha256(payload).hexdigest()
+    started_digest = hashlib.sha256(started_path.read_bytes()).hexdigest()
+    role_digest = hashlib.sha256(b"sealed_attempt_receipt").hexdigest()
+    destination = (
+        run_root
+        / "inputs"
+        / "receipt-artifacts"
+        / started_digest
+        / f"{role_digest}.artifact"
+    )
+    destination.parent.mkdir(parents=True)
+    destination.write_bytes(b"corrupted-existing-artifact")
+
+    with pytest.raises(FileExistsError, match="different bytes"):
+        _materialize_portable_receipt_artifacts(
+            started_path,
+            artifacts={"sealed_attempt_receipt": external},
+            expected_artifact_sha256={"sealed_attempt_receipt": digest},
+        )
+
+    assert destination.read_bytes() == b"corrupted-existing-artifact"
+
+
+def test_portable_receipt_snapshot_rejects_symlink_target(tmp_path: Path) -> None:
+    from pams.cli import _materialize_portable_receipt_artifacts
+    from pams.run_manifest import create_run_manifest, write_manifest_exclusive
+
+    run_root = tmp_path / "run-package"
+    started = create_run_manifest(
+        command=["pams", "fixture"],
+        config_sha256="1" * 64,
+        dataset_sha256="2" * 64,
+        seed=2026,
+        protocol="ucfrep_526",
+        cwd=REPOSITORY,
+    )
+    started_path = write_manifest_exclusive(
+        started,
+        run_root / "manifests" / f"{started.run_id}.started.json",
+    )
+    external = tmp_path / "external.json"
+    payload = b"expected-artifact"
+    external.write_bytes(payload)
+    digest = hashlib.sha256(payload).hexdigest()
+    started_digest = hashlib.sha256(started_path.read_bytes()).hexdigest()
+    role_digest = hashlib.sha256(b"sealed_attempt_receipt").hexdigest()
+    destination = (
+        run_root
+        / "inputs"
+        / "receipt-artifacts"
+        / started_digest
+        / f"{role_digest}.artifact"
+    )
+    destination.parent.mkdir(parents=True)
+    attacker_target = tmp_path / "attacker-controlled.bin"
+    attacker_target.write_bytes(payload)
+    try:
+        destination.symlink_to(attacker_target)
+    except OSError as exc:
+        pytest.skip(f"symlink creation is unavailable: {exc}")
+
+    with pytest.raises(FileExistsError, match="non-symlink"):
+        _materialize_portable_receipt_artifacts(
+            started_path,
+            artifacts={"sealed_attempt_receipt": external},
+            expected_artifact_sha256={"sealed_attempt_receipt": digest},
+        )
+
+    assert destination.is_symlink()
+    assert attacker_target.read_bytes() == payload
 
 
 def test_validate_run_accepts_schema_v2_receipt_with_explicit_migration_remap(

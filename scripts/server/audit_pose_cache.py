@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Audit the canonical 421-video UCFRep training pose-cache pool.
+"""Audit one exact, label-safe UCFRep pose-cache split.
 
 The audit intentionally emits only aggregate, path-free JSON on stdout. Error
 details are written to stderr by :func:`main`. Raw source detection counts are
-not stored in pose-cache schema v2 or failure-ledger schema v1, so this script
+not stored in pose-cache schema v2 or identity-ledger schema v2, so this script
 reports that limitation instead of reconstructing or guessing those values.
 """
 
@@ -27,19 +27,34 @@ from pams.config import PAMSConfig, load_config
 from pams.data import (
     PoseCacheEntryReceipt,
     PoseCacheSetSnapshot,
-    UCFRepRecord,
+    UnlabeledVideoRecord,
     load_pose_cache_set,
     load_pose_cache_with_receipt,
+    load_pose_input_commitment,
+    load_pose_input_manifest,
     load_ucfrep_manifest,
     pose_cache_path,
+    pose_input_identity_sha256,
 )
 from pams.reproducibility import sha256_file
 
-_TRAIN_POOL_SIZE = 421
+_EXPECTED_SPLIT_SIZES = {"train": 421, "test": 105}
 _TARGET_FRAMES = 256
 _LEDGER_FIELDS = frozenset(
     {
         "schema_version",
+        "input_kind",
+        "protocol",
+        "split",
+        "input_file_sha256",
+        "input_fingerprint",
+        "sidecar_sha256",
+        "sidecar_fingerprint",
+        "commitment_file_sha256",
+        "commitment_fingerprint",
+        "identity_sha256",
+        "pose_fingerprint",
+        "successful_cache_snapshot",
         "selected",
         "completed",
         "extracted",
@@ -49,6 +64,15 @@ _LEDGER_FIELDS = frozenset(
     }
 )
 _FAILURE_FIELDS = frozenset({"video_id", "video_path", "error_type", "message"})
+_PRIVILEGED_LABEL_KEYS = frozenset(
+    {
+        "source_manifest_file_sha256",
+        "source_manifest_fingerprint",
+        "sealed_dataset_fingerprint",
+        "count",
+        "action",
+    }
+)
 _STABLE_STAT_FIELDS = ("st_dev", "st_ino", "st_size", "st_mtime_ns")
 
 
@@ -70,6 +94,19 @@ class CacheAuditEntry:
 def _require(condition: bool, message: str) -> None:
     if not condition:
         raise AuditError(message)
+
+
+def _assert_label_free_payload(payload: Any) -> None:
+    """Reject privileged label-derived keys anywhere in a label-free artifact."""
+
+    if isinstance(payload, Mapping):
+        leaked = _PRIVILEGED_LABEL_KEYS.intersection(payload)
+        _require(not leaked, f"label-free payload contains privileged keys: {sorted(leaked)}")
+        for value in payload.values():
+            _assert_label_free_payload(value)
+    elif isinstance(payload, list | tuple):
+        for value in payload:
+            _assert_label_free_payload(value)
 
 
 def _reject_duplicate_json_fields(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -102,12 +139,18 @@ def _ledger_integer(payload: Mapping[str, Any], field: str) -> int:
     return value
 
 
-def _validate_identity_ledger(payload: Mapping[str, Any]) -> dict[str, int]:
-    """Validate a clean, full-pool ``--skip-existing`` identity ledger."""
+def _validate_identity_ledger(
+    payload: Mapping[str, Any],
+    *,
+    expected_size: int = 421,
+    expected_bindings: Mapping[str, Any] | None = None,
+    expected_snapshot: Mapping[str, Any] | None = None,
+) -> dict[str, int]:
+    """Validate a clean, full-split ``--skip-existing`` identity ledger."""
 
     _require(
         set(payload) == _LEDGER_FIELDS,
-        "identity ledger fields do not match schema_version=1",
+        "identity ledger fields do not match schema_version=2",
     )
     counts = {
         field: _ledger_integer(payload, field)
@@ -135,7 +178,67 @@ def _validate_identity_ledger(payload: Mapping[str, Any]) -> dict[str, int]:
                 f"identity ledger failure {index} field {field!r} must be non-empty",
             )
 
-    _require(counts["schema_version"] == 1, "identity ledger schema_version must be 1")
+    _require(
+        counts["schema_version"] == 2,
+        "identity ledger schema_version must be 2; legacy ledgers are unbound diagnostics",
+    )
+    for field in (
+        "input_kind",
+        "protocol",
+        "split",
+        "input_file_sha256",
+        "input_fingerprint",
+        "identity_sha256",
+        "pose_fingerprint",
+    ):
+        value = payload[field]
+        _require(
+            isinstance(value, str) and bool(value.strip()),
+            f"identity ledger field {field!r} must be non-empty",
+        )
+    for field in (
+        "input_file_sha256",
+        "input_fingerprint",
+        "identity_sha256",
+        "pose_fingerprint",
+    ):
+        value = payload[field]
+        _require(
+            isinstance(value, str)
+            and len(value) == 64
+            and all(character in "0123456789abcdef" for character in value),
+            f"identity ledger field {field!r} must be a lowercase SHA-256",
+        )
+    input_kind = payload["input_kind"]
+    _require(
+        input_kind in {"label_free_sidecar", "labelled_manifest"},
+        "identity ledger input_kind is unsupported",
+    )
+    sidecar_fields = (
+        "sidecar_sha256",
+        "sidecar_fingerprint",
+        "commitment_file_sha256",
+        "commitment_fingerprint",
+    )
+    if input_kind == "label_free_sidecar":
+        for field in sidecar_fields:
+            value = payload[field]
+            _require(
+                isinstance(value, str)
+                and len(value) == 64
+                and all(character in "0123456789abcdef" for character in value),
+                f"label-free identity ledger field {field!r} must be a lowercase SHA-256",
+            )
+    else:
+        _require(
+            all(payload[field] is None for field in sidecar_fields),
+            "labelled identity ledger must not claim sidecar commitment fields",
+        )
+    snapshot = payload["successful_cache_snapshot"]
+    _require(
+        isinstance(snapshot, dict),
+        "clean identity ledger successful_cache_snapshot must be an object",
+    )
     _require(
         counts["completed"] + counts["failed"] == counts["selected"],
         "identity ledger invariant completed + failed == selected failed",
@@ -149,8 +252,8 @@ def _validate_identity_ledger(payload: Mapping[str, Any]) -> dict[str, int]:
         "identity ledger failed count does not match failures length",
     )
     _require(
-        counts["selected"] == _TRAIN_POOL_SIZE,
-        f"identity ledger must select exactly {_TRAIN_POOL_SIZE} videos",
+        counts["selected"] == expected_size,
+        f"identity ledger must select exactly {expected_size} videos",
     )
     _require(
         (
@@ -159,10 +262,21 @@ def _validate_identity_ledger(payload: Mapping[str, Any]) -> dict[str, int]:
             counts["skipped"],
             counts["failed"],
         )
-        == (_TRAIN_POOL_SIZE, 0, _TRAIN_POOL_SIZE, 0)
+        == (expected_size, 0, expected_size, 0)
         and not failures,
         "identity ledger is not a clean full-pool skip-existing validation",
     )
+    if expected_bindings is not None:
+        for field, expected in expected_bindings.items():
+            _require(
+                payload.get(field) == expected,
+                f"identity ledger binding mismatch for {field!r}",
+            )
+    if expected_snapshot is not None:
+        _require(
+            snapshot == expected_snapshot,
+            "identity ledger successful cache snapshot does not match audited caches",
+        )
     return counts
 
 
@@ -214,9 +328,22 @@ def _stable_file_bytes(path: Path) -> bytes:
     return payload
 
 
-def _resolve_manifest_video_path(manifest_dir: Path, record: UCFRepRecord) -> Path:
+def _resolve_manifest_video_path(
+    manifest_dir: Path,
+    record: UnlabeledVideoRecord,
+    *,
+    portable_only: bool = False,
+) -> Path:
     source = Path(record.video_path)
-    return (source if source.is_absolute() else manifest_dir / source).resolve(strict=True)
+    if portable_only:
+        _require(not source.is_absolute() and not source.anchor, "video locator must be relative")
+    resolved = (source if source.is_absolute() else manifest_dir / source).resolve(strict=True)
+    if portable_only:
+        try:
+            resolved.relative_to(manifest_dir)
+        except ValueError as exc:
+            raise AuditError("video locator escapes the selected video root") from exc
+    return resolved
 
 
 def _validate_raw_npz(
@@ -265,16 +392,21 @@ def _validate_raw_npz(
 
 
 def _audit_cache_entry(
-    record: UCFRepRecord,
+    record: UnlabeledVideoRecord,
     *,
     manifest_dir: Path,
     cache_dir: Path,
     config: PAMSConfig,
+    portable_only: bool = False,
 ) -> CacheAuditEntry:
     """Validate one source/cache pair against manifest and pose identities."""
 
-    _require(record.video_sha256 is not None, "training record is missing video SHA-256")
-    source = _resolve_manifest_video_path(manifest_dir, record)
+    _require(record.video_sha256 is not None, "pose-input record is missing video SHA-256")
+    source = _resolve_manifest_video_path(
+        manifest_dir,
+        record,
+        portable_only=portable_only,
+    )
     source_sha256, source_bytes, source_inode = _stable_file_sha256(source)
     _require(source_sha256 == record.video_sha256, "source video SHA-256 mismatch")
 
@@ -330,8 +462,13 @@ def _expected_cache_paths(cache_dir: Path, video_ids: Sequence[str]) -> set[Path
     return paths
 
 
-def _validate_cache_scope(cache_dir: Path, expected: set[Path]) -> None:
-    """Reject missing or extra NPZ files, including files in subdirectories."""
+def _validate_cache_scope(
+    cache_dir: Path,
+    expected: set[Path],
+    *,
+    allow_extra: bool = False,
+) -> tuple[int, int]:
+    """Reject missing caches and, unless scoped auditing is requested, extras."""
 
     actual = {
         path
@@ -341,7 +478,9 @@ def _validate_cache_scope(cache_dir: Path, expected: set[Path]) -> None:
     missing = expected - actual
     extra = actual - expected
     _require(not missing, f"pose-cache pool is missing {len(missing)} expected files")
-    _require(not extra, f"pose-cache pool contains {len(extra)} extra NPZ files")
+    if not allow_extra:
+        _require(not extra, f"pose-cache pool contains {len(extra)} extra NPZ files")
+    return len(missing), len(extra)
 
 
 def _distribution(values: Sequence[float]) -> dict[str, float]:
@@ -357,12 +496,24 @@ def audit_pose_cache(
     cache_dir: Path,
     config_path: Path,
     identity_ledger_path: Path,
+    *,
+    split: str = "train",
+    label_free_manifest: bool = False,
+    allow_extra_caches: bool = False,
+    video_root: Path | None = None,
+    input_commitment_path: Path | None = None,
 ) -> dict[str, Any]:
-    """Audit and summarize the canonical UCFRep 421-video training cache."""
+    """Audit and summarize one exact UCFRep pose-cache split."""
 
     manifest_path = manifest_path.resolve(strict=True)
     config_path = config_path.resolve(strict=True)
     identity_ledger_path = identity_ledger_path.resolve(strict=True)
+    selected_split = split.strip().lower()
+    _require(
+        selected_split in _EXPECTED_SPLIT_SIZES,
+        "pose-cache audit split must be train or test",
+    )
+    expected_size = _EXPECTED_SPLIT_SIZES[selected_split]
     manifest_file_sha256 = sha256_file(manifest_path)
     config_file_sha256 = sha256_file(config_path)
     identity_ledger_sha256 = sha256_file(identity_ledger_path)
@@ -377,53 +528,146 @@ def audit_pose_cache(
         == (_TARGET_FRAMES, 33, 3),
         "configuration must use the frozen 256x33x3 pose shape",
     )
-    manifest = load_ucfrep_manifest(manifest_path, validate_exact=True)
-    _require(manifest.protocol == config.protocol, "manifest/config protocol mismatch")
+    if label_free_manifest:
+        pose_inputs = load_pose_input_manifest(manifest_path, validate_exact=True)
+        commitment_path = (
+            input_commitment_path.resolve(strict=True)
+            if input_commitment_path is not None
+            else manifest_path.with_name(f"{manifest_path.stem}.commitment.json").resolve(
+                strict=True
+            )
+        )
+        commitment = load_pose_input_commitment(commitment_path)
+        commitment_file_sha256 = sha256_file(commitment_path)
+        identity_sha256 = pose_input_identity_sha256(pose_inputs.records)
+        _require(
+            (
+                commitment.protocol,
+                commitment.split,
+                commitment.record_total,
+                commitment.identity_sha256,
+                commitment.sidecar_sha256,
+                commitment.sidecar_fingerprint,
+            )
+            == (
+                pose_inputs.protocol,
+                pose_inputs.split,
+                len(pose_inputs.records),
+                identity_sha256,
+                manifest_file_sha256,
+                pose_inputs.fingerprint,
+            ),
+            "pose-input commitment does not bind this exact label-free sidecar",
+        )
+        _require(
+            pose_inputs.protocol == config.protocol,
+            "pose-input/config protocol mismatch",
+        )
+        _require(
+            pose_inputs.split == selected_split,
+            "pose-input manifest split does not match the requested audit split",
+        )
+        records = pose_inputs.records
+        manifest_fingerprint = pose_inputs.fingerprint
+        training_fingerprint: str | None = None
+        privileged_provenance: dict[str, str] = {}
+        input_kind = "label_free_sidecar"
+        sidecar_sha256: str | None = manifest_file_sha256
+        sidecar_fingerprint: str | None = pose_inputs.fingerprint
+        commitment_fingerprint: str | None = commitment.fingerprint
+    else:
+        _require(
+            video_root is None and input_commitment_path is None,
+            "--video-root and --input-commitment require --label-free-manifest",
+        )
+        _require(
+            selected_split == "train",
+            "test cache audit requires --label-free-manifest",
+        )
+        manifest = load_ucfrep_manifest(manifest_path, validate_exact=True)
+        _require(manifest.protocol == config.protocol, "manifest/config protocol mismatch")
+        _require(
+            manifest.split_counts == {"train": 421, "test": 105},
+            "manifest must be the canonical 421/105 UCFRep manifest",
+        )
+        records = manifest.training_records()
+        manifest_fingerprint = manifest.fingerprint
+        sealed_dataset_fingerprint = manifest.sealed_dataset_fingerprint
+        source_manifest_file_sha256 = manifest_file_sha256
+        source_manifest_fingerprint = manifest.fingerprint
+        training_fingerprint = manifest.training_fingerprint()
+        privileged_provenance = {
+            "source_manifest_file_sha256": source_manifest_file_sha256,
+            "source_manifest_fingerprint": source_manifest_fingerprint,
+            "sealed_dataset_fingerprint": sealed_dataset_fingerprint,
+        }
+        identity_sha256 = pose_input_identity_sha256(
+            tuple(
+                UnlabeledVideoRecord(
+                    video_id=record.video_id,
+                    video_path=record.video_path,
+                    video_sha256=record.video_sha256,
+                )
+                for record in records
+            )
+        )
+        input_kind = "labelled_manifest"
+        sidecar_sha256 = None
+        sidecar_fingerprint = None
+        commitment_file_sha256 = None
+        commitment_fingerprint = None
     _require(
-        manifest.split_counts == {"train": _TRAIN_POOL_SIZE, "test": 105},
-        "manifest must be the canonical 421/105 UCFRep manifest",
+        len(records) == expected_size,
+        f"{selected_split} pose-input manifest must contain {expected_size} rows",
     )
-    records = manifest.records_for("train")
-    _require(len(records) == _TRAIN_POOL_SIZE, "manifest training pool must contain 421 rows")
     video_ids = [record.video_id for record in records]
     _require(
-        len(set(video_ids)) == _TRAIN_POOL_SIZE,
-        "manifest training video IDs must be unique",
+        len(set(video_ids)) == expected_size,
+        f"manifest {selected_split} video IDs must be unique",
     )
     video_sha256_values = [record.video_sha256 for record in records]
     _require(
         all(value is not None for value in video_sha256_values),
-        "every training source video must have a manifest SHA-256",
+        f"every {selected_split} source video must have a manifest SHA-256",
     )
     _require(
-        len(set(video_sha256_values)) == _TRAIN_POOL_SIZE,
-        "training source-video SHA-256 values must be unique",
+        len(set(video_sha256_values)) == expected_size,
+        f"{selected_split} source-video SHA-256 values must be unique",
     )
 
     ledger = _load_identity_ledger(identity_ledger_path)
-    ledger_counts = _validate_identity_ledger(ledger)
     resolved_cache_dir = cache_dir.resolve(strict=True)
     _require(resolved_cache_dir.is_dir(), "pose-cache path must be a directory")
     expected_paths = _expected_cache_paths(resolved_cache_dir, video_ids)
-    _validate_cache_scope(resolved_cache_dir, expected_paths)
+    missing_pose_caches, extra_pose_caches = _validate_cache_scope(
+        resolved_cache_dir,
+        expected_paths,
+        allow_extra=allow_extra_caches,
+    )
 
+    resolved_video_root = (
+        video_root.resolve(strict=True)
+        if label_free_manifest and video_root is not None
+        else manifest_path.parent
+    )
     entries = tuple(
         _audit_cache_entry(
             record,
-            manifest_dir=manifest_path.parent,
+            manifest_dir=resolved_video_root,
             cache_dir=resolved_cache_dir,
             config=config,
+            portable_only=label_free_manifest,
         )
         for record in records
     )
     source_inodes = {entry.source_inode for entry in entries}
     _require(
-        len(source_inodes) == _TRAIN_POOL_SIZE,
+        len(source_inodes) == expected_size,
         "multiple manifest records resolve to the same source-video inode",
     )
     cache_sha256_values = {entry.receipt.cache_sha256 for entry in entries}
     _require(
-        len(cache_sha256_values) == _TRAIN_POOL_SIZE,
+        len(cache_sha256_values) == expected_size,
         "multiple pose caches have the same byte-stream SHA-256",
     )
     receipts = tuple(entry.receipt for entry in entries)
@@ -432,14 +676,32 @@ def audit_pose_cache(
         entries=receipts,
     )
     _, api_snapshot = load_pose_cache_set(
-        manifest.training_records(),
+        records,
         cache_dir=resolved_cache_dir,
         pose_fingerprint=config.pose_fingerprint,
         materialize_sequences=False,
     )
     _require(
         snapshot.fingerprint == api_snapshot.fingerprint,
-        "pose-cache snapshot disagrees with the training loader",
+        "pose-cache snapshot disagrees with the shared cache-set loader",
+    )
+    ledger_counts = _validate_identity_ledger(
+        ledger,
+        expected_size=expected_size,
+        expected_bindings={
+            "input_kind": input_kind,
+            "protocol": config.protocol,
+            "split": selected_split,
+            "input_file_sha256": manifest_file_sha256,
+            "input_fingerprint": manifest_fingerprint,
+            "sidecar_sha256": sidecar_sha256,
+            "sidecar_fingerprint": sidecar_fingerprint,
+            "commitment_file_sha256": commitment_file_sha256,
+            "commitment_fingerprint": commitment_fingerprint,
+            "identity_sha256": identity_sha256,
+            "pose_fingerprint": config.pose_fingerprint,
+        },
+        expected_snapshot=snapshot.to_dict(),
     )
     _require(
         sha256_file(manifest_path) == manifest_file_sha256,
@@ -453,10 +715,15 @@ def audit_pose_cache(
         sha256_file(identity_ledger_path) == identity_ledger_sha256,
         "identity ledger changed during the audit",
     )
+    if label_free_manifest:
+        _require(
+            sha256_file(commitment_path) == commitment_file_sha256,
+            "pose-input commitment changed during the audit",
+        )
 
     valid_counts = [entry.cached_valid_frames for entry in entries]
     valid_fractions = [value / config.data.frames for value in valid_counts]
-    total_cached_frames = _TRAIN_POOL_SIZE * config.data.frames
+    total_cached_frames = expected_size * config.data.frames
     total_cached_valid_frames = sum(valid_counts)
     sorted_ids = "\n".join(sorted(video_ids)) + "\n"
     execution_identity = {
@@ -472,30 +739,36 @@ def audit_pose_cache(
         )
         if value
     }
-    return {
+    provenance: dict[str, Any] = {
+        "manifest_file_sha256": manifest_file_sha256,
+        "manifest_fingerprint": manifest_fingerprint,
+        f"{selected_split}_id_list_sha256": hashlib.sha256(
+            sorted_ids.encode("utf-8")
+        ).hexdigest(),
+        "config_file_sha256": config_file_sha256,
+        "pose_fingerprint": config.pose_fingerprint,
+        "pose_model": config.pose.model_id,
+        "pose_cache_set_sha256": snapshot.fingerprint,
+        "identity_ledger_sha256": identity_ledger_sha256,
+    }
+    provenance.update(privileged_provenance)
+    if training_fingerprint is not None:
+        provenance["training_fingerprint"] = training_fingerprint
+    result = {
         "schema_version": 1,
         "status": "passed",
         "scope": {
             "protocol": "ucfrep_526",
-            "split": "train",
-            "expected_records": _TRAIN_POOL_SIZE,
-            "missing_pose_caches": 0,
-            "extra_pose_caches": 0,
+            "split": selected_split,
+            "label_free_manifest": label_free_manifest,
+            "expected_records": expected_size,
+            "allow_extra_pose_caches": allow_extra_caches,
+            "missing_pose_caches": missing_pose_caches,
+            "extra_pose_caches": extra_pose_caches,
         },
-        "provenance": {
-            "manifest_file_sha256": manifest_file_sha256,
-            "manifest_fingerprint": manifest.fingerprint,
-            "sealed_dataset_fingerprint": manifest.sealed_dataset_fingerprint,
-            "training_fingerprint": manifest.training_fingerprint(),
-            "training_id_list_sha256": hashlib.sha256(sorted_ids.encode("utf-8")).hexdigest(),
-            "config_file_sha256": config_file_sha256,
-            "pose_fingerprint": config.pose_fingerprint,
-            "pose_model": config.pose.model_id,
-            "pose_cache_set_sha256": snapshot.fingerprint,
-            "identity_ledger_sha256": identity_ledger_sha256,
-        },
+        "provenance": provenance,
         "source_videos": {
-            "files": _TRAIN_POOL_SIZE,
+            "files": expected_size,
             "unique_inodes": len(source_inodes),
             "unique_sha256": len(set(video_sha256_values)),
             "bytes": sum(entry.source_bytes for entry in entries),
@@ -513,7 +786,7 @@ def audit_pose_cache(
         "source_detection_frames": {
             "available": False,
             "coverage_videos": 0,
-            "reason": "not_stored_in_pose_cache_schema_v2_or_failure_ledger_schema_v1",
+            "reason": "not_stored_in_pose_cache_schema_v2_or_identity_ledger_schema_v2",
         },
         "identity_ledger": {
             "schema_version": ledger_counts["schema_version"],
@@ -521,21 +794,47 @@ def audit_pose_cache(
                 field: ledger_counts[field]
                 for field in ("selected", "completed", "extracted", "skipped", "failed")
             },
-            "binds_manifest_or_pose_fingerprint": False,
+            "binds_manifest_or_pose_fingerprint": True,
+            "binds_sidecar_and_commitment": label_free_manifest,
+            "binds_successful_cache_snapshot": True,
             "historical_scope": "current_invocation_only",
         },
         "execution_identity": execution_identity,
     }
+    if label_free_manifest:
+        _assert_label_free_payload(result)
+    return result
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Audit the canonical UCFRep 421-video training pose-cache pool."
+        description="Audit one exact, label-safe UCFRep pose-cache split."
     )
     parser.add_argument("manifest", type=Path)
     parser.add_argument("cache_dir", type=Path)
     parser.add_argument("config", type=Path)
     parser.add_argument("identity_ledger", type=Path)
+    parser.add_argument("--split", choices=tuple(_EXPECTED_SPLIT_SIZES), default="train")
+    parser.add_argument(
+        "--label-free-manifest",
+        action="store_true",
+        help="Load a pams data pose-inputs JSON file; required for split=test.",
+    )
+    parser.add_argument(
+        "--allow-extra-caches",
+        action="store_true",
+        help="Audit the selected split inside a combined cache directory.",
+    )
+    parser.add_argument(
+        "--video-root",
+        type=Path,
+        help="Remap portable label-free video locators beneath this root.",
+    )
+    parser.add_argument(
+        "--input-commitment",
+        type=Path,
+        help="Independent pose-input receipt; defaults beside the sidecar.",
+    )
     return parser
 
 
@@ -547,6 +846,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.cache_dir,
             args.config,
             args.identity_ledger,
+            split=args.split,
+            label_free_manifest=args.label_free_manifest,
+            allow_extra_caches=args.allow_extra_caches,
+            video_root=args.video_root,
+            input_commitment_path=args.input_commitment,
         )
     except (AuditError, OSError, RuntimeError, ValueError) as exc:
         print(f"pose-cache audit failed: {exc}", file=sys.stderr)

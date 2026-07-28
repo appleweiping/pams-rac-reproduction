@@ -343,6 +343,11 @@ def _receipt_relative_locator(path: Path, receipt_directory: Path) -> str:
     return _validated_relative_locator(locator)
 
 
+def _trusted_artifact_root(receipt_directory: Path) -> Path:
+    resolved = receipt_directory.resolve(strict=False)
+    return resolved.parent if resolved.name == "manifests" else resolved
+
+
 def _artifact_receipt(
     role: str,
     path: str | Path,
@@ -350,10 +355,19 @@ def _artifact_receipt(
     receipt_directory: Path,
 ) -> ArtifactReceipt:
     source = Path(path)
+    locator = _receipt_relative_locator(source, receipt_directory)
+    candidate = receipt_directory.joinpath(*PurePosixPath(locator).parts).resolve(strict=False)
+    try:
+        candidate.relative_to(_trusted_artifact_root(receipt_directory))
+    except ValueError as exc:
+        raise ValueError(
+            f"artifact for role {role!r} is outside the trusted receipt artifact root; "
+            "snapshot it into the run package before creating the completion receipt"
+        ) from exc
     digest, byte_count = _artifact_identity(source)
     return ArtifactReceipt(
         role=role,
-        locator=_receipt_relative_locator(source, receipt_directory),
+        locator=locator,
         sha256=digest,
         bytes=byte_count,
     )
@@ -384,11 +398,7 @@ def resolve_artifact_path(
         parts = PurePosixPath(artifact.locator).parts
         receipt_path = Path(completed_receipt_path).resolve(strict=False)
         receipt_directory = receipt_path.parent
-        artifact_root = (
-            receipt_directory.parent
-            if receipt_directory.name == "manifests"
-            else receipt_directory
-        )
+        artifact_root = _trusted_artifact_root(receipt_directory)
         candidate = receipt_directory.joinpath(*parts).resolve(strict=False)
         try:
             candidate.relative_to(artifact_root)

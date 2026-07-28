@@ -7,16 +7,21 @@ import numpy as np
 import pytest
 
 from pams.data import (
+    PoseInputCommitment,
+    PoseInputManifest,
     TrainingPoseDataset,
     UCFRepManifest,
     UCFRepRecord,
+    UnlabeledVideoRecord,
     assert_split_disjoint,
     deterministic_stratified_split,
     load_pose_cache,
+    load_pose_input_manifest,
     load_ucfrep_manifest,
     longest_valid_span,
     per_frame_minmax,
     pose_cache_path,
+    pose_input_identity_sha256,
     preprocess_pose_sequence,
     save_ucfrep_manifest,
     split_ucfrep_pose_train_dev,
@@ -126,6 +131,113 @@ def test_manifest_fingerprint_ignores_local_mount_path() -> None:
     first = UCFRepManifest(protocol="ucfrep_526", records=(original,))
     second = UCFRepManifest(protocol="ucfrep_526", records=(moved,))
     assert first.fingerprint == second.fingerprint
+
+
+def test_pose_input_manifest_is_exact_count_free_and_portable(
+    tmp_path: Path,
+) -> None:
+    test_ids = (
+        REPOSITORY / "data" / "splits" / "ucfrep_526_test_105.txt"
+    ).read_text(encoding="utf-8").splitlines()
+    records = tuple(
+        UnlabeledVideoRecord(
+            video_id=video_id,
+            video_path=f"videos/{video_id}.avi",
+            video_sha256=hashlib.sha256(video_id.encode("utf-8")).hexdigest(),
+        )
+        for video_id in test_ids
+    )
+    manifest = PoseInputManifest(
+        protocol="ucfrep_526",
+        split="test",
+        records=records,
+    )
+    manifest.validate_exact_membership()
+    payload = manifest.to_dict()
+    encoded = json.dumps(payload, sort_keys=True)
+    for forbidden in (
+        "source_manifest_file_sha256",
+        "source_manifest_fingerprint",
+        "sealed_dataset_fingerprint",
+        "count",
+        "action",
+    ):
+        assert forbidden not in encoded
+
+    path = tmp_path / "pose-inputs.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    loaded = load_pose_input_manifest(path, validate_exact=True)
+    assert loaded == manifest
+    privileged_payload = dict(payload)
+    privileged_payload["source_manifest_file_sha256"] = "a" * 64
+    path.write_text(json.dumps(privileged_payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="fields mismatch"):
+        load_pose_input_manifest(path, validate_exact=False)
+    moved = PoseInputManifest(
+        protocol=manifest.protocol,
+        split=manifest.split,
+        records=tuple(
+            UnlabeledVideoRecord(
+                video_id=record.video_id,
+                video_path=f"portable-videos/{record.video_id}.avi",
+                video_sha256=record.video_sha256,
+            )
+            for record in records
+        ),
+    )
+    assert moved.fingerprint != manifest.fingerprint
+    with pytest.raises(ValueError, match="must be relative"):
+        PoseInputManifest(
+            protocol=manifest.protocol,
+            split=manifest.split,
+            records=tuple(
+                UnlabeledVideoRecord(
+                    video_id=record.video_id,
+                    video_path=f"D:/machine-root/{record.video_id}.avi",
+                    video_sha256=record.video_sha256,
+                )
+                for record in records
+            ),
+        )
+
+
+def test_pose_input_manifest_rejects_noncanonical_test_membership() -> None:
+    record = UnlabeledVideoRecord(
+        video_id="v_BenchPress_g01_c01",
+        video_path="video.avi",
+        video_sha256="a" * 64,
+    )
+    manifest = PoseInputManifest(
+        protocol="ucfrep_526",
+        split="test",
+        records=(record,),
+    )
+    with pytest.raises(ValueError, match="exactly"):
+        manifest.validate_exact_membership()
+
+
+def test_pose_input_identity_commitment_is_sorted_and_path_free() -> None:
+    records = (
+        UnlabeledVideoRecord("video-b", "root-b/video.avi", "b" * 64),
+        UnlabeledVideoRecord("video-a", "root-a/video.avi", "a" * 64),
+    )
+    moved_and_reordered = (
+        UnlabeledVideoRecord("video-a", "moved/a.avi", "a" * 64),
+        UnlabeledVideoRecord("video-b", "moved/b.avi", "b" * 64),
+    )
+    identity = pose_input_identity_sha256(records)
+    assert identity == pose_input_identity_sha256(moved_and_reordered)
+    commitment = PoseInputCommitment(
+        protocol="ucfrep_526",
+        split="test",
+        record_total=2,
+        identity_sha256=identity,
+        sidecar_sha256="c" * 64,
+        sidecar_fingerprint="d" * 64,
+    )
+    encoded = json.dumps(commitment.to_dict(), sort_keys=True)
+    assert "root-a" not in encoded
+    assert "moved" not in encoded
 
 
 def test_exact_standard_protocol_split_validation(

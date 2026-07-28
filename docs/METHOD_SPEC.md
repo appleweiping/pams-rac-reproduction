@@ -35,6 +35,15 @@ period estimation and inference.
 Fully invalid sequences are guarded before attention to avoid all-masked
 softmax NaNs, then returned as exact zeros.
 
+The frozen configuration keeps `model.input_projection_scale: none`, which
+is bitwise compatible with the original implementation. The separately
+fingerprinted
+[`pams_pe_scale_v2`](../configs/experiments/pams_pe_scale_v2.yaml)
+diagnostic instead multiplies the linear projection by `sqrt(model_dim)`
+before adding absolute positions. This is an inferred anti-shortcut repair,
+not an author-disclosed setting, and it cannot enter the frozen sealed-test
+table.
+
 ## Stop-gradient period estimate
 
 The paper says the period is estimated by applying FFT to an autocorrelation

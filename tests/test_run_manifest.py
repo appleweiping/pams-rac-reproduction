@@ -174,6 +174,26 @@ def test_schema_v3_artifact_locator_survives_moving_the_receipt_tree(
     validate_artifact_receipt(resolved, moved_record)
 
 
+def test_completion_rejects_artifact_outside_trusted_package_root(tmp_path: Path) -> None:
+    package_root = tmp_path / "run"
+    manifests = package_root / "manifests"
+    manifests.mkdir(parents=True)
+    started = _create_started(package_root)
+    started_path = write_manifest_exclusive(
+        started,
+        manifests / f"{started.run_id}.started.json",
+    )
+    external = tmp_path / "canonical-registry" / "attempt.json"
+    external.parent.mkdir()
+    external.write_bytes(b"external")
+
+    with pytest.raises(ValueError, match="outside the trusted receipt artifact root"):
+        create_completed_receipt(
+            started_path,
+            artifacts={"sealed_attempt_receipt": external},
+        )
+
+
 def test_schema_v2_absolute_path_requires_safe_migration_remap(
     tmp_path: Path,
 ) -> None:

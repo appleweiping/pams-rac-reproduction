@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import os
+import stat
 import sys
 import tempfile
 from dataclasses import asdict
@@ -20,13 +21,18 @@ from pams.baselines import BaselineUnavailableError, create_baseline, list_basel
 from pams.config import PAMSConfig, load_config
 from pams.data import (
     PoseCacheSetSnapshot,
+    PoseInputCommitment,
+    PoseInputManifest,
     TrainingPoseDataset,
     UCFRepManifest,
     UnlabeledVideoRecord,
     assert_split_disjoint,
     load_pose_cache,
     load_pose_cache_set,
+    load_pose_input_commitment,
+    load_pose_input_manifest,
     load_ucfrep_manifest,
+    pose_input_identity_sha256,
     save_ucfrep_manifest,
     split_ucfrep_pose_train_dev,
     split_ucfrep_train_dev,
@@ -54,6 +60,10 @@ baseline_app = typer.Typer(
 )
 report_app = typer.Typer(help="Compute frozen RAC metrics from predictions.", no_args_is_help=True)
 synthetic_app = typer.Typer(help="Run deterministic synthetic diagnostics.", no_args_is_help=True)
+diagnostic_app = typer.Typer(
+    help="Run explicitly inferred, label-free implementation diagnostics.",
+    no_args_is_help=True,
+)
 
 _FROZEN_PAMS_CHECKPOINT_METHODS_BY_PROTOCOL: dict[
     str,
@@ -138,6 +148,7 @@ app.add_typer(evaluate_app, name="evaluate")
 app.add_typer(baseline_app, name="baseline")
 app.add_typer(report_app, name="report")
 app.add_typer(synthetic_app, name="synthetic")
+app.add_typer(diagnostic_app, name="diagnostic")
 
 
 def _emit(payload: Any) -> None:
@@ -231,7 +242,7 @@ def _copy_file_exclusive(
     *,
     expected_sha256: str,
 ) -> None:
-    """Copy one immutable resume input without overwriting either lineage."""
+    """Copy one immutable input without overwriting either lineage."""
 
     if source.resolve() == destination.resolve():
         raise ValueError("resume input and output paths must be different")
@@ -282,6 +293,213 @@ def _copy_file_exclusive(
         except OSError:
             pass
         raise
+
+
+def _validate_reusable_receipt_snapshot(
+    destination: Path,
+    *,
+    expected_sha256: str,
+    expected_bytes: int,
+) -> None:
+    """Accept an already-published snapshot only when its identity is exact."""
+
+    before = destination.lstat()
+    if stat.S_ISLNK(before.st_mode) or not stat.S_ISREG(before.st_mode):
+        raise FileExistsError(
+            "receipt artifact snapshot already exists but is not a regular "
+            f"non-symlink file: {destination}"
+        )
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    descriptor = os.open(destination, flags)
+    digest = hashlib.sha256()
+    byte_count = 0
+    try:
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode):
+            raise FileExistsError(
+                f"receipt artifact snapshot is not a regular file: {destination}"
+            )
+        with os.fdopen(descriptor, "rb") as handle:
+            descriptor = -1
+            while chunk := handle.read(1024 * 1024):
+                digest.update(chunk)
+                byte_count += len(chunk)
+            closed = os.fstat(handle.fileno())
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+    after = destination.lstat()
+    stable_fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns")
+    if any(
+        getattr(before, field) != getattr(opened, field)
+        or getattr(opened, field) != getattr(closed, field)
+        or getattr(closed, field) != getattr(after, field)
+        for field in stable_fields
+    ):
+        raise RuntimeError(
+            f"receipt artifact snapshot changed while it was verified: {destination}"
+        )
+    if (
+        byte_count != expected_bytes
+        or after.st_size != expected_bytes
+        or digest.hexdigest() != expected_sha256
+    ):
+        raise FileExistsError(
+            "receipt artifact snapshot already exists with different bytes: "
+            f"{destination}"
+        )
+
+
+def _copy_receipt_snapshot_atomic(
+    source: Path,
+    destination: Path,
+    *,
+    expected_sha256: str,
+) -> None:
+    """Copy through a same-directory temporary and publish without replacement."""
+
+    durable_mkdir(destination.parent)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{destination.name}.",
+        suffix=".tmp",
+        dir=destination.parent,
+    )
+    temporary = Path(temporary_name)
+    digest = hashlib.sha256()
+    byte_count = 0
+    try:
+        before = source.stat()
+        if not source.is_file():
+            raise FileNotFoundError(
+                f"receipt artifact source is not a regular file: {source}"
+            )
+        with source.open("rb") as input_handle:
+            opened = os.fstat(input_handle.fileno())
+            with os.fdopen(descriptor, "wb") as output_handle:
+                descriptor = -1
+                while chunk := input_handle.read(1024 * 1024):
+                    digest.update(chunk)
+                    byte_count += len(chunk)
+                    output_handle.write(chunk)
+                closed = os.fstat(input_handle.fileno())
+                output_handle.flush()
+                os.fsync(output_handle.fileno())
+        after = source.stat()
+        stable_fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns")
+        if any(
+            getattr(before, field) != getattr(opened, field)
+            or getattr(opened, field) != getattr(closed, field)
+            or getattr(closed, field) != getattr(after, field)
+            for field in stable_fields
+        ):
+            raise RuntimeError(
+                f"receipt artifact changed while it was copied: {source}"
+            )
+        observed_sha256 = digest.hexdigest()
+        if byte_count != before.st_size or observed_sha256 != expected_sha256:
+            raise RuntimeError(
+                f"receipt artifact hash changed before snapshot: {source}"
+            )
+        try:
+            os.link(temporary, destination, follow_symlinks=False)
+        except FileExistsError:
+            _validate_reusable_receipt_snapshot(
+                destination,
+                expected_sha256=expected_sha256,
+                expected_bytes=byte_count,
+            )
+        else:
+            fsync_directory(destination.parent)
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+        else:
+            fsync_directory(destination.parent)
+
+
+def _durable_receipt_snapshot_directory(path: Path, *, package_root: Path) -> None:
+    """Create one snapshot directory while rejecting symlinked components."""
+
+    try:
+        relative = path.relative_to(package_root)
+    except ValueError as exc:
+        raise ValueError("receipt artifact snapshot directory escapes package root") from exc
+    current = package_root
+    for part in relative.parts:
+        current /= part
+        try:
+            existing = current.lstat()
+        except FileNotFoundError:
+            durable_mkdir(current)
+            existing = current.lstat()
+        if stat.S_ISLNK(existing.st_mode) or not stat.S_ISDIR(existing.st_mode):
+            raise ValueError(
+                "receipt artifact snapshot path contains a non-directory or "
+                f"symlink component: {current}"
+            )
+    try:
+        path.resolve().relative_to(package_root)
+    except ValueError as exc:
+        raise ValueError("receipt artifact snapshot directory escapes package root") from exc
+
+
+def _materialize_portable_receipt_artifacts(
+    started_manifest_path: Path,
+    *,
+    artifacts: dict[str, Path],
+    expected_artifact_sha256: dict[str, str],
+) -> dict[str, Path]:
+    """Snapshot external artifacts into the self-contained run package.
+
+    Schema-v3 locators are confined to the package rooted above ``manifests``.
+    Training inputs, upstream checkpoints, and the canonical sealed-attempt
+    registry intentionally live outside that tree while a command runs. At the
+    terminal boundary, copy only those external files while enforcing the
+    SHA-256 values captured when they were consumed.
+    """
+
+    if set(artifacts) != set(expected_artifact_sha256):
+        raise ValueError("expected artifact SHA-256 roles must exactly match artifact roles")
+    receipt_directory = started_manifest_path.resolve().parent
+    package_root = (
+        receipt_directory.parent
+        if receipt_directory.name == "manifests"
+        else receipt_directory
+    )
+    started_receipt_sha256 = _sha256_file(started_manifest_path)
+    snapshot_directory = (
+        package_root
+        / "inputs"
+        / "receipt-artifacts"
+        / started_receipt_sha256
+    )
+    portable: dict[str, Path] = {}
+    for role, raw_path in sorted(artifacts.items()):
+        source = raw_path.resolve()
+        try:
+            source.relative_to(package_root)
+        except ValueError:
+            _durable_receipt_snapshot_directory(
+                snapshot_directory,
+                package_root=package_root,
+            )
+            role_digest = hashlib.sha256(role.encode("utf-8")).hexdigest()
+            destination = snapshot_directory / f"{role_digest}.artifact"
+            _copy_receipt_snapshot_atomic(
+                source,
+                destination,
+                expected_sha256=expected_artifact_sha256[role],
+            )
+            portable[role] = destination
+        else:
+            portable[role] = source
+    return portable
 
 
 def _load_manifest(path: Path, *, protocol: str | None, exact: bool) -> UCFRepManifest:
@@ -525,9 +743,14 @@ def _complete_cli_run_manifest(
 
     from pams.run_manifest import create_completed_receipt, write_manifest_exclusive
 
-    completed = create_completed_receipt(
+    portable_artifacts = _materialize_portable_receipt_artifacts(
         started_manifest_path,
         artifacts=artifacts,
+        expected_artifact_sha256=expected_artifact_sha256,
+    )
+    completed = create_completed_receipt(
+        started_manifest_path,
+        artifacts=portable_artifacts,
         expected_artifact_sha256=expected_artifact_sha256,
         metrics=metrics,
     )
@@ -757,6 +980,172 @@ def data_prepare_ucfrep(
     )
 
 
+@data_app.command("pose-inputs")
+def data_pose_inputs(
+    manifest_path: Annotated[Path, typer.Argument(exists=True, dir_okay=False, readable=True)],
+    output: Annotated[Path, typer.Option("--output", "-o", dir_okay=False)],
+    split: Annotated[str, typer.Option("--split")] = "test",
+    video_root: Annotated[
+        Path | None,
+        typer.Option(
+            "--video-root",
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="Root used to encode every source video as a portable relative locator.",
+        ),
+    ] = None,
+    commitment_output: Annotated[
+        Path | None,
+        typer.Option(
+            "--commitment-output",
+            dir_okay=False,
+            help="Independent label-free receipt; defaults beside --output.",
+        ),
+    ] = None,
+    overwrite: Annotated[bool, typer.Option("--overwrite")] = False,
+) -> None:
+    """Compile one exact count-free/action-field-free pose input manifest."""
+
+    try:
+        if output.suffix.lower() != ".json":
+            raise ValueError("pose-input output path must end in .json")
+        commitment_path = commitment_output or output.with_name(
+            f"{output.stem}.commitment.json"
+        )
+        if commitment_path.suffix.lower() != ".json":
+            raise ValueError("pose-input commitment output path must end in .json")
+        resolved_manifest_path = manifest_path.resolve(strict=True)
+        resolved_output = output.resolve(strict=False)
+        resolved_commitment = commitment_path.resolve(strict=False)
+        if resolved_output == resolved_manifest_path or (
+            output.exists() and os.path.samefile(output, manifest_path)
+        ):
+            raise ValueError("pose-input output must not overwrite the source manifest")
+        if resolved_commitment in {resolved_manifest_path, resolved_output} or (
+            commitment_path.exists()
+            and (
+                os.path.samefile(commitment_path, manifest_path)
+                or (output.exists() and os.path.samefile(commitment_path, output))
+            )
+        ):
+            raise ValueError(
+                "pose-input commitment must be distinct from the source manifest and sidecar"
+            )
+        if output.exists() and not overwrite:
+            raise FileExistsError(f"refusing to overwrite existing file: {output}")
+        if commitment_path.exists() and not overwrite:
+            raise FileExistsError(
+                f"refusing to overwrite existing file: {commitment_path}"
+            )
+        source_manifest_file_sha256 = _sha256_file(manifest_path)
+        manifest = load_ucfrep_manifest(manifest_path, validate_exact=False)
+        _validate_experiment_split(manifest)
+        selected_split = split.strip().lower()
+        if selected_split not in {"train", "dev", "test"}:
+            raise ValueError("pose-input split must be train, dev, or test")
+        records = manifest.records_for(selected_split)
+        if not records:
+            raise ValueError(f"manifest contains no {selected_split!r} records")
+        source_root = manifest_path.resolve().parent
+        resolved_video_root = (
+            video_root.resolve(strict=True) if video_root is not None else source_root
+        )
+        unlabeled_records: list[UnlabeledVideoRecord] = []
+        for record in records:
+            if record.video_sha256 is None:
+                raise ValueError(
+                    f"pose input {record.video_id!r} is missing source-video SHA-256"
+                )
+            raw_video_path = Path(record.video_path)
+            resolved_video_path = (
+                raw_video_path
+                if raw_video_path.is_absolute()
+                else source_root / raw_video_path
+            ).resolve(strict=True)
+            try:
+                portable_path = resolved_video_path.relative_to(
+                    resolved_video_root
+                ).as_posix()
+            except ValueError:
+                raise ValueError(
+                    f"pose input {record.video_id!r} is outside --video-root; "
+                    "choose a common portable video root"
+                ) from None
+            if resolved_output == resolved_video_path or (
+                output.exists() and os.path.samefile(output, resolved_video_path)
+            ):
+                raise ValueError(
+                    f"pose-input output aliases selected video {record.video_id!r}"
+                )
+            if resolved_commitment == resolved_video_path or (
+                commitment_path.exists()
+                and os.path.samefile(commitment_path, resolved_video_path)
+            ):
+                raise ValueError(
+                    f"pose-input commitment aliases selected video {record.video_id!r}"
+                )
+            unlabeled_records.append(
+                UnlabeledVideoRecord(
+                    video_id=record.video_id,
+                    video_path=portable_path,
+                    video_sha256=record.video_sha256,
+                )
+            )
+        pose_inputs = PoseInputManifest(
+            protocol=manifest.protocol,
+            split=selected_split,
+            records=tuple(unlabeled_records),
+        )
+        pose_inputs.validate_exact_membership()
+        _write_json_exclusive(
+            output,
+            pose_inputs.to_dict(),
+            overwrite=overwrite,
+        )
+        persisted = load_pose_input_manifest(output, validate_exact=True)
+        if persisted != pose_inputs:
+            raise RuntimeError("persisted pose-input manifest changed during serialization")
+        output_sha256 = _sha256_file(output)
+        commitment = PoseInputCommitment(
+            protocol=pose_inputs.protocol,
+            split=pose_inputs.split,
+            record_total=len(pose_inputs.records),
+            identity_sha256=pose_input_identity_sha256(pose_inputs.records),
+            sidecar_sha256=output_sha256,
+            sidecar_fingerprint=pose_inputs.fingerprint,
+        )
+        _write_json_exclusive(
+            commitment_path,
+            commitment.to_dict(),
+            overwrite=overwrite,
+        )
+        persisted_commitment = load_pose_input_commitment(commitment_path)
+        if persisted_commitment != commitment:
+            raise RuntimeError("persisted pose-input commitment changed during serialization")
+        if _sha256_file(manifest_path) != source_manifest_file_sha256:
+            raise RuntimeError("source dataset manifest changed while pose inputs were compiled")
+        commitment_sha256 = _sha256_file(commitment_path)
+    except (OSError, RuntimeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(
+        {
+            "output": str(output.resolve()),
+            "output_sha256": output_sha256,
+            "commitment": str(commitment_path.resolve()),
+            "commitment_sha256": commitment_sha256,
+            "identity_sha256": commitment.identity_sha256,
+            "manifest_type": pose_inputs.manifest_type,
+            "protocol": pose_inputs.protocol,
+            "split": pose_inputs.split,
+            "records": len(pose_inputs.records),
+            "fingerprint": pose_inputs.fingerprint,
+            "contains_count_field": False,
+            "contains_action_field": False,
+        }
+    )
+
+
 @data_app.command("validate-run")
 def data_validate_run(
     path: Annotated[Path, typer.Argument(exists=True, dir_okay=False, readable=True)],
@@ -902,6 +1291,36 @@ def pose_extract(
         "configs/pams.yaml"
     ),
     split: Annotated[str, typer.Option("--split")] = "all",
+    label_free_manifest: Annotated[
+        bool,
+        typer.Option(
+            "--label-free-manifest",
+            help=(
+                "Require a pams data pose-inputs JSON file; the pose process then "
+                "never parses count or action fields."
+            ),
+        ),
+    ] = False,
+    video_root: Annotated[
+        Path | None,
+        typer.Option(
+            "--video-root",
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="Remap portable label-free video locators beneath this root.",
+        ),
+    ] = None,
+    input_commitment: Annotated[
+        Path | None,
+        typer.Option(
+            "--input-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Independent pose-input receipt; defaults beside the sidecar.",
+        ),
+    ] = None,
     limit: Annotated[int | None, typer.Option("--limit", min=1)] = None,
     overwrite: Annotated[bool, typer.Option("--overwrite")] = False,
     skip_existing: Annotated[
@@ -931,27 +1350,89 @@ def pose_extract(
         config = load_config(config_path)
         if overwrite and skip_existing:
             raise ValueError("--overwrite and --skip-existing are mutually exclusive")
-        manifest = load_ucfrep_manifest(manifest_path, validate_exact=False)
-        _assert_protocol_match(config, manifest)
-        _validate_experiment_split(manifest)
-        records = manifest.records if split == "all" else manifest.records_for(split)
+        if label_free_manifest:
+            pose_inputs = load_pose_input_manifest(manifest_path, validate_exact=True)
+            commitment_path = input_commitment or manifest_path.with_name(
+                f"{manifest_path.stem}.commitment.json"
+            )
+            commitment = load_pose_input_commitment(commitment_path)
+            sidecar_sha256 = _sha256_file(manifest_path)
+            input_file_sha256 = sidecar_sha256
+            identity_sha256 = pose_input_identity_sha256(pose_inputs.records)
+            if (
+                commitment.protocol != pose_inputs.protocol
+                or commitment.split != pose_inputs.split
+                or commitment.record_total != len(pose_inputs.records)
+                or commitment.identity_sha256 != identity_sha256
+                or commitment.sidecar_sha256 != sidecar_sha256
+                or commitment.sidecar_fingerprint != pose_inputs.fingerprint
+            ):
+                raise ValueError(
+                    "pose-input commitment does not bind this exact label-free sidecar"
+                )
+            if config.protocol != pose_inputs.protocol:
+                raise ValueError(
+                    f"configuration protocol {config.protocol!r} does not match "
+                    f"pose-input protocol {pose_inputs.protocol!r}"
+                )
+            requested_split = split.strip().lower()
+            if requested_split not in {"all", pose_inputs.split}:
+                raise ValueError(
+                    f"pose-input manifest is scoped to {pose_inputs.split!r}, "
+                    f"not {split!r}"
+                )
+            records: tuple[UnlabeledVideoRecord | Any, ...] = pose_inputs.records
+            input_manifest_fingerprint = pose_inputs.fingerprint
+            input_kind = "label_free_sidecar"
+            input_split = pose_inputs.split
+            sidecar_fingerprint: str | None = pose_inputs.fingerprint
+            commitment_file_sha256: str | None = _sha256_file(commitment_path)
+            commitment_fingerprint: str | None = commitment.fingerprint
+        else:
+            if video_root is not None or input_commitment is not None:
+                raise ValueError(
+                    "--video-root and --input-commitment require --label-free-manifest"
+                )
+            manifest = load_ucfrep_manifest(manifest_path, validate_exact=False)
+            input_file_sha256 = _sha256_file(manifest_path)
+            _assert_protocol_match(config, manifest)
+            _validate_experiment_split(manifest)
+            records = manifest.records if split == "all" else manifest.records_for(split)
+            input_manifest_fingerprint = manifest.fingerprint
+            input_kind = "labelled_manifest"
+            input_split = split.strip().lower()
+            if input_split == "all":
+                input_split = "all"
+            sidecar_sha256 = None
+            sidecar_fingerprint = None
+            commitment_file_sha256 = None
+            commitment_fingerprint = None
         if limit is not None:
             records = records[:limit]
         if not records:
             raise ValueError(f"no records selected by split {split!r}")
-        root = manifest_path.resolve().parent
-        videos = tuple(
-            (
-                record.video_id,
-                (
-                    Path(record.video_path)
-                    if Path(record.video_path).is_absolute()
-                    else root / record.video_path
-                ),
-                record.video_sha256,
-            )
-            for record in records
+        root = (
+            video_root.resolve(strict=True)
+            if label_free_manifest and video_root is not None
+            else manifest_path.resolve().parent
         )
+        video_rows: list[tuple[str, Path, str | None]] = []
+        for record in records:
+            locator = Path(record.video_path)
+            resolved_video = (
+                locator if locator.is_absolute() else root / locator
+            ).resolve(strict=True)
+            if label_free_manifest:
+                try:
+                    resolved_video.relative_to(root)
+                except ValueError:
+                    raise ValueError(
+                        f"pose-input locator for {record.video_id!r} escapes --video-root"
+                    ) from None
+            video_rows.append(
+                (record.video_id, resolved_video, record.video_sha256)
+            )
+        videos = tuple(video_rows)
         summaries, failures = extract_many_with_failures(
             videos,
             cache_dir=cache_dir,
@@ -969,11 +1450,55 @@ def pose_extract(
             skip_existing=skip_existing,
         )
         skipped = sum(summary.skipped for summary in summaries)
+        successful_ids = {summary.video_id for summary in summaries}
+        successful_records = tuple(
+            record for record in records if record.video_id in successful_ids
+        )
+        if successful_records:
+            _, successful_snapshot = load_pose_cache_set(
+                successful_records,
+                cache_dir=cache_dir,
+                pose_fingerprint=config.pose_fingerprint,
+                materialize_sequences=False,
+            )
+            successful_cache_snapshot: dict[str, Any] | None = (
+                successful_snapshot.to_dict()
+            )
+        else:
+            successful_cache_snapshot = None
+        selected_identity_sha256 = pose_input_identity_sha256(
+            tuple(
+                UnlabeledVideoRecord(
+                    video_id=record.video_id,
+                    video_path=str(record.video_path),
+                    video_sha256=record.video_sha256,
+                )
+                for record in records
+            )
+        )
+        if _sha256_file(manifest_path) != input_file_sha256:
+            raise RuntimeError("input manifest changed during pose extraction")
+        if label_free_manifest and (
+            _sha256_file(commitment_path) != commitment_file_sha256
+        ):
+            raise RuntimeError("pose-input commitment changed during pose extraction")
         ledger_path = failure_ledger or cache_dir / "failures.json"
         _write_json_exclusive(
             ledger_path,
             {
-                "schema_version": 1,
+                "schema_version": 2,
+                "input_kind": input_kind,
+                "protocol": config.protocol,
+                "split": input_split,
+                "input_file_sha256": input_file_sha256,
+                "input_fingerprint": input_manifest_fingerprint,
+                "sidecar_sha256": sidecar_sha256,
+                "sidecar_fingerprint": sidecar_fingerprint,
+                "commitment_file_sha256": commitment_file_sha256,
+                "commitment_fingerprint": commitment_fingerprint,
+                "identity_sha256": selected_identity_sha256,
+                "pose_fingerprint": config.pose_fingerprint,
+                "successful_cache_snapshot": successful_cache_snapshot,
                 "selected": len(records),
                 "completed": len(summaries),
                 "extracted": len(summaries) - skipped,
@@ -991,6 +1516,14 @@ def pose_extract(
         {
             "pose_model": config.pose.model_id,
             "pose_fingerprint": config.pose_fingerprint,
+            "label_free_manifest": label_free_manifest,
+            "input_manifest_fingerprint": input_manifest_fingerprint,
+            "identity_sha256": selected_identity_sha256,
+            "successful_cache_snapshot": (
+                None
+                if successful_cache_snapshot is None
+                else successful_cache_snapshot["fingerprint"]
+            ),
             "selected": len(records),
             "completed": len(summaries),
             "extracted": len(summaries) - skipped,
@@ -1927,6 +2460,57 @@ def evaluate_checkpoint_command(
     except ImportError as exc:
         _abort(f"checkpoint evaluation module is unavailable: {exc}")
     except (OSError, RuntimeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(payload)
+
+
+@diagnostic_app.command("encoder-shortcut-inferred")
+def encoder_shortcut_inferred_diagnostic(
+    checkpoint_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    config_path: Annotated[
+        Path,
+        typer.Option("--config", exists=True, dir_okay=False, readable=True),
+    ],
+    pose_cache_dir: Annotated[
+        Path,
+        typer.Option("--pose-cache-dir", exists=True, file_okay=False, readable=True),
+    ],
+    sample_size: Annotated[
+        int,
+        typer.Option(
+            "--sample-size",
+            min=0,
+            help="Seeded training-video sample; 0 selects the full checkpoint-bound set.",
+        ),
+    ] = 64,
+    seed: Annotated[int, typer.Option("--seed")] = 2026,
+    device: Annotated[str, typer.Option("--device")] = "auto",
+    batch_size: Annotated[int, typer.Option("--batch-size", min=1)] = 8,
+    output: Annotated[Path | None, typer.Option("--output", "-o", dir_okay=False)] = None,
+    overwrite: Annotated[bool, typer.Option("--overwrite")] = False,
+) -> None:
+    """Run the read-only, label-free inferred encoder shortcut audit."""
+
+    try:
+        from pams.diagnostics import run_encoder_shortcut_diagnostic
+
+        config = load_config(config_path)
+        payload = run_encoder_shortcut_diagnostic(
+            checkpoint_path,
+            config,
+            config_path=config_path,
+            pose_cache_dir=pose_cache_dir,
+            sample_size=sample_size,
+            seed=seed,
+            device=device,
+            batch_size=batch_size,
+        )
+        if output is not None:
+            _write_json_exclusive(output, payload, overwrite=overwrite)
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
         _abort(str(exc))
     _emit(payload)
 

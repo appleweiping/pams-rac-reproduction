@@ -81,6 +81,13 @@ or mismatching root. Both build and launch require a clean checkout. The
 launcher verifies the image's source-revision label and a deterministic hash
 of the Dockerfile/lock/wrapper inputs against that checkout, then injects the
 immutable Docker image ID and both labels into every run manifest.
+Every invocation also holds a per-device project `flock`. GPU optimizer and
+evaluation commands must add `--wait-for-idle-gpu`; this requires three
+consecutive 30-second samples below the frozen memory, utilization, and
+heavy-process thresholds, and exits 75 after 12 hours. This project-local
+lock serializes PAMS launchers only. The idle samples reduce accidental
+contention with unrelated jobs, but they are not a server-wide scheduler and
+cannot prevent another user from starting work after the final sample.
 `--sealed` disables container network access and forces model-hub offline
 mode. Record `docker image inspect`, `pip freeze`, `pip check`, the driver,
 and GPU properties in the environment artifact.
@@ -117,9 +124,10 @@ bash scripts/server/run_gpu1.sh --sealed -- \
   pams data split "$PAMS_RUNS_DIR/manifests/ucfrep_526.json" \
     --output "$PAMS_RUNS_DIR/manifests/ucfrep_337_84_105.json"
 bash scripts/server/run_gpu1.sh --sealed -- \
-  pams pose extract "$PAMS_RUNS_DIR/manifests/ucfrep_337_84_105.json" \
+  pams pose extract "$PAMS_RUNS_DIR/manifests/ucfrep_526.json" \
     "$PAMS_POSE_CACHE_DIR" --config configs/pams.yaml \
-    --skip-existing --failure-ledger "$PAMS_RUNS_DIR/pose-failures.json"
+    --split train --skip-existing \
+    --failure-ledger "$PAMS_RUNS_DIR/pose-train-failures.json"
 ```
 
 Any decode/pose failure is recorded. A run lacking all 105 sealed predictions
@@ -170,22 +178,34 @@ mismatches, malformed NPZ arrays, and non-finite values. It emits only a
 path-free aggregate JSON summary.
 
 After that audit passes, exercise one complete physical
-batch/KMeans/PAMS-TCC epoch with the dedicated smoke configuration:
+batch/KMeans/PAMS-TCC epoch and one real-cache inferred-SSHead epoch with the
+dedicated two-stage smoke configuration:
 
 ```bash
-bash scripts/server/run_gpu1.sh --sealed -- \
+bash scripts/server/run_gpu1.sh --sealed --wait-for-idle-gpu -- \
   pams train encoder \
     /pams/runs/manifests/ucfrep_526.json \
     /pams/pose-cache \
-    /pams/checkpoints/smoke/encoder-1epoch \
-    --config configs/smoke/pams_encoder_1epoch.yaml \
+    /pams/checkpoints/smoke/two-stage-1epoch/encoder \
+    --config configs/smoke/pams_two_stage_1epoch.yaml \
     --device cuda:0 --microbatch-size 32
+
+bash scripts/server/run_gpu1.sh --sealed --wait-for-idle-gpu -- \
+  pams train sshead \
+    /pams/checkpoints/smoke/two-stage-1epoch/encoder/encoder.pt \
+    /pams/runs/manifests/ucfrep_526.json \
+    /pams/pose-cache \
+    /pams/checkpoints/smoke/two-stage-1epoch/sshead \
+    --encoder-progress \
+      /pams/checkpoints/smoke/two-stage-1epoch/encoder/logs/encoder.jsonl \
+    --config configs/smoke/pams_two_stage_1epoch.yaml \
+    --device cuda:0 --microbatch-size 8
 ```
 
 Inside the one-GPU container, `cuda:0` is the host GPU selected by the
-launcher. The smoke config differs from `configs/pams.yaml` only in
-`training.epochs=1`; its checkpoint is `smoke_only` and cannot enter any
-benchmark table.
+launcher. Both checkpoints are `smoke_only` and cannot enter any benchmark
+table. Validate both completion receipts without remaps and retain their
+terminal progress/checkpoint hashes before formal training.
 
 ## Training order
 
@@ -202,6 +222,14 @@ An interrupted run resumes into a new output directory. Pass the prior,
 unchanged files with `--resume`, `--resume-checkpoint <old.pt>`, and
 `--resume-progress <old.jsonl>`; never point a resumed run at an output
 directory referenced by an existing completion receipt.
+
+At completion, every input or registry receipt outside the run directory is
+copied, with its already-captured SHA-256 enforced, into
+`inputs/receipt-artifacts/`. The schema-v3 completion receipt binds those
+portable snapshots instead of host-specific paths. Moving the complete run
+tree and running `pams data validate-run` therefore requires no artifact
+remaps; the shared sealed-attempt registry remains the authoritative
+one-attempt ledger.
 
 After all assumptions and checkpoints are frozen, retrain on all 421 training
 videos and permit the evaluator one sealed 105-video pass per seed. With the
@@ -252,7 +280,7 @@ for seed in 42 2026 3407; do
   encoder_run="/pams/checkpoints/ucfrep_526/seed-${seed}/encoder150"
   sshead_run="/pams/checkpoints/ucfrep_526/seed-${seed}/sshead30"
 
-  bash scripts/server/run_gpu1.sh --sealed -- \
+  bash scripts/server/run_gpu1.sh --sealed --wait-for-idle-gpu -- \
     pams train encoder \
       "$PAMS_FINAL_MANIFEST" \
       "$PAMS_FINAL_POSE_CACHE" \
@@ -263,7 +291,7 @@ for seed in 42 2026 3407; do
       --microbatch-size 32 \
       --include-dev
 
-  bash scripts/server/run_gpu1.sh --sealed -- \
+  bash scripts/server/run_gpu1.sh --sealed --wait-for-idle-gpu -- \
     pams train sshead \
       "$encoder_run/encoder.pt" \
       "$PAMS_FINAL_MANIFEST" \
@@ -278,9 +306,52 @@ for seed in 42 2026 3407; do
 done
 ```
 
-Do not run the next block until all six terminal checkpoints, progress logs,
-hashes, and completion receipts have been reviewed and frozen. Each command
-below consumes the sole legal sealed attempt for that method/seed pair.
+Do not prepare the sealed-test pose inputs until all six terminal checkpoints,
+progress logs, hashes, and completion receipts have been reviewed and frozen.
+The pose process consumes only the count-free/action-field-free sidecar:
+
+```bash
+set -euo pipefail
+
+readonly PAMS_TEST_POSE_INPUTS=/pams/runs/manifests/ucfrep_526_test_pose_inputs.json
+readonly PAMS_TEST_POSE_LEDGER=/pams/runs/pose-test-identity-ledger.json
+
+bash scripts/server/run_gpu1.sh --sealed -- \
+  pams pose extract \
+    "$PAMS_TEST_POSE_INPUTS" \
+    "$PAMS_FINAL_POSE_CACHE" \
+    --config configs/pams.yaml \
+    --label-free-manifest \
+    --skip-existing \
+    --failure-ledger "$PAMS_TEST_POSE_LEDGER"
+
+# A second identity-only resume must report 105 exact skips and zero failures.
+bash scripts/server/run_gpu1.sh --sealed -- \
+  pams pose extract \
+    "$PAMS_TEST_POSE_INPUTS" \
+    "$PAMS_FINAL_POSE_CACHE" \
+    --config configs/pams.yaml \
+    --label-free-manifest \
+    --skip-existing \
+    --failure-ledger "$PAMS_TEST_POSE_LEDGER"
+
+bash scripts/server/run_gpu1.sh --sealed -- \
+  python scripts/server/audit_pose_cache.py \
+    "$PAMS_TEST_POSE_INPUTS" \
+    "$PAMS_FINAL_POSE_CACHE" \
+    configs/pams.yaml \
+    "$PAMS_TEST_POSE_LEDGER" \
+    --split test \
+    --label-free-manifest \
+    --allow-extra-caches
+```
+
+The test audit verifies all 105 source/cache hashes and reports the 421
+already-audited training caches as allowed out-of-scope extras. It never loads
+the labelled dataset manifest.
+
+Only after that audit passes may the following commands consume the sole legal
+sealed attempt for each method/seed pair.
 
 ```bash
 set -euo pipefail
@@ -292,7 +363,7 @@ for seed in 42 2026 3407; do
   literal_output="/pams/artifacts/ucfrep_526/seed-${seed}/pams-literal-test"
   sshead_output="/pams/artifacts/ucfrep_526/seed-${seed}/pams-sshead-test"
 
-  bash scripts/server/run_gpu1.sh --sealed -- \
+  bash scripts/server/run_gpu1.sh --sealed --wait-for-idle-gpu -- \
     pams evaluate checkpoint \
       "$encoder_run/encoder.pt" \
       "$PAMS_FINAL_MANIFEST" \
@@ -307,7 +378,7 @@ for seed in 42 2026 3407; do
       --method-id pams-literal \
       --sealed-attempt-registry "$PAMS_ATTEMPT_REGISTRY"
 
-  bash scripts/server/run_gpu1.sh --sealed -- \
+  bash scripts/server/run_gpu1.sh --sealed --wait-for-idle-gpu -- \
     pams evaluate checkpoint \
       "$sshead_run/sshead.pt" \
       "$PAMS_FINAL_MANIFEST" \

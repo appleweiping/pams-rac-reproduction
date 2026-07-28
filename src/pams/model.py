@@ -8,6 +8,7 @@ allowing small configurations for CPU smoke tests.
 from __future__ import annotations
 
 import math
+from typing import Literal
 
 import torch
 from torch import Tensor, nn
@@ -74,6 +75,7 @@ class PAMSEncoder(nn.Module):
         *,
         max_length: int = 4096,
         norm_first: bool = False,
+        input_projection_scale: Literal["none", "sqrt_model_dim"] = "none",
     ) -> None:
         super().__init__()
         if input_dim < 1 or model_dim < 1 or embedding_dim < 1:
@@ -84,11 +86,16 @@ class PAMSEncoder(nn.Module):
             raise ValueError("model_dim must be divisible by num_heads")
         if not 0.0 <= dropout < 1.0:
             raise ValueError("dropout must be in [0, 1)")
+        if input_projection_scale not in {"none", "sqrt_model_dim"}:
+            raise ValueError(
+                "input_projection_scale must be 'none' or 'sqrt_model_dim'"
+            )
 
         self.input_dim = input_dim
         self.model_dim = model_dim
         self.embedding_dim = embedding_dim
         self.norm_first = norm_first
+        self.input_projection_scale = input_projection_scale
 
         self.input_projection = nn.Linear(input_dim, model_dim)
         self.position_encoding = SinusoidalPositionalEncoding(model_dim, max_length)
@@ -144,6 +151,8 @@ class PAMSEncoder(nn.Module):
             attention_valid[fully_invalid, 0] = True
 
         hidden = self.input_projection(inputs)
+        if self.input_projection_scale == "sqrt_model_dim":
+            hidden = hidden * math.sqrt(self.model_dim)
         hidden = self.position_encoding(hidden)
         hidden = self.transformer(
             hidden,

@@ -302,6 +302,7 @@ def build_pams_model(config: PAMSConfig) -> PAMSModel:
         dropout=model.dropout,
         max_length=max(4096, config.data.frames),
         norm_first=model.norm_first,
+        input_projection_scale=model.input_projection_scale,
     )
     head = PeriodHead(
         embedding_dim=model.embedding_dim,

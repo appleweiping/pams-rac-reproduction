@@ -17,6 +17,8 @@ APT_MIRROR="${PAMS_APT_MIRROR:-${DEFAULT_APT_MIRROR}}"
 APT_SNAPSHOT="${PAMS_APT_SNAPSHOT:-${FROZEN_APT_SNAPSHOT}}"
 PULL_BASE="${PAMS_PULL_BASE:-1}"
 CLEAR_PROXY="${PAMS_CLEAR_PROXY:-0}"
+IMAGE_UID="${PAMS_IMAGE_UID:-1000}"
+IMAGE_GID="${PAMS_IMAGE_GID:-1000}"
 
 case "${PULL_BASE}" in
   0|1) ;;
@@ -33,6 +35,13 @@ case "${CLEAR_PROXY}" in
     exit 2
     ;;
 esac
+for identity_setting in IMAGE_UID IMAGE_GID; do
+  identity_value="${!identity_setting}"
+  if [[ ! "${identity_value}" =~ ^[0-9]+$ ]] || ((identity_value < 1)); then
+    echo "PAMS_${identity_setting} must be a positive integer" >&2
+    exit 2
+  fi
+done
 
 if [[ ! "${BASE_IMAGE}" =~ @sha256:[0-9a-f]{64}$ ]]; then
   echo "PAMS_BASE_IMAGE must be an immutable repository reference ending in @sha256:<64 lowercase hex characters>" >&2
@@ -117,8 +126,8 @@ DOCKER_BUILDKIT=1 docker build \
   --build-arg "BASE_IMAGE=${BASE_IMAGE}" \
   --build-arg "APT_MIRROR=${APT_MIRROR}" \
   --build-arg "APT_SNAPSHOT=${APT_SNAPSHOT}" \
-  --build-arg "PAMS_UID=$(id -u)" \
-  --build-arg "PAMS_GID=$(id -g)" \
+  --build-arg "PAMS_UID=${IMAGE_UID}" \
+  --build-arg "PAMS_GID=${IMAGE_GID}" \
   --label "org.opencontainers.image.revision=${revision}" \
   --label "org.opencontainers.image.pams.environment-sha256=${environment_sha256}" \
   --label "org.opencontainers.image.pams.apt-snapshot=${APT_SNAPSHOT}" \

@@ -65,6 +65,7 @@ class PoseConfig(StrictModel):
 class ModelConfig(StrictModel):
     input_dim: int = 99
     model_dim: int = 512
+    input_projection_scale: Literal["none", "sqrt_model_dim"] = "none"
     embedding_dim: int = 512
     layers: int = 4
     heads: int = 16
@@ -157,7 +158,15 @@ class PAMSConfig(StrictModel):
     def canonical_dict(self) -> dict[str, Any]:
         """Return the stable JSON-compatible representation used for hashing."""
 
-        return self.model_dump(mode="json")
+        payload = self.model_dump(mode="json")
+        model = payload["model"]
+        if model["input_projection_scale"] == "none":
+            # ``none`` is the historical behavior.  Omitting only this default
+            # from the hash payload keeps existing configs/checkpoints bound to
+            # their original fingerprint, while every opt-in scale remains an
+            # explicit, fingerprint-changing experiment choice.
+            model.pop("input_projection_scale")
+        return payload
 
     def nonseed_canonical_dict(self) -> dict[str, Any]:
         """Return the experiment specification with only the seed removed."""

@@ -9,6 +9,7 @@ from pams.data import UCFRepRecord, pose_cache_path, write_pose_cache
 from pams.types import PoseSequence
 from scripts.server.audit_pose_cache import (
     AuditError,
+    _assert_label_free_payload,
     _audit_cache_entry,
     _validate_cache_scope,
     _validate_identity_ledger,
@@ -17,7 +18,19 @@ from scripts.server.audit_pose_cache import (
 
 def _clean_identity_ledger() -> dict[str, object]:
     return {
-        "schema_version": 1,
+        "schema_version": 2,
+        "input_kind": "labelled_manifest",
+        "protocol": "ucfrep_526",
+        "split": "train",
+        "input_file_sha256": "a" * 64,
+        "input_fingerprint": "b" * 64,
+        "sidecar_sha256": None,
+        "sidecar_fingerprint": None,
+        "commitment_file_sha256": None,
+        "commitment_fingerprint": None,
+        "identity_sha256": "c" * 64,
+        "pose_fingerprint": "d" * 64,
+        "successful_cache_snapshot": {"fingerprint": "e" * 64},
         "selected": 421,
         "completed": 421,
         "extracted": 0,
@@ -30,13 +43,77 @@ def _clean_identity_ledger() -> dict[str, object]:
 def test_identity_ledger_accepts_clean_full_pool_resume() -> None:
     counts = _validate_identity_ledger(_clean_identity_ledger())
     assert counts == {
-        "schema_version": 1,
+        "schema_version": 2,
         "selected": 421,
         "completed": 421,
         "extracted": 0,
         "skipped": 421,
         "failed": 0,
     }
+
+
+def test_identity_ledger_accepts_clean_sealed_test_resume() -> None:
+    ledger = _clean_identity_ledger()
+    ledger["selected"] = 105
+    ledger["completed"] = 105
+    ledger["skipped"] = 105
+
+    counts = _validate_identity_ledger(ledger, expected_size=105)
+
+    assert counts["selected"] == 105
+    assert counts["completed"] == 105
+    assert counts["extracted"] == 0
+    assert counts["skipped"] == 105
+    assert counts["failed"] == 0
+
+
+def test_identity_ledger_rejects_legacy_unbound_schema() -> None:
+    legacy = {
+        "schema_version": 1,
+        "selected": 421,
+        "completed": 421,
+        "extracted": 0,
+        "skipped": 421,
+        "failed": 0,
+        "failures": [],
+    }
+    with pytest.raises(AuditError, match="schema_version=2"):
+        _validate_identity_ledger(legacy)
+
+
+def test_identity_ledger_rejects_binding_or_snapshot_mismatch() -> None:
+    ledger = _clean_identity_ledger()
+    with pytest.raises(AuditError, match="input_fingerprint"):
+        _validate_identity_ledger(
+            ledger,
+            expected_bindings={"input_fingerprint": "f" * 64},
+        )
+    with pytest.raises(AuditError, match="snapshot"):
+        _validate_identity_ledger(
+            ledger,
+            expected_snapshot={"fingerprint": "0" * 64},
+        )
+
+
+def test_label_free_audit_payload_rejects_privileged_label_keys() -> None:
+    _assert_label_free_payload(
+        {
+            "provenance": {
+                "manifest_file_sha256": "a" * 64,
+                "manifest_fingerprint": "b" * 64,
+            },
+            "scope": {"split": "test"},
+        }
+    )
+    for forbidden in (
+        "source_manifest_file_sha256",
+        "source_manifest_fingerprint",
+        "sealed_dataset_fingerprint",
+        "count",
+        "action",
+    ):
+        with pytest.raises(AuditError, match="privileged"):
+            _assert_label_free_payload({"nested": {forbidden: "forbidden"}})
 
 
 @pytest.mark.parametrize(
@@ -143,3 +220,5 @@ def test_cache_scope_rejects_extra_npz(tmp_path: Path) -> None:
 
     with pytest.raises(AuditError, match="1 extra"):
         _validate_cache_scope(cache_dir, {expected})
+
+    assert _validate_cache_scope(cache_dir, {expected}, allow_extra=True) == (0, 1)

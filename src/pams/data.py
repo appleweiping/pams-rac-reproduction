@@ -118,6 +118,235 @@ class UnlabeledVideoRecord:
     video_path: str
     video_sha256: str | None
 
+    def __post_init__(self) -> None:
+        video_id = str(self.video_id).strip()
+        video_path = str(self.video_path).strip()
+        if not video_id:
+            raise ValueError("video_id must be non-empty")
+        if not video_path:
+            raise ValueError("video_path must be non-empty")
+        object.__setattr__(self, "video_id", video_id)
+        object.__setattr__(self, "video_path", video_path)
+        object.__setattr__(
+            self,
+            "video_sha256",
+            _validate_sha256(self.video_sha256, "video_sha256"),
+        )
+
+    def to_dict(self) -> dict[str, str | None]:
+        return {
+            "video_id": self.video_id,
+            "video_path": self.video_path,
+            "video_sha256": self.video_sha256,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class PoseInputManifest:
+    """Count-free, action-field-free video inputs for one pose-extraction split."""
+
+    protocol: str
+    split: str
+    records: tuple[UnlabeledVideoRecord, ...]
+    schema_version: int = 2
+    manifest_type: str = "pose_inputs"
+
+    def __post_init__(self) -> None:
+        protocol = str(self.protocol).strip()
+        if protocol not in _EXPECTED_PROTOCOL_SPLITS:
+            raise ValueError(
+                f"unsupported protocol {protocol!r}; "
+                f"expected one of {sorted(_EXPECTED_PROTOCOL_SPLITS)}"
+            )
+        if self.schema_version != 2:
+            raise ValueError("only pose-input schema_version=2 is supported")
+        if self.manifest_type != "pose_inputs":
+            raise ValueError("pose-input manifest_type must be 'pose_inputs'")
+        split = _canonical_split(self.split)
+        records = tuple(self.records)
+        if not records:
+            raise ValueError("pose-input manifest must contain at least one record")
+        if not all(isinstance(record, UnlabeledVideoRecord) for record in records):
+            raise TypeError("pose-input records must all be UnlabeledVideoRecord instances")
+        identifiers = [record.video_id for record in records]
+        if len(set(identifiers)) != len(identifiers):
+            raise ValueError("pose-input video_id values must be unique")
+        normalized_paths = [
+            os.path.normcase(os.path.normpath(record.video_path)) for record in records
+        ]
+        if len(set(normalized_paths)) != len(normalized_paths):
+            raise ValueError("pose-input video_path values must be unique")
+        for record in records:
+            locator = record.video_path
+            if "\\" in locator:
+                raise ValueError("pose-input video locators must use portable '/' separators")
+            locator_path = Path(locator)
+            if locator_path.is_absolute() or locator_path.anchor:
+                raise ValueError("pose-input video locators must be relative")
+            if any(part in {"", ".", ".."} for part in locator.split("/")):
+                raise ValueError(
+                    "pose-input video locators must not contain empty, '.', or '..' segments"
+                )
+        object.__setattr__(self, "protocol", protocol)
+        object.__setattr__(self, "split", split)
+        object.__setattr__(self, "records", records)
+
+    @property
+    def fingerprint(self) -> str:
+        canonical = {
+            "schema_version": self.schema_version,
+            "manifest_type": self.manifest_type,
+            "protocol": self.protocol,
+            "split": self.split,
+            "records": [
+                {
+                    "video_id": record.video_id,
+                    "video_sha256": record.video_sha256,
+                    "video_locator": record.video_path,
+                }
+                for record in self.records
+            ],
+        }
+        encoded = json.dumps(
+            canonical,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    def validate_exact_membership(self) -> None:
+        if self.protocol != "ucfrep_526":
+            raise ValueError(
+                "exact pose-input membership is unavailable until the protocol's "
+                "official split identities are frozen"
+            )
+        expected_key_by_split_and_count = {
+            ("train", 421): "train_pool",
+            ("train", 337): "train",
+            ("dev", 84): "dev",
+            ("test", 105): "test",
+        }
+        expected_key = expected_key_by_split_and_count.get((self.split, len(self.records)))
+        if expected_key is None:
+            raise ValueError(
+                "ucfrep_526 pose inputs require exactly train=421/337, dev=84, or test=105"
+            )
+        observed_ids_sha256 = _canonical_unlabeled_id_list_sha256(self.records)
+        expected_ids_sha256 = _UCFREP_526_CANONICAL_ID_SHA256[expected_key]
+        if observed_ids_sha256 != expected_ids_sha256:
+            raise ValueError(
+                f"ucfrep_526 {self.split} pose-input IDs do not match the "
+                "preregistered list"
+            )
+        if any(record.video_sha256 is None for record in self.records):
+            raise ValueError("exact pose inputs require every source-video SHA-256")
+        for record in self.records:
+            match = _UCF101_VIDEO_ID_PATTERN.fullmatch(record.video_id)
+            if match is None:
+                raise ValueError(f"invalid canonical UCF101 video_id: {record.video_id!r}")
+            group = int(match.group("group"))
+            expected_family = "test" if 21 <= group <= 25 else "train"
+            actual_family = "test" if self.split == "test" else "train"
+            if not 1 <= group <= 25 or expected_family != actual_family:
+                raise ValueError(
+                    f"canonical source group and pose-input split disagree for "
+                    f"{record.video_id!r}"
+                )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "manifest_type": self.manifest_type,
+            "protocol": self.protocol,
+            "split": self.split,
+            "records": [record.to_dict() for record in self.records],
+        }
+
+
+def pose_input_identity_sha256(records: Iterable[UnlabeledVideoRecord]) -> str:
+    """Commit to sorted label-free source identities without paths or labels."""
+
+    normalized = tuple(sorted(tuple(records), key=lambda record: record.video_id))
+    if not normalized:
+        raise ValueError("pose-input identity commitment requires at least one record")
+    if any(record.video_sha256 is None for record in normalized):
+        raise ValueError("pose-input identity commitment requires every video SHA-256")
+    identifiers = [record.video_id for record in normalized]
+    if len(set(identifiers)) != len(identifiers):
+        raise ValueError("pose-input identity commitment video_id values must be unique")
+    encoded = json.dumps(
+        [
+            {"video_id": record.video_id, "video_sha256": record.video_sha256}
+            for record in normalized
+        ],
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class PoseInputCommitment:
+    """Independent receipt binding one sidecar file to label-free identities."""
+
+    protocol: str
+    split: str
+    record_total: int
+    identity_sha256: str
+    sidecar_sha256: str
+    sidecar_fingerprint: str
+    schema_version: int = 1
+    commitment_type: str = "pose_input_commitment"
+
+    def __post_init__(self) -> None:
+        protocol = str(self.protocol).strip()
+        if protocol not in _EXPECTED_PROTOCOL_SPLITS:
+            raise ValueError(f"unsupported commitment protocol {protocol!r}")
+        split = _canonical_split(self.split)
+        if self.schema_version != 1:
+            raise ValueError("only pose-input commitment schema_version=1 is supported")
+        if self.commitment_type != "pose_input_commitment":
+            raise ValueError("invalid pose-input commitment_type")
+        if (
+            isinstance(self.record_total, bool)
+            or not isinstance(self.record_total, int)
+            or self.record_total < 1
+        ):
+            raise ValueError("pose-input commitment record_total must be positive")
+        for field in ("identity_sha256", "sidecar_sha256", "sidecar_fingerprint"):
+            digest = _validate_sha256(getattr(self, field), field)
+            assert digest is not None
+            object.__setattr__(self, field, digest)
+        object.__setattr__(self, "protocol", protocol)
+        object.__setattr__(self, "split", split)
+
+    @property
+    def fingerprint(self) -> str:
+        encoded = json.dumps(
+            self.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "commitment_type": self.commitment_type,
+            "protocol": self.protocol,
+            "split": self.split,
+            "record_total": self.record_total,
+            "identity_sha256": self.identity_sha256,
+            "sidecar_sha256": self.sidecar_sha256,
+            "sidecar_fingerprint": self.sidecar_fingerprint,
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class UCFRepManifest:
@@ -302,7 +531,9 @@ def assert_split_disjoint(records: Iterable[UCFRepRecord]) -> None:
                 )
 
 
-def _canonical_id_list_sha256(records: Iterable[UCFRepRecord]) -> str:
+def _canonical_unlabeled_id_list_sha256(
+    records: Iterable[UCFRepRecord | UnlabeledVideoRecord],
+) -> str:
     identifiers = sorted(record.video_id for record in records)
     return hashlib.sha256(("\n".join(identifiers) + "\n").encode("utf-8")).hexdigest()
 
@@ -368,7 +599,7 @@ def validate_canonical_split_membership(manifest: UCFRepManifest) -> None:
         }
     )
     for split, expected_hash in expected_hashes.items():
-        actual_hash = _canonical_id_list_sha256(records_by_split[split])
+        actual_hash = _canonical_unlabeled_id_list_sha256(records_by_split[split])
         if actual_hash != expected_hash:
             raise ValueError(
                 f"ucfrep_526 {split} video IDs do not match the preregistered list: "
@@ -425,6 +656,23 @@ def _record_from_mapping(payload: Mapping[str, Any]) -> UCFRepRecord:
         count=int(payload["count"]),
         video_sha256=(
             None if payload.get("video_sha256") in (None, "") else str(payload["video_sha256"])
+        ),
+    )
+
+
+def _unlabeled_record_from_mapping(payload: Mapping[str, Any]) -> UnlabeledVideoRecord:
+    expected = {"video_id", "video_path", "video_sha256"}
+    supplied = set(payload)
+    if supplied != expected:
+        raise ValueError(
+            "pose-input record fields mismatch; "
+            f"missing={sorted(expected - supplied)}, unknown={sorted(supplied - expected)}"
+        )
+    return UnlabeledVideoRecord(
+        video_id=str(payload["video_id"]),
+        video_path=str(payload["video_path"]),
+        video_sha256=(
+            None if payload["video_sha256"] in (None, "") else str(payload["video_sha256"])
         ),
     )
 
@@ -502,6 +750,121 @@ def load_ucfrep_manifest(
     if validate_exact:
         manifest.validate_exact_official_splits()
     return manifest
+
+
+def load_pose_input_manifest(
+    path: str | Path,
+    *,
+    validate_exact: bool = True,
+) -> PoseInputManifest:
+    """Load a strict JSON manifest containing no count or action fields."""
+
+    def reject_duplicate_fields(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"duplicate JSON field in pose-input manifest: {key!r}")
+            result[key] = value
+        return result
+
+    def reject_non_finite(value: str) -> None:
+        raise ValueError(f"non-finite JSON constant in pose-input manifest: {value}")
+
+    source = Path(path)
+    if source.suffix.lower() != ".json":
+        raise ValueError("pose-input manifest path must end in .json")
+    try:
+        payload = json.loads(
+            source.read_text(encoding="utf-8"),
+            object_pairs_hook=reject_duplicate_fields,
+            parse_constant=reject_non_finite,
+        )
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"invalid pose-input manifest JSON: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("pose-input manifest root must be an object")
+    expected = {
+        "schema_version",
+        "manifest_type",
+        "protocol",
+        "split",
+        "records",
+    }
+    supplied = set(payload)
+    if supplied != expected:
+        raise ValueError(
+            "pose-input manifest fields mismatch; "
+            f"missing={sorted(expected - supplied)}, unknown={sorted(supplied - expected)}"
+        )
+    raw_records = payload["records"]
+    if not isinstance(raw_records, list):
+        raise ValueError("pose-input records must be a list")
+    if any(not isinstance(item, Mapping) for item in raw_records):
+        raise ValueError("pose-input records must be JSON objects")
+    manifest = PoseInputManifest(
+        protocol=str(payload["protocol"]),
+        split=str(payload["split"]),
+        records=tuple(_unlabeled_record_from_mapping(item) for item in raw_records),
+        schema_version=int(payload["schema_version"]),
+        manifest_type=str(payload["manifest_type"]),
+    )
+    if validate_exact:
+        manifest.validate_exact_membership()
+    return manifest
+
+
+def load_pose_input_commitment(path: str | Path) -> PoseInputCommitment:
+    """Load a strict, path-free commitment produced beside a pose-input sidecar."""
+
+    def reject_duplicate_fields(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"duplicate JSON field in pose-input commitment: {key!r}")
+            result[key] = value
+        return result
+
+    source = Path(path)
+    if source.suffix.lower() != ".json":
+        raise ValueError("pose-input commitment path must end in .json")
+    try:
+        payload = json.loads(
+            source.read_text(encoding="utf-8"),
+            object_pairs_hook=reject_duplicate_fields,
+            parse_constant=lambda value: (_ for _ in ()).throw(
+                ValueError(f"non-finite JSON constant in pose-input commitment: {value}")
+            ),
+        )
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"invalid pose-input commitment JSON: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("pose-input commitment root must be an object")
+    expected = {
+        "schema_version",
+        "commitment_type",
+        "protocol",
+        "split",
+        "record_total",
+        "identity_sha256",
+        "sidecar_sha256",
+        "sidecar_fingerprint",
+    }
+    supplied = set(payload)
+    if supplied != expected:
+        raise ValueError(
+            "pose-input commitment fields mismatch; "
+            f"missing={sorted(expected - supplied)}, unknown={sorted(supplied - expected)}"
+        )
+    return PoseInputCommitment(
+        protocol=str(payload["protocol"]),
+        split=str(payload["split"]),
+        record_total=int(payload["record_total"]),
+        identity_sha256=str(payload["identity_sha256"]),
+        sidecar_sha256=str(payload["sidecar_sha256"]),
+        sidecar_fingerprint=str(payload["sidecar_fingerprint"]),
+        schema_version=int(payload["schema_version"]),
+        commitment_type=str(payload["commitment_type"]),
+    )
 
 
 def save_ucfrep_manifest(manifest: UCFRepManifest, path: str | Path) -> Path:

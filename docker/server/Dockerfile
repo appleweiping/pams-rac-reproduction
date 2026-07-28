@@ -7,6 +7,7 @@ ARG BASE_IMAGE
 
 LABEL org.opencontainers.image.title="PAMS RAC reproducibility environment" \
       org.opencontainers.image.description="Pinned PyTorch, MediaPipe, and CountLLM-Lite dependencies; source and data are mounted at runtime" \
+      org.opencontainers.image.source="https://github.com/appleweiping/pams-rac-reproduction" \
       org.opencontainers.image.base.name="${BASE_IMAGE}"
 
 ARG DEBIAN_FRONTEND=noninteractive
