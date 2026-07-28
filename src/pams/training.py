@@ -73,7 +73,7 @@ class CheckpointProvenance:
         protocol = str(self.protocol).strip()
         if not protocol:
             raise ValueError("protocol must be non-empty")
-        if isinstance(self.training_video_ids, (str, bytes)):
+        if isinstance(self.training_video_ids, str | bytes):
             raise TypeError("training_video_ids must be a sequence of identifiers")
         identifiers = tuple(str(identifier).strip() for identifier in self.training_video_ids)
         if not identifiers or any(not identifier for identifier in identifiers):
@@ -183,7 +183,7 @@ class CheckpointProvenance:
                 f"checkpoint provenance fields mismatch: missing={missing}, unknown={unknown}"
             )
         identifiers = payload["training_video_ids"]
-        if not isinstance(identifiers, (list, tuple)):
+        if not isinstance(identifiers, list | tuple):
             raise ValueError("checkpoint training_video_ids must be a list")
         if not all(isinstance(identifier, str) for identifier in identifiers):
             raise ValueError("checkpoint training_video_ids must contain strings")
@@ -385,7 +385,7 @@ class VideoPrototypeBank:
         video_ids = payload["video_ids"]
         features = payload["features"]
         cluster_labels = payload["cluster_labels"]
-        if not isinstance(video_ids, (list, tuple)) or not all(
+        if not isinstance(video_ids, list | tuple) or not all(
             isinstance(identifier, str) for identifier in video_ids
         ):
             raise ValueError("checkpoint prototype bank video_ids must be strings")

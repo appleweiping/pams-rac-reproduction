@@ -40,7 +40,7 @@ def _finite_positive(value: float, name: str) -> float:
 
 
 def _non_negative_integer(value: int, name: str) -> int:
-    if isinstance(value, (bool, np.bool_)):
+    if isinstance(value, bool | np.bool_):
         raise TypeError(f"{name} must be an integer, not bool")
     integer = int(value)
     if integer != value or integer < 0:

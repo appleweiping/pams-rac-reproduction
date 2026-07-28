@@ -82,7 +82,7 @@ class UCFRepRecord:
             raise ValueError("video_path must be non-empty")
         if not action:
             raise ValueError("action must be non-empty")
-        if isinstance(self.count, (bool, np.bool_)):
+        if isinstance(self.count, bool | np.bool_):
             raise TypeError("count must be a positive integer, not bool")
         count = int(self.count)
         if count != self.count or count <= 0:
