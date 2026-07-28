@@ -18,7 +18,7 @@ from numpy.typing import ArrayLike, NDArray
 
 from pams.data import (
     PoseCacheMetadata,
-    longest_valid_span,
+    load_pose_cache,
     pose_cache_path,
     preprocess_pose_sequence,
     write_pose_cache,
@@ -41,15 +41,18 @@ class PoseExtractorConfig:
     """Frozen settings for the MediaPipe Pose video extractor."""
 
     target_frames: int = 256
+    model_id: str = POSE_MODEL_ID
     model_complexity: int = 1
     min_detection_confidence: float = 0.5
     min_tracking_confidence: float = 0.5
     smooth_landmarks: bool = True
-    crop_to_longest_valid_span: bool = True
+    crop_to_detected_span: bool = True
 
     def __post_init__(self) -> None:
         if self.target_frames < 1:
             raise ValueError("target_frames must be positive")
+        if not self.model_id.strip():
+            raise ValueError("model_id must be non-empty")
         if self.model_complexity not in {0, 1, 2}:
             raise ValueError("model_complexity must be 0, 1, or 2")
         for name, value in (
@@ -68,12 +71,14 @@ class PoseExtractionSummary:
     video_path: str
     cache_path: str
     video_sha256: str
-    source_frames: int
-    source_valid_frames: int
+    pose_fingerprint: str
+    source_frames: int | None
+    source_valid_frames: int | None
     cached_frames: int
     cached_valid_frames: int
     fps: float
-    pose_model: str = POSE_MODEL_ID
+    pose_model: str
+    skipped: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -81,12 +86,14 @@ class PoseExtractionSummary:
             "video_path": self.video_path,
             "cache_path": self.cache_path,
             "video_sha256": self.video_sha256,
+            "pose_fingerprint": self.pose_fingerprint,
             "source_frames": self.source_frames,
             "source_valid_frames": self.source_valid_frames,
             "cached_frames": self.cached_frames,
             "cached_valid_frames": self.cached_valid_frames,
             "fps": self.fps,
             "pose_model": self.pose_model,
+            "skipped": self.skipped,
         }
 
 
@@ -211,15 +218,13 @@ def assemble_pose_sequence(
     return PoseSequence(video_id=video_id, fps=fps, xyz=xyz, valid_mask=valid)
 
 
-def trim_to_longest_valid_span(sequence: PoseSequence) -> PoseSequence:
-    """Keep the earliest longest contiguous valid subject track."""
+def trim_to_detected_span(sequence: PoseSequence) -> PoseSequence:
+    """Trim only leading/trailing misses while preserving internal gaps."""
 
-    try:
-        span = longest_valid_span(sequence.valid_mask)
-    except ValueError as exc:
-        raise PoseExtractionError(
-            f"no valid pose was detected in video {sequence.video_id!r}"
-        ) from exc
+    valid_indices = np.flatnonzero(sequence.valid_mask)
+    if not len(valid_indices):
+        raise PoseExtractionError(f"no valid pose was detected in video {sequence.video_id!r}")
+    span = slice(int(valid_indices[0]), int(valid_indices[-1]) + 1)
     return PoseSequence(
         video_id=sequence.video_id,
         fps=sequence.fps,
@@ -232,7 +237,7 @@ def preprocess_extracted_pose(
     sequence: PoseSequence,
     *,
     target_frames: int = 256,
-    crop_to_longest_valid_span: bool = True,
+    crop_to_detected_span: bool = True,
 ) -> PoseSequence:
     """Apply the frozen track selection, normalization, and uniform sampling."""
 
@@ -242,7 +247,7 @@ def preprocess_extracted_pose(
     # the sample.
     if not np.any(sequence.valid_mask):
         return preprocess_pose_sequence(sequence, target_frames=target_frames)
-    selected = trim_to_longest_valid_span(sequence) if crop_to_longest_valid_span else sequence
+    selected = trim_to_detected_span(sequence) if crop_to_detected_span else sequence
     return preprocess_pose_sequence(selected, target_frames=target_frames)
 
 
@@ -329,7 +334,7 @@ def extract_pose_sequence(
     processed = preprocess_extracted_pose(
         raw,
         target_frames=settings.target_frames,
-        crop_to_longest_valid_span=settings.crop_to_longest_valid_span,
+        crop_to_detected_span=settings.crop_to_detected_span,
     )
     return processed, raw.num_frames, valid_frames
 
@@ -339,13 +344,16 @@ def extract_pose_to_cache(
     *,
     video_id: str,
     cache_dir: str | Path,
-    config_sha256: str,
+    pose_fingerprint: str,
     expected_video_sha256: str | None = None,
     extractor_config: PoseExtractorConfig | None = None,
     overwrite: bool = False,
+    skip_existing: bool = False,
 ) -> tuple[PoseExtractionSummary, PoseCacheMetadata]:
     """Extract one video and atomically write its provenance-checked pose cache."""
 
+    if overwrite and skip_existing:
+        raise ValueError("overwrite and skip_existing are mutually exclusive")
     source = Path(video_path)
     video_digest = sha256_file(source)
     if expected_video_sha256 is not None and video_digest.lower() != expected_video_sha256.lower():
@@ -354,18 +362,59 @@ def extract_pose_to_cache(
             f"expected {expected_video_sha256}, received {video_digest}"
         )
     settings = extractor_config or PoseExtractorConfig()
+    target = pose_cache_path(cache_dir, video_id)
+    if target.exists():
+        if not skip_existing:
+            if not overwrite:
+                raise FileExistsError(f"pose cache already exists: {target}")
+        else:
+            sequence, metadata = load_pose_cache(
+                target,
+                expected_video_sha256=video_digest,
+                expected_pose_fingerprint=pose_fingerprint,
+            )
+            if sequence.video_id != video_id:
+                raise ValueError(
+                    f"pose cache video_id mismatch: expected {video_id!r}, "
+                    f"received {sequence.video_id!r}"
+                )
+            if metadata.pose_model != settings.model_id:
+                raise ValueError(
+                    "pose cache model ID mismatch: "
+                    f"expected {settings.model_id!r}, received {metadata.pose_model!r}"
+                )
+            if sequence.num_frames != settings.target_frames:
+                raise ValueError(
+                    "pose cache frame count mismatch: "
+                    f"expected {settings.target_frames}, received {sequence.num_frames}"
+                )
+            summary = PoseExtractionSummary(
+                video_id=video_id,
+                video_path=str(source.resolve()),
+                cache_path=str(target.resolve()),
+                video_sha256=video_digest,
+                pose_fingerprint=metadata.pose_fingerprint,
+                source_frames=None,
+                source_valid_frames=None,
+                cached_frames=sequence.num_frames,
+                cached_valid_frames=int(np.count_nonzero(sequence.valid_mask)),
+                fps=sequence.fps,
+                pose_model=metadata.pose_model,
+                skipped=True,
+            )
+            return summary, metadata
+
     sequence, source_frames, source_valid = extract_pose_sequence(
         source,
         video_id=video_id,
         config=settings,
     )
-    target = pose_cache_path(cache_dir, video_id)
     metadata = write_pose_cache(
         target,
         sequence,
         video_sha256=video_digest,
-        config_sha256=config_sha256,
-        pose_model=POSE_MODEL_ID,
+        pose_fingerprint=pose_fingerprint,
+        pose_model=settings.model_id,
         overwrite=overwrite,
     )
     summary = PoseExtractionSummary(
@@ -373,11 +422,13 @@ def extract_pose_to_cache(
         video_path=str(source.resolve()),
         cache_path=str(target.resolve()),
         video_sha256=video_digest,
+        pose_fingerprint=metadata.pose_fingerprint,
         source_frames=source_frames,
         source_valid_frames=source_valid,
         cached_frames=sequence.num_frames,
         cached_valid_frames=int(np.count_nonzero(sequence.valid_mask)),
         fps=sequence.fps,
+        pose_model=settings.model_id,
     )
     return summary, metadata
 
@@ -386,22 +437,26 @@ def extract_many_to_cache(
     videos: Iterable[tuple[str, str | Path, str | None]],
     *,
     cache_dir: str | Path,
-    config_sha256: str,
+    pose_fingerprint: str,
     extractor_config: PoseExtractorConfig | None = None,
     overwrite: bool = False,
+    skip_existing: bool = False,
 ) -> tuple[PoseExtractionSummary, ...]:
     """Extract ``(video_id, path, expected_sha256)`` rows sequentially."""
 
+    if overwrite and skip_existing:
+        raise ValueError("overwrite and skip_existing are mutually exclusive")
     summaries: list[PoseExtractionSummary] = []
     for video_id, video_path, expected_digest in videos:
         summary, _ = extract_pose_to_cache(
             video_path,
             video_id=video_id,
             cache_dir=cache_dir,
-            config_sha256=config_sha256,
+            pose_fingerprint=pose_fingerprint,
             expected_video_sha256=expected_digest,
             extractor_config=extractor_config,
             overwrite=overwrite,
+            skip_existing=skip_existing,
         )
         summaries.append(summary)
     return tuple(summaries)
@@ -411,12 +466,15 @@ def extract_many_with_failures(
     videos: Iterable[tuple[str, str | Path, str | None]],
     *,
     cache_dir: str | Path,
-    config_sha256: str,
+    pose_fingerprint: str,
     extractor_config: PoseExtractorConfig | None = None,
     overwrite: bool = False,
+    skip_existing: bool = False,
 ) -> tuple[tuple[PoseExtractionSummary, ...], tuple[PoseExtractionFailure, ...]]:
     """Extract every row and return a complete, non-silent failure ledger."""
 
+    if overwrite and skip_existing:
+        raise ValueError("overwrite and skip_existing are mutually exclusive")
     summaries: list[PoseExtractionSummary] = []
     failures: list[PoseExtractionFailure] = []
     for video_id, video_path, expected_digest in videos:
@@ -425,10 +483,11 @@ def extract_many_with_failures(
                 video_path,
                 video_id=video_id,
                 cache_dir=cache_dir,
-                config_sha256=config_sha256,
+                pose_fingerprint=pose_fingerprint,
                 expected_video_sha256=expected_digest,
                 extractor_config=extractor_config,
                 overwrite=overwrite,
+                skip_existing=skip_existing,
             )
             summaries.append(summary)
         except (OSError, RuntimeError, ValueError) as exc:

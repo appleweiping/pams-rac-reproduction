@@ -197,6 +197,7 @@ class VerificationDecision:
 
     status: VerificationStatus
     mean_metrics: MetricPair | None
+    population_std_metrics: MetricPair | None
     individual_passes: int
     checks: tuple[VerificationCheck, ...]
     missing_seeds: tuple[int, ...]
@@ -210,6 +211,11 @@ class VerificationDecision:
         return {
             "status": self.status.value,
             "mean_metrics": (None if self.mean_metrics is None else self.mean_metrics.to_dict()),
+            "population_std_metrics": (
+                None
+                if self.population_std_metrics is None
+                else self.population_std_metrics.to_dict()
+            ),
             "individual_passes": self.individual_passes,
             "missing_seeds": list(self.missing_seeds),
             "missing_ablations": list(self.missing_ablations),
@@ -281,11 +287,22 @@ def evaluate_verification(evidence: VerificationEvidence) -> VerificationDecisio
     )
 
     mean_metrics: MetricPair | None = None
+    population_std_metrics: MetricPair | None = None
     if seeds_complete:
         ordered = [result_by_seed[seed].metrics for seed in FROZEN_GATE.required_seeds]
         mean_metrics = MetricPair(
             nmae=sum(metrics.nmae for metrics in ordered) / len(ordered),
             obo=sum(metrics.obo for metrics in ordered) / len(ordered),
+        )
+        population_std_metrics = MetricPair(
+            nmae=math.sqrt(
+                sum((metrics.nmae - mean_metrics.nmae) ** 2 for metrics in ordered)
+                / len(ordered)
+            ),
+            obo=math.sqrt(
+                sum((metrics.obo - mean_metrics.obo) ** 2 for metrics in ordered)
+                / len(ordered)
+            ),
         )
 
     checks: list[VerificationCheck] = [
@@ -373,6 +390,7 @@ def evaluate_verification(evidence: VerificationEvidence) -> VerificationDecisio
     return VerificationDecision(
         status=status,
         mean_metrics=mean_metrics,
+        population_std_metrics=population_std_metrics,
         individual_passes=individual_passes,
         checks=tuple(checks),
         missing_seeds=missing_seeds,

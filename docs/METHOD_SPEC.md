@@ -40,8 +40,10 @@ softmax NaNs, then returned as exact zeros.
 The paper says the period is estimated by applying FFT to an autocorrelation
 of stop-gradient embeddings or a pose-energy proxy. The implementation:
 
-1. selects the highest-variance signed pose/embedding coordinate as a
-   phase-preserving scalar component;
+1. during pose warm-up, selects the highest-variance signed pose coordinate;
+   thereafter takes mask-aware first differences of detached embeddings and
+   selects the highest-variance signed velocity coordinate (never an L2 speed,
+   which can halve a sinusoid's apparent period);
 2. mean-centres it over valid frames;
 3. computes mask-normalized, non-circular autocorrelation with FFT;
 4. applies a Hann window and finds dominant spectral power corresponding to
@@ -55,8 +57,13 @@ encoder embeddings. Period selection has no gradient.
 For each anchor `z[t]`, local positives are valid `z[t-1]` and `z[t+1]`.
 Past/future cycle positives are the highest-cosine-similarity valid frames in
 the frozen correspondence neighbourhood around `t-T_hat` and `t+T_hat`.
-The window width is scaled by `s ∈ {0.5,1.0,1.5}` and the search radius is
-10% of that width.
+The paper discloses `W_k = round(s*T_hat)` but does not define whether this
+quantity is a radius or a full span. The independent implementation marks its
+choice as inferred: it uses the symmetric radius
+`max(1, round(s*T_hat/2))` around each of `t-T_hat` and `t+T_hat`. This avoids
+collapsing all three scales at the shortest allowed period. When the
+estimator's spectral confidence is exactly zero, the cycle positives are
+omitted but the local positives remain.
 
 For scale `s`, let `P_s(t)` be those positives and `A_s(t)` contain all
 admissible candidates. The implemented multi-positive loss is:
@@ -64,16 +71,18 @@ admissible candidates. The implemented multi-positive loss is:
 ```text
 L_s(t) =
     log Σ[j in A_s(t)] exp(sim(z[t], z[j]) / τ)
-  - log Σ[p in P_s(t)] exp(sim(z[t], z[p]) / τ)
+  - (1 / |P_s(t)|) Σ[p in P_s(t)] sim(z[t], z[p]) / τ
 
 L_PAMS = mean_s mean_valid_t L_s(t),       τ = 0.1
 ```
 
-The denominator includes other valid times from the same video and pooled
-prototypes from other videos. Every five epochs, valid-frame mean embeddings
-are clustered with deterministic KMeans (`k=8`). Up to the anchor's positive
-count of highest-similarity different-cluster prototypes is added as the
-explicit cross-cluster hard-negative pool.
+The denominator includes other valid times from the same video and live
+pooled prototypes from other videos in the physical batch. Every five epochs,
+valid-frame mean embeddings for the full training set are frozen and
+clustered with deterministic KMeans (`k=8`). For each anchor, the explicit
+cross-cluster pool contains `positive_count` distinct highest-similarity bank
+prototypes from other clusters, excluding every current-batch video. Requested,
+actual, and shortfall counts are logged; formal runs fail on any shortfall.
 
 ## Period Head audit and variants
 
@@ -95,6 +104,18 @@ the non-DC power share in the fundamental bin and its immediate neighbours;
 `L_variance` penalizes standard deviation below one; `L_smooth` penalizes
 the squared second temporal difference. This is an inferred repair.
 
+Training monitors this inferred repair without changing its loss. Each epoch
+logs per-video valid-frame stream-standard-deviation summaries and collapse
+fractions (`std <= 1e-6` and `std <= 1e-3`), together with maximum head
+gradient RMS, maximum gradient-to-parameter L2 ratio, and zero-gradient step
+count. Streams, loss components, and accumulated gradients must be finite.
+Immediately before each optimizer step, training aborts if a loss above
+`0.05` has gradient L2 at most `1e-12` while any valid-frame stream standard
+deviation is at most `1e-6`, or if gradient RMS exceeds `10` or the
+gradient-to-parameter L2 ratio exceeds `100`. A failed epoch produces neither
+a checkpoint update nor a progress-log row. These preregistered, label-free
+guards do not inspect benchmark counts.
+
 ## Multi-expert inference
 
 The raw stream `P` supplies a fresh FFT period `T_hat` and reference count
@@ -114,8 +135,14 @@ Each computes short and long rolling statistics over `0.5 T_hat` and
 ```
 
 Peak prominence must be at least `0.25(max(P_smooth)-min(P_smooth))`.
+Missing frames divide the stream into contiguous valid runs; smoothing,
+thresholding and peak finding are performed independently within each run, so
+an invalid gap can never synthesize or alter a cross-gap peak.
 Two agreeing experts form the majority. Otherwise the candidate nearest the
 FFT reference is selected; ties prefer Medium, then Fast, then Slow.
+The public confidence is the vote confidence multiplied by the FFT period
+confidence; generic callers that do not supply a period confidence retain the
+neutral multiplier of one.
 Per-expert peaks, thresholds and counts are retained for audit, while the
 public `CountResult` contains the compact final result.
 

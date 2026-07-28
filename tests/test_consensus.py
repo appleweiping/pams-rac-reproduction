@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import torch
 
 from pams.consensus import MultiExpertCounter, dynamic_threshold, vote_expert_counts
@@ -51,7 +52,7 @@ def test_dynamic_threshold_and_invalid_frames_are_safe() -> None:
         valid_mask=mask,
     )
     assert 0 <= result.count <= 4
-    assert np.isinf(result.experts[0].threshold[35:45]).sum() == 0
+    assert np.isinf(result.experts[0].threshold[35:45]).all()
 
 
 def test_constant_and_fully_invalid_streams_return_zero() -> None:
@@ -71,3 +72,36 @@ def test_constant_and_fully_invalid_streams_return_zero() -> None:
 
     bfloat_stream = torch.ones(64, dtype=torch.bfloat16)
     assert counter.count(bfloat_stream, period_frames=16).count == 0
+
+
+def test_period_confidence_scales_vote_confidence_and_rejects_invalid_values() -> None:
+    counter = MultiExpertCounter()
+    stream = np.ones(64)
+    assert counter.count(stream, period_frames=16).confidence == 1.0
+    assert counter.count(stream, period_frames=16, period_confidence=0.0).confidence == 0.0
+    assert counter.count(stream, period_frames=16, period_confidence=0.25).confidence == 0.25
+
+    for invalid in (-0.1, 1.1, np.nan, np.inf):
+        with pytest.raises(ValueError, match="period_confidence"):
+            counter.count(stream, period_frames=16, period_confidence=invalid)
+
+
+def test_valid_runs_are_filtered_independently_of_gap_content_and_length() -> None:
+    counter = MultiExpertCounter()
+    run = _peak_stream(60, [10, 30, 50])
+
+    def separated(gap_length: int, gap_value: float) -> tuple[object, np.ndarray]:
+        stream = np.concatenate((run, np.full(gap_length, gap_value), run))
+        mask = np.ones(len(stream), dtype=bool)
+        mask[60 : 60 + gap_length] = False
+        return counter.count(stream, period_frames=20, valid_mask=mask), mask
+
+    short_zero, short_mask = separated(7, 0.0)
+    short_corrupt, _ = separated(7, 1e9)
+    long_corrupt, long_mask = separated(41, -1e9)
+
+    assert short_zero.expert_counts == short_corrupt.expert_counts
+    assert short_zero.count == short_corrupt.count == long_corrupt.count
+    assert short_zero.expert_counts == long_corrupt.expert_counts
+    assert all(np.isinf(expert.threshold[~short_mask]).all() for expert in short_corrupt.experts)
+    assert all(np.isinf(expert.threshold[~long_mask]).all() for expert in long_corrupt.experts)

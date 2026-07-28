@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import io
 import json
 import os
 import re
@@ -19,6 +20,7 @@ from numpy.typing import ArrayLike, NDArray
 from pams.types import PoseSequence
 
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+_UCF101_VIDEO_ID_PATTERN = re.compile(r"^v_(?P<action>.+)_g(?P<group>\d{2})_c\d+$")
 _CANONICAL_SPLITS = frozenset({"train", "dev", "test"})
 _SPLIT_ALIASES: Mapping[str, str] = {
     "training": "train",
@@ -31,6 +33,15 @@ _EXPECTED_PROTOCOL_SPLITS: Mapping[str, Mapping[str, int]] = {
     "ucfrep_pose_110": {"train": 89, "test": 21},
 }
 _CSV_FIELDS = ("video_id", "video_path", "split", "action", "count", "video_sha256")
+_UCFREP_526_CANONICAL_ID_SHA256: Mapping[str, str] = {
+    "train": "811d263b61dce27671551326b45799b06ac4b07dba311bdc39d2ed6663729d25",
+    "dev": "2199294a1d22da6c67d2fdaaafb4bebaa11e92a5bb3accd4670975815001f2c6",
+    "train_pool": "776489ba3c556a105f96bd18788c527a9157dfaa451a0eb766c38faca27e416f",
+    "test": "0ca00989fa5d378a5e92fbb9e9663ddde3805d6f1806816a6ed8cd7b3d819b8b",
+}
+_UCFREP_526_CANONICAL_ANNOTATION_SHA256 = (
+    "d371f9f4609730d6484efc337413b444ed73752ad5e994366d02fb79a9960452"
+)
 
 
 def _canonical_split(value: str) -> str:
@@ -174,6 +185,17 @@ class UCFRepManifest:
         return hashlib.sha256(canonical).hexdigest()
 
     @property
+    def sealed_dataset_fingerprint(self) -> str:
+        """Return the split/order/path-invariant official annotation identity."""
+
+        if self.protocol != "ucfrep_526":
+            raise ValueError(
+                "sealed dataset identity is unavailable until the protocol's "
+                "official ID/count digest is frozen"
+            )
+        return _ucfrep_526_annotation_fingerprint(self.records)
+
+    @property
     def split_counts(self) -> dict[str, int]:
         return {
             split: sum(record.split == split for record in self.records)
@@ -193,6 +215,7 @@ class UCFRepManifest:
                 f"{self.protocol} requires exact split counts {expected}, received {actual}"
             )
         assert_split_disjoint(self.records)
+        validate_canonical_split_membership(self)
 
     def training_records(self, *, include_dev: bool = False) -> tuple[UnlabeledVideoRecord, ...]:
         """Return a label-free projection and never expose sealed test rows."""
@@ -208,6 +231,36 @@ class UCFRepManifest:
             if record.split in allowed
         )
 
+    def training_fingerprint(self, *, include_dev: bool = False) -> str:
+        """Hash only the exact label-free videos exposed to training.
+
+        Sealed-test rows, counts, actions, and machine-specific paths are
+        deliberately absent. Changing any of them cannot alter a checkpoint
+        or training-run identity.
+        """
+
+        records = sorted(
+            self.training_records(include_dev=include_dev),
+            key=lambda record: record.video_id,
+        )
+        canonical = json.dumps(
+            {
+                "schema_version": 1,
+                "protocol": self.protocol,
+                "records": [
+                    {
+                        "video_id": record.video_id,
+                        "video_sha256": record.video_sha256,
+                    }
+                    for record in records
+                ],
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+        return hashlib.sha256(canonical).hexdigest()
+
     def test_targets(self) -> dict[str, int]:
         """Return sealed evaluator targets; training code should not call this."""
 
@@ -222,10 +275,11 @@ class UCFRepManifest:
 
 
 def assert_split_disjoint(records: Iterable[UCFRepRecord]) -> None:
-    """Assert that no identifier or normalized path occurs in two splits."""
+    """Assert that no identifier, path, or known content occurs in two splits."""
 
     id_to_split: dict[str, str] = {}
     path_to_split: dict[str, str] = {}
+    digest_to_split: dict[str, str] = {}
     for record in records:
         previous = id_to_split.setdefault(record.video_id, record.split)
         if previous != record.split:
@@ -239,6 +293,113 @@ def assert_split_disjoint(records: Iterable[UCFRepRecord]) -> None:
                 f"video_path {record.video_path!r} occurs in both "
                 f"{previous_path} and {record.split}"
             )
+        if record.video_sha256 is not None:
+            previous_digest = digest_to_split.setdefault(record.video_sha256, record.split)
+            if previous_digest != record.split:
+                raise ValueError(
+                    f"video_sha256 {record.video_sha256!r} occurs in both "
+                    f"{previous_digest} and {record.split}"
+                )
+
+
+def _canonical_id_list_sha256(records: Iterable[UCFRepRecord]) -> str:
+    identifiers = sorted(record.video_id for record in records)
+    return hashlib.sha256(("\n".join(identifiers) + "\n").encode("utf-8")).hexdigest()
+
+
+def _ucfrep_526_annotation_fingerprint(records: Iterable[UCFRepRecord]) -> str:
+    """Bind every official ID to its action, count, and train/test family."""
+
+    rows: list[dict[str, str | int]] = []
+    for record in records:
+        match = _UCF101_VIDEO_ID_PATTERN.fullmatch(record.video_id)
+        if match is None:
+            raise ValueError(f"invalid canonical UCF101 video_id: {record.video_id!r}")
+        group = int(match.group("group"))
+        if not 1 <= group <= 25:
+            raise ValueError(f"canonical UCFRep group is outside 01-25: {record.video_id!r}")
+        rows.append(
+            {
+                "video_id": record.video_id,
+                "action": record.action,
+                "count": record.count,
+                "official_family": "test" if group >= 21 else "train",
+            }
+        )
+    encoded = json.dumps(
+        sorted(rows, key=lambda row: str(row["video_id"])),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def validate_canonical_split_membership(manifest: UCFRepManifest) -> None:
+    """Bind standard UCFRep splits to the preregistered official ID lists."""
+
+    if manifest.protocol != "ucfrep_526":
+        # UCFRep-pose remains blocked until its independently audited 89/21
+        # source lists are checked into the repository.
+        return
+
+    records_by_split = {
+        split: manifest.records_for(split)
+        for split in ("train", "dev", "test")
+        if manifest.records_for(split)
+    }
+    expected_keys = {"train", "test"} if "dev" not in records_by_split else {"train", "dev", "test"}
+    if set(records_by_split) != expected_keys:
+        raise ValueError(
+            "ucfrep_526 requires either canonical 421/105 or frozen 337/84/105 membership"
+        )
+
+    expected_hashes = (
+        {
+            "train": _UCFREP_526_CANONICAL_ID_SHA256["train_pool"],
+            "test": _UCFREP_526_CANONICAL_ID_SHA256["test"],
+        }
+        if "dev" not in records_by_split
+        else {
+            "train": _UCFREP_526_CANONICAL_ID_SHA256["train"],
+            "dev": _UCFREP_526_CANONICAL_ID_SHA256["dev"],
+            "test": _UCFREP_526_CANONICAL_ID_SHA256["test"],
+        }
+    )
+    for split, expected_hash in expected_hashes.items():
+        actual_hash = _canonical_id_list_sha256(records_by_split[split])
+        if actual_hash != expected_hash:
+            raise ValueError(
+                f"ucfrep_526 {split} video IDs do not match the preregistered list: "
+                f"expected {expected_hash}, received {actual_hash}"
+            )
+
+    for record in manifest.records:
+        match = _UCF101_VIDEO_ID_PATTERN.fullmatch(record.video_id)
+        if match is None:
+            raise ValueError(f"invalid canonical UCF101 video_id: {record.video_id!r}")
+        if record.action != match.group("action"):
+            raise ValueError(
+                f"record action does not match its canonical video_id: {record.video_id!r}"
+            )
+        group = int(match.group("group"))
+        expected_split_family = "test" if 21 <= group <= 25 else "train"
+        if not (1 <= group <= 25):
+            raise ValueError(f"canonical UCFRep group is outside 01-25: {record.video_id!r}")
+        actual_split_family = "test" if record.split == "test" else "train"
+        if actual_split_family != expected_split_family:
+            raise ValueError(
+                f"canonical source group and declared split disagree for {record.video_id!r}"
+            )
+    annotation_fingerprint = manifest.sealed_dataset_fingerprint
+    if annotation_fingerprint != _UCFREP_526_CANONICAL_ANNOTATION_SHA256:
+        raise ValueError(
+            "ucfrep_526 annotations do not match the frozen official "
+            "(video_id, action, count, train/test family) digest: "
+            f"expected {_UCFREP_526_CANONICAL_ANNOTATION_SHA256}, "
+            f"received {annotation_fingerprint}"
+        )
 
 
 def validate_exact_protocol_splits(manifest: UCFRepManifest) -> None:
@@ -602,8 +763,14 @@ def longest_valid_span(valid_mask: ArrayLike) -> slice:
 def preprocess_pose_sequence(sequence: PoseSequence, *, target_frames: int = 256) -> PoseSequence:
     """Apply the frozen per-frame normalization and uniform resampling."""
 
-    normalized = per_frame_minmax(sequence.xyz, sequence.valid_mask)
-    xyz, mask = uniform_resample(normalized, sequence.valid_mask, target_frames=target_frames)
+    effective_mask = np.array(sequence.valid_mask, dtype=np.bool_, copy=True)
+    valid_indices = np.flatnonzero(effective_mask)
+    if valid_indices.size:
+        valid_coordinates = sequence.xyz[valid_indices]
+        spans = valid_coordinates.max(axis=(1, 2)) - valid_coordinates.min(axis=(1, 2))
+        effective_mask[valid_indices[spans <= 1e-8]] = False
+    normalized = per_frame_minmax(sequence.xyz, effective_mask)
+    xyz, mask = uniform_resample(normalized, effective_mask, target_frames=target_frames)
     if sequence.num_frames == 1 or target_frames == 1:
         fps = sequence.fps
     else:
@@ -621,7 +788,7 @@ class PoseCacheMetadata:
     schema_version: int
     video_id: str
     video_sha256: str
-    config_sha256: str
+    pose_fingerprint: str
     pose_model: str
     fps: float
     frames: int
@@ -629,12 +796,12 @@ class PoseCacheMetadata:
     coordinates: int = 3
 
     def __post_init__(self) -> None:
-        if self.schema_version != 1:
-            raise ValueError("only pose cache schema_version=1 is supported")
+        if self.schema_version != 2:
+            raise ValueError("only pose cache schema_version=2 is supported")
         if not self.video_id.strip() or not self.pose_model.strip():
             raise ValueError("video_id and pose_model must be non-empty")
         _validate_sha256(self.video_sha256, "video_sha256")
-        _validate_sha256(self.config_sha256, "config_sha256")
+        _validate_sha256(self.pose_fingerprint, "pose_fingerprint")
         if not np.isfinite(self.fps) or self.fps <= 0:
             raise ValueError("cache fps must be positive")
         if self.frames < 1 or self.keypoints != 33 or self.coordinates != 3:
@@ -645,12 +812,91 @@ class PoseCacheMetadata:
             "schema_version": self.schema_version,
             "video_id": self.video_id,
             "video_sha256": self.video_sha256,
-            "config_sha256": self.config_sha256,
+            "pose_fingerprint": self.pose_fingerprint,
             "pose_model": self.pose_model,
             "fps": self.fps,
             "frames": self.frames,
             "keypoints": self.keypoints,
             "coordinates": self.coordinates,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class PoseCacheEntryReceipt:
+    """Content identity for one pose-cache file actually read."""
+
+    video_id: str
+    cache_sha256: str
+    bytes: int
+
+    def __post_init__(self) -> None:
+        identifier = str(self.video_id).strip()
+        digest = _validate_sha256(self.cache_sha256, "cache_sha256")
+        if not identifier:
+            raise ValueError("pose-cache receipt video_id must be non-empty")
+        if digest is None:
+            raise ValueError("pose-cache receipt SHA-256 is required")
+        if isinstance(self.bytes, bool) or not isinstance(self.bytes, int) or self.bytes < 1:
+            raise ValueError("pose-cache receipt bytes must be a positive integer")
+        object.__setattr__(self, "video_id", identifier)
+        object.__setattr__(self, "cache_sha256", digest)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "video_id": self.video_id,
+            "cache_sha256": self.cache_sha256,
+            "bytes": self.bytes,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class PoseCacheSetSnapshot:
+    """Canonical digest of every pose-cache byte stream used by one command."""
+
+    pose_fingerprint: str
+    entries: tuple[PoseCacheEntryReceipt, ...]
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if self.schema_version != 1:
+            raise ValueError("only pose-cache snapshot schema_version=1 is supported")
+        pose_fingerprint = _validate_sha256(self.pose_fingerprint, "pose_fingerprint")
+        if pose_fingerprint is None:
+            raise ValueError("pose-cache snapshot pose_fingerprint is required")
+        raw_entries = tuple(self.entries)
+        if not all(isinstance(entry, PoseCacheEntryReceipt) for entry in raw_entries):
+            raise TypeError("pose-cache snapshot entries must be PoseCacheEntryReceipt values")
+        entries = tuple(sorted(raw_entries, key=lambda entry: entry.video_id))
+        if not entries:
+            raise ValueError("pose-cache snapshot requires at least one entry")
+        identifiers = [entry.video_id for entry in entries]
+        if len(set(identifiers)) != len(identifiers):
+            raise ValueError("pose-cache snapshot video_id values must be unique")
+        object.__setattr__(self, "pose_fingerprint", pose_fingerprint)
+        object.__setattr__(self, "entries", entries)
+
+    @property
+    def fingerprint(self) -> str:
+        encoded = json.dumps(
+            {
+                "schema_version": self.schema_version,
+                "pose_fingerprint": self.pose_fingerprint,
+                "entries": [entry.to_dict() for entry in self.entries],
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "pose_fingerprint": self.pose_fingerprint,
+            "fingerprint": self.fingerprint,
+            "entry_count": len(self.entries),
+            "entries": [entry.to_dict() for entry in self.entries],
         }
 
 
@@ -669,17 +915,17 @@ def write_pose_cache(
     sequence: PoseSequence,
     *,
     video_sha256: str,
-    config_sha256: str,
-    pose_model: str = "mediapipe-0.10.14",
+    pose_fingerprint: str,
+    pose_model: str = "mediapipe-pose-0.10.14",
     overwrite: bool = False,
 ) -> PoseCacheMetadata:
     """Atomically write a cache whose provenance is validated on every load."""
 
     metadata = PoseCacheMetadata(
-        schema_version=1,
+        schema_version=2,
         video_id=sequence.video_id,
         video_sha256=_validate_sha256(video_sha256, "video_sha256") or "",
-        config_sha256=_validate_sha256(config_sha256, "config_sha256") or "",
+        pose_fingerprint=_validate_sha256(pose_fingerprint, "pose_fingerprint") or "",
         pose_model=str(pose_model),
         fps=sequence.fps,
         frames=sequence.num_frames,
@@ -707,16 +953,39 @@ def write_pose_cache(
     return metadata
 
 
-def load_pose_cache(
+def _read_file_bytes_stable(path: Path) -> bytes:
+    """Read one regular file while detecting replacement or mutation."""
+
+    before = path.stat()
+    with path.open("rb") as handle:
+        opened = os.fstat(handle.fileno())
+        payload = handle.read()
+        closed = os.fstat(handle.fileno())
+    after = path.stat()
+    stable_fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns")
+    if any(
+        getattr(before, field) != getattr(opened, field)
+        or getattr(opened, field) != getattr(closed, field)
+        or getattr(closed, field) != getattr(after, field)
+        for field in stable_fields
+    ):
+        raise RuntimeError(f"pose cache changed while it was being read: {path}")
+    if len(payload) != after.st_size:
+        raise RuntimeError(f"pose cache byte count changed while reading: {path}")
+    return payload
+
+
+def load_pose_cache_with_receipt(
     path: str | Path,
     *,
     expected_video_sha256: str | None = None,
-    expected_config_sha256: str | None = None,
-) -> tuple[PoseSequence, PoseCacheMetadata]:
-    """Load a cache and reject stale video/config provenance."""
+    expected_pose_fingerprint: str | None = None,
+) -> tuple[PoseSequence, PoseCacheMetadata, PoseCacheEntryReceipt]:
+    """Load exact cache bytes and return their cryptographic receipt."""
 
     source = Path(path)
-    with np.load(source, allow_pickle=False) as archive:
+    source_bytes = _read_file_bytes_stable(source)
+    with np.load(io.BytesIO(source_bytes), allow_pickle=False) as archive:
         required = {"xyz", "valid_mask", "metadata"}
         if set(archive.files) != required:
             raise ValueError(
@@ -729,7 +998,15 @@ def load_pose_cache(
         payload = json.loads(str(raw_metadata.item()))
         if not isinstance(payload, dict):
             raise ValueError("cache metadata JSON must be an object")
-        metadata = PoseCacheMetadata(**payload)
+        if "config_sha256" in payload or payload.get("schema_version") == 1:
+            raise ValueError(
+                "legacy pose cache uses the full experiment config_sha256; "
+                "regenerate it with schema_version=2 pose_fingerprint metadata"
+            )
+        try:
+            metadata = PoseCacheMetadata(**payload)
+        except TypeError as exc:
+            raise ValueError(f"invalid pose cache metadata fields: {exc}") from exc
         sequence = PoseSequence(
             video_id=metadata.video_id,
             fps=metadata.fps,
@@ -739,12 +1016,82 @@ def load_pose_cache(
     if metadata.frames != sequence.num_frames:
         raise ValueError("cache frame count does not match its metadata")
     expected_video = _validate_sha256(expected_video_sha256, "expected_video_sha256")
-    expected_config = _validate_sha256(expected_config_sha256, "expected_config_sha256")
+    expected_pose = _validate_sha256(
+        expected_pose_fingerprint,
+        "expected_pose_fingerprint",
+    )
     if expected_video is not None and metadata.video_sha256 != expected_video:
         raise ValueError("pose cache video SHA-256 mismatch")
-    if expected_config is not None and metadata.config_sha256 != expected_config:
-        raise ValueError("pose cache config SHA-256 mismatch")
+    if expected_pose is not None and metadata.pose_fingerprint != expected_pose:
+        raise ValueError("pose cache fingerprint mismatch")
+    return (
+        sequence,
+        metadata,
+        PoseCacheEntryReceipt(
+            video_id=sequence.video_id,
+            cache_sha256=hashlib.sha256(source_bytes).hexdigest(),
+            bytes=len(source_bytes),
+        ),
+    )
+
+
+def load_pose_cache(
+    path: str | Path,
+    *,
+    expected_video_sha256: str | None = None,
+    expected_pose_fingerprint: str | None = None,
+) -> tuple[PoseSequence, PoseCacheMetadata]:
+    """Load a cache and reject stale video/pose-extractor provenance."""
+
+    sequence, metadata, _ = load_pose_cache_with_receipt(
+        path,
+        expected_video_sha256=expected_video_sha256,
+        expected_pose_fingerprint=expected_pose_fingerprint,
+    )
     return sequence, metadata
+
+
+def load_pose_cache_set(
+    records: Sequence[UnlabeledVideoRecord],
+    *,
+    cache_dir: str | Path,
+    pose_fingerprint: str,
+    materialize_sequences: bool = True,
+) -> tuple[tuple[PoseSequence, ...], PoseCacheSetSnapshot]:
+    """Load and hash an ordered set of label-free pose caches exactly once."""
+
+    source = tuple(records)
+    if not source:
+        raise ValueError("pose-cache set requires at least one record")
+    identifiers = [record.video_id for record in source]
+    if len(set(identifiers)) != len(identifiers):
+        raise ValueError("pose-cache set video_id values must be unique")
+    validated_pose = _validate_sha256(pose_fingerprint, "pose_fingerprint")
+    if validated_pose is None:
+        raise ValueError("pose_fingerprint is required")
+    directory = Path(cache_dir)
+    sequences: list[PoseSequence] = []
+    receipts: list[PoseCacheEntryReceipt] = []
+    for record in source:
+        if record.video_sha256 is None:
+            raise ValueError(f"video SHA-256 is required for {record.video_id!r}")
+        sequence, _, receipt = load_pose_cache_with_receipt(
+            pose_cache_path(directory, record.video_id),
+            expected_video_sha256=record.video_sha256,
+            expected_pose_fingerprint=validated_pose,
+        )
+        if sequence.video_id != record.video_id:
+            raise ValueError("cache video_id does not match pose-cache record")
+        if materialize_sequences:
+            sequences.append(sequence)
+        receipts.append(receipt)
+    return (
+        tuple(sequences),
+        PoseCacheSetSnapshot(
+            pose_fingerprint=validated_pose,
+            entries=tuple(receipts),
+        ),
+    )
 
 
 class TrainingPoseDataset(Sequence[PoseSequence]):
@@ -755,7 +1102,7 @@ class TrainingPoseDataset(Sequence[PoseSequence]):
         records: Sequence[UCFRepRecord],
         *,
         cache_dir: str | Path,
-        config_sha256: str,
+        pose_fingerprint: str,
         include_dev: bool = False,
     ) -> None:
         source = tuple(records)
@@ -767,6 +1114,12 @@ class TrainingPoseDataset(Sequence[PoseSequence]):
             )
         if not source:
             raise ValueError("training dataset must contain at least one record")
+        missing_hashes = sorted(record.video_id for record in source if record.video_sha256 is None)
+        if missing_hashes:
+            raise ValueError(
+                "training requires content-hashed videos; missing video_sha256 for "
+                f"{missing_hashes[:5]}"
+            )
         self._items = tuple(
             UnlabeledVideoRecord(
                 video_id=record.video_id,
@@ -776,10 +1129,10 @@ class TrainingPoseDataset(Sequence[PoseSequence]):
             for record in source
         )
         self._cache_dir = Path(cache_dir)
-        validated = _validate_sha256(config_sha256, "config_sha256")
+        validated = _validate_sha256(pose_fingerprint, "pose_fingerprint")
         if validated is None:
-            raise ValueError("config_sha256 is required")
-        self._config_sha256 = validated
+            raise ValueError("pose_fingerprint is required")
+        self._pose_fingerprint = validated
 
     def __len__(self) -> int:
         return len(self._items)
@@ -797,7 +1150,7 @@ class TrainingPoseDataset(Sequence[PoseSequence]):
         sequence, _ = load_pose_cache(
             pose_cache_path(self._cache_dir, item.video_id),
             expected_video_sha256=item.video_sha256,
-            expected_config_sha256=self._config_sha256,
+            expected_pose_fingerprint=self._pose_fingerprint,
         )
         if sequence.video_id != item.video_id:
             raise ValueError("cache video_id does not match training record")
@@ -806,3 +1159,26 @@ class TrainingPoseDataset(Sequence[PoseSequence]):
     def __iter__(self) -> Iterator[PoseSequence]:
         for index in range(len(self)):
             yield self[index]
+
+    def materialize_snapshot(
+        self,
+    ) -> tuple[tuple[PoseSequence, ...], PoseCacheSetSnapshot]:
+        """Load each training cache once and bind the exact consumed bytes."""
+
+        return load_pose_cache_set(
+            self._items,
+            cache_dir=self._cache_dir,
+            pose_fingerprint=self._pose_fingerprint,
+            materialize_sequences=True,
+        )
+
+    def cache_snapshot(self) -> PoseCacheSetSnapshot:
+        """Hash and validate the set without retaining pose tensors."""
+
+        _, snapshot = load_pose_cache_set(
+            self._items,
+            cache_dir=self._cache_dir,
+            pose_fingerprint=self._pose_fingerprint,
+            materialize_sequences=False,
+        )
+        return snapshot

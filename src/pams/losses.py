@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import torch
@@ -31,7 +32,6 @@ def periodic_correspondence_indices(
     periods: Tensor,
     *,
     scale: float = 1.0,
-    correspondence_tolerance: float = 0.1,
     valid_mask: Tensor | None = None,
 ) -> Tensor:
     """Select the most similar past/future cyclic correspondence.
@@ -48,8 +48,6 @@ def periodic_correspondence_indices(
         raise ValueError(f"periods must have shape [{batch}]")
     if scale <= 0:
         raise ValueError("scale must be positive")
-    if not 0.0 <= correspondence_tolerance <= 0.5:
-        raise ValueError("correspondence_tolerance must be in [0, 0.5]")
     valid = _valid_mask(embeddings, valid_mask)
     normalized = F.normalize(embeddings.detach(), dim=-1, eps=1e-12)
     similarities = torch.einsum("btd,bsd->bts", normalized, normalized)
@@ -57,7 +55,6 @@ def periodic_correspondence_indices(
         similarities,
         periods.reshape(batch),
         scale=scale,
-        correspondence_tolerance=correspondence_tolerance,
         valid=valid,
     )
 
@@ -67,7 +64,6 @@ def _correspondences_from_similarities(
     periods: Tensor,
     *,
     scale: float,
-    correspondence_tolerance: float,
     valid: Tensor,
 ) -> Tensor:
     batch, time, candidate_time = similarities.shape
@@ -76,8 +72,11 @@ def _correspondences_from_similarities(
     indices = torch.arange(time, device=similarities.device)
     offsets = indices.view(1, 1, time) - indices.view(1, time, 1)
     rounded_periods = periods.round().clamp_min(1).to(dtype=torch.long)
-    windows = (rounded_periods.float() * scale).round().clamp_min(1)
-    radii = (windows * correspondence_tolerance).round().to(dtype=torch.long)
+    # The paper discloses W_k = round(scale * T) but not whether W_k is a
+    # radius or a full span around t +/- T. We infer a symmetric full-span
+    # interpretation, with a one-frame minimum radius. Unlike the previous
+    # extra 0.1 tolerance, this does not collapse all scales at short periods.
+    radii = (rounded_periods.float() * scale / 2.0).round().clamp_min(1).to(dtype=torch.long)
     result: list[Tensor] = []
     finite_floor = torch.finfo(similarities.dtype).min
 
@@ -99,6 +98,12 @@ class TCCLossOutput:
     total: Tensor
     scale_losses: tuple[Tensor, ...]
     valid_anchor_counts: tuple[int, ...]
+    cross_cluster_requested_counts: tuple[int, ...]
+    cross_cluster_actual_counts: tuple[int, ...]
+    cross_cluster_shortfall_counts: tuple[int, ...]
+    cross_cluster_requested_per_anchor: tuple[Tensor, ...]
+    cross_cluster_actual_per_anchor: tuple[Tensor, ...]
+    cross_cluster_shortfall_per_anchor: tuple[Tensor, ...]
 
 
 class PAMSTCCLoss(nn.Module):
@@ -108,18 +113,14 @@ class PAMSTCCLoss(nn.Module):
         self,
         scales: tuple[float, ...] = (0.5, 1.0, 1.5),
         temperature: float = 0.1,
-        correspondence_tolerance: float = 0.1,
     ) -> None:
         super().__init__()
         if not scales or any(scale <= 0 for scale in scales):
             raise ValueError("scales must contain positive values")
         if temperature <= 0:
             raise ValueError("temperature must be positive")
-        if not 0.0 <= correspondence_tolerance <= 0.5:
-            raise ValueError("correspondence_tolerance must be in [0, 0.5]")
         self.scales = tuple(float(scale) for scale in scales)
         self.temperature = float(temperature)
-        self.correspondence_tolerance = float(correspondence_tolerance)
 
     def compute(
         self,
@@ -127,7 +128,12 @@ class PAMSTCCLoss(nn.Module):
         periods: Tensor,
         valid_mask: Tensor | None = None,
         *,
+        period_confidence: Tensor | None = None,
         cluster_labels: Tensor | None = None,
+        video_ids: Sequence[str] | None = None,
+        bank_features: Tensor | None = None,
+        bank_cluster_labels: Tensor | None = None,
+        bank_video_ids: Sequence[str] | None = None,
         use_cross_cluster_negatives: bool = True,
     ) -> TCCLossOutput:
         batch, time, dimension = _check_embeddings(embeddings)
@@ -135,10 +141,70 @@ class PAMSTCCLoss(nn.Module):
         if periods.shape not in {(batch,), (batch, 1)}:
             raise ValueError(f"periods must have shape [{batch}]")
         periods = periods.reshape(batch)
+        if period_confidence is None:
+            period_evidence = torch.ones(batch, dtype=torch.bool, device=embeddings.device)
+        else:
+            if period_confidence.shape not in {(batch,), (batch, 1)}:
+                raise ValueError(f"period_confidence must have shape [{batch}]")
+            confidence = period_confidence.reshape(batch).to(device=embeddings.device)
+            if (
+                not torch.isfinite(confidence).all()
+                or (confidence < 0).any()
+                or (confidence > 1).any()
+            ):
+                raise ValueError("period_confidence must be finite and in [0, 1]")
+            period_evidence = confidence != 0
         if cluster_labels is not None:
             if cluster_labels.shape != (batch,):
                 raise ValueError(f"cluster_labels must have shape [{batch}]")
             cluster_labels = cluster_labels.to(device=embeddings.device)
+
+        bank_arguments = (bank_features, bank_cluster_labels, bank_video_ids)
+        supplied_bank_arguments = sum(argument is not None for argument in bank_arguments)
+        if supplied_bank_arguments not in {0, len(bank_arguments)}:
+            raise ValueError(
+                "bank_features, bank_cluster_labels, and bank_video_ids must be supplied together"
+            )
+        bank_logits: Tensor | None = None
+        bank_candidate_mask: Tensor | None = None
+        if supplied_bank_arguments:
+            assert bank_features is not None
+            assert bank_cluster_labels is not None
+            assert bank_video_ids is not None
+            if cluster_labels is None:
+                raise ValueError("cluster_labels are required with a prototype bank")
+            if video_ids is None or len(video_ids) != batch:
+                raise ValueError(f"video_ids must contain {batch} current-batch identifiers")
+            current_ids = tuple(str(identifier) for identifier in video_ids)
+            stored_ids = tuple(str(identifier) for identifier in bank_video_ids)
+            if len(set(current_ids)) != batch:
+                raise ValueError("video_ids must be unique")
+            if len(set(stored_ids)) != len(stored_ids):
+                raise ValueError("bank_video_ids must be unique")
+            if bank_features.ndim != 2 or bank_features.shape[1] != dimension:
+                raise ValueError(f"bank_features must have shape [bank, {dimension}]")
+            bank_size = bank_features.shape[0]
+            if bank_size != len(stored_ids):
+                raise ValueError("bank_features and bank_video_ids must have equal length")
+            if bank_cluster_labels.shape != (bank_size,):
+                raise ValueError(f"bank_cluster_labels must have shape [{bank_size}]")
+            stored_clusters = bank_cluster_labels.to(
+                device=embeddings.device,
+                dtype=cluster_labels.dtype,
+            )
+            excluded_ids = set(current_ids)
+            outside_current_batch = torch.tensor(
+                [identifier not in excluded_ids for identifier in stored_ids],
+                dtype=torch.bool,
+                device=embeddings.device,
+            )
+            bank_feature_valid = (
+                bank_features.detach().to(device=embeddings.device).abs().sum(dim=-1) > 1e-12
+            )
+            bank_candidate_mask = (
+                cluster_labels.view(batch, 1) != stored_clusters.view(1, bank_size)
+            ) & outside_current_batch.view(1, bank_size)
+            bank_candidate_mask &= bank_feature_valid.view(1, bank_size)
 
         normalized = F.normalize(embeddings, dim=-1, eps=1e-12)
         within_logits = torch.einsum("btd,bsd->bts", normalized, normalized) / self.temperature
@@ -149,21 +215,36 @@ class PAMSTCCLoss(nn.Module):
         prototypes = F.normalize(prototypes, dim=-1, eps=1e-12)
         prototype_valid = valid.any(dim=1)
         cross_video_logits = torch.einsum("btd,cd->btc", normalized, prototypes) / self.temperature
+        if supplied_bank_arguments:
+            assert bank_features is not None
+            normalized_bank = F.normalize(
+                bank_features.detach().to(
+                    device=embeddings.device,
+                    dtype=embeddings.dtype,
+                ),
+                dim=-1,
+                eps=1e-12,
+            )
+            bank_logits = (
+                torch.einsum("btd,nd->btn", normalized, normalized_bank) / self.temperature
+            )
         video_indices = torch.arange(batch, device=embeddings.device)
         other_video_mask = video_indices.view(1, 1, batch) != video_indices.view(batch, 1, 1)
         other_video_mask = (
             other_video_mask & valid.unsqueeze(-1) & prototype_valid.view(1, 1, batch)
         )
-        negative_infinity = torch.finfo(embeddings.dtype).min
+        negative_infinity = float("-inf")
         scale_losses: list[Tensor] = []
         anchor_counts: list[int] = []
+        requested_counts_by_scale: list[Tensor] = []
+        actual_counts_by_scale: list[Tensor] = []
+        shortfall_counts_by_scale: list[Tensor] = []
 
         for scale in self.scales:
             correspondences = _correspondences_from_similarities(
                 within_logits.detach(),
                 periods,
                 scale=scale,
-                correspondence_tolerance=self.correspondence_tolerance,
                 valid=valid,
             )
             positive_mask = torch.zeros(
@@ -177,7 +258,7 @@ class PAMSTCCLoss(nn.Module):
                 positive_mask[:, adjacent + 1, adjacent] = True
             for direction_slot in range(2):
                 selected = correspondences[:, :, direction_slot]
-                has_selected = selected >= 0
+                has_selected = (selected >= 0) & period_evidence.unsqueeze(1)
                 batch_grid, time_grid = torch.nonzero(has_selected, as_tuple=True)
                 positive_mask[
                     batch_grid,
@@ -191,34 +272,54 @@ class PAMSTCCLoss(nn.Module):
             positive_counts = positive_mask.sum(dim=-1)
             valid_anchors = valid & (positive_counts > 0)
 
-            positive_logits = within_logits.masked_fill(~positive_mask, negative_infinity)
             denominator_parts = [
                 within_logits.masked_fill(~within_candidate_mask, negative_infinity),
                 cross_video_logits.masked_fill(~other_video_mask, negative_infinity),
             ]
 
-            if use_cross_cluster_negatives and cluster_labels is not None and batch > 1:
-                different_cluster = cluster_labels.view(batch, 1) != cluster_labels.view(1, batch)
-                cross_cluster_mask = other_video_mask & different_cluster.view(batch, 1, batch)
-                cross_cluster_logits = cross_video_logits.masked_fill(
-                    ~cross_cluster_mask, negative_infinity
+            requested_counts = torch.zeros_like(positive_counts)
+            actual_counts = torch.zeros_like(positive_counts)
+            if use_cross_cluster_negatives and cluster_labels is not None:
+                requested_counts = torch.where(
+                    valid_anchors,
+                    positive_counts,
+                    torch.zeros_like(positive_counts),
                 )
-                maximum_positive_count = int(positive_counts.max())
-                pool_size = min(maximum_positive_count, batch)
-                if pool_size:
-                    hard_cross = torch.topk(cross_cluster_logits, k=pool_size, dim=-1).values
-                    pool_indices = torch.arange(pool_size, device=embeddings.device).view(
-                        1, 1, pool_size
-                    )
-                    hard_cross = hard_cross.masked_fill(
-                        pool_indices >= positive_counts.unsqueeze(-1),
-                        negative_infinity,
-                    )
-                    denominator_parts.append(hard_cross)
+                if bank_logits is not None and bank_candidate_mask is not None:
+                    available_counts = bank_candidate_mask.sum(dim=-1, keepdim=True)
+                    actual_counts = torch.minimum(requested_counts, available_counts)
+                    maximum_actual_count = int(actual_counts.max())
+                    if maximum_actual_count:
+                        candidate_scores = bank_logits.masked_fill(
+                            ~bank_candidate_mask.unsqueeze(1),
+                            negative_infinity,
+                        )
+                        hard_cross = torch.topk(
+                            candidate_scores,
+                            k=maximum_actual_count,
+                            dim=-1,
+                        ).values
+                        slots = torch.arange(
+                            maximum_actual_count,
+                            device=embeddings.device,
+                        ).view(1, 1, maximum_actual_count)
+                        selected_slots = slots < actual_counts.unsqueeze(-1)
+                        denominator_parts.append(
+                            hard_cross.masked_fill(~selected_slots, negative_infinity)
+                        )
+            shortfall_counts = requested_counts - actual_counts
+            requested_counts_by_scale.append(requested_counts.detach())
+            actual_counts_by_scale.append(actual_counts.detach())
+            shortfall_counts_by_scale.append(shortfall_counts.detach())
 
-            numerator = torch.logsumexp(positive_logits, dim=-1)
+            mean_positive_logit = within_logits.masked_fill(~positive_mask, 0.0).sum(
+                dim=-1
+            ) / positive_counts.clamp_min(1).to(within_logits.dtype)
             denominator = torch.logsumexp(torch.cat(denominator_parts, dim=-1), dim=-1)
-            losses = denominator - numerator
+            # Equation (1) averages one log-softmax term per positive.  A
+            # logsumexp positive numerator would instead reward satisfying
+            # only the easiest positive and is not the disclosed objective.
+            losses = denominator - mean_positive_logit
             if valid_anchors.any():
                 scale_loss = losses[valid_anchors].mean()
             else:
@@ -231,6 +332,18 @@ class PAMSTCCLoss(nn.Module):
             total=total,
             scale_losses=tuple(scale_losses),
             valid_anchor_counts=tuple(anchor_counts),
+            cross_cluster_requested_counts=tuple(
+                int(counts.sum()) for counts in requested_counts_by_scale
+            ),
+            cross_cluster_actual_counts=tuple(
+                int(counts.sum()) for counts in actual_counts_by_scale
+            ),
+            cross_cluster_shortfall_counts=tuple(
+                int(counts.sum()) for counts in shortfall_counts_by_scale
+            ),
+            cross_cluster_requested_per_anchor=tuple(requested_counts_by_scale),
+            cross_cluster_actual_per_anchor=tuple(actual_counts_by_scale),
+            cross_cluster_shortfall_per_anchor=tuple(shortfall_counts_by_scale),
         )
 
     def forward(
@@ -239,14 +352,24 @@ class PAMSTCCLoss(nn.Module):
         periods: Tensor,
         valid_mask: Tensor | None = None,
         *,
+        period_confidence: Tensor | None = None,
         cluster_labels: Tensor | None = None,
+        video_ids: Sequence[str] | None = None,
+        bank_features: Tensor | None = None,
+        bank_cluster_labels: Tensor | None = None,
+        bank_video_ids: Sequence[str] | None = None,
         use_cross_cluster_negatives: bool = True,
     ) -> Tensor:
         return self.compute(
             embeddings,
             periods,
             valid_mask,
+            period_confidence=period_confidence,
             cluster_labels=cluster_labels,
+            video_ids=video_ids,
+            bank_features=bank_features,
+            bank_cluster_labels=bank_cluster_labels,
+            bank_video_ids=bank_video_ids,
             use_cross_cluster_negatives=use_cross_cluster_negatives,
         ).total
 
@@ -291,6 +414,8 @@ class SSHeadLoss(nn.Module):
         period_stream: Tensor,
         periods: Tensor,
         valid_mask: Tensor | None = None,
+        *,
+        period_confidence: Tensor | None = None,
     ) -> SSHeadLossOutput:
         if period_stream.ndim == 1:
             stream = period_stream.unsqueeze(0)
@@ -306,6 +431,20 @@ class SSHeadLoss(nn.Module):
         if periods.shape not in {(batch,), (batch, 1)}:
             raise ValueError(f"periods must have shape [{batch}]")
         periods = periods.reshape(batch).to(device=stream.device)
+        if period_confidence is None:
+            confidences = torch.ones(batch, dtype=stream.dtype, device=stream.device)
+        else:
+            if period_confidence.ndim == 0:
+                period_confidence = period_confidence.expand(batch)
+            if period_confidence.shape not in {(batch,), (batch, 1)}:
+                raise ValueError(f"period_confidence must have shape [{batch}]")
+            confidences = period_confidence.reshape(batch).to(device=stream.device)
+            if (
+                not torch.isfinite(confidences).all()
+                or (confidences < 0).any()
+                or (confidences > 1).any()
+            ):
+                raise ValueError("period_confidence must be finite and in [0, 1]")
         if valid_mask is None:
             valid = torch.ones((batch, time), dtype=torch.bool, device=stream.device)
         else:
@@ -323,30 +462,39 @@ class SSHeadLoss(nn.Module):
         smoothness_losses: list[Tensor] = []
         zero = stream.sum() * 0.0
 
-        for values, sample_period, sample_valid in zip(stream, periods, valid, strict=True):
-            period = max(1, int(round(float(sample_period.detach()))))
-            if period < time:
-                pair_valid = sample_valid[:-period] & sample_valid[period:]
-                if pair_valid.any():
-                    difference = values[:-period] - values[period:]
-                    cycle_losses.append(difference[pair_valid].square().mean())
+        for values, sample_period, sample_valid, sample_confidence in zip(
+            stream,
+            periods,
+            valid,
+            confidences,
+            strict=True,
+        ):
+            if bool(sample_confidence != 0):
+                period = max(1, int(round(float(sample_period.detach()))))
+                if period < time:
+                    pair_valid = sample_valid[:-period] & sample_valid[period:]
+                    if pair_valid.any():
+                        difference = values[:-period] - values[period:]
+                        cycle_losses.append(difference[pair_valid].square().mean())
 
-            count = sample_valid.sum().clamp_min(1)
-            mean = (values * sample_valid).sum() / count
-            centered = (values - mean) * sample_valid
-            spectral_values = (
-                centered.float() if centered.dtype in (torch.float16, torch.bfloat16) else centered
-            )
-            power = torch.fft.rfft(spectral_values).abs().square()
-            if power.numel() > 1:
-                power = power.clone()
-                power[0] = 0.0
-                target_bin = int(round(time / period))
-                target_bin = min(max(target_bin, 1), power.numel() - 1)
-                low = max(1, target_bin - 1)
-                high = min(power.numel(), target_bin + 2)
-                target_power = power[low:high].sum()
-                spectral_losses.append(1.0 - target_power / power.sum().clamp_min(1e-12))
+                count = sample_valid.sum().clamp_min(1)
+                mean = (values * sample_valid).sum() / count
+                centered = (values - mean) * sample_valid
+                spectral_values = (
+                    centered.float()
+                    if centered.dtype in (torch.float16, torch.bfloat16)
+                    else centered
+                )
+                power = torch.fft.rfft(spectral_values).abs().square()
+                if power.numel() > 1:
+                    power = power.clone()
+                    power[0] = 0.0
+                    target_bin = int(round(time / period))
+                    target_bin = min(max(target_bin, 1), power.numel() - 1)
+                    low = max(1, target_bin - 1)
+                    high = min(power.numel(), target_bin + 2)
+                    target_power = power[low:high].sum()
+                    spectral_losses.append(1.0 - target_power / power.sum().clamp_min(1e-12))
 
             selected = values[sample_valid]
             if selected.numel() >= 2:
@@ -387,5 +535,12 @@ class SSHeadLoss(nn.Module):
         period_stream: Tensor,
         periods: Tensor,
         valid_mask: Tensor | None = None,
+        *,
+        period_confidence: Tensor | None = None,
     ) -> Tensor:
-        return self.compute(period_stream, periods, valid_mask).total
+        return self.compute(
+            period_stream,
+            periods,
+            valid_mask,
+            period_confidence=period_confidence,
+        ).total

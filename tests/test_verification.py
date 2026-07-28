@@ -61,6 +61,9 @@ def test_all_frozen_gates_produce_verified_status() -> None:
     assert decision.mean_metrics is not None
     assert decision.mean_metrics.nmae == pytest.approx(0.22)
     assert decision.mean_metrics.obo == pytest.approx(2.0 / 3.0)
+    assert decision.population_std_metrics is not None
+    assert decision.population_std_metrics.nmae == pytest.approx(0.0081649658)
+    assert decision.population_std_metrics.obo == pytest.approx(0.0124721913)
     assert decision.individual_passes == 2
     assert all(check.passed is True for check in decision.checks)
 

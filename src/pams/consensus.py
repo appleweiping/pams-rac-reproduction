@@ -200,11 +200,15 @@ class MultiExpertCounter:
         period_stream: Tensor | NDArray[np.floating] | list[float],
         period_frames: float,
         valid_mask: Tensor | NDArray[np.bool_] | list[bool] | None = None,
+        *,
+        period_confidence: float = 1.0,
     ) -> ConsensusResult:
         """Count peaks without consulting an action label or ground-truth count."""
 
         if period_frames <= 0 or not np.isfinite(period_frames):
             raise ValueError("period_frames must be finite and positive")
+        if not np.isfinite(period_confidence) or not 0.0 <= period_confidence <= 1.0:
+            raise ValueError("period_confidence must be finite and in [0, 1]")
         original = _to_numpy_1d(period_stream)
         if original.size == 0:
             raise ValueError("period_stream must contain at least one frame")
@@ -242,49 +246,53 @@ class MultiExpertCounter:
                 experts=empty_experts,  # type: ignore[arg-type]
             )
 
-        start, stop = int(valid_indices[0]), int(valid_indices[-1]) + 1
-        working = original[start:stop].copy()
-        working_valid = valid[start:stop]
-        if not working_valid.all():
-            known = np.flatnonzero(working_valid)
-            missing = np.flatnonzero(~working_valid)
-            working[missing] = np.interp(missing, known, working[known])
+        run_starts = valid_indices[np.concatenate((np.asarray([True]), np.diff(valid_indices) > 1))]
+        run_stops = (
+            valid_indices[np.concatenate((np.diff(valid_indices) > 1, np.asarray([True])))] + 1
+        )
+        valid_runs = tuple(
+            (int(start), int(stop)) for start, stop in zip(run_starts, run_stops, strict=True)
+        )
 
         expert_results: list[ExpertResult] = []
         for expert in self.experts:
             sigma = max(1e-6, expert.sigma_multiplier * period_frames)
-            smoothed_working = gaussian_filter1d(working, sigma=sigma, mode="nearest")
-            threshold_working = dynamic_threshold(
-                smoothed_working,
-                period_frames,
-                short_window_multiplier=self.short_window_multiplier,
-                long_window_multiplier=self.long_window_multiplier,
-                height_factor=self.height_factor,
-                long_window_weight=self.long_window_weight,
-            )
-            signal_range = float(np.ptp(smoothed_working))
-            prominence = self.prominence_factor * signal_range
             minimum_distance = max(1, int(round(expert.distance_multiplier * period_frames)))
-            peaks, _ = find_peaks(
-                smoothed_working,
-                height=threshold_working,
-                prominence=prominence,
-                distance=minimum_distance,
-            )
-            peaks = peaks[working_valid[peaks]] + start
-
             smoothed = np.zeros_like(original)
             threshold = np.full_like(original, np.inf)
-            smoothed[start:stop] = smoothed_working
-            threshold[start:stop] = threshold_working
+            all_peaks: list[int] = []
+            run_prominences: list[float] = []
+            for start, stop in valid_runs:
+                working = original[start:stop]
+                smoothed_working = gaussian_filter1d(working, sigma=sigma, mode="nearest")
+                threshold_working = dynamic_threshold(
+                    smoothed_working,
+                    period_frames,
+                    short_window_multiplier=self.short_window_multiplier,
+                    long_window_multiplier=self.long_window_multiplier,
+                    height_factor=self.height_factor,
+                    long_window_weight=self.long_window_weight,
+                )
+                signal_range = float(np.ptp(smoothed_working))
+                prominence = self.prominence_factor * signal_range
+                peaks, _ = find_peaks(
+                    smoothed_working,
+                    height=threshold_working,
+                    prominence=prominence,
+                    distance=minimum_distance,
+                )
+                all_peaks.extend(int(peak + start) for peak in peaks)
+                run_prominences.append(prominence)
+                smoothed[start:stop] = smoothed_working
+                threshold[start:stop] = threshold_working
             expert_results.append(
                 ExpertResult(
                     name=expert.name,
-                    count=int(len(peaks)),
-                    peaks=tuple(int(peak) for peak in peaks),
+                    count=len(all_peaks),
+                    peaks=tuple(all_peaks),
                     smoothed=smoothed,
                     threshold=threshold,
-                    prominence=prominence,
+                    prominence=max(run_prominences, default=0.0),
                     minimum_distance=minimum_distance,
                 )
             )
@@ -295,14 +303,14 @@ class MultiExpertCounter:
             expert_results[2].count,
         )
         reference_count = int(np.floor(valid.sum() / period_frames))
-        count, selected_index, confidence = vote_expert_counts(counts, reference_count)
+        count, selected_index, vote_confidence = vote_expert_counts(counts, reference_count)
         return ConsensusResult(
             count=count,
             period_frames=float(period_frames),
             reference_count=reference_count,
             expert_counts=counts,
             selected_expert=self.experts[selected_index].name,
-            confidence=float(confidence),
+            confidence=float(vote_confidence * period_confidence),
             period_stream=tuple(float(value) for value in original),
             experts=(expert_results[0], expert_results[1], expert_results[2]),
         )

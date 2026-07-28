@@ -7,9 +7,11 @@ Period-Adaptive Multi-Scale Consistency for Self-Supervised Repetitive
 Action Counting** (CVPR Findings 2026).
 
 > **Current status: implementation / no verified benchmark claim.**
-> The source code and protocol are being validated locally. UCFRep videos and
-> the designated GPU server are not connected yet, so this repository does
-> not publish invented or locally substituted benchmark numbers.
+> Core PAMS/data/audit paths have component tests, but the current
+> preprocessing revision has not yet produced a receipt-backed designated
+> server smoke run. Baselines, executable Table 2 variants, full
+> encoder/SSHead training, and sealed UCFRep evaluation remain incomplete.
+> This is a partial implementation scaffold, not a finished reproduction.
 
 ## Why this repository exists
 
@@ -46,6 +48,11 @@ See the [implementation specification](docs/METHOD_SPEC.md),
   OBO ≥ 0.666, at least two seeds pass independently, and the preregistered
   ablation directions hold.
 
+The Table 2 YAML is currently a preregistration ledger only. Its non-full
+variants are not executable and cannot enter sealed scoring until their
+behavior and config provenance are implemented. UCFRep-pose sealed scoring
+and all paper-baseline sealed IDs are also blocked in this revision.
+
 ## Quick start
 
 Python 3.10–3.12 is supported.
@@ -62,18 +69,49 @@ Validate the frozen configuration and run the synthetic smoke evaluation:
 
 ```bash
 pams config validate configs/pams.yaml
-pams synthetic evaluate --config configs/pams.yaml --counts 2,4,8,16
+pams synthetic evaluate --config configs/pams.yaml
+pams synthetic counter-gate
+pams synthetic period-counter-gate
+pams synthetic sshead-collapse
 ```
 
+`synthetic evaluate` defaults to the preregistered count sweep `2..40` and
+the frozen speed, pause, missing-joint, harmonic, rotation, scale, and
+translation stresses. It is a deterministic spectral-proxy diagnostic, not
+an encoder/head or benchmark result.
+`counter-gate` is a frozen 576-case sign/phase test of the multi-expert
+counter only: it is deliberately supplied the exact synthetic period and is
+not an encoder/head/period-estimator or end-to-end PAMS result.
+`period-counter-gate` runs the same frozen matrix through FFT/autocorrelation
+period estimation and then the counter. It still bypasses the learned encoder
+and Period Head, so it is a component-chain test rather than UCFRep evidence.
+`sshead-collapse` is deliberately diagnostic and currently exits nonzero: it
+documents the inferred loss's exact-constant dead point and near-collapse
+gradient spike. Formal SSHead training therefore also has per-step finite,
+collapse, and gradient guards before every optimizer mutation.
+
 UCFRep videos are deliberately not redistributed. Follow [DATA.md](DATA.md)
-to construct a checksummed local manifest and pose cache.
+to construct a checksummed local manifest and pose cache. Preparation accepts
+`UCF-101/<Action>/<video>.avi`, `<Action>/<video>.avi`, and
+`flat/<video>.avi` relative to the supplied root. Its default strict mode
+requires and hashes all 526 videos; duplicate candidates across layouts fail.
 
 ```bash
-pams data prepare-ucfrep /path/to/UCF101 \
+pams data prepare-ucfrep /path/containing/UCF-101 \
   --output data/manifests/ucfrep_526.json
 pams data split data/manifests/ucfrep_526.json \
   --output data/manifests/ucfrep_337_84_105.json
 ```
+
+`--no-hash-videos` keeps the 526-file existence check but skips video hashing.
+`--annotation-only` is the explicit non-experiment mode that permits missing
+videos.
+
+Pose caches use a dedicated `pose_fingerprint` derived only from frozen data
+preprocessing and MediaPipe settings. Training seeds and optimizer changes do
+not invalidate the cache. Resume an interrupted extraction with
+`pams pose extract ... --skip-existing`; an existing entry is skipped only
+after its source-video hash and complete cache provenance match.
 
 ## Repository layout
 
@@ -85,7 +123,10 @@ tests/                CPU unit, property and integration tests
 ```
 
 Every actual training/evaluation run writes an immutable JSON manifest with
-the Git commit, configuration and dataset hashes, seed, command and hardware.
+the Git commit, full experiment-configuration and dataset hashes, seed,
+command and hardware. The smaller pose fingerprint is used only to identify
+pose caches; an additional ordered cache-set digest binds the exact `.npz`
+bytes consumed by each checkpoint and evaluation.
 The current publication state is recorded in [results/README.md](results/README.md);
 empty cells are intentional and are never filled with proxy measurements.
 Designated GPU execution follows the credential-free

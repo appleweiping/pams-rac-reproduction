@@ -265,10 +265,27 @@ def synthetic_stress_suite(
             occluded_joint_fraction=0.30,
             **common,
         ),
-        "rotation": SyntheticSpec(video_id="rotation", rotation_degrees=15.0, **common),
-        "scale": SyntheticSpec(video_id="scale", scale=1.15, **common),
-        "translation": SyntheticSpec(
-            video_id="translation", translation=(0.1, -0.1, 0.1), **common
+        "rotation_negative": SyntheticSpec(
+            video_id="rotation_negative",
+            rotation_degrees=-15.0,
+            **common,
+        ),
+        "rotation_positive": SyntheticSpec(
+            video_id="rotation_positive",
+            rotation_degrees=15.0,
+            **common,
+        ),
+        "scale_low": SyntheticSpec(video_id="scale_low", scale=0.85, **common),
+        "scale_high": SyntheticSpec(video_id="scale_high", scale=1.15, **common),
+        "translation_negative": SyntheticSpec(
+            video_id="translation_negative",
+            translation=(-0.1, -0.1, -0.1),
+            **common,
+        ),
+        "translation_positive": SyntheticSpec(
+            video_id="translation_positive",
+            translation=(0.1, 0.1, 0.1),
+            **common,
         ),
         "multiharmonic": SyntheticSpec(
             video_id="multiharmonic", harmonics=(1.0, 0.5, 0.25), **common

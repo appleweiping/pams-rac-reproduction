@@ -17,7 +17,7 @@ from torch import Tensor
 class PeriodEstimate:
     """One sequence's bounded period estimate and diagnostic information."""
 
-    period: int
+    period: float
     confidence: float
     frequency: float
     valid_length: int
@@ -102,11 +102,52 @@ def embedding_energy(
     embeddings: Tensor,
     valid_mask: Tensor | None = None,
 ) -> Tensor:
-    """Return a stop-gradient activity proxy from frame embeddings."""
+    """Return a stop-gradient signed embedding-velocity proxy.
+
+    PAMS' frozen protocol uses temporal embedding velocity after the pose
+    warm-up.  A signed coordinate is retained rather than an L2 speed: speed
+    folds a one-dimensional sinusoid onto its absolute derivative and can
+    therefore halve the recovered period.  Velocity samples are valid only
+    when both adjacent embedding frames are valid, so a missing interval can
+    never create a synthetic jump.
+    """
 
     if embeddings.ndim not in (2, 3):
         raise ValueError("embeddings must have shape [time, dim] or [batch, time, dim]")
-    return temporal_component(embeddings, valid_mask)
+    velocities, velocity_valid = _embedding_velocity(embeddings, valid_mask)
+    return temporal_component(velocities, velocity_valid)
+
+
+def _embedding_velocity(
+    embeddings: Tensor,
+    valid_mask: Tensor | None,
+) -> tuple[Tensor, Tensor]:
+    """Return detached first differences and their pairwise-valid mask."""
+
+    unbatched = embeddings.ndim == 2
+    values = embeddings.unsqueeze(0) if unbatched else embeddings
+    batch, time, _ = values.shape
+    if valid_mask is None:
+        valid = torch.ones((batch, time), dtype=torch.bool, device=values.device)
+    else:
+        expected = (time,) if unbatched else (batch, time)
+        if valid_mask.shape != expected:
+            raise ValueError(
+                f"valid_mask must have shape {expected}, got {tuple(valid_mask.shape)}"
+            )
+        valid = valid_mask.unsqueeze(0) if unbatched else valid_mask
+        valid = valid.to(device=values.device, dtype=torch.bool)
+
+    detached = values.detach().to(dtype=torch.float32)
+    velocities = torch.zeros_like(detached)
+    velocity_valid = torch.zeros((batch, time), dtype=torch.bool, device=values.device)
+    if time > 1:
+        adjacent_valid = valid[:, 1:] & valid[:, :-1]
+        velocities[:, 1:] = (detached[:, 1:] - detached[:, :-1]) * adjacent_valid.unsqueeze(-1)
+        velocity_valid[:, 1:] = adjacent_valid
+    if unbatched:
+        return velocities[0], velocity_valid[0]
+    return velocities, velocity_valid
 
 
 def autocorrelation_fft(
@@ -176,13 +217,13 @@ def estimate_period_batch(
     if autocorrelation.ndim == 1:
         autocorrelation = autocorrelation.unsqueeze(0)
 
-    periods: list[int] = []
+    periods: list[float] = []
     confidences: list[Tensor] = []
     for sample_ac, sample_signal, sample_mask in zip(autocorrelation, batched, mask, strict=True):
         valid_length = int(sample_mask.sum())
         upper_period = min(maximum, max(minimum, valid_length - 1))
         if valid_length < minimum * 2:
-            periods.append(minimum)
+            periods.append(float(minimum))
             confidences.append(sample_signal.new_tensor(0.0))
             continue
 
@@ -204,18 +245,21 @@ def estimate_period_batch(
         band = power.masked_fill(~allowed, 0.0)
         total = band.sum()
         if not torch.isfinite(total) or float(total) <= 1e-12:
-            periods.append(upper_period)
+            periods.append(float(upper_period))
             confidences.append(sample_signal.new_tensor(0.0))
             continue
 
         index = int(torch.argmax(band))
-        frequency = float(frequencies[index])
-        estimate = int(round(1.0 / frequency))
-        estimate = min(max(estimate, minimum), upper_period)
+        frequency = index / sample_ac.numel()
+        # Preserve the FFT bin's fractional period (for example, 256/40 =
+        # 6.4 frames). TCC/SSHead round only where integer indexing is
+        # unavoidable, while inference smoothing and reference counting use
+        # the disclosed dominant period without premature quantization.
+        estimate = min(max(1.0 / frequency, float(minimum)), float(upper_period))
         periods.append(estimate)
         confidences.append((band[index] / total.clamp_min(1e-12)).clamp(0.0, 1.0))
 
-    period_tensor = torch.tensor(periods, dtype=torch.long, device=batched.device)
+    period_tensor = torch.tensor(periods, dtype=batched.dtype, device=batched.device)
     confidence_tensor = torch.stack(confidences).to(device=batched.device)
     if unbatched:
         return period_tensor[:1], confidence_tensor[:1]
@@ -243,7 +287,7 @@ def estimate_period(
         if valid_mask is None
         else valid_mask.to(dtype=torch.bool)
     )
-    period = int(periods[0])
+    period = float(periods[0])
     return PeriodEstimate(
         period=period,
         confidence=float(confidences[0]),
@@ -272,5 +316,6 @@ def estimate_period_from_embeddings(
 ) -> tuple[Tensor, Tensor]:
     """Estimate periods from stop-gradient encoder embeddings."""
 
-    energy = embedding_energy(embeddings, valid_mask)
-    return estimate_period_batch(energy, minimum, maximum, valid_mask)
+    velocities, velocity_valid = _embedding_velocity(embeddings, valid_mask)
+    energy = temporal_component(velocities, velocity_valid)
+    return estimate_period_batch(energy, minimum, maximum, velocity_valid)

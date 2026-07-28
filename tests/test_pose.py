@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import builtins
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
@@ -14,7 +15,7 @@ from pams.pose import (
     extract_pose_to_cache,
     preprocess_extracted_pose,
     select_dominant_pose,
-    trim_to_longest_valid_span,
+    trim_to_detected_span,
 )
 from pams.types import PoseSequence
 
@@ -53,7 +54,7 @@ def test_assemble_sequence_uses_exact_zeros_and_mask() -> None:
     assert sequence.xyz.dtype == np.float32
 
 
-def test_longest_valid_track_prefers_earliest_and_preprocesses_256() -> None:
+def test_detected_span_preserves_internal_missing_frames_and_preprocesses_256() -> None:
     xyz = np.arange(7 * 33 * 3, dtype=np.float32).reshape(7, 33, 3)
     sequence = PoseSequence(
         "track",
@@ -61,16 +62,19 @@ def test_longest_valid_track_prefers_earliest_and_preprocesses_256() -> None:
         xyz,
         np.asarray([False, True, True, False, True, True, False]),
     )
-    trimmed = trim_to_longest_valid_span(sequence)
-    assert trimmed.num_frames == 2
-    np.testing.assert_array_equal(trimmed.xyz, xyz[1:3])
+    trimmed = trim_to_detected_span(sequence)
+    assert trimmed.num_frames == 5
+    np.testing.assert_array_equal(trimmed.xyz, sequence.xyz[1:6])
+    np.testing.assert_array_equal(trimmed.valid_mask, [True, True, False, True, True])
 
     output = preprocess_extracted_pose(sequence)
     assert output.xyz.shape == (256, 33, 3)
-    assert output.valid_mask.all()
+    assert output.valid_mask.any()
+    assert not output.valid_mask.all()
+    assert np.all(output.xyz[~output.valid_mask] == 0.0)
     assert output.xyz.min() >= 0
     assert output.xyz.max() <= 1
-    assert output.fps == pytest.approx(30.0 * 255)
+    assert output.fps == pytest.approx(30.0 * 255 / 4)
 
 
 def test_preprocess_retains_video_without_any_pose_as_invalid_cache() -> None:
@@ -91,7 +95,7 @@ def test_optional_dependency_error_names_install_extra(monkeypatch: pytest.Monke
 
     original_import = builtins.__import__
 
-    def guarded_import(name: str, *args: object, **kwargs: object) -> object:
+    def guarded_import(name: str, *args: Any, **kwargs: Any) -> Any:
         if name in {"cv2", "mediapipe"}:
             raise ModuleNotFoundError(name)
         return original_import(name, *args, **kwargs)
@@ -123,7 +127,7 @@ def test_extract_to_cache_verifies_video_and_config_hash(
         video,
         video_id="fixture",
         cache_dir=tmp_path / "cache",
-        config_sha256="a" * 64,
+        pose_fingerprint="a" * 64,
     )
     loaded, cached_metadata = load_pose_cache(summary.cache_path)
     assert loaded.video_id == "fixture"
@@ -136,7 +140,7 @@ def test_extract_to_cache_verifies_video_and_config_hash(
             video,
             video_id="fixture",
             cache_dir=tmp_path / "other",
-            config_sha256="a" * 64,
+            pose_fingerprint="a" * 64,
             expected_video_sha256="b" * 64,
         )
 
@@ -148,7 +152,7 @@ def test_batch_extraction_returns_non_silent_failure_ledger(tmp_path: Path) -> N
             ("missing-b", tmp_path / "b.mp4", None),
         ),
         cache_dir=tmp_path / "cache",
-        config_sha256="a" * 64,
+        pose_fingerprint="a" * 64,
     )
     assert summaries == ()
     assert [failure.video_id for failure in failures] == [
@@ -156,3 +160,81 @@ def test_batch_extraction_returns_non_silent_failure_ledger(tmp_path: Path) -> N
         "missing-b",
     ]
     assert all(failure.error_type == "FileNotFoundError" for failure in failures)
+
+
+def test_skip_existing_requires_exact_video_and_pose_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import pose
+
+    video = tmp_path / "fixture.mp4"
+    video.write_bytes(b"stable-video")
+    sequence = PoseSequence(
+        "fixture",
+        30.0,
+        np.ones((256, 33, 3), dtype=np.float32),
+        np.ones(256, dtype=bool),
+    )
+    extraction_calls = 0
+
+    def fake_extract(*args: object, **kwargs: object) -> tuple[PoseSequence, int, int]:
+        nonlocal extraction_calls
+        extraction_calls += 1
+        return sequence, 300, 280
+
+    monkeypatch.setattr(pose, "extract_pose_sequence", fake_extract)
+    first, _ = extract_pose_to_cache(
+        video,
+        video_id="fixture",
+        cache_dir=tmp_path / "cache",
+        pose_fingerprint="a" * 64,
+    )
+    assert not first.skipped
+    assert extraction_calls == 1
+
+    summaries, failures = extract_many_with_failures(
+        (("fixture", video, first.video_sha256),),
+        cache_dir=tmp_path / "cache",
+        pose_fingerprint="a" * 64,
+        skip_existing=True,
+    )
+    assert failures == ()
+    assert len(summaries) == 1
+    assert summaries[0].skipped
+    assert summaries[0].source_frames is None
+    assert extraction_calls == 1
+
+    summaries, failures = extract_many_with_failures(
+        (("fixture", video, first.video_sha256),),
+        cache_dir=tmp_path / "cache",
+        pose_fingerprint="b" * 64,
+        skip_existing=True,
+    )
+    assert summaries == ()
+    assert len(failures) == 1
+    assert "fingerprint mismatch" in failures[0].message
+    assert extraction_calls == 1
+
+    video.write_bytes(b"changed-video")
+    summaries, failures = extract_many_with_failures(
+        (("fixture", video, None),),
+        cache_dir=tmp_path / "cache",
+        pose_fingerprint="a" * 64,
+        skip_existing=True,
+    )
+    assert summaries == ()
+    assert len(failures) == 1
+    assert "video SHA-256 mismatch" in failures[0].message
+    assert extraction_calls == 1
+
+
+def test_skip_existing_and_overwrite_are_mutually_exclusive(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        extract_many_with_failures(
+            (),
+            cache_dir=tmp_path,
+            pose_fingerprint="a" * 64,
+            overwrite=True,
+            skip_existing=True,
+        )

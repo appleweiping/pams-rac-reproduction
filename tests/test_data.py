@@ -1,3 +1,6 @@
+import hashlib
+import json
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -7,6 +10,7 @@ from pams.data import (
     TrainingPoseDataset,
     UCFRepManifest,
     UCFRepRecord,
+    assert_split_disjoint,
     deterministic_stratified_split,
     load_pose_cache,
     load_ucfrep_manifest,
@@ -21,6 +25,8 @@ from pams.data import (
     write_pose_cache,
 )
 from pams.types import PoseSequence
+
+REPOSITORY = Path(__file__).parents[1]
 
 
 def _record(index: int, *, split: str = "train") -> UCFRepRecord:
@@ -45,6 +51,24 @@ def test_per_frame_minmax_and_missing_frames() -> None:
     assert np.all(normalized[2] == 0)
 
 
+def test_preprocess_marks_zero_span_frames_invalid() -> None:
+    xyz = np.zeros((3, 33, 3), dtype=np.float32)
+    xyz[0, :, 0] = np.linspace(0.0, 1.0, 33, dtype=np.float32)
+    xyz[1] = 5.0
+    xyz[2, :, 1] = np.linspace(0.0, 1.0, 33, dtype=np.float32)
+    sequence = PoseSequence(
+        video_id="zero-span",
+        fps=30.0,
+        xyz=xyz,
+        valid_mask=np.ones(3, dtype=np.bool_),
+    )
+
+    processed = preprocess_pose_sequence(sequence, target_frames=3)
+
+    assert processed.valid_mask.tolist() == [True, False, True]
+    assert np.count_nonzero(processed.xyz[1]) == 0
+
+
 def test_uniform_resample_preserves_gap_mask_and_zeros() -> None:
     xyz = np.ones((3, 33, 3), dtype=np.float32)
     xyz[1] = 9
@@ -66,7 +90,7 @@ def test_preprocess_pose_produces_256_normalized_frames() -> None:
     source = PoseSequence(
         "pose",
         25,
-        rng.normal(size=(40, 33, 3)),
+        rng.normal(size=(40, 33, 3)).astype(np.float32),
         np.ones(40, dtype=bool),
     )
     output = preprocess_pose_sequence(source)
@@ -104,12 +128,78 @@ def test_manifest_fingerprint_ignores_local_mount_path() -> None:
     assert first.fingerprint == second.fingerprint
 
 
-def test_exact_standard_protocol_split_validation() -> None:
-    records = tuple(_record(index) for index in range(421)) + tuple(
-        _record(421 + index, split="test") for index in range(105)
+def test_exact_standard_protocol_split_validation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    train_ids = (
+        (REPOSITORY / "data" / "splits" / "ucfrep_526_train_421.txt")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    )
+    test_ids = (
+        (REPOSITORY / "data" / "splits" / "ucfrep_526_test_105.txt")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    )
+
+    def canonical_record(video_id: str, split: str, index: int) -> UCFRepRecord:
+        action = video_id.removeprefix("v_").split("_g", 1)[0]
+        return UCFRepRecord(
+            video_id=video_id,
+            video_path=f"videos/{video_id}.avi",
+            split=split,
+            action=action,
+            count=1,
+            video_sha256=f"{index + 1:064x}",
+        )
+
+    records = tuple(
+        canonical_record(video_id, "train", index) for index, video_id in enumerate(train_ids)
+    ) + tuple(
+        canonical_record(video_id, "test", len(train_ids) + index)
+        for index, video_id in enumerate(test_ids)
     )
     manifest = UCFRepManifest("ucfrep_526", records)
+    monkeypatch.setattr(
+        "pams.data._UCFREP_526_CANONICAL_ANNOTATION_SHA256",
+        manifest.sealed_dataset_fingerprint,
+    )
     manifest.validate_exact_official_splits()
+    reordered = UCFRepManifest("ucfrep_526", tuple(reversed(records)))
+    assert reordered.sealed_dataset_fingerprint == manifest.sealed_dataset_fingerprint
+    development_assignment = UCFRepManifest(
+        "ucfrep_526",
+        (replace(records[0], split="dev"), *records[1:]),
+    )
+    assert development_assignment.sealed_dataset_fingerprint == manifest.sealed_dataset_fingerprint
+
+    tampered_records = list(records)
+    tampered_records[-1] = replace(
+        tampered_records[-1],
+        count=tampered_records[-1].count + 1,
+    )
+    tampered = UCFRepManifest("ucfrep_526", tuple(tampered_records))
+    with pytest.raises(ValueError, match="frozen official"):
+        tampered.validate_exact_official_splits()
+
+    swapped = UCFRepManifest(
+        "ucfrep_526",
+        (
+            *(
+                canonical_record(
+                    record.video_id,
+                    "test" if record.video_id == train_ids[0] else record.split,
+                    index,
+                )
+                for index, record in enumerate(records)
+                if record.video_id != test_ids[0]
+            ),
+            canonical_record(test_ids[0], "train", len(records)),
+        ),
+    )
+    with pytest.raises(ValueError, match="preregistered list|source group"):
+        swapped.validate_exact_official_splits()
+
     bad = UCFRepManifest("ucfrep_526", records[:-1])
     with pytest.raises(ValueError, match="exact split"):
         bad.validate_exact_official_splits()
@@ -119,6 +209,17 @@ def test_manifest_rejects_duplicate_identity() -> None:
     duplicate = _record(1, split="test")
     with pytest.raises(ValueError, match="duplicate video_id"):
         UCFRepManifest("ucfrep_526", (_record(1), duplicate))
+
+
+def test_split_disjoint_rejects_same_known_content_under_different_ids() -> None:
+    digest = "a" * 64
+    with pytest.raises(ValueError, match="video_sha256.*both"):
+        assert_split_disjoint(
+            (
+                UCFRepRecord("train-a", "train.avi", "train", "jump", 3, digest),
+                UCFRepRecord("test-b", "test.avi", "test", "jump", 3, digest),
+            )
+        )
 
 
 def test_stratified_split_is_exact_disjoint_and_deterministic() -> None:
@@ -152,7 +253,7 @@ def test_generic_stratifier_handles_singletons_and_exact_size() -> None:
 def test_pose_cache_hash_guards_and_training_dataset_no_label_leak(
     tmp_path: Path,
 ) -> None:
-    config_hash = "a" * 64
+    pose_hash = "a" * 64
     video_hash = "b" * 64
     sequence = PoseSequence(
         "cached",
@@ -165,17 +266,19 @@ def test_pose_cache_hash_guards_and_training_dataset_no_label_leak(
         cache_path,
         sequence,
         video_sha256=video_hash,
-        config_sha256=config_hash,
+        pose_fingerprint=pose_hash,
     )
     loaded, metadata = load_pose_cache(
         cache_path,
         expected_video_sha256=video_hash,
-        expected_config_sha256=config_hash,
+        expected_pose_fingerprint=pose_hash,
     )
     assert loaded.video_id == "cached"
     assert metadata.frames == 8
-    with pytest.raises(ValueError, match="config"):
-        load_pose_cache(cache_path, expected_config_sha256="c" * 64)
+    assert metadata.schema_version == 2
+    assert metadata.pose_fingerprint == pose_hash
+    with pytest.raises(ValueError, match="fingerprint"):
+        load_pose_cache(cache_path, expected_pose_fingerprint="c" * 64)
 
     record = UCFRepRecord(
         video_id="cached",
@@ -185,10 +288,34 @@ def test_pose_cache_hash_guards_and_training_dataset_no_label_leak(
         count=999,
         video_sha256=video_hash,
     )
-    dataset = TrainingPoseDataset([record], cache_dir=tmp_path, config_sha256=config_hash)
+    dataset = TrainingPoseDataset(
+        [record],
+        cache_dir=tmp_path,
+        pose_fingerprint=pose_hash,
+    )
     assert dataset[0].video_id == "cached"
     assert not hasattr(dataset._items[0], "count")
     assert not hasattr(dataset._items[0], "action")
+    materialized, snapshot = dataset.materialize_snapshot()
+    assert materialized[0].video_id == "cached"
+    assert snapshot.entries[0].cache_sha256 == hashlib.sha256(cache_path.read_bytes()).hexdigest()
+    assert snapshot.to_dict()["fingerprint"] == snapshot.fingerprint
+
+    changed = PoseSequence(
+        "cached",
+        30,
+        np.zeros((8, 33, 3), dtype=np.float32),
+        np.ones(8, dtype=bool),
+    )
+    write_pose_cache(
+        cache_path,
+        changed,
+        video_sha256=video_hash,
+        pose_fingerprint=pose_hash,
+        overwrite=True,
+    )
+    _, changed_snapshot = dataset.materialize_snapshot()
+    assert changed_snapshot.fingerprint != snapshot.fingerprint
 
 
 def test_training_dataset_rejects_test_and_dev_by_default(tmp_path: Path) -> None:
@@ -196,11 +323,102 @@ def test_training_dataset_rejects_test_and_dev_by_default(tmp_path: Path) -> Non
         TrainingPoseDataset(
             [_record(1, split="test")],
             cache_dir=tmp_path,
-            config_sha256="a" * 64,
+            pose_fingerprint="a" * 64,
+        )
+
+
+def test_training_dataset_requires_source_content_hash(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="content-hashed.*video_sha256"):
+        TrainingPoseDataset(
+            [UCFRepRecord("train", "train.avi", "train", "jump", 5)],
+            cache_dir=tmp_path,
+            pose_fingerprint="a" * 64,
         )
     with pytest.raises(ValueError, match="disallowed"):
         TrainingPoseDataset(
             [UCFRepRecord("dev", "dev.mp4", "dev", "jump", 5)],
             cache_dir=tmp_path,
-            config_sha256="a" * 64,
+            pose_fingerprint="a" * 64,
         )
+
+
+def test_training_fingerprint_cannot_read_labels_or_sealed_test_rows() -> None:
+    train = UCFRepRecord(
+        "train",
+        "machine-a/train.avi",
+        "train",
+        "action-a",
+        4,
+        "a" * 64,
+    )
+    test = UCFRepRecord(
+        "test",
+        "machine-a/test.avi",
+        "test",
+        "action-b",
+        9,
+        "b" * 64,
+    )
+    base = UCFRepManifest("ucfrep_526", (train, test))
+    relabelled = UCFRepManifest(
+        "ucfrep_526",
+        (
+            UCFRepRecord(
+                "train",
+                "machine-b/train.avi",
+                "train",
+                "different-train-action",
+                99,
+                "a" * 64,
+            ),
+            UCFRepRecord(
+                "test",
+                "machine-b/test.avi",
+                "test",
+                "different-test-action",
+                123,
+                "c" * 64,
+            ),
+        ),
+    )
+    assert base.training_fingerprint() == relabelled.training_fingerprint()
+    assert base.fingerprint != relabelled.fingerprint
+
+    changed_train_content = UCFRepManifest(
+        "ucfrep_526",
+        (
+            UCFRepRecord(
+                "train",
+                "train.avi",
+                "train",
+                "action-a",
+                4,
+                "d" * 64,
+            ),
+            test,
+        ),
+    )
+    assert base.training_fingerprint() != changed_train_content.training_fingerprint()
+
+
+def test_legacy_full_config_pose_cache_is_rejected_readably(tmp_path: Path) -> None:
+    path = tmp_path / "legacy.npz"
+    metadata = {
+        "schema_version": 1,
+        "video_id": "legacy",
+        "video_sha256": "a" * 64,
+        "config_sha256": "b" * 64,
+        "pose_model": "mediapipe-pose-0.10.14",
+        "fps": 30.0,
+        "frames": 4,
+        "keypoints": 33,
+        "coordinates": 3,
+    }
+    np.savez_compressed(
+        path,
+        xyz=np.zeros((4, 33, 3), dtype=np.float32),
+        valid_mask=np.ones(4, dtype=np.bool_),
+        metadata=np.asarray(json.dumps(metadata)),
+    )
+    with pytest.raises(ValueError, match="legacy pose cache.*regenerate"):
+        load_pose_cache(path)

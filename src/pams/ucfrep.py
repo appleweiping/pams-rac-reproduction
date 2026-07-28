@@ -2,7 +2,8 @@
 
 The original repository distributes annotations but not the UCF101 video
 files.  This module downloads only that annotation archive, verifies its
-content hash, and derives the exact 421/105 manifest used by this project.
+content hash, resolves the three supported UCF101 layouts, and derives the
+exact 421/105 manifest used by this project.
 """
 
 from __future__ import annotations
@@ -94,6 +95,82 @@ def _annotation_count(payload: bytes) -> int:
     return count
 
 
+def _video_path_candidates(
+    *,
+    video_root: Path,
+    action: str,
+    filename: str,
+) -> tuple[Path, Path, Path]:
+    """Return the only three video layouts accepted by the official loader."""
+
+    return (
+        video_root / "UCF-101" / action / filename,
+        video_root / action / filename,
+        video_root / "flat" / filename,
+    )
+
+
+def resolve_ucfrep_video_path(
+    video_root: str | Path,
+    *,
+    video_id: str,
+    action: str,
+    video_suffix: str = ".avi",
+    allow_missing: bool = False,
+) -> Path:
+    """Resolve one UCFRep video without guessing between ambiguous layouts.
+
+    Supported layouts relative to ``video_root`` are:
+
+    - ``UCF-101/<Action>/<video>.avi``;
+    - ``<Action>/<video>.avi`` (including when ``video_root`` is UCF-101);
+    - ``flat/<video>.avi``.
+
+    With ``allow_missing=True``, a missing video receives the deterministic
+    ``<Action>/<video>.avi`` placeholder used by annotation-only manifests.
+    Multiple existing candidates are always an error, including in
+    annotation-only mode.
+    """
+
+    # Persist an absolute identity in the manifest.  Pose extraction resolves
+    # relative record paths against the manifest directory, so allowing a
+    # caller-CWD-relative video root here would silently change its meaning
+    # after the manifest is moved.
+    root = Path(video_root).expanduser().resolve(strict=False)
+    identifier = str(video_id).strip()
+    action_name = str(action).strip()
+    if not identifier or not action_name:
+        raise ValueError("video_id and action must be non-empty")
+    if not video_suffix.startswith(".") or Path(video_suffix).name != video_suffix:
+        raise ValueError("video_suffix must be a filename suffix beginning with a dot")
+    if any(separator in action_name for separator in ("/", "\\")):
+        raise ValueError("action must be a directory name, not a path")
+
+    filename = f"{identifier}{video_suffix}"
+    candidates = _video_path_candidates(
+        video_root=root,
+        action=action_name,
+        filename=filename,
+    )
+    matches = tuple(path for path in candidates if path.is_file())
+    if len(matches) > 1:
+        rendered = ", ".join(path.as_posix() for path in matches)
+        raise ValueError(
+            f"ambiguous UCFRep video path for {identifier!r}; "
+            f"multiple supported layouts contain the file: {rendered}"
+        )
+    if matches:
+        return matches[0]
+    if allow_missing:
+        # The action-relative form remains useful if VIDEO_ROOT is later set
+        # directly to the extracted UCF-101 directory.
+        return candidates[1]
+    searched = ", ".join(path.as_posix() for path in candidates)
+    raise FileNotFoundError(
+        f"missing UCFRep video {identifier!r}; searched supported layouts: {searched}"
+    )
+
+
 def _record_from_annotation(
     *,
     archive_name: str,
@@ -101,6 +178,7 @@ def _record_from_annotation(
     video_root: Path,
     video_suffix: str,
     hash_existing_videos: bool,
+    allow_missing_videos: bool,
 ) -> UCFRepRecord:
     prefix, filename = archive_name.rsplit("/", 1)
     source_split = prefix.rsplit("/", 1)[-1]
@@ -115,7 +193,14 @@ def _record_from_annotation(
     if split == "test" and not 21 <= group <= 25:
         raise ValueError(f"test record has non-test source group: {video_id}")
 
-    video_path = video_root / f"{video_id}{video_suffix}"
+    action = match.group("action")
+    video_path = resolve_ucfrep_video_path(
+        video_root,
+        video_id=video_id,
+        action=action,
+        video_suffix=video_suffix,
+        allow_missing=allow_missing_videos,
+    )
     video_digest = (
         sha256_file(video_path) if hash_existing_videos and video_path.is_file() else None
     )
@@ -123,7 +208,7 @@ def _record_from_annotation(
         video_id=video_id,
         video_path=video_path.as_posix(),
         split=split,
-        action=match.group("action"),
+        action=action,
         count=_annotation_count(payload),
         video_sha256=video_digest,
     )
@@ -134,19 +219,29 @@ def build_official_manifest(
     *,
     video_root: str | Path,
     video_suffix: str = ".avi",
-    hash_existing_videos: bool = False,
+    hash_existing_videos: bool = True,
+    allow_missing_videos: bool = False,
 ) -> UCFRepManifest:
-    """Build and validate the official 421/105 UCFRep manifest."""
+    """Build and validate the official 421/105 UCFRep manifest.
+
+    The default is experiment-strict: all 526 videos must resolve uniquely and
+    are content-hashed. ``hash_existing_videos=False`` skips hashing but still
+    requires every file. Annotation-only consumers must explicitly pass
+    ``allow_missing_videos=True``; any files that do exist are still resolved
+    and optionally hashed.
+    """
 
     archive_path = Path(annotation_archive)
     digest = sha256_file(archive_path)
     if digest != OFFICIAL_ANNOTATION_SHA256:
         raise ValueError(f"annotation archive SHA-256 mismatch: {digest}")
-    if not video_suffix.startswith("."):
-        raise ValueError("video_suffix must begin with a dot")
+    if not video_suffix.startswith(".") or Path(video_suffix).name != video_suffix:
+        raise ValueError("video_suffix must be a filename suffix beginning with a dot")
 
     records: list[UCFRepRecord] = []
-    root = Path(video_root)
+    root = Path(video_root).expanduser().resolve(strict=False)
+    if not allow_missing_videos and not root.is_dir():
+        raise FileNotFoundError(f"video_root is not an existing directory: {root}")
     with zipfile.ZipFile(archive_path) as archive:
         annotation_names = sorted(
             name
@@ -162,6 +257,7 @@ def build_official_manifest(
                     video_root=root,
                     video_suffix=video_suffix,
                     hash_existing_videos=hash_existing_videos,
+                    allow_missing_videos=allow_missing_videos,
                 )
             )
 

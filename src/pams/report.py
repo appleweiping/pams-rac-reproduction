@@ -283,10 +283,21 @@ def render_markdown(report: AggregateReport) -> str:
         lines.append(f"| `{_escape(check.key)}` | {result} | {_escape(check.detail)} |")
     mean_nmae = "—" if decision.mean_metrics is None else f"{decision.mean_metrics.nmae:.3f}"
     mean_obo = "—" if decision.mean_metrics is None else f"{decision.mean_metrics.obo:.3f}"
+    std_nmae = (
+        "—"
+        if decision.population_std_metrics is None
+        else f"{decision.population_std_metrics.nmae:.3f}"
+    )
+    std_obo = (
+        "—"
+        if decision.population_std_metrics is None
+        else f"{decision.population_std_metrics.obo:.3f}"
+    )
     lines.extend(
         [
             "",
-            f"Mean NMAE: **{mean_nmae}**; mean OBO: **{mean_obo}**; "
+            f"Mean NMAE: **{mean_nmae}** (population SD **{std_nmae}**); "
+            f"mean OBO: **{mean_obo}** (population SD **{std_obo}**); "
             f"individual passing seeds: **{decision.individual_passes}/3**.",
             "",
         ]

@@ -44,9 +44,12 @@ def test_stress_suite_contains_required_corruptions() -> None:
         "pause",
         "noise",
         "occlusion",
-        "rotation",
-        "scale",
-        "translation",
+        "rotation_negative",
+        "rotation_positive",
+        "scale_low",
+        "scale_high",
+        "translation_negative",
+        "translation_positive",
         "multiharmonic",
     }
     occlusion = suite["occlusion"]
@@ -55,7 +58,14 @@ def test_stress_suite_contains_required_corruptions() -> None:
     assert affected_frames.sum() == 20
     assert np.max(invisible.sum(axis=1)) == round(33 * 0.3)
     assert not np.array_equal(suite["clean"].sequence.xyz, suite["noise"].sequence.xyz)
-    assert not np.array_equal(suite["clean"].sequence.xyz, suite["rotation"].sequence.xyz)
+    assert not np.array_equal(
+        suite["clean"].sequence.xyz,
+        suite["rotation_negative"].sequence.xyz,
+    )
+    assert not np.array_equal(
+        suite["rotation_negative"].sequence.xyz,
+        suite["rotation_positive"].sequence.xyz,
+    )
 
 
 def test_missing_frames_are_zero_and_masked() -> None:

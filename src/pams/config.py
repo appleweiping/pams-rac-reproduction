@@ -9,10 +9,10 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class StrictModel(BaseModel):
@@ -25,8 +25,37 @@ class DataConfig(StrictModel):
     frames: int = Field(default=256, ge=16)
     keypoints: int = Field(default=33, ge=1)
     coordinates: int = Field(default=3, ge=1)
-    normalization: str = "per_frame_minmax"
-    missing_value: float = 0.0
+    normalization: Literal["per_frame_minmax"] = "per_frame_minmax"
+    missing_value: float = Field(default=0.0, strict=True)
+
+    @field_validator("missing_value")
+    @classmethod
+    def validate_missing_value(cls, value: float) -> float:
+        if value != 0.0:
+            raise ValueError("data.missing_value must be exactly 0.0")
+        return value
+
+
+class PoseConfig(StrictModel):
+    """Frozen MediaPipe extractor settings included in pose-cache identity."""
+
+    preprocessing_revision: Literal["detected-span-minmax-zero-span-invalid-v2"] = (
+        "detected-span-minmax-zero-span-invalid-v2"
+    )
+    model_id: str = "mediapipe-pose-0.10.14"
+    model_complexity: int = Field(default=1, ge=0, le=2)
+    smooth_landmarks: bool = True
+    min_detection_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
+    min_tracking_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
+    crop_to_detected_span: bool = True
+
+    @field_validator("model_id")
+    @classmethod
+    def validate_model_id(cls, value: str) -> str:
+        model_id = value.strip()
+        if not model_id:
+            raise ValueError("pose.model_id must be non-empty")
+        return model_id
 
 
 class ModelConfig(StrictModel):
@@ -62,7 +91,6 @@ class PeriodConfig(StrictModel):
 class LossConfig(StrictModel):
     scales: tuple[float, ...] = (0.5, 1.0, 1.5)
     temperature: float = Field(default=0.1, gt=0)
-    correspondence_tolerance: float = Field(default=0.1, ge=0, le=0.5)
     kmeans_clusters: int = Field(default=8, ge=2)
     kmeans_refresh_epochs: int = Field(default=5, ge=1)
 
@@ -102,6 +130,7 @@ class PAMSConfig(StrictModel):
     protocol: str = "ucfrep_526"
     seed: int = 2026
     data: DataConfig = DataConfig()
+    pose: PoseConfig = PoseConfig()
     model: ModelConfig = ModelConfig()
     period: PeriodConfig = PeriodConfig()
     loss: LossConfig = LossConfig()
@@ -126,11 +155,48 @@ class PAMSConfig(StrictModel):
 
         return self.model_dump(mode="json")
 
+    def nonseed_canonical_dict(self) -> dict[str, Any]:
+        """Return the experiment specification with only the seed removed."""
+
+        payload = self.canonical_dict()
+        payload.pop("seed")
+        return payload
+
+    def pose_canonical_dict(self) -> dict[str, Any]:
+        """Return only preprocessing/extractor state used by pose caches."""
+
+        return {
+            "data": self.data.model_dump(mode="json"),
+            "pose": self.pose.model_dump(mode="json"),
+        }
+
     @property
     def fingerprint(self) -> str:
         payload = json.dumps(self.canonical_dict(), sort_keys=True, separators=(",", ":")).encode(
             "utf-8"
         )
+        return hashlib.sha256(payload).hexdigest()
+
+    @property
+    def nonseed_fingerprint(self) -> str:
+        """Hash the frozen method specification shared by preregistered seeds."""
+
+        payload = json.dumps(
+            self.nonseed_canonical_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return hashlib.sha256(payload).hexdigest()
+
+    @property
+    def pose_fingerprint(self) -> str:
+        """Hash pose identity without seeds, models, or training hyperparameters."""
+
+        payload = json.dumps(
+            self.pose_canonical_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
         return hashlib.sha256(payload).hexdigest()
 
 

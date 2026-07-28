@@ -23,6 +23,9 @@ outputs/
 !.env.example
 *.pem
 *.key
+*.ppk
+id_ed25519*
+id_rsa*
 
 # Python
 .venv/

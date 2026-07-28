@@ -9,7 +9,7 @@ for an honestly runnable implementation; blocked methods raise
 
 | Registry key | Target evidence | Current status | Comparison protocol |
 |---|---|---|---|
-| `repnet` | official/conversion sanity, then clean-room | `blocked_unimplemented` | UCFRep-526 fair |
+| `repnet` | official current `ckpt-70` sanity, then independent adapter | `blocked_unimplemented`; PAMS table cell `protocol-unverifiable` | UCFRep-526 fair |
 | `transrac` | official sanity, then clean-room | `blocked_unimplemented` | UCFRep-526 fair |
 | `escounts` | official sanity, then clean-room | `blocked_unimplemented` | UCFRep-526 fair |
 | `ivac-p2l` | official zero-shot sanity, then clean-room | `blocked_unimplemented` | UCFRep-526 fair |
@@ -25,6 +25,10 @@ for an honestly runnable implementation; blocked methods raise
 The status is deliberately conservative. An architecture moves to `ready` only after
 its model, preprocessing, checkpoint provenance and prediction artifact have passed
 method-specific parity tests.
+No blocked baseline method ID is accepted by the sealed metrics command. The
+production sealed-report allowlist is empty in this revision; this prevents an
+arbitrary JSON file from being published under RepNet, TransRAC, or another
+paper method name.
 
 ## Table separation
 
@@ -75,8 +79,10 @@ name. The only deterministic placeholder is explicitly called `spectral-proxy`, 
 
 ## Source notes
 
-- RepNet: [project page](https://sites.google.com/view/repnet) and the separately
-  maintained [PyTorch conversion](https://github.com/materight/RepNet-pytorch).
+- RepNet: [official source](https://github.com/google-research/google-research/tree/ec7c3d346277b737bc2decffcd1b533d4b7ec105/repnet),
+  [project page](https://sites.google.com/view/repnet), and the separately
+  maintained [unlicensed legacy PyTorch conversion](https://github.com/materight/RepNet-pytorch).
+  See the [asset/protocol audit](baselines/REPNET_AUDIT.md).
 - TransRAC: [official repository](https://github.com/SvipRepetitionCounting/TransRAC).
 - Every Shot Counts: [official repository](https://github.com/sinhasaptarshi/EveryShotCounts).
 - IVAC-P2L: [official repository](https://github.com/hwang-cs-ime/IVAC-P2L).

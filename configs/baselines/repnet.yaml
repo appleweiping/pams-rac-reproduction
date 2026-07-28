@@ -8,5 +8,15 @@ modality: rgb
 eligible_for_comparison: false
 reason: Converted-weight parity and the fair UCFRep-526 adapter are not yet validated.
 sources:
+  - https://github.com/google-research/google-research/tree/ec7c3d346277b737bc2decffcd1b533d4b7ec105/repnet
   - https://sites.google.com/view/repnet
   - https://github.com/materight/RepNet-pytorch
+audit:
+  document: docs/baselines/REPNET_AUDIT.md
+  pams_reported_cell: protocol-unverifiable
+  planned_row_name: RepNet-official-current-ckpt70 / independent UCFRep evaluation
+  official_source_commit: ec7c3d346277b737bc2decffcd1b533d4b7ec105
+  official_license: Apache-2.0
+  checkpoint_prefix: ckpt-70
+  checkpoint_downloaded: false
+  legacy_port_eligible_for_public_redistribution: false

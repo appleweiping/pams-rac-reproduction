@@ -1,7 +1,13 @@
+import hashlib
 import inspect
+import json
 import math
+from dataclasses import replace
+from pathlib import Path
+from typing import Any
 
 import numpy as np
+import pytest
 import torch
 
 from pams.config import (
@@ -14,11 +20,15 @@ from pams.config import (
     TrainingConfig,
 )
 from pams.training import (
+    CheckpointProvenance,
     build_pams_model,
     collate_pose_sequences,
+    load_model_checkpoint,
     predict_sequence,
     train_encoder,
     train_sshead,
+    validate_sshead_encoder_binding,
+    validate_terminal_checkpoint,
 )
 from pams.types import PoseSequence
 
@@ -41,7 +51,6 @@ def _tiny_config(*, encoder_epochs: int = 2, head_epochs: int = 1) -> PAMSConfig
         loss=LossConfig(
             scales=(1.0,),
             temperature=0.1,
-            correspondence_tolerance=0.1,
             kmeans_clusters=2,
             kmeans_refresh_epochs=1,
         ),
@@ -77,6 +86,101 @@ def _sequence(identifier: str, *, phase: float = 0.0, frames: int = 16) -> PoseS
     )
 
 
+def _provenance(
+    config: PAMSConfig,
+    identifiers: tuple[str, ...] = ("b", "a"),
+    *,
+    dataset_fingerprint: str = "d" * 64,
+    upstream_encoder_checkpoint_sha256: str | None = None,
+) -> CheckpointProvenance:
+    return CheckpointProvenance(
+        protocol=config.protocol,
+        dataset_fingerprint=dataset_fingerprint,
+        training_video_ids=identifiers,
+        pose_fingerprint=config.pose_fingerprint,
+        pose_cache_set_sha256="c" * 64,
+        source_git_sha="a" * 40,
+        upstream_encoder_checkpoint_sha256=upstream_encoder_checkpoint_sha256,
+    )
+
+
+def _write_terminal_encoder_fixture(
+    tmp_path: Path,
+    config: PAMSConfig,
+) -> tuple[Path, Path, CheckpointProvenance, Any]:
+    from pams import training as training_module
+
+    checkpoint = tmp_path / "encoder.pt"
+    progress = tmp_path / "encoder.jsonl"
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(config.seed)
+        model = build_pams_model(config)
+    optimizer = training_module.AdamW(model.encoder.parameters(), lr=1e-3)
+    scheduler = training_module.ReduceLROnPlateau(optimizer)
+    provenance = _provenance(config)
+    bank = training_module.VideoPrototypeBank(
+        video_ids=provenance.training_video_ids,
+        features=torch.zeros(
+            len(provenance.training_video_ids),
+            config.model.embedding_dim,
+        ),
+        cluster_labels=torch.arange(len(provenance.training_video_ids), dtype=torch.long),
+    )
+    history = [
+        training_module.EncoderEpochStats(
+            epoch=epoch,
+            loss=1.0 / epoch,
+            learning_rate=1e-3,
+            period_source=(
+                "pose" if epoch <= config.period.pose_energy_epochs else "embedding"
+            ),
+            period_confidence_mean=0.8,
+            period_valid_fraction=1.0,
+            optimizer_steps=1,
+            clusters_refreshed=True,
+            cross_cluster_requested=2,
+            cross_cluster_actual=2,
+            cross_cluster_shortfall=0,
+        )
+        for epoch in range(1, config.training.epochs + 1)
+    ]
+    payload = training_module._checkpoint_payload(
+        stage="encoder",
+        config=config,
+        model=model,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        completed_epochs=config.training.epochs,
+        history=history,
+        cluster_assignments=bank.assignments,
+        prototype_bank=bank,
+        provenance=provenance,
+    )
+    torch.save(payload, checkpoint)
+    rows = [
+        training_module._progress_row(
+            stage="encoder",
+            stats=statistics,
+            config=config,
+        )
+        for statistics in history
+    ]
+    progress.write_text(
+        "".join(
+            json.dumps(
+                row,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            )
+            + "\n"
+            for row in rows
+        ),
+        encoding="utf-8",
+    )
+    return checkpoint, progress, provenance, model
+
+
 def test_collate_pads_without_creating_valid_frames() -> None:
     batch = collate_pose_sequences((_sequence("long"), _sequence("short", frames=12)))
     assert batch.poses.shape == (2, 16, 33, 3)
@@ -86,7 +190,9 @@ def test_collate_pads_without_creating_valid_frames() -> None:
     assert batch.lengths.tolist() == [16, 12]
 
 
-def test_train_api_is_label_free_and_resume_is_bitwise_deterministic(tmp_path) -> None:
+def test_train_api_is_label_free_and_resume_is_bitwise_deterministic(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     signature = inspect.signature(train_encoder)
     assert "targets" not in signature.parameters
     assert "ground_truths" not in signature.parameters
@@ -100,35 +206,232 @@ def test_train_api_is_label_free_and_resume_is_bitwise_deterministic(tmp_path) -
         items,
         config,
         device="cpu",
-        microbatch_size=1,
+        microbatch_size=2,
     )
     checkpoint = tmp_path / "encoder.pt"
+    progress = tmp_path / "encoder.jsonl"
     partial = train_encoder(
         items,
         config,
         device="cpu",
-        microbatch_size=1,
+        microbatch_size=2,
         checkpoint_path=checkpoint,
+        progress_path=progress,
         stop_after_epoch=1,
     )
     assert partial.completed_epochs == 1
+    partial_rows = [json.loads(line) for line in progress.read_text(encoding="utf-8").splitlines()]
+    assert len(partial_rows) == 1
+    assert partial_rows[0]["stage"] == "encoder"
+    assert partial_rows[0]["epoch"] == 1
+    assert partial_rows[0]["config_fingerprint"] == config.fingerprint
+    assert partial_rows[0]["checkpoint_role"] == "encoder_checkpoint"
+    assert "epoch" not in partial_rows[0]["stats"]
+    assert "period_confidence_mean" in partial_rows[0]["stats"]
+    assert "period_valid_fraction" in partial_rows[0]["stats"]
+    assert "cross_cluster_shortfall" in partial_rows[0]["stats"]
+    assert set(partial_rows[0]) == {
+        "schema_version",
+        "stage",
+        "epoch",
+        "stats",
+        "config_fingerprint",
+        "checkpoint_role",
+    }
+    real_torch_load = torch.load
+    checkpoint_map_locations: list[object] = []
+
+    def recording_torch_load(*args: Any, **kwargs: Any) -> Any:
+        checkpoint_map_locations.append(kwargs.get("map_location"))
+        return real_torch_load(*args, **kwargs)
+
+    monkeypatch.setattr(torch, "load", recording_torch_load)
     resumed = train_encoder(
-        items,
+        tuple(reversed(items)),
         config,
         device="cpu",
-        microbatch_size=1,
+        microbatch_size=2,
         checkpoint_path=checkpoint,
+        progress_path=progress,
         resume=True,
     )
     assert resumed.completed_epochs == 2
+    assert checkpoint_map_locations == [torch.device("cpu")]
     assert [item.period_source for item in resumed.history] == ["pose", "embedding"]
+    resumed_rows = [json.loads(line) for line in progress.read_text(encoding="utf-8").splitlines()]
+    assert [row["epoch"] for row in resumed_rows] == [1, 2]
     assert set(resumed.cluster_assignments) == {"a", "b"}
+    assert resumed.prototype_bank is not None
+    assert uninterrupted.prototype_bank is not None
+    assert resumed.prototype_bank.video_ids == uninterrupted.prototype_bank.video_ids
+    assert torch.equal(
+        resumed.prototype_bank.features,
+        uninterrupted.prototype_bank.features,
+    )
+    assert torch.equal(
+        resumed.prototype_bank.cluster_labels,
+        uninterrupted.prototype_bank.cluster_labels,
+    )
+    for stats in resumed.history:
+        assert 0.0 <= stats.period_confidence_mean <= 1.0
+        assert 0.0 <= stats.period_valid_fraction <= 1.0
+        assert (
+            stats.cross_cluster_requested
+            == stats.cross_cluster_actual + stats.cross_cluster_shortfall
+        )
+        assert isinstance(stats.cross_cluster_requested, int)
+        assert isinstance(stats.cross_cluster_actual, int)
+        assert isinstance(stats.cross_cluster_shortfall, int)
     for name, expected in uninterrupted.model.state_dict().items():
         assert torch.equal(expected, resumed.model.state_dict()[name]), name
 
 
-def test_sshead_keeps_encoder_frozen_and_prediction_is_well_formed() -> None:
-    config = _tiny_config(encoder_epochs=1, head_epochs=1)
+def test_encoder_rejects_gradient_accumulation_as_contrastive_batch_substitute() -> None:
+    items = (_sequence("a"), _sequence("b", phase=0.4))
+    config = _tiny_config(encoder_epochs=1)
+
+    with pytest.raises(
+        ValueError,
+        match=r"physical microbatch_size == effective_batch_size.*"
+        r"gradient accumulation cannot preserve.*cross-video.*cross-cluster",
+    ):
+        train_encoder(
+            items,
+            config,
+            device="cpu",
+            microbatch_size=1,
+        )
+
+
+def test_encoder_drops_incomplete_tail_and_records_zero_period_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    def zero_confidence(
+        poses: torch.Tensor,
+        minimum: int,
+        maximum: int,
+        valid_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        del maximum, valid_mask
+        batch = poses.shape[0]
+        return (
+            torch.full((batch,), minimum, dtype=torch.long, device=poses.device),
+            torch.zeros(batch, dtype=poses.dtype, device=poses.device),
+        )
+
+    monkeypatch.setattr(training_module, "estimate_period_from_pose", zero_confidence)
+    items = (
+        _sequence("a"),
+        _sequence("b", phase=0.4),
+        _sequence("c", phase=0.8),
+    )
+    result = train_encoder(
+        items,
+        _tiny_config(encoder_epochs=1),
+        device="cpu",
+        microbatch_size=2,
+    )
+    assert result.history[0].optimizer_steps == 1
+    assert result.history[0].period_confidence_mean == 0.0
+    assert result.history[0].period_valid_fraction == 0.0
+
+
+def test_encoder_strict_mode_fails_on_prototype_bank_shortfall(
+    tmp_path: Path,
+) -> None:
+    items = (_sequence("a"), _sequence("b", phase=0.4))
+    config = _tiny_config(encoder_epochs=1)
+    model = build_pams_model(config)
+    encoder_before = {
+        name: value.detach().clone() for name, value in model.encoder.state_dict().items()
+    }
+    checkpoint = tmp_path / "strict.pt"
+    progress = tmp_path / "strict.jsonl"
+    with pytest.raises(
+        RuntimeError,
+        match=r"prototype bank shortfall before optimizer\.step",
+    ):
+        train_encoder(
+            items,
+            config,
+            model=model,
+            device="cpu",
+            microbatch_size=2,
+            checkpoint_path=checkpoint,
+            progress_path=progress,
+            allow_negative_shortfall=False,
+        )
+    assert not checkpoint.exists()
+    assert not progress.exists()
+    for name, expected in encoder_before.items():
+        assert torch.equal(expected, model.encoder.state_dict()[name])
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is unavailable")
+def test_cuda_encoder_resume_loads_rng_on_cpu_before_device_migration(
+    tmp_path: Path,
+) -> None:
+    items = (_sequence("a"), _sequence("b", phase=0.4))
+    config = _tiny_config(encoder_epochs=2)
+    checkpoint = tmp_path / "encoder-cuda.pt"
+    partial = train_encoder(
+        items,
+        config,
+        device="cuda",
+        microbatch_size=2,
+        checkpoint_path=checkpoint,
+        stop_after_epoch=1,
+    )
+    assert partial.completed_epochs == 1
+
+    resumed = train_encoder(
+        items,
+        config,
+        device="cuda",
+        microbatch_size=2,
+        checkpoint_path=checkpoint,
+        resume=True,
+    )
+    assert resumed.completed_epochs == 2
+    assert next(resumed.model.parameters()).device.type == "cuda"
+
+
+def test_sshead_keeps_encoder_frozen_and_prediction_is_well_formed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    def zero_confidence(
+        embeddings: torch.Tensor,
+        minimum: int,
+        maximum: int,
+        valid_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        del maximum, valid_mask
+        batch = embeddings.shape[0]
+        return (
+            torch.full(
+                (batch,),
+                minimum,
+                dtype=torch.long,
+                device=embeddings.device,
+            ),
+            torch.zeros(
+                batch,
+                dtype=embeddings.dtype,
+                device=embeddings.device,
+            ),
+        )
+
+    monkeypatch.setattr(
+        training_module,
+        "estimate_period_from_embeddings",
+        zero_confidence,
+    )
+    config = _tiny_config(encoder_epochs=1, head_epochs=2)
     model = build_pams_model(config)
     encoder_before = {
         name: value.detach().clone() for name, value in model.encoder.state_dict().items()
@@ -137,14 +440,29 @@ def test_sshead_keeps_encoder_frozen_and_prediction_is_well_formed() -> None:
         name: value.detach().clone() for name, value in model.period_head.state_dict().items()
     }
     items = (_sequence("a"), _sequence("b", phase=0.7))
-    trained = train_sshead(
+    checkpoint = tmp_path / "sshead.pt"
+    progress = tmp_path / "sshead.jsonl"
+    partial = train_sshead(
         items,
         config,
         model=model,
         device="cpu",
         microbatch_size=1,
+        checkpoint_path=checkpoint,
+        progress_path=progress,
+        stop_after_epoch=1,
     )
-    assert trained.completed_epochs == 1
+    trained = train_sshead(
+        items,
+        config,
+        model=partial.model,
+        device="cpu",
+        microbatch_size=1,
+        checkpoint_path=checkpoint,
+        progress_path=progress,
+        resume=True,
+    )
+    assert trained.completed_epochs == 2
     for name, expected in encoder_before.items():
         assert torch.equal(expected, trained.model.encoder.state_dict()[name])
     assert any(
@@ -157,3 +475,565 @@ def test_sshead_keeps_encoder_frozen_and_prediction_is_well_formed() -> None:
     assert 4 <= result.period_frames <= 8
     assert len(result.expert_counts) == 3
     assert result.period_stream.shape == (16,)
+    rows = [json.loads(line) for line in progress.read_text(encoding="utf-8").splitlines()]
+    assert [row["stage"] for row in rows] == ["sshead", "sshead"]
+    assert [row["epoch"] for row in rows] == [1, 2]
+    assert all(row["stats"]["period_confidence_mean"] == 0.0 for row in rows)
+    assert all(row["stats"]["period_valid_fraction"] == 0.0 for row in rows)
+    assert trained.history[0] == partial.history[0]
+    monitor_fields = {
+        "stream_std_min",
+        "stream_std_p10",
+        "stream_std_median",
+        "stream_std_mean",
+        "collapsed_fraction_1e6",
+        "near_collapsed_fraction_1e3",
+        "head_grad_rms_max",
+        "head_grad_to_param_ratio_max",
+        "zero_grad_steps",
+    }
+    assert all(monitor_fields <= set(row["stats"]) for row in rows)
+    for stats in trained.history:
+        monitored_values = (
+            stats.stream_std_min,
+            stats.stream_std_p10,
+            stats.stream_std_median,
+            stats.stream_std_mean,
+            stats.collapsed_fraction_1e6,
+            stats.near_collapsed_fraction_1e3,
+            stats.head_grad_rms_max,
+            stats.head_grad_to_param_ratio_max,
+        )
+        assert all(math.isfinite(value) for value in monitored_values)
+        assert 0.0 <= stats.stream_std_min <= stats.stream_std_p10
+        assert stats.stream_std_min <= stats.stream_std_median
+        assert stats.stream_std_min <= stats.stream_std_mean
+        assert 0.0 <= stats.collapsed_fraction_1e6 <= 1.0
+        assert stats.collapsed_fraction_1e6 <= stats.near_collapsed_fraction_1e3 <= 1.0
+        assert stats.head_grad_rms_max >= 0.0
+        assert stats.head_grad_to_param_ratio_max >= 0.0
+        assert 0 <= stats.zero_grad_steps <= stats.optimizer_steps
+
+
+def test_sshead_exact_collapse_is_blocked_before_step_or_artifact_write(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    config = _tiny_config(encoder_epochs=1, head_epochs=1)
+    model = build_pams_model(config)
+    with torch.no_grad():
+        for parameter in model.period_head.parameters():
+            parameter.zero_()
+
+    optimizer_step_called = False
+    original_step = training_module.AdamW.step
+
+    def tracking_step(*args: Any, **kwargs: Any) -> Any:
+        nonlocal optimizer_step_called
+        optimizer_step_called = True
+        return original_step(*args, **kwargs)
+
+    monkeypatch.setattr(training_module.AdamW, "step", tracking_step)
+    checkpoint = tmp_path / "collapsed.pt"
+    progress = tmp_path / "collapsed.jsonl"
+    with pytest.raises(RuntimeError, match="exact-collapse guard.*before optimizer.step"):
+        train_sshead(
+            (_sequence("a"), _sequence("b", phase=0.7)),
+            config,
+            model=model,
+            device="cpu",
+            microbatch_size=2,
+            checkpoint_path=checkpoint,
+            progress_path=progress,
+        )
+
+    assert not optimizer_step_called
+    assert not checkpoint.exists()
+    assert not progress.exists()
+
+
+def test_sshead_near_collapse_gradient_spike_guard_helper() -> None:
+    from pams import training as training_module
+
+    parameter = torch.nn.Parameter(torch.full((4,), 1e-6))
+    parameter.grad = torch.ones_like(parameter)
+    diagnostics = training_module._head_gradient_diagnostics((parameter,))
+    assert diagnostics.grad_rms == pytest.approx(1.0)
+    assert diagnostics.grad_to_param_ratio > 100.0
+
+    with pytest.raises(RuntimeError, match="near-collapse-gradient-spike guard"):
+        training_module._guard_sshead_optimizer_step(
+            loss_value=0.01,
+            minimum_stream_std=1.0,
+            diagnostics=diagnostics,
+        )
+
+
+def test_prediction_confidence_is_zero_without_spectral_period_evidence() -> None:
+    config = _tiny_config(encoder_epochs=1, head_epochs=1)
+    model = build_pams_model(config)
+    with torch.no_grad():
+        for parameter in model.period_head.parameters():
+            parameter.zero_()
+
+    result = predict_sequence(model, _sequence("constant-head"), config, device="cpu")
+
+    assert result.confidence == 0.0
+
+
+def test_bound_checkpoint_records_and_validates_canonical_provenance(
+    tmp_path: Path,
+) -> None:
+    config = _tiny_config(encoder_epochs=1)
+    items = (_sequence("a"), _sequence("b", phase=0.4))
+    provenance = _provenance(config)
+    checkpoint = tmp_path / "encoder.pt"
+
+    train_encoder(
+        items,
+        config,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=checkpoint,
+        provenance=provenance,
+    )
+
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    assert payload["schema_version"] == 5
+    assert payload["stage"] == "encoder"
+    assert payload["provenance"] == provenance.to_dict()
+    assert payload["provenance"]["training_video_ids"] == ["a", "b"]
+    assert payload["prototype_bank"]["video_ids"] == ["a", "b"]
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(config.seed)
+        expected_initial_model = build_pams_model(config)
+    for key, expected in expected_initial_model.period_head.state_dict().items():
+        assert torch.equal(payload["model_state"][f"period_head.{key}"], expected)
+    loaded = load_model_checkpoint(
+        checkpoint,
+        config,
+        device="cpu",
+        expected_stage="encoder",
+        expected_provenance=provenance,
+    )
+    assert isinstance(loaded, type(build_pams_model(config)))
+
+    with pytest.raises(ValueError, match="dataset_fingerprint"):
+        load_model_checkpoint(
+            checkpoint,
+            config,
+            device="cpu",
+            expected_stage="encoder",
+            expected_provenance=replace(
+                provenance,
+                dataset_fingerprint="e" * 64,
+            ),
+        )
+    with pytest.raises(ValueError, match="training_video_ids"):
+        load_model_checkpoint(
+            checkpoint,
+            config,
+            device="cpu",
+            expected_stage="encoder",
+            expected_provenance=replace(
+                provenance,
+                training_video_ids=("a", "different"),
+            ),
+        )
+    with pytest.raises(ValueError, match="pose_cache_set_sha256"):
+        load_model_checkpoint(
+            checkpoint,
+            config,
+            device="cpu",
+            expected_stage="encoder",
+            expected_provenance=replace(
+                provenance,
+                pose_cache_set_sha256="f" * 64,
+            ),
+        )
+    with pytest.raises(ValueError, match="source_git_sha"):
+        load_model_checkpoint(
+            checkpoint,
+            config,
+            device="cpu",
+            expected_stage="encoder",
+            expected_provenance=replace(
+                provenance,
+                source_git_sha="b" * 40,
+            ),
+        )
+    with pytest.raises(ValueError, match="caller must provide expected_provenance"):
+        load_model_checkpoint(
+            checkpoint,
+            config,
+            device="cpu",
+            expected_stage="encoder",
+        )
+
+
+def test_terminal_checkpoint_requires_full_finite_history_and_exact_progress(
+    tmp_path: Path,
+) -> None:
+    config = _tiny_config(encoder_epochs=2)
+    checkpoint, progress, provenance, _model = _write_terminal_encoder_fixture(
+        tmp_path,
+        config,
+    )
+    validate_terminal_checkpoint(
+        checkpoint,
+        config,
+        expected_stage="encoder",
+        expected_provenance=provenance,
+        progress_path=progress,
+    )
+
+    complete_payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    complete_progress = progress.read_bytes()
+    altered_head_payload = dict(complete_payload)
+    altered_head_payload["model_state"] = dict(complete_payload["model_state"])
+    head_key = next(
+        key
+        for key in altered_head_payload["model_state"]
+        if key.startswith("period_head.")
+    )
+    altered_head_payload["model_state"][head_key] = (
+        altered_head_payload["model_state"][head_key].clone() + 1.0
+    )
+    torch.save(altered_head_payload, checkpoint)
+    with pytest.raises(ValueError, match="differs from deterministic initialization"):
+        validate_terminal_checkpoint(
+            checkpoint,
+            config,
+            expected_stage="encoder",
+            expected_provenance=provenance,
+            progress_path=progress,
+        )
+
+    partial_payload = dict(complete_payload)
+    partial_payload["completed_epochs"] = 1
+    partial_payload["history"] = partial_payload["history"][:1]
+    torch.save(partial_payload, checkpoint)
+    with pytest.raises(ValueError, match="checkpoint is partial"):
+        validate_terminal_checkpoint(
+            checkpoint,
+            config,
+            expected_stage="encoder",
+            expected_provenance=provenance,
+            progress_path=progress,
+        )
+    assert progress.read_bytes() == complete_progress
+
+    non_finite_payload = dict(complete_payload)
+    non_finite_payload["history"] = [dict(row) for row in complete_payload["history"]]
+    non_finite_payload["history"][0]["loss"] = float("nan")
+    torch.save(non_finite_payload, checkpoint)
+    with pytest.raises(ValueError, match="non-finite"):
+        validate_terminal_checkpoint(
+            checkpoint,
+            config,
+            expected_stage="encoder",
+            expected_provenance=provenance,
+            progress_path=progress,
+        )
+
+    torch.save(complete_payload, checkpoint)
+    first_line, *remaining = complete_progress.decode("utf-8").splitlines()
+    duplicate_epoch = first_line.replace('"epoch":1', '"epoch":1,"epoch":1', 1)
+    progress.write_text(
+        "\n".join([duplicate_epoch, *remaining]) + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="invalid JSON"):
+        validate_terminal_checkpoint(
+            checkpoint,
+            config,
+            expected_stage="encoder",
+            expected_provenance=provenance,
+            progress_path=progress,
+        )
+
+
+def test_terminal_sshead_binds_exact_upstream_encoder_tensors(
+    tmp_path: Path,
+) -> None:
+    from pams import training as training_module
+
+    config = _tiny_config(encoder_epochs=1, head_epochs=1)
+    encoder, encoder_progress, encoder_provenance, model = (
+        _write_terminal_encoder_fixture(tmp_path, config)
+    )
+    validate_terminal_checkpoint(
+        encoder,
+        config,
+        expected_stage="encoder",
+        expected_provenance=encoder_provenance,
+        progress_path=encoder_progress,
+    )
+    encoder_sha256 = hashlib.sha256(encoder.read_bytes()).hexdigest()
+    head_provenance = _provenance(
+        config,
+        upstream_encoder_checkpoint_sha256=encoder_sha256,
+    )
+    optimizer = training_module.AdamW(model.period_head.parameters(), lr=1e-3)
+    statistics = training_module.SSHeadEpochStats(
+        epoch=1,
+        total=1.0,
+        cycle=0.4,
+        spectral=0.4,
+        variance=0.1,
+        smoothness=0.1,
+        period_confidence_mean=0.8,
+        period_valid_fraction=1.0,
+        stream_std_min=0.2,
+        stream_std_p10=0.25,
+        stream_std_median=0.3,
+        stream_std_mean=0.35,
+        collapsed_fraction_1e6=0.0,
+        near_collapsed_fraction_1e3=0.0,
+        head_grad_rms_max=0.1,
+        head_grad_to_param_ratio_max=0.1,
+        zero_grad_steps=0,
+        learning_rate=1e-3,
+        optimizer_steps=1,
+    )
+    head = tmp_path / "sshead.pt"
+    head_progress = tmp_path / "sshead.jsonl"
+    head_payload = training_module._checkpoint_payload(
+        stage="sshead",
+        config=config,
+        model=model,
+        optimizer=optimizer,
+        completed_epochs=1,
+        history=[statistics],
+        provenance=head_provenance,
+    )
+    torch.save(head_payload, head)
+    progress_row = training_module._progress_row(
+        stage="sshead",
+        stats=statistics,
+        config=config,
+    )
+    head_progress.write_text(
+        json.dumps(
+            progress_row,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    validate_terminal_checkpoint(
+        head,
+        config,
+        expected_stage="sshead",
+        expected_provenance=head_provenance,
+        progress_path=head_progress,
+    )
+    validate_sshead_encoder_binding(head, encoder)
+
+    altered = tmp_path / "altered-sshead.pt"
+    altered_payload = torch.load(head, map_location="cpu", weights_only=False)
+    encoder_key = next(
+        key for key in altered_payload["model_state"] if key.startswith("encoder.")
+    )
+    altered_payload["model_state"][encoder_key] = (
+        altered_payload["model_state"][encoder_key].clone() + 1.0
+    )
+    torch.save(altered_payload, altered)
+    with pytest.raises(ValueError, match="differs from upstream"):
+        validate_sshead_encoder_binding(altered, encoder)
+
+
+def test_resume_rejects_provenance_mismatch(tmp_path: Path) -> None:
+    config = _tiny_config(encoder_epochs=2)
+    items = (_sequence("a"), _sequence("b", phase=0.4))
+    checkpoint = tmp_path / "encoder.pt"
+    provenance = _provenance(config)
+    train_encoder(
+        items,
+        config,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=checkpoint,
+        stop_after_epoch=1,
+        provenance=provenance,
+    )
+
+    with pytest.raises(ValueError, match="dataset_fingerprint"):
+        train_encoder(
+            items,
+            config,
+            device="cpu",
+            microbatch_size=2,
+            checkpoint_path=checkpoint,
+            resume=True,
+            provenance=replace(provenance, dataset_fingerprint="e" * 64),
+        )
+
+
+def test_progress_resume_rejects_tampering_and_repairs_one_missing_tail(
+    tmp_path: Path,
+) -> None:
+    config = _tiny_config(encoder_epochs=2)
+    items = (_sequence("a"), _sequence("b", phase=0.4))
+    checkpoint = tmp_path / "encoder.pt"
+    progress = tmp_path / "encoder.jsonl"
+    train_encoder(
+        items,
+        config,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=checkpoint,
+        progress_path=progress,
+        stop_after_epoch=1,
+    )
+    original_line = progress.read_text(encoding="utf-8").strip()
+    tampered = json.loads(original_line)
+    tampered["stats"]["loss"] = float(tampered["stats"]["loss"]) + 1.0
+    progress.write_text(json.dumps(tampered) + "\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="progress log stats mismatch"):
+        train_encoder(
+            items,
+            config,
+            device="cpu",
+            microbatch_size=2,
+            checkpoint_path=checkpoint,
+            progress_path=progress,
+            resume=True,
+        )
+
+    # Simulate interruption after the atomic checkpoint write but before its
+    # one corresponding JSONL append. Resume may repair only this final row.
+    progress.write_text("", encoding="utf-8")
+    resumed = train_encoder(
+        items,
+        config,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=checkpoint,
+        progress_path=progress,
+        resume=True,
+    )
+    assert resumed.completed_epochs == 2
+    lines = progress.read_text(encoding="utf-8").splitlines()
+    assert [json.loads(line)["epoch"] for line in lines] == [1, 2]
+
+    with progress.open("a", encoding="utf-8") as handle:
+        handle.write(lines[-1] + "\n")
+    with pytest.raises(ValueError, match="more epochs than checkpoint history"):
+        train_encoder(
+            items,
+            config,
+            device="cpu",
+            microbatch_size=2,
+            checkpoint_path=checkpoint,
+            progress_path=progress,
+            resume=True,
+        )
+
+
+def test_checkpoint_destination_mode_is_strict_for_both_stages(tmp_path: Path) -> None:
+    config = _tiny_config(encoder_epochs=1, head_epochs=1)
+    items = (_sequence("a"), _sequence("b", phase=0.4))
+    existing = tmp_path / "existing.pt"
+    existing.write_bytes(b"do-not-overwrite")
+
+    with pytest.raises(FileExistsError, match="refusing to overwrite"):
+        train_encoder(
+            items,
+            config,
+            device="cpu",
+            microbatch_size=2,
+            checkpoint_path=existing,
+        )
+    assert existing.read_bytes() == b"do-not-overwrite"
+
+    with pytest.raises(FileExistsError, match="refusing to overwrite"):
+        train_sshead(
+            items,
+            config,
+            model=build_pams_model(config),
+            device="cpu",
+            microbatch_size=1,
+            checkpoint_path=existing,
+        )
+    assert existing.read_bytes() == b"do-not-overwrite"
+
+    missing = tmp_path / "missing.pt"
+    with pytest.raises(FileNotFoundError, match="checkpoint does not exist"):
+        train_encoder(
+            items,
+            config,
+            device="cpu",
+            microbatch_size=2,
+            checkpoint_path=missing,
+            resume=True,
+        )
+    with pytest.raises(FileNotFoundError, match="checkpoint does not exist"):
+        train_sshead(
+            items,
+            config,
+            model=build_pams_model(config),
+            device="cpu",
+            microbatch_size=1,
+            checkpoint_path=missing,
+            resume=True,
+        )
+
+    progress = tmp_path / "existing.jsonl"
+    progress.write_text("do-not-overwrite\n", encoding="utf-8")
+    new_checkpoint = tmp_path / "new.pt"
+    with pytest.raises(FileExistsError, match="refusing to overwrite existing progress log"):
+        train_encoder(
+            items,
+            config,
+            device="cpu",
+            microbatch_size=2,
+            checkpoint_path=new_checkpoint,
+            progress_path=progress,
+        )
+    assert not new_checkpoint.exists()
+    assert progress.read_text(encoding="utf-8") == "do-not-overwrite\n"
+
+
+def test_sshead_checkpoint_binds_upstream_encoder_hash(tmp_path: Path) -> None:
+    config = _tiny_config(encoder_epochs=1, head_epochs=1)
+    items = (_sequence("a"), _sequence("b", phase=0.4))
+    provenance = _provenance(
+        config,
+        upstream_encoder_checkpoint_sha256="a" * 64,
+    )
+    checkpoint = tmp_path / "sshead.pt"
+    train_sshead(
+        items,
+        config,
+        model=build_pams_model(config),
+        device="cpu",
+        microbatch_size=1,
+        checkpoint_path=checkpoint,
+        provenance=provenance,
+    )
+
+    load_model_checkpoint(
+        checkpoint,
+        config,
+        device="cpu",
+        expected_stage="sshead",
+        expected_provenance=provenance,
+    )
+    with pytest.raises(ValueError, match="upstream_encoder_checkpoint_sha256"):
+        load_model_checkpoint(
+            checkpoint,
+            config,
+            device="cpu",
+            expected_stage="sshead",
+            expected_provenance=replace(
+                provenance,
+                upstream_encoder_checkpoint_sha256="b" * 64,
+            ),
+        )
