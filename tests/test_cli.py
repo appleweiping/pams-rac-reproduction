@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
@@ -19,10 +20,15 @@ from pams.types import PoseSequence
 
 runner = CliRunner()
 REPOSITORY = Path(__file__).parents[1]
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
 def _json_output(value: str) -> dict[str, object]:
     return json.loads(value)
+
+
+def _plain_text(value: str) -> str:
+    return ANSI_ESCAPE.sub("", value)
 
 
 def _pose_cache(tmp_path: Path) -> Path:
@@ -177,7 +183,7 @@ def test_spectral_proxy_is_explicitly_diagnostic(tmp_path: Path) -> None:
 def test_pose_extract_help_exposes_safe_resume_flag() -> None:
     result = runner.invoke(app, ["pose", "extract", "--help"])
     assert result.exit_code == 0, result.output
-    assert "--skip-existing" in result.stdout
+    assert "--skip-existing" in _plain_text(result.stdout)
     assert "--keep-full-timeline" not in result.stdout
 
 
@@ -344,10 +350,17 @@ def test_pose_train_and_evaluate_reject_config_manifest_protocol_mismatch(
 def test_evaluate_checkpoint_requires_variant() -> None:
     result = runner.invoke(app, ["evaluate", "checkpoint", "--help"])
     assert result.exit_code == 0, result.output
-    assert "--variant" in result.stdout
+    assert "--variant" in _plain_text(result.stdout)
     assert "literal" in result.stdout
     assert "sshead" in result.stdout
     assert "required" in result.stdout.lower()
+
+
+def test_checkpoint_variant_parser_is_frozen_and_case_normalized() -> None:
+    assert cli_module._normalize_checkpoint_variant(" Literal ") == "literal"
+    assert cli_module._normalize_checkpoint_variant("SSHEAD") == "sshead"
+    with pytest.raises(ValueError, match="literal.*sshead"):
+        cli_module._normalize_checkpoint_variant("trained")
 
 
 def test_validate_run_requires_sibling_start_and_every_artifact(

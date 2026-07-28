@@ -11,7 +11,7 @@ import sys
 import tempfile
 from dataclasses import asdict
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, cast
 
 import typer
 from pydantic import ValidationError
@@ -74,6 +74,13 @@ _FROZEN_PAMS_NONSEED_FINGERPRINT = (
     "2c995b374bc8cf97df3568d745dabd94f111aa54224c86ece51468cbe419b47b"
 )
 _FROZEN_PAMS_SEEDS = frozenset({42, 2026, 3407})
+
+
+def _normalize_checkpoint_variant(value: str) -> Literal["literal", "sshead"]:
+    normalized = value.strip().lower()
+    if normalized not in {"literal", "sshead"}:
+        raise ValueError("checkpoint variant must be 'literal' or 'sshead'")
+    return cast(Literal["literal", "sshead"], normalized)
 
 
 def _validate_frozen_pams_test_config(config: PAMSConfig) -> None:
@@ -1481,7 +1488,7 @@ def evaluate_checkpoint_command(
     cache_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Argument(file_okay=False)],
     variant: Annotated[
-        Literal["literal", "sshead"],
+        str,
         typer.Option(
             "--variant",
             help="literal requires an encoder checkpoint; sshead requires an SSHead checkpoint.",
@@ -1571,6 +1578,7 @@ def evaluate_checkpoint_command(
             raise RuntimeError("dataset manifest changed while it was being loaded")
         _assert_protocol_match(config, manifest)
         _validate_experiment_split(manifest)
+        checkpoint_variant = _normalize_checkpoint_variant(variant)
         evaluation_split = split.strip().lower()
         if evaluation_split not in {"dev", "test"}:
             raise ValueError("checkpoint evaluation split must be 'dev' or 'test'")
@@ -1579,7 +1587,7 @@ def evaluate_checkpoint_command(
                 "sealed evaluation is disabled for ucfrep_pose_110 until its "
                 "official 89/21 ID/count digest is frozen"
             )
-        if variant == "literal":
+        if checkpoint_variant == "literal":
             if upstream_encoder_checkpoint is not None:
                 raise ValueError("--upstream-encoder-checkpoint is forbidden for --variant literal")
             if upstream_encoder_progress is not None:
@@ -1609,16 +1617,16 @@ def evaluate_checkpoint_command(
             sealed_method_id = _normalize_frozen_method_id(
                 manifest.protocol,
                 method_id,
-                checkpoint_variant=variant,
+                checkpoint_variant=checkpoint_variant,
             )
             _validate_frozen_pams_test_config(config)
         elif method_id is None:
-            sealed_method_id = f"pams-{variant}"
+            sealed_method_id = f"pams-{checkpoint_variant}"
         else:
             sealed_method_id = _normalize_frozen_method_id(
                 manifest.protocol,
                 method_id,
-                checkpoint_variant=variant,
+                checkpoint_variant=checkpoint_variant,
             )
         from pams.reproducibility import clean_git_revision
 
@@ -1649,7 +1657,7 @@ def evaluate_checkpoint_command(
         )
         encoder_provenance = (
             None
-            if variant == "literal"
+            if checkpoint_variant == "literal"
             else _make_checkpoint_provenance(
                 manifest,
                 config,
@@ -1669,7 +1677,7 @@ def evaluate_checkpoint_command(
                 expected_provenance=provenance,
                 progress_path=checkpoint_progress,
             )
-            if variant == "sshead":
+            if checkpoint_variant == "sshead":
                 assert upstream_encoder_checkpoint is not None
                 assert upstream_encoder_progress is not None
                 assert encoder_provenance is not None
@@ -1732,7 +1740,7 @@ def evaluate_checkpoint_command(
             dataset_sha256=manifest.fingerprint,
             notes=[
                 f"evaluation split: {evaluation_split}",
-                f"variant: {variant}",
+                f"variant: {checkpoint_variant}",
                 f"method_id: {sealed_method_id}",
                 f"checkpoint stage: {expected_stage}",
                 f"training pose cache set: {training_pose_snapshot.fingerprint}",
@@ -1833,7 +1841,7 @@ def evaluate_checkpoint_command(
         payload = {
             **result.to_dict(include_streams=True),
             "method_id": sealed_method_id,
-            "variant": variant,
+            "variant": checkpoint_variant,
             "stage": expected_stage,
             "checkpoint_sha256": checkpoint_sha256,
             "checkpoint_progress_sha256": checkpoint_progress_sha256,
