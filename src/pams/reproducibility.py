@@ -29,7 +29,13 @@ def seed_everything(seed: int, *, deterministic: bool = True) -> None:
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
     if deterministic:
-        torch.use_deterministic_algorithms(True, warn_only=True)
+        torch.use_deterministic_algorithms(True, warn_only=False)
+        if torch.cuda.is_available():
+            # TransformerEncoder may otherwise select fused SDPA kernels that
+            # PyTorch explicitly marks non-deterministic on CUDA.
+            torch.backends.cuda.enable_flash_sdp(False)
+            torch.backends.cuda.enable_mem_efficient_sdp(False)
+            torch.backends.cuda.enable_math_sdp(True)
         if torch.backends.cudnn.is_available():
             torch.backends.cudnn.benchmark = False
             torch.backends.cudnn.deterministic = True
