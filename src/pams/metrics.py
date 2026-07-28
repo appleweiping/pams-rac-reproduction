@@ -259,7 +259,7 @@ def compute_count_metrics(
     if len(set(ids)) != len(ids):
         raise ValueError("video_ids must be unique")
     action_values: tuple[str | None, ...] = (
-        (None,) * count if actions is None else tuple(actions)
+        tuple(actions) if actions is not None else (None,) * count
     )
     if len(action_values) != count:
         raise ValueError("actions must contain one value per prediction")
