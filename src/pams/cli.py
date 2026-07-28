@@ -70,6 +70,10 @@ diagnostic_app = typer.Typer(
     help="Run explicitly inferred, label-free implementation diagnostics.",
     no_args_is_help=True,
 )
+local_frequency_app = typer.Typer(
+    help="Run the synthetic-frozen readout through a strict dev-only firewall.",
+    no_args_is_help=True,
+)
 
 _FROZEN_PAMS_CHECKPOINT_METHODS_BY_PROTOCOL: dict[
     str,
@@ -174,6 +178,7 @@ app.add_typer(baseline_app, name="baseline")
 app.add_typer(report_app, name="report")
 app.add_typer(synthetic_app, name="synthetic")
 app.add_typer(diagnostic_app, name="diagnostic")
+app.add_typer(local_frequency_app, name="local-frequency")
 
 
 def _emit(payload: Any) -> None:
@@ -2974,6 +2979,105 @@ def evaluate_checkpoint_command(
         )
     except ImportError as exc:
         _abort(f"checkpoint evaluation module is unavailable: {exc}")
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(payload)
+
+
+@local_frequency_app.command("synthetic-replay")
+def local_frequency_synthetic_replay_command(
+    output_dir: Annotated[Path, typer.Argument(file_okay=False)],
+    config_path: Annotated[
+        Path,
+        typer.Option("--config", exists=True, dir_okay=False, readable=True),
+    ] = Path("configs/readouts/local_frequency_synthetic_v1.yaml"),
+) -> None:
+    """Record the bounded synthetic-only parameter freeze and its hashes."""
+
+    try:
+        from pams.local_frequency_dev import run_synthetic_freeze_replay
+
+        payload = run_synthetic_freeze_replay(
+            config_path=config_path,
+            output_dir=output_dir,
+            repository_root=Path.cwd(),
+        )
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(payload)
+
+
+@local_frequency_app.command("dev-predict")
+def local_frequency_dev_predict_command(
+    dev_inputs_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    dev_commitment_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    pose_cache_dir: Annotated[
+        Path,
+        typer.Argument(exists=True, file_okay=False, readable=True),
+    ],
+    output_dir: Annotated[Path, typer.Argument(file_okay=False)],
+    config_path: Annotated[
+        Path,
+        typer.Option("--config", exists=True, dir_okay=False, readable=True),
+    ] = Path("configs/readouts/local_frequency_synthetic_v1.yaml"),
+    pose_config_path: Annotated[
+        Path,
+        typer.Option("--pose-config", exists=True, dir_okay=False, readable=True),
+    ] = Path("configs/pams.yaml"),
+) -> None:
+    """Freeze canonical dev predictions without accepting any target file."""
+
+    try:
+        from pams.local_frequency_dev import run_dev_prediction
+
+        payload = run_dev_prediction(
+            dev_inputs_path=dev_inputs_path,
+            dev_commitment_path=dev_commitment_path,
+            pose_cache_dir=pose_cache_dir,
+            output_dir=output_dir,
+            config_path=config_path,
+            pose_config_path=pose_config_path,
+            repository_root=Path.cwd(),
+        )
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(payload)
+
+
+@local_frequency_app.command("dev-score")
+def local_frequency_dev_score_command(
+    predictions_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    prediction_receipt_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    dev_targets_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    output_dir: Annotated[Path, typer.Argument(file_okay=False)],
+) -> None:
+    """Score an already-frozen artifact against the strict dev-only targets."""
+
+    try:
+        from pams.local_frequency_dev import score_dev_predictions
+
+        payload = score_dev_predictions(
+            predictions_path=predictions_path,
+            prediction_receipt_path=prediction_receipt_path,
+            dev_targets_path=dev_targets_path,
+            output_dir=output_dir,
+            repository_root=Path.cwd(),
+        )
     except (OSError, RuntimeError, TypeError, ValueError) as exc:
         _abort(str(exc))
     _emit(payload)
