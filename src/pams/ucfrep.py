@@ -2,8 +2,9 @@
 
 The original repository distributes annotations but not the UCF101 video
 files.  This module downloads only that annotation archive, verifies its
-content hash, resolves the three supported UCF101 layouts, and derives the
-exact 421/105 manifest used by this project.
+content hash, resolves the three supported UCF101 layout families (including
+one audited official directory-name alias), and derives the exact 421/105
+manifest used by this project.
 """
 
 from __future__ import annotations
@@ -33,6 +34,11 @@ OFFICIAL_ANNOTATION_URL = (
 )
 OFFICIAL_ANNOTATION_SHA256 = "08b2b8a88c2728e9aa6de6c62dc6b02f1941dfa2c3adb28dab5852c12695ae3c"
 _VIDEO_PATTERN = re.compile(r"^v_(?P<action>.+)_g(?P<group>\d{2})_c\d+$")
+_UCF101_DIRECTORY_ALIASES: dict[str, tuple[str, ...]] = {
+    # UCFRep identifiers use ``HandStandPushups`` while the official UCF101
+    # archive stores all 24 matching files under ``HandstandPushups``.
+    "HandStandPushups": ("HandstandPushups",),
+}
 
 
 def download_official_annotations(
@@ -100,12 +106,15 @@ def _video_path_candidates(
     video_root: Path,
     action: str,
     filename: str,
-) -> tuple[Path, Path, Path]:
-    """Return the only three video layouts accepted by the official loader."""
+) -> tuple[Path, ...]:
+    """Return candidates from the three audited UCF101 layout families."""
 
+    directory_names = (action, *_UCF101_DIRECTORY_ALIASES.get(action, ()))
+    nested = tuple(video_root / "UCF-101" / name / filename for name in directory_names)
+    action_relative = tuple(video_root / name / filename for name in directory_names)
     return (
-        video_root / "UCF-101" / action / filename,
-        video_root / action / filename,
+        *nested,
+        *action_relative,
         video_root / "flat" / filename,
     )
 
@@ -125,6 +134,10 @@ def resolve_ucfrep_video_path(
     - ``UCF-101/<Action>/<video>.avi``;
     - ``<Action>/<video>.avi`` (including when ``video_root`` is UCF-101);
     - ``flat/<video>.avi``.
+
+    The two action-directory forms also recognize the single audited official
+    UCF101 alias ``HandStandPushups`` -> ``HandstandPushups``. No
+    case-insensitive or recursive fallback is attempted.
 
     With ``allow_missing=True``, a missing video receives the deterministic
     ``<Action>/<video>.avi`` placeholder used by annotation-only manifests.
@@ -152,7 +165,14 @@ def resolve_ucfrep_video_path(
         action=action_name,
         filename=filename,
     )
-    matches = tuple(path for path in candidates if path.is_file())
+    unique_matches: list[Path] = []
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        if any(os.path.samefile(candidate, existing) for existing in unique_matches):
+            continue
+        unique_matches.append(candidate)
+    matches = tuple(unique_matches)
     if len(matches) > 1:
         rendered = ", ".join(path.as_posix() for path in matches)
         raise ValueError(
@@ -164,7 +184,7 @@ def resolve_ucfrep_video_path(
     if allow_missing:
         # The action-relative form remains useful if VIDEO_ROOT is later set
         # directly to the extracted UCF-101 directory.
-        return candidates[1]
+        return root / action_name / filename
     searched = ", ".join(path.as_posix() for path in candidates)
     raise FileNotFoundError(
         f"missing UCFRep video {identifier!r}; searched supported layouts: {searched}"

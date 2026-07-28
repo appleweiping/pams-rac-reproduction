@@ -1,5 +1,6 @@
 import hashlib
 import io
+import os
 import zipfile
 from pathlib import Path
 
@@ -133,6 +134,51 @@ def test_video_resolver_supports_all_three_declared_layouts(
         action="JumpRope",
     )
     assert resolved == expected
+
+
+@pytest.mark.parametrize(
+    "relative_path",
+    [
+        Path("UCF-101") / "HandstandPushups" / "v_HandStandPushups_g02_c04.avi",
+        Path("HandstandPushups") / "v_HandStandPushups_g02_c04.avi",
+    ],
+)
+def test_video_resolver_supports_audited_official_handstand_directory_alias(
+    tmp_path: Path,
+    relative_path: Path,
+) -> None:
+    expected = tmp_path / relative_path
+    expected.parent.mkdir(parents=True)
+    expected.write_bytes(b"video")
+
+    resolved = resolve_ucfrep_video_path(
+        tmp_path,
+        video_id="v_HandStandPushups_g02_c04",
+        action="HandStandPushups",
+    )
+
+    assert resolved.samefile(expected)
+
+
+def test_video_resolver_rejects_canonical_and_alias_directory_ambiguity(
+    tmp_path: Path,
+) -> None:
+    if os.path.normcase("HandStandPushups") == os.path.normcase("HandstandPushups"):
+        pytest.skip("case-insensitive filesystems cannot materialize both directory spellings")
+    filename = "v_HandStandPushups_g02_c04.avi"
+    canonical = tmp_path / "UCF-101" / "HandStandPushups" / filename
+    alias = tmp_path / "UCF-101" / "HandstandPushups" / filename
+    canonical.parent.mkdir(parents=True)
+    alias.parent.mkdir(parents=True)
+    canonical.write_bytes(b"canonical")
+    alias.write_bytes(b"alias")
+
+    with pytest.raises(ValueError, match="ambiguous UCFRep video path"):
+        resolve_ucfrep_video_path(
+            tmp_path,
+            video_id="v_HandStandPushups_g02_c04",
+            action="HandStandPushups",
+        )
 
 
 def test_video_resolver_rejects_ambiguous_layouts_even_annotation_only(
