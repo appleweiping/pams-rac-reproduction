@@ -1075,6 +1075,7 @@ def test_training_cli_always_supplies_bound_provenance_and_refuses_overwrite(
         "pams.reproducibility.clean_git_revision",
         lambda _cwd: "a" * 40,
     )
+    _set_fake_container_identity(monkeypatch)
     started_dataset_sha256: list[object] = []
 
     def fake_create_manifest(**kwargs: object) -> Path:
@@ -1130,6 +1131,8 @@ def test_training_cli_always_supplies_bound_provenance_and_refuses_overwrite(
     assert encoder_provenance.dataset_fingerprint == "e" * 64
     assert encoder_provenance.training_video_ids == ("train-a", "train-b")
     assert encoder_provenance.upstream_encoder_checkpoint_sha256 is None
+    assert encoder_provenance.container_image_id == f"sha256:{'1' * 64}"
+    assert encoder_provenance.container_environment_sha256 == "2" * 64
     assert started_dataset_sha256[0] == "e" * 64
 
     log_only_output = tmp_path / "log-only-output"
@@ -1281,6 +1284,7 @@ def test_encoder_cli_resume_copies_immutable_inputs_into_a_new_run(
         "pams.reproducibility.clean_git_revision",
         lambda _cwd: "a" * 40,
     )
+    _set_fake_container_identity(monkeypatch)
     monkeypatch.setattr(
         cli_module,
         "_create_cli_run_manifest",
