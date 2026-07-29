@@ -20,6 +20,7 @@ def test_default_config_matches_disclosed_dimensions() -> None:
     assert config.period.post_warmup_source == "embedding_velocity_coordinate"
     assert config.loss.exclude_other_scale_positives_from_denominator is False
     assert config.sshead.input_source == "encoder_embedding"
+    assert config.sshead.period_confidence_mode == "nonzero_gate"
     assert config.consensus.expert_mode == "multi"
 
 
@@ -116,6 +117,31 @@ def test_inferred_pre_pe_head_is_explicit_identity_and_preserves_pose_cache() ->
     assert repair.nonseed_fingerprint != period_only.nonseed_fingerprint
     assert repair.pose_fingerprint == period_only.pose_fingerprint
     assert reconstructed_implicit.fingerprint == period_only.fingerprint
+
+
+def test_inferred_confidence_weighting_changes_only_sshead_confidence_mode() -> None:
+    root = Path(__file__).parents[1]
+    pre_pe = load_config(
+        root / "configs" / "experiments" / "pams_sshead_pre_pe_v5.yaml"
+    )
+    weighted = load_config(
+        root
+        / "configs"
+        / "experiments"
+        / "pams_sshead_confidence_weighted_v6.yaml"
+    )
+    implicit_payload = pre_pe.model_dump()
+    implicit_payload["sshead"].pop("period_confidence_mode")
+    reconstructed_implicit = PAMSConfig.model_validate(implicit_payload)
+
+    assert weighted.sshead.period_confidence_mode == "normalized_weight"
+    weighted_payload = weighted.model_dump()
+    weighted_payload["sshead"]["period_confidence_mode"] = "nonzero_gate"
+    assert weighted_payload == pre_pe.model_dump()
+    assert weighted.fingerprint != pre_pe.fingerprint
+    assert weighted.nonseed_fingerprint != pre_pe.nonseed_fingerprint
+    assert weighted.pose_fingerprint == pre_pe.pose_fingerprint
+    assert reconstructed_implicit.fingerprint == pre_pe.fingerprint
 
 
 def test_fixed_period_proxy_is_explicit_identity_and_default_preserves_history() -> None:

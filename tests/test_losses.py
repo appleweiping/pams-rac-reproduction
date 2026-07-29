@@ -424,6 +424,71 @@ def test_sshead_zero_period_evidence_skips_only_cycle_and_spectral() -> None:
     assert stream.grad is not None
 
 
+def test_sshead_can_normalize_period_losses_by_continuous_confidence() -> None:
+    time = torch.arange(64, dtype=torch.float32)
+    streams = torch.stack(
+        (
+            torch.sin(2.0 * math.pi * time / 8.0),
+            torch.sin(2.0 * math.pi * time / 16.0),
+        )
+    ).requires_grad_()
+    periods = torch.tensor([8.0, 8.0])
+    confidences = torch.tensor([1.0, 0.1])
+    unweighted = SSHeadLoss().compute(
+        streams,
+        periods,
+        period_confidence=confidences,
+    )
+    weighted_objective = SSHeadLoss(
+        confidence_weighted_period_losses=True,
+    )
+    weighted = weighted_objective.compute(
+        streams,
+        periods,
+        period_confidence=confidences,
+    )
+    individual = [
+        SSHeadLoss().compute(
+            streams[index],
+            periods[index],
+            period_confidence=confidences[index],
+        )
+        for index in range(2)
+    ]
+
+    expected_spectral = (
+        individual[0].spectral + 0.1 * individual[1].spectral
+    ) / 1.1
+    expected_cycle = (
+        individual[0].cycle + 0.1 * individual[1].cycle
+    ) / 1.1
+    assert torch.allclose(weighted.spectral, expected_spectral)
+    assert torch.allclose(weighted.cycle, expected_cycle)
+    assert weighted.spectral < unweighted.spectral
+    assert weighted.cycle < unweighted.cycle
+    # Variance and smoothness are deliberately unchanged by this single
+    # inferred repair.
+    assert torch.equal(weighted.variance, unweighted.variance)
+    assert torch.equal(weighted.smoothness, unweighted.smoothness)
+    weighted.total.backward()
+    assert streams.grad is not None
+    assert torch.isfinite(streams.grad).all()
+
+    equal_confidence = torch.full((2,), 0.25)
+    equal_weighted = weighted_objective.compute(
+        streams.detach(),
+        periods,
+        period_confidence=equal_confidence,
+    )
+    equal_unweighted = SSHeadLoss().compute(
+        streams.detach(),
+        periods,
+        period_confidence=equal_confidence,
+    )
+    assert torch.allclose(equal_weighted.cycle, equal_unweighted.cycle)
+    assert torch.allclose(equal_weighted.spectral, equal_unweighted.spectral)
+
+
 @torch.no_grad()
 def test_period_confidence_rejects_non_finite_or_out_of_range_values() -> None:
     embeddings = _periodic_embeddings(batch=1)

@@ -418,6 +418,8 @@ class SSHeadLoss(nn.Module):
         spectral_weight: float = 1.0,
         variance_weight: float = 0.1,
         smoothness_weight: float = 0.01,
+        *,
+        confidence_weighted_period_losses: bool = False,
     ) -> None:
         super().__init__()
         weights = (
@@ -432,6 +434,9 @@ class SSHeadLoss(nn.Module):
         self.spectral_weight = float(spectral_weight)
         self.variance_weight = float(variance_weight)
         self.smoothness_weight = float(smoothness_weight)
+        self.confidence_weighted_period_losses = bool(
+            confidence_weighted_period_losses
+        )
 
     def compute(
         self,
@@ -481,7 +486,9 @@ class SSHeadLoss(nn.Module):
             valid = valid.to(device=stream.device, dtype=torch.bool)
 
         cycle_losses: list[Tensor] = []
+        cycle_confidences: list[Tensor] = []
         spectral_losses: list[Tensor] = []
+        spectral_confidences: list[Tensor] = []
         variance_losses: list[Tensor] = []
         smoothness_losses: list[Tensor] = []
         zero = stream.sum() * 0.0
@@ -500,6 +507,7 @@ class SSHeadLoss(nn.Module):
                     if pair_valid.any():
                         difference = values[:-period] - values[period:]
                         cycle_losses.append(difference[pair_valid].square().mean())
+                        cycle_confidences.append(sample_confidence)
 
                 count = sample_valid.sum().clamp_min(1)
                 mean = (values * sample_valid).sum() / count
@@ -518,7 +526,10 @@ class SSHeadLoss(nn.Module):
                     low = max(1, target_bin - 1)
                     high = min(power.numel(), target_bin + 2)
                     target_power = power[low:high].sum()
-                    spectral_losses.append(1.0 - target_power / power.sum().clamp_min(1e-12))
+                    spectral_losses.append(
+                        1.0 - target_power / power.sum().clamp_min(1e-12)
+                    )
+                    spectral_confidences.append(sample_confidence)
 
             selected = values[sample_valid]
             if selected.numel() >= 2:
@@ -536,8 +547,23 @@ class SSHeadLoss(nn.Module):
         def mean_or_zero(items: list[Tensor]) -> Tensor:
             return torch.stack(items).mean() if items else zero
 
-        cycle = mean_or_zero(cycle_losses)
-        spectral = mean_or_zero(spectral_losses)
+        def period_mean_or_zero(
+            items: list[Tensor],
+            item_confidences: list[Tensor],
+        ) -> Tensor:
+            if not items:
+                return zero
+            if not self.confidence_weighted_period_losses:
+                return torch.stack(items).mean()
+            weights = torch.stack(item_confidences).to(
+                device=stream.device,
+                dtype=stream.dtype,
+            )
+            values = torch.stack(items)
+            return (values * weights).sum() / weights.sum().clamp_min(1e-12)
+
+        cycle = period_mean_or_zero(cycle_losses, cycle_confidences)
+        spectral = period_mean_or_zero(spectral_losses, spectral_confidences)
         variance = mean_or_zero(variance_losses)
         smoothness = mean_or_zero(smoothness_losses)
         total = (

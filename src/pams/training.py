@@ -2024,6 +2024,9 @@ def train_sshead(
         spectral_weight=config.sshead.spectral_weight,
         variance_weight=config.sshead.variance_weight,
         smoothness_weight=config.sshead.smoothness_weight,
+        confidence_weighted_period_losses=(
+            config.sshead.period_confidence_mode == "normalized_weight"
+        ),
     )
     history: list[SSHeadEpochStats] = []
     completed_epochs = 0

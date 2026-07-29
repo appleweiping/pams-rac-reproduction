@@ -136,6 +136,10 @@ class SSHeadConfig(StrictModel):
         "encoder_embedding",
         "projected_pose_pre_pe",
     ] = "encoder_embedding"
+    period_confidence_mode: Literal[
+        "nonzero_gate",
+        "normalized_weight",
+    ] = "nonzero_gate"
     cycle_weight: float = Field(default=1.0, ge=0)
     spectral_weight: float = Field(default=1.0, ge=0)
     variance_weight: float = Field(default=0.1, ge=0)
@@ -214,6 +218,10 @@ class PAMSConfig(StrictModel):
             # pre-PE route is an independently inferred repair and therefore
             # remains in the canonical payload.
             sshead.pop("input_source")
+        if sshead["period_confidence_mode"] == "nonzero_gate":
+            # Preserve historical config/checkpoint identities.  Continuous
+            # normalized confidence weighting is an opt-in inferred repair.
+            sshead.pop("period_confidence_mode")
         consensus = payload["consensus"]
         if consensus["expert_mode"] == "multi":
             # Preserve every historical checkpoint/config fingerprint.  The
