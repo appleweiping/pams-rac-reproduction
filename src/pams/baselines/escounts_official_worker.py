@@ -52,6 +52,39 @@ OFFICIAL_CRITICAL_FILES = {
     ),
 }
 SHA256_CHARACTERS = frozenset("0123456789abcdef")
+ENCODER_JUST_ENCODE_UNUSED_PARAMETERS = (
+    {
+        "name": "example_spatial_pos_embed",
+        "shape": [196, 512],
+        "dtype": "float32",
+        "just_encode_unused": True,
+    },
+    {
+        "name": "shot_token",
+        "shape": [1568, 512],
+        "dtype": "float32",
+        "just_encode_unused": True,
+    },
+    {
+        "name": "map.weight",
+        "shape": [1, 512],
+        "dtype": "float32",
+        "just_encode_unused": True,
+    },
+    {
+        "name": "map.bias",
+        "shape": [1],
+        "dtype": "float32",
+        "just_encode_unused": True,
+    },
+)
+ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_JSON = json.dumps(
+    list(ENCODER_JUST_ENCODE_UNUSED_PARAMETERS),
+    sort_keys=True,
+    separators=(",", ":"),
+    ensure_ascii=False,
+    allow_nan=False,
+)
 
 
 def canonical_sha256(value):
@@ -79,6 +112,75 @@ def validate_sha256(value, field):
     ):
         raise ValueError(f"{field} must be a lowercase SHA-256")
     return value
+
+
+def validate_encoder_just_encode_unmatched(observed):
+    """Accept only the four decoder-side tensors bypassed by ``just_encode``.
+
+    The frozen official ``forward`` returns immediately after
+    ``_mae_forward_encoder`` when ``just_encode`` is true, before
+    ``decoder_embed`` and all later decoder-only state.  This validator does
+    not permit a general non-strict checkpoint load: names, shapes, dtypes,
+    cardinality, and the unused-path classification must all match.
+    """
+
+    if not isinstance(observed, (list, tuple)):
+        raise RuntimeError("encoder unmatched tensor audit must be a sequence")
+    normalized = []
+    for index, item in enumerate(observed):
+        strict_object(
+            item,
+            {"name", "shape", "dtype", "just_encode_unused"},
+            f"encoder unmatched tensor {index}",
+        )
+        shape = item["shape"]
+        if (
+            not isinstance(shape, (list, tuple))
+            or any(not isinstance(dimension, int) for dimension in shape)
+        ):
+            raise RuntimeError(
+                f"encoder unmatched tensor {index} shape is invalid"
+            )
+        normalized.append(
+            {
+                "name": item["name"],
+                "shape": list(shape),
+                "dtype": item["dtype"],
+                "just_encode_unused": item["just_encode_unused"],
+            }
+        )
+    expected_by_name = {
+        item["name"]: item for item in ENCODER_JUST_ENCODE_UNUSED_PARAMETERS
+    }
+    observed_by_name = {item["name"]: item for item in normalized}
+    if (
+        len(observed_by_name) != len(normalized)
+        or set(observed_by_name) != set(expected_by_name)
+        or any(
+            observed_by_name[name] != expected
+            for name, expected in expected_by_name.items()
+        )
+    ):
+        raise RuntimeError(
+            "encoder checkpoint unmatched tensors differ from the exact "
+            "just_encode-unused allowlist"
+        )
+    ordered = [observed_by_name[item["name"]] for item in expected_by_name.values()]
+    parameters_json = json.dumps(
+        ordered,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    )
+    if parameters_json != ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_JSON:
+        raise RuntimeError("encoder unmatched tensor audit ordering changed")
+    return {
+        "parameters_json": parameters_json,
+        "parameters_sha256": hashlib.sha256(
+            parameters_json.encode("utf-8")
+        ).hexdigest(),
+    }
 
 
 def stable_file_digest(path):
@@ -349,11 +451,18 @@ class OfficialRuntime:
                             )
                         )
                         continue
-                unmatched.append(name)
-        if unmatched:
-            raise RuntimeError(
-                f"encoder checkpoint left {len(unmatched)} tensors unmatched"
-            )
+                dtype_name = str(target.dtype)
+                if dtype_name.startswith("torch."):
+                    dtype_name = dtype_name[len("torch.") :]
+                unmatched.append(
+                    {
+                        "name": name,
+                        "shape": list(target.shape),
+                        "dtype": dtype_name,
+                        "just_encode_unused": True,
+                    }
+                )
+        unmatched_audit = validate_encoder_just_encode_unmatched(unmatched)
         encoder.eval()
 
         decoder = model_class(
@@ -395,6 +504,12 @@ class OfficialRuntime:
             "av": str(dependencies["av"].__version__),
             "container_image_id": self.container_image_id,
             "pytorchvideo_commit": PYTORCHVIDEO_COMMIT,
+            "encoder_just_encode_unused_parameters_json": unmatched_audit[
+                "parameters_json"
+            ],
+            "encoder_just_encode_unused_parameters_sha256": unmatched_audit[
+                "parameters_sha256"
+            ],
         }
 
     def assert_critical_inputs_unchanged(self):

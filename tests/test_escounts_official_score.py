@@ -271,6 +271,12 @@ def _write_prediction(
         "worker_command_sha256": "6" * 64,
         "module_origins_sha256": "5" * 64,
         "pytorchvideo_origin_sha256": "4" * 64,
+        "encoder_just_encode_unused_parameters_json": (
+            runner.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_JSON
+        ),
+        "encoder_just_encode_unused_parameters_sha256": (
+            runner.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_SHA256
+        ),
         "container_image_id": f"sha256:{'9' * 64}",
     }
     final = dict(rows[-1])

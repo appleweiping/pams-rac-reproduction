@@ -84,6 +84,42 @@ _FORBIDDEN_LABEL_KEYS = frozenset(
     }
 )
 _SHA256_HEX = frozenset("0123456789abcdef")
+ENCODER_JUST_ENCODE_UNUSED_PARAMETERS = (
+    {
+        "name": "example_spatial_pos_embed",
+        "shape": [196, 512],
+        "dtype": "float32",
+        "just_encode_unused": True,
+    },
+    {
+        "name": "shot_token",
+        "shape": [1568, 512],
+        "dtype": "float32",
+        "just_encode_unused": True,
+    },
+    {
+        "name": "map.weight",
+        "shape": [1, 512],
+        "dtype": "float32",
+        "just_encode_unused": True,
+    },
+    {
+        "name": "map.bias",
+        "shape": [1],
+        "dtype": "float32",
+        "just_encode_unused": True,
+    },
+)
+ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_JSON = json.dumps(
+    list(ENCODER_JUST_ENCODE_UNUSED_PARAMETERS),
+    sort_keys=True,
+    separators=(",", ":"),
+    ensure_ascii=False,
+    allow_nan=False,
+)
+ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_SHA256 = hashlib.sha256(
+    ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_JSON.encode("utf-8")
+).hexdigest()
 
 
 def _canonical_sha256(value: Any, *, field: str) -> str:
@@ -1456,6 +1492,10 @@ class JSONLWorkerBackend:
             or pytorchvideo_origin.get("repository_tree") != PYTORCHVIDEO_TREE
             or not isinstance(versions, dict)
             or versions.get("container_image_id") != self._container_image_id
+            or versions.get("encoder_just_encode_unused_parameters_json")
+            != ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_JSON
+            or versions.get("encoder_just_encode_unused_parameters_sha256")
+            != ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_SHA256
         ):
             self.close(force=True)
             raise ESCountsDependencyError("worker module/runtime provenance is incomplete")
@@ -1943,17 +1983,27 @@ def _validate_prediction_artifact_payload(
         "worker_command_sha256",
         "module_origins_sha256",
         "pytorchvideo_origin_sha256",
+        "encoder_just_encode_unused_parameters_json",
+        "encoder_just_encode_unused_parameters_sha256",
     }
     if not required_runtime_fields.issubset(runtime_versions):
         raise ValueError("prediction runtime provenance is incomplete")
     _validate_container_image_id(runtime_versions["container_image_id"])
     if runtime_versions["pytorchvideo_commit"] != PYTORCHVIDEO_COMMIT:
         raise ValueError("prediction PyTorchVideo provenance changed")
+    if (
+        runtime_versions["encoder_just_encode_unused_parameters_json"]
+        != ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_JSON
+        or runtime_versions["encoder_just_encode_unused_parameters_sha256"]
+        != ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_SHA256
+    ):
+        raise ValueError("prediction encoder unmatched-tensor audit changed")
     for name in (
         "worker_code_sha256",
         "worker_command_sha256",
         "module_origins_sha256",
         "pytorchvideo_origin_sha256",
+        "encoder_just_encode_unused_parameters_sha256",
     ):
         _canonical_sha256(runtime_versions[name], field=f"runtime_versions.{name}")
     resource = _strict_object(

@@ -85,6 +85,22 @@ start it as the long-lived JSONL worker command supplied to
 `escounts_official_runner predict`. The host validates every request/response
 ID and SHA-256, while the worker loads the official models exactly once.
 
+The released encoder checkpoint leaves exactly four tensors unmatched:
+`example_spatial_pos_embed` (`[196,512]`, float32), `shot_token`
+(`[1568,512]`, float32), `map.weight` (`[1,512]`, float32), and `map.bias`
+(`[1]`, float32). The frozen official `forward` returns the encoder latent
+tokens at lines 487--488 when `just_encode=True`, before `decoder_embed` and
+the decoder-only path that can read these tensors. The compatibility shim is
+therefore an exact allowlist, not a relaxed checkpoint load: any fifth tensor
+or any name, shape, or dtype drift fails initialization. The worker preserves
+the official random initialization of these unused tensors and emits the
+canonical name/shape/dtype/unused-path list plus its stable structural
+SHA-256. The host independently compares both values to its frozen constants
+and records them in every prediction artifact. The digest intentionally
+covers structure rather than random tensor bytes, so independently started
+primary and retry workers retain official initialization semantics while
+remaining lineage-compatible.
+
 The successful historical image ID is evidence for that run, not a promise
 that a later Docker build is byte-identical. Conda, pip, apt repositories, and
 their transitive package builds can change even when the top-level versions

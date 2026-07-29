@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 
 from pams.baselines import escounts_official_runner as runner
+from pams.baselines import escounts_official_worker as worker
 from pams.data import (
     PoseInputCommitment,
     PoseInputManifest,
@@ -145,6 +146,12 @@ class _FakeBackend:
         "worker_command_sha256": "2" * 64,
         "module_origins_sha256": "3" * 64,
         "pytorchvideo_origin_sha256": "4" * 64,
+        "encoder_just_encode_unused_parameters_json": (
+            runner.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_JSON
+        ),
+        "encoder_just_encode_unused_parameters_sha256": (
+            runner.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_SHA256
+        ),
     }
 
     def __init__(self, *, oom_name: str | None = None) -> None:
@@ -188,6 +195,67 @@ def test_worker_source_is_python38_parseable_and_does_not_import_pams() -> None:
     source = worker.read_text(encoding="utf-8")
     ast.parse(source, filename=str(worker), feature_version=(3, 8))
     assert "import pams" not in source
+
+
+def test_worker_accepts_and_records_exact_just_encode_unused_allowlist() -> None:
+    observed = [
+        {
+            "name": item["name"],
+            "shape": tuple(item["shape"]),
+            "dtype": item["dtype"],
+            "just_encode_unused": item["just_encode_unused"],
+        }
+        for item in reversed(worker.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS)
+    ]
+    audit = worker.validate_encoder_just_encode_unmatched(observed)
+    assert (
+        audit["parameters_json"]
+        == runner.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_JSON
+        == worker.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_JSON
+    )
+    assert (
+        audit["parameters_sha256"]
+        == runner.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_SHA256
+    )
+    assert json.loads(audit["parameters_json"]) == list(
+        runner.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS
+    )
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    (
+        ("name", "unexpected.weight"),
+        ("shape", [2, 512]),
+        ("dtype", "float16"),
+    ),
+)
+def test_worker_rejects_just_encode_allowlist_descriptor_drift(
+    field: str,
+    replacement: object,
+) -> None:
+    observed = [
+        dict(item) for item in worker.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS
+    ]
+    observed[0][field] = replacement
+    with pytest.raises(RuntimeError, match="exact just_encode-unused allowlist"):
+        worker.validate_encoder_just_encode_unmatched(observed)
+
+
+def test_worker_rejects_fifth_unmatched_encoder_tensor() -> None:
+    observed = [
+        dict(item) for item in worker.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS
+    ]
+    observed.append(
+        {
+            "name": "fifth.weight",
+            "shape": [1],
+            "dtype": "float32",
+            "just_encode_unused": True,
+        }
+    )
+    with pytest.raises(RuntimeError, match="exact just_encode-unused allowlist"):
+        worker.validate_encoder_just_encode_unmatched(observed)
 
 
 @pytest.mark.parametrize(
@@ -318,6 +386,12 @@ def test_jsonl_backend_reuses_fake_subprocess_and_binds_messages(
                         "python": "3.8.13",
                         "torch": "1.10.0",
                         "container_image_id": image_id,
+                        "encoder_just_encode_unused_parameters_json": (
+                            runner.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_JSON
+                        ),
+                        "encoder_just_encode_unused_parameters_sha256": (
+                            runner.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_SHA256
+                        ),
                     },
                 }
             elif request["type"] == "predict":
@@ -421,6 +495,12 @@ def test_jsonl_backend_reuses_fake_subprocess_and_binds_messages(
         "predict",
         "shutdown",
     ]
+    assert (
+        backend.runtime_versions[
+            "encoder_just_encode_unused_parameters_sha256"
+        ]
+        == runner.ENCODER_JUST_ENCODE_UNUSED_PARAMETERS_SHA256
+    )
 
 
 @pytest.mark.parametrize(
