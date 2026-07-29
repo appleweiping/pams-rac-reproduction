@@ -2984,6 +2984,190 @@ def evaluate_checkpoint_command(
     _emit(payload)
 
 
+@evaluate_app.command("dev-predict")
+def evaluate_dev_predict_command(
+    checkpoint_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    train_inputs_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    cache_dir: Annotated[
+        Path,
+        typer.Argument(exists=True, file_okay=False, readable=True),
+    ],
+    output_dir: Annotated[Path, typer.Argument(file_okay=False)],
+    checkpoint_progress_path: Annotated[
+        Path,
+        typer.Option(
+            "--checkpoint-progress",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    checkpoint_completion_receipt_path: Annotated[
+        Path,
+        typer.Option(
+            "--checkpoint-completion-receipt",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Independent completed training receipt for the checkpoint.",
+        ),
+    ],
+    train_commitment_path: Annotated[
+        Path,
+        typer.Option(
+            "--input-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    dev_inputs_path: Annotated[
+        Path,
+        typer.Option("--dev-inputs", exists=True, dir_okay=False, readable=True),
+    ],
+    dev_commitment_path: Annotated[
+        Path,
+        typer.Option(
+            "--dev-input-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    test_identity_inputs_path: Annotated[
+        Path,
+        typer.Option(
+            "--test-identity-inputs",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    test_identity_commitment_path: Annotated[
+        Path,
+        typer.Option(
+            "--test-identity-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    variant: Annotated[
+        str,
+        typer.Option(
+            "--variant",
+            help="literal requires an encoder; sshead requires the inferred head.",
+        ),
+    ],
+    config_path: Annotated[
+        Path,
+        typer.Option("--config", exists=True, dir_okay=False, readable=True),
+    ] = Path("configs/pams.yaml"),
+    device: Annotated[str, typer.Option("--device")] = "auto",
+    upstream_encoder_checkpoint: Annotated[
+        Path | None,
+        typer.Option(
+            "--upstream-encoder-checkpoint",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ] = None,
+    upstream_encoder_progress: Annotated[
+        Path | None,
+        typer.Option(
+            "--upstream-encoder-progress",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ] = None,
+    upstream_encoder_completion_receipt: Annotated[
+        Path | None,
+        typer.Option(
+            "--upstream-encoder-completion-receipt",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Completed encoder receipt required by the SSHead variant.",
+        ),
+    ] = None,
+) -> None:
+    """Freeze canonical PAMS dev predictions without accepting targets."""
+
+    try:
+        from pams.pams_dev import run_pams_dev_prediction
+
+        normalized_variant = variant.strip().lower()
+        if normalized_variant not in {"literal", "sshead"}:
+            raise ValueError("--variant must be 'literal' or 'sshead'")
+        payload = run_pams_dev_prediction(
+            checkpoint_path=checkpoint_path,
+            checkpoint_progress_path=checkpoint_progress_path,
+            checkpoint_completion_receipt_path=checkpoint_completion_receipt_path,
+            train_inputs_path=train_inputs_path,
+            train_commitment_path=train_commitment_path,
+            dev_inputs_path=dev_inputs_path,
+            dev_commitment_path=dev_commitment_path,
+            test_identity_inputs_path=test_identity_inputs_path,
+            test_identity_commitment_path=test_identity_commitment_path,
+            pose_cache_dir=cache_dir,
+            output_dir=output_dir,
+            config_path=config_path,
+            variant=cast(Literal["literal", "sshead"], normalized_variant),
+            upstream_encoder_checkpoint_path=upstream_encoder_checkpoint,
+            upstream_encoder_progress_path=upstream_encoder_progress,
+            upstream_encoder_completion_receipt_path=(
+                upstream_encoder_completion_receipt
+            ),
+            device=device,
+            repository_root=Path.cwd(),
+            command=list(sys.argv),
+        )
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(payload)
+
+
+@evaluate_app.command("dev-score")
+def evaluate_dev_score_command(
+    predictions_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    prediction_receipt_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    dev_targets_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    output_dir: Annotated[Path, typer.Argument(file_okay=False)],
+) -> None:
+    """Score frozen PAMS dev predictions at the only label-bearing boundary."""
+
+    try:
+        from pams.pams_dev import score_pams_dev_predictions
+
+        payload = score_pams_dev_predictions(
+            predictions_path=predictions_path,
+            prediction_receipt_path=prediction_receipt_path,
+            dev_targets_path=dev_targets_path,
+            output_dir=output_dir,
+            repository_root=Path.cwd(),
+        )
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(payload)
+
+
 @local_frequency_app.command("synthetic-replay")
 def local_frequency_synthetic_replay_command(
     output_dir: Annotated[Path, typer.Argument(file_okay=False)],
