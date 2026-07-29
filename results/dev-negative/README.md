@@ -257,6 +257,33 @@ rounded prediction values exactly, then emitted the same metrics. The
 historical artifact remains separately bound so the schema transition is
 auditable.
 
+## Official ESCounts current-runner sanity
+
+The pinned EveryShotCounts source and published VideoMAE/RepCount checkpoints
+completed the strict current runner-to-scorer path at Git SHA
+`bbaa7a1ee59bab022f8cc24f41a2a399bbd550e5`. The 8 GiB primary tier produced
+82 predictions and exactly two resource-exhausted rows; the one permitted
+12 GiB retry recovered both. The merged artifact contains all 84 rows and
+preserves every primary success row canonically. Prediction had no target or
+test mount; only the separate scorer opened development targets.
+
+The current scorer obtained NMAE `0.352419` (paired-bootstrap 95% CI
+`[0.257909, 0.460455]`) and OBO `0.595238`
+(`[0.488095, 0.702381]`). All 84 current raw values and all 84 rounded values
+are exactly identical to the legacy ledger. Resource routing changed for one
+video only: `v_JumpRope_g15_c01` now fits the primary tier.
+
+The frame audit reports 83 exact OpenCV/PyAV frame-count matches and one
+official-compatible trailing shortfall:
+`v_PommelHorse_g07_c06` decoded `669/670` frames. Shortfalls greater than one
+remain hard decode failures. Earlier startup and strict-tail failures are
+retained solely as repair audit and contribute no metric. Complete path-free
+source/code/artifact hashes, frame evidence, intervals, and the explicit
+legacy comparison are in
+[`escounts_official_dev84_f18fcf1.json`](escounts_official_dev84_f18fcf1.json).
+This is a development-only official-checkpoint sanity, not original paper
+protocol parity or a PAMS verification result.
+
 ## Official IVAC-P2L modern-compatibility sanity
 
 The pinned IVAC-P2L source at commit `0b1149e695`, linked Swin backbone,

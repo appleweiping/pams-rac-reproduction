@@ -135,6 +135,18 @@ rounding (`8`) to frozen half-up (`9`), so the current metrics are kept
 separate. Exact bindings are in
 [`ivac_p2l_official_dev84_retrospective.json`](dev-negative/ivac_p2l_official_dev84_retrospective.json).
 
+The official ESCounts zero-shot path also completed its clean current
+runner-to-scorer rerun at Git SHA
+`bbaa7a1ee59bab022f8cc24f41a2a399bbd550e5`. Its 84 current raw and rounded
+predictions are each exactly identical to the legacy ledger. The strict
+scorer obtained NMAE `0.352419` and OBO `0.595238`, with paired 10,000-sample
+95% CIs `[0.257909, 0.460455]` and `[0.488095, 0.702381]`. The primary/retry
+flow records one accepted official-compatible tail shortfall (`669/670`
+frames); larger shortfalls remain failures. Prediction had no target or test
+mount, and development targets were opened only by the separate scorer.
+Path-free full lineage and repair audit are in
+[`escounts_official_dev84_f18fcf1.json`](dev-negative/escounts_official_dev84_f18fcf1.json).
+
 ## Standard UCFRep-526 fair table
 
 | Method | Protocol | Status | NMAE | OBO |
@@ -143,7 +155,7 @@ separate. Exact bindings are in
 | PAMS-SSHead | 421/105 | dev negative available; test not run | — | — |
 | RepNet | 421/105 | official-current ckpt-70 dev sanity available; original parity/test blocked | — | — |
 | TransRAC | 421/105 | current-code modern-compat dev sanity available; original parity/test blocked | — | — |
-| ESCounts | 421/105 | parity/data blocked | — | — |
+| ESCounts | 421/105 | current-code official-checkpoint dev sanity available; original parity/test blocked | — | — |
 | IVAC-P2L | 421/105 | current-code modern-compat dev sanity available; original parity/test blocked | — | — |
 | PoseRAC-ICONIP24 | 421/105 | implementation/data blocked | — | — |
 | JTSPS-count-only | 421/105 | protocol blocked | — | — |
