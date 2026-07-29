@@ -1,0 +1,7 @@
+{
+  "artifact": "smoke.json",
+  "schema_version": 1,
+  "sealed_test_touched": false,
+  "sha256": "06b21d74f234721bfe6b93da36e834095eb562a3c87b341d6851105591219d98",
+  "source_revision": "59ae69f24fa75b8d608633c75b8cda5aab4700ed"
+}

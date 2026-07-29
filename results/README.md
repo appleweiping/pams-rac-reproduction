@@ -229,6 +229,15 @@ mount, and development targets were opened only by the separate scorer.
 Path-free full lineage and repair audit are in
 [`escounts_official_dev84_f18fcf1.json`](dev-negative/escounts_official_dev84_f18fcf1.json).
 
+The CountLLM-Lite resource gate was also executed in an isolated designated-
+server container. One RTX A6000 exposed `47.318 GiB`, below the frozen
+`48 GiB` minimum, so the status remains `smoke_only` and no full recipe was
+started. The only CUDA work was a `70.7 MB` bridge forward/backward with
+finite gradients. It did not load Vicuna, a video encoder, UCFRep samples,
+development labels, or sealed-test inputs, and it is not a CountLLM baseline
+result. The original artifact, receipt, hashes, and compact disclosure are in
+[`results/resource-gates/countllm-lite-resource-smoke-59ae69f-20260729-v1`](resource-gates/countllm-lite-resource-smoke-59ae69f-20260729-v1/README.md).
+
 ## Standard UCFRep-526 fair table
 
 | Method | Protocol | Status | NMAE | OBO |
@@ -242,7 +251,7 @@ Path-free full lineage and repair audit are in
 | PoseRAC-v1 official checkpoint | 421/105 | oracle-free dev84 diagnostic available; original protocol/test blocked | — | — |
 | PoseRAC-ICONIP24 | 421/105 | implementation/data blocked | — | — |
 | JTSPS-count-only | 421/105 | inferred clean-room dev84 negative available; source protocol/test blocked | — | — |
-| CountLLM-Lite | 421/105, non-comparable recipe | smoke-only / adapter incomplete | — | — |
+| CountLLM-Lite | 421/105, non-comparable recipe | 47.318 GiB < 48 GiB; bridge smoke-only / full adapter not run | — | — |
 
 ## UCFRep-pose-110 fair table
 
