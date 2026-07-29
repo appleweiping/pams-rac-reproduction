@@ -121,19 +121,48 @@ waveform for approximately `valid_frames / 8` cycles.
 
 This was read-only diagnosis, not a new experiment or metric-guided
 configuration choice. No model was trained, no new prediction was run, and
-the test split remained untouched. The next recommended experiment first
-freezes a label-free static/shuffled/synthetic period-source gate, then
-changes only `period.post_warmup_source` from
-`embedding_velocity_coordinate` to
+the test split remained untouched. Its frozen follow-up first passed a
+label-free static/shuffled/synthetic period-source gate, then changed only
+`period.post_warmup_source` from `embedding_velocity_coordinate` to
 `projected_pose_velocity_vector_acf` in a strict matched 337-train
-seed-2026 run. Peak and fps parameters must not be tuned on development
-labels.
+seed-2026 run. Peak and fps parameters were not tuned on development labels.
 
 The complete mechanism evidence, code locations, cross-seed statistics, and
 path-free artifact hashes are in
 [`pams_full_multiscale_readout_diagnosis.md`](pams_full_multiscale_readout_diagnosis.md)
 and
 [`pams_full_multiscale_readout_diagnosis.json`](pams_full_multiscale_readout_diagnosis.json).
+
+## Projected-pose vector-ACF single-variable diagnostic
+
+The preregistered label-free gate passed before development scoring: static
+pose confidence was `0`; all `39/39` synthetic counts from 2 through 40
+recovered their periods within 3% (maximum relative error `5.22e-8`); and
+only `2.56%` of time-shuffled probes landed in the 6–8 frame band. A parsed
+YAML structural audit then confirmed exactly one change from the formal
+seed-2026 configuration:
+`period.post_warmup_source = projected_pose_velocity_vector_acf`.
+
+After 150 encoder and 30 inferred-SSHead epochs on the same 337 videos, a
+target-isolated process froze 84 predictions and a separate scorer obtained
+NMAE `2.380005` (95% CI `[1.829288, 2.989140]`) and OBO `0.095238`
+(95% CI `[0.035714, 0.166667]`). Against the matched default period source,
+the paired NMAE difference was `-2.340309` (95% CI
+`[-3.109489, -1.639701]`), while the OBO difference was `+0.035714`
+(95% CI `[-0.047619, 0.119048]`). This identifies a material period-source
+failure, but the repaired run still fails the `0.228/0.666` gate and remains
+an inferred development diagnostic.
+
+Two launch attempts are explicitly excluded: v1 exposed the unchanged
+canonical config and was stopped after the 10 pose-warm-up epochs; v2 failed
+before any container launch because its protected configuration could not be
+replaced. Neither produced a completion receipt or score. The successful v3
+run used clean Git SHA `6c52288`, immutable container identity bindings,
+`CUBLAS_WORKSPACE_CONFIG=:4096:8`, and physical GPU 1. No test target,
+prediction, evaluation, or metric was accessed. Gate results, paired
+bootstrap differences, exclusion receipts, and complete artifact hashes are
+in
+[`pams_projected_pose_vector_acf_seed2026_strict.json`](pams_projected_pose_vector_acf_seed2026_strict.json).
 
 ## PE-scale v2 inferred diagnostic
 

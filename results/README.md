@@ -95,6 +95,18 @@ four NMAE/OBO pairs fail the gate. Those separately inferred v3/v4 variants
 remain seed-2026-only; the strict paper-config full multi-scale experiment
 described above is the protocol that was expanded to seeds 42 and 3407.
 
+A later strict 337-train follow-up changed only the post-warm-up period
+source to a pre-position-encoding projected-pose vector ACF. Its label-free
+static/shuffled/synthetic gate passed before scoring. The inferred SSHead
+obtained NMAE/OBO `2.380005 / 0.095238`, versus
+`4.720314 / 0.059524` for the matched default period source. The paired NMAE
+difference was `-2.340309` with 95% CI
+`[-3.109489, -1.639701]`; OBO's difference interval crossed zero. This
+material improvement still fails the frozen reproduction gate. The
+single-field structural diff, two excluded launch attempts, target-isolated
+receipts, and complete hashes are in
+[`pams_projected_pose_vector_acf_seed2026_strict.json`](dev-negative/pams_projected_pose_vector_acf_seed2026_strict.json).
+
 A subsequent development-only local-frequency sweep found
 `0.347761 / 0.511905` at its best-NMAE setting and
 `0.361573 / 0.583333` at its best-OBO setting. These settings are explicitly
