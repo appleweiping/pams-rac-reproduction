@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "status": "failed_representation_diagnostic",
+  "classification": "PAMS single-scale dev representation diagnostic",
+  "method_id": "pams-sshead-inferred-single-scale",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "seed": 2026,
+  "sample_count": 84,
+  "table2_eligible": false,
+  "sealed_test_status": "untouched",
+  "claim_boundary": {
+    "verified_reproduction": false,
+    "eligible_for_paper_table": false,
+    "eligible_for_paper_table2": false,
+    "reason": "The implementation exposes a true single-scale representation switch but not a separately auditable single-expert switch, and no protocol-matched 337-train full-model comparator has yet been scored through this two-process path."
+  },
+  "configuration_delta": {
+    "only_change": "loss.scales",
+    "full_value": [
+      0.5,
+      1.0,
+      1.5
+    ],
+    "diagnostic_value": [
+      1.0
+    ],
+    "config_file_sha256": "c89fd2b95f256d61984cabff07bd87056c2835336a4129b1b67e3c570bf3855e",
+    "config_fingerprint": "22fa68805731adb2c2b1cf49b63c966ca82019e223d1efb357f0c4a7741b5f1a"
+  },
+  "training_scope": {
+    "train_videos": 337,
+    "development_videos": 84,
+    "development_labels_loaded_during_training": false,
+    "test_identity_videos": 105,
+    "test_labels_loaded": false,
+    "encoder_epochs": 150,
+    "sshead_epochs": 30,
+    "sshead_classification": "inferred_non_author_completion"
+  },
+  "label_firewall": {
+    "train_inputs_sha256": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207",
+    "train_commitment_sha256": "ce39b1c9038bb1506354de010e46a23053b307b852222332f13df3f79d799044",
+    "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "dev_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "test_identity_inputs_sha256": "9eb2a057246b77fc7a1121ba4c9d27bf55177ad2fcd5dbb87237396a4a6015ca",
+    "test_identity_commitment_sha256": "232d3db7ce09018716594a1f1b332eec47b37410a8d3068e662b026ee2dc9c66",
+    "prediction_process_target_mount": false,
+    "scorer_first_opened_targets_after_prediction_and_receipt_validation": true,
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6"
+  },
+  "metrics": {
+    "nmae": 4.62448430230142,
+    "obo": 0.047619047619047616,
+    "mae": 17.607142857142858,
+    "rmse": 19.910215133610855,
+    "exact": 0.011904761904761904
+  },
+  "bootstrap": {
+    "samples": 10000,
+    "seed": 2026,
+    "confidence_level": 0.95,
+    "pairing": "paired_prediction_target_rows",
+    "confidence_intervals": {
+      "nmae": {
+        "low": 3.783761883171904,
+        "high": 5.4989669308865725
+      },
+      "obo": {
+        "low": 0.011904761904761904,
+        "high": 0.09523809523809523
+      },
+      "mae": {
+        "low": 15.619047619047619,
+        "high": 19.547619047619047
+      },
+      "rmse": {
+        "low": 18.356895032326232,
+        "high": 21.338582871862496
+      },
+      "exact": {
+        "low": 0.0,
+        "high": 0.03571428571428571
+      }
+    }
+  },
+  "diagnostic_gate": {
+    "maximum_nmae": 0.228,
+    "minimum_obo": 0.666,
+    "pass": false
+  },
+  "artifact_bindings": {
+    "encoder_checkpoint_sha256": "e45d3c45ebb226bcca4039572d3a455d95039d540ac6699f0231d70132ffa534",
+    "encoder_progress_sha256": "d32573853e8e23ba72a98fdceee42b4bdbd63d2343318e567dc34c768ed9f01d",
+    "encoder_completed_receipt_sha256": "5c553be04327a824f391f3a25e6c3665b0abc0e8bb8e666b72e319d1f913f17e",
+    "sshead_checkpoint_sha256": "87d3dcb3327556ceefad5e6b608ded987ba71baab9645a27d131717a8fade2d6",
+    "sshead_progress_sha256": "6f6c3c622c9a20db102f1b591409b13785e0810be4485051c1f84bd403e17ae0",
+    "sshead_completed_receipt_sha256": "ae21195e394d0afcf16a2312d08d0515266b0e338c5dda3aed5a2df57cfe387d",
+    "training_pose_cache_set_sha256": "34123ac27334ab06852c12254c7e0c046f7d86f3a066c81f9b8751c362dd0cd0",
+    "dev_pose_cache_set_sha256": "2e14cb39a4112f7ee1d10b759d166bb472f41e317e55e773776394331690256c",
+    "dev_pose_cache_snapshot_sha256": "f36e34059c6d99878c31404a6a63b44d8cf3c5da901a8f6e13e009a25d819208",
+    "prediction_source_git_sha": "6c52288d6a227bc3040fd672c31039408e2d6696",
+    "prediction_code_sha256": "0a3f066d28af2b0c35796eff0dfedba71ad88982cf41c7dc3fe133b5d6b8dcb7",
+    "prediction_sha256": "38bb2d8b822d539671758ac1569d774e2ed36f6d28c56983ace1c77f161201cf",
+    "prediction_receipt_sha256": "2d210359ba8ab672914837f68196bc09cac45e037fd5b1b986f666d7563fdafd",
+    "evaluation_sha256": "26ac0ec8f74160bef2027027ca5c5d4b42181d89613e556bf25b8bea413b842f",
+    "evaluation_receipt_sha256": "919d2e0551d269aa944514dfa0ee5c7deaafcfde27db7c43560038b92b1078b9"
+  },
+  "runtime": {
+    "training_source_git_sha": "b0b85f113a9ec752585eb0d054175ad50397c4cc",
+    "prediction_source_git_sha": "6c52288d6a227bc3040fd672c31039408e2d6696",
+    "container_image_id": "sha256:022103f69a42ef3e88ee43ddcfbd706dabfdeec6247c257d1d01fda2c0ea2f91",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "gpu": "NVIDIA RTX A6000"
+  },
+  "limitations": [
+    "This is a development-only negative representation diagnostic, not a sealed-test result.",
+    "The inferred SSHead is an independent reproduction completion absent from the paper.",
+    "The earlier f99f3fd single-scale diagnostic used a different 421-video training scope and an older combined evaluator, so its metrics are not substituted for this run.",
+    "A protocol-matched multi-scale 337-train comparator and a separately executable single-expert switch are still required before any Table 2 directional claim."
+  ]
+}

@@ -36,6 +36,22 @@ failure:
 These diagnostics change more than one condition relative to the primary
 three-seed run and are not admissible evidence for a component ablation.
 
+## Strict 337-train single-scale representation diagnostic
+
+A fresh seed-2026 run changed only `loss.scales` from `{0.5, 1.0, 1.5}` to
+`{1.0}`. It trained on 337 label-free videos for 150 encoder and 30 inferred
+SSHead epochs, froze 84 predictions in a process without target access, then
+used a separate scorer. NMAE was `4.624484` (95% CI
+`[3.783762, 5.498967]`) and OBO was `0.047619` (95% CI
+`[0.011905, 0.095238]`).
+
+This remains a representation diagnostic, not a Table 2 result. The code
+does not expose a separately auditable single-expert switch, and a
+protocol-matched 337-train full multi-scale comparator has not yet passed
+through the same two-process scorer. The exact training receipts, prediction
+and evaluation hashes are in
+[`pams_single_scale_seed2026_strict.json`](pams_single_scale_seed2026_strict.json).
+
 ## PE-scale v2 inferred diagnostic
 
 A separate seed-2026 run at source revision `fea4a7d` multiplied the input

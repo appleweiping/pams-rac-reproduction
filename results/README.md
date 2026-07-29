@@ -59,6 +59,15 @@ seed-2026 diagnostic. It weakened one positional shortcut indicator but did
 not improve the literal-head development result and remained far outside the
 acceptance thresholds.
 
+A new seed-2026 single-scale representation diagnostic used only 337
+label-free training videos, completed 150 encoder plus 30 inferred-SSHead
+epochs, and was evaluated through the target-isolated predictor/scorer. It
+obtained NMAE `4.624484` and OBO `0.047619`, again far outside the gate.
+This run is not a paper Table 2 reconstruction: no protocol-matched
+multi-scale 337-train comparator or independently executable single-expert
+switch exists yet. Exact receipts and hashes are in
+[`pams_single_scale_seed2026_strict.json`](dev-negative/pams_single_scale_seed2026_strict.json).
+
 The same directory now includes strict-firewall seed-2026 v3/v4 experiments.
 Projected-vector period v3 obtained `3.966841 / 0.059524` with the literal
 head and `2.074190 / 0.202381` with the inferred SSHead. Cross-scale-union v4
