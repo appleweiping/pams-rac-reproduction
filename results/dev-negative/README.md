@@ -133,6 +133,32 @@ path-free artifact hashes are in
 and
 [`pams_full_multiscale_readout_diagnosis.json`](pams_full_multiscale_readout_diagnosis.json).
 
+### Train337 SSHead loss/gradient diagnosis
+
+A subsequent label-free, read-only gradient audit used only the canonical 337
+training pose caches. It ruled out a missing Period Head gradient or optimizer
+step: all six three-seed final logs have `zero_grad_steps=0`, representative
+heads moved by about 10% of their initial parameter norm, fixed-period
+training learned a period near 16, and adaptive training emitted period 8 on
+310/337 videos.
+
+The failure is instead consistent with a positional shortcut. Centered head
+streams have median cross-video correlation `0.991` for fixed-period training
+and `0.999` for adaptive training. The weighted spectral gradient is
+`1074.6x/55.6x` the variance gradient, respectively. Independently, an exact
+constant stream has total loss `1.1` but zero gradient for every loss
+component. Eight unusable pose rows are also incorrectly counted as collapsed
+streams and add a constant variance penalty.
+
+This supports testing the explicit pre-position-encoding head input as a
+single-variable repair; it does not validate that repair or authorize a
+development-label variance sweep. No development target or sealed-test input
+was opened. Full code locations, checkpoint bindings, loss values, gradients,
+and the next label-free gates are in
+[`pams_sshead_gradient_diagnosis_train337.md`](pams_sshead_gradient_diagnosis_train337.md)
+and
+[`pams_sshead_gradient_diagnosis_train337.json`](pams_sshead_gradient_diagnosis_train337.json).
+
 ## Projected-pose vector-ACF single-variable diagnostic
 
 The preregistered label-free gate passed before development scoring: static
