@@ -6,16 +6,15 @@ Independent, auditable reproduction of **Count What Repeats:
 Period-Adaptive Multi-Scale Consistency for Self-Supervised Repetitive
 Action Counting** (CVPR Findings 2026).
 
-> **Current status: implementation / no verified benchmark claim.**
-> Core PAMS/data/audit paths pass the committed test suite and a
-> designated-server component smoke recorded in an operator digest summary.
-> The strict 526-video
-> UCFRep manifest and all 421 official training-pool MediaPipe pose caches
-> have also been reconstructed and identity-audited. Thirteen training videos
-> remain all-invalid under the frozen missing-pose policy. Full encoder/SSHead
-> training, baselines, executable Table 2 variants, and sealed UCFRep
-> evaluation remain incomplete. This is a partial implementation, not a
-> verified reproduction.
+> **Current status: partial reproduction / no verified benchmark claim.**
+> PAMS-Literal and inferred PAMS-SSHead completed all three preregistered
+> seeds on the fixed 84-video development split, but both missed the frozen
+> NMAE/OBO gate by a wide margin. The official current RepNet checkpoint and
+> official TransRAC checkpoint now have separate development-only sanity
+> results; TransRAC uses an explicitly labeled modern compatibility
+> environment and is not original-protocol parity. The sealed 105-video
+> UCFRep test split remains untouched, so no test metric or successful
+> reproduction claim exists.
 
 ## Why this repository exists
 

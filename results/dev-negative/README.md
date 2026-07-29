@@ -133,6 +133,29 @@ Exact 10,000-sample paired bootstrap intervals, source/checkpoint/container
 hashes, repeat hashes, and output receipts are recorded in
 [`server_dev_readouts_repnet_4d4d708.json`](server_dev_readouts_repnet_4d4d708.json).
 
+## Official TransRAC modern-compatibility sanity
+
+The pinned official TransRAC source at commit `68bdd4daa6`, linked Swin
+backbone, and RepCount-A checkpoint completed label-free predictions for all
+84 development videos. A separate strict scorer obtained rounded NMAE
+`0.690692` (paired-bootstrap 95% CI `[0.562069, 0.848339]`) and OBO
+`0.285714` (`[0.190476, 0.380952]`). No decode or non-finite failure was
+recorded, and the sealed 105-video test split was untouched.
+
+This result is explicitly **modern compatibility**, not original-protocol
+parity or a paper-table value. The released dependencies conflict, and the
+released evaluator reads labels and uses a different normalized-error
+formula. Compact path-free evidence and exact source/model/container/input/
+prediction/evaluation bindings are recorded in
+[`transrac_official_modern_compat_dev84.json`](transrac_official_modern_compat_dev84.json).
+Official source, weights, videos, raw predictions, and machine paths are not
+published.
+
+The historical server artifact predates the strict public runner/scorer
+schema. It is retained as retrospective hash-backed evidence; a clean
+current-code runner-to-scorer rerun is required before claiming that the
+published implementation reconstructs it.
+
 The operator-recorded source aggregate has SHA-256
 `c8f6a117ce635d91d7c4446b2f2aea156bb2f3ed0ae86460986685c16cdeb814`.
 The raw aggregate and per-video predictions are not published in this

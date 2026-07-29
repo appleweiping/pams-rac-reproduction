@@ -10,7 +10,7 @@ for an honestly runnable implementation; blocked methods raise
 | Registry key | Target evidence | Current status | Comparison protocol |
 |---|---|---|---|
 | `repnet` | official current `ckpt-70` sanity, then independent adapter | `blocked_unimplemented`; PAMS table cell `protocol-unverifiable` | UCFRep-526 fair |
-| `transrac` | official sanity, then clean-room | `blocked_unimplemented` | UCFRep-526 fair |
+| `transrac` | official checkpoint modern-compat dev sanity complete, then clean-room | `blocked_unimplemented`; parity/test blocked | UCFRep-526 fair |
 | `escounts` | official sanity, then clean-room | `blocked_unimplemented` | UCFRep-526 fair |
 | `ivac-p2l` | official zero-shot sanity, then clean-room | `blocked_unimplemented` | UCFRep-526 fair |
 | `poserac-v1` | released oracle diagnostic plus fair rewrite | `blocked_unimplemented` | UCFRep-pose-110 |
@@ -84,6 +84,9 @@ name. The only deterministic placeholder is explicitly called `spectral-proxy`, 
   maintained [unlicensed legacy PyTorch conversion](https://github.com/materight/RepNet-pytorch).
   See the [asset/protocol audit](baselines/REPNET_AUDIT.md).
 - TransRAC: [official repository](https://github.com/SvipRepetitionCounting/TransRAC).
+  The official checkpoint has a strict development-only modern-compatibility
+  sanity result; original evaluator parity and sealed test evaluation remain
+  blocked. See the [asset/protocol audit](baselines/TRANSRAC_AUDIT.md).
 - Every Shot Counts: [official repository](https://github.com/sinhasaptarshi/EveryShotCounts).
 - IVAC-P2L: [official repository](https://github.com/hwang-cs-ime/IVAC-P2L).
 - PoseRAC: [paper](https://arxiv.org/abs/2303.08450) and

@@ -106,8 +106,9 @@ _STATIC_SPECS: tuple[BaselineSpec, ...] = (
         protocols=(UCFREP_526_FAIR,),
         source_urls=("https://github.com/SvipRepetitionCounting/TransRAC",),
         reason=(
-            "Official assets require an isolated sanity run before a separately "
-            "authored UCFRep-526 implementation can be marked runnable."
+            "Official-checkpoint modern-compatibility development sanity is "
+            "complete, but original-protocol parity, a separately authored "
+            "UCFRep-526 implementation, and sealed test evaluation remain blocked."
         ),
     ),
     _blocked(
