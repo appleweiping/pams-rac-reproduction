@@ -2087,11 +2087,15 @@ def train_sshead(
                 raise TypeError("pose collator returned an unexpected batch type")
             batch = raw_batch.to(resolved_device)
             with torch.no_grad():
-                if (
-                    config.period.training_mode == "adaptive"
-                    and config.period.post_warmup_source
-                    == "projected_pose_velocity_vector_acf"
-                ):
+                needs_projected_pose = (
+                    config.sshead.input_source == "projected_pose_pre_pe"
+                    or (
+                        config.period.training_mode == "adaptive"
+                        and config.period.post_warmup_source
+                        == "projected_pose_velocity_vector_acf"
+                    )
+                )
+                if needs_projected_pose:
                     embeddings, projected_pose = model.encoder.forward_with_pre_pe(
                         batch.poses,
                         batch.valid_mask,
@@ -2109,7 +2113,20 @@ def train_sshead(
                     projected_pose=projected_pose,
                     valid_mask=batch.valid_mask,
                 )
-            stream = model.period_head(embeddings.detach())
+            if config.sshead.input_source == "encoder_embedding":
+                head_inputs = embeddings
+            elif config.sshead.input_source == "projected_pose_pre_pe":
+                if projected_pose is None:
+                    raise RuntimeError(
+                        "projected-pose SSHead input was not materialized"
+                    )
+                head_inputs = projected_pose
+            else:
+                raise AssertionError(
+                    "unreachable validated SSHead input source: "
+                    f"{config.sshead.input_source!r}"
+                )
+            stream = model.period_head(head_inputs.detach())
             stream = stream.masked_fill(~batch.valid_mask, 0.0)
             _require_finite_sshead_tensor(stream, "period stream")
             with torch.no_grad():
@@ -2257,7 +2274,11 @@ def predict_sequence(
     model.eval()
     batch = collate_pose_sequences((sequence,)).to(resolved_device)
     with torch.inference_mode():
-        _, stream_batch = model(batch.poses, batch.valid_mask)
+        _, stream_batch = model.forward_with_head_source(
+            batch.poses,
+            batch.valid_mask,
+            head_input_source=config.sshead.input_source,
+        )
         periods, period_confidences = estimate_period_batch(
             stream_batch,
             minimum=config.period.minimum,

@@ -19,6 +19,7 @@ def test_default_config_matches_disclosed_dimensions() -> None:
     assert config.period.fixed_period_frames == 16
     assert config.period.post_warmup_source == "embedding_velocity_coordinate"
     assert config.loss.exclude_other_scale_positives_from_denominator is False
+    assert config.sshead.input_source == "encoder_embedding"
     assert config.consensus.expert_mode == "multi"
 
 
@@ -92,6 +93,29 @@ def test_explicit_default_period_source_preserves_historical_fingerprint() -> No
 
     assert explicit.fingerprint == reconstructed_implicit.fingerprint
     assert explicit.nonseed_fingerprint == reconstructed_implicit.nonseed_fingerprint
+
+
+def test_inferred_pre_pe_head_is_explicit_identity_and_preserves_pose_cache() -> None:
+    root = Path(__file__).parents[1]
+    period_only = load_config(
+        root
+        / "configs"
+        / "experiments"
+        / "pams_projected_vector_period_v3.yaml"
+    )
+    repair = load_config(
+        root / "configs" / "experiments" / "pams_sshead_pre_pe_v5.yaml"
+    )
+    implicit_payload = period_only.model_dump()
+    implicit_payload["sshead"].pop("input_source")
+    reconstructed_implicit = PAMSConfig.model_validate(implicit_payload)
+
+    assert repair.sshead.input_source == "projected_pose_pre_pe"
+    assert repair.period == period_only.period
+    assert repair.fingerprint != period_only.fingerprint
+    assert repair.nonseed_fingerprint != period_only.nonseed_fingerprint
+    assert repair.pose_fingerprint == period_only.pose_fingerprint
+    assert reconstructed_implicit.fingerprint == period_only.fingerprint
 
 
 def test_fixed_period_proxy_is_explicit_identity_and_default_preserves_history() -> None:

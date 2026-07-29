@@ -245,3 +245,39 @@ def test_period_head_and_composed_model_are_differentiable() -> None:
     assert encoded.shape == (1, 3, 8)
     assert predicted.shape == (1, 3)
     assert predicted[0, 2] == 0
+
+
+def test_composed_model_can_bind_period_head_to_pre_pe_projection() -> None:
+    torch.manual_seed(3407)
+    encoder = PAMSEncoder(
+        input_dim=6,
+        model_dim=8,
+        embedding_dim=8,
+        num_layers=1,
+        num_heads=2,
+        feedforward_dim=16,
+        dropout=0.0,
+    ).eval()
+    model = PAMSModel(encoder=encoder, period_head=PeriodHead(8, 4)).eval()
+    inputs = torch.randn(1, 7, 2, 3)
+    valid = torch.tensor([[True, True, True, True, True, False, False]])
+
+    with torch.no_grad():
+        expected_embeddings, projected = encoder.forward_with_pre_pe(inputs, valid)
+        expected_stream = model.period_head(projected).masked_fill(~valid, 0.0)
+        embeddings, stream = model.forward_with_head_source(
+            inputs,
+            valid,
+            head_input_source="projected_pose_pre_pe",
+        )
+
+    assert torch.equal(embeddings, expected_embeddings)
+    assert torch.equal(stream, expected_stream)
+    assert torch.count_nonzero(stream[~valid]) == 0
+
+    with pytest.raises(ValueError, match="input source"):
+        model.forward_with_head_source(
+            inputs,
+            valid,
+            head_input_source="unknown",  # type: ignore[arg-type]
+        )

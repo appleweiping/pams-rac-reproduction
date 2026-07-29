@@ -245,8 +245,43 @@ class PAMSModel(nn.Module):
         inputs: Tensor,
         valid_mask: Tensor | None = None,
     ) -> tuple[Tensor, Tensor]:
-        embeddings = self.encoder(inputs, valid_mask)
-        stream = self.period_head(embeddings)
+        return self.forward_with_head_source(
+            inputs,
+            valid_mask,
+            head_input_source="encoder_embedding",
+        )
+
+    def forward_with_head_source(
+        self,
+        inputs: Tensor,
+        valid_mask: Tensor | None = None,
+        *,
+        head_input_source: Literal[
+            "encoder_embedding",
+            "projected_pose_pre_pe",
+        ],
+    ) -> tuple[Tensor, Tensor]:
+        """Run the head from an explicitly selected, provenance-bound source.
+
+        ``encoder_embedding`` is the historical behavior.  The pre-PE option
+        is an inferred repair that removes the deterministic positional
+        template diagnosed in the original SSHead readout; callers must bind
+        the choice through :class:`pams.config.SSHeadConfig`.
+        """
+
+        if head_input_source == "encoder_embedding":
+            embeddings = self.encoder(inputs, valid_mask)
+            head_inputs = embeddings
+        elif head_input_source == "projected_pose_pre_pe":
+            embeddings, head_inputs = self.encoder.forward_with_pre_pe(
+                inputs,
+                valid_mask,
+            )
+        else:
+            raise ValueError(
+                f"unsupported period-head input source: {head_input_source!r}"
+            )
+        stream = self.period_head(head_inputs)
         if valid_mask is not None:
             stream = stream.masked_fill(~valid_mask.to(device=stream.device, dtype=torch.bool), 0.0)
         return embeddings, stream

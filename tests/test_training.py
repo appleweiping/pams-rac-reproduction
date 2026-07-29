@@ -79,6 +79,12 @@ def _with_projected_vector_period(config: PAMSConfig) -> PAMSConfig:
     return PAMSConfig.model_validate(payload)
 
 
+def _with_pre_pe_head(config: PAMSConfig) -> PAMSConfig:
+    payload = config.model_dump()
+    payload["sshead"]["input_source"] = "projected_pose_pre_pe"
+    return PAMSConfig.model_validate(payload)
+
+
 def _with_fixed_period(config: PAMSConfig, *, frames: int = 4) -> PAMSConfig:
     payload = config.model_dump()
     payload["period"]["training_mode"] = "fixed_period_inferred"
@@ -526,6 +532,102 @@ def test_projected_vector_period_routes_encoder_and_sshead_to_same_source(
         progress_row["stats"]["period_source"]
         == "projected_pose_velocity_vector_acf"
     )
+
+
+def test_sshead_pre_pe_source_routes_training_and_prediction_consistently(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    config = _with_pre_pe_head(_tiny_config(encoder_epochs=1, head_epochs=1))
+    model = build_pams_model(config)
+    observed_inputs: list[torch.Tensor] = []
+
+    def fake_forward_with_pre_pe(
+        inputs: torch.Tensor,
+        valid_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        batch, time = inputs.shape[:2]
+        dimension = config.model.embedding_dim
+        embeddings = torch.zeros(
+            (batch, time, dimension),
+            dtype=inputs.dtype,
+            device=inputs.device,
+        )
+        phase = torch.arange(time, dtype=inputs.dtype, device=inputs.device)
+        projected = torch.zeros_like(embeddings)
+        projected[..., 0] = torch.sin(2.0 * math.pi * phase / 4.0)
+        projected[..., 1] = torch.cos(2.0 * math.pi * phase / 4.0)
+        projected = projected.masked_fill(~valid_mask.unsqueeze(-1), 0.0)
+        return embeddings, projected
+
+    def fixed_period(
+        embeddings: torch.Tensor,
+        minimum: int,
+        maximum: int,
+        valid_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        del minimum, maximum, valid_mask
+        return (
+            torch.full(
+                (embeddings.shape[0],),
+                4,
+                dtype=torch.long,
+                device=embeddings.device,
+            ),
+            torch.ones(
+                embeddings.shape[0],
+                dtype=embeddings.dtype,
+                device=embeddings.device,
+            ),
+        )
+
+    def capture_head_input(
+        _module: torch.nn.Module,
+        args: tuple[torch.Tensor, ...],
+    ) -> None:
+        observed_inputs.append(args[0].detach().cpu().clone())
+
+    monkeypatch.setattr(
+        model.encoder,
+        "forward_with_pre_pe",
+        fake_forward_with_pre_pe,
+    )
+    monkeypatch.setattr(
+        training_module,
+        "estimate_period_from_embeddings",
+        fixed_period,
+    )
+    hook = model.period_head.register_forward_pre_hook(capture_head_input)
+    items = (_sequence("a"), _sequence("b", phase=0.7))
+    trained = train_sshead(
+        items,
+        config,
+        model=model,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=tmp_path / "head.pt",
+        progress_path=tmp_path / "head.jsonl",
+    )
+    training_input_count = len(observed_inputs)
+    assert training_input_count == 1
+    expected_first_channel = torch.sin(
+        2.0 * math.pi * torch.arange(16, dtype=torch.float32) / 4.0
+    )
+    assert torch.allclose(
+        observed_inputs[0][0, :, 0],
+        expected_first_channel,
+    )
+
+    result = predict_sequence(trained.model, items[0], config, device="cpu")
+    hook.remove()
+    assert len(observed_inputs) == training_input_count + 1
+    assert torch.allclose(
+        observed_inputs[-1][0, :, 0],
+        expected_first_channel,
+    )
+    assert result.period_frames == pytest.approx(4.0)
 
 
 def test_encoder_routes_cross_scale_denominator_switch(

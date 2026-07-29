@@ -132,6 +132,10 @@ class SSHeadConfig(StrictModel):
     epochs: int = Field(default=30, ge=1)
     learning_rate: float = Field(default=1e-4, gt=0)
     weight_decay: float = Field(default=1e-4, ge=0)
+    input_source: Literal[
+        "encoder_embedding",
+        "projected_pose_pre_pe",
+    ] = "encoder_embedding"
     cycle_weight: float = Field(default=1.0, ge=0)
     spectral_weight: float = Field(default=1.0, ge=0)
     variance_weight: float = Field(default=0.1, ge=0)
@@ -204,6 +208,12 @@ class PAMSConfig(StrictModel):
             # Preserve historical fingerprints for the literal denominator.
             # The opt-in inferred union repair is identity-changing.
             loss.pop("exclude_other_scale_positives_from_denominator")
+        sshead = payload["sshead"]
+        if sshead["input_source"] == "encoder_embedding":
+            # Preserve historical config/checkpoint identities.  The opt-in
+            # pre-PE route is an independently inferred repair and therefore
+            # remains in the canonical payload.
+            sshead.pop("input_source")
         consensus = payload["consensus"]
         if consensus["expert_mode"] == "multi":
             # Preserve every historical checkpoint/config fingerprint.  The
