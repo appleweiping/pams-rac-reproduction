@@ -1,0 +1,344 @@
+{
+  "schema_version": 1,
+  "status": "failed_inferred_fixed_period_three_seed_proxy",
+  "classification": "PAMS fixed-period-16 inferred three-seed dev diagnostic",
+  "method_id": "pams-fixed-period16-inferred-single-scale",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "seeds": [
+    42,
+    2026,
+    3407
+  ],
+  "sample_count_per_seed": 84,
+  "paper_table2_eligible": false,
+  "internal_period_ablation_eligible": true,
+  "sealed_test_status": "untouched",
+  "claim_boundary": {
+    "verified_reproduction": false,
+    "supports_period_adaptive_advantage": false,
+    "reason": "The paper does not disclose the conventional-TCC fixed window or complete loss geometry. This independently frozen 16-frame proxy fails the preregistered gate for every seed, is highly unstable under the Literal readout, and cannot recover or occupy the paper's Table 2 baseline row."
+  },
+  "configuration": {
+    "training_mode": "fixed_period_inferred",
+    "fixed_period_frames": 16,
+    "scales": [
+      1.0
+    ],
+    "inference_period_rule": "Inference estimates period from the emitted stream; the fixed period changes only the inferred training objective.",
+    "paper_disclosure_status": "inferred_not_uniquely_recoverable",
+    "per_seed": {
+      "42": {
+        "config_file_sha256": "6f0e79b1032f26d562d4a6b417f237caaad0a5251dd35ca69cd28eec788cf489",
+        "config_fingerprint": "eb90e754762c9207f6995bb9c5998442229ab13e2d628fd0ae3778dc776cdf33"
+      },
+      "2026": {
+        "config_file_sha256": "78aa6f422de91e4e7a07046376711d96dea432585ad3f0ac269db765069563db",
+        "config_fingerprint": "3978d2ec99f5d29f5ec4a24e9f24c1d0e77b9a339e74baabfd8b4258e05bfdb0"
+      },
+      "3407": {
+        "config_file_sha256": "0f1ee9251c42362ff758b6f28ebfb5e596a701f19ea4ea5361532be5e15c0457",
+        "config_fingerprint": "dad163845b734cfcc9ef48093d16df682a1999250f3cfdd3aabf54222db7990e"
+      }
+    }
+  },
+  "training_scope": {
+    "train_videos": 337,
+    "development_videos": 84,
+    "development_labels_loaded_during_training": false,
+    "test_identity_videos": 105,
+    "test_labels_loaded": false,
+    "encoder_epochs": 150,
+    "encoder_microbatch_size": 32,
+    "sshead_epochs": 30,
+    "sshead_microbatch_size": 32,
+    "sshead_classification": "inferred_non_author_completion",
+    "per_seed_final_diagnostics": {
+      "42": {
+        "encoder_loss": 1.50939196348,
+        "cross_cluster_shortfall": 0,
+        "sshead_stream_std_mean": 0.00282415,
+        "sshead_variance_loss": 0.99717584
+      },
+      "2026": {
+        "encoder_loss": 1.5091588497161865,
+        "cross_cluster_shortfall": 0,
+        "sshead_stream_std_mean": 0.0022439327008417016,
+        "sshead_variance_loss": 0.997756068182982
+      },
+      "3407": {
+        "encoder_loss": 1.50914025307,
+        "cross_cluster_shortfall": 0,
+        "sshead_stream_std_mean": 0.00233263,
+        "sshead_variance_loss": 0.99766738
+      }
+    },
+    "sshead_diagnosis": "All three heads retain output standard deviation near 0.002 and variance loss near 0.998, so the independently inferred anti-collapse objective did not produce a healthy counting stream."
+  },
+  "per_seed_metrics": {
+    "42": {
+      "literal": {
+        "nmae": 0.6324500292172704,
+        "obo": 0.3333333333333333,
+        "mae": 3.5595238095238093,
+        "rmse": 5.27008629187507,
+        "exact": 0.14285714285714285
+      },
+      "sshead_inferred": {
+        "nmae": 1.630698594076057,
+        "obo": 0.08333333333333333,
+        "mae": 6.309523809523809,
+        "rmse": 7.044078904941911,
+        "exact": 0.011904761904761904
+      }
+    },
+    "2026": {
+      "literal": {
+        "nmae": 3.09908278411973,
+        "obo": 0.09523809523809523,
+        "mae": 11.714285714285714,
+        "rmse": 13.51454243187157,
+        "exact": 0.023809523809523808
+      },
+      "sshead_inferred": {
+        "nmae": 1.7053730598219512,
+        "obo": 0.07142857142857142,
+        "mae": 6.476190476190476,
+        "rmse": 7.244045173533257,
+        "exact": 0.011904761904761904
+      }
+    },
+    "3407": {
+      "literal": {
+        "nmae": 0.9355257467172491,
+        "obo": 0.30952380952380953,
+        "mae": 4.964285714285714,
+        "rmse": 7.280927465776923,
+        "exact": 0.10714285714285714
+      },
+      "sshead_inferred": {
+        "nmae": 1.9317570457502722,
+        "obo": 0.07142857142857142,
+        "mae": 7.345238095238095,
+        "rmse": 8.244045470173349,
+        "exact": 0.011904761904761904
+      }
+    }
+  },
+  "three_seed_mean_and_sample_standard_deviation": {
+    "literal": {
+      "nmae": {
+        "mean": 1.5556861866847498,
+        "sample_standard_deviation": 1.345183450450137
+      },
+      "obo": {
+        "mean": 0.24603174603174605,
+        "sample_standard_deviation": 0.13113263207824052
+      },
+      "mae": {
+        "mean": 6.746031746031746,
+        "sample_standard_deviation": 4.359587093070977
+      },
+      "rmse": {
+        "mean": 8.688518729841187,
+        "sample_standard_deviation": 4.298691560938518
+      },
+      "exact": {
+        "mean": 0.09126984126984126,
+        "sample_standard_deviation": 0.06109049332674862
+      }
+    },
+    "sshead_inferred": {
+      "nmae": {
+        "mean": 1.7559428998827602,
+        "sample_standard_deviation": 0.15677062662996147
+      },
+      "obo": {
+        "mean": 0.07539682539682539,
+        "sample_standard_deviation": 0.0068732174903526864
+      },
+      "mae": {
+        "mean": 6.71031746031746,
+        "sample_standard_deviation": 0.5561363177589294
+      },
+      "rmse": {
+        "mean": 7.510723182882839,
+        "sample_standard_deviation": 0.6428979778482165
+      },
+      "exact": {
+        "mean": 0.011904761904761904,
+        "sample_standard_deviation": 0.0
+      }
+    }
+  },
+  "cluster_bootstrap_10000_seed2026_95ci": {
+    "policy": {
+      "sampling_unit": "video identity cluster; retain all three seeds for each sampled identity",
+      "aggregation": "compute each metric within seed, then arithmetic mean across seeds",
+      "method": "percentile",
+      "samples": 10000,
+      "seed": 2026
+    },
+    "literal": {
+      "nmae": {
+        "low": 1.3265436774842567,
+        "high": 1.8047917657122037
+      },
+      "obo": {
+        "low": 0.1865079365079365,
+        "high": 0.3055555555555555
+      },
+      "mae": {
+        "low": 6.166666666666667,
+        "high": 7.349206349206349
+      },
+      "rmse": {
+        "low": 7.806692125659474,
+        "high": 9.594091891981694
+      },
+      "exact": {
+        "low": 0.059523809523809514,
+        "high": 0.12698412698412698
+      }
+    },
+    "sshead_inferred": {
+      "nmae": {
+        "low": 1.435343951934803,
+        "high": 2.096716559644515
+      },
+      "obo": {
+        "low": 0.03571428571428571,
+        "high": 0.12301587301587301
+      },
+      "mae": {
+        "low": 5.98015873015873,
+        "high": 7.404761904761905
+      },
+      "rmse": {
+        "low": 6.8431430349461175,
+        "high": 8.130710778728758
+      },
+      "exact": {
+        "low": 0.0,
+        "high": 0.031746031746031744
+      }
+    },
+    "sshead_minus_literal": {
+      "point_difference": {
+        "nmae": 0.20025671319801042,
+        "obo": -0.17063492063492064,
+        "mae": -0.035714285714286476,
+        "rmse": -1.1777955469583476,
+        "exact": -0.07936507936507936
+      },
+      "confidence_intervals": {
+        "nmae": {
+          "low": 0.014223564134278206,
+          "high": 0.3862362879719714
+        },
+        "obo": {
+          "low": -0.25,
+          "high": -0.08730158730158732
+        },
+        "mae": {
+          "low": -0.7896825396825387,
+          "high": 0.6984126984126986
+        },
+        "rmse": {
+          "low": -1.947457261317133,
+          "high": -0.3250287400783502
+        },
+        "exact": {
+          "low": -0.11904761904761904,
+          "high": -0.03968253968253968
+        }
+      },
+      "conclusion": "The inferred head lowers mean RMSE but significantly worsens normalized error, OBO, and exact-count rate. It therefore does not repair the missing Period Head training specification."
+    }
+  },
+  "diagnostic_gate": {
+    "maximum_nmae": 0.228,
+    "minimum_obo": 0.666,
+    "literal_individual_seed_passes": 0,
+    "sshead_individual_seed_passes": 0,
+    "required_individual_seed_passes": 2,
+    "literal_mean_pass": false,
+    "sshead_mean_pass": false,
+    "verified": false
+  },
+  "label_firewall": {
+    "protocol_identity_sha256": "7aaaea4fdd0620cc7abb4f307cf63a9506448540e3d3d920acf70957f6b8b97f",
+    "training_identity_sha256": "177e3a70e6fb272bac7c976e9700f70355bc30adb3990dc1276485c3e0cbddd6",
+    "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "dev_pose_cache_snapshot_sha256": "f36e34059c6d99878c31404a6a63b44d8cf3c5da901a8f6e13e009a25d819208",
+    "prediction_process_loaded_dev_targets": false,
+    "prediction_process_loaded_test_targets": false,
+    "scoring_process_loaded_dev_targets": true,
+    "scoring_process_loaded_test_targets": false,
+    "test_prediction_artifacts_created": false
+  },
+  "artifact_bindings": {
+    "42": {
+      "encoder_checkpoint_sha256": "b67abc86757849c5122e9a827775d3ad104ab317d4160641e274a00f57b36224",
+      "encoder_progress_sha256": "02276e1e33168d7c94d1c0aa74228eb726d99ff1dedd6755898ed85e2df1e8fc",
+      "encoder_completion_receipt_sha256": "a779324c8c60901573c2de286308bb85cdf8703714e9c835c19a1b937b6d0c30",
+      "sshead_checkpoint_sha256": "1d62fdf9c62ed7809a6c3b60afa55709beb54a1b93dbe81fc095616eed2a670c",
+      "sshead_progress_sha256": "c22d4d1e34a4486c73c6e0aa585b31f372d33abb3d73743797f7f572ba494c74",
+      "sshead_completion_receipt_sha256": "b93af27c736b1bd0cbe73a1f59b9f33503493c95c804d1297a4f2d2d7998607c",
+      "literal_prediction_sha256": "58d3d6c8293123ede71b0a4f3f1e2b6d88c2fce5b3d770f7ccfb3c7d006edee2",
+      "literal_prediction_receipt_sha256": "8c93f8eb9a857de7eb153fc20debd65d14f72b189b772d36bdf9b026058b7a25",
+      "literal_evaluation_sha256": "0140afd16be64c05ead42a087ddbb4eec7ebffd66df9e5333ccb1c0fb9140023",
+      "literal_evaluation_receipt_sha256": "bb0b9db4dec1463ed97f967adb0732732d30501bb476f5498899b27d17a06248",
+      "sshead_prediction_sha256": "5de7019f5d563256cb3f3f21c445d487812f23f12f77074d505386b1d5925523",
+      "sshead_prediction_receipt_sha256": "7a866ea004716399ca28fecc3a07a55ee1baa399c5a5cfd94fd5c232d159ba32",
+      "sshead_evaluation_sha256": "883bac78927a4a47205b23c7d1a20a2a0b35ad6c9acc072f5321d85fa82e4c9e",
+      "sshead_evaluation_receipt_sha256": "d545c2c0a0d905f7b53ad785b86015085a2a0560add1020fea5fafd8d623b2a0"
+    },
+    "2026": {
+      "encoder_checkpoint_sha256": "959fc1959b23ce028806d81769fe7d3a2139f1161bdaf4ecf9d5353addae64a5",
+      "encoder_progress_sha256": "80f03c547cf16f7379f7dae9e860eaee9db58bcba42242ad8c340c01d89ff4f9",
+      "encoder_completion_receipt_sha256": "83d7fa47d60bd85623182abf6205315d515ed3de02a9014faf67acd035f6e997",
+      "sshead_checkpoint_sha256": "c20f48b424fa86f0bf40e2185ba7324b081940f4ba5b3bcf677d3dce22b343e2",
+      "sshead_progress_sha256": "9e19f74d354c882672a069e114a0704b22d15e274abbb4c259279a861300b3cb",
+      "sshead_completion_receipt_sha256": "e8bf8b42a29d63eae78666927f98f6c79648b3667133fcf756a5af1750bfebb3",
+      "literal_prediction_sha256": "801cf057458acc081db7dd0217a6ddd2779df82791db9262e85b5772b3e7332f",
+      "literal_prediction_receipt_sha256": "07e214f1a4d18ad173335a5eaefe3df9cf1a0c959fea94ae75f902d2b420b1e8",
+      "literal_evaluation_sha256": "6029a79f002bba3129883976f29221241d4049dacf2f9834cf149385e0d91eca",
+      "literal_evaluation_receipt_sha256": "d9663cc2a18795fd711a0dfd510529645b9ed26aacb2b6417dfd3df561ab7384",
+      "sshead_prediction_sha256": "f1da195ba2caad5d13f8741b8dd34d525b193a7db7ee9961517c4c35871cfe80",
+      "sshead_prediction_receipt_sha256": "58ccbe28db26795ea4b27a4290377a7140c2e37db07e6c90e21a5ac17944b850",
+      "sshead_evaluation_sha256": "5035cf21ed4cbfbc8ffc47689ad765824ab220865f80b3af256859808085328f",
+      "sshead_evaluation_receipt_sha256": "1da54f28115fad9bd0a158471d5facc3ec046c4d47cd6c78642041cd63205aa3"
+    },
+    "3407": {
+      "encoder_checkpoint_sha256": "95c6cd656ca9c09974433dc2476f264e919e74b9693bf2f31de4d5065c9ca31f",
+      "encoder_progress_sha256": "172c6f64b83211dc7871bb299520bb4adc8b17e4445b78641ad6a53df1eaadbd",
+      "encoder_completion_receipt_sha256": "d0f4ab85e90fa54fe7e53cbda1c5f513cfad17d32365aeab08f114c729659f61",
+      "sshead_checkpoint_sha256": "52b0672965a049e60a84d2f5e729dfcefe2a409369a22341278f63d3328fd412",
+      "sshead_progress_sha256": "2f86890cfe7185f53cd031be3dbad03a9cdb46bc62e12e0c2996c9c87550cc64",
+      "sshead_completion_receipt_sha256": "a96910b603402d590480909f16b51f0900aacc59ee0183da7bae76984046509c",
+      "literal_prediction_sha256": "8849853685b60ea4e8e2bc048b5a05153efd575b5d46814dbb60f4fad88438fd",
+      "literal_prediction_receipt_sha256": "d625faf20e530f0bd75b43d9c46fb4a1f1c8f08337c1d946b2cc54d2626cfbf2",
+      "literal_evaluation_sha256": "de4c14cad271ab19b251557963caa7a74df04b28090f9208827504c1fe257755",
+      "literal_evaluation_receipt_sha256": "d4fad4322c485a20888fb3a9b787a652b0f29eb808a7c6cff9415b1b9519d81e",
+      "sshead_prediction_sha256": "ecf601a89942e6aefe1162343567a63bbd3d454234686eb7e85208a3f1c3bc63",
+      "sshead_prediction_receipt_sha256": "999bec5c97fcade1f1ad298c1e2f3bba33c5361f27c6b9c6a742b0efa929389c",
+      "sshead_evaluation_sha256": "6f686912e2d6f7da51e8b34eb3e5885dd810a7f893fccbce5fff99ef282daab4",
+      "sshead_evaluation_receipt_sha256": "fe9de57c4e03cc07c6060cecdda3d7bfc239fe4edd6bb5656414f4c4d8649057"
+    }
+  },
+  "runtime": {
+    "training_and_prediction_source_git_sha": "ebbc296db11c3d7d06f5fc3090a3487abed55e36",
+    "container_image_id": "sha256:6e8105129eade4f6c6aa49a81e2d732e98cba66d7a70cd557c3d39cfc66b7738",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "gpu": "NVIDIA RTX A6000"
+  },
+  "limitations": [
+    "This is a development-only inferred proxy, not a recovered conventional-TCC baseline or sealed-test result.",
+    "The fixed value 16 and loss geometry are independently frozen because the paper does not disclose the author baseline.",
+    "PAMS-SSHead is independently inferred because the paper gives no Period Head loss or gradient path.",
+    "Literal seed variance is extremely large and all three SSHeads remain near collapse.",
+    "The 105-video sealed test split has no predictions, targets, evaluation, or metrics."
+  ]
+}

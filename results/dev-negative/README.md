@@ -216,6 +216,18 @@ current-code prediction/scoring reruns, paired intervals, and claim boundaries
 are in
 [`pams_fixed_period16_inferred_seed2026_strict.json`](pams_fixed_period16_inferred_seed2026_strict.json).
 
+The preregistered seed expansion is also complete. Across seeds `42`, `2026`,
+and `3407`, Literal obtained NMAE/OBO `1.555686 ± 1.345183 /
+0.246032 ± 0.131133`; inferred SSHead obtained `1.755943 ± 0.156771 /
+0.075397 ± 0.006873` (sample standard deviations). Both pass the joint gate
+on `0/3` seeds. A 10,000-sample video-cluster bootstrap gives SSHead-minus-
+Literal NMAE `+0.200257`, 95% CI `[+0.014224, +0.386236]`, and OBO
+`-0.170635`, 95% CI `[-0.250000, -0.087302]`. The inferred head reduces mean
+RMSE but significantly worsens normalized error and OBO, while all three
+heads retain output standard deviation near `0.002`. The full seed-level
+metrics, cluster intervals, receipts, and checkpoint hashes are in
+[`pams_fixed_period16_inferred_three_seed_strict.json`](pams_fixed_period16_inferred_three_seed_strict.json).
+
 ## PE-scale v2 inferred diagnostic
 
 A separate seed-2026 run at source revision `fea4a7d` multiplied the input

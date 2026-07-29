@@ -94,6 +94,15 @@ therefore does not support a period-adaptive advantage under this inferred
 closure, and neither fixed row passes the gate. Full evidence is in
 [`pams_fixed_period16_inferred_seed2026_strict.json`](dev-negative/pams_fixed_period16_inferred_seed2026_strict.json).
 
+The fixed-period proxy has now completed all three preregistered seeds.
+Literal obtained mean NMAE/OBO `1.555686 / 0.246032`, with sample standard
+deviations `1.345183 / 0.131133`; inferred SSHead obtained
+`1.755943 / 0.075397`, with sample standard deviations
+`0.156771 / 0.006873`. Both pass the joint gate on `0/3` seeds. A
+video-cluster bootstrap finds that SSHead significantly worsens NMAE and OBO
+relative to Literal, despite lowering mean RMSE. Full evidence is in
+[`pams_fixed_period16_inferred_three_seed_strict.json`](dev-negative/pams_fixed_period16_inferred_three_seed_strict.json).
+
 The strict full multi-scale protocol has now also completed seeds `42`,
 `2026`, and `3407` for both readouts. PAMS-Literal obtained mean NMAE/OBO
 `1.489633 / 0.226190`; its NMAE population/sample standard deviations are
