@@ -74,6 +74,10 @@ local_frequency_app = typer.Typer(
     help="Run the synthetic-frozen readout through a strict dev-only firewall.",
     no_args_is_help=True,
 )
+stress_app = typer.Typer(
+    help="Run deterministic pose-cache stress tests through a dev-only firewall.",
+    no_args_is_help=True,
+)
 
 _FROZEN_PAMS_CHECKPOINT_METHODS_BY_PROTOCOL: dict[
     str,
@@ -179,6 +183,7 @@ app.add_typer(report_app, name="report")
 app.add_typer(synthetic_app, name="synthetic")
 app.add_typer(diagnostic_app, name="diagnostic")
 app.add_typer(local_frequency_app, name="local-frequency")
+app.add_typer(stress_app, name="stress")
 
 
 def _emit(payload: Any) -> None:
@@ -3178,6 +3183,122 @@ def evaluate_dev_score_command(
         payload = score_pams_dev_predictions(
             predictions_path=predictions_path,
             prediction_receipt_path=prediction_receipt_path,
+            dev_targets_path=dev_targets_path,
+            output_dir=output_dir,
+            repository_root=Path.cwd(),
+        )
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(payload)
+
+
+@stress_app.command("dev-predict")
+def stress_dev_predict_command(
+    source_clean_predictions_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    source_clean_prediction_receipt_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    checkpoint_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    dev_inputs_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    cache_dir: Annotated[
+        Path,
+        typer.Argument(exists=True, file_okay=False, readable=True),
+    ],
+    output_dir: Annotated[Path, typer.Argument(file_okay=False)],
+    dev_commitment_path: Annotated[
+        Path,
+        typer.Option(
+            "--dev-input-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    config_path: Annotated[
+        Path,
+        typer.Option("--config", exists=True, dir_okay=False, readable=True),
+    ] = Path("configs/pams.yaml"),
+    stress_config_path: Annotated[
+        Path,
+        typer.Option(
+            "--stress-config",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ] = Path("configs/stress.yaml"),
+    device: Annotated[str, typer.Option("--device")] = "auto",
+) -> None:
+    """Freeze all target-free UCFRep dev pose-cache stress predictions."""
+
+    try:
+        from pams.stress_dev import run_pams_dev_stress_prediction
+
+        payload = run_pams_dev_stress_prediction(
+            source_clean_predictions_path=source_clean_predictions_path,
+            source_clean_prediction_receipt_path=(
+                source_clean_prediction_receipt_path
+            ),
+            checkpoint_path=checkpoint_path,
+            dev_inputs_path=dev_inputs_path,
+            dev_commitment_path=dev_commitment_path,
+            pose_cache_dir=cache_dir,
+            output_dir=output_dir,
+            config_path=config_path,
+            stress_config_path=stress_config_path,
+            device=device,
+            repository_root=Path.cwd(),
+            command=list(sys.argv),
+        )
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(payload)
+
+
+@stress_app.command("dev-score")
+def stress_dev_score_command(
+    predictions_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    prediction_receipt_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    dev_targets_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    output_dir: Annotated[Path, typer.Argument(file_okay=False)],
+    stress_config_path: Annotated[
+        Path,
+        typer.Option(
+            "--stress-config",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ] = Path("configs/stress.yaml"),
+) -> None:
+    """Score frozen stress predictions at the only label-bearing boundary."""
+
+    try:
+        from pams.stress_dev import score_pams_dev_stress_predictions
+
+        payload = score_pams_dev_stress_predictions(
+            predictions_path=predictions_path,
+            prediction_receipt_path=prediction_receipt_path,
+            stress_config_path=stress_config_path,
             dev_targets_path=dev_targets_path,
             output_dir=output_dir,
             repository_root=Path.cwd(),
