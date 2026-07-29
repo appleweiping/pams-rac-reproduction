@@ -66,13 +66,19 @@ obtained NMAE `4.624484` and OBO `0.047619`, again far outside the gate.
 Its now-completed protocol-matched full multi-scale comparator obtained NMAE
 `4.720314` and OBO `0.059524`. The multi-scale run is worse on NMAE and only
 slightly better on OBO, so the pair does not support a clear multi-scale
-advantage. It is still not a paper Table 2 reconstruction because no
-independently executable single-expert switch exists. Exact receipts and
-hashes are in
+advantage. A later independently inferred Medium-only switch reused that
+exact full-model checkpoint and obtained NMAE/OBO
+`4.690327 / 0.059524`. Multi-expert consensus therefore has worse NMAE by
+`+0.029987` (paired 95% CI `[+0.002977, +0.064290]`) and identical OBO.
+This also fails the preregistered multi-expert-over-single-expert condition.
+It is not a paper Table 2 reconstruction because the paper does not uniquely
+disclose the single-expert replacement. Exact receipts and hashes are in
 [`pams_single_scale_seed2026_strict.json`](dev-negative/pams_single_scale_seed2026_strict.json)
 and
-[`pams_multiscale_seed2026_strict.json`](dev-negative/pams_multiscale_seed2026_strict.json).
-Both rows are `table2_eligible=false`; the 105-video test split remains
+[`pams_multiscale_seed2026_strict.json`](dev-negative/pams_multiscale_seed2026_strict.json),
+with the expert comparison in
+[`pams_medium_only_seed2026_strict.json`](dev-negative/pams_medium_only_seed2026_strict.json).
+All rows are `table2_eligible=false`; the 105-video test split remains
 untouched.
 
 The strict full multi-scale protocol has now also completed seeds `42`,

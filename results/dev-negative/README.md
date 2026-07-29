@@ -164,6 +164,30 @@ bootstrap differences, exclusion receipts, and complete artifact hashes are
 in
 [`pams_projected_pose_vector_acf_seed2026_strict.json`](pams_projected_pose_vector_acf_seed2026_strict.json).
 
+## Inferred Medium-only expert ablation
+
+The formal seed-2026 full multi-scale SSHead checkpoint was reused without
+retraining at prediction revision `adb2dc4`. The only effective inference
+change was `consensus.expert_mode: multi -> medium_only`: the Medium expert
+count was returned directly while all three expert counts remained recorded.
+Prediction remained target-free and a separate process opened the 84
+development targets.
+
+| Readout | NMAE | Raw MAE | RMSE | OBO |
+|---|---:|---:|---:|---:|
+| Multi-expert consensus | 4.720314 | 18.011905 | 20.619281 | 0.059524 |
+| Medium-only inferred ablation | 4.690327 | 17.916667 | 20.546405 | 0.059524 |
+
+The counts agree for 70/84 videos. Among the 14 changed rows, Medium has lower
+absolute error on 11 and multi-expert consensus on 3. The paired
+`multi - medium` NMAE difference is `+0.029987`, with a 10,000-sample 95% CI
+of `[+0.002977, +0.064290]`; OBO is exactly unchanged. Thus the preregistered
+requirement that multi-expert consensus outperform a single expert is not
+met. This switch is independently inferred and remains ineligible for the
+paper's Table 2. Exact hashes, changed rows, intervals, and firewall evidence
+are in
+[`pams_medium_only_seed2026_strict.json`](pams_medium_only_seed2026_strict.json).
+
 ## PE-scale v2 inferred diagnostic
 
 A separate seed-2026 run at source revision `fea4a7d` multiplied the input

@@ -14,7 +14,7 @@
     "eligible_for_paper_table": false,
     "eligible_for_paper_table2": false,
     "supports_multi_scale_advantage": false,
-    "reason": "Against the protocol-matched strict single-scale run, full multi-scale has worse NMAE and only slightly better OBO. The implementation also lacks a separately auditable single-expert switch, so this pair cannot reconstruct paper Table 2."
+    "reason": "Against the protocol-matched strict single-scale run, full multi-scale has worse NMAE and only slightly better OBO. A later independently inferred Medium-only switch also found multi-expert consensus worse on NMAE and identical on OBO. Neither comparison supports the paper's ablation claims."
   },
   "configuration_delta": {
     "only_change_relative_to_strict_single_scale": "loss.scales",
@@ -174,7 +174,7 @@
     "This is a development-only negative representation diagnostic, not a sealed-test result.",
     "The inferred SSHead is an independent reproduction completion absent from the paper.",
     "The paired multi-scale and single-scale metrics move in opposite directions and do not support the paper's claimed multi-scale advantage.",
-    "The code does not expose a separately auditable single-expert switch, so this result is not eligible for paper Table 2.",
+    "This artifact predates the separately audited inferred Medium-only switch. Its matched follow-up is recorded in pams_medium_only_seed2026_strict.json; the pair remains ineligible for paper Table 2 because the paper does not uniquely disclose the single-expert replacement.",
     "Only the 105 test identities were committed for firewall auditing; no test target, prediction, evaluation, or metric was accessed or produced.",
     "The nonformal v3 run is retained only as a byte-identical progress/provenance diagnostic and is not substituted for the formal v4 result."
   ]
