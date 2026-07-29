@@ -12,10 +12,16 @@
   "current_code_compatibility": {
     "historical_prediction_sha256": "d108ad349a7c1562814f68d8e99dff175b4bca2fba521291e15e23a4603e13ec",
     "historical_adapter_sha256": "f5dcc9f2915c7d05d245ab95351d14e4b645333f311871ba645a3413fb09e463",
-    "compatible": false,
-    "failure_class": "strict_schema_mismatch",
-    "interpretation": "The server experiment predates the committed strict runner/scorer schema. These metrics are retrospective hash-backed evidence and are not yet a result emitted or validated by the current implementation.",
-    "requires_current_runner_rerun": true
+    "current_runner_source_git_sha": "b0b85f113a9ec752585eb0d054175ad50397c4cc",
+    "current_runner_code_sha256": "2a602610d78a22d9e46227e4753f880941099bc23fb37141265ab0f46a6af64b",
+    "current_scorer_code_sha256": "4e7e7948da9853608312ee57ba6e1efa087434116d6f4e0cb2eda31d78b4ff47",
+    "compatible": true,
+    "failure_class": null,
+    "raw_prediction_values_identical_to_historical": true,
+    "rounded_prediction_values_identical_to_historical": true,
+    "maximum_raw_count_absolute_difference": 0.0,
+    "interpretation": "A clean current-code runner-to-scorer rerun reproduced all 84 historical raw and rounded prediction values exactly and emitted the same metrics.",
+    "requires_current_runner_rerun": false
   },
   "label_boundary": {
     "prediction_labels_loaded": false,
@@ -26,8 +32,8 @@
     "decode_ok_total": 84,
     "failure_total": 0,
     "nonfinite_output_total": 0,
-    "inference_seconds_total": 160.388,
-    "external_gpu_peak_mib": 895
+    "historical_inference_seconds_total": 160.388,
+    "historical_external_gpu_peak_mib": 895
   },
   "metrics": {
     "nmae_rounded": 0.6906921109815201,
@@ -107,20 +113,25 @@
     "input_manifest_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
     "input_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
     "input_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
-    "config_fingerprint_sha256": "d1349cff6913345899db288c11aa991419cdd2572a124f3dda6aa2aba35fb81d",
-    "staging_receipt_sha256": "6ab619da82158106f896461462cd3325f80439b4711dcf72c7e7ebac15cc6de2",
-    "prediction_adapter_sha256": "f5dcc9f2915c7d05d245ab95351d14e4b645333f311871ba645a3413fb09e463",
-    "prediction_sha256": "d108ad349a7c1562814f68d8e99dff175b4bca2fba521291e15e23a4603e13ec",
-    "prediction_receipt_sha256": "fa756ebf3ebfebfdfbe575e8d0d6094f233a6a02f6f2f1c256e0f7a1c8f30b4f",
-    "prediction_validation_sha256": "760bae7f240115832c9f380f33960bf637e707715a0e4417f722bd8972f8a74b",
+    "input_sidecar_fingerprint_sha256": "d1349cff6913345899db288c11aa991419cdd2572a124f3dda6aa2aba35fb81d",
     "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
-    "server_scorer_sha256": "8a75395df3148993fdcca17b688ad82535c76c866418172df88fc9fa2b591f5e",
-    "evaluation_sha256": "49b2b292e3cd2189593e7f45e37f4bada49bc1b1b0a4820a97364ee002609e79",
-    "evaluation_receipt_sha256": "30561ff3360995f0b98e52beeb7ec46833bb626d847a0b78910d4c87c9f4f059"
+    "current_config_sha256": "7086011c87c02ccbde56353835b2bf0216cde9994246325bf8e0739aea2232a0",
+    "current_prediction_sha256": "eaab2ae6d844392764ac56849a18d39b7fb7ec7b757ee4e03ceb19f1b219659b",
+    "current_prediction_receipt_sha256": "61e7718026c4c8af58eff17db71fe45e41878112c7d2dfbb1dc25f1a9b9c7e5a",
+    "current_evaluation_sha256": "fa6e8c627fa5e443ebfcaba7d45e007d4b800e81196fcec28e778f29438f9218",
+    "current_evaluation_receipt_sha256": "792c4a9a38df6a1a8f0c27d8dcc0fc3af1f9ad0a0960dc7f0bc9ec621da469a7",
+    "historical_staging_receipt_sha256": "6ab619da82158106f896461462cd3325f80439b4711dcf72c7e7ebac15cc6de2",
+    "historical_prediction_adapter_sha256": "f5dcc9f2915c7d05d245ab95351d14e4b645333f311871ba645a3413fb09e463",
+    "historical_prediction_sha256": "d108ad349a7c1562814f68d8e99dff175b4bca2fba521291e15e23a4603e13ec",
+    "historical_prediction_receipt_sha256": "fa756ebf3ebfebfdfbe575e8d0d6094f233a6a02f6f2f1c256e0f7a1c8f30b4f",
+    "historical_prediction_validation_sha256": "760bae7f240115832c9f380f33960bf637e707715a0e4417f722bd8972f8a74b",
+    "historical_server_scorer_sha256": "8a75395df3148993fdcca17b688ad82535c76c866418172df88fc9fa2b591f5e",
+    "historical_evaluation_sha256": "49b2b292e3cd2189593e7f45e37f4bada49bc1b1b0a4820a97364ee002609e79",
+    "historical_evaluation_receipt_sha256": "30561ff3360995f0b98e52beeb7ec46833bb626d847a0b78910d4c87c9f4f059"
   },
   "limitations": [
     "This is development-only sanity evidence, not a sealed-test or paper-table result.",
-    "The historical prediction artifact uses a pre-integration schema; the current strict runner and scorer must be rerun before this record can claim current-code reconstruction.",
+    "The historical prediction artifact uses a pre-integration schema; the current strict runner and scorer independently reconstructed the same 84 raw and rounded values in a new schema.",
     "The released source requirements are internally inconsistent; this run used a modern compatibility stack.",
     "The independent label-free adapter invokes only the official VideoRead and TransferModel paths and does not reproduce the released evaluator's label access or count-plus-0.1 metric.",
     "The official repository's LICENSE file and README license badge/link disagree, so no third-party source, weights, videos, or raw predictions are redistributed.",

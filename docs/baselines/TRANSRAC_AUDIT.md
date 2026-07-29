@@ -15,10 +15,11 @@ Raw predictions, UCFRep videos, official source, and model weights are not
 redistributed.
 
 The recorded server prediction predates the strict public runner/scorer
-schema in this repository. Its hashes and metrics are retained as
-retrospective evidence, but the current code has not yet emitted or validated
-that artifact. A clean-commit rerun is required before claiming
-current-code reconstruction.
+schema in this repository. A clean current-code rerun at Git SHA
+`b0b85f113a9ec752585eb0d054175ad50397c4cc` reproduced all 84 raw and
+rounded values exactly. The new prediction, receipt, evaluation, and
+evaluation-receipt hashes remain separate from the historical schema in the
+compact evidence record.
 
 ## Frozen official identity
 
@@ -44,7 +45,7 @@ official model path.
 
 Prediction and scoring are different processes:
 
-For the pending current-code rerun:
+For the completed current-code rerun:
 
 1. the runner accepts a label-free sidecar, its byte commitment, the video
    root, and read-only official assets; its CLI has no count, action, label,

@@ -89,7 +89,9 @@ OBO `0.285714`; paired 10,000-sample 95% CIs are
 `[0.562069, 0.848339]` and `[0.190476, 0.380952]`. This is a
 development-only official-checkpoint sanity, not original evaluator parity.
 The server artifact predates the strict public runner/scorer schema, so it is
-currently retrospective evidence and requires a clean current-code rerun.
+retained as historical evidence. A clean current-code rerun at Git SHA
+`b0b85f113a9ec752585eb0d054175ad50397c4cc` reproduced every raw and
+rounded prediction exactly and emitted the same metrics.
 Exact asset/runtime/receipt hashes are in
 [`transrac_official_modern_compat_dev84.json`](dev-negative/transrac_official_modern_compat_dev84.json).
 
@@ -100,7 +102,7 @@ Exact asset/runtime/receipt hashes are in
 | PAMS-Literal | 421/105 | dev negative available; test not run | — | — |
 | PAMS-SSHead | 421/105 | dev negative available; test not run | — | — |
 | RepNet | 421/105 | official-current ckpt-70 dev sanity available; original parity/test blocked | — | — |
-| TransRAC | 421/105 | retrospective modern-compat dev sanity available; current-code rerun/parity/test blocked | — | — |
+| TransRAC | 421/105 | current-code modern-compat dev sanity available; original parity/test blocked | — | — |
 | ESCounts | 421/105 | parity/data blocked | — | — |
 | IVAC-P2L | 421/105 | parity/data blocked | — | — |
 | PoseRAC-ICONIP24 | 421/105 | implementation/data blocked | — | — |

@@ -152,9 +152,11 @@ Official source, weights, videos, raw predictions, and machine paths are not
 published.
 
 The historical server artifact predates the strict public runner/scorer
-schema. It is retained as retrospective hash-backed evidence; a clean
-current-code runner-to-scorer rerun is required before claiming that the
-published implementation reconstructs it.
+schema. A clean runner-to-scorer rerun at Git SHA
+`b0b85f113a9ec752585eb0d054175ad50397c4cc` reproduced all 84 raw and
+rounded prediction values exactly, then emitted the same metrics. The
+historical artifact remains separately bound so the schema transition is
+auditable.
 
 The operator-recorded source aggregate has SHA-256
 `c8f6a117ce635d91d7c4446b2f2aea156bb2f3ed0ae86460986685c16cdeb814`.
