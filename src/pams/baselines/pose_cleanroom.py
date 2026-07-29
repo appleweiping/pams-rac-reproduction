@@ -15,9 +15,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import NamedTuple
 
+import numpy as np
 import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
+
+from pams.types import CountResult, PoseSequence
 
 NUM_MEDIAPIPE_JOINTS = 33
 POSE_FEATURE_DIM = NUM_MEDIAPIPE_JOINTS * 3
@@ -106,6 +109,19 @@ POSE_CLEANROOM_DISCLOSURES: tuple[ScaffoldDisclosure, ...] = (
         parity_blockers=(
             "training-only pose-saliency annotations are not packaged",
             "released evaluator selects a channel using test ground-truth count",
+        ),
+    ),
+    ScaffoldDisclosure(
+        method="poserac-iconip24",
+        inferred_parameters=(
+            "33-joint MediaPipe input in place of the disclosed 3D OpenPose estimator",
+            "oracle-free action-channel selection by valid temporal dynamic range",
+            "Transformer hidden width, attention heads, and feed-forward width",
+        ),
+        parity_blockers=(
+            "no public ICONIP'24 implementation or checkpoint was located",
+            "UCFRep salient-pose definitions and generated training images are not disclosed",
+            "the disclosed UniFormerV2-L action recognizer cannot consume PoseSequence inputs",
         ),
     ),
     ScaffoldDisclosure(
@@ -389,6 +405,190 @@ class PoseRACV1(nn.Module):
         return PoseRACOutput(
             logits=_masked_frames(logits, valid),
             embeddings=_masked_frames(embeddings, valid),
+        )
+
+
+class PoseRACICONIP24Output(NamedTuple):
+    """Per-frame action scores and spatial pose/query features."""
+
+    logits: Tensor
+    pose_features: Tensor
+    query_features: Tensor
+
+
+class PoseRACICONIP24(nn.Module):
+    """Clean-room architecture scaffold of the distinct ICONIP'24 PoseRAC network.
+
+    Unlike :class:`PoseRACV1`, this model treats joints as spatial tokens for
+    every frame.  A pose-wise Transformer encoder produces joint features and
+    a Transformer decoder cross-attends one query per action to those features.
+    The published architecture specifies six encoder and two decoder layers but
+    omits the hidden widths; the defaults below are therefore explicit inferred
+    closures.  No temporal context, action identity, or count label enters this
+    module.
+    """
+
+    def __init__(
+        self,
+        num_action_channels: int,
+        *,
+        num_joints: int = NUM_MEDIAPIPE_JOINTS,
+        coordinate_dim: int = 3,
+        model_dim: int = 96,
+        num_heads: int = 8,
+        encoder_layers: int = 6,
+        decoder_layers: int = 2,
+        feedforward_dim: int = 384,
+        dropout: float = 0.1,
+    ) -> None:
+        super().__init__()
+        if num_action_channels < 1:
+            raise ValueError("num_action_channels must be positive")
+        if num_joints < 1 or coordinate_dim < 1:
+            raise ValueError("num_joints and coordinate_dim must be positive")
+        if model_dim < 1 or model_dim % num_heads:
+            raise ValueError("model_dim must be positive and divisible by num_heads")
+        if encoder_layers < 1 or decoder_layers < 1:
+            raise ValueError("encoder_layers and decoder_layers must be positive")
+
+        self.num_action_channels = int(num_action_channels)
+        self.num_joints = int(num_joints)
+        self.coordinate_dim = int(coordinate_dim)
+        self.model_dim = int(model_dim)
+        self.joint_embedding = nn.Sequential(
+            nn.Linear(coordinate_dim, model_dim),
+            nn.GELU(),
+            nn.Linear(model_dim, model_dim),
+        )
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=model_dim,
+            nhead=num_heads,
+            dim_feedforward=feedforward_dim,
+            dropout=dropout,
+            batch_first=True,
+            norm_first=False,
+        )
+        self.pose_encoder = nn.TransformerEncoder(
+            encoder_layer,
+            num_layers=encoder_layers,
+            enable_nested_tensor=False,
+        )
+        decoder_layer = nn.TransformerDecoderLayer(
+            d_model=model_dim,
+            nhead=num_heads,
+            dim_feedforward=feedforward_dim,
+            dropout=dropout,
+            batch_first=True,
+            norm_first=False,
+        )
+        self.pose_text_decoder = nn.TransformerDecoder(
+            decoder_layer,
+            num_layers=decoder_layers,
+        )
+        self.action_queries = nn.Parameter(torch.empty(num_action_channels, model_dim))
+        nn.init.normal_(self.action_queries, mean=0.0, std=model_dim**-0.5)
+        self.score_head = nn.Linear(model_dim, 1)
+
+    def forward(
+        self,
+        pose: Tensor,
+        valid_mask: Tensor | None = None,
+        *,
+        action_queries: Tensor | None = None,
+    ) -> PoseRACICONIP24Output:
+        pose, valid = _validate_pose_inputs(
+            pose,
+            valid_mask,
+            expected_joints=self.num_joints,
+        )
+        if pose.shape[-1] != self.coordinate_dim:
+            raise ValueError(
+                f"pose coordinate dimension must be {self.coordinate_dim}, "
+                f"got {pose.shape[-1]}"
+            )
+        queries = self.action_queries if action_queries is None else action_queries
+        expected_query_shape = (self.num_action_channels, self.model_dim)
+        if queries.shape != expected_query_shape:
+            raise ValueError(
+                f"action_queries must have shape {expected_query_shape}, got {tuple(queries.shape)}"
+            )
+
+        batch, time, joints, _ = pose.shape
+        frame_count = batch * time
+        joint_tokens = self.joint_embedding(pose).reshape(frame_count, joints, self.model_dim)
+        pose_features = self.pose_encoder(joint_tokens)
+        query_tokens = queries.to(device=pose.device, dtype=pose_features.dtype)
+        query_tokens = query_tokens.unsqueeze(0).expand(frame_count, -1, -1)
+        query_features = self.pose_text_decoder(query_tokens, pose_features)
+        logits = self.score_head(query_features).squeeze(-1)
+
+        logits = logits.reshape(batch, time, self.num_action_channels)
+        pose_features = pose_features.reshape(batch, time, joints, self.model_dim)
+        query_features = query_features.reshape(
+            batch,
+            time,
+            self.num_action_channels,
+            self.model_dim,
+        )
+        return PoseRACICONIP24Output(
+            logits=_masked_frames(logits, valid),
+            pose_features=_masked_frames(pose_features, valid),
+            query_features=_masked_frames(query_features, valid),
+        )
+
+
+@dataclass(slots=True)
+class PoseRACICONIP24Adapter:
+    """Smoke-only, oracle-free adapter around a trained clean-room model.
+
+    The paper selects one action channel with an RGB UniFormerV2-L recognizer.
+    ``PoseSequence`` intentionally contains no RGB frames, so this preparation
+    adapter uses the frozen dynamic-range selector in :class:`ActionTrigger`.
+    That substitution is inferred and makes results ineligible for the paper
+    table until a separately audited action recognizer and trained checkpoint
+    are supplied.
+    """
+
+    model: PoseRACICONIP24
+    trigger: ActionTrigger
+    device: str = "cpu"
+
+    @property
+    def spec(self):  # type: ignore[no-untyped-def]
+        # Imported lazily to avoid coupling architecture scaffolds to registry
+        # construction. The registry deliberately remains blocked.
+        from pams.baselines.registry import get_baseline_spec
+
+        return get_baseline_spec("poserac-iconip24")
+
+    def predict(self, sample: PoseSequence) -> CountResult:
+        device = torch.device(self.device)
+        pose = torch.from_numpy(np.array(sample.xyz, copy=True)).unsqueeze(0).to(device)
+        valid = torch.from_numpy(np.array(sample.valid_mask, copy=True)).unsqueeze(0).to(device)
+        self.model.to(device)
+        self.model.eval()
+        self.trigger.to(device)
+        self.trigger.eval()
+        with torch.inference_mode():
+            output = self.model(pose, valid)
+            probabilities = torch.sigmoid(output.logits)
+            triggered = self.trigger(probabilities, valid)
+
+        count = int(triggered.counts.item())
+        stream = triggered.smoothed_scores.squeeze(0).detach().cpu().numpy().astype(np.float32)
+        valid_numpy = np.asarray(sample.valid_mask, dtype=bool)
+        valid_stream = stream[valid_numpy]
+        confidence = (
+            float(np.clip(np.ptp(valid_stream), 0.0, 1.0)) if valid_stream.size else 0.0
+        )
+        valid_frames = max(int(np.count_nonzero(valid_numpy)), 1)
+        period_frames = float(valid_frames / count) if count else float(valid_frames)
+        return CountResult(
+            count=count,
+            period_frames=period_frames,
+            expert_counts=(count, count, count),
+            confidence=confidence,
+            period_stream=stream,
         )
 
 

@@ -18,9 +18,12 @@ from pams.baselines.pose_cleanroom import (
     IntraPartGraphBlock,
     JointWiseTemporalSelfSimilarity,
     JTSPSCountOnly,
+    PoseRACICONIP24,
+    PoseRACICONIP24Adapter,
     PoseRACV1,
     SPKDBDualBranch,
 )
+from pams.types import CountResult, PoseSequence
 
 
 def _pose_fixture() -> tuple[torch.Tensor, torch.Tensor]:
@@ -90,6 +93,60 @@ def test_poserac_v1_shapes_masks_and_gradients() -> None:
     assert output.embeddings[~valid].eq(0).all()
     output.logits[valid].sum().backward()
     _assert_nonzero_finite_gradient(pose)
+
+
+def test_poserac_iconip24_spatial_encoder_decoder_shapes_and_gradients() -> None:
+    pose, valid = _pose_fixture()
+    model = PoseRACICONIP24(
+        num_action_channels=5,
+        model_dim=12,
+        num_heads=3,
+        encoder_layers=1,
+        decoder_layers=1,
+        feedforward_dim=24,
+        dropout=0.0,
+    )
+    output = model(pose, valid)
+    assert output.logits.shape == (2, 8, 5)
+    assert output.pose_features.shape == (2, 8, 33, 12)
+    assert output.query_features.shape == (2, 8, 5, 12)
+    assert output.logits[~valid].eq(0).all()
+    assert output.pose_features[~valid].eq(0).all()
+    assert output.query_features[~valid].eq(0).all()
+    output.logits[valid].sum().backward()
+    _assert_nonzero_finite_gradient(pose)
+
+
+def test_poserac_iconip24_adapter_is_oracle_free_and_cpu_runnable() -> None:
+    generator = torch.Generator().manual_seed(2026)
+    model = PoseRACICONIP24(
+        num_action_channels=3,
+        model_dim=12,
+        num_heads=3,
+        encoder_layers=1,
+        decoder_layers=1,
+        feedforward_dim=24,
+        dropout=0.0,
+    )
+    for parameter in model.parameters():
+        parameter.data.normal_(generator=generator)
+    xyz = torch.randn(10, 33, 3, generator=generator).numpy()
+    sample = PoseSequence(
+        video_id="iconip24-smoke",
+        fps=30.0,
+        xyz=xyz,
+        valid_mask=[True] * 8 + [False, True],
+    )
+    adapter = PoseRACICONIP24Adapter(
+        model=model,
+        trigger=ActionTrigger(momentum=0.0),
+    )
+    result = adapter.predict(sample)
+    assert isinstance(result, CountResult)
+    assert result.period_stream.shape == (10,)
+    assert result.period_stream[8] == 0.0
+    assert adapter.spec.key == "poserac-iconip24"
+    assert not adapter.spec.runnable
 
 
 def test_gmfl_modalities_are_well_formed_and_translation_invariant() -> None:
@@ -203,6 +260,8 @@ def test_jtsps_similarity_masks_and_impulse_density_heads() -> None:
     [
         ActionTrigger.forward,
         PoseRACV1.forward,
+        PoseRACICONIP24.forward,
+        PoseRACICONIP24Adapter.predict,
         GMFLLocalGlobalFusion.forward,
         SPKDBDualBranch.forward,
         BIGCGraphModel.forward,
@@ -222,6 +281,7 @@ def test_every_pose_scaffold_declares_inferences_and_parity_blockers() -> None:
     methods = {disclosure.method for disclosure in POSE_CLEANROOM_DISCLOSURES}
     assert methods == {
         "poserac-v1",
+        "poserac-iconip24",
         "gmfl",
         "spkdb",
         "bigc",
