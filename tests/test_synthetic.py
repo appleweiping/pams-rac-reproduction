@@ -36,6 +36,20 @@ def test_pause_creates_flat_phase_without_changing_total_count() -> None:
     assert sample.phase_radians[-1] == pytest.approx(14 * np.pi)
 
 
+def test_descending_linear_speed_is_supported_and_exact_count() -> None:
+    sample = generate_synthetic_sample(
+        SyntheticSpec(
+            frames=256,
+            count=8,
+            speed_profile="linear",
+            speed_range=(2.0, 0.5),
+        )
+    )
+    increments = np.diff(sample.phase_radians)
+    assert increments[0] > increments[-1]
+    assert sample.phase_radians[-1] == pytest.approx(16 * np.pi)
+
+
 def test_stress_suite_contains_required_corruptions() -> None:
     suite = synthetic_stress_suite(frames=100)
     assert set(suite) == {
@@ -88,7 +102,7 @@ def test_count_sweep_covers_inclusive_2_to_40() -> None:
         {"count": 1},
         {"count": 41},
         {"pause_ranges": ((0.8, 0.2),)},
-        {"speed_range": (2.0, 0.5)},
+        {"speed_range": (0.0, 0.5)},
         {"occlusion_time_fraction": 1.1},
         {"harmonics": (0.0,)},
     ],

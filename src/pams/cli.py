@@ -3837,6 +3837,42 @@ def synthetic_evaluate(
     _emit(payload)
 
 
+@synthetic_app.command("acceptance")
+def synthetic_acceptance(
+    output_dir: Annotated[Path, typer.Argument(file_okay=False)],
+    config_path: Annotated[
+        Path,
+        typer.Option("--config", exists=True, dir_okay=False, readable=True),
+    ] = Path("configs/pams.yaml"),
+    stress_config_path: Annotated[
+        Path,
+        typer.Option(
+            "--stress-config",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ] = Path("configs/stress.yaml"),
+) -> None:
+    """Publish the two 576-case gates and full config-derived pose suite."""
+
+    try:
+        from pams.synthetic_audit import run_synthetic_acceptance
+
+        payload = run_synthetic_acceptance(
+            output_dir=output_dir,
+            config_path=config_path,
+            stress_config_path=stress_config_path,
+            repository_root=Path.cwd(),
+            command=list(sys.argv),
+        )
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(payload)
+    if not bool(payload["passed"]):
+        raise typer.Exit(1)
+
+
 def _publish_safety_report(
     report: dict[str, Any],
     *,

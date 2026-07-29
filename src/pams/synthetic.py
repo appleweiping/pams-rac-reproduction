@@ -51,8 +51,8 @@ class SyntheticSpec:
         if self.speed_profile not in ("constant", "linear", "sinusoidal"):
             raise ValueError("unknown speed_profile")
         low, high = self.speed_range
-        if not np.isfinite([low, high]).all() or low <= 0 or high < low:
-            raise ValueError("speed_range must contain positive ordered values")
+        if not np.isfinite([low, high]).all() or low <= 0 or high <= 0:
+            raise ValueError("speed_range must contain two positive endpoints")
         for start, stop in self.pause_ranges:
             if not 0 <= start < stop <= 1:
                 raise ValueError("pause ranges must satisfy 0 <= start < stop <= 1")
