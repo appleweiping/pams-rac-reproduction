@@ -103,6 +103,16 @@ video-cluster bootstrap finds that SSHead significantly worsens NMAE and OBO
 relative to Literal, despite lowering mean RMSE. Full evidence is in
 [`pams_fixed_period16_inferred_three_seed_strict.json`](dev-negative/pams_fixed_period16_inferred_three_seed_strict.json).
 
+The preregistered pose-cache stress matrix is also complete for the full
+multi-scale seed-2026 SSHead checkpoint. Among 11 clean/perturbed conditions,
+the endpoint-preserving `2.0` first-half speed warp significantly worsens
+NMAE by `+0.524400` and reduces OBO to zero. Other temporal and occlusion
+changes have paired intervals crossing zero; geometric transforms change
+almost no rounded counts. Because clean NMAE/OBO is already
+`4.720314 / 0.059524`, this invariance is a failure diagnostic rather than
+robustness evidence. Full results are in
+[`pams_pose_stress_seed2026_strict.json`](dev-negative/pams_pose_stress_seed2026_strict.json).
+
 The strict full multi-scale protocol has now also completed seeds `42`,
 `2026`, and `3407` for both readouts. PAMS-Literal obtained mean NMAE/OBO
 `1.489633 / 0.226190`; its NMAE population/sample standard deviations are

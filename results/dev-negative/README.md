@@ -228,6 +228,24 @@ heads retain output standard deviation near `0.002`. The full seed-level
 metrics, cluster intervals, receipts, and checkpoint hashes are in
 [`pams_fixed_period16_inferred_three_seed_strict.json`](pams_fixed_period16_inferred_three_seed_strict.json).
 
+## Dev pose-cache stress matrix
+
+The full multi-scale seed-2026 SSHead checkpoint was replayed under 11 frozen
+conditions, producing `924` target-free predictions before a separate scoring
+process loaded development counts. Clean NMAE/OBO is
+`4.720314 / 0.059524`. The endpoint-preserving `2.0` first-half speed warp
+worsens NMAE to `5.244714` (paired change `+0.524400`, 95% CI
+`[+0.312097, +0.762337]`) and reduces OBO to zero. The `0.5` speed warp,
+20% middle pause, and 20%-time by 30%-joint occlusion do not differ
+significantly from clean. Rotations, scaling, and translation change zero or
+two rounded counts across 84 videos.
+
+This is not evidence of useful geometric robustness: the clean model is
+already catastrophically inaccurate, and the apparent invariance often means
+that an already-wrong discrete output does not move. Exact condition metrics,
+paired intervals, implementation semantics, and artifact hashes are in
+[`pams_pose_stress_seed2026_strict.json`](pams_pose_stress_seed2026_strict.json).
+
 ## PE-scale v2 inferred diagnostic
 
 A separate seed-2026 run at source revision `fea4a7d` multiplied the input
