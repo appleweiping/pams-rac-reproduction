@@ -1,0 +1,209 @@
+{
+  "schema_version": 1,
+  "status": "failed_official_checkpoint_oracle_free_dev_diagnostic",
+  "classification": "PoseRAC-v1 official checkpoint / PAMS 256-frame pose-cache / inferred oracle-free dynamic-range channel / local 84-dev diagnostic",
+  "method_id": "poserac-v1-official-checkpoint-pams-cache-dynamic-range",
+  "method_version": "PoseRAC-v1-2023",
+  "distinct_from": "PoseRAC-ICONIP24",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "sample_count": 84,
+  "prediction_failure_count": 0,
+  "eligible_for_original_poserac_v1_cell": false,
+  "eligible_for_original_pams_poserac_cell": false,
+  "sealed_test_status": "untouched",
+  "claim_boundary": {
+    "verified_reproduction": false,
+    "official_checkpoint_sanity": true,
+    "official_protocol_parity": false,
+    "reason": "The released checkpoint restores exactly, but the official evaluator selects an output channel with the evaluation count. This run disables that oracle, freezes an independently inferred dynamic-range channel rule, uses PAMS caches uniformly resampled to 256 frames, and evaluates standard UCFRep-526 dev84 rather than the released UCFRep-pose-110 protocol."
+  },
+  "official_assets": {
+    "repository": "https://github.com/MiracleDance/PoseRAC",
+    "source_commit": "469590b611bde3595eaf163b517263da634e2096",
+    "source_archive_bytes": 62833091,
+    "source_archive_sha256": "0150eacf56ec033a77c24d61bebc0894134547677deda41ba5681eea887c21d0",
+    "source_tree_files": 22,
+    "source_tree_bytes": 66442868,
+    "source_tree_sha256": "7b3feec127f7a81a44d7ed94cb6d54e515421213cc40392aa89fa44311912e90",
+    "checkpoint_bytes": 10772679,
+    "checkpoint_sha256": "21afc8334333e5f5751f0e5d765376a778415285c0ac3078d8358ccb83b2b34a",
+    "license": "MIT"
+  },
+  "restore_audit": {
+    "checkpoint_format": "plain ordered tensor state dictionary",
+    "checkpoint_key_count": 74,
+    "model_key_count": 74,
+    "loaded_key_count": 74,
+    "missing_keys": [],
+    "unexpected_keys": [],
+    "strict_key_coverage": true,
+    "model_parameter_count": 2686682,
+    "output_weight_shape": [
+      8,
+      99
+    ]
+  },
+  "oracle_audit": {
+    "official_evaluator_uses_ground_truth_count_to_select_channel": true,
+    "ground_truth_count_channel_oracle_enabled_here": false,
+    "selection_rule": "largest temporal dynamic range after released smoothing; lowest channel index on ties",
+    "selection_rule_provenance": "inferred",
+    "released_enter_threshold": 0.78,
+    "released_exit_threshold": 0.4,
+    "released_smoothing_momentum": 0.4
+  },
+  "metrics": {
+    "nmae_rounded": 0.7061784548237751,
+    "obo_rounded": 0.23809523809523808,
+    "mae_raw_prediction": 4.273809523809524,
+    "mae_rounded": 4.273809523809524,
+    "rmse_raw_prediction": 5.508651204717729,
+    "rmse_rounded": 5.508651204717729,
+    "exact_rounded": 0.11904761904761904
+  },
+  "bootstrap_10000_seed2026_95ci": {
+    "method": "paired prediction-target row percentile bootstrap",
+    "nmae_rounded": {
+      "low": 0.6245944483813941,
+      "high": 0.7876441650394852
+    },
+    "obo_rounded": {
+      "low": 0.15476190476190477,
+      "high": 0.3333333333333333
+    },
+    "mae_raw_prediction": {
+      "low": 3.5714285714285716,
+      "high": 5.024107142857138
+    },
+    "mae_rounded": {
+      "low": 3.5714285714285716,
+      "high": 5.024107142857138
+    },
+    "rmse_raw_prediction": {
+      "low": 4.57474302756413,
+      "high": 6.439276800564309
+    },
+    "rmse_rounded": {
+      "low": 4.57474302756413,
+      "high": 6.439276800564309
+    },
+    "exact_rounded": {
+      "low": 0.05952380952380952,
+      "high": 0.19047619047619047
+    }
+  },
+  "selected_action_distribution": {
+    "front_raise": 9,
+    "pull_up": 3,
+    "squat": 18,
+    "bench_pressing": 6,
+    "jump_jack": 11,
+    "situp": 0,
+    "push_up": 27,
+    "pommelhorse": 10
+  },
+  "predicted_count_distribution": {
+    "0": 28,
+    "1": 17,
+    "2": 10,
+    "3": 12,
+    "4": 5,
+    "5": 4,
+    "6": 4,
+    "7": 2,
+    "8": 1,
+    "13": 1
+  },
+  "largest_absolute_errors": [
+    {
+      "video_id": "v_SoccerJuggling_g18_c05",
+      "prediction": 1,
+      "target": 18,
+      "absolute_error": 17
+    },
+    {
+      "video_id": "v_JumpRope_g03_c04",
+      "prediction": 13,
+      "target": 29,
+      "absolute_error": 16
+    },
+    {
+      "video_id": "v_Hammering_g10_c01",
+      "prediction": 0,
+      "target": 12,
+      "absolute_error": 12
+    },
+    {
+      "video_id": "v_ShavingBeard_g15_c07",
+      "prediction": 4,
+      "target": 16,
+      "absolute_error": 12
+    }
+  ],
+  "diagnostic_gate": {
+    "maximum_nmae": 0.228,
+    "minimum_obo": 0.666,
+    "nmae_pass": false,
+    "obo_pass": false,
+    "joint_pass": false
+  },
+  "input_binding": {
+    "sidecar_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "pose_fingerprint": "8ecb6c1384e1d6a088762322ed90bb6aa631683318e0ab7ed21c19541e5f6656",
+    "pose_cache_set_sha256": "2e14cb39a4112f7ee1d10b759d166bb472f41e317e55e773776394331690256c",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6"
+  },
+  "firewall": {
+    "prediction_labels_loaded": false,
+    "prediction_scoring_performed": false,
+    "prediction_target_mounts": [],
+    "prediction_test_identity_mounts": [],
+    "prediction_test_target_mounts": [],
+    "prediction_readonly_roots": [
+      "UCF-101 video root",
+      "schema-v2 pose-cache root"
+    ],
+    "prediction_record_selector": "exact canonical dev84 sidecar only",
+    "scorer_target_mounts": [
+      "dev.targets.json"
+    ],
+    "scorer_test_mounts": [],
+    "test_predictions_created": false
+  },
+  "artifact_bindings": {
+    "run_id": "poserac-v1-official-dev84-59ae69f-20260729T110951Z",
+    "prediction_sha256": "b57c7542e37d58af5166aec653572a9b8bc186c3501ce526e15f25559e9faffe",
+    "prediction_receipt_sha256": "3089d5ffdeff21ae916d743174d7f01967210e88e2fcc5a4c8411d26872c0022",
+    "evaluation_sha256": "73db4f9381bcfcea5e65b37ee5dc0d68f62bd53ae7fe4bec697fac6c359a185a",
+    "evaluation_receipt_sha256": "ad43ab8b35da1866ac0394fd61a93502e725af8ce8d209b5b1d62e7e9913af0d",
+    "formal_summary_sha256": "c1f6ffaf9d56fde41bf60b926e6561f65fd1f3b23d22931a42aa2811d823b312",
+    "run_file_ledger_sha256": "fb8f08c7cf7cac7539622daa292de65cda16cff2dad4ffa3ce4b19054be9c1d1"
+  },
+  "runtime": {
+    "code_source_git_sha": "59ae69f24fa75b8d608633c75b8cda5aab4700ed",
+    "runner_code_sha256": "c2d7b5c8823ab4f47fdabb07502664d997570cbeb4e05ddfcd2088b3b15f47a6",
+    "scorer_code_sha256": "8bfd272a544e6a8ff55ee1cc11d911d8d05b33a52e0052c9c9cb511e209898ce",
+    "compatibility_container_image_id": "sha256:022103f69a42ef3e88ee43ddcfbd706dabfdeec6247c257d1d01fda2c0ea2f91",
+    "compatibility_image_label_revision": "b0b85f113a9ec752585eb0d054175ad50397c4cc",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "runtime_source_policy": "The immutable compatibility image supplies dependencies; clean mounted source and executed runner/scorer bytes are independently bound to code_source_git_sha.",
+    "gpu": "NVIDIA RTX A6000",
+    "physical_gpu_index": 1,
+    "driver": "550.54.14",
+    "cuda_runtime": "12.4",
+    "torch": "2.5.1+cu124",
+    "numpy": "1.26.4",
+    "python": "3.11.10",
+    "server_validation": "28 passed"
+  },
+  "limitations": [
+    "The 256-frame PAMS cache cannot reconstruct PoseRAC-v1's original-frame MediaPipe sequence.",
+    "The oracle-free output-channel selector is independently inferred rather than author disclosed.",
+    "The result is standard UCFRep-526 dev84, not UCFRep-pose-110.",
+    "The official GT-count oracle result is permanently excluded from fair tables.",
+    "The 105-video sealed test split has no predictions, targets, evaluation, or metrics."
+  ]
+}

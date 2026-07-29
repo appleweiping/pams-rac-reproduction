@@ -113,6 +113,15 @@ almost no rounded counts. Because clean NMAE/OBO is already
 robustness evidence. Full results are in
 [`pams_pose_stress_seed2026_strict.json`](dev-negative/pams_pose_stress_seed2026_strict.json).
 
+The released PoseRAC-v1 checkpoint has also completed an oracle-free dev84
+diagnostic. Exact `74/74` checkpoint restoration plus an inferred
+dynamic-range channel selector obtains NMAE/OBO
+`0.706178 / 0.238095`. This is ineligible for the original PoseRAC-v1 or PAMS
+cells because the released evaluator's GT-count oracle is disabled, the
+selector is independently inferred, and the input is the 256-frame PAMS
+cache. Full evidence is in
+[`poserac_v1_official_oracle_free_dev84_strict.json`](dev-negative/poserac_v1_official_oracle_free_dev84_strict.json).
+
 The strict full multi-scale protocol has now also completed seeds `42`,
 `2026`, and `3407` for both readouts. PAMS-Literal obtained mean NMAE/OBO
 `1.489633 / 0.226190`; its NMAE population/sample standard deviations are
@@ -207,6 +216,7 @@ Path-free full lineage and repair audit are in
 | TransRAC | 421/105 | current-code modern-compat dev sanity available; original parity/test blocked | — | — |
 | ESCounts | 421/105 | current-code official-checkpoint dev sanity available; original parity/test blocked | — | — |
 | IVAC-P2L | 421/105 | current-code modern-compat dev sanity available; original parity/test blocked | — | — |
+| PoseRAC-v1 official checkpoint | 421/105 | oracle-free dev84 diagnostic available; original protocol/test blocked | — | — |
 | PoseRAC-ICONIP24 | 421/105 | implementation/data blocked | — | — |
 | JTSPS-count-only | 421/105 | protocol blocked | — | — |
 | CountLLM-Lite | 421/105, non-comparable recipe | smoke-only / adapter incomplete | — | — |

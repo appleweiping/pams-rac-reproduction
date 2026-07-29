@@ -1,7 +1,7 @@
 schema_version: 1
 key: poserac-v1
 paper_name: PoseRAC-v1 (released eight-channel pose protocol)
-status: official_runner_prepared_unscored
+status: official_checkpoint_oracle_free_dev84_diagnostic_complete
 implementation: official_checkpoint_wrapper
 protocols:
   source_faithful: ucfrep_pose_110_poserac_v1_oracle
@@ -20,3 +20,4 @@ sources:
   checkpoint_sha256: 21afc8334333e5f5751f0e5d765376a778415285c0ac3078d8358ccb83b2b34a
 runner: src/pams/baselines/poserac_v1_official_runner.py
 audit: docs/baselines/POSERAC_V1_OFFICIAL_AUDIT.md
+result: results/dev-negative/poserac_v1_official_oracle_free_dev84_strict.json

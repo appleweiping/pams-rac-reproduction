@@ -107,6 +107,27 @@ quoted in the PAMS paper.
 No UCFRep-526 sealed-test video or label is required or accepted by this
 runner. Scoring remains a separate process.
 
+## Formal standard-UCFRep dev84 diagnostic
+
+The target-free official-checkpoint run completed all 84 frozen development
+videos with the inferred dynamic-range channel rule. A separate CPU process
+validated the prediction artifact, receipt, source/checkpoint identities,
+84-video cache snapshot, runner bytes, and clean Git revision before it first
+opened `dev.targets.json`.
+
+The result is NMAE `0.706178`, OBO `0.238095`, MAE `4.273810`, and RMSE
+`5.508651`. The 10,000-sample 95% intervals are `[0.624594, 0.787644]` for
+NMAE and `[0.154762, 0.333333]` for OBO. It fails the reproduction gate and
+is not eligible for either source-paper cell.
+
+Prediction used immutable compatibility image
+`sha256:022103f69a42ef3e88ee43ddcfbd706dabfdeec6247c257d1d01fda2c0ea2f91`
+for dependencies. The executed clean source and runner/scorer bytes are
+independently bound to Git revision
+`59ae69f24fa75b8d608633c75b8cda5aab4700ed`; this separation is explicit
+rather than misreporting a relabeled image. Full metrics and hashes are in
+[`../../results/dev-negative/poserac_v1_official_oracle_free_dev84_strict.json`](../../results/dev-negative/poserac_v1_official_oracle_free_dev84_strict.json).
+
 ## Sealed development scorer
 
 `src/pams/baselines/poserac_v1_official_score.py` accepts only the exact

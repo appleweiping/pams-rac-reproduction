@@ -13,7 +13,7 @@ for an honestly runnable implementation; blocked methods raise
 | `transrac` | official checkpoint modern-compat dev sanity complete, then clean-room | `blocked_unimplemented`; parity/test blocked | UCFRep-526 fair |
 | `escounts` | official sanity, then clean-room | `blocked_unimplemented` | UCFRep-526 fair |
 | `ivac-p2l` | official checkpoint modern-compat dev sanity complete, then clean-room | `blocked_unimplemented`; parity/test blocked | UCFRep-526 fair |
-| `poserac-v1` | released oracle diagnostic plus fair rewrite | `blocked_unimplemented` | UCFRep-pose-110 |
+| `poserac-v1` | official checkpoint oracle-free dev84 diagnostic complete; fair rewrite pending | diagnostic complete; fair 89/21 rewrite blocked | UCFRep-526 dev diagnostic / UCFRep-pose-110 target |
 | `poserac-iconip24` | distinct clean-room architecture scaffold | `blocked_unimplemented` | UCFRep-526 fair |
 | `gmfl` | clean-room | `blocked_unimplemented` | UCFRep-pose-110 |
 | `jtsps-count-only` | protocol audit before implementation | `blocked_protocol` | UCFRep-526 target |
@@ -96,6 +96,11 @@ name. The only deterministic placeholder is explicitly called `spectral-proxy`, 
   blocked.
 - PoseRAC-v1: [paper](https://arxiv.org/abs/2303.08450) and
   [official repository](https://github.com/MiracleDance/PoseRAC).
+  The official checkpoint now has a strict standard-UCFRep dev84 diagnostic
+  with the released GT-count channel oracle disabled. It uses an inferred
+  label-free channel rule and the 256-frame PAMS cache, so it remains
+  ineligible for the original PoseRAC-v1 and PAMS table cells. See the
+  [official-checkpoint audit](baselines/POSERAC_V1_OFFICIAL_AUDIT.md).
 - PoseRAC-ICONIP24: [primary paper](https://doi.org/10.1007/978-981-96-6588-4_18).
   No public implementation or checkpoint is treated as belonging to this
   distinct method; see the

@@ -246,6 +246,22 @@ that an already-wrong discrete output does not move. Exact condition metrics,
 paired intervals, implementation semantics, and artifact hashes are in
 [`pams_pose_stress_seed2026_strict.json`](pams_pose_stress_seed2026_strict.json).
 
+## PoseRAC-v1 official checkpoint, oracle-free diagnostic
+
+The released eight-channel checkpoint restored with exact `74/74` key
+coverage and ran on the same 84-video development identity. We permanently
+disabled the official evaluator's GT-count channel oracle and froze an
+inferred label-free rule: select the smoothed output channel with the largest
+temporal dynamic range.
+
+The result is NMAE/OBO `0.706178 / 0.238095`, MAE `4.273810`, and RMSE
+`5.508651`; 10,000-sample 95% intervals are `[0.624594, 0.787644]` for NMAE
+and `[0.154762, 0.333333]` for OBO. It is a valid negative diagnostic, not a
+source-protocol score: the current cache is uniformly resampled to 256 frames
+and this split is standard UCFRep-526 rather than UCFRep-pose-110. Exact
+asset, cache, firewall, prediction, evaluation, and runtime hashes are in
+[`poserac_v1_official_oracle_free_dev84_strict.json`](poserac_v1_official_oracle_free_dev84_strict.json).
+
 ## PE-scale v2 inferred diagnostic
 
 A separate seed-2026 run at source revision `fea4a7d` multiplied the input
