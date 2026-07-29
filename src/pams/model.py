@@ -218,10 +218,85 @@ class PeriodHead(nn.Module):
             nn.Linear(hidden_dim, 1),
         )
 
-    def forward(self, embeddings: Tensor) -> Tensor:
+    def forward(
+        self,
+        embeddings: Tensor,
+        *,
+        valid_mask: Tensor | None = None,
+    ) -> Tensor:
+        del valid_mask
         if embeddings.ndim < 2:
             raise ValueError("period head expects [..., time, embedding] inputs")
         return self.network(embeddings).squeeze(-1)
+
+
+class TemporalPeriodHead(PeriodHead):
+    """Inferred local-context repair of the disclosed scalar period head.
+
+    A same-padded depthwise five-frame convolution adds local context before
+    the unchanged disclosed ``embedding -> 128 -> scalar`` framewise core.
+    Its bias-free residual branch is zero-initialized, making the initial
+    valid-frame output exactly equal to the pointwise head.  Invalid inputs
+    are zeroed before the convolution and invalid outputs afterwards, so
+    missing or padded frames cannot inject values into neighboring valid
+    predictions.
+    """
+
+    temporal_kernel_size = 5
+
+    def __init__(self, embedding_dim: int = 512, hidden_dim: int = 128) -> None:
+        super().__init__(embedding_dim=embedding_dim, hidden_dim=hidden_dim)
+        self.embedding_dim = embedding_dim
+        self.temporal_conv = nn.Conv1d(
+            embedding_dim,
+            embedding_dim,
+            kernel_size=self.temporal_kernel_size,
+            padding=self.temporal_kernel_size // 2,
+            groups=embedding_dim,
+            bias=False,
+        )
+        nn.init.zeros_(self.temporal_conv.weight)
+
+    def forward(
+        self,
+        embeddings: Tensor,
+        *,
+        valid_mask: Tensor | None = None,
+    ) -> Tensor:
+        if embeddings.ndim != 3:
+            raise ValueError(
+                "temporal period head expects [batch, time, embedding] inputs"
+            )
+        batch, time, dimension = embeddings.shape
+        if dimension != self.embedding_dim:
+            raise ValueError(
+                f"expected embedding dimension {self.embedding_dim}, got {dimension}"
+            )
+        if valid_mask is None:
+            valid = torch.ones(
+                (batch, time),
+                dtype=torch.bool,
+                device=embeddings.device,
+            )
+        else:
+            if valid_mask.shape != (batch, time):
+                raise ValueError(
+                    "valid_mask must have shape "
+                    f"{(batch, time)}, got {tuple(valid_mask.shape)}"
+                )
+            valid = valid_mask.to(device=embeddings.device, dtype=torch.bool)
+
+        valid_rows = valid.unsqueeze(-1)
+        masked_embeddings = embeddings.masked_fill(~valid_rows, 0.0)
+        temporal = self.temporal_conv(
+            masked_embeddings.transpose(1, 2)
+        ).transpose(1, 2)
+        contextualized = (masked_embeddings + temporal).masked_fill(
+            ~valid_rows,
+            0.0,
+        )
+        stream = super().forward(contextualized)
+        return stream.masked_fill(~valid, 0.0)
 
 
 class PAMSModel(nn.Module):
@@ -230,7 +305,7 @@ class PAMSModel(nn.Module):
     def __init__(
         self,
         encoder: PAMSEncoder | None = None,
-        period_head: PeriodHead | None = None,
+        period_head: PeriodHead | TemporalPeriodHead | None = None,
     ) -> None:
         super().__init__()
         self.encoder = encoder if encoder is not None else PAMSEncoder()
@@ -281,7 +356,10 @@ class PAMSModel(nn.Module):
             raise ValueError(
                 f"unsupported period-head input source: {head_input_source!r}"
             )
-        stream = self.period_head(head_inputs)
+        stream = self.period_head(
+            head_inputs,
+            valid_mask=valid_mask,
+        )
         if valid_mask is not None:
             stream = stream.masked_fill(~valid_mask.to(device=stream.device, dtype=torch.bool), 0.0)
         return embeddings, stream

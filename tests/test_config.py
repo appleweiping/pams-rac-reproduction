@@ -19,6 +19,7 @@ def test_default_config_matches_disclosed_dimensions() -> None:
     assert config.period.fixed_period_frames == 16
     assert config.period.post_warmup_source == "embedding_velocity_coordinate"
     assert config.loss.exclude_other_scale_positives_from_denominator is False
+    assert config.sshead.architecture == "pointwise_mlp"
     assert config.sshead.input_source == "encoder_embedding"
     assert config.sshead.period_confidence_mode == "nonzero_gate"
     assert config.consensus.expert_mode == "multi"
@@ -142,6 +143,31 @@ def test_inferred_confidence_weighting_changes_only_sshead_confidence_mode() -> 
     assert weighted.nonseed_fingerprint != pre_pe.nonseed_fingerprint
     assert weighted.pose_fingerprint == pre_pe.pose_fingerprint
     assert reconstructed_implicit.fingerprint == pre_pe.fingerprint
+
+
+def test_inferred_temporal_head_changes_only_sshead_architecture() -> None:
+    root = Path(__file__).parents[1]
+    weighted = load_config(
+        root
+        / "configs"
+        / "experiments"
+        / "pams_sshead_confidence_weighted_v6.yaml"
+    )
+    temporal = load_config(
+        root / "configs" / "experiments" / "pams_sshead_temporal_conv_v7.yaml"
+    )
+    implicit_payload = weighted.model_dump()
+    implicit_payload["sshead"].pop("architecture")
+    reconstructed_implicit = PAMSConfig.model_validate(implicit_payload)
+
+    assert temporal.sshead.architecture == "temporal_conv"
+    temporal_payload = temporal.model_dump()
+    temporal_payload["sshead"]["architecture"] = "pointwise_mlp"
+    assert temporal_payload == weighted.model_dump()
+    assert temporal.fingerprint != weighted.fingerprint
+    assert temporal.nonseed_fingerprint != weighted.nonseed_fingerprint
+    assert temporal.pose_fingerprint == weighted.pose_fingerprint
+    assert reconstructed_implicit.fingerprint == weighted.fingerprint
 
 
 def test_fixed_period_proxy_is_explicit_identity_and_default_preserves_history() -> None:

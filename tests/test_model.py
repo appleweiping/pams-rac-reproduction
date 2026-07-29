@@ -3,7 +3,7 @@ import math
 import pytest
 import torch
 
-from pams.model import PAMSEncoder, PAMSModel, PeriodHead
+from pams.model import PAMSEncoder, PAMSModel, PeriodHead, TemporalPeriodHead
 
 
 def test_disclosed_default_architecture() -> None:
@@ -245,6 +245,41 @@ def test_period_head_and_composed_model_are_differentiable() -> None:
     assert encoded.shape == (1, 3, 8)
     assert predicted.shape == (1, 3)
     assert predicted[0, 2] == 0
+
+
+def test_temporal_period_head_is_mask_aware_and_differentiable() -> None:
+    torch.manual_seed(2026)
+    head = TemporalPeriodHead(embedding_dim=8, hidden_dim=4)
+    valid = torch.tensor(
+        [
+            [True, True, False, True, True, False, False],
+            [False, False, False, False, False, False, False],
+        ]
+    )
+    clean = torch.randn(2, 7, 8, requires_grad=True)
+    altered = clean.detach().clone()
+    altered[~valid] = 10_000.0
+
+    clean_stream = head(clean, valid_mask=valid)
+    altered_stream = head(altered, valid_mask=valid)
+    expected_initial = head.network(
+        clean.masked_fill(~valid.unsqueeze(-1), 0.0)
+    ).squeeze(-1)
+
+    assert head.temporal_conv.kernel_size == (5,)
+    assert head.temporal_conv.padding == (2,)
+    assert head.temporal_conv.groups == 8
+    assert head.temporal_conv.bias is None
+    assert head.temporal_conv.weight.numel() == 8 * 5
+    assert torch.count_nonzero(head.temporal_conv.weight) == 0
+    assert clean_stream.shape == (2, 7)
+    assert torch.equal(clean_stream[valid], expected_initial[valid])
+    assert torch.equal(clean_stream[valid], altered_stream[valid])
+    assert torch.count_nonzero(clean_stream[~valid]) == 0
+    assert torch.isfinite(clean_stream).all()
+    clean_stream[valid].sum().backward()
+    assert clean.grad is not None
+    assert torch.count_nonzero(clean.grad[~valid]) == 0
 
 
 def test_composed_model_can_bind_period_head_to_pre_pe_projection() -> None:

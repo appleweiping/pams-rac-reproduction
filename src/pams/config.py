@@ -132,6 +132,10 @@ class SSHeadConfig(StrictModel):
     epochs: int = Field(default=30, ge=1)
     learning_rate: float = Field(default=1e-4, gt=0)
     weight_decay: float = Field(default=1e-4, ge=0)
+    architecture: Literal[
+        "pointwise_mlp",
+        "temporal_conv",
+    ] = "pointwise_mlp"
     input_source: Literal[
         "encoder_embedding",
         "projected_pose_pre_pe",
@@ -213,6 +217,11 @@ class PAMSConfig(StrictModel):
             # The opt-in inferred union repair is identity-changing.
             loss.pop("exclude_other_scale_positives_from_denominator")
         sshead = payload["sshead"]
+        if sshead["architecture"] == "pointwise_mlp":
+            # Preserve all historical SSHead config/checkpoint identities.
+            # The local temporal-convolution head is an explicit inferred
+            # architecture and remains in the canonical payload.
+            sshead.pop("architecture")
         if sshead["input_source"] == "encoder_embedding":
             # Preserve historical config/checkpoint identities.  The opt-in
             # pre-PE route is an independently inferred repair and therefore

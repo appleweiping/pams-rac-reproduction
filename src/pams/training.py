@@ -30,7 +30,7 @@ from torch.utils.data import DataLoader, Dataset
 from pams.config import PAMSConfig
 from pams.consensus import MultiExpertCounter
 from pams.losses import PAMSTCCLoss, SSHeadLoss
-from pams.model import PAMSEncoder, PAMSModel, PeriodHead
+from pams.model import PAMSEncoder, PAMSModel, PeriodHead, TemporalPeriodHead
 from pams.period import (
     estimate_period_batch,
     estimate_period_from_embeddings,
@@ -312,10 +312,21 @@ def build_pams_model(config: PAMSConfig) -> PAMSModel:
         norm_first=model.norm_first,
         input_projection_scale=model.input_projection_scale,
     )
-    head = PeriodHead(
-        embedding_dim=model.embedding_dim,
-        hidden_dim=model.period_head_hidden_dim,
-    )
+    if config.sshead.architecture == "pointwise_mlp":
+        head = PeriodHead(
+            embedding_dim=model.embedding_dim,
+            hidden_dim=model.period_head_hidden_dim,
+        )
+    elif config.sshead.architecture == "temporal_conv":
+        head = TemporalPeriodHead(
+            embedding_dim=model.embedding_dim,
+            hidden_dim=model.period_head_hidden_dim,
+        )
+    else:
+        raise AssertionError(
+            "unreachable validated SSHead architecture: "
+            f"{config.sshead.architecture!r}"
+        )
     return PAMSModel(encoder=encoder, period_head=head)
 
 
@@ -2129,7 +2140,10 @@ def train_sshead(
                     "unreachable validated SSHead input source: "
                     f"{config.sshead.input_source!r}"
                 )
-            stream = model.period_head(head_inputs.detach())
+            stream = model.period_head(
+                head_inputs.detach(),
+                valid_mask=batch.valid_mask,
+            )
             stream = stream.masked_fill(~batch.valid_mask, 0.0)
             _require_finite_sshead_tensor(stream, "period stream")
             with torch.no_grad():

@@ -19,6 +19,7 @@ from pams.config import (
     SSHeadConfig,
     TrainingConfig,
 )
+from pams.model import TemporalPeriodHead
 from pams.training import (
     CheckpointProvenance,
     build_pams_model,
@@ -82,6 +83,12 @@ def _with_projected_vector_period(config: PAMSConfig) -> PAMSConfig:
 def _with_pre_pe_head(config: PAMSConfig) -> PAMSConfig:
     payload = config.model_dump()
     payload["sshead"]["input_source"] = "projected_pose_pre_pe"
+    return PAMSConfig.model_validate(payload)
+
+
+def _with_temporal_head(config: PAMSConfig) -> PAMSConfig:
+    payload = config.model_dump()
+    payload["sshead"]["architecture"] = "temporal_conv"
     return PAMSConfig.model_validate(payload)
 
 
@@ -628,6 +635,60 @@ def test_sshead_pre_pe_source_routes_training_and_prediction_consistently(
         expected_first_channel,
     )
     assert result.period_frames == pytest.approx(4.0)
+
+
+def test_temporal_sshead_routes_the_same_valid_mask_through_training_and_prediction(
+    tmp_path: Path,
+) -> None:
+    config = _with_temporal_head(
+        _with_pre_pe_head(
+            _with_fixed_period(
+                _tiny_config(encoder_epochs=1, head_epochs=1),
+            )
+        )
+    )
+    model = build_pams_model(config)
+    assert isinstance(model.period_head, TemporalPeriodHead)
+    observed_masks: list[torch.Tensor] = []
+
+    def capture_valid_mask(
+        _module: torch.nn.Module,
+        _args: tuple[torch.Tensor, ...],
+        kwargs: dict[str, object],
+    ) -> None:
+        valid_mask = kwargs.get("valid_mask")
+        assert isinstance(valid_mask, torch.Tensor)
+        observed_masks.append(valid_mask.detach().cpu().clone())
+
+    hook = model.period_head.register_forward_pre_hook(
+        capture_valid_mask,
+        with_kwargs=True,
+    )
+    mask = np.ones(16, dtype=np.bool_)
+    mask[[2, 9, 15]] = False
+    first = replace(_sequence("a"), valid_mask=mask)
+    second = _sequence("b", phase=0.7)
+    trained = train_sshead(
+        (first, second),
+        config,
+        model=model,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=tmp_path / "temporal-head.pt",
+        progress_path=tmp_path / "temporal-head.jsonl",
+    )
+    assert isinstance(trained.model.period_head, TemporalPeriodHead)
+    assert torch.count_nonzero(
+        trained.model.period_head.temporal_conv.weight
+    ) > 0
+    assert len(observed_masks) == 1
+    assert any(torch.equal(row, torch.from_numpy(mask)) for row in observed_masks[0])
+
+    result = predict_sequence(trained.model, first, config, device="cpu")
+    hook.remove()
+    assert len(observed_masks) == 2
+    assert torch.equal(observed_masks[-1][0], torch.from_numpy(mask))
+    assert np.count_nonzero(result.period_stream[~mask]) == 0
 
 
 def test_encoder_routes_cross_scale_denominator_switch(
