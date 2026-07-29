@@ -188,6 +188,34 @@ paper's Table 2. Exact hashes, changed rows, intervals, and firewall evidence
 are in
 [`pams_medium_only_seed2026_strict.json`](pams_medium_only_seed2026_strict.json).
 
+## Inferred fixed-period-16 training proxy
+
+The paper describes its Table 2 baseline only as conventional TCC with a fixed
+window; it does not disclose the chosen window or enough loss geometry to
+recover that row. We therefore froze a clearly named, single-scale
+`fixed_period_inferred` proxy at 16 resampled frames before development
+scoring. It is permanently ineligible to claim the paper's Table 2 value.
+The encoder was retrained for 150 epochs and its inferred SSHead for 30 epochs
+on the same 337 label-free videos.
+
+| Training objective | Readout | NMAE | Raw MAE | RMSE | OBO |
+|---|---|---:|---:|---:|---:|
+| Fixed-period-16 inferred | Literal head | 3.099083 | 11.714286 | 13.514542 | 0.095238 |
+| Adaptive single-scale | Literal head | 3.313016 | 12.976190 | 15.648673 | 0.083333 |
+| Fixed-period-16 inferred | SSHead inferred | 1.705373 | 6.476190 | 7.244045 | 0.071429 |
+| Adaptive single-scale | SSHead inferred | 4.624484 | 17.607143 | 19.910215 | 0.047619 |
+
+For the Literal readout, `adaptive - fixed` NMAE is `+0.213934`, but its
+paired 95% CI `[-0.236285, +0.617477]` crosses zero. For the inferred SSHead,
+the difference is `+2.919111`, with CI `[+2.365327, +3.486879]`; adaptive
+training is decisively worse under that closure. Both OBO differences favor
+fixed training but their intervals cross zero. Thus this executable proxy
+does not support the paper's period-adaptive ablation direction, while every
+row still fails the frozen reproduction gate. Exact training receipts,
+current-code prediction/scoring reruns, paired intervals, and claim boundaries
+are in
+[`pams_fixed_period16_inferred_seed2026_strict.json`](pams_fixed_period16_inferred_seed2026_strict.json).
+
 ## PE-scale v2 inferred diagnostic
 
 A separate seed-2026 run at source revision `fea4a7d` multiplied the input

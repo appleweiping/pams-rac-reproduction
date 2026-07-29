@@ -81,6 +81,19 @@ with the expert comparison in
 All rows are `table2_eligible=false`; the 105-video test split remains
 untouched.
 
+An independently frozen fixed-period-16, single-scale training proxy has now
+also been retrained and scored at seed 2026. The paper does not disclose its
+conventional-TCC baseline window or complete geometry, so this proxy cannot
+claim the paper's Table 2 row. Fixed-period Literal obtained NMAE/OBO
+`3.099083 / 0.095238`, versus `3.313016 / 0.083333` for the current-code
+adaptive single-scale Literal rerun. Fixed-period inferred SSHead obtained
+`1.705373 / 0.071429`, versus `4.624484 / 0.047619` for adaptive
+single-scale. The paired adaptive-minus-fixed SSHead NMAE difference is
+`+2.919111`, with 95% CI `[+2.365327, +3.486879]`. The observed direction
+therefore does not support a period-adaptive advantage under this inferred
+closure, and neither fixed row passes the gate. Full evidence is in
+[`pams_fixed_period16_inferred_seed2026_strict.json`](dev-negative/pams_fixed_period16_inferred_seed2026_strict.json).
+
 The strict full multi-scale protocol has now also completed seeds `42`,
 `2026`, and `3407` for both readouts. PAMS-Literal obtained mean NMAE/OBO
 `1.489633 / 0.226190`; its NMAE population/sample standard deviations are
