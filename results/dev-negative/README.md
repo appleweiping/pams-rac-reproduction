@@ -46,11 +46,36 @@ used a separate scorer. NMAE was `4.624484` (95% CI
 `[0.011905, 0.095238]`).
 
 This remains a representation diagnostic, not a Table 2 result. The code
-does not expose a separately auditable single-expert switch, and a
-protocol-matched 337-train full multi-scale comparator has not yet passed
-through the same two-process scorer. The exact training receipts, prediction
-and evaluation hashes are in
+does not expose a separately auditable single-expert switch. The exact
+training receipts, prediction and evaluation hashes are in
 [`pams_single_scale_seed2026_strict.json`](pams_single_scale_seed2026_strict.json).
+
+## Strict 337-train full multi-scale representation diagnostic
+
+The protocol-matched seed-2026 comparator changed only `loss.scales` back
+from `{1.0}` to `{0.5, 1.0, 1.5}`. A byte-level config diff verified that no
+other setting changed. It completed the same 150 encoder plus 30 inferred
+SSHead epochs on 337 label-free videos, froze all 84 predictions without a
+target mount, and used a separate scorer.
+
+Full multi-scale obtained NMAE `4.720314` (95% CI
+`[3.847375, 5.635771]`) and OBO `0.059524` (95% CI
+`[0.011905, 0.119048]`). Relative to strict single-scale, NMAE worsened by
+`+0.095830` while OBO improved slightly by `+0.011905`. The metrics therefore
+move in opposite directions and do not support a clear multi-scale
+advantage. Both runs remain far outside the frozen gate and are
+`table2_eligible=false`; the missing auditable single-expert switch still
+prevents a paper Table 2 reconstruction.
+
+The formal v4 run binds the clean source revision, immutable container image
+and environment in both training completion receipts. An earlier v3 run has
+byte-identical encoder and SSHead progress logs but omitted those explicit
+container-identity bindings; it is retained only as a provenance diagnostic,
+was rejected by the target-isolated predictor, and is not used as the formal
+result. No test target, prediction, evaluation, or metric was accessed or
+produced. Path-free run identifiers, complete receipt/artifact hashes, and
+the 10,000-sample intervals are in
+[`pams_multiscale_seed2026_strict.json`](pams_multiscale_seed2026_strict.json).
 
 ## PE-scale v2 inferred diagnostic
 
