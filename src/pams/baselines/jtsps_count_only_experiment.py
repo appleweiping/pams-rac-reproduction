@@ -26,6 +26,8 @@ from torch.nn import functional as F
 from pams.baselines.pose_cleanroom import JTSPSCountOnly
 from pams.data import load_pose_cache_set, load_pose_input_manifest
 from pams.metrics import compute_count_metrics
+from pams.reproducibility import sha256_file
+from pams.ucfrep import build_official_manifest
 
 _CLOSURES = {
     "status": "inferred-clean-room-not-source-parity",
@@ -353,6 +355,40 @@ def score_predictions(arguments: argparse.Namespace) -> dict[str, Any]:
     return result
 
 
+def prepare_train_targets(arguments: argparse.Namespace) -> dict[str, Any]:
+    """Materialize the only label-bearing input exposed to formal training."""
+
+    train_inputs_path = arguments.train_inputs.resolve(strict=True)
+    annotation_path = arguments.annotations.resolve(strict=True)
+    output_path = arguments.output.resolve(strict=False)
+    train_inputs = load_pose_input_manifest(train_inputs_path, validate_exact=True)
+    if train_inputs.split != "train" or len(train_inputs.records) != 337:
+        raise ValueError("target preparation requires canonical train337 inputs")
+    manifest = build_official_manifest(
+        annotation_path,
+        video_root=arguments.video_root,
+        hash_existing_videos=False,
+        allow_missing_videos=True,
+    )
+    counts = {record.video_id: record.count for record in manifest.records}
+    identifiers = tuple(record.video_id for record in train_inputs.records)
+    if any(identifier not in counts for identifier in identifiers):
+        raise ValueError("an official train337 identifier is absent from annotations")
+    payload = {
+        "schema_version": 1,
+        "manifest_type": "train_count_targets",
+        "protocol": "ucfrep_526",
+        "split": "train",
+        "source_annotation_sha256": sha256_file(annotation_path),
+        "records": [
+            {"video_id": identifier, "count": counts[identifier]}
+            for identifier in identifiers
+        ],
+    }
+    _write_json_exclusive(output_path, payload)
+    return payload
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -372,12 +408,22 @@ def _parser() -> argparse.ArgumentParser:
     score.add_argument("--predictions", type=Path, required=True)
     score.add_argument("--dev-targets", type=Path, required=True)
     score.add_argument("--output", type=Path, required=True)
+    prepare = subparsers.add_parser("prepare-targets")
+    prepare.add_argument("--train-inputs", type=Path, required=True)
+    prepare.add_argument("--annotations", type=Path, required=True)
+    prepare.add_argument("--video-root", type=Path, default=Path("/nonexistent"))
+    prepare.add_argument("--output", type=Path, required=True)
     return parser
 
 
 def main() -> None:
     arguments = _parser().parse_args()
-    result = run_experiment(arguments) if arguments.command == "run" else score_predictions(arguments)
+    if arguments.command == "run":
+        result = run_experiment(arguments)
+    elif arguments.command == "score":
+        result = score_predictions(arguments)
+    else:
+        result = prepare_train_targets(arguments)
     print(json.dumps(result, sort_keys=True, allow_nan=False))
 
 
