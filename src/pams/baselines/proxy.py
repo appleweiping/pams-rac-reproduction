@@ -63,7 +63,7 @@ def _period_from_autocorrelation(
     signal: np.ndarray,
     minimum_period: int,
     maximum_period: int,
-) -> tuple[int, float]:
+) -> tuple[float, float]:
     """Estimate the dominant bounded period of a signed activity signal.
 
     The name is retained for compatibility with the first smoke adapter. A
@@ -74,11 +74,11 @@ def _period_from_autocorrelation(
     centered = np.asarray(signal, dtype=np.float64) - float(np.mean(signal))
     energy = float(np.dot(centered, centered))
     if centered.size < minimum_period * 2 or energy <= np.finfo(np.float64).eps:
-        return max(minimum_period, 1), 0.0
+        return float(max(minimum_period, 1)), 0.0
 
     upper = min(maximum_period, centered.size // 2)
     if upper < minimum_period:
-        return max(1, upper), 0.0
+        return float(max(1, upper)), 0.0
 
     window = np.hanning(centered.size)
     power = np.abs(np.fft.rfft(centered * window)) ** 2
@@ -88,12 +88,67 @@ def _period_from_autocorrelation(
     band = np.where(allowed, power, 0.0)
     total = float(np.sum(band))
     if total <= np.finfo(np.float64).eps:
-        return upper, 0.0
+        return float(upper), 0.0
     index = int(np.argmax(band))
-    period = int(round(1.0 / frequencies[index]))
-    period = min(max(period, minimum_period), upper)
+    period = float(
+        np.clip(
+            1.0 / frequencies[index],
+            float(minimum_period),
+            float(upper),
+        )
+    )
     confidence = float(np.clip(band[index] / total, 0.0, 1.0))
     return period, confidence
+
+
+def _robust_pose_coordinate(xyz: np.ndarray, valid: np.ndarray) -> np.ndarray:
+    """Select a high-coverage signed coordinate after mask-aware interpolation.
+
+    Zero-filled joint triplets are the pose-cache convention for a missing
+    joint.  Treating those zeros as observations can make the occlusion block
+    the highest-variance coordinate and create a spurious low-frequency peak.
+    This helper first identifies the coordinates with maximum observation
+    coverage, linearly fills their unavailable samples, and only then applies
+    the historical highest-variance signed-coordinate rule.
+    """
+
+    time = xyz.shape[0]
+    flattened = xyz.reshape(time, -1).copy()
+    if int(np.count_nonzero(valid)) < 2:
+        return np.zeros(time, dtype=np.float64)
+
+    joint_observed = np.any(np.abs(xyz) > np.finfo(np.float32).eps, axis=2)
+    joint_observed &= valid[:, None]
+    coordinate_observed = np.repeat(joint_observed, xyz.shape[2], axis=1)
+    valid_count = int(np.count_nonzero(valid))
+    coverage = coordinate_observed.sum(axis=0) / float(valid_count)
+    maximum_coverage = float(np.max(coverage, initial=0.0))
+    candidates = np.flatnonzero(
+        (coverage >= maximum_coverage - 1e-12) & (coverage > 0.0)
+    )
+    if candidates.size == 0:
+        return np.zeros(time, dtype=np.float64)
+
+    frame_grid = np.arange(time)
+    for coordinate in candidates:
+        known = np.flatnonzero(coordinate_observed[:, coordinate])
+        if known.size < 2:
+            continue
+        flattened[:, coordinate] = np.interp(
+            frame_grid,
+            known,
+            flattened[known, coordinate],
+        )
+
+    candidate_values = flattened[:, candidates]
+    centered_valid = candidate_values[valid] - candidate_values[valid].mean(
+        axis=0,
+        keepdims=True,
+    )
+    coordinate = int(candidates[np.argmax(np.mean(centered_valid**2, axis=0))])
+    signal = flattened[:, coordinate].copy()
+    signal -= float(np.mean(signal[valid]))
+    return signal
 
 
 @dataclass(slots=True)
@@ -124,21 +179,10 @@ class SpectralProxyAdapter:
             )
 
         # A magnitude/velocity proxy commonly produces two peaks per action
-        # cycle.  Use the highest-variance signed pose coordinate instead so
-        # the diagnostic preserves fundamental phase.
-        flattened = xyz.reshape(xyz.shape[0], -1)
-        valid_values = flattened[valid]
-        if valid_values.shape[0] >= 2:
-            centered_valid = valid_values - valid_values.mean(axis=0, keepdims=True)
-            coordinate = int(np.argmax(np.mean(centered_valid**2, axis=0)))
-            signal = flattened[:, coordinate].copy()
-            signal -= float(np.mean(signal[valid]))
-            if not valid.all():
-                known = np.flatnonzero(valid)
-                missing = np.flatnonzero(~valid)
-                signal[missing] = np.interp(missing, known, signal[known])
-        else:
-            signal = np.zeros(xyz.shape[0], dtype=np.float64)
+        # cycle.  Preserve fundamental phase with a signed coordinate while
+        # preventing zero-filled missing joints from winning the variance
+        # selection.
+        signal = _robust_pose_coordinate(xyz, valid)
 
         period, confidence = _period_from_autocorrelation(
             signal,
@@ -146,7 +190,15 @@ class SpectralProxyAdapter:
             maximum_period=self.maximum_period,
         )
         effective_frames = int(np.count_nonzero(valid))
-        count = int(math.floor(effective_frames / max(period, 1)))
+        continuous_count = effective_frames / max(period, 1.0)
+        quantized_period = max(1, int(round(period)))
+        stable_count = math.floor(effective_frames / quantized_period)
+        # The continuous peak avoids short-period quantization errors.  For a
+        # diffuse peak (for example, a paused action), retain more of the
+        # conservative quantized-period estimate.  The spectral confidence is
+        # the interpolation weight, so this introduces no tuned threshold.
+        blended_count = confidence * continuous_count + (1.0 - confidence) * stable_count
+        count = int(math.floor(blended_count + 0.5))
         stream = signal.astype(np.float32)
         return CountResult(
             count=count,
