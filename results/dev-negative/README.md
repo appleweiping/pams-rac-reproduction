@@ -228,6 +228,38 @@ heads retain output standard deviation near `0.002`. The full seed-level
 metrics, cluster intervals, receipts, and checkpoint hashes are in
 [`pams_fixed_period16_inferred_three_seed_strict.json`](pams_fixed_period16_inferred_three_seed_strict.json).
 
+## Three-seed Table 2 proxy matrix
+
+The paper-shaped six-row matrix is complete for seeds `42`, `2026`, and
+`3407` on the sealed-label dev84 workflow. Values below are
+mean ± sample standard deviation across seeds.
+
+| Proxy row | NMAE | OBO | Joint gate |
+|---|---:|---:|---:|
+| Baseline: fixed-period-16, Medium-only, Literal | 1.282771 ± 0.975830 | 0.234127 ± 0.136948 | 0/3 |
+| PAMS w/o multi-scale: adaptive single-scale, Medium-only, Literal | 1.501348 ± 1.195202 | 0.214286 ± 0.125424 | 0/3 |
+| PAMS multi-scale: adaptive multi-scale, Medium-only, Literal | 1.132350 ± 0.883825 | 0.234127 ± 0.151211 | 0/3 |
+| Multi-Expert w/o multi-expert: exact Baseline alias | 1.282771 ± 0.975830 | 0.234127 ± 0.136948 | 0/3 |
+| Multi-Expert: fixed-period-16, multi-expert, Literal | 1.555686 ± 1.345183 | 0.246032 ± 0.131133 | 0/3 |
+| Full: adaptive multi-scale, multi-expert, inferred SSHead | 5.022471 ± 0.505117 | 0.051587 ± 0.013746 | 0/3 |
+
+A 10,000-sample paired bootstrap stratified by seed gives multi-scale-minus-
+single-scale NMAE `-0.368998`, 95% CI
+`[-0.641961, -0.103619]`, but OBO `+0.019841`, 95% CI
+`[-0.035714, +0.075397]`; seed `3407` also reverses the NMAE direction.
+Fixed-period multi-expert-minus-Medium-only NMAE is `+0.272915`, 95% CI
+`[+0.204061, +0.344424]`, with no supported OBO benefit. Full-minus-
+multi-scale Medium-only NMAE is `+3.890121`, 95% CI
+`[+3.420563, +4.369121]`, and OBO is `-0.182540`, 95% CI
+`[-0.238095, -0.123016]`.
+
+The Full row is therefore not the best ablation, every row fails the frozen
+gate, and this matrix is published only as a negative development
+diagnostic. It is neither a verified reproduction of the paper's Table 2 nor
+a test105 result. Per-seed metrics, exact run paths, full artifact hashes,
+the failed seed-42 launch record, and paired intervals are in
+[`pams_table2_three_seed_strict.json`](pams_table2_three_seed_strict.json).
+
 ## Dev pose-cache stress matrix
 
 The full multi-scale seed-2026 SSHead checkpoint was replayed under 11 frozen

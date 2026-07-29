@@ -103,6 +103,17 @@ video-cluster bootstrap finds that SSHead significantly worsens NMAE and OBO
 relative to Literal, despite lowering mean RMSE. Full evidence is in
 [`pams_fixed_period16_inferred_three_seed_strict.json`](dev-negative/pams_fixed_period16_inferred_three_seed_strict.json).
 
+The six-row, three-seed Table 2 proxy matrix is now closed on dev84. Every
+row passes the frozen joint gate on `0/3` seeds; the best mean NMAE is
+`1.132350 ± 0.883825` for the multi-scale Medium-only Literal proxy, while
+the independently inferred Full completion obtains
+`5.022471 ± 0.505117 / 0.051587 ± 0.013746` NMAE/OBO and is not its own
+ablation best. Paired stratified bootstrap supports an aggregate NMAE gain
+from multi-scale, but not an OBO gain, and multi-expert consensus worsens
+NMAE. This is a negative development diagnostic, not a paper Table 2 or
+test105 result. Full evidence is in
+[`pams_table2_three_seed_strict.json`](dev-negative/pams_table2_three_seed_strict.json).
+
 The preregistered pose-cache stress matrix is also complete for the full
 multi-scale seed-2026 SSHead checkpoint. Among 11 clean/perturbed conditions,
 the endpoint-preserving `2.0` first-half speed warp significantly worsens
