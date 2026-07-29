@@ -1,0 +1,170 @@
+{
+  "aggregator": {
+    "path": "scripts/aggregate_pams_v7_seed_evaluations.py",
+    "sha256": "873f2afcedaac5ccf0e77289a1795f17a50d93f09adc24dc07f6dd1b517b69ed"
+  },
+  "artifact_type": "pams_sshead_temporal_conv_v7_three_seed_dev84_aggregate",
+  "bootstrap": {
+    "confidence_level": 0.95,
+    "method": "paired percentile over identical video indices; same indices for all seeds; mean of per-seed metrics in each replicate",
+    "samples": 10000,
+    "seed": 2026
+  },
+  "caller_audit_bindings": {
+    "config_fingerprints": {
+      "2026": "317442965eb856a59a5b70f3ec63756fdceec16c55c9c31820b61a7c9d25ccca",
+      "3407": "c329367692191849cabca3ccca9fec5e80788ef9f0d6328fb05e4fc8aef2869b",
+      "42": "0b44f415a8083fb35205ad6a1a085a92df68b6b4bcc2974cae101a9a381196c7"
+    },
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "legacy_boundary": "Legacy evaluations verify config_fingerprint and per-video target membership, but do not carry source_git_sha or dev_targets_sha256. Their source/target bindings remain caller assertions.",
+    "source_git_sha": "6ee25a2e1291c35c563140999e16c5aa65bc8ced"
+  },
+  "claim_boundary": {
+    "development_only": true,
+    "eligible_for_original_paper_table": false,
+    "eligible_for_preregistered_three_seed_claim": false,
+    "eligible_for_verified_pams_reproduction_claim": false,
+    "post_hoc": true,
+    "test105_access": false
+  },
+  "classification": "post-hoc-three-seed-variance-follow-up",
+  "frozen_gate_reference_only": {
+    "claim_override": "Post-hoc execution makes this aggregate ineligible for the verified claim regardless of its numerical values.",
+    "individual_seeds_jointly_passing": 0,
+    "mean_nmae_pass": false,
+    "mean_obo_pass": false,
+    "numerical_gate_pass": false,
+    "required_individual_seed_passes": 2,
+    "required_nmae_at_most": 0.228,
+    "required_obo_at_least": 0.666
+  },
+  "input_evaluations": [
+    {
+      "checkpoint_sha256": "3d1e7cf5d541a83f1dfd96999d3fc6ca6aece3fcfe80a517c244f4c8c6a0d873",
+      "config_file_sha256": null,
+      "config_fingerprint": "0b44f415a8083fb35205ad6a1a085a92df68b6b4bcc2974cae101a9a381196c7",
+      "prediction_sha256": null,
+      "schema_flavor": "legacy",
+      "seed": 42,
+      "sha256": "39c7ceeb7f5d9acbdd024fdbcf314ed8f62350491dfecd636374067787b51ce6",
+      "source_binding_evidence": "unverifiable_from_legacy_evaluation",
+      "target_binding_evidence": "unverifiable_from_legacy_evaluation"
+    },
+    {
+      "checkpoint_sha256": "0f88bcadd4236c48f2619ec9b4c51abb0c575e161b94c45a8e3e4cd4f82ce882",
+      "config_file_sha256": null,
+      "config_fingerprint": "317442965eb856a59a5b70f3ec63756fdceec16c55c9c31820b61a7c9d25ccca",
+      "prediction_sha256": null,
+      "schema_flavor": "legacy",
+      "seed": 2026,
+      "sha256": "1abcf7b14deff977476136803f1e44668a23e10b479e6715a682324c0fe25375",
+      "source_binding_evidence": "unverifiable_from_legacy_evaluation",
+      "target_binding_evidence": "unverifiable_from_legacy_evaluation"
+    },
+    {
+      "checkpoint_sha256": "745e707f9354d41adc074a90ab812e190ede3b7a1d23754ae9e04a2b5c16a152",
+      "config_file_sha256": "a6926c095a039379d1d1b22931568c6cd05f84a4a0913bccdfc6fc0f2aa9f053",
+      "config_fingerprint": "c329367692191849cabca3ccca9fec5e80788ef9f0d6328fb05e4fc8aef2869b",
+      "prediction_sha256": "3f591fbfff73f8f9eab3cfe8df53acb224647eec6d63a4559da5f64da63ed1ad",
+      "schema_flavor": "strict",
+      "seed": 3407,
+      "sha256": "f54fc75c9ab08f78fce69f212bb87584049ce42cce6cde7d2e75819aef51f26c",
+      "source_binding_evidence": "verified_against_checkpoint_prediction_and_scoring_source_fields",
+      "target_binding_evidence": "verified_against_dev_targets_sha256"
+    }
+  ],
+  "input_schema_coverage": {
+    "legacy_seeds": [
+      42,
+      2026
+    ],
+    "strict_dev_score_seeds": [
+      3407
+    ]
+  },
+  "method_id": "pams-sshead",
+  "metrics_after_half_up_rounding": {
+    "exact": {
+      "mean": 0.09523809523809523,
+      "paired_bootstrap_95_percent": {
+        "high": 0.14285714285714285,
+        "level": 0.95,
+        "low": 0.055555555555555546
+      },
+      "per_seed": {
+        "2026": 0.10714285714285714,
+        "3407": 0.08333333333333333,
+        "42": 0.09523809523809523
+      },
+      "sample_sd": 0.011904761904761904
+    },
+    "mae": {
+      "mean": 4.492063492063492,
+      "paired_bootstrap_95_percent": {
+        "high": 5.32142857142857,
+        "level": 0.95,
+        "low": 3.7261904761904763
+      },
+      "per_seed": {
+        "2026": 4.428571428571429,
+        "3407": 4.785714285714286,
+        "42": 4.261904761904762
+      },
+      "sample_sd": 0.26761452857281526
+    },
+    "nmae": {
+      "mean": 0.723528193473801,
+      "paired_bootstrap_95_percent": {
+        "high": 0.7848813447611426,
+        "level": 0.95,
+        "low": 0.6607712040428327
+      },
+      "per_seed": {
+        "2026": 0.7357284358361944,
+        "3407": 0.7403675359032502,
+        "42": 0.6944886086819584
+      },
+      "sample_sd": 0.02525576025424699
+    },
+    "obo": {
+      "mean": 0.21031746031746032,
+      "paired_bootstrap_95_percent": {
+        "high": 0.2896825396825397,
+        "level": 0.95,
+        "low": 0.13888888888888887
+      },
+      "per_seed": {
+        "2026": 0.19047619047619047,
+        "3407": 0.20238095238095238,
+        "42": 0.23809523809523808
+      },
+      "sample_sd": 0.024781738088882527
+    },
+    "rmse": {
+      "mean": 6.033457538045741,
+      "paired_bootstrap_95_percent": {
+        "high": 7.04431078207962,
+        "level": 0.95,
+        "low": 4.960733509568448
+      },
+      "per_seed": {
+        "2026": 5.794085654478071,
+        "3407": 6.611677980232077,
+        "42": 5.694608979427072
+      },
+      "sample_sd": 0.5032177083941135
+    }
+  },
+  "normalized_strict_method_key": "pams-sshead-inferred",
+  "protocol": "ucfrep_526_train337_dev84",
+  "sample_count_per_seed": 84,
+  "schema_version": 1,
+  "seeds": [
+    42,
+    2026,
+    3407
+  ],
+  "split": "dev",
+  "variant": "sshead"
+}

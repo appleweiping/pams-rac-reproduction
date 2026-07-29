@@ -417,6 +417,25 @@ Exact 10,000-sample paired bootstrap intervals, source/checkpoint/container
 hashes, repeat hashes, and output receipts are recorded in
 [`server_dev_readouts_repnet_4d4d708.json`](server_dev_readouts_repnet_4d4d708.json).
 
+## PAMS-SSHead temporal-conv v7 post-hoc three-seed follow-up
+
+The frozen temporal-conv v7 inferred repair now has results for seeds
+`42/2026/3407`. Seed 3407 was deliberately run only as a post-hoc variance
+follow-up after the first two seeds had already failed. Its strict
+target-free-predict / separate-score result is NMAE `0.740368` and OBO
+`0.202381`; the three-seed mean ± sample SD is
+`0.723528 ± 0.025256` / `0.210317 ± 0.024782`. All `0/3` seeds fail the
+joint gate.
+
+The seed-3407 run completed 150 encoder and 30 Head epochs in four
+mount-whitelisted containers. Development targets appeared only in the final
+CPU score container, and test105 was not accessed. The full per-video
+prediction/evaluation, 10,000-sample paired aggregate, logs, exact launcher,
+and container/artifact audit are in
+[`pams_sshead_temporal_conv_v7_three_seed_posthoc_6ee25a2/`](pams_sshead_temporal_conv_v7_three_seed_posthoc_6ee25a2/).
+The result remains an inferred negative partial reproduction and is
+ineligible for the paper table, preregistered claim, or verified status.
+
 ## Inferred JTSPS count-only strict dev diagnostic
 
 The independently implemented `JTSPS-count-only` scaffold completed real

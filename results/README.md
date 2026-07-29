@@ -133,6 +133,16 @@ selector is independently inferred, and the input is the 256-frame PAMS
 cache. Full evidence is in
 [`poserac_v1_official_oracle_free_dev84_strict.json`](dev-negative/poserac_v1_official_oracle_free_dev84_strict.json).
 
+The inferred PAMS-SSHead temporal-conv v7 repair has also completed a
+post-hoc seed-3407 variance follow-up after seeds 42 and 2026 had already
+failed. Seed 3407 obtains NMAE/OBO `0.740368 / 0.202381`; the three-seed mean
+± sample SD is `0.723528 ± 0.025256 / 0.210317 ± 0.024782`, with `0/3`
+seeds passing. The new run used separate target-free prediction and CPU
+scoring containers and did not access test105. Because the third seed was
+post-hoc and the repair is independently inferred, it cannot enter the paper
+table or a verified claim. Full evidence is in
+[`pams_sshead_temporal_conv_v7_three_seed_posthoc_6ee25a2/`](dev-negative/pams_sshead_temporal_conv_v7_three_seed_posthoc_6ee25a2/).
+
 The independently inferred `JTSPS-count-only` baseline has now completed real
 supervised train337/dev84 runs for seeds `42/2026/3407`. Mean ± sample SD
 NMAE is `0.487634 ± 0.012843`, and OBO is

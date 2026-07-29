@@ -2,6 +2,11 @@
 
 **Status:** failed inferred repair; partial reproduction
 
+This file preserves the original two-seed early-stop decision. Seed 3407 was
+later run only as a post-hoc variance follow-up and is reported separately in
+[`pams_sshead_temporal_conv_v7_three_seed_posthoc_6ee25a2/`](pams_sshead_temporal_conv_v7_three_seed_posthoc_6ee25a2/);
+that run does not retroactively change the preregistered failure decision.
+
 This preregistered repair inserts one mask-aware, zero-initialized residual
 depthwise `Conv1d` (`512` channels, kernel `5`, `2,560` parameters) before the
 unchanged disclosed `512 -> 128 -> 1` GELU MLP. It otherwise keeps the v6
