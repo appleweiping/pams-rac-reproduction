@@ -15,6 +15,8 @@ def test_default_config_matches_disclosed_dimensions() -> None:
     assert len(config.pose_fingerprint) == 64
     assert config.pose.model_id == "mediapipe-pose-0.10.14"
     assert config.pose.preprocessing_revision == "detected-span-minmax-zero-span-invalid-v2"
+    assert config.period.training_mode == "adaptive"
+    assert config.period.fixed_period_frames == 16
     assert config.period.post_warmup_source == "embedding_velocity_coordinate"
     assert config.loss.exclude_other_scale_positives_from_denominator is False
     assert config.consensus.expert_mode == "multi"
@@ -90,6 +92,41 @@ def test_explicit_default_period_source_preserves_historical_fingerprint() -> No
 
     assert explicit.fingerprint == reconstructed_implicit.fingerprint
     assert explicit.nonseed_fingerprint == reconstructed_implicit.nonseed_fingerprint
+
+
+def test_fixed_period_proxy_is_explicit_identity_and_default_preserves_history() -> None:
+    root = Path(__file__).parents[1]
+    formal = load_config(root / "configs" / "pams.yaml")
+    fixed = load_config(
+        root / "configs" / "ablations" / "pams_fixed_period16_inferred.yaml"
+    )
+    implicit_payload = formal.model_dump()
+    implicit_payload["period"].pop("training_mode")
+    implicit_payload["period"].pop("fixed_period_frames")
+    reconstructed_implicit = PAMSConfig.model_validate(implicit_payload)
+
+    assert formal.fingerprint == reconstructed_implicit.fingerprint
+    assert formal.nonseed_fingerprint == reconstructed_implicit.nonseed_fingerprint
+    assert fixed.period.training_mode == "fixed_period_inferred"
+    assert fixed.period.fixed_period_frames == 16
+    assert fixed.loss.scales == (1.0,)
+    assert fixed.fingerprint != formal.fingerprint
+    assert fixed.nonseed_fingerprint != formal.nonseed_fingerprint
+    assert fixed.pose_fingerprint == formal.pose_fingerprint
+
+
+def test_fixed_period_proxy_must_stay_inside_period_bounds() -> None:
+    with pytest.raises(ValidationError, match="fixed_period_frames"):
+        PAMSConfig.model_validate(
+            {
+                "period": {
+                    "minimum": 4,
+                    "maximum": 8,
+                    "training_mode": "fixed_period_inferred",
+                    "fixed_period_frames": 16,
+                }
+            }
+        )
 
 
 def test_inferred_union_repair_changes_only_cross_scale_denominator() -> None:

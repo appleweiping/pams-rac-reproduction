@@ -50,6 +50,7 @@ PeriodHistorySource = Literal[
     "pose",
     "embedding",
     "projected_pose_velocity_vector_acf",
+    "fixed_period_inferred",
 ]
 
 
@@ -319,6 +320,8 @@ def build_pams_model(config: PAMSConfig) -> PAMSModel:
 
 
 def _post_warmup_period_history_source(config: PAMSConfig) -> PeriodHistorySource:
+    if config.period.training_mode == "fixed_period_inferred":
+        return "fixed_period_inferred"
     source = config.period.post_warmup_source
     if source == "embedding_velocity_coordinate":
         # Preserve the exact historical receipt label for the default route.
@@ -333,9 +336,43 @@ def _encoder_period_history_source(
     *,
     epoch: int,
 ) -> PeriodHistorySource:
+    if config.period.training_mode == "fixed_period_inferred":
+        return "fixed_period_inferred"
     if epoch <= config.period.pose_energy_epochs:
         return "pose"
     return _post_warmup_period_history_source(config)
+
+
+def _estimate_fixed_training_periods(
+    *,
+    config: PAMSConfig,
+    valid_mask: Tensor,
+) -> tuple[Tensor, Tensor]:
+    """Return the preregistered fixed-period proxy and mask-aware evidence.
+
+    The paper describes its Table 2 baseline only as conventional TCC with a
+    fixed window.  It does not publish the chosen window or enough geometry to
+    recover that implementation.  Our opt-in proxy substitutes the frozen
+    ``fixed_period_frames`` for every per-video period used by the current TCC
+    and SSHead objectives.  Confidence is one only when two complete periods
+    are available, matching the minimum evidence required by the adaptive
+    estimator; otherwise periodic positives are disabled for that sample.
+    """
+
+    if config.period.training_mode != "fixed_period_inferred":
+        raise ValueError("fixed-period estimates require fixed_period_inferred mode")
+    if valid_mask.ndim != 2:
+        raise ValueError("valid_mask must have shape [batch, time]")
+    fixed = config.period.fixed_period_frames
+    periods = torch.full(
+        (valid_mask.shape[0],),
+        float(fixed),
+        dtype=torch.float32,
+        device=valid_mask.device,
+    )
+    valid_counts = valid_mask.to(dtype=torch.bool).sum(dim=1)
+    confidences = (valid_counts >= 2 * fixed).to(dtype=torch.float32)
+    return periods, confidences
 
 
 def _estimate_post_warmup_periods(
@@ -346,6 +383,12 @@ def _estimate_post_warmup_periods(
     valid_mask: Tensor,
 ) -> tuple[Tensor, Tensor, PeriodHistorySource]:
     source = _post_warmup_period_history_source(config)
+    if source == "fixed_period_inferred":
+        periods, confidences = _estimate_fixed_training_periods(
+            config=config,
+            valid_mask=valid_mask,
+        )
+        return periods, confidences, source
     if source == "embedding":
         periods, confidences = estimate_period_from_embeddings(
             embeddings.detach(),
@@ -1027,7 +1070,15 @@ def _progress_row(
 ) -> dict[str, Any]:
     statistics = asdict(stats)
     epoch = int(statistics.pop("epoch"))
-    if (
+    if config.period.training_mode == "fixed_period_inferred":
+        # Checkpoint identity already binds these values through the config
+        # fingerprint.  Repeat them in every terminal progress row so a human
+        # audit never has to reverse a hash to discover the effective switch.
+        statistics["period_training_mode"] = config.period.training_mode
+        statistics["fixed_period_frames"] = config.period.fixed_period_frames
+        if stage == "sshead":
+            statistics["period_source"] = "fixed_period_inferred"
+    elif (
         stage == "sshead"
         and config.period.post_warmup_source
         == "projected_pose_velocity_vector_acf"
@@ -1770,7 +1821,8 @@ def train_encoder(
                 )
             projected_pose: Tensor | None = None
             if (
-                epoch_index >= config.period.pose_energy_epochs
+                config.period.training_mode == "adaptive"
+                and epoch_index >= config.period.pose_energy_epochs
                 and config.period.post_warmup_source
                 == "projected_pose_velocity_vector_acf"
             ):
@@ -1780,14 +1832,21 @@ def train_encoder(
                 )
             else:
                 embeddings = trained_model.encoder(batch.poses, batch.valid_mask)
-            if epoch_index < config.period.pose_energy_epochs:
+            period_source: PeriodHistorySource
+            if config.period.training_mode == "fixed_period_inferred":
+                periods, period_confidences = _estimate_fixed_training_periods(
+                    config=config,
+                    valid_mask=batch.valid_mask,
+                )
+                period_source = "fixed_period_inferred"
+            elif epoch_index < config.period.pose_energy_epochs:
                 periods, period_confidences = estimate_period_from_pose(
                     batch.poses,
                     minimum=config.period.minimum,
                     maximum=config.period.maximum,
                     valid_mask=batch.valid_mask,
                 )
-                period_source: PeriodHistorySource = "pose"
+                period_source = "pose"
             else:
                 (
                     periods,
@@ -2029,7 +2088,8 @@ def train_sshead(
             batch = raw_batch.to(resolved_device)
             with torch.no_grad():
                 if (
-                    config.period.post_warmup_source
+                    config.period.training_mode == "adaptive"
+                    and config.period.post_warmup_source
                     == "projected_pose_velocity_vector_acf"
                 ):
                     embeddings, projected_pose = model.encoder.forward_with_pre_pe(

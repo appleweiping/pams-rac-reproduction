@@ -79,6 +79,13 @@ def _with_projected_vector_period(config: PAMSConfig) -> PAMSConfig:
     return PAMSConfig.model_validate(payload)
 
 
+def _with_fixed_period(config: PAMSConfig, *, frames: int = 4) -> PAMSConfig:
+    payload = config.model_dump()
+    payload["period"]["training_mode"] = "fixed_period_inferred"
+    payload["period"]["fixed_period_frames"] = frames
+    return PAMSConfig.model_validate(payload)
+
+
 def _sequence(identifier: str, *, phase: float = 0.0, frames: int = 16) -> PoseSequence:
     time = np.arange(frames, dtype=np.float32)
     wave = np.sin(2.0 * math.pi * time / 4.0 + phase)
@@ -163,13 +170,17 @@ def _write_terminal_encoder_fixture(
             loss=1.0 / epoch,
             learning_rate=1e-3,
             period_source=(
-                "pose"
-                if epoch <= config.period.pose_energy_epochs
+                "fixed_period_inferred"
+                if config.period.training_mode == "fixed_period_inferred"
                 else (
-                    "embedding"
-                    if config.period.post_warmup_source
-                    == "embedding_velocity_coordinate"
-                    else "projected_pose_velocity_vector_acf"
+                    "pose"
+                    if epoch <= config.period.pose_energy_epochs
+                    else (
+                        "embedding"
+                        if config.period.post_warmup_source
+                        == "embedding_velocity_coordinate"
+                        else "projected_pose_velocity_vector_acf"
+                    )
                 )
             ),
             period_confidence_mean=0.8,
@@ -217,6 +228,80 @@ def _write_terminal_encoder_fixture(
         encoding="utf-8",
     )
     return checkpoint, progress, provenance, model
+
+
+def test_fixed_period_training_proxy_is_constant_mask_aware_and_audited(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    config = _with_fixed_period(_tiny_config(encoder_epochs=1), frames=4)
+    valid_mask = torch.tensor(
+        [
+            [True] * 8 + [False] * 8,
+            [True] * 7 + [False] * 9,
+        ]
+    )
+    periods, confidences = training_module._estimate_fixed_training_periods(
+        config=config,
+        valid_mask=valid_mask,
+    )
+    assert periods.tolist() == [4.0, 4.0]
+    assert confidences.tolist() == [1.0, 0.0]
+
+    def forbidden_adaptive_estimator(*args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        raise AssertionError("fixed-period training called an adaptive estimator")
+
+    monkeypatch.setattr(
+        training_module,
+        "estimate_period_from_pose",
+        forbidden_adaptive_estimator,
+    )
+    monkeypatch.setattr(
+        training_module,
+        "estimate_period_from_embeddings",
+        forbidden_adaptive_estimator,
+    )
+    monkeypatch.setattr(
+        training_module,
+        "estimate_period_from_projected_pose",
+        forbidden_adaptive_estimator,
+    )
+    checkpoint = tmp_path / "encoder.pt"
+    progress = tmp_path / "encoder.jsonl"
+    result = train_encoder(
+        (_sequence("a"), _sequence("b", phase=0.4)),
+        config,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=checkpoint,
+        progress_path=progress,
+    )
+
+    assert [row.period_source for row in result.history] == ["fixed_period_inferred"]
+    progress_row = json.loads(progress.read_text(encoding="utf-8"))
+    assert progress_row["stats"]["period_source"] == "fixed_period_inferred"
+    assert progress_row["stats"]["period_training_mode"] == "fixed_period_inferred"
+    assert progress_row["stats"]["fixed_period_frames"] == 4
+    assert progress_row["config_fingerprint"] == config.fingerprint
+    head_checkpoint = tmp_path / "sshead.pt"
+    head_progress = tmp_path / "sshead.jsonl"
+    head_result = train_sshead(
+        (_sequence("a"), _sequence("b", phase=0.4)),
+        config,
+        model=result.model,
+        device="cpu",
+        microbatch_size=1,
+        checkpoint_path=head_checkpoint,
+        progress_path=head_progress,
+    )
+    assert head_result.completed_epochs == 1
+    head_progress_row = json.loads(head_progress.read_text(encoding="utf-8"))
+    assert head_progress_row["stats"]["period_source"] == "fixed_period_inferred"
+    assert head_progress_row["stats"]["period_training_mode"] == "fixed_period_inferred"
+    assert head_progress_row["stats"]["fixed_period_frames"] == 4
 
 
 def test_collate_pads_without_creating_valid_frames() -> None:
@@ -1166,6 +1251,41 @@ def test_terminal_encoder_strictly_validates_projected_vector_period_source(
     tampered = tmp_path / "tampered-period-source.pt"
     payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
     payload["history"][-1]["period_source"] = "embedding"
+    torch.save(payload, tampered)
+    with pytest.raises(ValueError, match="period-source schedule mismatch"):
+        validate_terminal_checkpoint(
+            tampered,
+            config,
+            expected_stage="encoder",
+            expected_provenance=provenance,
+            progress_path=progress,
+        )
+
+
+def test_terminal_encoder_strictly_validates_fixed_period_proxy(
+    tmp_path: Path,
+) -> None:
+    config = _with_fixed_period(_tiny_config(encoder_epochs=1), frames=4)
+    checkpoint, progress, provenance, _ = _write_terminal_encoder_fixture(
+        tmp_path,
+        config,
+    )
+
+    validate_terminal_checkpoint(
+        checkpoint,
+        config,
+        expected_stage="encoder",
+        expected_provenance=provenance,
+        progress_path=progress,
+    )
+    progress_row = json.loads(progress.read_text(encoding="utf-8"))
+    assert progress_row["stats"]["period_source"] == "fixed_period_inferred"
+    assert progress_row["stats"]["period_training_mode"] == "fixed_period_inferred"
+    assert progress_row["stats"]["fixed_period_frames"] == 4
+
+    tampered = tmp_path / "tampered-fixed-period-source.pt"
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    payload["history"][0]["period_source"] = "pose"
     torch.save(payload, tampered)
     with pytest.raises(ValueError, match="period-source schedule mismatch"):
         validate_terminal_checkpoint(

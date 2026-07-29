@@ -19,6 +19,7 @@ all other values are frozen **inferences**, not claims about author code.
 | Encoder | 99→512; 4 layers; 16 heads; FFN 2048; dropout .1; post-LN; L2 output | disclosed except post-LN | `norm_first=False` is independently fixed |
 | Period range | 4–128 resampled frames; preserve fractional FFT-bin period until integer indexing is required | inferred | Avoids quantizing values such as 256/40=6.4 before consensus |
 | Warm-up period | pose-energy for first 10 epochs | partially disclosed/inferred | Thereafter use stop-gradient embedding velocity |
+| Fixed-period Table 2 proxy | `training_mode=fixed_period_inferred`, 16 resampled frames, single scale | inferred; the paper says “conventional TCC”/fixed window but does not disclose its chosen baseline window or full geometry; Supplementary Fig. 12a only displays candidate sizes | Requires a new encoder (and a new SSHead if that inferred readout is evaluated); never claim the paper's Table 2 baseline value |
 | PAMS scales | 0.5, 1.0, 1.5; inferred symmetric radius `max(1, round(s*T/2))` around `t±T` | scales disclosed, window geometry inferred | Shortest-period windows remain distinct; report single-scale ablation separately |
 | Positives | adjacent frames and TSM maximum near `t±T_hat` | partially disclosed/inferred | Exact window clipping is unit-tested |
 | Negatives | temporal, current-batch cross-video, distinct equal-count cross-cluster prototypes from a frozen full-training bank | partially disclosed | Current-batch IDs are excluded from bank top-k; formal runs fail on any explicit shortfall |

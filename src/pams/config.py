@@ -85,6 +85,11 @@ class PeriodConfig(StrictModel):
     minimum: int = Field(default=4, ge=2)
     maximum: int = Field(default=128, ge=3)
     pose_energy_epochs: int = Field(default=10, ge=0)
+    training_mode: Literal[
+        "adaptive",
+        "fixed_period_inferred",
+    ] = "adaptive"
+    fixed_period_frames: int = Field(default=16, ge=2)
     post_warmup_source: Literal[
         "embedding_velocity_coordinate",
         "projected_pose_velocity_vector_acf",
@@ -94,6 +99,14 @@ class PeriodConfig(StrictModel):
     def validate_period_bounds(self) -> PeriodConfig:
         if self.maximum <= self.minimum:
             raise ValueError("period.maximum must be greater than period.minimum")
+        if (
+            self.training_mode == "fixed_period_inferred"
+            and not self.minimum <= self.fixed_period_frames <= self.maximum
+        ):
+            raise ValueError(
+                "period.fixed_period_frames must lie within [minimum, maximum] "
+                "for fixed_period_inferred"
+            )
         return self
 
 
@@ -178,6 +191,14 @@ class PAMSConfig(StrictModel):
             # Only the opt-in inferred vector-ACF route changes method
             # identity; the explicit default names the existing implementation.
             period.pop("post_warmup_source")
+        if period["training_mode"] == "adaptive":
+            # The configurable fixed-period route was added after the formal
+            # adaptive runs.  Omitting both default fields keeps every
+            # historical config/checkpoint fingerprint byte-for-byte stable.
+            # Opting into the independently inferred fixed-period baseline
+            # retains both fields in the method identity.
+            period.pop("training_mode")
+            period.pop("fixed_period_frames")
         loss = payload["loss"]
         if not loss["exclude_other_scale_positives_from_denominator"]:
             # Preserve historical fingerprints for the literal denominator.

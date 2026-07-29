@@ -10,6 +10,10 @@ rows:
     label: Baseline
     family: representation
     period_adaptive_tcc: false
+    executable_proxy: configs/ablations/pams_fixed_period16_inferred.yaml
+    fixed_period_frames: 16
+    evidence: inferred_not_uniquely_recoverable
+    table2_value_claim_eligible: false
     tcc_scales: [1.0]
     multi_expert_consensus: false
     sshead: false
