@@ -146,10 +146,11 @@ _STATIC_SPECS: tuple[BaselineSpec, ...] = (
         key="poserac-iconip24",
         paper_name="PoseRAC-ICONIP24 (standard-protocol target)",
         protocols=(UCFREP_526_FAIR,),
-        source_urls=("https://github.com/MiracleDance/PoseRAC",),
+        source_urls=("https://doi.org/10.1007/978-981-96-6588-4_18",),
         reason=(
-            "The identifier and standard UCFRep-526 adaptation require a clean-room "
-            "implementation and protocol verification; it is not aliased to PoseRAC-v1."
+            "A clean-room architecture scaffold exists, but the synthetic salient-pose "
+            "training data, RGB action recognizer, trained checkpoint, and protocol "
+            "parity are incomplete; it is not aliased to PoseRAC-v1."
         ),
     ),
     _blocked(

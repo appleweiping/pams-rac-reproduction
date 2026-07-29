@@ -14,7 +14,7 @@ for an honestly runnable implementation; blocked methods raise
 | `escounts` | official sanity, then clean-room | `blocked_unimplemented` | UCFRep-526 fair |
 | `ivac-p2l` | official checkpoint modern-compat dev sanity complete, then clean-room | `blocked_unimplemented`; parity/test blocked | UCFRep-526 fair |
 | `poserac-v1` | released oracle diagnostic plus fair rewrite | `blocked_unimplemented` | UCFRep-pose-110 |
-| `poserac-iconip24` | separately verified rewrite | `blocked_unimplemented` | UCFRep-526 fair |
+| `poserac-iconip24` | distinct clean-room architecture scaffold | `blocked_unimplemented` | UCFRep-526 fair |
 | `gmfl` | clean-room | `blocked_unimplemented` | UCFRep-pose-110 |
 | `jtsps-count-only` | protocol audit before implementation | `blocked_protocol` | UCFRep-526 target |
 | `spkdb` | clean-room | `blocked_unimplemented` | UCFRep-pose-110 |
@@ -94,8 +94,12 @@ name. The only deterministic placeholder is explicitly called `spectral-proxy`, 
   ties-to-even versus frozen half-up rounding difference is reported
   explicitly; original evaluator parity and sealed test evaluation remain
   blocked.
-- PoseRAC: [paper](https://arxiv.org/abs/2303.08450) and
+- PoseRAC-v1: [paper](https://arxiv.org/abs/2303.08450) and
   [official repository](https://github.com/MiracleDance/PoseRAC).
+- PoseRAC-ICONIP24: [primary paper](https://doi.org/10.1007/978-981-96-6588-4_18).
+  No public implementation or checkpoint is treated as belonging to this
+  distinct method; see the
+  [variant and scaffold audit](baselines/POSERAC_ICONIP24_AUDIT.md).
 - GMFL: [primary paper](https://arxiv.org/abs/2409.00330).
 - JTSPS: [primary DOI](https://doi.org/10.1109/TCSVT.2024.3402728).
 - SPKDB: [primary article](https://www.sciencedirect.com/science/article/pii/S1077314225001572).

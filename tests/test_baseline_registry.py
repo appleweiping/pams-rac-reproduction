@@ -65,6 +65,18 @@ def test_unimplemented_method_never_falls_back_to_proxy() -> None:
         create_baseline("repnet")
 
 
+def test_poserac_variants_have_distinct_primary_source_identities() -> None:
+    v1 = get_baseline_spec("poserac-v1")
+    iconip24 = get_baseline_spec("poserac-iconip24")
+
+    assert "https://github.com/MiracleDance/PoseRAC" in v1.source_urls
+    assert iconip24.source_urls == (
+        "https://doi.org/10.1007/978-981-96-6588-4_18",
+    )
+    assert set(v1.source_urls).isdisjoint(iconip24.source_urls)
+    assert "not aliased to PoseRAC-v1" in (iconip24.blocked_reason or "")
+
+
 def test_protocol_record_forbids_fair_ground_truth_count_oracle() -> None:
     with pytest.raises(ValueError, match="ground-truth count"):
         ProtocolRecord(
