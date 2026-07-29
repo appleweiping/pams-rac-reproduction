@@ -133,17 +133,19 @@ selector is independently inferred, and the input is the 256-frame PAMS
 cache. Full evidence is in
 [`poserac_v1_official_oracle_free_dev84_strict.json`](dev-negative/poserac_v1_official_oracle_free_dev84_strict.json).
 
-The independently inferred `JTSPS-count-only` baseline has now completed a
-real supervised train337/dev84 run at seed 2026. It obtained NMAE/OBO
-`0.502275 / 0.392857`, with 10,000-sample 95% intervals
-`[0.421530, 0.585122]` and `[0.297619, 0.500000]`. This is not a random-weight
-smoke, but it is permanently ineligible for the paper's JTSPS cell because
-the source protocol does not uniquely disclose cycle-density supervision or
-decoding. Prediction had no development-target, test, annotation, or raw-video
-mount; the independent scorer opened dev84 targets only after all 84
-predictions were frozen. Full protocol, server paths, hashes, and the negative
-claim boundary are in
-[`jtsps_count_only_inferred_dev84_strict.json`](dev-negative/jtsps_count_only_inferred_dev84_strict.json).
+The independently inferred `JTSPS-count-only` baseline has now completed real
+supervised train337/dev84 runs for seeds `42/2026/3407`. Mean ± sample SD
+NMAE is `0.487634 ± 0.012843`, and OBO is
+`0.408730 ± 0.018185`; the paired 10,000-sample 95% intervals for the
+mean-across-seeds estimand are `[0.409718, 0.566997]` and
+`[0.309524, 0.511905]`. This is not a random-weight smoke, but it is
+permanently ineligible for the paper's JTSPS cell because the source protocol
+does not uniquely disclose cycle-density supervision or decoding. The two
+new train/predict containers had no development-target or test mount; separate
+CPU scorers opened dev84 targets only after all predictions were frozen. Full
+predictions, evaluations, three-seed statistics, source/runtime hashes, and
+the negative claim boundary are in
+[`jtsps_count_only_inferred_three_seed_9df2646/`](dev-negative/jtsps_count_only_inferred_three_seed_9df2646/).
 
 The strict full multi-scale protocol has now also completed seeds `42`,
 `2026`, and `3407` for both readouts. PAMS-Literal obtained mean NMAE/OBO
@@ -250,7 +252,7 @@ result. The original artifact, receipt, hashes, and compact disclosure are in
 | IVAC-P2L | 421/105 | current-code modern-compat dev sanity available; original parity/test blocked | — | — |
 | PoseRAC-v1 official checkpoint | 421/105 | oracle-free dev84 diagnostic available; original protocol/test blocked | — | — |
 | PoseRAC-ICONIP24 | 421/105 | implementation/data blocked | — | — |
-| JTSPS-count-only | 421/105 | inferred clean-room dev84 negative available; source protocol/test blocked | — | — |
+| JTSPS-count-only | 421/105 | inferred clean-room three-seed dev84 negative available; source protocol/test blocked | — | — |
 | CountLLM-Lite | 421/105, non-comparable recipe | 47.318 GiB < 48 GiB; bridge smoke-only / full adapter not run | — | — |
 
 ## UCFRep-pose-110 fair table

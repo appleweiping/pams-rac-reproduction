@@ -419,30 +419,34 @@ hashes, repeat hashes, and output receipts are recorded in
 
 ## Inferred JTSPS count-only strict dev diagnostic
 
-The independently implemented `JTSPS-count-only` scaffold completed a real
-seed-2026 supervised run on train337: 30 epochs, batch size 8, 64 uniformly
-sampled MediaPipe-pose frames, and video-level count-only supervision. This
-is explicitly an inferred clean-room closure, not source parity. Public
-material does not uniquely determine the original cycle-density supervision
-or decoding policy.
+The independently implemented `JTSPS-count-only` scaffold completed real
+supervised runs for seeds `42/2026/3407` on train337: 30 epochs, batch size 8,
+64 uniformly sampled MediaPipe-pose frames, and video-level count-only
+supervision. This is explicitly an inferred clean-room closure, not source
+parity. Public material does not uniquely determine the original
+cycle-density supervision or decoding policy.
 
-| Method | Source parity | Train/dev | NMAE | OBO | Joint gate |
+| Seed / aggregate | Source parity | Train/dev | NMAE | OBO | Joint gate reference |
 |---|---|---:|---:|---:|---|
-| JTSPS-count-only (inferred) | No | 337/84 | 0.502275 | 0.392857 | Fail |
+| 42 | No | 337/84 | 0.478276 | 0.404762 | Fail |
+| 2026 | No | 337/84 | 0.502275 | 0.392857 | Fail |
+| 3407 | No | 337/84 | 0.482349 | 0.428571 | Fail |
+| Mean ± sample SD | No | 337/84 | 0.487634 ± 0.012843 | 0.408730 ± 0.018185 | Fail |
 
-All 84 development predictions were frozen without development targets,
-test identity, the annotation archive, or raw videos mounted. A separate CPU
-scorer then obtained NMAE `0.502275` (10,000-sample 95% CI
-`[0.421530, 0.585122]`), OBO `0.392857`
-(`[0.297619, 0.500000]`), rounded MAE `2.976190`, and rounded RMSE `4.728334`.
-Both preregistered thresholds fail. The result is therefore a valid trained
-negative diagnostic, but it cannot occupy the original paper table or verify
-PAMS.
+For the two new seeds, all 84 development predictions were frozen without
+development targets or test identity mounted. Separate CPU scorers then
+opened dev84 targets. The paired 10,000-sample 95% intervals for the
+mean-across-seeds estimand are `[0.409718, 0.566997]` for NMAE and
+`[0.309524, 0.511905]` for OBO. Both reference thresholds fail for every
+seed. The result is therefore a valid trained negative diagnostic, but it
+cannot occupy the original paper table or verify PAMS.
 
-The clean source revision, isolated train-count sidecar, model/runtime
-closure, designated-server paths, all input/artifact/operator-log SHA-256
-values, and full metric intervals are recorded in
-[`jtsps_count_only_inferred_dev84_strict.json`](jtsps_count_only_inferred_dev84_strict.json).
+Full per-video predictions and evaluations, the aggregate, exact launcher,
+source/runtime/container/input hashes, and the claim boundary are recorded in
+[`jtsps_count_only_inferred_three_seed_9df2646/`](jtsps_count_only_inferred_three_seed_9df2646/).
+The earlier single-seed sanitized record remains at
+[`jtsps_count_only_inferred_dev84_strict.json`](jtsps_count_only_inferred_dev84_strict.json)
+for history.
 
 ## Official TransRAC modern-compatibility sanity
 

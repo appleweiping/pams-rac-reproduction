@@ -16,7 +16,7 @@ for an honestly runnable implementation; blocked methods raise
 | `poserac-v1` | official checkpoint oracle-free dev84 diagnostic complete; fair rewrite pending | diagnostic complete; fair 89/21 rewrite blocked | UCFRep-526 dev diagnostic / UCFRep-pose-110 target |
 | `poserac-iconip24` | distinct clean-room architecture scaffold | `blocked_unimplemented` | UCFRep-526 fair |
 | `gmfl` | clean-room | `blocked_unimplemented` | UCFRep-pose-110 |
-| `jtsps-count-only` | protocol audit before implementation | `blocked_protocol` | UCFRep-526 target |
+| `jtsps-count-only` | inferred three-seed count-only dev diagnostic complete; source-faithful protocol unresolved | `blocked_protocol`; inferred diagnostic only | UCFRep-526 dev diagnostic |
 | `spkdb` | clean-room | `blocked_unimplemented` | UCFRep-pose-110 |
 | `bigc` | clean-room | `blocked_unimplemented` | UCFRep-pose-110 |
 | `countllm-lite` | reduced-resource recipe | dynamic `blocked`/`smoke_only` | non-comparable UCFRep-526 |
