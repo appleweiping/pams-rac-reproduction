@@ -359,6 +359,33 @@ Exact 10,000-sample paired bootstrap intervals, source/checkpoint/container
 hashes, repeat hashes, and output receipts are recorded in
 [`server_dev_readouts_repnet_4d4d708.json`](server_dev_readouts_repnet_4d4d708.json).
 
+## Inferred JTSPS count-only strict dev diagnostic
+
+The independently implemented `JTSPS-count-only` scaffold completed a real
+seed-2026 supervised run on train337: 30 epochs, batch size 8, 64 uniformly
+sampled MediaPipe-pose frames, and video-level count-only supervision. This
+is explicitly an inferred clean-room closure, not source parity. Public
+material does not uniquely determine the original cycle-density supervision
+or decoding policy.
+
+| Method | Source parity | Train/dev | NMAE | OBO | Joint gate |
+|---|---|---:|---:|---:|---|
+| JTSPS-count-only (inferred) | No | 337/84 | 0.502275 | 0.392857 | Fail |
+
+All 84 development predictions were frozen without development targets,
+test identity, the annotation archive, or raw videos mounted. A separate CPU
+scorer then obtained NMAE `0.502275` (10,000-sample 95% CI
+`[0.421530, 0.585122]`), OBO `0.392857`
+(`[0.297619, 0.500000]`), rounded MAE `2.976190`, and rounded RMSE `4.728334`.
+Both preregistered thresholds fail. The result is therefore a valid trained
+negative diagnostic, but it cannot occupy the original paper table or verify
+PAMS.
+
+The clean source revision, isolated train-count sidecar, model/runtime
+closure, designated-server paths, all input/artifact/operator-log SHA-256
+values, and full metric intervals are recorded in
+[`jtsps_count_only_inferred_dev84_strict.json`](jtsps_count_only_inferred_dev84_strict.json).
+
 ## Official TransRAC modern-compatibility sanity
 
 The pinned official TransRAC source at commit `68bdd4daa6`, linked Swin
