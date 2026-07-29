@@ -95,6 +95,16 @@ rounded prediction exactly and emitted the same metrics.
 Exact asset/runtime/receipt hashes are in
 [`transrac_official_modern_compat_dev84.json`](dev-negative/transrac_official_modern_compat_dev84.json).
 
+The official IVAC-P2L RepCount-A checkpoint likewise completed strict
+label-free prediction and separate scoring on all 84 development videos.
+The current half-up protocol obtained NMAE `0.666137` and OBO `0.333333`,
+with 10,000-sample paired 95% CIs `[0.523205, 0.839972]` and
+`[0.238095, 0.428571]`. All 84 raw model outputs exactly match the
+historical adapter. One exact `8.5` output changes from legacy ties-to-even
+rounding (`8`) to frozen half-up (`9`), so the current metrics are kept
+separate. Exact bindings are in
+[`ivac_p2l_official_dev84_retrospective.json`](dev-negative/ivac_p2l_official_dev84_retrospective.json).
+
 ## Standard UCFRep-526 fair table
 
 | Method | Protocol | Status | NMAE | OBO |
@@ -104,7 +114,7 @@ Exact asset/runtime/receipt hashes are in
 | RepNet | 421/105 | official-current ckpt-70 dev sanity available; original parity/test blocked | — | — |
 | TransRAC | 421/105 | current-code modern-compat dev sanity available; original parity/test blocked | — | — |
 | ESCounts | 421/105 | parity/data blocked | — | — |
-| IVAC-P2L | 421/105 | parity/data blocked | — | — |
+| IVAC-P2L | 421/105 | current-code modern-compat dev sanity available; original parity/test blocked | — | — |
 | PoseRAC-ICONIP24 | 421/105 | implementation/data blocked | — | — |
 | JTSPS-count-only | 421/105 | protocol blocked | — | — |
 | CountLLM-Lite | 421/105, non-comparable recipe | smoke-only / adapter incomplete | — | — |

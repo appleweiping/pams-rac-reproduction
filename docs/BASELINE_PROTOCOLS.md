@@ -12,7 +12,7 @@ for an honestly runnable implementation; blocked methods raise
 | `repnet` | official current `ckpt-70` sanity, then independent adapter | `blocked_unimplemented`; PAMS table cell `protocol-unverifiable` | UCFRep-526 fair |
 | `transrac` | official checkpoint modern-compat dev sanity complete, then clean-room | `blocked_unimplemented`; parity/test blocked | UCFRep-526 fair |
 | `escounts` | official sanity, then clean-room | `blocked_unimplemented` | UCFRep-526 fair |
-| `ivac-p2l` | official zero-shot sanity, then clean-room | `blocked_unimplemented` | UCFRep-526 fair |
+| `ivac-p2l` | official checkpoint modern-compat dev sanity complete, then clean-room | `blocked_unimplemented`; parity/test blocked | UCFRep-526 fair |
 | `poserac-v1` | released oracle diagnostic plus fair rewrite | `blocked_unimplemented` | UCFRep-pose-110 |
 | `poserac-iconip24` | separately verified rewrite | `blocked_unimplemented` | UCFRep-526 fair |
 | `gmfl` | clean-room | `blocked_unimplemented` | UCFRep-pose-110 |
@@ -89,6 +89,11 @@ name. The only deterministic placeholder is explicitly called `spectral-proxy`, 
   blocked. See the [asset/protocol audit](baselines/TRANSRAC_AUDIT.md).
 - Every Shot Counts: [official repository](https://github.com/sinhasaptarshi/EveryShotCounts).
 - IVAC-P2L: [official repository](https://github.com/hwang-cs-ime/IVAC-P2L).
+  The official RepCount-A checkpoint has a strict current-code
+  development-only modern-compatibility sanity result. The one-row legacy
+  ties-to-even versus frozen half-up rounding difference is reported
+  explicitly; original evaluator parity and sealed test evaluation remain
+  blocked.
 - PoseRAC: [paper](https://arxiv.org/abs/2303.08450) and
   [official repository](https://github.com/MiracleDance/PoseRAC).
 - GMFL: [primary paper](https://arxiv.org/abs/2409.00330).

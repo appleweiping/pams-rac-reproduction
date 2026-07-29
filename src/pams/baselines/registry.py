@@ -124,8 +124,9 @@ _STATIC_SPECS: tuple[BaselineSpec, ...] = (
         protocols=(UCFREP_526_FAIR,),
         source_urls=("https://github.com/hwang-cs-ime/IVAC-P2L",),
         reason=(
-            "Only a source audit is registered; the fair UCFRep-526 zero-shot "
-            "adapter and artifact checks are not implemented."
+            "Official-checkpoint modern-compatibility development sanity is "
+            "complete, but original-protocol parity, a separately authored "
+            "UCFRep-526 implementation, and sealed test evaluation remain blocked."
         ),
     ),
     _blocked(

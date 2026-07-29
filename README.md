@@ -10,9 +10,9 @@ Action Counting** (CVPR Findings 2026).
 > PAMS-Literal and inferred PAMS-SSHead completed all three preregistered
 > seeds on the fixed 84-video development split, but both missed the frozen
 > NMAE/OBO gate by a wide margin. The official current RepNet checkpoint and
-> official TransRAC checkpoint now have separate development-only sanity
-> results; TransRAC uses an explicitly labeled modern compatibility
-> environment and is not original-protocol parity. The sealed 105-video
+> official TransRAC and IVAC-P2L checkpoints now have separate
+> development-only sanity results; both use explicitly labeled modern
+> compatibility environments and are not original-protocol parity. The sealed 105-video
 > UCFRep test split remains untouched, so no test metric or successful
 > reproduction claim exists.
 

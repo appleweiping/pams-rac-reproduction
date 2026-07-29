@@ -158,6 +158,23 @@ rounded prediction values exactly, then emitted the same metrics. The
 historical artifact remains separately bound so the schema transition is
 auditable.
 
+## Official IVAC-P2L modern-compatibility sanity
+
+The pinned IVAC-P2L source at commit `0b1149e695`, linked Swin backbone,
+and RepCount-A checkpoint completed label-free predictions for all 84
+development videos. The independent current-code scorer obtained NMAE
+`0.666137` (paired-bootstrap 95% CI `[0.523205, 0.839972]`) and OBO
+`0.333333` (`[0.238095, 0.428571]`). No decode or non-finite failure was
+recorded, and the sealed 105-video test split was untouched.
+
+The current runner reproduced all 84 historical raw counts exactly. One raw
+count is exactly `8.5`: the legacy PyTorch adapter rounded it ties-to-even to
+`8`, while the frozen shared protocol rounds half-up to `9`. Current and
+legacy rounded metrics therefore remain separate. This is a
+modern-compatibility checkpoint sanity, not original evaluator parity or a
+paper-table result. Compact path-free evidence is in
+[`ivac_p2l_official_dev84_retrospective.json`](ivac_p2l_official_dev84_retrospective.json).
+
 The operator-recorded source aggregate has SHA-256
 `c8f6a117ce635d91d7c4446b2f2aea156bb2f3ed0ae86460986685c16cdeb814`.
 The raw aggregate and per-video predictions are not published in this

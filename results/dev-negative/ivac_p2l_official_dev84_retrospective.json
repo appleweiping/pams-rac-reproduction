@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "artifact_type": "sanitized_retrospective_baseline_result",
-  "status": "complete_legacy_run_requires_current_runner_rerun",
+  "status": "current_runner_rerun_complete",
   "classification": "IVAC-P2L official RepCount-A checkpoint / modern compatibility / local 84-dev sanity",
   "method_id": "ivac-p2l-official-modern-compat-repcounta",
   "protocol": "ucfrep_526",
@@ -12,13 +12,19 @@
     "eligible_for_original_paper_table": false,
     "paper_protocol_parity": false,
     "pams_verified_reproduction": false,
-    "current_runner_result": false
+    "current_runner_result": true
   },
   "current_code_compatibility": {
     "legacy_artifact_generated_by_current_runner": false,
-    "tested_with_current_loader": false,
-    "compatible": false,
-    "requires_rerun": true,
+    "tested_with_current_loader": true,
+    "current_runner_source_git_sha": "fb8028a1681cdc71313455c1c0b2f4a7946acb6b",
+    "current_runner_code_sha256": "e366573a81e8316ef8f95f33f8856ea3e15c066dae602b4a6b766530262175cb",
+    "current_scorer_code_sha256": "b84fa58f3dbc5c5d8e0d3dbf38c0eaafa7762f898e679b0f8e0a4168abd4f710",
+    "raw_predictions_identical_to_legacy": true,
+    "maximum_raw_count_absolute_difference": 0.0,
+    "rounded_predictions_identical_to_legacy": false,
+    "compatible_with_legacy_aggregate_metrics": false,
+    "requires_rerun": false,
     "rounding_delta": {
       "legacy": "PyTorch round-to-nearest-even",
       "current": "half-up",
@@ -27,20 +33,13 @@
       "current_rounded_count": 9,
       "affected_rows": 1
     },
-    "reasons": [
-      "The legacy server artifacts predate and do not satisfy the current runner schema.",
-      "The legacy adapter used PyTorch ties-to-even rounding, while the current runner uses half-up rounding.",
-      "The legacy artifacts do not contain the current complete source-tree and imported-module-origin bindings.",
-      "The legacy artifacts do not contain the current full before/after rehash bindings for every asset and video.",
-      "The legacy artifacts do not bind a clean full-SHA project checkout and the exact current runner source bytes.",
-      "The legacy artifacts do not contain the current recoverable paired prediction/receipt write bindings."
-    ]
+    "interpretation": "The current runner exactly reproduced all 84 legacy raw model outputs. One exact 8.5 output changed from legacy ties-to-even rounding to the frozen half-up rule, so current rounded metrics are reported separately."
   },
   "label_boundary": {
     "prediction_labels_loaded": false,
     "prediction_scoring_performed": false,
     "prediction_target_mount": false,
-    "scoring_loaded_targets_only_after_legacy_prediction_validation": true,
+    "scoring_loaded_targets_only_after_current_prediction_validation": true,
     "test_inputs_read": false,
     "test_predictions_created": false
   },
@@ -50,7 +49,7 @@
     "failure_total": 0,
     "nonfinite_output_total": 0
   },
-  "metrics": {
+  "legacy_metrics": {
     "nmae_rounded": 0.6637558419732066,
     "obo_rounded": 0.3333333333333333,
     "mae_raw_prediction": 3.5989757719494047,
@@ -59,7 +58,7 @@
     "rmse_rounded": 5.166282627816271,
     "exact_rounded": 0.09523809523809523
   },
-  "bootstrap": {
+  "legacy_bootstrap": {
     "samples": 10000,
     "seed": 2026,
     "confidence_level": 0.95,
@@ -84,6 +83,51 @@
       "rmse_rounded": [
         3.997022701485504,
         6.332080076502357
+      ],
+      "obo_rounded": [
+        0.23809523809523808,
+        0.42857142857142855
+      ],
+      "exact_rounded": [
+        0.03571428571428571,
+        0.16666666666666666
+      ]
+    }
+  },
+  "current_metrics": {
+    "nmae_rounded": 0.666136794354159,
+    "obo_rounded": 0.3333333333333333,
+    "mae_raw_prediction": 3.5989757719494047,
+    "rmse_raw_prediction": 5.079865362668051,
+    "mae_rounded": 3.630952380952381,
+    "rmse_rounded": 5.174341457983762,
+    "exact_rounded": 0.09523809523809523
+  },
+  "current_bootstrap": {
+    "samples": 10000,
+    "seed": 2026,
+    "confidence_level": 0.95,
+    "interval_method": "paired_percentile",
+    "confidence_intervals": {
+      "nmae_rounded": [
+        0.5232047312635366,
+        0.8399722823102599
+      ],
+      "mae_raw_prediction": [
+        2.872650291806176,
+        4.398519897460937
+      ],
+      "rmse_raw_prediction": [
+        3.9224881130130966,
+        6.231638807312503
+      ],
+      "mae_rounded": [
+        2.892559523809524,
+        4.4523809523809526
+      ],
+      "rmse_rounded": [
+        4.00594795867583,
+        6.338680385232207
       ],
       "obo_rounded": [
         0.23809523809523808,
@@ -146,9 +190,24 @@
     "evaluation_receipt_sha256": "60ad15230f03164442e9470452c57349cf969ff3e51c1e6338f2650bfd85fdd0",
     "full_legacy_experiment_audit_sha256": "d239bd280e923f361a25d6556d04ff42fedd8c2e80fc9fcd8ed8c631de72f63a"
   },
+  "current_artifact_bindings": {
+    "runner_source_git_sha": "fb8028a1681cdc71313455c1c0b2f4a7946acb6b",
+    "runner_code_sha256": "e366573a81e8316ef8f95f33f8856ea3e15c066dae602b4a6b766530262175cb",
+    "scorer_source_git_sha": "fb8028a1681cdc71313455c1c0b2f4a7946acb6b",
+    "scorer_code_sha256": "b84fa58f3dbc5c5d8e0d3dbf38c0eaafa7762f898e679b0f8e0a4168abd4f710",
+    "input_manifest_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "input_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "input_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "config_sha256": "4578bd9be4ef390c63d6bcd610660aaf0de220beebcf4f1eebe72c0746da5090",
+    "prediction_sha256": "5af33078ad60305f553a4d9712585952640852b66314473a9e01148fd23bbe00",
+    "prediction_receipt_sha256": "43f7850660073a4ea5adb46bb53f7f89eb200adb7117d52e71d5679b5d9d16a4",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "evaluation_sha256": "03929b17ce9c80b11ecdd5f96aa70d7720b4917b6cd711a42b1341dd7b3dfc84",
+    "evaluation_receipt_sha256": "c4142544d722cd3fab6f42f9e11581894bbf337d3359fe9b674f9b9051a8c7a8"
+  },
   "limitations": [
-    "This compact file is retrospective hash-backed evidence, not an artifact emitted or validated by the current IVAC-P2L runner and loader.",
-    "The rounding change means the legacy aggregate metrics must not be relabeled as current-runner metrics.",
+    "The legacy artifact predates the strict public schema; its metrics remain separate from the current runner result.",
+    "The current runner reproduced every raw count exactly, but the one-row rounding change means the legacy aggregate metrics must not be relabeled as current-runner metrics.",
     "This is development-only negative evidence; it is not a sealed-test result or a verified paper reproduction.",
     "No source tree, weights, videos, raw predictions, targets, or per-video data are redistributed."
   ]
