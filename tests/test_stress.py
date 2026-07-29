@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import inspect
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
+import torch
 
 import pams.stress_dev as stress_dev_module
 from pams.stress import (
@@ -14,9 +16,11 @@ from pams.stress import (
 )
 from pams.stress_dev import (
     StressPredictionRow,
+    _load_bound_replay_model,
     run_pams_dev_stress_prediction,
     score_pams_dev_stress_predictions,
 )
+from pams.training import CheckpointProvenance
 from pams.types import PoseSequence
 
 
@@ -187,6 +191,85 @@ def test_stress_prediction_row_reconstructs_count_result() -> None:
     result = row.to_count_result()
     assert result.count == 4
     assert result.expert_counts == (3, 4, 5)
+
+
+def test_formal_checkpoint_replay_supplies_verified_bound_provenance(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    provenance = CheckpointProvenance(
+        protocol="ucfrep_526",
+        dataset_fingerprint="1" * 64,
+        training_video_ids=tuple(f"train-{index:03d}" for index in range(337)),
+        pose_fingerprint="2" * 64,
+        pose_cache_set_sha256="3" * 64,
+        source_git_sha="4" * 40,
+        container_image_id="sha256:" + "5" * 64,
+        container_environment_sha256="6" * 64,
+        upstream_encoder_checkpoint_sha256="7" * 64,
+    )
+    checkpoint = tmp_path / "sshead.pt"
+    torch.save(
+        {
+            "stage": "sshead",
+            "provenance": provenance.to_dict(),
+        },
+        checkpoint,
+    )
+    clean_artifact = SimpleNamespace(
+        protocol=provenance.protocol,
+        pose_fingerprint=provenance.pose_fingerprint,
+        training_pose_cache_set_sha256=provenance.pose_cache_set_sha256,
+        checkpoint_source_git_sha=provenance.source_git_sha,
+        checkpoint_container_image_id=provenance.container_image_id,
+        checkpoint_container_environment_sha256=(
+            provenance.container_environment_sha256
+        ),
+        upstream_encoder_checkpoint_sha256=(
+            provenance.upstream_encoder_checkpoint_sha256
+        ),
+    )
+    sentinel_model = object()
+    observed: dict[str, object] = {}
+
+    def fake_loader(
+        path: Path,
+        config: object,
+        *,
+        device: str | None,
+        expected_stage: str,
+        expected_provenance: CheckpointProvenance,
+    ) -> object:
+        observed.update(
+            {
+                "path": path,
+                "config": config,
+                "device": device,
+                "stage": expected_stage,
+                "provenance": expected_provenance,
+            }
+        )
+        return sentinel_model
+
+    monkeypatch.setattr(stress_dev_module, "load_model_checkpoint", fake_loader)
+    config = object()
+    model, provenance_sha256 = _load_bound_replay_model(
+        checkpoint,
+        config,
+        clean_artifact,
+        expected_stage="sshead",
+        device="cuda:0",
+    )
+
+    assert model is sentinel_model
+    assert observed == {
+        "path": checkpoint,
+        "config": config,
+        "device": "cuda:0",
+        "stage": "sshead",
+        "provenance": provenance,
+    }
+    assert len(provenance_sha256) == 64
 
 
 def test_scorer_does_not_touch_targets_before_prediction_validation(

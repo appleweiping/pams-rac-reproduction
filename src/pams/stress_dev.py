@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
+import torch
 from pydantic import Field, model_validator
 
 from pams.config import StrictModel, load_config
@@ -45,7 +46,7 @@ from pams.reproducibility import (
     sha256_json,
 )
 from pams.stress import apply_stress_condition, load_stress_protocol
-from pams.training import load_model_checkpoint
+from pams.training import CheckpointProvenance, load_model_checkpoint
 from pams.types import CountResult
 
 _PREDICTIONS_NAME: Literal["stress-predictions.json"] = "stress-predictions.json"
@@ -155,6 +156,7 @@ class StressPredictionArtifact(StrictModel):
     source_dev_commitment_sha256: str
     source_dev_pose_cache_set_sha256: str
     source_checkpoint_sha256: str
+    source_checkpoint_provenance_sha256: str
     source_checkpoint_progress_sha256: str
     source_checkpoint_completion_receipt_sha256: str
     source_upstream_encoder_checkpoint_sha256: str | None
@@ -183,6 +185,7 @@ class StressPredictionArtifact(StrictModel):
             self.source_dev_commitment_sha256,
             self.source_dev_pose_cache_set_sha256,
             self.source_checkpoint_sha256,
+            self.source_checkpoint_provenance_sha256,
             self.source_checkpoint_progress_sha256,
             self.source_checkpoint_completion_receipt_sha256,
             self.prediction_container_environment_sha256,
@@ -252,6 +255,7 @@ class StressPredictionReceipt(StrictModel):
     source_clean_predictions_sha256: str
     source_clean_prediction_receipt_sha256: str
     source_checkpoint_sha256: str
+    source_checkpoint_provenance_sha256: str
     prediction_source_git_sha: str
     prediction_container_image_id: str
     prediction_container_environment_sha256: str
@@ -268,6 +272,7 @@ class StressPredictionReceipt(StrictModel):
                 self.source_clean_predictions_sha256,
                 self.source_clean_prediction_receipt_sha256,
                 self.source_checkpoint_sha256,
+                self.source_checkpoint_provenance_sha256,
                 self.prediction_container_environment_sha256,
             )
         ):
@@ -335,6 +340,88 @@ def _count_result_equal(left: PAMSDevPredictionRow, right: StressPredictionRow) 
         and left.confidence == right.confidence
         and left.period_stream == right.period_stream
     )
+
+
+def _load_bound_replay_model(
+    checkpoint_path: Path,
+    training_config: Any,
+    clean_artifact: Any,
+    *,
+    expected_stage: Literal["encoder", "sshead"],
+    device: str | None,
+) -> tuple[Any, str]:
+    """Load a formal checkpoint only after replaying its frozen provenance.
+
+    The source clean prediction was produced through the full terminal
+    checkpoint validator and is independently bound by its receipt.  Stress
+    replay therefore verifies the immutable checkpoint bytes against that
+    artifact, parses the checkpoint's untrusted provenance, and requires every
+    provenance field available at this boundary to match before passing it
+    back to the strict model loader.
+    """
+
+    payload = torch.load(
+        checkpoint_path,
+        map_location=torch.device("cpu"),
+        weights_only=False,
+    )
+    if not isinstance(payload, Mapping):
+        raise ValueError("stress replay checkpoint root must be a mapping")
+    if payload.get("stage") != expected_stage:
+        raise ValueError(
+            "stress replay checkpoint stage differs from the source clean variant"
+        )
+    raw_provenance = payload.get("provenance")
+    if not isinstance(raw_provenance, Mapping):
+        raise ValueError("stress replay requires bound checkpoint provenance")
+    provenance = CheckpointProvenance.from_mapping(raw_provenance)
+    bindings = (
+        (provenance.protocol, clean_artifact.protocol, "protocol"),
+        (
+            provenance.pose_fingerprint,
+            clean_artifact.pose_fingerprint,
+            "pose_fingerprint",
+        ),
+        (
+            provenance.pose_cache_set_sha256,
+            clean_artifact.training_pose_cache_set_sha256,
+            "training_pose_cache_set_sha256",
+        ),
+        (
+            provenance.source_git_sha,
+            clean_artifact.checkpoint_source_git_sha,
+            "checkpoint_source_git_sha",
+        ),
+        (
+            provenance.container_image_id,
+            clean_artifact.checkpoint_container_image_id,
+            "checkpoint_container_image_id",
+        ),
+        (
+            provenance.container_environment_sha256,
+            clean_artifact.checkpoint_container_environment_sha256,
+            "checkpoint_container_environment_sha256",
+        ),
+        (
+            provenance.upstream_encoder_checkpoint_sha256,
+            clean_artifact.upstream_encoder_checkpoint_sha256,
+            "upstream_encoder_checkpoint_sha256",
+        ),
+    )
+    for observed, expected, name in bindings:
+        if observed != expected:
+            raise ValueError(f"stress replay checkpoint provenance mismatch for {name}")
+    if len(provenance.training_video_ids) != 337:
+        raise ValueError("stress replay checkpoint must bind the frozen 337-video train set")
+
+    model = load_model_checkpoint(
+        checkpoint_path,
+        training_config,
+        device=device,
+        expected_stage=expected_stage,
+        expected_provenance=provenance,
+    )
+    return model, sha256_json(provenance.to_dict())
 
 
 def run_pams_dev_stress_prediction(
@@ -431,9 +518,10 @@ def run_pams_dev_stress_prediction(
     expected_stage: Literal["encoder", "sshead"] = (
         "encoder" if clean_artifact.variant == "literal" else "sshead"
     )
-    model = load_model_checkpoint(
+    model, checkpoint_provenance_sha256 = _load_bound_replay_model(
         checkpoint,
         training_config,
+        clean_artifact,
         device=device,
         expected_stage=expected_stage,
     )
@@ -536,6 +624,7 @@ def run_pams_dev_stress_prediction(
         source_dev_commitment_sha256=dev_commitment_sha256,
         source_dev_pose_cache_set_sha256=pose_snapshot.fingerprint,
         source_checkpoint_sha256=checkpoint_sha256,
+        source_checkpoint_provenance_sha256=checkpoint_provenance_sha256,
         source_checkpoint_progress_sha256=clean_artifact.checkpoint_progress_sha256,
         source_checkpoint_completion_receipt_sha256=(
             clean_artifact.checkpoint_completion_receipt_sha256
@@ -570,6 +659,7 @@ def run_pams_dev_stress_prediction(
         source_clean_predictions_sha256=clean_prediction_sha256,
         source_clean_prediction_receipt_sha256=clean_receipt_sha256,
         source_checkpoint_sha256=checkpoint_sha256,
+        source_checkpoint_provenance_sha256=checkpoint_provenance_sha256,
         prediction_source_git_sha=source_git_sha,
         prediction_container_image_id=image_id,
         prediction_container_environment_sha256=environment_sha256,
@@ -591,6 +681,7 @@ def run_pams_dev_stress_prediction(
         "record_total_per_condition": 84,
         "stress_config_sha256": protocol.config_sha256,
         "source_checkpoint_sha256": checkpoint_sha256,
+        "source_checkpoint_provenance_sha256": checkpoint_provenance_sha256,
         "clean_replay_matches_source": True,
         "predictions_path": str(prediction_path.resolve()),
         "predictions_sha256": prediction_sha256,
@@ -624,6 +715,10 @@ def _validate_stress_receipt_binding(
             receipt.source_clean_prediction_receipt_sha256,
         ),
         (artifact.source_checkpoint_sha256, receipt.source_checkpoint_sha256),
+        (
+            artifact.source_checkpoint_provenance_sha256,
+            receipt.source_checkpoint_provenance_sha256,
+        ),
         (artifact.prediction_source_git_sha, receipt.prediction_source_git_sha),
         (
             artifact.prediction_container_image_id,
