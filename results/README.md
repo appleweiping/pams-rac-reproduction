@@ -122,6 +122,18 @@ selector is independently inferred, and the input is the 256-frame PAMS
 cache. Full evidence is in
 [`poserac_v1_official_oracle_free_dev84_strict.json`](dev-negative/poserac_v1_official_oracle_free_dev84_strict.json).
 
+The independently inferred `JTSPS-count-only` baseline has now completed a
+real supervised train337/dev84 run at seed 2026. It obtained NMAE/OBO
+`0.502275 / 0.392857`, with 10,000-sample 95% intervals
+`[0.421530, 0.585122]` and `[0.297619, 0.500000]`. This is not a random-weight
+smoke, but it is permanently ineligible for the paper's JTSPS cell because
+the source protocol does not uniquely disclose cycle-density supervision or
+decoding. Prediction had no development-target, test, annotation, or raw-video
+mount; the independent scorer opened dev84 targets only after all 84
+predictions were frozen. Full protocol, server paths, hashes, and the negative
+claim boundary are in
+[`jtsps_count_only_inferred_dev84_strict.json`](dev-negative/jtsps_count_only_inferred_dev84_strict.json).
+
 The strict full multi-scale protocol has now also completed seeds `42`,
 `2026`, and `3407` for both readouts. PAMS-Literal obtained mean NMAE/OBO
 `1.489633 / 0.226190`; its NMAE population/sample standard deviations are
@@ -218,7 +230,7 @@ Path-free full lineage and repair audit are in
 | IVAC-P2L | 421/105 | current-code modern-compat dev sanity available; original parity/test blocked | — | — |
 | PoseRAC-v1 official checkpoint | 421/105 | oracle-free dev84 diagnostic available; original protocol/test blocked | — | — |
 | PoseRAC-ICONIP24 | 421/105 | implementation/data blocked | — | — |
-| JTSPS-count-only | 421/105 | protocol blocked | — | — |
+| JTSPS-count-only | 421/105 | inferred clean-room dev84 negative available; source protocol/test blocked | — | — |
 | CountLLM-Lite | 421/105, non-comparable recipe | smoke-only / adapter incomplete | — | — |
 
 ## UCFRep-pose-110 fair table
