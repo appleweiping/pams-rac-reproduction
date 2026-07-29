@@ -1,0 +1,10 @@
+{
+  "artifact_type": "ucfrep_pose_110_asset_audit_receipt",
+  "artifacts": {
+    "asset-audit.json": "9c04fc8c8693a33ff6a78e1907c48a1801f3b2d90e55c6b79873378fb8632dca",
+    "raw-five-class-inventory.json": "574d4c864fe0f9b4ff73c0f48239f0d2d2a2230352adcb5532270e3ae9c4a85e",
+    "standard-five-class-intersection.json": "fd85c296e3c2a3a7fcba2a2a406d41f436d2e617c66c9ffd22aabebb6b8b67a7"
+  },
+  "schema_version": 1,
+  "script_sha256": "fddf8fe2352348f5dd223bebfa9c691272e76e7ce272bc16946af0bb0703f9ac"
+}
