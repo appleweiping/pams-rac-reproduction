@@ -1,0 +1,12 @@
+{
+  "artifact_type": "spectral_proxy_evaluation_receipt",
+  "bootstrap_samples": 10000,
+  "bootstrap_seed": 2026,
+  "created_at_utc": "2026-07-29T20:33:42Z",
+  "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+  "evaluation_sha256": "f718ef681f74d13041322ae87b128e39f0d872c18e226281bea281a256ac1ec8",
+  "identity_receipt_sha256": "16fef8581a03a7746df0a3fc2d98c133803edd679e63f3c21eff856179370a7f",
+  "prediction_receipt_sha256": "0c583ca68852940f7865a5b145f4dafcd61b07ab264ab6ca4880e7f4cd207417",
+  "predictions_sha256": "7efeec8c44e36786cd95b8f005357ad5a596f8a508c8290ee4b74f8a1dcf7261",
+  "schema_version": 1
+}
