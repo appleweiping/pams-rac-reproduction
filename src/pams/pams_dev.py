@@ -59,6 +59,8 @@ from pams.training import (
 from pams.types import CountResult
 
 PAMSDevVariant = Literal["literal", "sshead"]
+PAMSInferenceExpertMode = Literal["multi", "medium_only"]
+PAMSSelectedExpert = Literal["fast", "medium", "slow"]
 
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _IMAGE_ID_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -289,6 +291,35 @@ def _method_key(variant: PAMSDevVariant) -> str:
     return "pams-literal" if variant == "literal" else "pams-sshead-inferred"
 
 
+def _inference_config(
+    training_config: PAMSConfig,
+    expert_mode: PAMSInferenceExpertMode | None,
+) -> PAMSConfig:
+    """Derive an inference-only consensus choice without changing training identity."""
+
+    resolved_mode = (
+        training_config.consensus.expert_mode
+        if expert_mode is None
+        else expert_mode
+    )
+    if resolved_mode not in {"multi", "medium_only"}:
+        raise ValueError("expert_mode must be 'multi' or 'medium_only'")
+    consensus = training_config.consensus.model_copy(
+        update={"expert_mode": resolved_mode}
+    )
+    return training_config.model_copy(update={"consensus": consensus})
+
+
+def _ablation_status(
+    expert_mode: PAMSInferenceExpertMode,
+) -> Literal["default multi-expert", "inferred single-expert ablation"]:
+    return (
+        "default multi-expert"
+        if expert_mode == "multi"
+        else "inferred single-expert ablation"
+    )
+
+
 class PAMSDevPredictionRow(StrictModel):
     """One target-free PAMS prediction bound to source-video identity."""
 
@@ -297,6 +328,8 @@ class PAMSDevPredictionRow(StrictModel):
     count: int = Field(ge=0)
     period_frames: float = Field(gt=0)
     expert_counts: tuple[int, int, int]
+    selection_mode: PAMSInferenceExpertMode
+    selected_expert: PAMSSelectedExpert | None
     confidence: float = Field(ge=0, le=1)
     period_stream: tuple[float, ...]
 
@@ -321,7 +354,7 @@ class PAMSDevPredictionRow(StrictModel):
 class PAMSDevPredictionArtifact(StrictModel):
     """Strict target-free artifact emitted by checkpoint prediction."""
 
-    schema_version: Literal[1] = 1
+    schema_version: Literal[2] = 2
     artifact_type: Literal["pams_checkpoint_dev_predictions"]
     classification: Literal["PAMS dev representation diagnostic"]
     table2_eligible: Literal[False] = False
@@ -331,7 +364,13 @@ class PAMSDevPredictionArtifact(StrictModel):
     method_key: str
     record_total: Literal[84]
     config_file_sha256: str
+    training_config_fingerprint: str
     config_fingerprint: str
+    consensus_expert_mode: PAMSInferenceExpertMode
+    ablation_status: Literal[
+        "default multi-expert",
+        "inferred single-expert ablation",
+    ]
     pose_fingerprint: str
     protocol_identity_sha256: str
     training_identity_sha256: str
@@ -365,6 +404,7 @@ class PAMSDevPredictionArtifact(StrictModel):
     def validate_artifact(self) -> PAMSDevPredictionArtifact:
         for field in (
             "config_file_sha256",
+            "training_config_fingerprint",
             "config_fingerprint",
             "pose_fingerprint",
             "protocol_identity_sha256",
@@ -407,11 +447,40 @@ class PAMSDevPredictionArtifact(StrictModel):
         )
         if self.method_key != _method_key(self.variant):
             raise ValueError("method_key does not match checkpoint variant")
+        expected_status = (
+            "default multi-expert"
+            if self.consensus_expert_mode == "multi"
+            else "inferred single-expert ablation"
+        )
+        if self.ablation_status != expected_status:
+            raise ValueError("ablation_status does not match consensus_expert_mode")
+        if any(
+            row.selection_mode != self.consensus_expert_mode
+            for row in self.records
+        ):
+            raise ValueError("prediction row selection_mode mismatch")
+        if self.consensus_expert_mode == "medium_only" and any(
+            row.selected_expert != "medium" for row in self.records
+        ):
+            raise ValueError("medium_only predictions must select the medium expert")
+        if self.consensus_expert_mode == "multi" and any(
+            row.selected_expert is not None for row in self.records
+        ):
+            raise ValueError(
+                "multi predictions cannot infer a selected expert from compact counts"
+            )
         if self.variant == "literal" and any(value is not None for value in optional_hashes):
             raise ValueError("literal predictions cannot name an upstream encoder")
         if self.variant == "sshead" and any(value is None for value in optional_hashes):
             raise ValueError("SSHead predictions require all upstream encoder hashes")
-        expected_code_files = {"data", "evaluation", "pams_dev", "training"}
+        expected_code_files = {
+            "config",
+            "consensus",
+            "data",
+            "evaluation",
+            "pams_dev",
+            "training",
+        }
         if set(self.prediction_code_files_sha256) != expected_code_files:
             raise ValueError("prediction_code_files_sha256 has an incomplete source set")
         for name, digest in self.prediction_code_files_sha256.items():
@@ -429,7 +498,7 @@ class PAMSDevPredictionArtifact(StrictModel):
 class PAMSDevPredictionReceipt(StrictModel):
     """Independent commitment to already-written PAMS prediction bytes."""
 
-    schema_version: Literal[1] = 1
+    schema_version: Literal[2] = 2
     artifact_type: Literal["pams_checkpoint_dev_prediction_receipt"]
     protocol: Literal["ucfrep_526"]
     split: Literal["dev"]
@@ -438,7 +507,13 @@ class PAMSDevPredictionReceipt(StrictModel):
     prediction_file: Literal["predictions.json"]
     prediction_sha256: str
     prediction_bytes: int = Field(ge=1)
+    training_config_fingerprint: str
     config_fingerprint: str
+    consensus_expert_mode: PAMSInferenceExpertMode
+    ablation_status: Literal[
+        "default multi-expert",
+        "inferred single-expert ablation",
+    ]
     protocol_identity_sha256: str
     training_identity_sha256: str
     dev_identity_sha256: str
@@ -462,6 +537,7 @@ class PAMSDevPredictionReceipt(StrictModel):
     def validate_receipt(self) -> PAMSDevPredictionReceipt:
         for field in (
             "prediction_sha256",
+            "training_config_fingerprint",
             "config_fingerprint",
             "protocol_identity_sha256",
             "training_identity_sha256",
@@ -492,6 +568,13 @@ class PAMSDevPredictionReceipt(StrictModel):
         )
         if self.method_key != _method_key(self.variant):
             raise ValueError("receipt method_key does not match checkpoint variant")
+        expected_status = (
+            "default multi-expert"
+            if self.consensus_expert_mode == "multi"
+            else "inferred single-expert ablation"
+        )
+        if self.ablation_status != expected_status:
+            raise ValueError("receipt ablation_status does not match expert mode")
         optional_hashes = (
             self.upstream_encoder_checkpoint_sha256,
             self.upstream_encoder_progress_sha256,
@@ -510,6 +593,8 @@ class PAMSDevPredictionReceipt(StrictModel):
 def _code_file_hashes() -> dict[str, str]:
     directory = Path(__file__).parent
     return {
+        "config": sha256_file(directory / "config.py"),
+        "consensus": sha256_file(directory / "consensus.py"),
         "data": sha256_file(directory / "data.py"),
         "evaluation": sha256_file(directory / "evaluation.py"),
         "pams_dev": sha256_file(Path(__file__)),
@@ -928,14 +1013,28 @@ def _prediction_row(
     prediction: PredictionRecord,
     *,
     video_sha256: str,
+    selection_mode: PAMSInferenceExpertMode,
 ) -> PAMSDevPredictionRow:
     result = prediction.result
+    selected_expert: PAMSSelectedExpert | None
+    if selection_mode == "medium_only":
+        selected_expert = "medium"
+        if result.count != result.expert_counts[1]:
+            raise ValueError("medium_only prediction did not return the medium expert count")
+    else:
+        # ``CountResult`` intentionally does not expose the full
+        # ``ConsensusResult``.  Reconstructing an expert from matching counts
+        # would be ambiguous when multiple experts agree, so v2 records no
+        # per-row expert for the multi-expert path.
+        selected_expert = None
     return PAMSDevPredictionRow(
         video_id=prediction.video_id,
         video_sha256=video_sha256,
         count=result.count,
         period_frames=result.period_frames,
         expert_counts=result.expert_counts,
+        selection_mode=selection_mode,
+        selected_expert=selected_expert,
         confidence=result.confidence,
         period_stream=tuple(float(value) for value in result.period_stream),
     )
@@ -956,6 +1055,7 @@ def run_pams_dev_prediction(
     output_dir: str | Path,
     config_path: str | Path,
     variant: PAMSDevVariant,
+    expert_mode: PAMSInferenceExpertMode | None = None,
     upstream_encoder_checkpoint_path: str | Path | None = None,
     upstream_encoder_progress_path: str | Path | None = None,
     upstream_encoder_completion_receipt_path: str | Path | None = None,
@@ -1014,8 +1114,9 @@ def run_pams_dev_prediction(
     code_files_sha256 = _code_file_hashes()
     code_sha256 = sha256_json(code_files_sha256)
     config_file_sha256 = sha256_file(config_file)
-    config = load_config(config_file)
-    if config.protocol != "ucfrep_526":
+    training_config = load_config(config_file)
+    inference_config = _inference_config(training_config, expert_mode)
+    if training_config.protocol != "ucfrep_526":
         raise ValueError("PAMS dev prediction requires protocol ucfrep_526")
     inputs, input_hashes = _load_protocol_inputs(
         train_inputs_path=train_inputs,
@@ -1029,7 +1130,7 @@ def run_pams_dev_prediction(
     _, training_pose_snapshot = load_pose_cache_set(
         training_records,
         cache_dir=cache_dir,
-        pose_fingerprint=config.pose_fingerprint,
+        pose_fingerprint=training_config.pose_fingerprint,
         materialize_sequences=False,
     )
     input_paths = {
@@ -1049,7 +1150,7 @@ def run_pams_dev_prediction(
         checkpoint_path=checkpoint,
         progress_path=checkpoint_progress,
         config_path=config_file,
-        config=config,
+        config=training_config,
         inputs=inputs,
         input_paths=input_paths,
         input_hashes=input_hashes,
@@ -1073,7 +1174,7 @@ def run_pams_dev_prediction(
             checkpoint_path=upstream_checkpoint,
             progress_path=upstream_progress,
             config_path=config_file,
-            config=config,
+            config=training_config,
             inputs=inputs,
             input_paths=input_paths,
             input_hashes=input_hashes,
@@ -1091,7 +1192,7 @@ def run_pams_dev_prediction(
         upstream_encoder_checkpoint_path=upstream_checkpoint,
         upstream_encoder_progress_path=upstream_progress,
         upstream_encoder_training_binding=upstream_encoder_training_binding,
-        config=config,
+        config=training_config,
         inputs=inputs,
         training_pose_snapshot=training_pose_snapshot,
         device=device,
@@ -1100,7 +1201,7 @@ def run_pams_dev_prediction(
     sequences, dev_pose_snapshot = load_pose_cache_set(
         dev_records,
         cache_dir=cache_dir,
-        pose_fingerprint=config.pose_fingerprint,
+        pose_fingerprint=training_config.pose_fingerprint,
     )
     expected_ids = tuple(record.video_id for record in dev_records)
     if tuple(sequence.video_id for sequence in sequences) != expected_ids:
@@ -1108,7 +1209,7 @@ def run_pams_dev_prediction(
     predictions = predict_sequences(
         model,
         sequences,
-        config,
+        inference_config,
         device=device,
     )
     if tuple(record.video_id for record in predictions) != expected_ids:
@@ -1167,6 +1268,7 @@ def run_pams_dev_prediction(
         _prediction_row(
             prediction,
             video_sha256=video_hashes[prediction.video_id],
+            selection_mode=inference_config.consensus.expert_mode,
         )
         for prediction in predictions
     )
@@ -1179,8 +1281,11 @@ def run_pams_dev_prediction(
         method_key=_method_key(typed_variant),
         record_total=84,
         config_file_sha256=config_file_sha256,
-        config_fingerprint=config.fingerprint,
-        pose_fingerprint=config.pose_fingerprint,
+        training_config_fingerprint=training_config.fingerprint,
+        config_fingerprint=inference_config.fingerprint,
+        consensus_expert_mode=inference_config.consensus.expert_mode,
+        ablation_status=_ablation_status(inference_config.consensus.expert_mode),
+        pose_fingerprint=training_config.pose_fingerprint,
         protocol_identity_sha256=inputs.fingerprint,
         training_identity_sha256=inputs.training_fingerprint(include_dev=False),
         train_inputs_sha256=input_hashes["train_inputs_sha256"],
@@ -1237,7 +1342,10 @@ def run_pams_dev_prediction(
         prediction_file=_PREDICTION_NAME,
         prediction_sha256=prediction_sha256,
         prediction_bytes=len(prediction_encoded),
-        config_fingerprint=config.fingerprint,
+        training_config_fingerprint=training_config.fingerprint,
+        config_fingerprint=inference_config.fingerprint,
+        consensus_expert_mode=inference_config.consensus.expert_mode,
+        ablation_status=_ablation_status(inference_config.consensus.expert_mode),
         protocol_identity_sha256=inputs.fingerprint,
         training_identity_sha256=inputs.training_fingerprint(include_dev=False),
         dev_identity_sha256=artifact.dev_identity_sha256,
@@ -1281,6 +1389,10 @@ def run_pams_dev_prediction(
         "split": "dev",
         "variant": typed_variant,
         "method_key": _method_key(typed_variant),
+        "consensus_expert_mode": inference_config.consensus.expert_mode,
+        "ablation_status": _ablation_status(inference_config.consensus.expert_mode),
+        "training_config_fingerprint": training_config.fingerprint,
+        "config_fingerprint": inference_config.fingerprint,
         "record_total": 84,
         "predictions_path": str(output_paths["predictions"].resolve()),
         "predictions_sha256": prediction_sha256,
@@ -1341,9 +1453,21 @@ def _validate_receipt_binding(
         "split": (artifact.split, receipt.split),
         "variant": (artifact.variant, receipt.variant),
         "method_key": (artifact.method_key, receipt.method_key),
+        "training_config_fingerprint": (
+            artifact.training_config_fingerprint,
+            receipt.training_config_fingerprint,
+        ),
         "config_fingerprint": (
             artifact.config_fingerprint,
             receipt.config_fingerprint,
+        ),
+        "consensus_expert_mode": (
+            artifact.consensus_expert_mode,
+            receipt.consensus_expert_mode,
+        ),
+        "ablation_status": (
+            artifact.ablation_status,
+            receipt.ablation_status,
         ),
         "protocol_identity_sha256": (
             artifact.protocol_identity_sha256,
@@ -1527,11 +1651,14 @@ def score_pams_dev_predictions(
         "split": "dev",
         "variant": artifact.variant,
         "method_key": artifact.method_key,
+        "consensus_expert_mode": artifact.consensus_expert_mode,
+        "ablation_status": artifact.ablation_status,
         "bootstrap_pairing": "paired_prediction_target_rows",
         "prediction_sha256": prediction_sha256,
         "prediction_receipt_sha256": receipt_sha256,
         "dev_targets_sha256": targets_sha256,
         "config_file_sha256": artifact.config_file_sha256,
+        "training_config_fingerprint": artifact.training_config_fingerprint,
         "config_fingerprint": artifact.config_fingerprint,
         "protocol_identity_sha256": artifact.protocol_identity_sha256,
         "training_identity_sha256": artifact.training_identity_sha256,
@@ -1571,6 +1698,8 @@ def score_pams_dev_predictions(
                 "count": row.count,
                 "period_frames": row.period_frames,
                 "expert_counts": list(row.expert_counts),
+                "selection_mode": row.selection_mode,
+                "selected_expert": row.selected_expert,
                 "confidence": row.confidence,
             }
             for row in artifact.records
@@ -1591,7 +1720,10 @@ def score_pams_dev_predictions(
         "prediction_sha256": prediction_sha256,
         "prediction_receipt_sha256": receipt_sha256,
         "dev_targets_sha256": targets_sha256,
+        "training_config_fingerprint": artifact.training_config_fingerprint,
         "config_fingerprint": artifact.config_fingerprint,
+        "consensus_expert_mode": artifact.consensus_expert_mode,
+        "ablation_status": artifact.ablation_status,
         "dev_identity_sha256": artifact.dev_identity_sha256,
         "checkpoint_sha256": artifact.checkpoint_sha256,
         "checkpoint_progress_sha256": artifact.checkpoint_progress_sha256,

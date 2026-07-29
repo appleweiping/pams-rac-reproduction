@@ -17,6 +17,7 @@ def test_default_config_matches_disclosed_dimensions() -> None:
     assert config.pose.preprocessing_revision == "detected-span-minmax-zero-span-invalid-v2"
     assert config.period.post_warmup_source == "embedding_velocity_coordinate"
     assert config.loss.exclude_other_scale_positives_from_denominator is False
+    assert config.consensus.expert_mode == "multi"
 
 
 def test_config_rejects_dimension_mismatch() -> None:
@@ -124,6 +125,31 @@ def test_explicit_default_union_repair_preserves_historical_fingerprint() -> Non
 
     assert explicit.fingerprint == reconstructed_implicit.fingerprint
     assert explicit.nonseed_fingerprint == reconstructed_implicit.nonseed_fingerprint
+
+
+def test_medium_only_is_inference_identity_and_default_preserves_history() -> None:
+    implicit = PAMSConfig()
+    payload = implicit.model_dump()
+    payload["consensus"].pop("expert_mode")
+    explicit_default = PAMSConfig.model_validate(implicit.model_dump())
+    reconstructed_implicit = PAMSConfig.model_validate(payload)
+    medium_only = PAMSConfig.model_validate(
+        {
+            **implicit.model_dump(),
+            "consensus": {
+                **implicit.consensus.model_dump(),
+                "expert_mode": "medium_only",
+            },
+        }
+    )
+
+    assert explicit_default.fingerprint == reconstructed_implicit.fingerprint
+    assert explicit_default.nonseed_fingerprint == (
+        reconstructed_implicit.nonseed_fingerprint
+    )
+    assert medium_only.fingerprint != implicit.fingerprint
+    assert medium_only.nonseed_fingerprint != implicit.nonseed_fingerprint
+    assert medium_only.pose_fingerprint == implicit.pose_fingerprint
 
 
 def test_config_rejects_unknown_input_projection_scale() -> None:

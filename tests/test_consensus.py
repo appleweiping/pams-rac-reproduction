@@ -38,6 +38,20 @@ def test_vote_uses_majority_then_reference_with_medium_tie_break() -> None:
     assert (count, selected) == (6, 0)
 
 
+def test_medium_only_returns_medium_without_vote_or_fft_fallback() -> None:
+    stream = _peak_stream(120, [10, 30, 50, 70, 90, 110])
+    counter = MultiExpertCounter(expert_mode="medium_only")
+    result = counter.count(stream, period_frames=11, period_confidence=0.4)
+
+    assert result.selection_mode == "medium_only"
+    assert result.selected_expert == "medium"
+    assert result.count == result.expert_counts[1]
+    assert result.confidence == pytest.approx(0.4)
+
+    with pytest.raises(ValueError, match="expert_mode"):
+        MultiExpertCounter(expert_mode="oracle")  # type: ignore[arg-type]
+
+
 def test_dynamic_threshold_and_invalid_frames_are_safe() -> None:
     stream = _peak_stream(80, [10, 30, 50, 70])
     threshold = dynamic_threshold(stream, period_frames=20)

@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from pams.types import CountResult
 
 ExpertName = Literal["fast", "medium", "slow"]
+ExpertMode = Literal["multi", "medium_only"]
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,7 @@ class ConsensusResult:
     reference_count: int
     expert_counts: tuple[int, int, int]
     selected_expert: ExpertName
+    selection_mode: ExpertMode
     confidence: float
     period_stream: tuple[float, ...]
     experts: tuple[ExpertResult, ExpertResult, ExpertResult]
@@ -173,6 +175,7 @@ class MultiExpertCounter:
         height_factor: float = 0.6,
         prominence_factor: float = 0.25,
         long_window_weight: float = 0.6,
+        expert_mode: ExpertMode = "multi",
     ) -> None:
         if experts is None:
             if len(sigma_multipliers) != 3 or len(distance_multipliers) != 3:
@@ -188,12 +191,15 @@ class MultiExpertCounter:
             raise ValueError("experts must be ordered fast, medium, slow")
         if height_factor < 0 or prominence_factor < 0:
             raise ValueError("height and prominence factors must be non-negative")
+        if expert_mode not in {"multi", "medium_only"}:
+            raise ValueError("expert_mode must be 'multi' or 'medium_only'")
         self.experts = experts
         self.short_window_multiplier = short_window_multiplier
         self.long_window_multiplier = long_window_multiplier
         self.height_factor = height_factor
         self.prominence_factor = prominence_factor
         self.long_window_weight = long_window_weight
+        self.expert_mode = expert_mode
 
     def count(
         self,
@@ -241,6 +247,7 @@ class MultiExpertCounter:
                 reference_count=0,
                 expert_counts=(0, 0, 0),
                 selected_expert="medium",
+                selection_mode=self.expert_mode,
                 confidence=0.0,
                 period_stream=tuple(float(value) for value in original),
                 experts=empty_experts,  # type: ignore[arg-type]
@@ -303,13 +310,22 @@ class MultiExpertCounter:
             expert_results[2].count,
         )
         reference_count = int(np.floor(valid.sum() / period_frames))
-        count, selected_index, vote_confidence = vote_expert_counts(counts, reference_count)
+        if self.expert_mode == "medium_only":
+            count = counts[1]
+            selected_index = 1
+            vote_confidence = 1.0
+        else:
+            count, selected_index, vote_confidence = vote_expert_counts(
+                counts,
+                reference_count,
+            )
         return ConsensusResult(
             count=count,
             period_frames=float(period_frames),
             reference_count=reference_count,
             expert_counts=counts,
             selected_expert=self.experts[selected_index].name,
+            selection_mode=self.expert_mode,
             confidence=float(vote_confidence * period_confidence),
             period_stream=tuple(float(value) for value in original),
             experts=(expert_results[0], expert_results[1], expert_results[2]),

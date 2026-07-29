@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 from typer.testing import CliRunner
 
 import pams.data as data_module
@@ -381,6 +382,8 @@ def _patch_prediction_dependencies(
 def _run_prediction(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    *,
+    expert_mode: str | None = None,
 ) -> tuple[dict[str, object], Path, Path]:
     train_inputs, train_commitment, train = _write_bound_inputs(tmp_path, "train")
     dev_inputs, dev_commitment, dev = _write_bound_inputs(tmp_path, "dev")
@@ -431,6 +434,7 @@ def _run_prediction(
         output_dir=output,
         config_path=CONFIG,
         variant="sshead",
+        expert_mode=expert_mode,  # type: ignore[arg-type]
         upstream_encoder_checkpoint_path=upstream_checkpoint,
         upstream_encoder_progress_path=upstream_progress,
         upstream_encoder_completion_receipt_path=upstream_completion_receipt,
@@ -488,6 +492,7 @@ def test_cli_prediction_help_exposes_no_target_option() -> None:
     assert {"dev-predict", "dev-score"} <= set(group_output.split())
     assert "--checkpoint-completion-receipt" in predict_output
     assert "--upstream-encoder-completion-receipt" in predict_output
+    assert "--expert-mode" in predict_output
     assert "--dev-targets" not in predict_output
     assert "--targets" not in predict_output
 
@@ -544,6 +549,7 @@ def test_prediction_freezes_target_free_sshead_artifact(
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
 
     assert payload["variant"] == "sshead"
+    assert payload["schema_version"] == receipt["schema_version"] == 2
     assert payload["method_key"] == "pams-sshead-inferred"
     assert payload["table2_eligible"] is False
     assert payload["record_total"] == len(payload["records"]) == 84
@@ -567,6 +573,43 @@ def test_prediction_freezes_target_free_sshead_artifact(
     assert result["prediction_receipt_sha256"] == hashlib.sha256(
         receipt_path.read_bytes()
     ).hexdigest()
+
+    legacy_payload = {**payload, "schema_version": 1}
+    with pytest.raises(ValidationError, match="schema_version"):
+        dev_module.PAMSDevPredictionArtifact.model_validate(legacy_payload)
+
+
+def test_prediction_records_inferred_medium_only_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    result, predictions_path, receipt_path = _run_prediction(
+        tmp_path,
+        monkeypatch,
+        expert_mode="medium_only",
+    )
+    payload = json.loads(predictions_path.read_text(encoding="utf-8"))
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    training_config = dev_module.load_config(CONFIG)
+    inference_config = dev_module._inference_config(
+        training_config,
+        "medium_only",
+    )
+
+    assert payload["consensus_expert_mode"] == "medium_only"
+    assert payload["ablation_status"] == "inferred single-expert ablation"
+    assert payload["training_config_fingerprint"] == training_config.fingerprint
+    assert payload["config_fingerprint"] == inference_config.fingerprint
+    assert payload["config_fingerprint"] != payload["training_config_fingerprint"]
+    assert all(
+        row["selection_mode"] == "medium_only"
+        and row["selected_expert"] == "medium"
+        and row["count"] == row["expert_counts"][1]
+        for row in payload["records"]
+    )
+    assert receipt["consensus_expert_mode"] == "medium_only"
+    assert receipt["config_fingerprint"] == payload["config_fingerprint"]
+    assert result["consensus_expert_mode"] == "medium_only"
 
 
 def test_json_bundle_rolls_back_first_file_on_late_collision(

@@ -2216,6 +2216,7 @@ def predict_sequence(
             height_factor=consensus.height_factor,
             prominence_factor=consensus.prominence_factor,
             long_window_weight=consensus.long_window_weight,
+            expert_mode=consensus.expert_mode,
         )
     result = counter.count(
         stream,
