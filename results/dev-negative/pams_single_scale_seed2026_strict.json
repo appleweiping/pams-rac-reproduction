@@ -13,7 +13,7 @@
     "verified_reproduction": false,
     "eligible_for_paper_table": false,
     "eligible_for_paper_table2": false,
-    "reason": "The implementation exposes a true single-scale representation switch but not a separately auditable single-expert switch. A protocol-matched 337-train full multi-scale comparator is now recorded separately; its worse NMAE and slightly better OBO do not establish a multi-scale advantage."
+    "reason": "The implementation exposes a true single-scale representation switch. A protocol-matched 337-train full multi-scale comparator is recorded separately; its worse NMAE and slightly better OBO do not establish a multi-scale advantage. A later independently inferred Medium-only comparison also fails to establish a multi-expert advantage."
   },
   "configuration_delta": {
     "only_change": "loss.scales",
@@ -117,6 +117,6 @@
     "This is a development-only negative representation diagnostic, not a sealed-test result.",
     "The inferred SSHead is an independent reproduction completion absent from the paper.",
     "The earlier f99f3fd single-scale diagnostic used a different 421-video training scope and an older combined evaluator, so its metrics are not substituted for this run.",
-    "The protocol-matched multi-scale 337-train comparator moves NMAE and OBO in opposite directions; a separately executable single-expert switch is still required before any Table 2 claim."
+    "The protocol-matched multi-scale 337-train comparator moves NMAE and OBO in opposite directions. The later inferred Medium-only switch is auditable but still not source-faithful Table 2 evidence because the paper does not uniquely disclose the single-expert replacement."
   ]
 }
