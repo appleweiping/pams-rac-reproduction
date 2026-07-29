@@ -75,11 +75,25 @@ and
 Both rows are `table2_eligible=false`; the 105-video test split remains
 untouched.
 
+The strict full multi-scale protocol has now also completed seeds `42`,
+`2026`, and `3407` for both readouts. PAMS-Literal obtained mean NMAE/OBO
+`1.489633 / 0.226190`; its NMAE population/sample standard deviations are
+`1.175316 / 1.439463`, exposing substantial random-head seed sensitivity.
+PAMS-SSHead obtained `5.022471 / 0.051587`; its NMAE population/sample
+standard deviations are `0.412427 / 0.505117`. Each method passes the joint
+gate on `0/3` seeds. The inferred SSHead worsens NMAE for every matched seed,
+while OBO is worse for two seeds and improves by only `1/84` for seed 3407.
+All predictions were frozen without a target mount and scored in separate
+processes. Full confidence intervals and artifact bindings are in
+[`pams_full_multiscale_three_seed_strict.json`](dev-negative/pams_full_multiscale_three_seed_strict.json).
+
 The same directory now includes strict-firewall seed-2026 v3/v4 experiments.
 Projected-vector period v3 obtained `3.966841 / 0.059524` with the literal
 head and `2.074190 / 0.202381` with the inferred SSHead. Cross-scale-union v4
 obtained `2.422484 / 0.130952` and `2.620294 / 0.107143`, respectively. All
-four NMAE/OBO pairs fail the gate, so seeds 42 and 3407 were not expanded.
+four NMAE/OBO pairs fail the gate. Those separately inferred v3/v4 variants
+remain seed-2026-only; the strict paper-config full multi-scale experiment
+described above is the protocol that was expanded to seeds 42 and 3407.
 
 A subsequent development-only local-frequency sweep found
 `0.347761 / 0.511905` at its best-NMAE setting and

@@ -77,6 +77,64 @@ produced. Path-free run identifiers, complete receipt/artifact hashes, and
 the 10,000-sample intervals are in
 [`pams_multiscale_seed2026_strict.json`](pams_multiscale_seed2026_strict.json).
 
+## Strict 337-train full multi-scale three-seed diagnostic
+
+The strict full multi-scale protocol was then completed for all three frozen
+seeds. Each seed used the same `337/84/105` identity commitments, 150 encoder
+epochs, and two target-isolated prediction/scoring processes. PAMS-Literal
+uses the random, untrained Period Head implied by the paper's missing head
+loss. PAMS-SSHead is the separately named 30-epoch inferred completion.
+
+| Variant | Seed | NMAE | Raw MAE | RMSE | OBO |
+|---|---:|---:|---:|---:|---:|
+| PAMS-Literal | 42 | 0.627806 | 3.738095 | 5.490251 | 0.309524 |
+| PAMS-Literal | 2026 | 0.689695 | 3.809524 | 5.629429 | 0.321429 |
+| PAMS-Literal | 3407 | 3.151397 | 12.071429 | 13.828025 | 0.047619 |
+| PAMS-Literal | mean ± population SD | 1.489633 ± 1.175316 | 6.539683 ± 3.911644 | 8.315902 ± 3.898074 | 0.226190 ± 0.126363 |
+| PAMS-Literal | mean ± sample SD | 1.489633 ± 1.439463 | 6.539683 ± 4.790766 | 8.315902 ± 4.774146 | 0.226190 ± 0.154762 |
+| PAMS-SSHead inferred | 42 | 4.741497 | 18.142857 | 20.648417 | 0.035714 |
+| PAMS-SSHead inferred | 2026 | 4.720314 | 18.011905 | 20.619281 | 0.059524 |
+| PAMS-SSHead inferred | 3407 | 5.605602 | 21.630952 | 24.651137 | 0.059524 |
+| PAMS-SSHead inferred | mean ± population SD | 5.022471 ± 0.412427 | 19.261905 ± 1.676022 | 21.972945 ± 1.893805 | 0.051587 ± 0.011224 |
+| PAMS-SSHead inferred | mean ± sample SD | 5.022471 ± 0.505117 | 19.261905 ± 2.052700 | 21.972945 ± 2.319428 | 0.051587 ± 0.013746 |
+
+Both variants pass the joint `NMAE <= 0.228` and `OBO >= 0.666` gate on
+`0/3` seeds. Literal is highly seed-sensitive. The inferred SSHead worsens
+NMAE on all three matched seeds; its OBO is worse on seeds 42 and 2026 and
+only `1/84` better on seed 3407. No test target was mounted, and no test
+prediction, evaluation, or metric exists.
+
+Complete per-seed 10,000-sample confidence intervals, configuration,
+encoder/head, prediction, evaluation, and receipt hashes are recorded in
+[`pams_full_multiscale_three_seed_strict.json`](pams_full_multiscale_three_seed_strict.json).
+
+### Read-only full multi-scale failure diagnosis
+
+A post-hoc audit of the already-frozen seed-2026 and seed-42 prediction
+artifacts localizes the `NMAE ~= 4.7` failure to the inferred SSHead/readout,
+not original-fps conversion. All `43/43` fully valid development videos have
+`period_frames=8` and `count=31` in both seeds. Their centered head streams
+have median cross-video correlation `0.9987/0.9989`; prediction correlates
+only `0.073/0.066` with target count but `0.992/0.990` with valid-frame
+count. The counter is therefore reading a nearly identical positional
+waveform for approximately `valid_frames / 8` cycles.
+
+This was read-only diagnosis, not a new experiment or metric-guided
+configuration choice. No model was trained, no new prediction was run, and
+the test split remained untouched. The next recommended experiment first
+freezes a label-free static/shuffled/synthetic period-source gate, then
+changes only `period.post_warmup_source` from
+`embedding_velocity_coordinate` to
+`projected_pose_velocity_vector_acf` in a strict matched 337-train
+seed-2026 run. Peak and fps parameters must not be tuned on development
+labels.
+
+The complete mechanism evidence, code locations, cross-seed statistics, and
+path-free artifact hashes are in
+[`pams_full_multiscale_readout_diagnosis.md`](pams_full_multiscale_readout_diagnosis.md)
+and
+[`pams_full_multiscale_readout_diagnosis.json`](pams_full_multiscale_readout_diagnosis.json).
+
 ## PE-scale v2 inferred diagnostic
 
 A separate seed-2026 run at source revision `fea4a7d` multiplied the input
