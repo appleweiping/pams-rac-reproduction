@@ -78,6 +78,14 @@ The finite resource policy is one 8 GiB primary allocator tier and one 12 GiB
 retry containing exactly the primary CUDA-OOM rows. Decode, missing-file,
 hash, or inference failures are not retryable and cannot be hidden by merge.
 
+The upstream demo obtains its nominal frame count from OpenCV but consumes the
+frames PyAV actually decodes. Some valid AVI files report one trailing frame
+that PyAV does not emit. The adapter therefore accepts only a tail shortfall of
+zero or one frame; a shortfall greater than one remains a non-retryable decode
+failure. Every worker response and prediction row records
+`reported_frame_count`, `decoded_frames`, and `tail_shortfall`, and the host
+verifies their arithmetic before accepting or scoring the artifact.
+
 The environment is intentionally split across processes. The repository's
 Python 3.10+ audit runner must **not** be imported in this Python 3.8 image.
 Instead, mount `src/pams/baselines/escounts_official_worker.py` read-only and

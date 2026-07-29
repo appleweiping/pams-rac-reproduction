@@ -230,11 +230,26 @@ class ESCountsDependencyError(ESCountsOfficialError):
     """The isolated runtime is missing an exact demo dependency."""
 
 
-class ESCountsDecodeError(ESCountsOfficialError):
+class _ESCountsAuditedVideoError(ESCountsOfficialError):
+    def __init__(
+        self,
+        message: str,
+        *,
+        reported_frame_count: int = 0,
+        decoded_frames: int = 0,
+        tail_shortfall: int = 0,
+    ) -> None:
+        super().__init__(message)
+        self.reported_frame_count = reported_frame_count
+        self.decoded_frames = decoded_frames
+        self.tail_shortfall = tail_shortfall
+
+
+class ESCountsDecodeError(_ESCountsAuditedVideoError):
     """The official PyAV/OpenCV decode path failed."""
 
 
-class ESCountsResourceExhaustedError(ESCountsOfficialError):
+class ESCountsResourceExhaustedError(_ESCountsAuditedVideoError):
     """Inference exceeded the explicitly authorized allocator tier."""
 
 
@@ -870,13 +885,21 @@ def _load_label_free_inputs(
 @dataclass(frozen=True, slots=True)
 class BackendPrediction:
     raw_count: float
+    reported_frame_count: int
     decoded_frames: int
+    tail_shortfall: int
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.raw_count) or self.raw_count < 0.0:
             raise ValueError("official ESCounts raw_count must be finite and non-negative")
-        if self.decoded_frames < 1:
-            raise ValueError("successful ESCounts prediction requires decoded frames")
+        if (
+            self.reported_frame_count < 1
+            or self.decoded_frames < 1
+            or self.tail_shortfall not in {0, 1}
+            or self.reported_frame_count - self.decoded_frames
+            != self.tail_shortfall
+        ):
+            raise ValueError("successful ESCounts frame audit is inconsistent")
 
 
 class _OfficialBackend(Protocol):
@@ -913,7 +936,9 @@ class ESCountsVideoResult:
     raw_count: float | None
     rounded_count: int | None
     finite: bool
+    reported_frame_count: int
     decoded_frames: int
+    tail_shortfall: int
     elapsed_seconds: float
     resource_tier: str
     memory_limit_bytes: int
@@ -936,9 +961,20 @@ class ESCountsVideoResult:
         if (
             not math.isfinite(self.elapsed_seconds)
             or self.elapsed_seconds < 0.0
+            or self.reported_frame_count < 0
             or self.decoded_frames < 0
+            or self.tail_shortfall < 0
         ):
-            raise ValueError("elapsed_seconds/decoded_frames are invalid")
+            raise ValueError("elapsed_seconds/frame audit fields are invalid")
+        if self.reported_frame_count == 0:
+            if self.decoded_frames != 0 or self.tail_shortfall != 0:
+                raise ValueError("absent frame audit must be all zero")
+        elif (
+            self.decoded_frames < 1
+            or self.reported_frame_count - self.decoded_frames
+            != self.tail_shortfall
+        ):
+            raise ValueError("frame audit fields are inconsistent")
         if _RESOURCE_LIMITS.get(self.resource_tier) != self.memory_limit_bytes:
             raise ValueError("resource tier/memory limit mismatch")
         successful = self.status is PredictionStatus.OK
@@ -949,6 +985,7 @@ class ESCountsVideoResult:
                 or not self.finite
                 or self.failure_reason is not None
                 or self.decoded_frames < 1
+                or self.tail_shortfall not in {0, 1}
             ):
                 raise ValueError("successful prediction fields are incomplete")
             if (
@@ -976,7 +1013,9 @@ class ESCountsVideoResult:
             "raw_count": self.raw_count,
             "rounded_count": self.rounded_count,
             "finite": self.finite,
+            "reported_frame_count": self.reported_frame_count,
             "decoded_frames": self.decoded_frames,
+            "tail_shortfall": self.tail_shortfall,
             "elapsed_seconds": self.elapsed_seconds,
             "resource_tier": self.resource_tier,
             "memory_limit_bytes": self.memory_limit_bytes,
@@ -1124,7 +1163,9 @@ def _failure(
     resource_tier: str,
     status: PredictionStatus,
     reason: str,
+    reported_frame_count: int = 0,
     decoded_frames: int = 0,
+    tail_shortfall: int = 0,
 ) -> ESCountsVideoResult:
     return ESCountsVideoResult(
         index=index,
@@ -1135,7 +1176,9 @@ def _failure(
         raw_count=None,
         rounded_count=None,
         finite=False,
+        reported_frame_count=reported_frame_count,
         decoded_frames=decoded_frames,
+        tail_shortfall=tail_shortfall,
         elapsed_seconds=elapsed_seconds,
         resource_tier=resource_tier,
         memory_limit_bytes=_RESOURCE_LIMITS[resource_tier],
@@ -1251,6 +1294,9 @@ def _run_verified_backend(
                     resource_tier=resource_tier,
                     status=PredictionStatus.RESOURCE_EXHAUSTED,
                     reason=str(exc),
+                    reported_frame_count=exc.reported_frame_count,
+                    decoded_frames=exc.decoded_frames,
+                    tail_shortfall=exc.tail_shortfall,
                 )
             )
         except ESCountsDecodeError as exc:
@@ -1265,6 +1311,9 @@ def _run_verified_backend(
                     resource_tier=resource_tier,
                     status=PredictionStatus.DECODE_FAILED,
                     reason=str(exc),
+                    reported_frame_count=exc.reported_frame_count,
+                    decoded_frames=exc.decoded_frames,
+                    tail_shortfall=exc.tail_shortfall,
                 )
             )
         except (OSError, RuntimeError, ValueError) as exc:
@@ -1292,7 +1341,9 @@ def _run_verified_backend(
                     raw_count=prediction.raw_count,
                     rounded_count=round_count(prediction.raw_count),
                     finite=True,
+                    reported_frame_count=prediction.reported_frame_count,
                     decoded_frames=prediction.decoded_frames,
+                    tail_shortfall=prediction.tail_shortfall,
                     elapsed_seconds=time.perf_counter() - started,
                     resource_tier=resource_tier,
                     memory_limit_bytes=_RESOURCE_LIMITS[resource_tier],
@@ -1600,26 +1651,65 @@ class JSONLWorkerBackend:
             "video_sha256",
             "status",
             "raw_count",
+            "reported_frame_count",
             "decoded_frames",
+            "tail_shortfall",
             "error_type",
             "error_message",
         }
         if set(response) != expected_fields:
             raise ESCountsDependencyError("worker result response fields changed")
+        frame_audit = (
+            response["reported_frame_count"],
+            response["decoded_frames"],
+            response["tail_shortfall"],
+        )
+        if any(isinstance(value, bool) or not isinstance(value, int) for value in frame_audit):
+            raise ESCountsDependencyError("worker frame audit fields are not integers")
+        reported_frame_count, decoded_frames, tail_shortfall = frame_audit
+        if (
+            reported_frame_count < 0
+            or decoded_frames < 0
+            or tail_shortfall < 0
+            or (
+                reported_frame_count == 0
+                and (decoded_frames != 0 or tail_shortfall != 0)
+            )
+            or (
+                reported_frame_count > 0
+                and (
+                    decoded_frames < 1
+                    or reported_frame_count - decoded_frames != tail_shortfall
+                )
+            )
+        ):
+            raise ESCountsDependencyError("worker frame audit fields are inconsistent")
         if status == PredictionStatus.OK.value:
             if response["error_type"] is not None or response["error_message"] is not None:
                 raise ESCountsDependencyError("worker success response contains an error")
             return BackendPrediction(
                 raw_count=float(response["raw_count"]),
-                decoded_frames=int(response["decoded_frames"]),
+                reported_frame_count=reported_frame_count,
+                decoded_frames=decoded_frames,
+                tail_shortfall=tail_shortfall,
             )
         error_message = response.get("error_message")
         if not isinstance(error_message, str) or not error_message:
             raise ESCountsDependencyError("worker failure response lacks an error")
         if status == PredictionStatus.RESOURCE_EXHAUSTED.value:
-            raise ESCountsResourceExhaustedError(error_message)
+            raise ESCountsResourceExhaustedError(
+                error_message,
+                reported_frame_count=reported_frame_count,
+                decoded_frames=decoded_frames,
+                tail_shortfall=tail_shortfall,
+            )
         if status == PredictionStatus.DECODE_FAILED.value:
-            raise ESCountsDecodeError(error_message)
+            raise ESCountsDecodeError(
+                error_message,
+                reported_frame_count=reported_frame_count,
+                decoded_frames=decoded_frames,
+                tail_shortfall=tail_shortfall,
+            )
         if status == PredictionStatus.INFERENCE_FAILED.value:
             raise ESCountsOfficialError(error_message)
         raise ESCountsDependencyError(f"unknown worker result status: {status!r}")
@@ -1766,7 +1856,9 @@ _ROW_FIELDS = {
     "raw_count",
     "rounded_count",
     "finite",
+    "reported_frame_count",
     "decoded_frames",
+    "tail_shortfall",
     "elapsed_seconds",
     "resource_tier",
     "memory_limit_bytes",
@@ -1807,6 +1899,27 @@ def _validate_result_row(
     ):
         raise ValueError(f"{field}.elapsed_seconds is invalid")
     if (
+        isinstance(row["reported_frame_count"], bool)
+        or not isinstance(row["reported_frame_count"], int)
+        or row["reported_frame_count"] < 0
+        or isinstance(row["tail_shortfall"], bool)
+        or not isinstance(row["tail_shortfall"], int)
+        or row["tail_shortfall"] < 0
+        or (
+            row["reported_frame_count"] == 0
+            and (row["decoded_frames"] != 0 or row["tail_shortfall"] != 0)
+        )
+        or (
+            row["reported_frame_count"] > 0
+            and (
+                row["decoded_frames"] < 1
+                or row["reported_frame_count"] - row["decoded_frames"]
+                != row["tail_shortfall"]
+            )
+        )
+    ):
+        raise ValueError(f"{field} frame audit is inconsistent")
+    if (
         isinstance(row["decoded_frames"], bool)
         or not isinstance(row["decoded_frames"], int)
         or row["decoded_frames"] < 0
@@ -1825,6 +1938,7 @@ def _validate_result_row(
             or row["failure_reason"] is not None
             or observed_sha != expected_sha
             or row["decoded_frames"] < 1
+            or row["tail_shortfall"] not in {0, 1}
         ):
             raise ValueError(f"{field} successful fields are inconsistent")
     elif (

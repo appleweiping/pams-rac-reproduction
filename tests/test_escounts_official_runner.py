@@ -171,7 +171,12 @@ class _FakeBackend:
             raise runner.ESCountsResourceExhaustedError("fixture CUDA OOM")
         if video_path.name == "decode.mp4":
             raise runner.ESCountsDecodeError("fixture decode failure")
-        return runner.BackendPrediction(raw_count=4.5, decoded_frames=32)
+        return runner.BackendPrediction(
+            raw_count=4.5,
+            reported_frame_count=32,
+            decoded_frames=32,
+            tail_shortfall=0,
+        )
 
 
 def test_module_import_does_not_import_torch() -> None:
@@ -256,6 +261,29 @@ def test_worker_rejects_fifth_unmatched_encoder_tensor() -> None:
     )
     with pytest.raises(RuntimeError, match="exact just_encode-unused allowlist"):
         worker.validate_encoder_just_encode_unmatched(observed)
+
+
+@pytest.mark.parametrize(
+    ("reported_frame_count", "decoded_frames", "expected_shortfall"),
+    ((32, 32, 0), (670, 669, 1)),
+)
+def test_worker_accepts_official_tail_decode_semantics(
+    reported_frame_count: int,
+    decoded_frames: int,
+    expected_shortfall: int,
+) -> None:
+    assert (
+        worker.validate_official_tail_shortfall(
+            reported_frame_count,
+            decoded_frames,
+        )
+        == expected_shortfall
+    )
+
+
+def test_worker_rejects_more_than_one_missing_tail_frame() -> None:
+    with pytest.raises(worker.DecodeError, match="decoded 668 of 670"):
+        worker.validate_official_tail_shortfall(670, 668)
 
 
 @pytest.mark.parametrize(
@@ -403,7 +431,9 @@ def test_jsonl_backend_reuses_fake_subprocess_and_binds_messages(
                     "video_sha256": request["video_sha256"],
                     "status": "ok",
                     "raw_count": 4.25,
+                    "reported_frame_count": 32,
                     "decoded_frames": 32,
+                    "tail_shortfall": 0,
                     "error_type": None,
                     "error_message": None,
                 }

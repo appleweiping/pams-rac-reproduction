@@ -292,11 +292,48 @@ def ensure_module_under(module, root, role):
 
 
 class DecodeError(RuntimeError):
-    pass
+    def __init__(
+        self,
+        message,
+        reported_frame_count=0,
+        decoded_frames=0,
+        tail_shortfall=0,
+    ):
+        super().__init__(message)
+        self.reported_frame_count = reported_frame_count
+        self.decoded_frames = decoded_frames
+        self.tail_shortfall = tail_shortfall
 
 
 class ResourceExhaustedError(RuntimeError):
-    pass
+    def __init__(
+        self,
+        message,
+        reported_frame_count=0,
+        decoded_frames=0,
+        tail_shortfall=0,
+    ):
+        super().__init__(message)
+        self.reported_frame_count = reported_frame_count
+        self.decoded_frames = decoded_frames
+        self.tail_shortfall = tail_shortfall
+
+
+MAX_OFFICIAL_TAIL_SHORTFALL = 1
+
+
+def validate_official_tail_shortfall(reported_frame_count, decoded_frames):
+    if reported_frame_count < 1:
+        raise DecodeError("OpenCV reported no video frames")
+    tail_shortfall = reported_frame_count - decoded_frames
+    if decoded_frames < 1 or tail_shortfall < 0 or tail_shortfall > 1:
+        raise DecodeError(
+            f"decoded {decoded_frames} of {reported_frame_count} expected frames",
+            reported_frame_count,
+            decoded_frames,
+            max(tail_shortfall, 0),
+        )
+    return tail_shortfall
 
 
 class OfficialRuntime:
@@ -553,27 +590,30 @@ class OfficialRuntime:
     def read_video(self, path):
         capture = self.cv2.VideoCapture(str(path))
         try:
-            frame_count = int(capture.get(self.cv2.CAP_PROP_FRAME_COUNT))
+            reported_frame_count = int(
+                capture.get(self.cv2.CAP_PROP_FRAME_COUNT)
+            )
         finally:
             capture.release()
-        if frame_count < 1:
+        if reported_frame_count < 1:
             raise DecodeError("OpenCV reported no video frames")
         frames = []
         try:
             container = self.av.open(str(path))
             try:
                 for index, frame in enumerate(container.decode(video=0)):
-                    if index >= frame_count:
+                    if index >= reported_frame_count:
                         break
                     frames.append(frame)
             finally:
                 container.close()
         except Exception as error:
             raise DecodeError(f"PyAV decode failed: {error}") from error
-        if len(frames) != frame_count:
-            raise DecodeError(
-                f"decoded {len(frames)} of {frame_count} expected frames"
-            )
+        decoded_frames = len(frames)
+        tail_shortfall = validate_official_tail_shortfall(
+            reported_frame_count,
+            decoded_frames,
+        )
         try:
             tensors = [
                 self.torch.from_numpy(frame.to_ndarray(format="rgb24"))
@@ -584,11 +624,24 @@ class OfficialRuntime:
             )
         except Exception as error:
             raise DecodeError(f"RGB tensor conversion failed: {error}") from error
-        return video, len(frames)
+        return (
+            video,
+            reported_frame_count,
+            decoded_frames,
+            tail_shortfall,
+        )
 
     def predict(self, path):
+        reported_frame_count = 0
+        decoded_frames = 0
+        tail_shortfall = 0
         try:
-            video, decoded_frames = self.read_video(path)
+            (
+                video,
+                reported_frame_count,
+                decoded_frames,
+                tail_shortfall,
+            ) = self.read_video(path)
             frames = self.transform(video / 255.0)
             channels, total_frames, height, width = frames.shape
             padding = self.torch.zeros([channels, 64, height, width])
@@ -643,14 +696,24 @@ class OfficialRuntime:
             if "out of memory" in str(error).lower():
                 if self.cuda:
                     self.torch.cuda.empty_cache()
-                raise ResourceExhaustedError(str(error)) from error
+                raise ResourceExhaustedError(
+                    str(error),
+                    reported_frame_count,
+                    decoded_frames,
+                    tail_shortfall,
+                ) from error
             raise
         finally:
             if self.cuda:
                 self.torch.cuda.empty_cache()
         if not math.isfinite(raw_count) or raw_count < 0.0:
             raise RuntimeError("official decoder returned invalid count")
-        return raw_count, decoded_frames
+        return (
+            raw_count,
+            reported_frame_count,
+            decoded_frames,
+            tail_shortfall,
+        )
 
 
 def load_message(line, expected_type):
@@ -813,12 +876,19 @@ def worker_main(arguments):
         }
         try:
             with contextlib.redirect_stdout(sys.stderr):
-                raw_count, decoded_frames = runtime.predict(path)
+                (
+                    raw_count,
+                    reported_frame_count,
+                    decoded_frames,
+                    tail_shortfall,
+                ) = runtime.predict(path)
             response.update(
                 {
                     "status": "ok",
                     "raw_count": raw_count,
+                    "reported_frame_count": reported_frame_count,
                     "decoded_frames": decoded_frames,
+                    "tail_shortfall": tail_shortfall,
                     "error_type": None,
                     "error_message": None,
                 }
@@ -828,7 +898,9 @@ def worker_main(arguments):
                 {
                     "status": "resource_exhausted",
                     "raw_count": None,
-                    "decoded_frames": 0,
+                    "reported_frame_count": error.reported_frame_count,
+                    "decoded_frames": error.decoded_frames,
+                    "tail_shortfall": error.tail_shortfall,
                     "error_type": type(error).__name__,
                     "error_message": str(error),
                 }
@@ -838,7 +910,9 @@ def worker_main(arguments):
                 {
                     "status": "decode_failed",
                     "raw_count": None,
-                    "decoded_frames": 0,
+                    "reported_frame_count": error.reported_frame_count,
+                    "decoded_frames": error.decoded_frames,
+                    "tail_shortfall": error.tail_shortfall,
                     "error_type": type(error).__name__,
                     "error_message": str(error),
                 }
@@ -848,7 +922,9 @@ def worker_main(arguments):
                 {
                     "status": "inference_failed",
                     "raw_count": None,
+                    "reported_frame_count": 0,
                     "decoded_frames": 0,
+                    "tail_shortfall": 0,
                     "error_type": type(error).__name__,
                     "error_message": str(error),
                 }
