@@ -617,6 +617,10 @@ class GMFLFeatureBuilder(nn.Module):
         hip_center = (pose[:, :, 23] + pose[:, :, 24]) * 0.5
         coordinates = pose - hip_center.unsqueeze(2)
         distances = torch.cdist(coordinates, coordinates, p=2)
+        # Some CUDA/PyTorch kernels accumulate the two traversal directions
+        # differently by a few ulps.  A pairwise Euclidean distance is
+        # symmetric by definition, so canonicalize it before kNN selection.
+        distances = (distances + distances.transpose(-1, -2)) * 0.5
         diagonal = torch.eye(
             NUM_MEDIAPIPE_JOINTS,
             dtype=torch.bool,
