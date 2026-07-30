@@ -19,6 +19,7 @@ def test_default_config_matches_disclosed_dimensions() -> None:
     assert config.period.fixed_period_frames == 16
     assert config.period.post_warmup_source == "embedding_velocity_coordinate"
     assert config.loss.exclude_other_scale_positives_from_denominator is False
+    assert config.model.position_encoding_mode == "sinusoidal"
     assert config.sshead.architecture == "pointwise_mlp"
     assert config.sshead.input_source == "encoder_embedding"
     assert config.sshead.period_confidence_mode == "nonzero_gate"
@@ -213,6 +214,83 @@ def test_pe_permutation_v9_changes_only_inferred_training_weight() -> None:
     assert v9.fingerprint != v8.fingerprint
     assert v9.nonseed_fingerprint != v8.nonseed_fingerprint
     assert v9.pose_fingerprint == v8.pose_fingerprint
+
+
+def test_no_absolute_pe_v11_changes_only_position_encoding_mode() -> None:
+    root = Path(__file__).parents[1]
+    v8 = load_config(
+        root / "configs" / "experiments" / "pams_longest_contiguous_track_v8.yaml"
+    )
+    v11 = load_config(
+        root / "configs" / "experiments" / "pams_no_absolute_pe_v11.yaml"
+    )
+
+    assert v8.model.position_encoding_mode == "sinusoidal"
+    assert v11.model.position_encoding_mode == "none"
+    assert v11.training.position_permutation_consistency_weight == 0.0
+    restored = v11.model_dump()
+    restored["model"]["position_encoding_mode"] = "sinusoidal"
+    assert restored == v8.model_dump()
+    assert v11.fingerprint != v8.fingerprint
+    assert v11.nonseed_fingerprint != v8.nonseed_fingerprint
+    assert v11.pose_fingerprint == v8.pose_fingerprint
+
+
+def test_no_absolute_pe_seed42_is_exact_nonseed_replica() -> None:
+    root = Path(__file__).parents[1]
+    seed2026 = load_config(
+        root / "configs" / "experiments" / "pams_no_absolute_pe_v11.yaml"
+    )
+    seed42 = load_config(
+        root
+        / "configs"
+        / "experiments"
+        / "pams_no_absolute_pe_seed42_v11.yaml"
+    )
+
+    assert seed2026.seed == 2026
+    assert seed42.seed == 42
+    restored = seed42.model_dump()
+    restored["seed"] = seed2026.seed
+    assert restored == seed2026.model_dump()
+    assert seed42.fingerprint != seed2026.fingerprint
+    assert seed42.nonseed_fingerprint == seed2026.nonseed_fingerprint
+    assert seed42.pose_fingerprint == seed2026.pose_fingerprint
+
+
+def test_default_position_encoding_preserves_exact_v8_historical_identity() -> None:
+    root = Path(__file__).parents[1]
+    explicit = load_config(
+        root / "configs" / "experiments" / "pams_longest_contiguous_track_v8.yaml"
+    )
+    implicit_payload = explicit.model_dump()
+    implicit_payload["model"].pop("position_encoding_mode")
+    implicit = PAMSConfig.model_validate(implicit_payload)
+
+    assert explicit.fingerprint == (
+        "eaf9e2ce6047c4a13c13daaef10af1ae288542ad94ff9fb513d19e225912adf2"
+    )
+    assert explicit.fingerprint == implicit.fingerprint
+    assert explicit.nonseed_fingerprint == implicit.nonseed_fingerprint
+
+
+def test_position_encoding_mode_validation_rejects_invalid_or_nonsensical_modes() -> None:
+    with pytest.raises(ValidationError, match="position_encoding_mode"):
+        PAMSConfig.model_validate(
+            {"model": {"position_encoding_mode": "learned"}}
+        )
+    with pytest.raises(
+        ValidationError,
+        match="position-permutation consistency requires",
+    ):
+        PAMSConfig.model_validate(
+            {
+                "model": {"position_encoding_mode": "none"},
+                "training": {
+                    "position_permutation_consistency_weight": 1.0,
+                },
+            }
+        )
 
 
 def test_disabled_pe_permutation_weight_preserves_historical_identity() -> None:

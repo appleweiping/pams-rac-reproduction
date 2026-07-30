@@ -80,6 +80,7 @@ class ModelConfig(StrictModel):
     input_dim: int = 99
     model_dim: int = 512
     input_projection_scale: Literal["none", "sqrt_model_dim"] = "none"
+    position_encoding_mode: Literal["sinusoidal", "none"] = "sinusoidal"
     embedding_dim: int = 512
     layers: int = 4
     heads: int = 16
@@ -199,6 +200,14 @@ class PAMSConfig(StrictModel):
             )
         if self.model.embedding_dim != self.model.model_dim:
             raise ValueError("the disclosed architecture requires embedding_dim == model_dim")
+        if (
+            self.model.position_encoding_mode == "none"
+            and self.training.position_permutation_consistency_weight != 0.0
+        ):
+            raise ValueError(
+                "position-permutation consistency requires "
+                "model.position_encoding_mode=sinusoidal"
+            )
         return self
 
     def canonical_dict(self) -> dict[str, Any]:
@@ -212,6 +221,11 @@ class PAMSConfig(StrictModel):
             # their original fingerprint, while every opt-in scale remains an
             # explicit, fingerprint-changing experiment choice.
             model.pop("input_projection_scale")
+        if model["position_encoding_mode"] == "sinusoidal":
+            # Preserve every historical config/checkpoint fingerprint.  The
+            # opt-in ``none`` route is an independently inferred anti-shortcut
+            # candidate and therefore remains in the method identity.
+            model.pop("position_encoding_mode")
         period = payload["period"]
         if period["post_warmup_source"] == "embedding_velocity_coordinate":
             # Preserve every historical f99 config/checkpoint fingerprint.

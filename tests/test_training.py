@@ -109,6 +109,13 @@ def _with_position_permutation_consistency(
     return PAMSConfig.model_validate(payload)
 
 
+def _with_no_absolute_position_encoding(config: PAMSConfig) -> PAMSConfig:
+    payload = config.model_dump()
+    payload["model"]["position_encoding_mode"] = "none"
+    payload["training"]["position_permutation_consistency_weight"] = 0.0
+    return PAMSConfig.model_validate(payload)
+
+
 def _sequence(identifier: str, *, phase: float = 0.0, frames: int = 16) -> PoseSequence:
     time = np.arange(frames, dtype=np.float32)
     wave = np.sin(2.0 * math.pi * time / 4.0 + phase)
@@ -530,6 +537,48 @@ def test_pe_permutation_training_is_resume_deterministic_and_audited(
         row["position_permutation_consistency"] > 0.0
         for row in payload["history"]
     )
+
+
+def test_no_absolute_pe_training_skips_permutation_objective_and_is_audited(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    config = _with_no_absolute_position_encoding(
+        _tiny_config(encoder_epochs=1)
+    )
+
+    def forbidden_permutation(*args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        raise AssertionError("disabled PE consistency generated a permutation")
+
+    monkeypatch.setattr(
+        training_module,
+        "_permuted_valid_position_indices",
+        forbidden_permutation,
+    )
+    checkpoint = tmp_path / "no-absolute-pe.pt"
+    progress = tmp_path / "no-absolute-pe.jsonl"
+    result = train_encoder(
+        (_sequence("a"), _sequence("b", phase=0.4)),
+        config,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=checkpoint,
+        progress_path=progress,
+    )
+
+    assert result.model.encoder.position_encoding_mode == "none"
+    assert result.history[0].position_permutation_consistency == 0.0
+    progress_row = json.loads(progress.read_text(encoding="utf-8"))
+    assert "position_permutation_consistency" not in progress_row["stats"]
+    checkpoint_payload = torch.load(
+        checkpoint,
+        map_location="cpu",
+        weights_only=False,
+    )
+    assert "encoder.position_encoding.encoding" in checkpoint_payload["model_state"]
 
 
 def test_projected_vector_period_routes_encoder_and_sshead_to_same_source(

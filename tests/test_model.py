@@ -22,6 +22,7 @@ def test_disclosed_default_architecture() -> None:
     assert encoder.transformer.layers[0].linear1.out_features == 2048
     assert encoder.transformer.layers[0].self_attn.num_heads == 16
     assert encoder.input_projection_scale == "none"
+    assert encoder.position_encoding_mode == "sinusoidal"
 
 
 def test_default_projection_scale_is_bitwise_compatible_with_explicit_none() -> None:
@@ -52,6 +53,38 @@ def test_default_projection_scale_is_bitwise_compatible_with_explicit_none() -> 
     with torch.no_grad():
         default_output = default(inputs, valid)
         explicit_output = explicit_none(inputs, valid)
+
+    assert torch.equal(default_output, explicit_output)
+
+
+def test_default_position_mode_is_bitwise_compatible_with_explicit_sinusoidal() -> None:
+    torch.manual_seed(17)
+    default = PAMSEncoder(
+        input_dim=6,
+        model_dim=8,
+        embedding_dim=8,
+        num_layers=1,
+        num_heads=2,
+        feedforward_dim=16,
+        dropout=0.0,
+    ).eval()
+    explicit = PAMSEncoder(
+        input_dim=6,
+        model_dim=8,
+        embedding_dim=8,
+        num_layers=1,
+        num_heads=2,
+        feedforward_dim=16,
+        dropout=0.0,
+        position_encoding_mode="sinusoidal",
+    ).eval()
+    explicit.load_state_dict(default.state_dict(), strict=True)
+    inputs = torch.randn(2, 7, 6)
+    valid = torch.ones(2, 7, dtype=torch.bool)
+
+    with torch.no_grad():
+        default_output = default(inputs, valid)
+        explicit_output = explicit(inputs, valid)
 
     assert torch.equal(default_output, explicit_output)
 
@@ -139,6 +172,75 @@ def test_encoder_threads_explicit_position_indices_without_changing_none_path() 
 
     assert torch.equal(omitted, explicit_none)
     assert not torch.equal(omitted, reversed_output)
+
+
+def test_no_absolute_pe_ignores_position_indices_and_keeps_checkpoint_schema() -> None:
+    torch.manual_seed(17)
+    sinusoidal = PAMSEncoder(
+        input_dim=6,
+        model_dim=8,
+        embedding_dim=8,
+        num_layers=1,
+        num_heads=2,
+        feedforward_dim=16,
+        dropout=0.0,
+        position_encoding_mode="sinusoidal",
+    ).eval()
+    no_absolute_pe = PAMSEncoder(
+        input_dim=6,
+        model_dim=8,
+        embedding_dim=8,
+        num_layers=1,
+        num_heads=2,
+        feedforward_dim=16,
+        dropout=0.0,
+        position_encoding_mode="none",
+    ).eval()
+
+    assert set(no_absolute_pe.state_dict()) == set(sinusoidal.state_dict())
+    no_absolute_pe.load_state_dict(sinusoidal.state_dict(), strict=True)
+    inputs = torch.randn(2, 5, 6)
+    valid = torch.tensor(
+        [
+            [True, True, True, True, True],
+            [True, True, False, True, True],
+        ]
+    )
+    ignored_indices = torch.full((2, 5), 100_000, dtype=torch.long)
+
+    with torch.no_grad():
+        canonical = no_absolute_pe(inputs, valid)
+        indexed = no_absolute_pe(
+            inputs,
+            valid,
+            position_indices=ignored_indices,
+        )
+        canonical_with_pre_pe = no_absolute_pe.forward_with_pre_pe(
+            inputs,
+            valid,
+        )
+        indexed_with_pre_pe = no_absolute_pe.forward_with_pre_pe(
+            inputs,
+            valid,
+            position_indices=ignored_indices,
+        )
+
+    assert torch.equal(canonical, indexed)
+    assert torch.equal(canonical_with_pre_pe[0], indexed_with_pre_pe[0])
+    assert torch.equal(canonical_with_pre_pe[1], indexed_with_pre_pe[1])
+
+
+def test_encoder_rejects_unknown_position_encoding_mode() -> None:
+    with pytest.raises(ValueError, match="position_encoding_mode"):
+        PAMSEncoder(
+            input_dim=6,
+            model_dim=8,
+            embedding_dim=8,
+            num_layers=1,
+            num_heads=2,
+            feedforward_dim=16,
+            position_encoding_mode="learned",  # type: ignore[arg-type]
+        )
 
 
 def test_sqrt_model_dim_scales_linear_projection_before_positions() -> None:

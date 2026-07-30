@@ -1,4 +1,4 @@
-"""Strict target-free predev gate for the inferred PE-permutation encoder.
+"""Strict target-free predev gate for inferred PE-shortcut encoder candidates.
 
 This runner accepts only an encoder checkpoint, its exact configuration, and
 the checkpoint-bound training pose-cache directory.  It has no dataset
@@ -6,9 +6,10 @@ manifest, action, count-label, development, or test input surface.  Synthetic
 period truth is generated inside this file and is used only for a component
 diagnostic.
 
-The PE-permutation consistency experiment is independently inferred and was
-not disclosed by the PAMS authors.  Passing this gate can authorize a separate
-development-only prediction run; it can never authorize sealed-test access.
+The PE-permutation consistency and no-absolute-PE experiments are independently
+inferred and were not disclosed by the PAMS authors. Passing this gate can
+authorize a separate development-only prediction run; it can never authorize
+sealed-test access.
 """
 
 from __future__ import annotations
@@ -103,6 +104,7 @@ def _permutation_consistency(
 ) -> dict[str, Any]:
     """Compare canonical and independently PE-permuted valid embeddings."""
 
+    position_encoding_mode = model.encoder.position_encoding_mode
     frame_cosines: list[float] = []
     video_medians: list[float] = []
     model.eval()
@@ -136,15 +138,25 @@ def _permutation_consistency(
                     video_medians.append(float(np.median(selected)))
     if not frame_cosines:
         raise RuntimeError("no valid training frames were available for PE consistency")
+    if position_encoding_mode == "none":
+        algorithm = (
+            "The encoder disables absolute positional encoding, so the same "
+            "stable valid-frame index shuffles are supplied as a strict "
+            "invariance control and intentionally ignored by the encoder. "
+            "Cosine similarity is measured only on valid output rows."
+        )
+    else:
+        algorithm = (
+            "For every checkpoint-bound sampled training video, valid PE row "
+            "indices are independently shuffled by a stable SHA-256-derived "
+            "seed. Invalid and padded rows retain canonical indices. The frozen "
+            "eval-mode encoder processes canonical and shuffled views, and "
+            "cosine similarity is measured only on valid output rows."
+        )
     return {
         "classification": _CLASSIFICATION,
-        "algorithm": (
-            "For every checkpoint-bound sampled training video, valid PE row indices "
-            "are independently shuffled by a stable SHA-256-derived seed. Invalid "
-            "and padded rows retain canonical indices. The frozen eval-mode encoder "
-            "processes canonical and shuffled views, and cosine similarity is "
-            "measured only on valid output rows."
-        ),
+        "position_encoding_mode": position_encoding_mode,
+        "algorithm": algorithm,
         "permutation_seed": seed,
         "sampled_video_total": len(sequences),
         "valid_frame_cosine": _summary(frame_cosines),
@@ -333,6 +345,24 @@ def _gate_decision(
     }
 
 
+def _validated_candidate_mode(config: PAMSConfig) -> tuple[str, float]:
+    """Accept only either trained PE consistency or the no-absolute-PE control."""
+
+    mode = config.model.position_encoding_mode
+    consistency_weight = config.training.position_permutation_consistency_weight
+    if not math.isfinite(consistency_weight):
+        raise ValueError("predev gate requires a finite consistency weight")
+    if mode == "sinusoidal" and consistency_weight > 0.0:
+        return mode, consistency_weight
+    if mode == "none" and consistency_weight == 0.0:
+        return mode, consistency_weight
+    raise ValueError(
+        "predev gate requires either sinusoidal position encoding with a "
+        "positive consistency weight or no position encoding with zero "
+        "consistency weight"
+    )
+
+
 def run_predev_gate(
     checkpoint_path: str | Path,
     config_path: str | Path,
@@ -364,9 +394,7 @@ def run_predev_gate(
         raise ValueError("PE-permutation predev gate requires exactly 256 frames")
     if (config.period.minimum, config.period.maximum) != (4, 128):
         raise ValueError("PE-permutation predev gate requires period range 4--128")
-    consistency_weight = config.training.position_permutation_consistency_weight
-    if not math.isfinite(consistency_weight) or consistency_weight <= 0.0:
-        raise ValueError("PE-permutation predev gate requires a positive consistency weight")
+    position_encoding_mode, consistency_weight = _validated_candidate_mode(config)
 
     stage, provenance = _peek_checkpoint(checkpoint, config)
     if stage != "encoder":
@@ -483,6 +511,7 @@ def run_predev_gate(
             "config_bytes": config_bytes,
             "config_fingerprint": config.fingerprint,
             "pose_fingerprint": config.pose_fingerprint,
+            "position_encoding_mode": position_encoding_mode,
             "position_permutation_consistency_weight": consistency_weight,
             "checkpoint_training_video_total": len(provenance.training_video_ids),
             "sampled_training_video_total": len(selected_ids),

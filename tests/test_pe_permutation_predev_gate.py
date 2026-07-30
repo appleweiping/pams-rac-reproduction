@@ -4,6 +4,7 @@ import importlib.util
 import inspect
 from pathlib import Path
 from types import ModuleType
+from typing import Literal
 
 import numpy as np
 import pytest
@@ -34,7 +35,11 @@ def _load_runner() -> ModuleType:
     return module
 
 
-def _tiny_config() -> PAMSConfig:
+def _tiny_config(
+    *,
+    position_encoding_mode: Literal["sinusoidal", "none"] = "sinusoidal",
+    consistency_weight: float = 1.0,
+) -> PAMSConfig:
     return PAMSConfig(
         seed=2026,
         data=DataConfig(frames=16),
@@ -47,6 +52,7 @@ def _tiny_config() -> PAMSConfig:
             feedforward_dim=16,
             dropout=0.0,
             period_head_hidden_dim=4,
+            position_encoding_mode=position_encoding_mode,
         ),
         period=PeriodConfig(minimum=4, maximum=8, pose_energy_epochs=1),
         loss=LossConfig(
@@ -63,7 +69,7 @@ def _tiny_config() -> PAMSConfig:
             scheduler_factor=0.5,
             scheduler_patience=1,
             minimum_learning_rate=1e-6,
-            position_permutation_consistency_weight=1.0,
+            position_permutation_consistency_weight=consistency_weight,
         ),
     )
 
@@ -172,9 +178,62 @@ def test_permutation_consistency_reports_valid_frame_and_video_medians() -> None
     )
 
     assert payload["sampled_video_total"] == 2
+    assert payload["position_encoding_mode"] == "sinusoidal"
     assert payload["valid_frame_cosine"]["observations"] == 32
     assert payload["per_video_median_cosine"]["observations"] == 2
     assert -1.0 <= payload["valid_frame_cosine"]["median"] <= 1.0
+
+
+def test_no_absolute_pe_permutation_gate_is_exactly_invariant() -> None:
+    runner = _load_runner()
+    config = _tiny_config(
+        position_encoding_mode="none",
+        consistency_weight=0.0,
+    )
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(config.seed)
+        model = build_pams_model(config)
+    sequences = tuple(
+        runner._synthetic_period_sequence(period, frames=16, seed=2026)
+        for period in (4, 8)
+    )
+
+    payload = runner._permutation_consistency(
+        model,
+        sequences,
+        device=torch.device("cpu"),
+        batch_size=2,
+        seed=2026,
+    )
+
+    assert payload["position_encoding_mode"] == "none"
+    assert payload["valid_frame_cosine"]["median"] == pytest.approx(
+        1.0,
+        abs=1e-6,
+    )
+    assert payload["per_video_median_cosine"]["minimum"] == pytest.approx(
+        1.0,
+        abs=1e-6,
+    )
+
+
+def test_candidate_validation_accepts_both_preregistered_modes_only() -> None:
+    runner = _load_runner()
+
+    assert runner._validated_candidate_mode(_tiny_config()) == (
+        "sinusoidal",
+        1.0,
+    )
+    assert runner._validated_candidate_mode(
+        _tiny_config(
+            position_encoding_mode="none",
+            consistency_weight=0.0,
+        )
+    ) == ("none", 0.0)
+    with pytest.raises(ValueError, match="either sinusoidal"):
+        runner._validated_candidate_mode(
+            _tiny_config(consistency_weight=0.0)
+        )
 
 
 def test_frozen_gate_thresholds_require_every_criterion() -> None:

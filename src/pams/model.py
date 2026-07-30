@@ -119,6 +119,7 @@ class PAMSEncoder(nn.Module):
         max_length: int = 4096,
         norm_first: bool = False,
         input_projection_scale: Literal["none", "sqrt_model_dim"] = "none",
+        position_encoding_mode: Literal["sinusoidal", "none"] = "sinusoidal",
     ) -> None:
         super().__init__()
         if input_dim < 1 or model_dim < 1 or embedding_dim < 1:
@@ -133,14 +134,21 @@ class PAMSEncoder(nn.Module):
             raise ValueError(
                 "input_projection_scale must be 'none' or 'sqrt_model_dim'"
             )
+        if position_encoding_mode not in {"sinusoidal", "none"}:
+            raise ValueError(
+                "position_encoding_mode must be 'sinusoidal' or 'none'"
+            )
 
         self.input_dim = input_dim
         self.model_dim = model_dim
         self.embedding_dim = embedding_dim
         self.norm_first = norm_first
         self.input_projection_scale = input_projection_scale
+        self.position_encoding_mode = position_encoding_mode
 
         self.input_projection = nn.Linear(input_dim, model_dim)
+        # Keep the historical persistent buffer in both modes so that the
+        # checkpoint tensor schema remains structurally compatible.
         self.position_encoding = SinusoidalPositionalEncoding(model_dim, max_length)
         layer = nn.TransformerEncoderLayer(
             d_model=model_dim,
@@ -213,10 +221,17 @@ class PAMSEncoder(nn.Module):
             attention_valid[fully_invalid, 0] = True
 
         projected = self._project_pre_pe(inputs)
-        hidden = self.position_encoding(
-            projected,
-            position_indices=position_indices,
-        )
+        if self.position_encoding_mode == "sinusoidal":
+            hidden = self.position_encoding(
+                projected,
+                position_indices=position_indices,
+            )
+        else:
+            # ``position_indices`` intentionally has no effect when absolute
+            # positional encoding is disabled.  This gives the target-free
+            # canonical/permuted diagnostic an exact nuisance-invariance
+            # control while retaining the historical state-dict schema.
+            hidden = projected
         hidden = self.transformer(
             hidden,
             src_key_padding_mask=~attention_valid,

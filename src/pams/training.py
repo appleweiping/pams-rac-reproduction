@@ -311,6 +311,7 @@ def build_pams_model(config: PAMSConfig) -> PAMSModel:
         max_length=max(4096, config.data.frames),
         norm_first=model.norm_first,
         input_projection_scale=model.input_projection_scale,
+        position_encoding_mode=model.position_encoding_mode,
     )
     if config.sshead.architecture == "pointwise_mlp":
         head = PeriodHead(
