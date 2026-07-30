@@ -167,7 +167,9 @@ def test_predev_gates_use_position_not_velocity_and_run_in_order() -> None:
     assert "fundamental_amplitude != 1.0" in launcher
     assert "harmonic_amplitude != 0.75" in launcher
     assert "diagnostic.selected_bin is None" in launcher
-    assert "zip(sets, (337, 84, 105), strict=True)" in launcher
+    assert "expected_sizes = (337, 84, 105)" in launcher
+    assert "assert len(sets) == len(expected_sizes)" in launcher
+    assert "zip(sets, expected_sizes)" in launcher
     assert '"period_min": min(positive_periods) if positive_periods else None' in launcher
     assert '"period_max": max(positive_periods) if positive_periods else None' in launcher
 

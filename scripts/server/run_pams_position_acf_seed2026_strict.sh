@@ -843,9 +843,11 @@ sets = [
     {row["video_id"] for row in payload["records"]}
     for payload in (train, dev, test)
 ]
+expected_sizes = (337, 84, 105)
+assert len(sets) == len(expected_sizes)
 assert all(
     len(ids) == expected
-    for ids, expected in zip(sets, (337, 84, 105), strict=True)
+    for ids, expected in zip(sets, expected_sizes)
 )
 assert not (sets[0] & sets[1])
 assert not (sets[0] & sets[2])
