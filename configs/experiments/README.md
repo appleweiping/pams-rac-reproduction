@@ -20,3 +20,13 @@ comparison of projected input-change magnitude and positional-encoding
 magnitude. It does not establish improved counting performance. Its distinct
 configuration fingerprint intentionally prevents it from entering the frozen
 PAMS sealed-test path or being reported as `PAMS-Literal`.
+
+## `pams_longest_contiguous_track_v8.yaml`
+
+This is a data-protocol correction rather than an author-disclosed model
+setting. Relative to temporal-conv v7, it changes only the pose preprocessing
+revision: the earliest longest uninterrupted MediaPipe trajectory is selected
+before per-frame normalization and 256-frame resampling. Historical v2 caches
+used the first-to-last detected span and remain immutable. V8 must write a new
+pose-cache namespace and is evaluated first on dev84; it cannot retroactively
+upgrade any v2 result.

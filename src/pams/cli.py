@@ -1640,6 +1640,7 @@ def pose_extract(
             pose_fingerprint=config.pose_fingerprint,
             extractor_config=PoseExtractorConfig(
                 target_frames=config.data.frames,
+                preprocessing_revision=config.pose.preprocessing_revision,
                 model_id=config.pose.model_id,
                 model_complexity=config.pose.model_complexity,
                 smooth_landmarks=config.pose.smooth_landmarks,
@@ -1705,6 +1706,7 @@ def pose_extract(
                 "extracted": len(summaries) - skipped,
                 "skipped": skipped,
                 "failed": len(failures),
+                "caches": [summary.to_dict() for summary in summaries],
                 "failures": [failure.to_dict() for failure in failures],
             },
             # A resume rewrites only the ledger. Individual pose caches remain

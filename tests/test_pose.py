@@ -9,13 +9,17 @@ import pytest
 
 from pams.data import load_pose_cache
 from pams.pose import (
+    DETECTED_SPAN_PREPROCESSING_REVISION,
+    LONGEST_TRACK_PREPROCESSING_REVISION,
     PoseDependencyError,
+    PoseExtractorConfig,
     assemble_pose_sequence,
     extract_many_with_failures,
     extract_pose_to_cache,
     preprocess_extracted_pose,
     select_dominant_pose,
     trim_to_detected_span,
+    trim_to_longest_contiguous_track,
 )
 from pams.types import PoseSequence
 
@@ -67,7 +71,10 @@ def test_detected_span_preserves_internal_missing_frames_and_preprocesses_256() 
     np.testing.assert_array_equal(trimmed.xyz, sequence.xyz[1:6])
     np.testing.assert_array_equal(trimmed.valid_mask, [True, True, False, True, True])
 
-    output = preprocess_extracted_pose(sequence)
+    output = preprocess_extracted_pose(
+        sequence,
+        preprocessing_revision=DETECTED_SPAN_PREPROCESSING_REVISION,
+    )
     assert output.xyz.shape == (256, 33, 3)
     assert output.valid_mask.any()
     assert not output.valid_mask.all()
@@ -75,6 +82,60 @@ def test_detected_span_preserves_internal_missing_frames_and_preprocesses_256() 
     assert output.xyz.min() >= 0
     assert output.xyz.max() <= 1
     assert output.fps == pytest.approx(30.0 * 255 / 4)
+
+
+def test_longest_contiguous_track_is_earliest_on_ties_and_resamples_all_valid() -> None:
+    xyz = np.arange(10 * 33 * 3, dtype=np.float32).reshape(10, 33, 3)
+    sequence = PoseSequence(
+        "track",
+        30.0,
+        xyz,
+        np.asarray(
+            [False, True, True, True, False, True, True, True, False, True]
+        ),
+    )
+    selected = trim_to_longest_contiguous_track(sequence)
+    assert selected.num_frames == 3
+    np.testing.assert_array_equal(selected.xyz, sequence.xyz[1:4])
+    assert selected.valid_mask.all()
+
+    output = preprocess_extracted_pose(
+        sequence,
+        preprocessing_revision=LONGEST_TRACK_PREPROCESSING_REVISION,
+    )
+    assert output.xyz.shape == (256, 33, 3)
+    assert output.valid_mask.all()
+    assert np.all(output.xyz >= 0.0)
+    assert np.all(output.xyz <= 1.0)
+    assert output.fps == pytest.approx(30.0 * 255 / 2)
+
+
+def test_longest_track_revision_requires_crop_and_rejects_unknown_revision() -> None:
+    with pytest.raises(ValueError, match="requires crop"):
+        PoseExtractorConfig(
+            preprocessing_revision=LONGEST_TRACK_PREPROCESSING_REVISION,
+            crop_to_detected_span=False,
+        )
+    with pytest.raises(ValueError, match="unsupported pose preprocessing"):
+        PoseExtractorConfig(preprocessing_revision="future")
+
+
+def test_single_frame_longest_track_becomes_full_duration_invalid_cache() -> None:
+    xyz = np.ones((9, 33, 3), dtype=np.float32)
+    sequence = PoseSequence(
+        "single-detection",
+        30.0,
+        xyz,
+        np.asarray([False, False, True, False, False, False, False, False, False]),
+    )
+    output = preprocess_extracted_pose(
+        sequence,
+        preprocessing_revision=LONGEST_TRACK_PREPROCESSING_REVISION,
+    )
+    assert output.num_frames == 256
+    assert not output.valid_mask.any()
+    assert np.all(output.xyz == 0.0)
+    assert output.fps == pytest.approx(30.0 * 255 / 8)
 
 
 def test_preprocess_retains_video_without_any_pose_as_invalid_cache() -> None:
@@ -119,8 +180,10 @@ def test_extract_to_cache_verifies_video_and_config_hash(
         np.ones(256, dtype=bool),
     )
 
-    def fake_extract(*args: object, **kwargs: object) -> tuple[PoseSequence, int, int]:
-        return sequence, 300, 280
+    def fake_extract(
+        *args: object, **kwargs: object
+    ) -> tuple[PoseSequence, int, int, int]:
+        return sequence, 300, 280, 250
 
     monkeypatch.setattr(pose, "extract_pose_sequence", fake_extract)
     summary, metadata = extract_pose_to_cache(
@@ -133,6 +196,7 @@ def test_extract_to_cache_verifies_video_and_config_hash(
     assert loaded.video_id == "fixture"
     assert metadata == cached_metadata
     assert summary.source_frames == 300
+    assert summary.selected_source_frames == 250
     assert len(summary.video_sha256) == 64
 
     with pytest.raises(ValueError, match="SHA-256 mismatch"):
@@ -178,10 +242,12 @@ def test_skip_existing_requires_exact_video_and_pose_identity(
     )
     extraction_calls = 0
 
-    def fake_extract(*args: object, **kwargs: object) -> tuple[PoseSequence, int, int]:
+    def fake_extract(
+        *args: object, **kwargs: object
+    ) -> tuple[PoseSequence, int, int, int]:
         nonlocal extraction_calls
         extraction_calls += 1
-        return sequence, 300, 280
+        return sequence, 300, 280, 250
 
     monkeypatch.setattr(pose, "extract_pose_sequence", fake_extract)
     first, _ = extract_pose_to_cache(

@@ -170,6 +170,29 @@ def test_inferred_temporal_head_changes_only_sshead_architecture() -> None:
     assert reconstructed_implicit.fingerprint == weighted.fingerprint
 
 
+def test_longest_track_v8_changes_only_pose_preprocessing_revision() -> None:
+    root = Path(__file__).parents[1]
+    temporal = load_config(
+        root / "configs" / "experiments" / "pams_sshead_temporal_conv_v7.yaml"
+    )
+    corrected = load_config(
+        root / "configs" / "experiments" / "pams_longest_contiguous_track_v8.yaml"
+    )
+
+    assert (
+        corrected.pose.preprocessing_revision
+        == "longest-contiguous-track-minmax-zero-span-invalid-v3"
+    )
+    corrected_payload = corrected.model_dump()
+    corrected_payload["pose"][
+        "preprocessing_revision"
+    ] = "detected-span-minmax-zero-span-invalid-v2"
+    assert corrected_payload == temporal.model_dump()
+    assert corrected.pose_fingerprint != temporal.pose_fingerprint
+    assert corrected.fingerprint != temporal.fingerprint
+    assert corrected.nonseed_fingerprint != temporal.nonseed_fingerprint
+
+
 def test_fixed_period_proxy_is_explicit_identity_and_default_preserves_history() -> None:
     root = Path(__file__).parents[1]
     formal = load_config(root / "configs" / "pams.yaml")
@@ -354,6 +377,29 @@ def test_pose_preprocessing_revision_is_frozen() -> None:
     with pytest.raises(ValidationError, match="preprocessing_revision"):
         PAMSConfig.model_validate(
             {"pose": {"preprocessing_revision": "unsupported-revision"}}
+        )
+
+
+def test_longest_contiguous_track_revision_is_explicit_pose_identity() -> None:
+    legacy = PAMSConfig()
+    payload = legacy.model_dump()
+    payload["pose"]["preprocessing_revision"] = (
+        "longest-contiguous-track-minmax-zero-span-invalid-v3"
+    )
+    corrected = PAMSConfig.model_validate(payload)
+
+    assert corrected.pose_fingerprint != legacy.pose_fingerprint
+    assert corrected.fingerprint != legacy.fingerprint
+    with pytest.raises(ValidationError, match="requires.*true"):
+        PAMSConfig.model_validate(
+            {
+                "pose": {
+                    "preprocessing_revision": (
+                        "longest-contiguous-track-minmax-zero-span-invalid-v3"
+                    ),
+                    "crop_to_detected_span": False,
+                }
+            }
         )
 
 

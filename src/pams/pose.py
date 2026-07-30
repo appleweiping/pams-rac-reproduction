@@ -19,6 +19,7 @@ from numpy.typing import ArrayLike, NDArray
 from pams.data import (
     PoseCacheMetadata,
     load_pose_cache,
+    longest_valid_span,
     pose_cache_path,
     preprocess_pose_sequence,
     write_pose_cache,
@@ -26,6 +27,16 @@ from pams.data import (
 from pams.types import PoseSequence
 
 POSE_MODEL_ID = "mediapipe-pose-0.10.14"
+DETECTED_SPAN_PREPROCESSING_REVISION = "detected-span-minmax-zero-span-invalid-v2"
+LONGEST_TRACK_PREPROCESSING_REVISION = (
+    "longest-contiguous-track-minmax-zero-span-invalid-v3"
+)
+SUPPORTED_PREPROCESSING_REVISIONS = frozenset(
+    {
+        DETECTED_SPAN_PREPROCESSING_REVISION,
+        LONGEST_TRACK_PREPROCESSING_REVISION,
+    }
+)
 
 
 class PoseDependencyError(RuntimeError):
@@ -41,6 +52,7 @@ class PoseExtractorConfig:
     """Frozen settings for the MediaPipe Pose video extractor."""
 
     target_frames: int = 256
+    preprocessing_revision: str = DETECTED_SPAN_PREPROCESSING_REVISION
     model_id: str = POSE_MODEL_ID
     model_complexity: int = 1
     min_detection_confidence: float = 0.5
@@ -51,6 +63,19 @@ class PoseExtractorConfig:
     def __post_init__(self) -> None:
         if self.target_frames < 1:
             raise ValueError("target_frames must be positive")
+        if self.preprocessing_revision not in SUPPORTED_PREPROCESSING_REVISIONS:
+            raise ValueError(
+                "unsupported pose preprocessing revision: "
+                f"{self.preprocessing_revision!r}"
+            )
+        if (
+            self.preprocessing_revision == LONGEST_TRACK_PREPROCESSING_REVISION
+            and not self.crop_to_detected_span
+        ):
+            raise ValueError(
+                "longest-contiguous-track preprocessing requires "
+                "crop_to_detected_span=true"
+            )
         if not self.model_id.strip():
             raise ValueError("model_id must be non-empty")
         if self.model_complexity not in {0, 1, 2}:
@@ -74,6 +99,7 @@ class PoseExtractionSummary:
     pose_fingerprint: str
     source_frames: int | None
     source_valid_frames: int | None
+    selected_source_frames: int | None
     cached_frames: int
     cached_valid_frames: int
     fps: float
@@ -89,6 +115,7 @@ class PoseExtractionSummary:
             "pose_fingerprint": self.pose_fingerprint,
             "source_frames": self.source_frames,
             "source_valid_frames": self.source_valid_frames,
+            "selected_source_frames": self.selected_source_frames,
             "cached_frames": self.cached_frames,
             "cached_valid_frames": self.cached_valid_frames,
             "fps": self.fps,
@@ -233,21 +260,88 @@ def trim_to_detected_span(sequence: PoseSequence) -> PoseSequence:
     )
 
 
+def trim_to_longest_contiguous_track(sequence: PoseSequence) -> PoseSequence:
+    """Select the earliest longest uninterrupted detected trajectory.
+
+    MediaPipe's legacy video API emits at most one person per frame. Its
+    deterministic main-subject trajectory is therefore the longest
+    contiguous run of valid detections. Equal-length runs choose the earliest
+    occurrence.
+    """
+
+    try:
+        span = longest_valid_span(sequence.valid_mask)
+    except ValueError:
+        raise PoseExtractionError(
+            f"no valid pose was detected in video {sequence.video_id!r}"
+        ) from None
+    selected_mask = sequence.valid_mask[span]
+    if not np.all(selected_mask):
+        raise RuntimeError("longest contiguous trajectory contains an invalid frame")
+    return PoseSequence(
+        video_id=sequence.video_id,
+        fps=sequence.fps,
+        xyz=sequence.xyz[span],
+        valid_mask=selected_mask,
+    )
+
+
+def _select_preprocessing_span(
+    sequence: PoseSequence,
+    *,
+    crop_to_detected_span: bool,
+    preprocessing_revision: str,
+) -> tuple[PoseSequence, int]:
+    """Return the selected raw sequence and its detected-run length."""
+
+    if preprocessing_revision not in SUPPORTED_PREPROCESSING_REVISIONS:
+        raise ValueError(
+            f"unsupported pose preprocessing revision: {preprocessing_revision!r}"
+        )
+    if (
+        preprocessing_revision == LONGEST_TRACK_PREPROCESSING_REVISION
+        and not crop_to_detected_span
+    ):
+        raise ValueError(
+            "longest-contiguous-track preprocessing requires "
+            "crop_to_detected_span=true"
+        )
+    if not np.any(sequence.valid_mask):
+        return sequence, 0
+    if not crop_to_detected_span:
+        return sequence, sequence.num_frames
+    if preprocessing_revision == LONGEST_TRACK_PREPROCESSING_REVISION:
+        selected = trim_to_longest_contiguous_track(sequence)
+        if selected.num_frames == 1:
+            # A one-frame observation has no defined temporal duration. Keep
+            # the original video duration but mark every frame invalid rather
+            # than manufacturing a 256-frame static trajectory.
+            invalid = PoseSequence(
+                video_id=sequence.video_id,
+                fps=sequence.fps,
+                xyz=np.zeros_like(sequence.xyz, dtype=np.float32),
+                valid_mask=np.zeros(sequence.num_frames, dtype=np.bool_),
+            )
+            return invalid, 1
+        return selected, selected.num_frames
+    selected = trim_to_detected_span(sequence)
+    return selected, selected.num_frames
+
+
 def preprocess_extracted_pose(
     sequence: PoseSequence,
     *,
     target_frames: int = 256,
     crop_to_detected_span: bool = True,
+    preprocessing_revision: str = DETECTED_SPAN_PREPROCESSING_REVISION,
 ) -> PoseSequence:
     """Apply the frozen track selection, normalization, and uniform sampling."""
 
-    # The protocol retains a video when pose extraction finds no subject.  An
-    # all-zero, all-invalid cache lets every method share the same denominator
-    # and makes the failure visible in metadata rather than silently dropping
-    # the sample.
-    if not np.any(sequence.valid_mask):
-        return preprocess_pose_sequence(sequence, target_frames=target_frames)
-    selected = trim_to_detected_span(sequence) if crop_to_detected_span else sequence
+    selected, _ = _select_preprocessing_span(
+        sequence,
+        crop_to_detected_span=crop_to_detected_span,
+        preprocessing_revision=preprocessing_revision,
+    )
     return preprocess_pose_sequence(selected, target_frames=target_frames)
 
 
@@ -282,10 +376,11 @@ def extract_pose_sequence(
     video_id: str | None = None,
     config: PoseExtractorConfig | None = None,
     progress: Callable[[int], None] | None = None,
-) -> tuple[PoseSequence, int, int]:
+) -> tuple[PoseSequence, int, int, int]:
     """Extract and preprocess one video with MediaPipe Pose.
 
-    Returns ``(sequence, decoded_frames, valid_frames_before_track_crop)``.
+    Returns ``(sequence, decoded_frames, valid_frames_before_track_crop,
+    selected_source_frames)``.
     Dependency loading happens only after the input path has been validated.
     """
 
@@ -331,12 +426,16 @@ def extract_pose_sequence(
 
     raw = assemble_pose_sequence(frame_candidates, video_id=identifier, fps=fps)
     valid_frames = int(np.count_nonzero(raw.valid_mask))
-    processed = preprocess_extracted_pose(
+    selected, selected_source_frames = _select_preprocessing_span(
         raw,
-        target_frames=settings.target_frames,
         crop_to_detected_span=settings.crop_to_detected_span,
+        preprocessing_revision=settings.preprocessing_revision,
     )
-    return processed, raw.num_frames, valid_frames
+    processed = preprocess_pose_sequence(
+        selected,
+        target_frames=settings.target_frames,
+    )
+    return processed, raw.num_frames, valid_frames, selected_source_frames
 
 
 def extract_pose_to_cache(
@@ -396,6 +495,7 @@ def extract_pose_to_cache(
                 pose_fingerprint=metadata.pose_fingerprint,
                 source_frames=None,
                 source_valid_frames=None,
+                selected_source_frames=None,
                 cached_frames=sequence.num_frames,
                 cached_valid_frames=int(np.count_nonzero(sequence.valid_mask)),
                 fps=sequence.fps,
@@ -404,7 +504,7 @@ def extract_pose_to_cache(
             )
             return summary, metadata
 
-    sequence, source_frames, source_valid = extract_pose_sequence(
+    sequence, source_frames, source_valid, selected_source_frames = extract_pose_sequence(
         source,
         video_id=video_id,
         config=settings,
@@ -425,6 +525,7 @@ def extract_pose_to_cache(
         pose_fingerprint=metadata.pose_fingerprint,
         source_frames=source_frames,
         source_valid_frames=source_valid,
+        selected_source_frames=selected_source_frames,
         cached_frames=sequence.num_frames,
         cached_valid_frames=int(np.count_nonzero(sequence.valid_mask)),
         fps=sequence.fps,

@@ -243,6 +243,44 @@ def test_gpu1_launcher_is_scoped_and_supports_sealed_mode() -> None:
     assert "/media/" not in launcher
 
 
+def test_v8_pose_launcher_mounts_only_label_free_split_views() -> None:
+    launcher = (
+        SERVER_SCRIPTS / "run_pams_v8_longest_track_pose421.sh"
+    ).read_text(encoding="utf-8")
+    assert 'git -C "$SOURCE_CHECKOUT" archive' in launcher
+    assert 'src=${SOURCE_VIEW},dst=/workspace,readonly' in launcher
+    assert 'src=${video_view},dst=/pams/videos,readonly' in launcher
+    assert 'src=${SOURCE_CHECKOUT},dst=/workspace' not in launcher
+    assert 'src=${VIDEO_ROOT},dst=/pams/videos' not in launcher
+    assert 'dst=/pams/pose-cache' in launcher
+    for path in ("/tmp", "/pams/tmp", "/pams/cache", "/pams/home"):
+        assert f"--tmpfs {path}:" in launcher
+    assert '"test_inputs_mounted": false' in launcher
+    assert '"targets_mounted": false' in launcher
+    assert '(keys | sort) == ["video_id", "video_path", "video_sha256"]' in launcher
+    assert 'test ! -e "${SOURCE_VIEW}/results"' in launcher
+    assert 'test ! -e "${SOURCE_VIEW}/data"' in launcher
+
+
+def test_v8_pose_launcher_reserves_attempt_and_fails_closed() -> None:
+    launcher = (
+        SERVER_SCRIPTS / "run_pams_v8_longest_track_pose421.sh"
+    ).read_text(encoding="utf-8")
+    assert "^[a-z0-9][a-z0-9._-]{0,47}$" in launcher
+    assert '[[ "$ATTEMPT_ID" != *".."* ]]' in launcher
+    assert 'mkdir -- "$RUN_ROOT" || fail "immutable run root exists' in launcher
+    assert "trap on_exit EXIT" in launcher
+    assert 'docker stop --time 10 "$ACTIVE_CONTAINER"' in launcher
+    assert 'if [[ "$was_still_running" == "true" ]]' in launcher
+    assert launcher.index('was_still_running="$(') < launcher.index(
+        'ACTIVE_CONTAINER=""',
+        launcher.index('was_still_running="$('),
+    )
+    assert 'write_status "failed" "$CURRENT_STAGE" "$exit_code"' in launcher
+    assert ".caches[].selected_source_frames == null" in launcher
+    assert "pams_environment_fingerprint" in launcher
+
+
 @pytest.mark.skipif(_bash_with_flock() is None, reason="requires POSIX bash and flock")
 def test_gpu1_launcher_serializes_concurrent_processes_with_host_only_lock(
     tmp_path: Path,

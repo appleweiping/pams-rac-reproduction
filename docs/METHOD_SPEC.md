@@ -18,8 +18,13 @@ P = Hφ(Z): [B,T]
 
 The paper defines the general input as `K×3`; `K=33`, 256-frame resampling,
 MediaPipe extraction and per-frame min-max normalization are independent
-closures. Invalid frames are all zero and are masked in attention, loss,
-period estimation and inference.
+closures. The current v3 preprocessing selects the earliest longest
+contiguous main-subject detection run before normalization and resampling.
+Invalid videos remain all zero and masked. Historical v2 results retain their
+first-to-last-detection-span identity and are never overwritten by v3 caches.
+The implementation does not claim cross-person identity tracking. A one-frame
+v3 run is retained in the denominator as an all-invalid cache, and extraction
+receipts record the selected source-run length.
 
 ## Encoder
 

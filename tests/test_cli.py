@@ -21,6 +21,7 @@ from pams.data import (
     pose_input_identity_sha256,
     write_pose_cache,
 )
+from pams.pose import PoseExtractorConfig
 from pams.training import CheckpointProvenance
 from pams.types import PoseSequence
 
@@ -525,10 +526,13 @@ def test_pose_extract_label_free_path_never_loads_labelled_manifest(
         skipped=False,
         to_dict=lambda: {"video_id": "opaque-video"},
     )
-    monkeypatch.setattr(
-        "pams.pose.extract_many_with_failures",
-        lambda *_args, **_kwargs: ((summary,), ()),
-    )
+    observed_extractor_config: dict[str, PoseExtractorConfig] = {}
+
+    def fake_extract_many(*_args: object, **kwargs: object) -> tuple[tuple[object, ...], tuple[()]]:
+        observed_extractor_config["value"] = kwargs["extractor_config"]
+        return (summary,), ()
+
+    monkeypatch.setattr("pams.pose.extract_many_with_failures", fake_extract_many)
 
     result = runner.invoke(
         app,
@@ -547,6 +551,11 @@ def test_pose_extract_label_free_path_never_loads_labelled_manifest(
     payload = _json_output(result.stdout)
     assert payload["label_free_manifest"] is True
     assert payload["input_manifest_fingerprint"] == "e" * 64
+    extractor_config = observed_extractor_config["value"]
+    assert (
+        extractor_config.preprocessing_revision
+        == "detected-span-minmax-zero-span-invalid-v2"
+    )
     ledger = json.loads(
         (tmp_path / "cache" / "failures.json").read_text(encoding="utf-8")
     )

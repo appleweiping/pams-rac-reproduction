@@ -43,15 +43,29 @@ class DataConfig(StrictModel):
 class PoseConfig(StrictModel):
     """Frozen MediaPipe extractor settings included in pose-cache identity."""
 
-    preprocessing_revision: Literal["detected-span-minmax-zero-span-invalid-v2"] = (
-        "detected-span-minmax-zero-span-invalid-v2"
-    )
+    preprocessing_revision: Literal[
+        "detected-span-minmax-zero-span-invalid-v2",
+        "longest-contiguous-track-minmax-zero-span-invalid-v3",
+    ] = "detected-span-minmax-zero-span-invalid-v2"
     model_id: str = "mediapipe-pose-0.10.14"
     model_complexity: int = Field(default=1, ge=0, le=2)
     smooth_landmarks: bool = True
     min_detection_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     min_tracking_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     crop_to_detected_span: bool = True
+
+    @model_validator(mode="after")
+    def validate_track_policy(self) -> PoseConfig:
+        if (
+            self.preprocessing_revision
+            == "longest-contiguous-track-minmax-zero-span-invalid-v3"
+            and not self.crop_to_detected_span
+        ):
+            raise ValueError(
+                "longest-contiguous-track preprocessing requires "
+                "crop_to_detected_span=true"
+            )
+        return self
 
     @field_validator("model_id")
     @classmethod
