@@ -72,6 +72,10 @@ comparison wrapper accidentally included the NVIDIA base-image banner on
 stdout; that invalid stream was retained only on the server. The clean
 artifact was recomputed with an explicit Python entrypoint, as recorded in
 `paired-comparison-recovery.txt`; no experimental artifact changed.
+`provenance.json` binds the four input evaluation hashes. The clean rerun did
+not retain a separate container receipt, so that omission is disclosed there;
+an independent recomputation reproduced every reported difference and
+interval exactly.
 
 This evidence does not authorize seeds 42/3407 or test105. Repository status
 remains `partial_reproduction`.
