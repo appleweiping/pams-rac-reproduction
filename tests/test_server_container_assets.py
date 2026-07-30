@@ -281,6 +281,66 @@ def test_v8_pose_launcher_reserves_attempt_and_fails_closed() -> None:
     assert "pams_environment_fingerprint" in launcher
 
 
+def test_v8_seed2026_launcher_is_label_isolated_and_source_receipted() -> None:
+    launcher = (
+        SERVER_SCRIPTS / "run_pams_v8_seed2026_strict.sh"
+    ).read_text(encoding="utf-8")
+    assert 'git -C "$SOURCE_CHECKOUT" archive' in launcher
+    assert 'src=${SOURCE_VIEW},dst=/workspace,readonly' in launcher
+    assert (
+        "src=${SOURCE_RECEIPT},"
+        "dst=/pams/source-export-receipt.json,readonly"
+    ) in launcher
+    assert "PAMS_SOURCE_EXPORT_RECEIPT=/pams/source-export-receipt.json" in launcher
+    assert "PAMS_SOURCE_EXPORT_RECEIPT_SHA256=" in launcher
+    assert "docker cp" not in launcher
+    assert "git clone" not in launcher
+    assert "sparse-checkout" not in launcher
+    assert "python -m pams train encoder" in launcher
+    assert "python -m pams train sshead" in launcher
+    assert "python -m pams evaluate dev-predict" in launcher
+    assert "python -m pams evaluate dev-score" in launcher
+    assert "--epochs 150" in launcher
+    assert "--epochs 30" in launcher
+    assert "evaluate test" not in launcher
+    assert '"test_evaluation_authorized": false' in launcher
+    assert '"seeds_42_3407_authorized_initially": false' in launcher
+
+    prediction_frozen = launcher.index('chmod -R a-w "${PREDICT_STAGE}/run"')
+    target_boundary = launcher.index(
+        'CURRENT_STAGE="dev-score-target-boundary"'
+    )
+    first_target_read = launcher.index(
+        'assert_sha256 "$DEV_TARGET" "$DEV_TARGET_SHA256"'
+    )
+    assert prediction_frozen < target_boundary < first_target_read
+
+
+def test_v8_seed2026_launcher_reserves_and_verifies_every_container() -> None:
+    launcher = (
+        SERVER_SCRIPTS / "run_pams_v8_seed2026_strict.sh"
+    ).read_text(encoding="utf-8")
+    assert "^[a-z0-9][a-z0-9._-]{0,39}$" in launcher
+    assert '[[ "$ATTEMPT_ID" != *".."* ]]' in launcher
+    assert 'mkdir -- "$RUN_ROOT" || fail "immutable run root exists' in launcher
+    assert "trap on_exit EXIT" in launcher
+    assert 'docker stop --time 10 "$ACTIVE_CONTAINER"' in launcher
+    assert 'write_status "failed" "$CURRENT_STAGE" "$exit_code"' in launcher
+    assert 'sha256sum --check --strict "$POSE_ARTIFACT_MANIFEST"' in launcher
+    assert "verify_container \"$CONFIG_NAME\" \"config-preflight\"" in launcher
+    assert "verify_container \"$ENCODER_NAME\" \"encoder\"" in launcher
+    assert "verify_container \"$SSHEAD_NAME\" \"sshead\"" in launcher
+    assert "verify_container \"$PREDICT_NAME\" \"dev-predict\"" in launcher
+    assert "verify_container \"$SCORE_NAME\" \"dev-score\"" in launcher
+    assert 'host["NetworkMode"] == "none"' in launcher
+    assert 'host["ReadonlyRootfs"] is True' in launcher
+    assert 'assert mounts == expected' in launcher
+    assert 'package_root = receipt_path.parent.parent.resolve(strict=True)' in launcher
+    assert "artifact_path.relative_to(package_root)" in launcher
+    assert 'assert ".." not in locator.parts' not in launcher
+    assert "pams_environment_fingerprint" in launcher
+
+
 @pytest.mark.skipif(_bash_with_flock() is None, reason="requires POSIX bash and flock")
 def test_gpu1_launcher_serializes_concurrent_processes_with_host_only_lock(
     tmp_path: Path,

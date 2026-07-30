@@ -8,8 +8,9 @@ import os
 import platform
 import random
 import re
+import stat
 import subprocess
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 import numpy as np
@@ -104,6 +105,19 @@ def durable_mkdir(path: str | Path) -> Path:
 def git_revision(cwd: str | Path | None = None) -> str:
     """Return the checked-out commit or ``uncommitted`` outside a repository."""
 
+    receipt_value = os.environ.get("PAMS_SOURCE_EXPORT_RECEIPT", "").strip()
+    receipt_sha256 = os.environ.get(
+        "PAMS_SOURCE_EXPORT_RECEIPT_SHA256",
+        "",
+    ).strip()
+    if bool(receipt_value) != bool(receipt_sha256):
+        raise RuntimeError("source-export receipt environment is incomplete")
+    if receipt_value:
+        return _clean_source_export_revision(
+            cwd,
+            receipt_value=receipt_value,
+            expected_receipt_sha256=receipt_sha256,
+        )
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
@@ -118,8 +132,171 @@ def git_revision(cwd: str | Path | None = None) -> str:
     return result.stdout.strip()
 
 
+def _stable_regular_file_digest(path: Path) -> tuple[str, int]:
+    """Hash one regular file while rejecting replacement or mutation."""
+
+    if path.is_symlink():
+        raise RuntimeError(f"source export contains a symlink: {path}")
+    before = path.stat()
+    if not stat.S_ISREG(before.st_mode):
+        raise RuntimeError(f"source export entry is not a regular file: {path}")
+    digest = hashlib.sha256()
+    size = 0
+    with path.open("rb") as handle:
+        opened = os.fstat(handle.fileno())
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+            size += len(chunk)
+        closed = os.fstat(handle.fileno())
+    after = path.stat()
+    stable_fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns")
+    if any(
+        getattr(before, field) != getattr(opened, field)
+        or getattr(opened, field) != getattr(closed, field)
+        or getattr(closed, field) != getattr(after, field)
+        for field in stable_fields
+    ):
+        raise RuntimeError(f"source export changed while hashing: {path}")
+    if size != after.st_size:
+        raise RuntimeError(f"source export byte count changed while hashing: {path}")
+    return digest.hexdigest(), size
+
+
+def _clean_source_export_revision(
+    cwd: str | Path | None,
+    *,
+    receipt_value: str,
+    expected_receipt_sha256: str,
+) -> str:
+    """Validate an exact, Git-object-free source export."""
+
+    if not _SHA256_PATTERN.fullmatch(expected_receipt_sha256):
+        raise RuntimeError("source-export receipt SHA-256 is invalid")
+    root = Path.cwd() if cwd is None else Path(cwd)
+    root = root.resolve(strict=True)
+    if not root.is_dir():
+        raise RuntimeError("source-export root is not a directory")
+    receipt_path = Path(receipt_value)
+    if not receipt_path.is_absolute():
+        receipt_path = root / receipt_path
+    receipt_path = receipt_path.resolve(strict=True)
+    receipt_sha256, _ = _stable_regular_file_digest(receipt_path)
+    if receipt_sha256 != expected_receipt_sha256:
+        raise RuntimeError("source-export receipt SHA-256 mismatch")
+    try:
+        payload = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("source-export receipt is not valid UTF-8 JSON") from exc
+    if not isinstance(payload, dict) or set(payload) != {
+        "schema_version",
+        "source_revision",
+        "root",
+        "files",
+    }:
+        raise RuntimeError("source-export receipt has an invalid schema")
+    if payload["schema_version"] != 1 or payload["root"] != ".":
+        raise RuntimeError("source-export receipt version or root is unsupported")
+    source_revision = payload["source_revision"]
+    if not isinstance(source_revision, str) or not _GIT_SHA_PATTERN.fullmatch(
+        source_revision
+    ):
+        raise RuntimeError("source-export revision is not a Git SHA")
+    container_revision = os.environ.get(
+        "PAMS_CONTAINER_SOURCE_REVISION",
+        "",
+    ).strip()
+    if source_revision != container_revision:
+        raise RuntimeError(
+            "source-export revision does not match container source revision"
+        )
+    raw_files = payload["files"]
+    if not isinstance(raw_files, list) or not raw_files:
+        raise RuntimeError("source-export receipt requires at least one file")
+
+    expected: dict[str, tuple[str, int]] = {}
+    ordered_paths: list[str] = []
+    for raw in raw_files:
+        if not isinstance(raw, dict) or set(raw) != {"path", "sha256", "bytes"}:
+            raise RuntimeError("source-export file receipt has an invalid schema")
+        relative = raw["path"]
+        digest = raw["sha256"]
+        byte_count = raw["bytes"]
+        if not isinstance(relative, str) or "\\" in relative:
+            raise RuntimeError("source-export path must be a POSIX relative path")
+        posix = PurePosixPath(relative)
+        if (
+            not relative
+            or posix.is_absolute()
+            or any(part in {"", ".", ".."} for part in posix.parts)
+        ):
+            raise RuntimeError("source-export path is unsafe")
+        if not isinstance(digest, str) or not _SHA256_PATTERN.fullmatch(digest):
+            raise RuntimeError("source-export file SHA-256 is invalid")
+        if (
+            isinstance(byte_count, bool)
+            or not isinstance(byte_count, int)
+            or byte_count < 0
+        ):
+            raise RuntimeError("source-export file byte count is invalid")
+        if relative in expected:
+            raise RuntimeError("source-export receipt contains duplicate paths")
+        expected[relative] = (digest, byte_count)
+        ordered_paths.append(relative)
+    if ordered_paths != sorted(ordered_paths):
+        raise RuntimeError("source-export receipt paths are not sorted")
+
+    actual_paths: set[str] = set()
+    for entry in root.rglob("*"):
+        if entry.is_symlink():
+            raise RuntimeError(f"source export contains a symlink: {entry}")
+        if entry.is_dir():
+            continue
+        if not entry.is_file():
+            raise RuntimeError(f"source export contains a non-file entry: {entry}")
+        resolved = entry.resolve(strict=True)
+        if resolved == receipt_path:
+            continue
+        try:
+            relative = resolved.relative_to(root).as_posix()
+        except ValueError:
+            raise RuntimeError("source-export entry escapes its root") from None
+        actual_paths.add(relative)
+    if actual_paths != set(expected):
+        missing = sorted(set(expected) - actual_paths)
+        extra = sorted(actual_paths - set(expected))
+        raise RuntimeError(
+            "source-export file set mismatch: "
+            f"missing={missing[:5]}, extra={extra[:5]}"
+        )
+
+    for relative in ordered_paths:
+        expected_digest, expected_bytes = expected[relative]
+        source = root.joinpath(*PurePosixPath(relative).parts)
+        actual_digest, actual_bytes = _stable_regular_file_digest(source)
+        if actual_digest != expected_digest or actual_bytes != expected_bytes:
+            raise RuntimeError(f"source-export file mismatch: {relative}")
+    final_receipt_sha256, _ = _stable_regular_file_digest(receipt_path)
+    if final_receipt_sha256 != expected_receipt_sha256:
+        raise RuntimeError("source-export receipt changed during validation")
+    return source_revision
+
+
 def clean_git_revision(cwd: str | Path | None = None) -> str:
     """Return HEAD only when tracked and untracked source state is clean."""
+
+    receipt_value = os.environ.get("PAMS_SOURCE_EXPORT_RECEIPT", "").strip()
+    receipt_sha256 = os.environ.get(
+        "PAMS_SOURCE_EXPORT_RECEIPT_SHA256",
+        "",
+    ).strip()
+    if bool(receipt_value) != bool(receipt_sha256):
+        raise RuntimeError("source-export receipt environment is incomplete")
+    if receipt_value:
+        return _clean_source_export_revision(
+            cwd,
+            receipt_value=receipt_value,
+            expected_receipt_sha256=receipt_sha256,
+        )
 
     revision = git_revision(cwd)
     if revision == "uncommitted":
