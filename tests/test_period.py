@@ -12,7 +12,9 @@ from pams.period import (
     estimate_period_from_embeddings,
     estimate_period_from_pose,
     estimate_period_from_projected_pose,
+    estimate_period_from_projected_position,
     estimate_period_from_vectors,
+    projected_position_vector_acf_diagnostics,
     vector_autocorrelation_fft,
 )
 
@@ -294,3 +296,212 @@ def test_projected_pose_velocity_vector_acf_preserves_fundamental_period() -> No
 
     assert periods.tolist() == [32]
     assert confidence.item() > 0
+
+
+@pytest.mark.parametrize("harmonic", range(2, 8))
+def test_projected_position_acf_rejects_velocity_amplified_harmonics(
+    harmonic: int,
+) -> None:
+    time = torch.arange(256, dtype=torch.float64)
+    fundamental_period = 64
+    fundamental_angle = 2.0 * math.pi * time / fundamental_period
+    harmonic_angle = harmonic * fundamental_angle + 0.37
+    projected_pose = torch.stack(
+        (
+            torch.sin(fundamental_angle) + 0.75 * torch.sin(harmonic_angle),
+            torch.cos(fundamental_angle) + 0.75 * torch.cos(harmonic_angle),
+        ),
+        dim=-1,
+    )
+
+    position_period, position_confidence = estimate_period_from_projected_position(
+        projected_pose,
+        minimum=4,
+        maximum=128,
+    )
+    velocity_period, velocity_confidence = estimate_period_from_projected_pose(
+        projected_pose,
+        minimum=4,
+        maximum=128,
+    )
+
+    assert position_period.item() == pytest.approx(float(fundamental_period))
+    assert velocity_period.item() == pytest.approx(fundamental_period / harmonic)
+    assert position_confidence.item() > 0
+    assert velocity_confidence.item() > 0
+
+
+def test_projected_position_acf_is_constant_bias_invariant() -> None:
+    time = torch.arange(256, dtype=torch.float64)
+    angle = 2.0 * math.pi * time / 32.0
+    projected_pose = torch.stack(
+        (
+            torch.sin(angle),
+            torch.cos(angle),
+            0.4 * torch.sin(angle + 0.2),
+        ),
+        dim=-1,
+    )
+    bias = torch.tensor((1000.0, -700.0, 53.0), dtype=projected_pose.dtype)
+
+    base_period, base_confidence = estimate_period_from_projected_position(projected_pose)
+    biased_period, biased_confidence = estimate_period_from_projected_position(
+        projected_pose + bias
+    )
+
+    assert torch.equal(base_period, biased_period)
+    assert torch.allclose(base_confidence, biased_confidence, rtol=1e-10, atol=1e-12)
+
+
+def test_projected_position_acf_is_orthogonal_basis_invariant() -> None:
+    generator = torch.Generator().manual_seed(2026)
+    time = torch.arange(256, dtype=torch.float64)
+    angle = 2.0 * math.pi * time / 20.0
+    projected_pose = torch.stack(
+        (
+            torch.sin(angle),
+            torch.cos(angle),
+            0.7 * torch.sin(angle + 0.3),
+            0.2 * torch.cos(angle - 0.4),
+        ),
+        dim=-1,
+    )
+    orthogonal, _ = torch.linalg.qr(
+        torch.randn(4, 4, dtype=projected_pose.dtype, generator=generator)
+    )
+
+    base_period, base_confidence = estimate_period_from_projected_position(projected_pose)
+    rotated_period, rotated_confidence = estimate_period_from_projected_position(
+        projected_pose @ orthogonal
+    )
+
+    assert torch.equal(base_period, rotated_period)
+    assert torch.allclose(base_confidence, rotated_confidence, rtol=1e-12, atol=1e-12)
+
+
+def test_projected_position_acf_mask_ignores_invalid_corruption() -> None:
+    generator = torch.Generator().manual_seed(3407)
+    time = torch.arange(256, dtype=torch.float32)
+    angle = 2.0 * math.pi * time / 32.0
+    clean = torch.stack((torch.sin(angle), torch.cos(angle)), dim=-1)
+    corrupted = clean.clone()
+    mask = torch.ones(256, dtype=torch.bool)
+    mask[192:] = False
+    corrupted[~mask] = (
+        torch.randn(
+            corrupted[~mask].shape,
+            dtype=corrupted.dtype,
+            generator=generator,
+        )
+        * 100_000.0
+    )
+
+    clean_period, clean_confidence = estimate_period_from_projected_position(
+        clean,
+        minimum=4,
+        maximum=128,
+        valid_mask=mask,
+    )
+    corrupted_period, corrupted_confidence = estimate_period_from_projected_position(
+        corrupted,
+        minimum=4,
+        maximum=128,
+        valid_mask=mask,
+    )
+
+    assert torch.equal(clean_period, corrupted_period)
+    assert torch.equal(clean_confidence, corrupted_confidence)
+    assert clean_period.item() == 32.0
+
+
+def test_projected_position_acf_zero_constant_and_all_invalid_have_no_evidence() -> None:
+    all_valid = torch.ones(256, dtype=torch.bool)
+    all_invalid = torch.zeros(256, dtype=torch.bool)
+    generator = torch.Generator().manual_seed(42)
+    inputs = (
+        (torch.zeros(256, 3), all_valid),
+        (torch.full((256, 3), 17.0), all_valid),
+        (torch.randn(256, 3, generator=generator), all_invalid),
+    )
+
+    for projected_pose, mask in inputs:
+        _, confidence = estimate_period_from_projected_position(
+            projected_pose,
+            valid_mask=mask,
+        )
+        diagnostic = projected_position_vector_acf_diagnostics(
+            projected_pose,
+            valid_mask=mask,
+        )[0]
+
+        assert confidence.tolist() == [0.0]
+        assert diagnostic.confidence == 0.0
+        assert diagnostic.selected_bin is None
+        assert diagnostic.allowed_bins == tuple(range(2, 65))
+        assert len(diagnostic.power_shares) == 63
+        assert not any(diagnostic.power_shares)
+
+
+def test_projected_position_spectrum_exposes_exact_allowed_band_and_argmax() -> None:
+    time = torch.arange(256, dtype=torch.float64)
+    angle = 2.0 * math.pi * time / 16.0
+    projected_pose = torch.stack((torch.sin(angle), torch.cos(angle)), dim=-1)
+
+    period, confidence = estimate_period_from_projected_position(
+        projected_pose,
+        minimum=4,
+        maximum=128,
+    )
+    diagnostic = projected_position_vector_acf_diagnostics(
+        projected_pose,
+        minimum=4,
+        maximum=128,
+    )[0]
+
+    assert diagnostic.valid_length == 256
+    assert diagnostic.allowed_bins == tuple(range(2, 65))
+    assert len(diagnostic.allowed_bins) == 63
+    assert len(diagnostic.frequencies) == 63
+    assert len(diagnostic.periods) == 63
+    assert len(diagnostic.power_shares) == 63
+    assert sum(diagnostic.power_shares) == pytest.approx(1.0)
+    selected_offset = max(
+        range(len(diagnostic.power_shares)),
+        key=diagnostic.power_shares.__getitem__,
+    )
+    assert diagnostic.selected_bin == diagnostic.allowed_bins[selected_offset] == 16
+    assert diagnostic.selected_period == period.item() == 16.0
+    assert diagnostic.confidence == pytest.approx(confidence.item())
+    assert diagnostic.confidence == pytest.approx(diagnostic.power_shares[selected_offset])
+
+
+def test_projected_position_acf_supports_batched_masks_and_diagnostics() -> None:
+    time = torch.arange(256, dtype=torch.float32)
+    sequences = torch.stack(
+        tuple(
+            torch.stack(
+                (
+                    torch.sin(2.0 * math.pi * time / period),
+                    torch.cos(2.0 * math.pi * time / period),
+                ),
+                dim=-1,
+            )
+            for period in (16.0, 32.0)
+        )
+    )
+    mask = torch.ones((2, 256), dtype=torch.bool)
+
+    periods, confidence = estimate_period_from_projected_position(
+        sequences,
+        valid_mask=mask,
+    )
+    diagnostics = projected_position_vector_acf_diagnostics(
+        sequences,
+        valid_mask=mask,
+    )
+
+    assert periods.tolist() == [16.0, 32.0]
+    assert torch.all(confidence > 0)
+    assert len(diagnostics) == 2
+    assert tuple(diagnostic.selected_bin for diagnostic in diagnostics) == (16, 8)
+    assert all(diagnostic.allowed_bins == tuple(range(2, 65)) for diagnostic in diagnostics)

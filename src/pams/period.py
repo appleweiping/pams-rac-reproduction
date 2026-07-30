@@ -23,6 +23,20 @@ class PeriodEstimate:
     valid_length: int
 
 
+@dataclass(frozen=True)
+class ProjectedPositionSpectrumDiagnostic:
+    """Auditable allowed-band evidence for one projected-position sequence."""
+
+    valid_length: int
+    allowed_bins: tuple[int, ...]
+    frequencies: tuple[float, ...]
+    periods: tuple[float, ...]
+    power_shares: tuple[float, ...]
+    selected_bin: int | None
+    selected_period: float
+    confidence: float
+
+
 def _as_batch_signal(signal: Tensor) -> tuple[Tensor, bool]:
     if signal.ndim == 1:
         return signal.unsqueeze(0), True
@@ -508,3 +522,143 @@ def estimate_period_from_projected_pose(
         maximum=maximum,
         valid_mask=velocity_valid,
     )
+
+
+def projected_position_vector_acf_diagnostics(
+    projected_pose: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> tuple[ProjectedPositionSpectrumDiagnostic, ...]:
+    """Return mask-aware vector-ACF spectrum evidence without differencing.
+
+    The projected coordinates are centered inside
+    :func:`vector_autocorrelation_fft`, so a constant projection bias cannot
+    affect the result.  Keeping positions instead of first differences avoids
+    the latter's deterministic high-frequency gain.  This independently
+    inferred diagnostic is intentionally separate from the frozen projected
+    velocity route.
+
+    One diagnostic is returned per batch item, including for an unbatched
+    input.  ``allowed_bins`` contains the absolute rFFT bin indices in the
+    valid period band, and ``power_shares`` is normalized over exactly those
+    bins.  Inputs without usable evidence have zero shares, zero confidence,
+    and no selected bin.
+    """
+
+    if minimum < 2:
+        raise ValueError("minimum period must be at least 2")
+    if maximum <= minimum:
+        raise ValueError("maximum must be greater than minimum")
+    batched, unbatched = _as_batch_vectors(projected_pose)
+    if batched.dtype not in (torch.float32, torch.float64):
+        batched = batched.float()
+    batch, time, _ = batched.shape
+    if valid_mask is None:
+        mask = torch.ones((batch, time), dtype=torch.bool, device=batched.device)
+    else:
+        expected = (time,) if unbatched else (batch, time)
+        if valid_mask.shape != expected:
+            raise ValueError(
+                f"valid_mask must have shape {expected}, got {tuple(valid_mask.shape)}"
+            )
+        mask = valid_mask.unsqueeze(0) if unbatched else valid_mask
+        mask = mask.to(device=batched.device, dtype=torch.bool)
+
+    autocorrelation = vector_autocorrelation_fft(batched, mask)
+    if autocorrelation.ndim == 1:
+        autocorrelation = autocorrelation.unsqueeze(0)
+
+    diagnostics: list[ProjectedPositionSpectrumDiagnostic] = []
+    for sample_ac, sample_mask in zip(autocorrelation, mask, strict=True):
+        valid_length = int(sample_mask.sum())
+        frequencies = torch.fft.rfftfreq(
+            sample_ac.numel(),
+            d=1.0,
+            dtype=sample_ac.dtype,
+            device=sample_ac.device,
+        )
+        allowed = (frequencies >= 1.0 / maximum) & (frequencies <= 1.0 / minimum)
+        allowed[0] = False
+        allowed_indices = torch.nonzero(allowed, as_tuple=False).flatten()
+        allowed_frequencies = frequencies[allowed_indices]
+        allowed_periods = allowed_frequencies.reciprocal()
+        zero_shares = torch.zeros_like(allowed_frequencies)
+
+        selected_bin: int | None = None
+        selected_period = float(minimum)
+        confidence = 0.0
+        shares = zero_shares
+        if valid_length >= minimum * 2:
+            window = torch.hann_window(
+                sample_ac.numel(),
+                periodic=False,
+                dtype=sample_ac.dtype,
+                device=sample_ac.device,
+            )
+            power = torch.fft.rfft(sample_ac * window).abs().square()
+            band = power.masked_fill(~allowed, 0.0)
+            total = band.sum()
+            if torch.isfinite(total) and float(total) > 1e-12:
+                selected_bin = int(torch.argmax(band))
+                frequency = selected_bin / sample_ac.numel()
+                selected_period = min(
+                    max(1.0 / frequency, float(minimum)),
+                    float(maximum),
+                )
+                shares = band[allowed_indices] / total.clamp_min(1e-12)
+                confidence = float(band[selected_bin] / total.clamp_min(1e-12))
+            else:
+                selected_period = float(maximum)
+
+        diagnostics.append(
+            ProjectedPositionSpectrumDiagnostic(
+                valid_length=valid_length,
+                allowed_bins=tuple(int(value) for value in allowed_indices.detach().cpu()),
+                frequencies=tuple(float(value) for value in allowed_frequencies.detach().cpu()),
+                periods=tuple(float(value) for value in allowed_periods.detach().cpu()),
+                power_shares=tuple(float(value) for value in shares.detach().cpu()),
+                selected_bin=selected_bin,
+                selected_period=selected_period,
+                confidence=confidence,
+            )
+        )
+    return tuple(diagnostics)
+
+
+def estimate_period_from_projected_position(
+    projected_pose: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> tuple[Tensor, Tensor]:
+    """Estimate projected-position periods through a full vector ACF.
+
+    This opt-in inferred route deliberately does not call
+    :func:`_embedding_velocity`.  Its output shape and dtype follow the
+    existing projected-pose estimator while its auditable spectrum is exposed
+    separately by :func:`projected_position_vector_acf_diagnostics`.
+    """
+
+    batched, unbatched = _as_batch_vectors(projected_pose)
+    if batched.dtype not in (torch.float32, torch.float64):
+        batched = batched.float()
+    diagnostics = projected_position_vector_acf_diagnostics(
+        projected_pose,
+        minimum=minimum,
+        maximum=maximum,
+        valid_mask=valid_mask,
+    )
+    periods = torch.tensor(
+        [diagnostic.selected_period for diagnostic in diagnostics],
+        dtype=batched.dtype,
+        device=batched.device,
+    )
+    confidences = torch.tensor(
+        [diagnostic.confidence for diagnostic in diagnostics],
+        dtype=batched.dtype,
+        device=batched.device,
+    )
+    if unbatched:
+        return periods[:1], confidences[:1]
+    return periods, confidences

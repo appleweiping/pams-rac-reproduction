@@ -78,6 +78,10 @@ teacher_period_app = typer.Typer(
     help="Run the frozen-v8 direct teacher-period diagnostic on dev84.",
     no_args_is_help=True,
 )
+position_acf_app = typer.Typer(
+    help="Run the frozen-v8 projected-position ACF diagnostic on dev84.",
+    no_args_is_help=True,
+)
 stress_app = typer.Typer(
     help="Run deterministic pose-cache stress tests through a dev-only firewall.",
     no_args_is_help=True,
@@ -188,6 +192,7 @@ app.add_typer(synthetic_app, name="synthetic")
 app.add_typer(diagnostic_app, name="diagnostic")
 app.add_typer(local_frequency_app, name="local-frequency")
 app.add_typer(teacher_period_app, name="teacher-period")
+app.add_typer(position_acf_app, name="position-acf")
 app.add_typer(stress_app, name="stress")
 
 
@@ -3458,6 +3463,167 @@ def teacher_period_dev_score_command(
             prediction_receipt_path=prediction_receipt_path,
             dev_targets_path=dev_targets_path,
             output_dir=output_dir,
+            repository_root=Path.cwd(),
+        )
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(payload)
+
+
+@position_acf_app.command("dev-predict")
+def position_acf_dev_predict_command(
+    checkpoint_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    train_inputs_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    pose_cache_dir: Annotated[
+        Path,
+        typer.Argument(exists=True, file_okay=False, readable=True),
+    ],
+    output_dir: Annotated[Path, typer.Argument(file_okay=False)],
+    checkpoint_progress_path: Annotated[
+        Path,
+        typer.Option(
+            "--checkpoint-progress",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    checkpoint_completion_receipt_path: Annotated[
+        Path,
+        typer.Option(
+            "--checkpoint-completion-receipt",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    train_commitment_path: Annotated[
+        Path,
+        typer.Option(
+            "--input-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    dev_inputs_path: Annotated[
+        Path,
+        typer.Option("--dev-inputs", exists=True, dir_okay=False, readable=True),
+    ],
+    dev_commitment_path: Annotated[
+        Path,
+        typer.Option(
+            "--dev-input-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    test_identity_inputs_path: Annotated[
+        Path,
+        typer.Option(
+            "--test-identity-inputs",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    test_identity_commitment_path: Annotated[
+        Path,
+        typer.Option(
+            "--test-identity-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    readout_config_path: Annotated[
+        Path,
+        typer.Option(
+            "--readout-config",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    config_path: Annotated[
+        Path,
+        typer.Option("--config", exists=True, dir_okay=False, readable=True),
+    ] = Path("configs/experiments/pams_longest_contiguous_track_v8.yaml"),
+    device: Annotated[str, typer.Option("--device")] = "auto",
+) -> None:
+    """Freeze target-free dev84 predictions from projected-position ACF."""
+
+    try:
+        from pams.position_acf_dev import run_dev_prediction
+
+        payload = run_dev_prediction(
+            checkpoint_path=checkpoint_path,
+            checkpoint_progress_path=checkpoint_progress_path,
+            checkpoint_completion_receipt_path=(
+                checkpoint_completion_receipt_path
+            ),
+            train_inputs_path=train_inputs_path,
+            train_commitment_path=train_commitment_path,
+            dev_inputs_path=dev_inputs_path,
+            dev_commitment_path=dev_commitment_path,
+            test_identity_inputs_path=test_identity_inputs_path,
+            test_identity_commitment_path=test_identity_commitment_path,
+            pose_cache_dir=pose_cache_dir,
+            output_dir=output_dir,
+            config_path=config_path,
+            readout_config_path=readout_config_path,
+            device=None if device.strip().lower() == "auto" else device,
+            repository_root=Path.cwd(),
+            command=list(sys.argv),
+        )
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(payload)
+
+
+@position_acf_app.command("dev-score")
+def position_acf_dev_score_command(
+    predictions_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    prediction_receipt_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    dev_targets_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    output_dir: Annotated[Path, typer.Argument(file_okay=False)],
+    readout_config_path: Annotated[
+        Path,
+        typer.Option(
+            "--readout-config",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+) -> None:
+    """Score an already-frozen position-ACF dev artifact."""
+
+    try:
+        from pams.position_acf_dev import score_dev_predictions
+
+        payload = score_dev_predictions(
+            predictions_path=predictions_path,
+            prediction_receipt_path=prediction_receipt_path,
+            dev_targets_path=dev_targets_path,
+            output_dir=output_dir,
+            readout_config_path=readout_config_path,
             repository_root=Path.cwd(),
         )
     except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:

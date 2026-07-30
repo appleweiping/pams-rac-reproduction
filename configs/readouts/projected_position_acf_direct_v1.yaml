@@ -1,0 +1,114 @@
+# Independently inferred diagnostic. This is not an author-disclosed PAMS
+# component and is permanently ineligible for a paper-comparison table.
+schema_version: 1
+key: pams-projected-position-acf-direct-v1
+classification: inferred frozen-v8 projected-position vector-ACF diagnostic
+eligible_for_paper_table: false
+test105_evaluation_authorized: false
+
+frozen_inputs:
+  dataset_protocol: ucfrep_526
+  seed: 2026
+  encoder_checkpoint_sha256: 6817fe468d76c3fa2182dd831695d6fe3d6da208a2b7f8dfa90cffa6872e8053
+  encoder_progress_sha256: aadc8f9bf067b3489efcd80db43c42cf09dba3477c2976bbc16571ff31684622
+  encoder_completion_receipt_sha256: f4815e1961ba883c23ef479ddcdef44aea5cad8a50d54e17b8e6a4cccc613f3d
+  encoder_source_git_sha: 07192debb7f5748c53a1c6d4f0c0d3f16228e229
+  encoder_container_image_id: sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005
+  encoder_container_environment_sha256: 1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508
+  experiment_config_sha256: eb4072a195608757cd2542855b33fb000c987f96c94b83a1e448ab78f97e9374
+  experiment_config_fingerprint: eaf9e2ce6047c4a13c13daaef10af1ae288542ad94ff9fb513d19e225912adf2
+  pose_fingerprint: 3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116
+  train337_pose_cache_set_sha256: f32d718ae922120778f535a6a4f467edba79cafeba90373b3a6a55bf11be6ee2
+  dev84_pose_cache_set_sha256: 681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1
+
+readout:
+  input_source: encoder_input_projection_pre_positional_encoding
+  temporal_transform: none
+  autocorrelation: masked_centered_vector_dot_product_fft
+  spectrum_window: hann_periodic_false
+  minimum_period_frames: 4
+  maximum_period_frames: 128
+  selection: maximum_allowed_non_dc_power_share
+  count_duration: valid_frame_intervals
+  confidence_guard: strictly_positive
+  rounding: nearest_integer_half_up
+  prediction_batch_size: 32
+
+# These two gates execute before any dev pose, dev identity, or target-bearing
+# input can be mounted. Synthetic truth is permitted only inside the bounded
+# synthetic gate; the train337 gate consumes no action or count labels.
+predev_gates:
+  synthetic:
+    harmonic_orders: [2, 3, 4, 5, 6, 7]
+    frames: 256
+    fundamental_period_frames: 64
+    fundamental_amplitude: 1.0
+    harmonic_amplitude: 0.75
+    required_records: 6
+    minimum_fundamental_selection_fraction: 1.0
+    require_finite_outputs: true
+    require_positive_confidence: true
+  train337_target_free_distribution:
+    required_records: 337
+    maximum_zero_confidence_fraction: 0.10
+    maximum_minimum_period_fraction: 0.10
+    maximum_maximum_period_fraction: 0.10
+    maximum_selected_bin_mode_fraction: 0.25
+    minimum_unique_selected_bins: 8
+    require_finite_outputs: true
+    require_zero_confidence_zero_count: true
+
+# This is only a dev84 stop/continue comparison against the already public
+# target-free local-frequency readout. Passing never authorizes test105.
+dev_stop_gate:
+  reference_key: pams-local-frequency-synthetic-v1
+  reference_evaluation_sha256: b6add8af9c229cd467be6bba282f267d0d70651a1a39b46ba1443016689add97
+  reference_nmae: 0.5290583435903633
+  reference_obo: 0.3333333333333333
+  require_strict_nmae_improvement: true
+  require_strict_obo_improvement: true
+  pass_decision: continue-dev-only-analysis
+  fail_decision: stop-position-acf-line
+  test105_evaluation_authorized: false
+
+mount_policy:
+  network: none
+  synthetic_gate_inputs:
+    - source_export
+    - source_export_receipt
+    - readout_config
+    - experiment_config
+    - exact_v8_encoder_package
+  train337_gate_inputs:
+    - source_export
+    - source_export_receipt
+    - readout_config
+    - experiment_config
+    - exact_v8_encoder_package
+    - train337_identity_sidecars
+    - train337_pose_cache
+  dev_predict_inputs:
+    - source_export
+    - source_export_receipt
+    - readout_config
+    - experiment_config
+    - exact_v8_encoder_package
+    - train337_identity_sidecars
+    - dev84_identity_sidecars
+    - dev84_pose_cache
+    - test105_identity_sidecars
+  dev_score_inputs:
+    - source_export
+    - source_export_receipt
+    - readout_config
+    - frozen_dev84_predictions
+    - frozen_prediction_receipt
+    - dev84_targets
+  prohibited_everywhere:
+    - test105_media
+    - test105_pose
+    - test105_labels
+  prohibited_before_dev_score:
+    - train337_count_labels
+    - train337_action_labels
+    - dev84_targets
