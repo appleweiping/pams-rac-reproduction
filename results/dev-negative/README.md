@@ -10,6 +10,17 @@ Head and the independently inferred SSHead completion. It is not a test
 result, leaderboard result, successful reproduction claim, or ablation
 result.
 
+## Pose spectral consensus dev84 diagnostic
+
+The independently inferred `pose-spectral-consensus-harmonic-v1` candidate
+completed 84 target-free predictions before isolated development scoring. It
+obtained NMAE `0.492955` and OBO `0.369048`, failing both frozen acceptance
+thresholds (`0.228` / `0.666`). This candidate is dev-only, ineligible for the
+paper table, and not a verified reproduction. The sealed test105 split was
+untouched. Public-safe predictions, evaluation, receipts, status, independent
+metric checks, and hashes are in
+[`pose_spectral_consensus_dev84_e2dd1f7`](pose_spectral_consensus_dev84_e2dd1f7/README.md).
+
 ## Inferred near-best lag-ACF dev84 diagnostic
 
 The separately frozen seed-2026 position lag-ACF readout with a

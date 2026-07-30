@@ -1,0 +1,90 @@
+{
+  "artifact_type": "pose_spectral_consensus_public_audit_summary",
+  "schema_version": 1,
+  "status": "partial_reproduction",
+  "classification": "inferred_candidate_dev_only_negative_diagnostic",
+  "method_id": "pose-spectral-consensus-harmonic-v1",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "source_git_sha": "e2dd1f7db6cba85f6bba4fd9148797a2e657711d",
+  "record_total": 84,
+  "metrics": {
+    "nmae": 0.49295538376511283,
+    "mae": 3.2738095238095237,
+    "rmse": 4.676435353883086,
+    "obo": 0.36904761904761907,
+    "exact": 0.16666666666666666,
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 2026,
+    "confidence_intervals_95_percent": {
+      "nmae": [
+        0.42717694183211424,
+        0.5568716945883663
+      ],
+      "mae": [
+        2.607142857142857,
+        4.011904761904762
+      ],
+      "rmse": [
+        3.711308330469125,
+        5.613599548455156
+      ],
+      "obo": [
+        0.2619047619047619,
+        0.47619047619047616
+      ],
+      "exact": [
+        0.09523809523809523,
+        0.25
+      ]
+    }
+  },
+  "acceptance": {
+    "nmae_threshold_max": 0.228,
+    "obo_threshold_min": 0.666,
+    "nmae_pass": false,
+    "obo_pass": false,
+    "joint_pass": false
+  },
+  "claim_boundary": {
+    "diagnostic_only": true,
+    "eligible_for_paper_table": false,
+    "paper_disclosed_method": false,
+    "independently_inferred_candidate": true,
+    "development_only": true,
+    "verified_reproduction": false,
+    "sealed_test105_untouched": true
+  },
+  "label_firewall": {
+    "gt_count_or_action_oracle_used": false,
+    "prediction_loaded_dev_targets": false,
+    "prediction_loaded_test_identity": false,
+    "prediction_loaded_test_targets": false
+  },
+  "validation": {
+    "strict_json_files_parsed": 5,
+    "duplicate_json_keys": 0,
+    "nonfinite_json_values": 0,
+    "prediction_records": 84,
+    "evaluation_rows": 84,
+    "unique_video_ids": 84,
+    "prediction_evaluation_order_exact": true,
+    "per_video_values_reconciled": true,
+    "receipt_byte_counts_verified": true,
+    "receipt_hashes_verified": true,
+    "status_hash_bindings_verified": true,
+    "core_metrics_recomputed": true,
+    "bootstrap_intervals_recomputed": true,
+    "bootstrap_pairing": "paired_prediction_target_rows",
+    "forbidden_file_count": 0,
+    "sensitive_content_scan_pass": true
+  },
+  "source_artifact_sha256": {
+    "predictions.json": "cdd9be4ceab1ade05e4741042c840273a4d31e2b31c2f2e105950f4202ba2265",
+    "prediction.receipt.json": "90377be7d2f52a82e6c166c7cd891fccceb7e26ad47ecea6c22506ceb11f22ab",
+    "evaluation.json": "dcc8345a8ec32091a6911e540454915db859f80db5f378c056cdd891a9e4b575",
+    "evaluation.receipt.json": "0980e71a06a4b5ec0f064942ec442db48c74aeff2ce94227bea260fd594a9e79",
+    "status.json": "a007e270fda12a087f49089e7a6a3cceddbab9c4d5e9bef091b3494381613566"
+  },
+  "sha256_manifest_scope": "all_package_files_except_SHA256SUMS"
+}
