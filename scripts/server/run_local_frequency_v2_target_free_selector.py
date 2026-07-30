@@ -43,12 +43,8 @@ from pams.types import PoseSequence
 _ARTIFACT_TYPE = "pams_local_frequency_v2_target_free_selector"
 _CLASSIFICATION = "exploratory-derived target-free selector; paper-table ineligible"
 _SOURCE_RELATIVE_PATH = "scripts/server/run_local_frequency_v2_target_free_selector.py"
-_FROZEN_POSE_FINGERPRINT = (
-    "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116"
-)
-_FROZEN_TRAIN337_SIDECAR_SHA256 = (
-    "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207"
-)
+_FROZEN_POSE_FINGERPRINT = "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116"
+_FROZEN_TRAIN337_SIDECAR_SHA256 = "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207"
 _FROZEN_TRAIN337_MANIFEST_FINGERPRINT = (
     "e3d6c979f5d160e37199726bff773a803cc77a0357079d046462b58da6454662"
 )
@@ -101,6 +97,7 @@ _LEXICOGRAPHIC_OBJECTIVE = (
     "negative_distinct_training_count_total",
     "candidate_key",
 )
+
 
 @dataclass(frozen=True, slots=True)
 class CandidateAudit:
@@ -168,25 +165,19 @@ class CandidateAudit:
             },
             "unlabeled_train_consistency": {
                 "transform_pair_total": self.train_transform_pair_total,
-                "transform_relative_disagreement": (
-                    self.train_transform_relative_disagreement
-                ),
+                "transform_relative_disagreement": (self.train_transform_relative_disagreement),
                 "transform_exact_agreement": self.train_transform_exact_agreement,
                 "duplicate_time_pair_total": self.train_duplicate_pair_total,
                 "duplicate_time_expected": "min(40, 2 * original_prediction)",
                 "duplicate_time_relative_scale_error": (
                     self.train_duplicate_time_relative_scale_error
                 ),
-                "duplicate_time_exact_scale_rate": (
-                    self.train_duplicate_time_exact_scale_rate
-                ),
+                "duplicate_time_exact_scale_rate": (self.train_duplicate_time_exact_scale_rate),
                 "prediction_boundary_share": self.training_prediction_boundary_share,
                 "prediction_mode": self.training_prediction_mode,
                 "prediction_mode_share": self.training_prediction_mode_share,
                 "distinct_prediction_total": self.distinct_training_count_total,
-                "prediction_boundary_and_mode_penalty": (
-                    self.prediction_boundary_and_mode_penalty
-                ),
+                "prediction_boundary_and_mode_penalty": (self.prediction_boundary_and_mode_penalty),
             },
         }
 
@@ -371,9 +362,8 @@ def _local_frequency(
         n_fft = 4 * window
         power = np.abs(np.fft.rfft(values, n=n_fft, axis=0)) ** 2
         frequency_axis = np.fft.rfftfreq(n_fft)
-        allowed = (
-            (frequency_axis >= max(1.0 / 128.0, minimum_cycles / window))
-            & (frequency_axis <= 1.0 / 4.0)
+        allowed = (frequency_axis >= max(1.0 / 128.0, minimum_cycles / window)) & (
+            frequency_axis <= 1.0 / 4.0
         )
         band = power[allowed]
         informative = np.sum(band, axis=0) > 1e-12
@@ -389,16 +379,12 @@ def _local_frequency(
         allowed_frequencies = frequency_axis[allowed]
         peak = int(np.argmax(aggregate))
         frequencies.append(float(allowed_frequencies[peak]))
-        confidences.append(
-            float(aggregate[peak] / max(float(np.sum(aggregate)), 1e-12))
-        )
+        confidences.append(float(aggregate[peak] / max(float(np.sum(aggregate)), 1e-12)))
     if not frequencies:
         return 2.0 / max(length, 1), 2.0 / max(length, 1)
     frequency_values = np.asarray(frequencies)
     confidence_values = np.maximum(np.asarray(confidences), 1e-6)
-    mean_frequency = float(
-        np.sum(frequency_values * confidence_values) / np.sum(confidence_values)
-    )
+    mean_frequency = float(np.sum(frequency_values * confidence_values) / np.sum(confidence_values))
     median_frequency = _weighted_median(frequency_values, confidence_values)
     return mean_frequency, median_frequency
 
@@ -500,13 +486,13 @@ def _interpolate_pose_time(
     right = np.minimum(left + 1, source.num_frames - 1)
     weight = (clipped - left).astype(np.float32)
     xyz = (
-        source.xyz[left] * (1.0 - weight[:, None, None])
-        + source.xyz[right] * weight[:, None, None]
+        source.xyz[left] * (1.0 - weight[:, None, None]) + source.xyz[right] * weight[:, None, None]
     )
-    exact = left == right
-    valid = (source.valid_mask[left] & source.valid_mask[right]) | (
-        exact & source.valid_mask[left]
-    )
+    # At an integer interior position, ``right`` is the following frame even
+    # though its interpolation weight is exactly zero.  Treat that sample as
+    # exact so an unused invalid right neighbour cannot invalidate it.
+    exact = weight == 0.0
+    valid = (source.valid_mask[left] & source.valid_mask[right]) | (exact & source.valid_mask[left])
     return _new_sequence(source, name, xyz, valid)
 
 
@@ -589,9 +575,7 @@ def _training_transforms(sequence: PoseSequence) -> dict[str, PoseSequence]:
         sequence.num_frames,
         dtype=np.float64,
     )
-    cumulative = np.concatenate(
-        (np.asarray([0.0]), np.cumsum(0.5 * (speed[:-1] + speed[1:])))
-    )
+    cumulative = np.concatenate((np.asarray([0.0]), np.cumsum(0.5 * (speed[:-1] + speed[1:]))))
     positions = cumulative / cumulative[-1] * (sequence.num_frames - 1)
     transforms["speed_warp_0_5_to_2_0"] = _interpolate_pose_time(
         sequence,
@@ -741,10 +725,7 @@ def _score_candidate(
         key=lambda item: (-item[1], item[0]),
     )
     boundary_share = float(
-        np.mean(
-            (training_values == _COUNT_MINIMUM)
-            | (training_values == _COUNT_MAXIMUM)
-        )
+        np.mean((training_values == _COUNT_MINIMUM) | (training_values == _COUNT_MAXIMUM))
     )
     mode_share = mode_total / training_values.size
     distinct_total = len(frequencies)
@@ -806,18 +787,12 @@ def _evaluate_candidates(
         frames=256,
         seed=_SYNTHETIC_SEED,
     )
-    stress_items = tuple(
-        (name, sample)
-        for name, sample in stress_suite.items()
-        if name != "clean"
-    )
+    stress_items = tuple((name, sample) for name, sample in stress_suite.items() if name != "clean")
     training_items = tuple(training_sequences)
     transformed_by_id = {
         sequence.video_id: _training_transforms(sequence) for sequence in training_items
     }
-    duplicate_by_id = {
-        sequence.video_id: _duplicate_time(sequence) for sequence in training_items
-    }
+    duplicate_by_id = {sequence.video_id: _duplicate_time(sequence) for sequence in training_items}
     work_items = (
         tuple(sample.sequence for sample in count_sweep)
         + tuple(sample.sequence for _, sample in stress_items)
@@ -843,9 +818,7 @@ def _evaluate_candidates(
     stress_truth = tuple(sample.target_count for _, sample in stress_items)
     audits: list[CandidateAudit] = []
     for method in methods:
-        originals = [
-            prediction_rows[sequence.video_id][method] for sequence in training_items
-        ]
+        originals = [prediction_rows[sequence.video_id][method] for sequence in training_items]
         transforms = [
             [
                 prediction_rows[transformed.video_id][method]
@@ -861,13 +834,11 @@ def _evaluate_candidates(
             _score_candidate(
                 method,
                 count_sweep_predictions=[
-                    prediction_rows[sample.sequence.video_id][method]
-                    for sample in count_sweep
+                    prediction_rows[sample.sequence.video_id][method] for sample in count_sweep
                 ],
                 count_sweep_truth=count_truth,
                 stress_predictions=[
-                    prediction_rows[sample.sequence.video_id][method]
-                    for _, sample in stress_items
+                    prediction_rows[sample.sequence.video_id][method] for _, sample in stress_items
                 ],
                 stress_truth=stress_truth,
                 original_predictions=originals,
@@ -882,9 +853,7 @@ def _evaluate_candidates(
             {
                 "sample_id": sample.sequence.video_id,
                 "synthetic_target_count": sample.target_count,
-                "prediction": prediction_rows[sample.sequence.video_id][
-                    selected.candidate_key
-                ],
+                "prediction": prediction_rows[sample.sequence.video_id][selected.candidate_key],
             }
             for sample in count_sweep
         ],
@@ -892,18 +861,14 @@ def _evaluate_candidates(
             {
                 "sample_id": name,
                 "synthetic_target_count": sample.target_count,
-                "prediction": prediction_rows[sample.sequence.video_id][
-                    selected.candidate_key
-                ],
+                "prediction": prediction_rows[sample.sequence.video_id][selected.candidate_key],
             }
             for name, sample in stress_items
         ],
         "unlabeled_train": [
             {
                 "video_id": sequence.video_id,
-                "original_prediction": prediction_rows[sequence.video_id][
-                    selected.candidate_key
-                ],
+                "original_prediction": prediction_rows[sequence.video_id][selected.candidate_key],
                 "transform_predictions": {
                     name: prediction_rows[transformed.video_id][selected.candidate_key]
                     for name, transformed in transformed_by_id[sequence.video_id].items()
@@ -922,9 +887,7 @@ def _evaluate_candidates(
                 name: pose_sequence_sha256(transformed)
                 for name, transformed in transformed_by_id[sequence.video_id].items()
             },
-            "duplicate_time_pose_sha256": pose_sequence_sha256(
-                duplicate_by_id[sequence.video_id]
-            ),
+            "duplicate_time_pose_sha256": pose_sequence_sha256(duplicate_by_id[sequence.video_id]),
         }
         for sequence in training_items
     }
@@ -1019,7 +982,12 @@ def run_selector(
             "occlusion_time_fraction": _OCCLUSION_TIME_FRACTION,
             "occluded_joint_total": _OCCLUDED_JOINT_TOTAL,
             "noise_standard_deviation": _NOISE_STANDARD_DEVIATION,
-            "speed_warp_endpoints": list(_SPEED_WARP_ENDPOINTS),
+            "speed_warp_raw_weight_endpoints": list(_SPEED_WARP_ENDPOINTS),
+            "speed_warp_endpoint_normalization": (
+                "cumulative profile rescaled to preserve the first and last "
+                "frame; effective relative derivative is approximately "
+                "0.4_to_1.6"
+            ),
             "duplicate_time_operation": "concatenate_sequence_with_itself",
             "duplicate_time_expected_prediction": "min(40, 2 * original_prediction)",
             "synthetic_count_range_inclusive": [_COUNT_MINIMUM, _COUNT_MAXIMUM],
@@ -1036,6 +1004,7 @@ def run_selector(
             "test_targets_loaded": False,
             "dataset_count_labels_loaded": False,
             "dataset_action_labels_loaded": False,
+            "video_id_action_strings_used_only_as_opaque_hash_rng_keys": True,
             "synthetic_truth_used": True,
             "real_pose_objective_uses_predictions_only": True,
         },
@@ -1051,26 +1020,19 @@ def run_selector(
             "train337_sidecar_sha256": sidecar_sha256,
             "frozen_train337_sidecar_sha256": _FROZEN_TRAIN337_SIDECAR_SHA256,
             "train337_sidecar_fingerprint": manifest.fingerprint,
-            "frozen_train337_sidecar_fingerprint": (
-                _FROZEN_TRAIN337_MANIFEST_FINGERPRINT
-            ),
+            "frozen_train337_sidecar_fingerprint": (_FROZEN_TRAIN337_MANIFEST_FINGERPRINT),
             "train337_identity_sha256": pose_input_identity_sha256(manifest.records),
             "frozen_train337_identity_sha256": _FROZEN_TRAIN337_IDENTITY_SHA256,
             "pose_fingerprint": _FROZEN_POSE_FINGERPRINT,
-            "selected_train_video_ids": [
-                record.video_id for record in selected_records
-            ],
-            "selected_train_identity_sha256": pose_input_identity_sha256(
-                selected_records
-            ),
+            "selected_train_video_ids": [record.video_id for record in selected_records],
+            "selected_train_identity_sha256": pose_input_identity_sha256(selected_records),
             "selected_pose_cache_set": cache_snapshot.to_dict(),
             "selected_pose_cache_set_sha256": cache_snapshot.fingerprint,
             "transformed_pose_sha256": transformation_hashes,
         },
         "selected_predictions": selected_predictions,
         "candidate_audits": [
-            {"rank": rank, **audit.to_dict()}
-            for rank, audit in enumerate(ranked, start=1)
+            {"rank": rank, **audit.to_dict()} for rank, audit in enumerate(ranked, start=1)
         ],
     }
     _write_new_json(output, payload)

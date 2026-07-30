@@ -15,12 +15,7 @@ from pams.synthetic import SyntheticSpec, generate_synthetic_sample
 from pams.types import PoseSequence
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNNER = (
-    ROOT
-    / "scripts"
-    / "server"
-    / "run_local_frequency_v2_target_free_selector.py"
-)
+RUNNER = ROOT / "scripts" / "server" / "run_local_frequency_v2_target_free_selector.py"
 
 
 def _load_runner() -> ModuleType:
@@ -88,9 +83,7 @@ def test_grid_is_exactly_512_and_candidate_metadata_is_complete() -> None:
         and "centered.trim0.1.norm.c1.5.median.scale_max" in methods
     )
     window = runner._candidate_parameters("centered.trim0.05.w96.norm.c1.5.median")
-    multiscale = runner._candidate_parameters(
-        "xyz.trim0.075.sum.c1.mean.scale_median"
-    )
+    multiscale = runner._candidate_parameters("xyz.trim0.075.sum.c1.mean.scale_median")
     assert window["window_frames"] == 96
     assert window["minimum_cycles_per_window"] == 1.5
     assert window["normalized_dimensions"] is True
@@ -125,6 +118,28 @@ def test_transform_suite_is_deterministic_and_has_frozen_scope() -> None:
     assert duplicate.num_frames == 2 * sequence.num_frames
     assert np.array_equal(duplicate.xyz[: sequence.num_frames], sequence.xyz)
     assert np.array_equal(duplicate.xyz[sequence.num_frames :], sequence.xyz)
+
+
+def test_integer_time_sample_does_not_require_unused_right_frame() -> None:
+    runner = _load_runner()
+    sequence = _short_periodic_sequence()
+    valid = np.ones(sequence.num_frames, dtype=np.bool_)
+    valid[2] = False
+    source = PoseSequence(
+        video_id=sequence.video_id,
+        fps=sequence.fps,
+        xyz=sequence.xyz,
+        valid_mask=valid,
+    )
+
+    interpolated = runner._interpolate_pose_time(
+        source,
+        np.asarray([1.0], dtype=np.float64),
+        "integer_sample",
+    )
+
+    assert interpolated.valid_mask.tolist() == [True]
+    assert np.array_equal(interpolated.xyz[0], source.xyz[1])
 
 
 def test_constant_boundary_predictor_receives_explicit_degeneracy_penalty() -> None:
@@ -177,10 +192,7 @@ def test_selector_core_never_calls_dataset_label_loader(
         sequences: tuple[PoseSequence, ...],
     ) -> dict[str, dict[str, int]]:
         return {
-            sequence.video_id: {
-                method: 2 + (index % 5)
-                for index, method in enumerate(methods)
-            }
+            sequence.video_id: {method: 2 + (index % 5) for index, method in enumerate(methods)}
             for sequence in sequences
         }
 
@@ -195,9 +207,7 @@ def test_selector_core_never_calls_dataset_label_loader(
 
     assert len(ranked) == 512
     assert ranked[0].candidate_key in methods
-    assert [audit.rank_key for audit in ranked] == [
-        audit.rank_key for audit in repeated
-    ]
+    assert [audit.rank_key for audit in ranked] == [audit.rank_key for audit in repeated]
     assert selected == repeated_selected
     assert hashes == repeated_hashes
     assert len(selected["synthetic_count_sweep"]) == 39
