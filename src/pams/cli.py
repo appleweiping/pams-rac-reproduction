@@ -74,6 +74,10 @@ local_frequency_app = typer.Typer(
     help="Run the synthetic-frozen readout through a strict dev-only firewall.",
     no_args_is_help=True,
 )
+teacher_period_app = typer.Typer(
+    help="Run the frozen-v8 direct teacher-period diagnostic on dev84.",
+    no_args_is_help=True,
+)
 stress_app = typer.Typer(
     help="Run deterministic pose-cache stress tests through a dev-only firewall.",
     no_args_is_help=True,
@@ -183,6 +187,7 @@ app.add_typer(report_app, name="report")
 app.add_typer(synthetic_app, name="synthetic")
 app.add_typer(diagnostic_app, name="diagnostic")
 app.add_typer(local_frequency_app, name="local-frequency")
+app.add_typer(teacher_period_app, name="teacher-period")
 app.add_typer(stress_app, name="stress")
 
 
@@ -353,9 +358,7 @@ def _validate_reusable_receipt_snapshot(
     try:
         opened = os.fstat(descriptor)
         if not stat.S_ISREG(opened.st_mode):
-            raise FileExistsError(
-                f"receipt artifact snapshot is not a regular file: {destination}"
-            )
+            raise FileExistsError(f"receipt artifact snapshot is not a regular file: {destination}")
         with os.fdopen(descriptor, "rb") as handle:
             descriptor = -1
             while chunk := handle.read(1024 * 1024):
@@ -382,8 +385,7 @@ def _validate_reusable_receipt_snapshot(
         or digest.hexdigest() != expected_sha256
     ):
         raise FileExistsError(
-            "receipt artifact snapshot already exists with different bytes: "
-            f"{destination}"
+            f"receipt artifact snapshot already exists with different bytes: {destination}"
         )
 
 
@@ -407,9 +409,7 @@ def _copy_receipt_snapshot_atomic(
     try:
         before = source.stat()
         if not source.is_file():
-            raise FileNotFoundError(
-                f"receipt artifact source is not a regular file: {source}"
-            )
+            raise FileNotFoundError(f"receipt artifact source is not a regular file: {source}")
         with source.open("rb") as input_handle:
             opened = os.fstat(input_handle.fileno())
             with os.fdopen(descriptor, "wb") as output_handle:
@@ -429,14 +429,10 @@ def _copy_receipt_snapshot_atomic(
             or getattr(closed, field) != getattr(after, field)
             for field in stable_fields
         ):
-            raise RuntimeError(
-                f"receipt artifact changed while it was copied: {source}"
-            )
+            raise RuntimeError(f"receipt artifact changed while it was copied: {source}")
         observed_sha256 = digest.hexdigest()
         if byte_count != before.st_size or observed_sha256 != expected_sha256:
-            raise RuntimeError(
-                f"receipt artifact hash changed before snapshot: {source}"
-            )
+            raise RuntimeError(f"receipt artifact hash changed before snapshot: {source}")
         try:
             os.link(temporary, destination, follow_symlinks=False)
         except FileExistsError:
@@ -503,17 +499,10 @@ def _materialize_portable_receipt_artifacts(
         raise ValueError("expected artifact SHA-256 roles must exactly match artifact roles")
     receipt_directory = started_manifest_path.resolve().parent
     package_root = (
-        receipt_directory.parent
-        if receipt_directory.name == "manifests"
-        else receipt_directory
+        receipt_directory.parent if receipt_directory.name == "manifests" else receipt_directory
     )
     started_receipt_sha256 = _sha256_file(started_manifest_path)
-    snapshot_directory = (
-        package_root
-        / "inputs"
-        / "receipt-artifacts"
-        / started_receipt_sha256
-    )
+    snapshot_directory = package_root / "inputs" / "receipt-artifacts" / started_receipt_sha256
     portable: dict[str, Path] = {}
     for role, raw_path in sorted(artifacts.items()):
         source = raw_path.resolve()
@@ -566,9 +555,7 @@ def _load_bound_pose_inputs(
         sidecar_sha256=sidecar_sha256,
     )
     if sidecar.split != expected_split:
-        raise ValueError(
-            f"expected {expected_split!r} pose inputs, received {sidecar.split!r}"
-        )
+        raise ValueError(f"expected {expected_split!r} pose inputs, received {sidecar.split!r}")
     if _sha256_file(sidecar_path) != sidecar_sha256:
         raise RuntimeError("pose-input sidecar changed while it was being loaded")
     if _sha256_file(commitment_path) != commitment_sha256:
@@ -1151,9 +1138,7 @@ def data_pose_inputs(
     try:
         if output.suffix.lower() != ".json":
             raise ValueError("pose-input output path must end in .json")
-        commitment_path = commitment_output or output.with_name(
-            f"{output.stem}.commitment.json"
-        )
+        commitment_path = commitment_output or output.with_name(f"{output.stem}.commitment.json")
         if commitment_path.suffix.lower() != ".json":
             raise ValueError("pose-input commitment output path must end in .json")
         resolved_manifest_path = manifest_path.resolve(strict=True)
@@ -1176,9 +1161,7 @@ def data_pose_inputs(
         if output.exists() and not overwrite:
             raise FileExistsError(f"refusing to overwrite existing file: {output}")
         if commitment_path.exists() and not overwrite:
-            raise FileExistsError(
-                f"refusing to overwrite existing file: {commitment_path}"
-            )
+            raise FileExistsError(f"refusing to overwrite existing file: {commitment_path}")
         source_manifest_file_sha256 = _sha256_file(manifest_path)
         manifest = load_ucfrep_manifest(manifest_path, validate_exact=False)
         _validate_experiment_split(manifest)
@@ -1195,19 +1178,13 @@ def data_pose_inputs(
         unlabeled_records: list[UnlabeledVideoRecord] = []
         for record in records:
             if record.video_sha256 is None:
-                raise ValueError(
-                    f"pose input {record.video_id!r} is missing source-video SHA-256"
-                )
+                raise ValueError(f"pose input {record.video_id!r} is missing source-video SHA-256")
             raw_video_path = Path(record.video_path)
             resolved_video_path = (
-                raw_video_path
-                if raw_video_path.is_absolute()
-                else source_root / raw_video_path
+                raw_video_path if raw_video_path.is_absolute() else source_root / raw_video_path
             ).resolve(strict=True)
             try:
-                portable_path = resolved_video_path.relative_to(
-                    resolved_video_root
-                ).as_posix()
+                portable_path = resolved_video_path.relative_to(resolved_video_root).as_posix()
             except ValueError:
                 raise ValueError(
                     f"pose input {record.video_id!r} is outside --video-root; "
@@ -1216,12 +1193,9 @@ def data_pose_inputs(
             if resolved_output == resolved_video_path or (
                 output.exists() and os.path.samefile(output, resolved_video_path)
             ):
-                raise ValueError(
-                    f"pose-input output aliases selected video {record.video_id!r}"
-                )
+                raise ValueError(f"pose-input output aliases selected video {record.video_id!r}")
             if resolved_commitment == resolved_video_path or (
-                commitment_path.exists()
-                and os.path.samefile(commitment_path, resolved_video_path)
+                commitment_path.exists() and os.path.samefile(commitment_path, resolved_video_path)
             ):
                 raise ValueError(
                     f"pose-input commitment aliases selected video {record.video_id!r}"
@@ -1384,13 +1358,9 @@ def data_validate_run(
             normalized_role = role.strip()
             normalized_path = raw_path.strip()
             if not separator or not normalized_role or not normalized_path:
-                raise ValueError(
-                    "artifact remaps must use the form ROLE=ABSOLUTE_PATH"
-                )
+                raise ValueError("artifact remaps must use the form ROLE=ABSOLUTE_PATH")
             if normalized_role in remaps:
-                raise ValueError(
-                    f"duplicate artifact remap for role {normalized_role!r}"
-                )
+                raise ValueError(f"duplicate artifact remap for role {normalized_role!r}")
             candidate = Path(normalized_path).expanduser()
             if not candidate.is_absolute():
                 raise ValueError(
@@ -1579,8 +1549,7 @@ def pose_extract(
             requested_split = split.strip().lower()
             if requested_split not in {"all", pose_inputs.split}:
                 raise ValueError(
-                    f"pose-input manifest is scoped to {pose_inputs.split!r}, "
-                    f"not {split!r}"
+                    f"pose-input manifest is scoped to {pose_inputs.split!r}, not {split!r}"
                 )
             records: tuple[UnlabeledVideoRecord | Any, ...] = pose_inputs.records
             input_manifest_fingerprint = pose_inputs.fingerprint
@@ -1620,9 +1589,9 @@ def pose_extract(
         video_rows: list[tuple[str, Path, str | None]] = []
         for record in records:
             locator = Path(record.video_path)
-            resolved_video = (
-                locator if locator.is_absolute() else root / locator
-            ).resolve(strict=True)
+            resolved_video = (locator if locator.is_absolute() else root / locator).resolve(
+                strict=True
+            )
             if label_free_manifest:
                 try:
                     resolved_video.relative_to(root)
@@ -1630,9 +1599,7 @@ def pose_extract(
                     raise ValueError(
                         f"pose-input locator for {record.video_id!r} escapes --video-root"
                     ) from None
-            video_rows.append(
-                (record.video_id, resolved_video, record.video_sha256)
-            )
+            video_rows.append((record.video_id, resolved_video, record.video_sha256))
         videos = tuple(video_rows)
         summaries, failures = extract_many_with_failures(
             videos,
@@ -1663,9 +1630,7 @@ def pose_extract(
                 pose_fingerprint=config.pose_fingerprint,
                 materialize_sequences=False,
             )
-            successful_cache_snapshot: dict[str, Any] | None = (
-                successful_snapshot.to_dict()
-            )
+            successful_cache_snapshot: dict[str, Any] | None = successful_snapshot.to_dict()
         else:
             successful_cache_snapshot = None
         selected_identity_sha256 = pose_input_identity_sha256(
@@ -1680,9 +1645,7 @@ def pose_extract(
         )
         if _sha256_file(manifest_path) != input_file_sha256:
             raise RuntimeError("input manifest changed during pose extraction")
-        if label_free_manifest and (
-            _sha256_file(commitment_path) != commitment_file_sha256
-        ):
+        if label_free_manifest and (_sha256_file(commitment_path) != commitment_file_sha256):
             raise RuntimeError("pose-input commitment changed during pose extraction")
         ledger_path = failure_ledger or cache_dir / "failures.json"
         _write_json_exclusive(
@@ -1875,26 +1838,22 @@ def train_encoder_command(
         dataset_manifest_sha256 = _sha256_file(manifest_path)
         config = load_config(config_path)
         if resume and (resume_checkpoint is None or resume_progress is None):
-            raise ValueError(
-                "--resume requires both --resume-checkpoint and --resume-progress"
-            )
+            raise ValueError("--resume requires both --resume-checkpoint and --resume-progress")
         if not resume and (resume_checkpoint is not None or resume_progress is not None):
             raise ValueError("resume input options require --resume")
         label_free_bundle: _LabelFreeInputBundle | None = None
         manifest: UCFRepManifest | LabelFreeProtocolInputs
         if label_free_inputs:
-            manifest, sequences, pose_snapshot, label_free_bundle = (
-                _label_free_training_inputs(
-                    manifest_path,
-                    cache_dir,
-                    config,
-                    include_dev=include_dev,
-                    input_commitment=input_commitment,
-                    dev_inputs=dev_inputs,
-                    dev_input_commitment=dev_input_commitment,
-                    test_identity_inputs=test_identity_inputs,
-                    test_identity_commitment=test_identity_commitment,
-                )
+            manifest, sequences, pose_snapshot, label_free_bundle = _label_free_training_inputs(
+                manifest_path,
+                cache_dir,
+                config,
+                include_dev=include_dev,
+                input_commitment=input_commitment,
+                dev_inputs=dev_inputs,
+                dev_input_commitment=dev_input_commitment,
+                test_identity_inputs=test_identity_inputs,
+                test_identity_commitment=test_identity_commitment,
             )
         else:
             unexpected_label_free_options = {
@@ -1910,9 +1869,7 @@ def train_encoder_command(
                 if value is not None
             )
             if supplied:
-                raise ValueError(
-                    f"{', '.join(supplied)} require --label-free-inputs"
-                )
+                raise ValueError(f"{', '.join(supplied)} require --label-free-inputs")
             manifest, sequences, pose_snapshot = _training_inputs(
                 manifest_path, cache_dir, config, include_dev=include_dev
             )
@@ -1949,9 +1906,7 @@ def train_encoder_command(
         resume_checkpoint_sha256 = (
             None if resume_checkpoint is None else _sha256_file(resume_checkpoint)
         )
-        resume_progress_sha256 = (
-            None if resume_progress is None else _sha256_file(resume_progress)
-        )
+        resume_progress_sha256 = None if resume_progress is None else _sha256_file(resume_progress)
         durable_mkdir(output_dir)
         pose_snapshot_sha256 = _persist_pose_cache_snapshot(
             pose_snapshot_path,
@@ -2010,10 +1965,7 @@ def train_encoder_command(
             and _sha256_file(resume_checkpoint) != resume_checkpoint_sha256
         ):
             raise RuntimeError("resume encoder checkpoint changed during training")
-        if (
-            resume_progress is not None
-            and _sha256_file(resume_progress) != resume_progress_sha256
-        ):
+        if resume_progress is not None and _sha256_file(resume_progress) != resume_progress_sha256:
             raise RuntimeError("resume encoder progress changed during training")
         final_epoch = asdict(result.history[-1]) if result.history else None
         checkpoint_sha256 = _sha256_file(checkpoint_path)
@@ -2038,9 +1990,7 @@ def train_encoder_command(
         if resume_checkpoint is not None:
             assert resume_checkpoint_sha256 is not None
             completion_artifacts["input_resume_checkpoint"] = resume_checkpoint
-            completion_expected_sha256["input_resume_checkpoint"] = (
-                resume_checkpoint_sha256
-            )
+            completion_expected_sha256["input_resume_checkpoint"] = resume_checkpoint_sha256
         if resume_progress is not None:
             assert resume_progress_sha256 is not None
             completion_artifacts["input_resume_progress"] = resume_progress
@@ -2171,26 +2121,22 @@ def train_sshead_command(
         dataset_manifest_sha256 = _sha256_file(manifest_path)
         config = load_config(config_path)
         if resume and (resume_checkpoint is None or resume_progress is None):
-            raise ValueError(
-                "--resume requires both --resume-checkpoint and --resume-progress"
-            )
+            raise ValueError("--resume requires both --resume-checkpoint and --resume-progress")
         if not resume and (resume_checkpoint is not None or resume_progress is not None):
             raise ValueError("resume input options require --resume")
         label_free_bundle: _LabelFreeInputBundle | None = None
         manifest: UCFRepManifest | LabelFreeProtocolInputs
         if label_free_inputs:
-            manifest, sequences, pose_snapshot, label_free_bundle = (
-                _label_free_training_inputs(
-                    manifest_path,
-                    cache_dir,
-                    config,
-                    include_dev=include_dev,
-                    input_commitment=input_commitment,
-                    dev_inputs=dev_inputs,
-                    dev_input_commitment=dev_input_commitment,
-                    test_identity_inputs=test_identity_inputs,
-                    test_identity_commitment=test_identity_commitment,
-                )
+            manifest, sequences, pose_snapshot, label_free_bundle = _label_free_training_inputs(
+                manifest_path,
+                cache_dir,
+                config,
+                include_dev=include_dev,
+                input_commitment=input_commitment,
+                dev_inputs=dev_inputs,
+                dev_input_commitment=dev_input_commitment,
+                test_identity_inputs=test_identity_inputs,
+                test_identity_commitment=test_identity_commitment,
             )
         else:
             unexpected_label_free_options = {
@@ -2206,9 +2152,7 @@ def train_sshead_command(
                 if value is not None
             )
             if supplied:
-                raise ValueError(
-                    f"{', '.join(supplied)} require --label-free-inputs"
-                )
+                raise ValueError(f"{', '.join(supplied)} require --label-free-inputs")
             manifest, sequences, pose_snapshot = _training_inputs(
                 manifest_path, cache_dir, config, include_dev=include_dev
             )
@@ -2268,9 +2212,7 @@ def train_sshead_command(
         resume_checkpoint_sha256 = (
             None if resume_checkpoint is None else _sha256_file(resume_checkpoint)
         )
-        resume_progress_sha256 = (
-            None if resume_progress is None else _sha256_file(resume_progress)
-        )
+        resume_progress_sha256 = None if resume_progress is None else _sha256_file(resume_progress)
         durable_mkdir(output_dir)
         pose_snapshot_sha256 = _persist_pose_cache_snapshot(
             pose_snapshot_path,
@@ -2338,10 +2280,7 @@ def train_sshead_command(
             and _sha256_file(resume_checkpoint) != resume_checkpoint_sha256
         ):
             raise RuntimeError("resume SSHead checkpoint changed during training")
-        if (
-            resume_progress is not None
-            and _sha256_file(resume_progress) != resume_progress_sha256
-        ):
+        if resume_progress is not None and _sha256_file(resume_progress) != resume_progress_sha256:
             raise RuntimeError("resume SSHead progress changed during training")
         final_epoch = asdict(result.history[-1]) if result.history else None
         checkpoint_sha256 = _sha256_file(checkpoint_path)
@@ -2370,9 +2309,7 @@ def train_sshead_command(
         if resume_checkpoint is not None:
             assert resume_checkpoint_sha256 is not None
             completion_artifacts["input_resume_checkpoint"] = resume_checkpoint
-            completion_expected_sha256["input_resume_checkpoint"] = (
-                resume_checkpoint_sha256
-            )
+            completion_expected_sha256["input_resume_checkpoint"] = resume_checkpoint_sha256
         if resume_progress is not None:
             assert resume_progress_sha256 is not None
             completion_artifacts["input_resume_progress"] = resume_progress
@@ -2603,9 +2540,7 @@ def evaluate_checkpoint_command(
                 if value is not None
             )
             if supplied:
-                raise ValueError(
-                    f"{', '.join(supplied)} require --label-free-inputs"
-                )
+                raise ValueError(f"{', '.join(supplied)} require --label-free-inputs")
             manifest = load_ucfrep_manifest(manifest_path, validate_exact=False)
         if _sha256_file(config_path) != config_file_sha256:
             raise RuntimeError("configuration changed while it was being loaded")
@@ -2742,8 +2677,7 @@ def evaluate_checkpoint_command(
                 raise RuntimeError("upstream encoder changed during terminal validation")
             if (
                 upstream_encoder_progress is not None
-                and _sha256_file(upstream_encoder_progress)
-                != upstream_encoder_progress_sha256
+                and _sha256_file(upstream_encoder_progress) != upstream_encoder_progress_sha256
             ):
                 raise RuntimeError("upstream encoder progress changed during terminal validation")
         if evaluation_split == "dev" and sealed_attempt_registry is not None:
@@ -2845,17 +2779,12 @@ def evaluate_checkpoint_command(
                 checkpoint_progress is not None
                 and _sha256_file(checkpoint_progress) != checkpoint_progress_sha256
             ):
-                raise RuntimeError(
-                    "checkpoint progress log changed during label-free prediction"
-                )
+                raise RuntimeError("checkpoint progress log changed during label-free prediction")
             if (
                 upstream_encoder_progress is not None
-                and _sha256_file(upstream_encoder_progress)
-                != upstream_encoder_progress_sha256
+                and _sha256_file(upstream_encoder_progress) != upstream_encoder_progress_sha256
             ):
-                raise RuntimeError(
-                    "upstream encoder progress changed during label-free prediction"
-                )
+                raise RuntimeError("upstream encoder progress changed during label-free prediction")
             registry = _canonical_sealed_registry(
                 sealed_attempt_registry,
                 protocol=manifest.protocol,
@@ -2873,9 +2802,7 @@ def evaluate_checkpoint_command(
 
         evaluation_records: tuple[UCFRepRecord | DevTargetRecord, ...]
         if dev_target_manifest is None:
-            evaluation_records = cast(UCFRepManifest, manifest).records_for(
-                evaluation_split
-            )
+            evaluation_records = cast(UCFRepManifest, manifest).records_for(evaluation_split)
         else:
             evaluation_records = dev_target_manifest.records
         if tuple(record.video_id for record in evaluation_records) != tuple(identifiers):
@@ -2942,9 +2869,7 @@ def evaluate_checkpoint_command(
         if checkpoint_progress is not None:
             assert checkpoint_progress_sha256 is not None
             completion_artifacts["input_checkpoint_progress"] = checkpoint_progress
-            completion_expected_sha256["input_checkpoint_progress"] = (
-                checkpoint_progress_sha256
-            )
+            completion_expected_sha256["input_checkpoint_progress"] = checkpoint_progress_sha256
         if upstream_encoder_checkpoint is not None:
             assert upstream_encoder_sha256 is not None
             completion_artifacts["input_upstream_encoder_checkpoint"] = upstream_encoder_checkpoint
@@ -2953,9 +2878,7 @@ def evaluate_checkpoint_command(
             )
         if upstream_encoder_progress is not None:
             assert upstream_encoder_progress_sha256 is not None
-            completion_artifacts["input_upstream_encoder_progress"] = (
-                upstream_encoder_progress
-            )
+            completion_artifacts["input_upstream_encoder_progress"] = upstream_encoder_progress
             completion_expected_sha256["input_upstream_encoder_progress"] = (
                 upstream_encoder_progress_sha256
             )
@@ -3124,9 +3047,7 @@ def evaluate_dev_predict_command(
         normalized_variant = variant.strip().lower()
         if normalized_variant not in {"literal", "sshead"}:
             raise ValueError("--variant must be 'literal' or 'sshead'")
-        normalized_expert_mode = (
-            None if expert_mode is None else expert_mode.strip().lower()
-        )
+        normalized_expert_mode = None if expert_mode is None else expert_mode.strip().lower()
         if normalized_expert_mode not in {None, "multi", "medium_only"}:
             raise ValueError("--expert-mode must be 'multi' or 'medium_only'")
         payload = run_pams_dev_prediction(
@@ -3149,9 +3070,7 @@ def evaluate_dev_predict_command(
             ),
             upstream_encoder_checkpoint_path=upstream_encoder_checkpoint,
             upstream_encoder_progress_path=upstream_encoder_progress,
-            upstream_encoder_completion_receipt_path=(
-                upstream_encoder_completion_receipt
-            ),
+            upstream_encoder_completion_receipt_path=(upstream_encoder_completion_receipt),
             device=device,
             repository_root=Path.cwd(),
             command=list(sys.argv),
@@ -3248,9 +3167,7 @@ def stress_dev_predict_command(
 
         payload = run_pams_dev_stress_prediction(
             source_clean_predictions_path=source_clean_predictions_path,
-            source_clean_prediction_receipt_path=(
-                source_clean_prediction_receipt_path
-            ),
+            source_clean_prediction_receipt_path=(source_clean_prediction_receipt_path),
             checkpoint_path=checkpoint_path,
             dev_inputs_path=dev_inputs_path,
             dev_commitment_path=dev_commitment_path,
@@ -3405,6 +3322,145 @@ def local_frequency_dev_score_command(
             repository_root=Path.cwd(),
         )
     except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(payload)
+
+
+@teacher_period_app.command("dev-predict")
+def teacher_period_dev_predict_command(
+    checkpoint_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    train_inputs_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    pose_cache_dir: Annotated[
+        Path,
+        typer.Argument(exists=True, file_okay=False, readable=True),
+    ],
+    output_dir: Annotated[Path, typer.Argument(file_okay=False)],
+    checkpoint_progress_path: Annotated[
+        Path,
+        typer.Option(
+            "--checkpoint-progress",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    checkpoint_completion_receipt_path: Annotated[
+        Path,
+        typer.Option(
+            "--checkpoint-completion-receipt",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    train_commitment_path: Annotated[
+        Path,
+        typer.Option(
+            "--input-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    dev_inputs_path: Annotated[
+        Path,
+        typer.Option("--dev-inputs", exists=True, dir_okay=False, readable=True),
+    ],
+    dev_commitment_path: Annotated[
+        Path,
+        typer.Option(
+            "--dev-input-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    test_identity_inputs_path: Annotated[
+        Path,
+        typer.Option(
+            "--test-identity-inputs",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    test_identity_commitment_path: Annotated[
+        Path,
+        typer.Option(
+            "--test-identity-commitment",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+        ),
+    ],
+    config_path: Annotated[
+        Path,
+        typer.Option("--config", exists=True, dir_okay=False, readable=True),
+    ] = Path("configs/experiments/pams_longest_contiguous_track_v8.yaml"),
+    device: Annotated[str, typer.Option("--device")] = "auto",
+) -> None:
+    """Freeze target-free dev84 predictions from the exact v8 encoder."""
+
+    try:
+        from pams.teacher_period_dev import run_dev_prediction
+
+        payload = run_dev_prediction(
+            checkpoint_path=checkpoint_path,
+            checkpoint_progress_path=checkpoint_progress_path,
+            checkpoint_completion_receipt_path=(checkpoint_completion_receipt_path),
+            train_inputs_path=train_inputs_path,
+            train_commitment_path=train_commitment_path,
+            dev_inputs_path=dev_inputs_path,
+            dev_commitment_path=dev_commitment_path,
+            test_identity_inputs_path=test_identity_inputs_path,
+            test_identity_commitment_path=test_identity_commitment_path,
+            pose_cache_dir=pose_cache_dir,
+            output_dir=output_dir,
+            config_path=config_path,
+            device=None if device.strip().lower() == "auto" else device,
+            repository_root=Path.cwd(),
+            command=list(sys.argv),
+        )
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        _abort(str(exc))
+    _emit(payload)
+
+
+@teacher_period_app.command("dev-score")
+def teacher_period_dev_score_command(
+    predictions_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    prediction_receipt_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    dev_targets_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    output_dir: Annotated[Path, typer.Argument(file_okay=False)],
+) -> None:
+    """Score frozen diagnostic predictions at the label-bearing boundary."""
+
+    try:
+        from pams.teacher_period_dev import score_dev_predictions
+
+        payload = score_dev_predictions(
+            predictions_path=predictions_path,
+            prediction_receipt_path=prediction_receipt_path,
+            dev_targets_path=dev_targets_path,
+            output_dir=output_dir,
+            repository_root=Path.cwd(),
+        )
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
         _abort(str(exc))
     _emit(payload)
 
