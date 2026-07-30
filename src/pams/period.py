@@ -7,6 +7,7 @@ deterministic, mask-aware implementation of that description.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import torch
@@ -57,6 +58,28 @@ class ProjectedPositionLagVelocityFallbackDiagnostic:
     selection_source: str
     fallback_period: float
     fallback_confidence: float
+
+
+@dataclass(frozen=True)
+class HarmonicFundamentalDiagnostic:
+    """Auditable evidence for an inferred embedding-velocity fundamental."""
+
+    valid_length: int
+    fft_length: int
+    candidate_bins: tuple[int, ...]
+    candidate_periods: tuple[float, ...]
+    candidate_scores: tuple[float, ...]
+    selected_bin: int | None
+    selected_period: float
+    prewhitened_bin: int | None
+    prewhitened_residual_power_fraction: float
+    selected_harmonic_bins: tuple[int, ...]
+    selected_harmonic_power_shares: tuple[float, ...]
+    candidate_distribution_concentration: float
+    family_spectral_concentration: float
+    uniform_family_expectation: float
+    overtone_noise_floor: float
+    confidence: float
 
 
 def _as_batch_signal(signal: Tensor) -> tuple[Tensor, bool]:
@@ -521,6 +544,410 @@ def estimate_period_from_embeddings(
     velocities, velocity_valid = _embedding_velocity(embeddings, valid_mask)
     energy = temporal_component(velocities, velocity_valid)
     return estimate_period_batch(energy, minimum, maximum, velocity_valid)
+
+
+def embedding_velocity_harmonic_fundamental_diagnostics(
+    embeddings: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+    *,
+    maximum_harmonic: int = 8,
+    fundamental_only_weight: float = 0.001,
+    local_bin_radius: int = 0,
+) -> tuple[HarmonicFundamentalDiagnostic, ...]:
+    """Infer a fundamental from full embedding-velocity harmonic evidence.
+
+    This is an independently inferred readout, not an author-disclosed PAMS
+    component.  It deliberately leaves :func:`estimate_period_from_embeddings`
+    unchanged.
+
+    For every bounded fundamental-frequency candidate, the selected-bin power
+    is multiplied with the mean power over all *available* overtones up to
+    ``maximum_harmonic``.  Taking the square root gives an HPS-like
+    fundamental/overtone consensus.  A small fundamental-only term preserves
+    a deterministic pure-sinusoid fallback.  Averaging the overtone power by
+    its available count prevents long-period candidates from winning merely
+    because more harmonics fit below Nyquist.
+
+    Confidence is the product of two bounded quantities: normalized
+    candidate-distribution concentration (Herfindahl excess over uniform) and
+    the selected harmonic family's spectral-power excess over its uniform
+    bin-count expectation.  Exact zero input therefore has zero confidence,
+    while unstructured white noise is not assigned the confidence of a
+    concentrated periodic spectrum.
+    """
+
+    if embeddings.ndim not in (2, 3):
+        raise ValueError(
+            "embeddings must have shape [time, dim] or [batch, time, dim]"
+        )
+    if minimum < 2:
+        raise ValueError("minimum period must be at least 2")
+    if maximum <= minimum:
+        raise ValueError("maximum must be greater than minimum")
+    if isinstance(maximum_harmonic, bool) or maximum_harmonic < 2:
+        raise ValueError("maximum_harmonic must be an integer of at least 2")
+    if not isinstance(maximum_harmonic, int):
+        raise TypeError("maximum_harmonic must be an integer")
+    if (
+        not isinstance(fundamental_only_weight, (int, float))
+        or isinstance(fundamental_only_weight, bool)
+        or not torch.isfinite(torch.tensor(float(fundamental_only_weight)))
+        or not 0.0 <= float(fundamental_only_weight) <= 1.0
+    ):
+        raise ValueError("fundamental_only_weight must be finite and in [0, 1]")
+    if (
+        isinstance(local_bin_radius, bool)
+        or not isinstance(local_bin_radius, int)
+        or local_bin_radius < 0
+    ):
+        raise ValueError("local_bin_radius must be a non-negative integer")
+
+    batched, unbatched = _as_batch_vectors(embeddings)
+    if batched.dtype not in (torch.float32, torch.float64):
+        batched = batched.float()
+    values = torch.nan_to_num(
+        batched.detach(),
+        nan=0.0,
+        posinf=0.0,
+        neginf=0.0,
+    )
+    batch, time, _ = values.shape
+    if valid_mask is None:
+        mask = torch.ones((batch, time), dtype=torch.bool, device=values.device)
+    else:
+        expected = (time,) if unbatched else (batch, time)
+        if valid_mask.shape != expected:
+            raise ValueError(
+                f"valid_mask must have shape {expected}, got {tuple(valid_mask.shape)}"
+            )
+        mask = valid_mask.unsqueeze(0) if unbatched else valid_mask
+        mask = mask.to(device=values.device, dtype=torch.bool)
+
+    velocities, velocity_valid = _embedding_velocity(values, mask)
+    if velocities.ndim == 2:
+        velocities = velocities.unsqueeze(0)
+        velocity_valid = velocity_valid.unsqueeze(0)
+    diagnostics: list[HarmonicFundamentalDiagnostic] = []
+    epsilon = torch.finfo(values.dtype).eps
+
+    for sample_velocity, sample_mask in zip(
+        velocities,
+        velocity_valid,
+        strict=True,
+    ):
+        valid_length = int(sample_mask.sum())
+        upper_period = min(maximum, max(minimum, valid_length - 1))
+        empty = HarmonicFundamentalDiagnostic(
+            valid_length=valid_length,
+            fft_length=time,
+            candidate_bins=(),
+            candidate_periods=(),
+            candidate_scores=(),
+            selected_bin=None,
+            selected_period=float(minimum),
+            prewhitened_bin=None,
+            prewhitened_residual_power_fraction=0.0,
+            selected_harmonic_bins=(),
+            selected_harmonic_power_shares=(),
+            candidate_distribution_concentration=0.0,
+            family_spectral_concentration=0.0,
+            uniform_family_expectation=0.0,
+            overtone_noise_floor=0.0,
+            confidence=0.0,
+        )
+        if valid_length < minimum * 2 or time < minimum * 2:
+            diagnostics.append(empty)
+            continue
+
+        weights = sample_mask.to(dtype=values.dtype)
+        count = weights.sum().clamp_min(1.0)
+        mean = (sample_velocity * weights.unsqueeze(-1)).sum(dim=0) / count
+        centered = torch.nan_to_num(
+            (sample_velocity - mean) * weights.unsqueeze(-1),
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0,
+        )
+        window = torch.hann_window(
+            time,
+            periodic=False,
+            dtype=values.dtype,
+            device=values.device,
+        )
+        spectrum = torch.fft.rfft(centered * window.unsqueeze(-1), dim=0)
+        power = torch.nan_to_num(
+            spectrum.abs().square().sum(dim=-1),
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0,
+        )
+        if power.numel() > 0:
+            power[0] = 0.0
+        total_power = power.sum()
+        if not bool(torch.isfinite(total_power)) or float(total_power) <= float(epsilon):
+            diagnostics.append(empty)
+            continue
+        power_share = power / total_power.clamp_min(epsilon)
+        nyquist_bin = power_share.numel() - 1
+        non_dc_bin_total = max(power_share.numel() - 1, 1)
+        overtone_noise_floor = 0.10 / non_dc_bin_total
+        dominant_bin = int(torch.argmax(power_share[1:])) + 1
+
+        # Remove the single dominant sinusoid by mask-weighted least squares.
+        # The residual spectrum exposes a weak fundamental that a 3rd/5th/7th
+        # harmonic can otherwise hide.  The original spectrum is retained for
+        # overtone evidence and for the pure-sinusoid fallback.
+        frame_index = torch.arange(
+            time,
+            dtype=values.dtype,
+            device=values.device,
+        )
+        phase = (2.0 * math.pi * dominant_bin / time) * frame_index
+        design = torch.stack(
+            (
+                torch.cos(phase),
+                torch.sin(phase),
+                torch.ones_like(phase),
+            ),
+            dim=-1,
+        )
+        weighted_design = design * weights.unsqueeze(-1)
+        gram = design.transpose(0, 1) @ weighted_design
+        regularizer = epsilon * gram.diagonal().abs().max().clamp_min(1.0)
+        gram = gram + regularizer * torch.eye(
+            3,
+            dtype=values.dtype,
+            device=values.device,
+        )
+        coefficients = torch.linalg.solve(
+            gram,
+            weighted_design.transpose(0, 1) @ centered,
+        )
+        residual = (
+            centered - design @ coefficients
+        ) * weights.unsqueeze(-1)
+        residual_spectrum = torch.fft.rfft(
+            residual * window.unsqueeze(-1),
+            dim=0,
+        )
+        residual_power = torch.nan_to_num(
+            residual_spectrum.abs().square().sum(dim=-1),
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0,
+        )
+        residual_power[0] = 0.0
+        residual_total = residual_power.sum()
+        residual_fraction = float(
+            (residual_total / total_power.clamp_min(epsilon)).clamp(0.0, 1.0)
+        )
+        if (
+            bool(torch.isfinite(residual_total))
+            and float(residual_total) > float(epsilon)
+            and residual_fraction >= 1e-6
+        ):
+            residual_share = residual_power / residual_total.clamp_min(epsilon)
+        else:
+            residual_share = torch.zeros_like(power_share)
+        minimum_bin = max(1, math.ceil(time / float(upper_period)))
+        maximum_bin = min(nyquist_bin, math.floor(time / float(minimum)))
+        candidate_bins = tuple(range(minimum_bin, maximum_bin + 1))
+        if not candidate_bins:
+            diagnostics.append(empty)
+            continue
+
+        candidate_scores: list[Tensor] = []
+        candidate_peak_bins: list[tuple[int, ...]] = []
+        candidate_peak_shares: list[tuple[Tensor, ...]] = []
+        for candidate_bin in candidate_bins:
+            harmonic_bins: list[int] = []
+            harmonic_shares: list[Tensor] = []
+            available_harmonic = min(
+                maximum_harmonic,
+                nyquist_bin // candidate_bin,
+            )
+            for order in range(1, available_harmonic + 1):
+                center_bin = order * candidate_bin
+                lower = max(1, center_bin - local_bin_radius)
+                upper = min(nyquist_bin, center_bin + local_bin_radius)
+                local = power_share[lower : upper + 1]
+                relative_peak = int(torch.argmax(local))
+                peak_bin = lower + relative_peak
+                harmonic_bins.append(peak_bin)
+                harmonic_shares.append(power_share[peak_bin])
+            original_fundamental_share = harmonic_shares[0]
+            residual_lower = max(1, candidate_bin - local_bin_radius)
+            residual_upper = min(nyquist_bin, candidate_bin + local_bin_radius)
+            residual_fundamental_share = residual_share[
+                residual_lower : residual_upper + 1
+            ].max()
+            fundamental_share = torch.maximum(
+                original_fundamental_share,
+                residual_fundamental_share,
+            )
+            if len(harmonic_shares) > 1:
+                # The mean, rather than a raw sum, is the explicit
+                # available-harmonic normalization. A fixed tenth of the
+                # uniform-bin expectation is subtracted from every overtone:
+                # this prevents numerical leakage beside one dominant peak
+                # from masquerading as a second harmonic, without erasing a
+                # weak candidate fundamental.
+                overtone_mean = (
+                    torch.stack(harmonic_shares[1:])
+                    .sub(overtone_noise_floor)
+                    .clamp_min(0.0)
+                    .mean()
+                )
+            else:
+                overtone_mean = fundamental_share.new_tensor(0.0)
+            consensus = torch.sqrt(
+                fundamental_share.clamp_min(0.0)
+                * overtone_mean.clamp_min(0.0)
+            )
+            score = consensus + (
+                float(fundamental_only_weight) * fundamental_share
+            )
+            candidate_scores.append(
+                torch.nan_to_num(
+                    score,
+                    nan=0.0,
+                    posinf=0.0,
+                    neginf=0.0,
+                )
+            )
+            candidate_peak_bins.append(tuple(harmonic_bins))
+            candidate_peak_shares.append(tuple(harmonic_shares))
+
+        score_tensor = torch.stack(candidate_scores).clamp_min(0.0)
+        score_total = score_tensor.sum()
+        if not bool(torch.isfinite(score_total)) or float(score_total) <= float(epsilon):
+            diagnostics.append(empty)
+            continue
+        maximum_score = float(score_tensor.max())
+        # A deterministic shorter-period tie break is used only for numerically
+        # equal scores; genuine lower-frequency harmonic consensus dominates
+        # the small fundamental-only fallback by score.
+        score_tolerance = max(float(epsilon) * max(maximum_score, 1.0) * 8.0, 1e-15)
+        tied = [
+            index
+            for index, score in enumerate(score_tensor.detach().cpu().tolist())
+            if maximum_score - float(score) <= score_tolerance
+        ]
+        selected_index = max(tied, key=lambda index: candidate_bins[index])
+        selected_bin = candidate_bins[selected_index]
+        selected_period = min(
+            max(time / float(selected_bin), float(minimum)),
+            float(upper_period),
+        )
+
+        probabilities = score_tensor / score_total.clamp_min(epsilon)
+        candidate_total = probabilities.numel()
+        if candidate_total > 1:
+            uniform_candidate = 1.0 / candidate_total
+            hhi = probabilities.square().sum()
+            hhi_excess = (
+                (hhi - uniform_candidate) / (1.0 - uniform_candidate)
+            ).clamp(0.0, 1.0)
+            candidate_concentration = torch.sqrt(hhi_excess)
+        else:
+            candidate_concentration = probabilities.new_tensor(1.0)
+
+        selected_bins = candidate_peak_bins[selected_index]
+        selected_shares = candidate_peak_shares[selected_index]
+        unique_selected_bins = tuple(dict.fromkeys(selected_bins))
+        family_share = power_share[
+            torch.tensor(
+                unique_selected_bins,
+                dtype=torch.long,
+                device=power_share.device,
+            )
+        ].sum().clamp(0.0, 1.0)
+        uniform_family = min(
+            len(unique_selected_bins) / non_dc_bin_total,
+            1.0,
+        )
+        if uniform_family < 1.0:
+            family_excess = (
+                (family_share - uniform_family) / (1.0 - uniform_family)
+            ).clamp(0.0, 1.0)
+        else:
+            family_excess = family_share.new_tensor(0.0)
+        confidence = (candidate_concentration * family_excess).clamp(0.0, 1.0)
+
+        diagnostics.append(
+            HarmonicFundamentalDiagnostic(
+                valid_length=valid_length,
+                fft_length=time,
+                candidate_bins=candidate_bins,
+                candidate_periods=tuple(
+                    min(
+                        max(time / float(candidate_bin), float(minimum)),
+                        float(upper_period),
+                    )
+                    for candidate_bin in candidate_bins
+                ),
+                candidate_scores=tuple(
+                    float(value) for value in score_tensor.detach().cpu()
+                ),
+                selected_bin=selected_bin,
+                selected_period=selected_period,
+                prewhitened_bin=dominant_bin,
+                prewhitened_residual_power_fraction=residual_fraction,
+                selected_harmonic_bins=selected_bins,
+                selected_harmonic_power_shares=tuple(
+                    float(value) for value in selected_shares
+                ),
+                candidate_distribution_concentration=float(
+                    candidate_concentration
+                ),
+                family_spectral_concentration=float(family_share),
+                uniform_family_expectation=uniform_family,
+                overtone_noise_floor=overtone_noise_floor,
+                confidence=float(confidence),
+            )
+        )
+    return tuple(diagnostics)
+
+
+def estimate_harmonic_fundamental_from_embeddings(
+    embeddings: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+    *,
+    maximum_harmonic: int = 8,
+    fundamental_only_weight: float = 0.001,
+    local_bin_radius: int = 0,
+) -> tuple[Tensor, Tensor]:
+    """Return the opt-in inferred embedding-velocity harmonic fundamental."""
+
+    batched, unbatched = _as_batch_vectors(embeddings)
+    if batched.dtype not in (torch.float32, torch.float64):
+        batched = batched.float()
+    diagnostics = embedding_velocity_harmonic_fundamental_diagnostics(
+        embeddings,
+        minimum=minimum,
+        maximum=maximum,
+        valid_mask=valid_mask,
+        maximum_harmonic=maximum_harmonic,
+        fundamental_only_weight=fundamental_only_weight,
+        local_bin_radius=local_bin_radius,
+    )
+    periods = torch.tensor(
+        [diagnostic.selected_period for diagnostic in diagnostics],
+        dtype=batched.dtype,
+        device=batched.device,
+    )
+    confidences = torch.tensor(
+        [diagnostic.confidence for diagnostic in diagnostics],
+        dtype=batched.dtype,
+        device=batched.device,
+    )
+    if unbatched:
+        return periods[:1], confidences[:1]
+    return periods, confidences
 
 
 def estimate_period_from_projected_pose(
