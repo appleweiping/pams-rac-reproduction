@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "artifact_type": "pams_teacher_period_direct_inferred_paired_dev84_comparisons",
+  "classification": "posthoc inferred dev-only paired negative-result diagnosis",
+  "split": "dev84",
+  "sample_count": 84,
+  "paper_table_eligible": false,
+  "test_evaluation_authorized": false,
+  "a_method": "pams-teacher-period-direct-inferred-v1",
+  "disclosures": [
+    "PAMS-TeacherPeriodDirect-inferred is an independent post-hoc diagnostic, not an author-disclosed method.",
+    "Both comparators are frozen development diagnostics from the public v8 readout package.",
+    "All comparisons use the same 84 video IDs and half-up-rounded counts.",
+    "These results are development-only, test105 remains sealed, and no row is eligible for the paper table."
+  ],
+  "input_bindings": {
+    "teacher_one_off_prediction": {
+      "locator": "one-off/predict/predictions.json",
+      "sha256": "501875b4234b01c80a6c712fd82174540a2856c625ab02f76411be386654853c"
+    },
+    "teacher_one_off_evaluation": {
+      "locator": "one-off/score/evaluation.json",
+      "sha256": "1491ad51da7472244cee07afec775a7dcd2e4e3ba6bca908dec5f677205bd105"
+    },
+    "teacher_formal_prediction": {
+      "locator": "formal-cli/predict/predictions.json",
+      "sha256": "3de2e518fa5221f2a9f019affdba327fabd40bdde6c361f9ca94995160272a19"
+    },
+    "teacher_formal_evaluation": {
+      "locator": "formal-cli/score/evaluation.json",
+      "sha256": "3f7048f3afaaf16d32a8574212c1e029d1b1969717ee05098292a303882eb0c6"
+    },
+    "teacher_formal_equivalence": {
+      "locator": "formal-cli/recovery/formal-cli-equivalence.json",
+      "sha256": "4dbd3b90a1d75199daf29d548ab46d2ba3cdf9e5cbf62b0a98a0f522ca110f8a"
+    },
+    "v8_local_frequency_evaluation": {
+      "locator": "../pams_v8_frozen_readout_diagnostics_seed2026_07192de/local-frequency.evaluation.json",
+      "sha256": "b6add8af9c229cd467be6bba282f267d0d70651a1a39b46ba1443016689add97",
+      "embedded_prediction_sha256": "415fd94928ec34dc17b11c4b9aa1ffcd34cac778453be077fe06beeea40c3056"
+    },
+    "v8_literal_evaluation": {
+      "locator": "../pams_v8_frozen_readout_diagnostics_seed2026_07192de/literal.evaluation.json",
+      "sha256": "4009e32bc0cddcfe37bf0e2c057de4be3f140190dfc580381426d5e162a99e68",
+      "embedded_prediction_sha256": "b2e347895b9aa676deb5bb7fc86a6cf59930f969c78d59f9e3ab43ea1b0579da"
+    },
+    "v8_package_provenance": {
+      "locator": "../pams_v8_frozen_readout_diagnostics_seed2026_07192de/provenance.json",
+      "sha256": "adf196b62802c8fcbbefb8b814674cbd2b40e07a9a9086fa98fe15a0bbddcb6a"
+    },
+    "v8_package_paired_comparisons": {
+      "locator": "../pams_v8_frozen_readout_diagnostics_seed2026_07192de/paired-comparisons.json",
+      "sha256": "8383692de15692357e0a194908459292642db8684b65dd78f516611f72226ab6",
+      "role": "package provenance binding; not reused as comparison output"
+    },
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6"
+  },
+  "alignment_audit": {
+    "same_video_id_set": true,
+    "same_video_id_order_after_explicit_id_join": true,
+    "unique_video_ids": 84,
+    "missing_rows": 0,
+    "duplicate_rows": 0,
+    "teacher_formal_and_one_off_core_fields_exact": true
+  },
+  "bootstrap": {
+    "pairing": "same 84 video rows resampled by shared indices within each method pair",
+    "samples": 10000,
+    "seed": 2026,
+    "confidence_level": 0.95,
+    "interval": "numpy linear percentile at 0.025 and 0.975",
+    "difference_direction": "A minus B",
+    "rounding": "nearest integer, half up"
+  },
+  "comparisons": [
+    {
+      "a": "pams_teacher_period_direct_inferred",
+      "b": "v8_local_frequency_synthetic_frozen",
+      "absolute_error_comparison": {
+        "a_better": 17,
+        "a_worse": 48,
+        "tied": 19,
+        "a_absolute_error_sum": 1118,
+        "b_absolute_error_sum": 296,
+        "a_minus_b_absolute_error_sum": 822
+      },
+      "metrics": {
+        "nmae": {
+          "difference_a_minus_b": 2.3310613299991374,
+          "confidence_interval_95": {
+            "low": 1.5710391641091304,
+            "high": 3.1721900147750666,
+            "level": 0.95
+          },
+          "samples": 10000,
+          "seed": 2026
+        },
+        "mae": {
+          "difference_a_minus_b": 9.785714285714286,
+          "confidence_interval_95": {
+            "low": 6.75,
+            "high": 12.92857142857143,
+            "level": 0.95
+          },
+          "samples": 10000,
+          "seed": 2026
+        },
+        "rmse": {
+          "difference_a_minus_b": 14.938129765558127,
+          "confidence_interval_95": {
+            "low": 11.098664769077002,
+            "high": 18.46243217401126,
+            "level": 0.95
+          },
+          "samples": 10000,
+          "seed": 2026
+        },
+        "obo": {
+          "difference_a_minus_b": -0.16666666666666666,
+          "confidence_interval_95": {
+            "low": -0.2619047619047619,
+            "high": -0.07142857142857142,
+            "level": 0.95
+          },
+          "samples": 10000,
+          "seed": 2026
+        },
+        "exact": {
+          "difference_a_minus_b": -0.09523809523809525,
+          "confidence_interval_95": {
+            "low": -0.1785714285714286,
+            "high": -0.011904761904761904,
+            "level": 0.95
+          },
+          "samples": 10000,
+          "seed": 2026
+        }
+      },
+      "interpretation": "TeacherPeriodDirect is materially worse than the pose-only local-frequency diagnostic. Every paired interval shown excludes zero in the worse direction for TeacherPeriodDirect."
+    },
+    {
+      "a": "pams_teacher_period_direct_inferred",
+      "b": "v8_pams_literal_random_untrained_head",
+      "absolute_error_comparison": {
+        "a_better": 23,
+        "a_worse": 48,
+        "tied": 13,
+        "a_absolute_error_sum": 1118,
+        "b_absolute_error_sum": 342,
+        "a_minus_b_absolute_error_sum": 776
+      },
+      "metrics": {
+        "nmae": {
+          "difference_a_minus_b": 2.195493134055326,
+          "confidence_interval_95": {
+            "low": 1.422603346326407,
+            "high": 3.053361701798816,
+            "level": 0.95
+          },
+          "samples": 10000,
+          "seed": 2026
+        },
+        "mae": {
+          "difference_a_minus_b": 9.238095238095239,
+          "confidence_interval_95": {
+            "low": 6.226190476190476,
+            "high": 12.416666666666666,
+            "level": 0.95
+          },
+          "samples": 10000,
+          "seed": 2026
+        },
+        "rmse": {
+          "difference_a_minus_b": 14.470395379201157,
+          "confidence_interval_95": {
+            "low": 10.661647360502664,
+            "high": 17.999521247900063,
+            "level": 0.95
+          },
+          "samples": 10000,
+          "seed": 2026
+        },
+        "obo": {
+          "difference_a_minus_b": -0.09523809523809526,
+          "confidence_interval_95": {
+            "low": -0.20238095238095238,
+            "high": 0.01190476190476189,
+            "level": 0.95
+          },
+          "samples": 10000,
+          "seed": 2026
+        },
+        "exact": {
+          "difference_a_minus_b": -0.07142857142857144,
+          "confidence_interval_95": {
+            "low": -0.15476190476190477,
+            "high": 0.011904761904761904,
+            "level": 0.95
+          },
+          "samples": 10000,
+          "seed": 2026
+        }
+      },
+      "interpretation": "TeacherPeriodDirect has substantially worse error magnitude than PAMS-Literal. Its NMAE, MAE, and RMSE intervals exclude zero in the worse direction; OBO and Exact intervals cross zero."
+    }
+  ],
+  "conclusion": "The direct teacher-period readout is not a viable recovery path. It is substantially worse than both frozen v8 diagnostics, especially the pose-only local-frequency readout, and therefore must not be used as a pseudo-label teacher for a follow-up head."
+}

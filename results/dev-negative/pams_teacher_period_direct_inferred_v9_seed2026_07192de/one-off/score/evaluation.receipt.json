@@ -1,0 +1,12 @@
+{
+  "artifact_type": "teacher_period_direct_evaluation_receipt",
+  "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+  "evaluation_bytes": 28365,
+  "evaluation_file": "evaluation.json",
+  "evaluation_sha256": "1491ad51da7472244cee07afec775a7dcd2e4e3ba6bca908dec5f677205bd105",
+  "method_key": "pams-teacher-period-direct-inferred-v1",
+  "prediction_receipt_sha256": "0de1cb9ca4e9af6eda76014b8198c3dda34a80010324cc5291de85db16689ff2",
+  "prediction_sha256": "501875b4234b01c80a6c712fd82174540a2856c625ab02f76411be386654853c",
+  "schema_version": 1,
+  "scoring_script_sha256": "253cfdcddce271a30273a41a80ade90ec65c288ae875ac5434458975282dd751"
+}

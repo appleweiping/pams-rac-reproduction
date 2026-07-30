@@ -1,0 +1,78 @@
+{
+  "artifact_type": "pams_teacher_period_direct_dev_prediction_receipt",
+  "checkpoint_completion_receipt_sha256": "f4815e1961ba883c23ef479ddcdef44aea5cad8a50d54e17b8e6a4cccc613f3d",
+  "checkpoint_progress_sha256": "aadc8f9bf067b3489efcd80db43c42cf09dba3477c2976bbc16571ff31684622",
+  "checkpoint_sha256": "6817fe468d76c3fa2182dd831695d6fe3d6da208a2b7f8dfa90cffa6872e8053",
+  "command": [
+    "/workspace/src/pams/cli.py",
+    "teacher-period",
+    "dev-predict",
+    "/pams/encoder/encoder.pt",
+    "/pams/protocol/train.inputs.json",
+    "/pams/pose-cache",
+    "/pams/output",
+    "--checkpoint-progress",
+    "/pams/encoder/logs/encoder.jsonl",
+    "--checkpoint-completion-receipt",
+    "/pams/encoder/manifests/20260730T025521Z-e6e6a2f657aa.completed.json",
+    "--input-commitment",
+    "/pams/protocol/train.inputs.commitment.json",
+    "--dev-inputs",
+    "/pams/protocol/dev.inputs.json",
+    "--dev-input-commitment",
+    "/pams/protocol/dev.inputs.commitment.json",
+    "--test-identity-inputs",
+    "/pams/protocol/test-identity.inputs.json",
+    "--test-identity-commitment",
+    "/pams/protocol/test-identity.inputs.commitment.json",
+    "--config",
+    "/pams/input/config.yaml",
+    "--device",
+    "cuda:0"
+  ],
+  "config_fingerprint": "eaf9e2ce6047c4a13c13daaef10af1ae288542ad94ff9fb513d19e225912adf2",
+  "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+  "dev_pose_cache_set_sha256": "681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1",
+  "dev_pose_cache_snapshot_sha256": "14c290d86097b572cd544853f9d9c8bde379a3e53d7b637b22b66c6fbe1bb417",
+  "hardware": {
+    "container": {
+      "environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+      "image_id": "sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005",
+      "source_revision": "f7108edb24b70895ae1404eb354595208828a5dd"
+    },
+    "cuda_runtime": "12.4",
+    "cudnn": 90100,
+    "gpus": [
+      {
+        "capability": "8.6",
+        "index": 0,
+        "name": "NVIDIA RTX A6000",
+        "total_memory_bytes": 50807570432
+      }
+    ],
+    "logical_cpu_count": 40,
+    "nvidia_driver": {
+      "status": "available",
+      "versions": [
+        "550.54.14"
+      ]
+    },
+    "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.35",
+    "processor": "x86_64",
+    "python": "3.11.10",
+    "torch": "2.5.1+cu124"
+  },
+  "method_key": "pams-teacher-period-direct-inferred-v1",
+  "prediction_batch_size": 32,
+  "prediction_bytes": 557402,
+  "prediction_code_sha256": "d106b90143979a243f88f894eea170e247dcf8715be10c688e59e5acb433fba7",
+  "prediction_container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+  "prediction_container_image_id": "sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005",
+  "prediction_file": "predictions.json",
+  "prediction_sha256": "3de2e518fa5221f2a9f019affdba327fabd40bdde6c361f9ca94995160272a19",
+  "prediction_source_git_sha": "f7108edb24b70895ae1404eb354595208828a5dd",
+  "protocol": "ucfrep_526",
+  "schema_version": 1,
+  "split": "dev",
+  "training_pose_cache_set_sha256": "f32d718ae922120778f535a6a4f467edba79cafeba90373b3a6a55bf11be6ee2"
+}

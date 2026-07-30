@@ -1,0 +1,16 @@
+{
+  "artifact_type": "teacher_period_direct_prediction_receipt",
+  "config_fingerprint": "eaf9e2ce6047c4a13c13daaef10af1ae288542ad94ff9fb513d19e225912adf2",
+  "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+  "encoder_checkpoint_sha256": "6817fe468d76c3fa2182dd831695d6fe3d6da208a2b7f8dfa90cffa6872e8053",
+  "method_key": "pams-teacher-period-direct-inferred-v1",
+  "pose_cache_set_sha256": "681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1",
+  "pose_fingerprint": "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116",
+  "prediction_bytes": 27932,
+  "prediction_file": "predictions.json",
+  "prediction_script_sha256": "4201d9193a7d2606ef004854c9a5d8a0e10a24024431a8defd99bc5744397fc3",
+  "prediction_sha256": "501875b4234b01c80a6c712fd82174540a2856c625ab02f76411be386654853c",
+  "record_total": 84,
+  "schema_version": 1,
+  "source_revision": "07192debb7f5748c53a1c6d4f0c0d3f16228e229"
+}

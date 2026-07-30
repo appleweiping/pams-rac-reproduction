@@ -33,6 +33,17 @@ signal and that the learned inferred SSHead/period stream is the primary
 remaining bottleneck. Full target-isolated artifacts are under
 [`dev-negative/pams_v8_frozen_readout_diagnostics_seed2026_07192de/`](dev-negative/pams_v8_frozen_readout_diagnostics_seed2026_07192de/).
 
+The frozen-v8 `PAMS-TeacherPeriodDirect-inferred-v1` follow-up then applied
+the projected-pose vector-ACF teacher directly, without training another
+head. Its formal CLI replay matched all 84 frozen one-off predictions exactly
+for raw count, rounded count, period, confidence, valid-frame count, video ID,
+and video hash. The resulting NMAE/OBO is `2.860120 / 0.166667`, with
+over-counting and harmonic aliases dominating the error. This is a negative,
+post-hoc development diagnostic and cannot enter a paper table or authorize
+seeds `42/3407` or test105. Full gate, prediction, evaluation, recovery, and
+equivalence evidence is under
+[`dev-negative/pams_teacher_period_direct_inferred_v9_seed2026_07192de/`](dev-negative/pams_teacher_period_direct_inferred_v9_seed2026_07192de/).
+
 ## UCFRep-526 development-only negative result
 
 All rows use the same fixed 84-video development split and source revision

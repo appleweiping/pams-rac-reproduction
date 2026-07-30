@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/pams-run/gate-script.py", line 19, in <module>
+    model=load_model_checkpoint(checkpoint_path,config,device=device,expected_stage='encoder').eval()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/src/pams/training.py", line 1379, in load_model_checkpoint
+    _checkpoint_provenance(
+  File "/workspace/src/pams/training.py", line 1025, in _checkpoint_provenance
+    raise ValueError(
+ValueError: checkpoint contains bound provenance; caller must provide expected_provenance

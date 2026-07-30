@@ -18,6 +18,12 @@ Action Counting** (CVPR Findings 2026).
 > synthetic-frozen pose-only local-frequency readout. The latter isolates the
 > learned Period Head/period stream as the main remaining bottleneck, but is
 > not an author-disclosed PAMS component or a paper-table result.
+> A subsequent frozen-v8 `PAMS-TeacherPeriodDirect-inferred-v1` diagnostic
+> tested the pre-position-encoding vector-ACF teacher directly. Its formal CLI
+> replay exactly matched all 84 previously frozen predictions, but obtained
+> NMAE/OBO `2.860120 / 0.166667`; harmonic over-counting makes it unsuitable
+> as SSHead supervision. It is development-only, post-hoc, and permanently
+> paper-table-ineligible.
 > The official current RepNet checkpoint and official TransRAC and IVAC-P2L
 > checkpoints have separate
 > development-only sanity results; both use explicitly labeled modern
