@@ -171,6 +171,36 @@ def _predict(arguments: argparse.Namespace) -> None:
                 batch.poses,
                 batch.valid_mask,
             )
+            attention_valid = batch.valid_mask.clone()
+            fully_invalid = ~attention_valid.any(dim=1)
+            if fully_invalid.any():
+                attention_valid[fully_invalid, 0] = True
+            no_pe_hidden = model.encoder.transformer(
+                projected,
+                src_key_padding_mask=~attention_valid,
+            )
+            no_pe_embeddings = torch.nn.functional.normalize(
+                model.encoder.output_projection(no_pe_hidden),
+                p=2,
+                dim=-1,
+                eps=1e-12,
+            ).masked_fill(~batch.valid_mask.unsqueeze(-1), 0.0)
+            position_only_hidden = model.encoder.transformer(
+                model.encoder.position_encoding(torch.zeros_like(projected)),
+                src_key_padding_mask=~attention_valid,
+            )
+            position_only_embeddings = torch.nn.functional.normalize(
+                model.encoder.output_projection(position_only_hidden),
+                p=2,
+                dim=-1,
+                eps=1e-12,
+            ).masked_fill(~batch.valid_mask.unsqueeze(-1), 0.0)
+            pe_residual_embeddings = torch.nn.functional.normalize(
+                embeddings - position_only_embeddings,
+                p=2,
+                dim=-1,
+                eps=1e-12,
+            ).masked_fill(~batch.valid_mask.unsqueeze(-1), 0.0)
             pose = batch.poses.flatten(start_dim=2)
             representations = {
                 "pose-centered": (pose, False),
@@ -178,6 +208,13 @@ def _predict(arguments: argparse.Namespace) -> None:
                 "projected-linear-detrended": (projected, True),
                 "embedding-centered": (embeddings, False),
                 "embedding-linear-detrended": (embeddings, True),
+                "transformer-no-pe-centered": (no_pe_embeddings, False),
+                "transformer-no-pe-linear-detrended": (no_pe_embeddings, True),
+                "embedding-pe-residual-centered": (pe_residual_embeddings, False),
+                "embedding-pe-residual-linear-detrended": (
+                    pe_residual_embeddings,
+                    True,
+                ),
             }
             diagnostics = {
                 name: _representation_diagnostics(
@@ -234,6 +271,10 @@ def _predict(arguments: argparse.Namespace) -> None:
             "projected-linear-detrended",
             "embedding-centered",
             "embedding-linear-detrended",
+            "transformer-no-pe-centered",
+            "transformer-no-pe-linear-detrended",
+            "embedding-pe-residual-centered",
+            "embedding-pe-residual-linear-detrended",
         ],
         "period_range_frames": [config.period.minimum, config.period.maximum],
         "hardware": hardware_fingerprint(),
