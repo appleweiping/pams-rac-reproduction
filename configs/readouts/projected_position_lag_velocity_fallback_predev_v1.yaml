@@ -1,0 +1,94 @@
+# Independently inferred target-free pre-dev diagnostic. This configuration
+# cannot authorize dev84 scoring or any test105 access.
+schema_version: 1
+key: pams-projected-position-lag-velocity-fallback-predev-v1
+classification: inferred detrended lag-ACF peak with projected-velocity fallback predev diagnostic
+eligible_for_paper_table: false
+dev84_scoring_authorized: false
+test105_evaluation_authorized: false
+
+frozen_inputs:
+  dataset_protocol: ucfrep_526
+  seed: 2026
+  encoder_checkpoint_sha256: 6817fe468d76c3fa2182dd831695d6fe3d6da208a2b7f8dfa90cffa6872e8053
+  encoder_source_git_sha: 07192debb7f5748c53a1c6d4f0c0d3f16228e229
+  encoder_container_image_id: sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005
+  encoder_container_environment_sha256: 1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508
+  experiment_config_sha256: eb4072a195608757cd2542855b33fb000c987f96c94b83a1e448ab78f97e9374
+  experiment_config_fingerprint: eaf9e2ce6047c4a13c13daaef10af1ae288542ad94ff9fb513d19e225912adf2
+  pose_fingerprint: 3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116
+  train337_inputs_sha256: e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207
+  train337_pose_cache_set_sha256: f32d718ae922120778f535a6a4f467edba79cafeba90373b3a6a55bf11be6ee2
+
+readout:
+  input_source: encoder_input_projection_pre_positional_encoding
+  primary_temporal_transform: mask_aware_per_feature_least_squares_linear_detrend
+  primary_evidence: masked_centered_vector_dot_product_fft_autocorrelation
+  primary_lag_minimum_frames: 4
+  primary_lag_maximum_frames: min_128_and_floor_valid_length_over_2
+  primary_peak_finder: scipy_find_peaks
+  primary_peak_minimum_distance_frames: 4
+  primary_peak_minimum_prominence: 0
+  primary_peak_height_guard: strictly_positive
+  primary_selection: maximum_acf_height_then_smallest_lag
+  fallback_trigger: no_positive_primary_local_peak
+  fallback: projected_pose_pairwise_valid_velocity_vector_acf_spectrum
+  fallback_selection: maximum_allowed_non_dc_power_share
+  fallback_confidence_guard: strictly_positive
+  no_evidence_period_frames: 4
+  minimum_period_frames: 4
+  maximum_period_frames: 128
+  count_duration: valid_frame_intervals
+  rounding: nearest_integer_half_up
+  prediction_batch_size: 32
+
+predev_gates:
+  synthetic:
+    harmonic_orders: [2, 3, 4, 5, 6, 7]
+    frames: 256
+    fundamental_period_frames: 64
+    fundamental_amplitude: 1.0
+    harmonic_amplitude: 0.75
+    harmonic_phase_radians: 0.37
+    linear_drift_per_frame: 0.02
+    required_records: 6
+    minimum_fundamental_selection_fraction: 1.0
+    require_finite_outputs: true
+    require_positive_confidence: true
+  train337_target_free_distribution:
+    required_records: 337
+    maximum_zero_confidence_fraction: 0.10
+    maximum_minimum_period_fraction: 0.10
+    maximum_maximum_period_fraction: 0.10
+    maximum_selected_period_mode_fraction: 0.25
+    minimum_unique_selected_periods: 8
+    require_finite_outputs: true
+    require_zero_confidence_zero_count: true
+
+stop_policy:
+  synthetic_failure: stop_before_train337
+  train337_failure: stop_before_dev84
+  pass: eligible_to_build_separate_frozen_dev84_protocol
+  dev84_scoring_authorized: false
+  test105_evaluation_authorized: false
+
+mount_policy:
+  network: none
+  allowed:
+    - clean_source_export
+    - experiment_config
+    - this_readout_config
+    - exact_v8_encoder_checkpoint
+    - train337_identity_sidecar
+    - train337_pose_cache
+    - output_directory
+  prohibited:
+    - train337_action_labels
+    - train337_count_labels
+    - dev84_identity_sidecars
+    - dev84_pose_cache
+    - dev84_targets
+    - test105_identity_sidecars
+    - test105_media
+    - test105_pose
+    - test105_labels
