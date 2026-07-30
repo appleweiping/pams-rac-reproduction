@@ -627,10 +627,16 @@ def test_detrended_projected_position_no_evidence_contract() -> None:
     all_valid = torch.ones(256, dtype=torch.bool)
     all_invalid = torch.zeros(256, dtype=torch.bool)
     affine = torch.stack((3.0 + 0.2 * time, -7.0 - 0.05 * time), dim=-1)
+    float32_time = time.float()
+    float32_affine = torch.stack(
+        (3.0 + 0.2 * float32_time, -7.0 - 0.05 * float32_time),
+        dim=-1,
+    )
     inputs = (
         (torch.zeros(256, 2, dtype=torch.float64), all_valid, 128.0),
         (torch.full((256, 2), 11.0, dtype=torch.float64), all_valid, 128.0),
         (affine, all_valid, 128.0),
+        (float32_affine, all_valid, 128.0),
         (torch.randn(256, 2, dtype=torch.float64), all_invalid, 4.0),
     )
 
