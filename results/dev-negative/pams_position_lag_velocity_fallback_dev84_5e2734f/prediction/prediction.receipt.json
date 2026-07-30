@@ -1,0 +1,15 @@
+{
+  "artifact_type": "pams_position_lag_velocity_fallback_dev_prediction_receipt",
+  "dev84_targets_mounted": false,
+  "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+  "dev_pose_cache_set_sha256": "681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1",
+  "formal_predev_artifact_sha256": "f563cffa4235b34e091bf9b93af9123a93fa1d57ee29dc39f54f4feb60e0d928",
+  "prediction_bytes": 27241,
+  "prediction_file": "predictions.json",
+  "prediction_sha256": "7613e0d57e1be3db986e9581047ef2ed9ae54a711fcf55262b6d7241395e7f75",
+  "prediction_total": 84,
+  "readout_config_sha256": "b3c38341e442765cb709d8ca9c5ecfe541121ea61d1ae35c0ff2cb48b6b09a98",
+  "schema_version": 1,
+  "source_revision": "470d49bd97eef5adad89142d4ffc017125505525",
+  "test105_evaluation_authorized": false
+}

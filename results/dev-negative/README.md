@@ -10,6 +10,17 @@ Head and the independently inferred SSHead completion. It is not a test
 result, leaderboard result, successful reproduction claim, or ablation
 result.
 
+## Inferred near-best lag-ACF dev84 diagnostic
+
+The separately frozen seed-2026 position lag-ACF readout with a
+projected-velocity fallback completed all 84 target-free predictions before
+isolated scoring. It obtained NMAE `0.984422` and OBO `0.285714`, failing
+both frozen acceptance thresholds (`0.228` / `0.666`). The method is an
+independently inferred paper completion and is ineligible for the paper
+table. The sealed test105 split was untouched. Public-safe predictions,
+evaluation, receipts, hashes, and isolation audit are in
+[`pams_position_lag_velocity_fallback_dev84_5e2734f`](pams_position_lag_velocity_fallback_dev84_5e2734f/README.md).
+
 The three preregistered seeds `42`, `2026`, and `3407` completed on the same
 development split. PAMS-Literal has mean NMAE/OBO
 `0.7299247978 / 0.2500000000`; PAMS-SSHead has
