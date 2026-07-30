@@ -290,6 +290,8 @@ def test_attempts_are_non_overwriting_failure_preserving_and_receipted() -> None
     assert 'with path.open("x"' in launcher
     assert "source-export.receipt.json" in launcher
     assert "gate.receipt.json" in launcher
+    assert 'GATE_SCRIPT_PATH="$GATE_SCRIPT"' in launcher
+    assert '\n  GATE_SCRIPT="$GATE_SCRIPT" \\\n' not in launcher
     assert "prediction.receipt.json" in launcher
     assert "evaluation.receipt.json" in launcher
     assert 'chmod -R a-w "$RUN_ROOT"' in launcher

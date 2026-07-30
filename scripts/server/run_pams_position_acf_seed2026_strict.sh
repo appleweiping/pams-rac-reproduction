@@ -246,7 +246,7 @@ write_gate_receipt() {
   GATE_PATH="$gate_path" \
   GATE_RECEIPT="$receipt_path" \
   GATE_INSPECT="$inspect_path" \
-  GATE_SCRIPT="$GATE_SCRIPT" \
+  GATE_SCRIPT_PATH="$GATE_SCRIPT" \
   GATE_SOURCE_RECEIPT="$SOURCE_RECEIPT" \
   GATE_READOUT_CONFIG="${SOURCE_VIEW}/${READOUT_CONFIG_RELATIVE}" \
   GATE_EXPERIMENT_CONFIG="${SOURCE_VIEW}/${EXPERIMENT_CONFIG_RELATIVE}" \
@@ -271,7 +271,7 @@ payload = {
     "gate_file": gate.name,
     "gate_sha256": digest(gate),
     "gate_bytes": gate.stat().st_size,
-    "gate_script_sha256": digest(Path(os.environ["GATE_SCRIPT"])),
+    "gate_script_sha256": digest(Path(os.environ["GATE_SCRIPT_PATH"])),
     "source_export_receipt_sha256": digest(
         Path(os.environ["GATE_SOURCE_RECEIPT"])
     ),
