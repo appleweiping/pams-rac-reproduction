@@ -9,11 +9,14 @@ from pams.period import (
     embedding_energy,
     estimate_period,
     estimate_period_batch,
+    estimate_period_from_detrended_projected_position,
     estimate_period_from_embeddings,
     estimate_period_from_pose,
     estimate_period_from_projected_pose,
     estimate_period_from_projected_position,
     estimate_period_from_vectors,
+    linear_detrend_projected_position,
+    projected_position_detrended_vector_acf_diagnostics,
     projected_position_vector_acf_diagnostics,
     vector_autocorrelation_fft,
 )
@@ -505,3 +508,182 @@ def test_projected_position_acf_supports_batched_masks_and_diagnostics() -> None
     assert len(diagnostics) == 2
     assert tuple(diagnostic.selected_bin for diagnostic in diagnostics) == (16, 8)
     assert all(diagnostic.allowed_bins == tuple(range(2, 65)) for diagnostic in diagnostics)
+
+
+def test_detrended_projected_position_is_invariant_to_affine_drift() -> None:
+    time = torch.arange(256, dtype=torch.float64)
+    angle = 2.0 * math.pi * time / 32.0
+    clean = torch.stack(
+        (
+            torch.sin(angle),
+            torch.cos(angle),
+            0.4 * torch.sin(angle + 0.31),
+        ),
+        dim=-1,
+    )
+    offset = torch.tensor((12.0, -7.0, 3.5), dtype=clean.dtype)
+    slope = torch.tensor((0.03, -0.05, 0.08), dtype=clean.dtype)
+    drifted = clean + offset + time.unsqueeze(-1) * slope
+
+    clean_residual = linear_detrend_projected_position(clean)
+    drifted_residual = linear_detrend_projected_position(drifted)
+    clean_period, clean_confidence = (
+        estimate_period_from_detrended_projected_position(clean)
+    )
+    drifted_period, drifted_confidence = (
+        estimate_period_from_detrended_projected_position(drifted)
+    )
+
+    assert torch.allclose(clean_residual, drifted_residual, rtol=1e-12, atol=1e-12)
+    assert clean_period.tolist() == drifted_period.tolist() == [32.0]
+    assert torch.allclose(
+        clean_confidence,
+        drifted_confidence,
+        rtol=1e-12,
+        atol=1e-12,
+    )
+
+
+@pytest.mark.parametrize("harmonic", range(2, 8))
+def test_detrended_projected_position_preserves_k2_to_k7_fundamental(
+    harmonic: int,
+) -> None:
+    time = torch.arange(256, dtype=torch.float64)
+    fundamental_angle = 2.0 * math.pi * time / 64.0
+    harmonic_angle = harmonic * fundamental_angle + 0.37
+    periodic = torch.stack(
+        (
+            torch.sin(fundamental_angle) + 0.75 * torch.sin(harmonic_angle),
+            torch.cos(fundamental_angle) + 0.75 * torch.cos(harmonic_angle),
+        ),
+        dim=-1,
+    )
+    offset = torch.tensor((20.0, -11.0), dtype=periodic.dtype)
+    slope = torch.tensor((0.04, -0.07), dtype=periodic.dtype)
+    projected_pose = periodic + offset + time.unsqueeze(-1) * slope
+
+    period, confidence = estimate_period_from_detrended_projected_position(
+        projected_pose,
+        minimum=4,
+        maximum=128,
+    )
+    diagnostic = projected_position_detrended_vector_acf_diagnostics(
+        projected_pose,
+        minimum=4,
+        maximum=128,
+    )[0]
+
+    assert period.tolist() == [64.0]
+    assert confidence.item() > 0.0
+    assert diagnostic.selected_bin == 4
+    assert diagnostic.allowed_bins == tuple(range(2, 65))
+
+
+def test_detrended_projected_position_mask_ignores_invalid_pollution() -> None:
+    generator = torch.Generator().manual_seed(3407)
+    time = torch.arange(256, dtype=torch.float64)
+    angle = 2.0 * math.pi * time / 32.0
+    clean = torch.stack((torch.sin(angle), torch.cos(angle)), dim=-1)
+    clean = clean + torch.tensor((5.0, -8.0)) + time.unsqueeze(-1) * torch.tensor(
+        (0.02, -0.03)
+    )
+    mask = torch.ones(256, dtype=torch.bool)
+    mask[48:77] = False
+    mask[190:213] = False
+    corrupted = clean.clone()
+    corrupted[~mask] = (
+        torch.randn(
+            corrupted[~mask].shape,
+            dtype=corrupted.dtype,
+            generator=generator,
+        )
+        * 1e12
+    )
+
+    clean_residual = linear_detrend_projected_position(clean, mask)
+    corrupted_residual = linear_detrend_projected_position(corrupted, mask)
+    clean_period, clean_confidence = (
+        estimate_period_from_detrended_projected_position(
+            clean,
+            valid_mask=mask,
+        )
+    )
+    corrupted_period, corrupted_confidence = (
+        estimate_period_from_detrended_projected_position(
+            corrupted,
+            valid_mask=mask,
+        )
+    )
+
+    assert torch.equal(clean_residual, corrupted_residual)
+    assert torch.count_nonzero(corrupted_residual[~mask]) == 0
+    assert torch.equal(clean_period, corrupted_period)
+    assert torch.equal(clean_confidence, corrupted_confidence)
+    assert clean_period.tolist() == [32.0]
+
+
+def test_detrended_projected_position_no_evidence_contract() -> None:
+    time = torch.arange(256, dtype=torch.float64)
+    all_valid = torch.ones(256, dtype=torch.bool)
+    all_invalid = torch.zeros(256, dtype=torch.bool)
+    affine = torch.stack((3.0 + 0.2 * time, -7.0 - 0.05 * time), dim=-1)
+    inputs = (
+        (torch.zeros(256, 2, dtype=torch.float64), all_valid, 128.0),
+        (torch.full((256, 2), 11.0, dtype=torch.float64), all_valid, 128.0),
+        (affine, all_valid, 128.0),
+        (torch.randn(256, 2, dtype=torch.float64), all_invalid, 4.0),
+    )
+
+    for projected_pose, mask, fallback_period in inputs:
+        period, confidence = estimate_period_from_detrended_projected_position(
+            projected_pose,
+            valid_mask=mask,
+        )
+        diagnostic = projected_position_detrended_vector_acf_diagnostics(
+            projected_pose,
+            valid_mask=mask,
+        )[0]
+
+        assert period.tolist() == [fallback_period]
+        assert confidence.tolist() == [0.0]
+        assert diagnostic.selected_bin is None
+        assert diagnostic.confidence == 0.0
+        assert diagnostic.allowed_bins == tuple(range(2, 65))
+        assert not any(diagnostic.power_shares)
+
+
+def test_detrended_projected_position_supports_batches_and_masks() -> None:
+    time = torch.arange(256, dtype=torch.float32)
+    sequences = torch.stack(
+        tuple(
+            torch.stack(
+                (
+                    torch.sin(2.0 * math.pi * time / period),
+                    torch.cos(2.0 * math.pi * time / period),
+                ),
+                dim=-1,
+            )
+            + time.unsqueeze(-1) * torch.tensor((0.01, -0.02))
+            for period in (16.0, 32.0)
+        )
+    )
+    mask = torch.ones((2, 256), dtype=torch.bool)
+    mask[0, 220:] = False
+    mask[1, 96:112] = False
+
+    periods, confidence = estimate_period_from_detrended_projected_position(
+        sequences,
+        valid_mask=mask,
+    )
+    diagnostics = projected_position_detrended_vector_acf_diagnostics(
+        sequences,
+        valid_mask=mask,
+    )
+    residual = linear_detrend_projected_position(sequences, mask)
+
+    assert periods.tolist() == [16.0, 32.0]
+    assert torch.all(confidence > 0.0)
+    assert len(diagnostics) == 2
+    assert tuple(item.valid_length for item in diagnostics) == (220, 240)
+    assert tuple(item.selected_bin for item in diagnostics) == (16, 8)
+    assert torch.count_nonzero(residual[~mask]) == 0

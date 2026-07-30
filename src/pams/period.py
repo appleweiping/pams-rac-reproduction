@@ -662,3 +662,134 @@ def estimate_period_from_projected_position(
     if unbatched:
         return periods[:1], confidences[:1]
     return periods, confidences
+
+
+def linear_detrend_projected_position(
+    projected_pose: Tensor,
+    valid_mask: Tensor | None = None,
+) -> Tensor:
+    """Remove a per-feature affine time trend using valid frames only.
+
+    Each batch item and projected feature receives its own least-squares
+    intercept and slope.  Frame indices retain their original locations when
+    the mask contains gaps; invalid values never enter the fit and are exact
+    zero in the returned residual.  Inputs with fewer than two valid frame
+    locations reduce to intercept-only fitting and therefore contain no
+    residual evidence.
+
+    This is an independently inferred, non-gradient diagnostic transform.  It
+    is deliberately separate from both raw projected-position ACF and the
+    frozen projected-velocity route.
+    """
+
+    batched, unbatched = _as_batch_vectors(projected_pose)
+    if batched.dtype not in (torch.float32, torch.float64):
+        batched = batched.float()
+    values = torch.nan_to_num(batched.detach())
+    batch, time, _ = values.shape
+    if valid_mask is None:
+        mask = torch.ones((batch, time), dtype=torch.bool, device=values.device)
+    else:
+        expected = (time,) if unbatched else (batch, time)
+        if valid_mask.shape != expected:
+            raise ValueError(
+                f"valid_mask must have shape {expected}, got {tuple(valid_mask.shape)}"
+            )
+        mask = valid_mask.unsqueeze(0) if unbatched else valid_mask
+        mask = mask.to(device=values.device, dtype=torch.bool)
+
+    weights = mask.to(dtype=values.dtype)
+    feature_weights = weights.unsqueeze(-1)
+    valid_values = values.masked_fill(~mask.unsqueeze(-1), 0.0)
+    counts = weights.sum(dim=1, keepdim=True)
+    safe_counts = counts.clamp_min(1.0)
+    frame_index = torch.arange(
+        time,
+        dtype=values.dtype,
+        device=values.device,
+    ).view(1, time)
+    mean_index = (frame_index * weights).sum(dim=1, keepdim=True) / safe_counts
+    centered_index = (frame_index - mean_index) * weights
+    mean_value = valid_values.sum(dim=1, keepdim=True) / safe_counts.unsqueeze(-1)
+    denominator = centered_index.square().sum(dim=1)
+    numerator = (
+        centered_index.unsqueeze(-1) * (valid_values - mean_value)
+    ).sum(dim=1)
+    epsilon = torch.finfo(values.dtype).eps
+    slope = numerator / denominator.clamp_min(epsilon).unsqueeze(-1)
+    usable_slope = (counts.squeeze(1) >= 2) & (denominator > epsilon)
+    slope = slope * usable_slope.to(values.dtype).unsqueeze(-1)
+    fitted = mean_value + (
+        (frame_index - mean_index).unsqueeze(-1) * slope.unsqueeze(1)
+    )
+    residual = (values - fitted) * feature_weights
+    residual = torch.nan_to_num(residual).masked_fill(
+        ~mask.unsqueeze(-1),
+        0.0,
+    )
+    # A mathematically affine float32 sequence can retain a few ulps of
+    # quantization residue after least squares.  Treat only that
+    # representation-scale floor as exact zero so it cannot become a
+    # high-confidence spectrum after lag-zero normalization.
+    feature_scale = valid_values.abs().amax(dim=1, keepdim=True).clamp_min(1.0)
+    numerical_floor = 32.0 * torch.finfo(values.dtype).eps * feature_scale
+    residual = residual.masked_fill(residual.abs() <= numerical_floor, 0.0)
+    return residual[0] if unbatched else residual
+
+
+def projected_position_detrended_vector_acf_diagnostics(
+    projected_pose: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> tuple[ProjectedPositionSpectrumDiagnostic, ...]:
+    """Return the standard position-ACF diagnostic after linear detrending.
+
+    The transform changes only the evidence supplied to the existing
+    mask-aware vector ACF.  Hann windowing, the fixed 4--128 period band,
+    confidence definition, no-evidence behavior, and diagnostic fields are
+    exactly those of :func:`projected_position_vector_acf_diagnostics`.
+    """
+
+    detrended = linear_detrend_projected_position(
+        projected_pose,
+        valid_mask=valid_mask,
+    )
+    return projected_position_vector_acf_diagnostics(
+        detrended,
+        minimum=minimum,
+        maximum=maximum,
+        valid_mask=valid_mask,
+    )
+
+
+def estimate_period_from_detrended_projected_position(
+    projected_pose: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> tuple[Tensor, Tensor]:
+    """Estimate period from linearly detrended projected positions."""
+
+    batched, unbatched = _as_batch_vectors(projected_pose)
+    if batched.dtype not in (torch.float32, torch.float64):
+        batched = batched.float()
+    diagnostics = projected_position_detrended_vector_acf_diagnostics(
+        projected_pose,
+        minimum=minimum,
+        maximum=maximum,
+        valid_mask=valid_mask,
+    )
+    periods = torch.tensor(
+        [diagnostic.selected_period for diagnostic in diagnostics],
+        dtype=batched.dtype,
+        device=batched.device,
+    )
+    confidences = torch.tensor(
+        [diagnostic.confidence for diagnostic in diagnostics],
+        dtype=batched.dtype,
+        device=batched.device,
+    )
+    if unbatched:
+        return periods[:1], confidences[:1]
+    return periods, confidences
