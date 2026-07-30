@@ -99,6 +99,16 @@ def _with_fixed_period(config: PAMSConfig, *, frames: int = 4) -> PAMSConfig:
     return PAMSConfig.model_validate(payload)
 
 
+def _with_position_permutation_consistency(
+    config: PAMSConfig,
+    *,
+    weight: float = 1.0,
+) -> PAMSConfig:
+    payload = config.model_dump()
+    payload["training"]["position_permutation_consistency_weight"] = weight
+    return PAMSConfig.model_validate(payload)
+
+
 def _sequence(identifier: str, *, phase: float = 0.0, frames: int = 16) -> PoseSequence:
     time = np.arange(frames, dtype=np.float32)
     wave = np.sin(2.0 * math.pi * time / 4.0 + phase)
@@ -366,6 +376,7 @@ def test_train_api_is_label_free_and_resume_is_bitwise_deterministic(
     assert "period_confidence_mean" in partial_rows[0]["stats"]
     assert "period_valid_fraction" in partial_rows[0]["stats"]
     assert "cross_cluster_shortfall" in partial_rows[0]["stats"]
+    assert "position_permutation_consistency" not in partial_rows[0]["stats"]
     assert set(partial_rows[0]) == {
         "schema_version",
         "stage",
@@ -409,6 +420,7 @@ def test_train_api_is_label_free_and_resume_is_bitwise_deterministic(
         uninterrupted.prototype_bank.cluster_labels,
     )
     for stats in resumed.history:
+        assert stats.position_permutation_consistency == 0.0
         assert 0.0 <= stats.period_confidence_mean <= 1.0
         assert 0.0 <= stats.period_valid_fraction <= 1.0
         assert (
@@ -420,6 +432,104 @@ def test_train_api_is_label_free_and_resume_is_bitwise_deterministic(
         assert isinstance(stats.cross_cluster_shortfall, int)
     for name, expected in uninterrupted.model.state_dict().items():
         assert torch.equal(expected, resumed.model.state_dict()[name]), name
+    resumed_payload = real_torch_load(
+        checkpoint,
+        map_location="cpu",
+        weights_only=False,
+    )
+    assert all(
+        "position_permutation_consistency" not in row
+        for row in resumed_payload["history"]
+    )
+
+
+def test_valid_position_permutations_are_seeded_and_mask_local() -> None:
+    from pams import training as training_module
+
+    valid = torch.tensor(
+        [
+            [True, True, False, True, False, True],
+            [False, True, True, True, False, False],
+            [False, False, False, False, False, False],
+        ]
+    )
+    canonical = torch.arange(valid.shape[1]).expand(valid.shape[0], -1)
+
+    torch.manual_seed(3407)
+    first = training_module._permuted_valid_position_indices(valid)
+    torch.manual_seed(3407)
+    second = training_module._permuted_valid_position_indices(valid)
+
+    assert torch.equal(first, second)
+    assert torch.equal(first[~valid], canonical[~valid])
+    for sample_index in range(valid.shape[0]):
+        expected = canonical[sample_index, valid[sample_index]].sort().values
+        actual = first[sample_index, valid[sample_index]].sort().values
+        assert torch.equal(actual, expected)
+
+
+def test_pe_permutation_training_is_resume_deterministic_and_audited(
+    tmp_path: Path,
+) -> None:
+    config = _with_position_permutation_consistency(
+        _tiny_config(encoder_epochs=2)
+    )
+    items = (
+        _sequence("a", phase=0.0),
+        _sequence("b", phase=0.4),
+    )
+    uninterrupted = train_encoder(
+        items,
+        config,
+        device="cpu",
+        microbatch_size=2,
+    )
+    checkpoint = tmp_path / "pe-permutation.pt"
+    progress = tmp_path / "pe-permutation.jsonl"
+    train_encoder(
+        items,
+        config,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=checkpoint,
+        progress_path=progress,
+        stop_after_epoch=1,
+    )
+    resumed = train_encoder(
+        tuple(reversed(items)),
+        config,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=checkpoint,
+        progress_path=progress,
+        resume=True,
+    )
+
+    assert resumed.history == uninterrupted.history
+    assert all(
+        math.isfinite(row.position_permutation_consistency)
+        and row.position_permutation_consistency > 0.0
+        for row in resumed.history
+    )
+    for name, expected in uninterrupted.model.state_dict().items():
+        assert torch.equal(expected, resumed.model.state_dict()[name]), name
+    rows = [
+        json.loads(line)
+        for line in progress.read_text(encoding="utf-8").splitlines()
+    ]
+    assert all(
+        row["stats"]["position_permutation_consistency"] > 0.0
+        for row in rows
+    )
+    payload = torch.load(
+        checkpoint,
+        map_location="cpu",
+        weights_only=False,
+    )
+    assert all(
+        row["position_permutation_consistency"] > 0.0
+        for row in payload["history"]
+    )
 
 
 def test_projected_vector_period_routes_encoder_and_sshead_to_same_source(

@@ -524,6 +524,7 @@ class EncoderEpochStats:
     cross_cluster_requested: int
     cross_cluster_actual: int
     cross_cluster_shortfall: int
+    position_permutation_consistency: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -562,6 +563,20 @@ def _validate_encoder_period_history(
         )
         if statistics.period_source != expected_period_source:
             raise ValueError("encoder history period-source schedule mismatch")
+        consistency = statistics.position_permutation_consistency
+        if not math.isfinite(consistency) or consistency < 0.0:
+            raise ValueError(
+                "encoder history position-permutation consistency must be "
+                "finite and non-negative"
+            )
+        if (
+            config.training.position_permutation_consistency_weight == 0.0
+            and consistency != 0.0
+        ):
+            raise ValueError(
+                "encoder history contains position-permutation consistency "
+                "while the objective is disabled"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -827,6 +842,65 @@ def _data_loader(
     )
 
 
+def _permuted_valid_position_indices(valid_mask: Tensor) -> Tensor:
+    """Randomly permute PE rows among each sample's valid time positions.
+
+    The global PyTorch RNG is intentionally used so the permutation stream is
+    covered by the existing seed and checkpoint RNG state. Invalid or padded
+    positions retain their canonical row, and samples with fewer than two
+    valid frames do not consume permutation randomness.
+    """
+
+    if valid_mask.ndim != 2:
+        raise ValueError("valid_mask must have shape [batch, time]")
+    valid = valid_mask.to(dtype=torch.bool)
+    batch, time = valid.shape
+    indices = torch.arange(
+        time,
+        dtype=torch.long,
+        device=valid.device,
+    ).expand(batch, time).clone()
+    for sample_index in range(batch):
+        positions = torch.nonzero(
+            valid[sample_index],
+            as_tuple=False,
+        ).flatten()
+        if positions.numel() < 2:
+            continue
+        order = torch.randperm(
+            positions.numel(),
+            device=valid.device,
+        )
+        indices[sample_index, positions] = positions[order]
+    return indices
+
+
+def _position_permutation_consistency_loss(
+    canonical_embeddings: Tensor,
+    permuted_embeddings: Tensor,
+    valid_mask: Tensor,
+) -> Tensor:
+    """Return mean valid ``1-cos`` between canonical and PE-permuted views."""
+
+    if canonical_embeddings.ndim != 3:
+        raise ValueError("canonical_embeddings must have shape [batch, time, feature]")
+    if permuted_embeddings.shape != canonical_embeddings.shape:
+        raise ValueError("permuted_embeddings must match canonical_embeddings")
+    if valid_mask.shape != canonical_embeddings.shape[:2]:
+        raise ValueError("valid_mask shape must match embedding batch and time")
+    valid = valid_mask.to(
+        device=canonical_embeddings.device,
+        dtype=torch.bool,
+    )
+    if not valid.any():
+        return canonical_embeddings.sum() * 0.0
+    cosine = (canonical_embeddings * permuted_embeddings).sum(dim=-1).clamp(
+        min=-1.0,
+        max=1.0,
+    )
+    return (1.0 - cosine)[valid].mean()
+
+
 def _pooled_embeddings(
     encoder: PAMSEncoder,
     sequences: Sequence[PoseSequence],
@@ -1081,6 +1155,14 @@ def _progress_row(
 ) -> dict[str, Any]:
     statistics = asdict(stats)
     epoch = int(statistics.pop("epoch"))
+    if (
+        stage == "encoder"
+        and config.training.position_permutation_consistency_weight == 0.0
+    ):
+        # Retain the exact historical progress schema while the inferred
+        # objective is disabled. Legacy checkpoint rows deserialize through
+        # the dataclass default.
+        statistics.pop("position_permutation_consistency")
     if config.period.training_mode == "fixed_period_inferred":
         # Checkpoint identity already binds these values through the config
         # fingerprint.  Repeat them in every terminal progress row so a human
@@ -1271,6 +1353,15 @@ def _checkpoint_payload(
             cast(Sequence[EncoderEpochStats], history),
             config,
         )
+    serialized_history: list[dict[str, Any]] = []
+    for item in typed_history:
+        row = asdict(item)
+        if (
+            isinstance(item, EncoderEpochStats)
+            and config.training.position_permutation_consistency_weight == 0.0
+        ):
+            row.pop("position_permutation_consistency")
+        serialized_history.append(row)
     return {
         "schema_version": _CHECKPOINT_SCHEMA_VERSION,
         "stage": stage,
@@ -1283,7 +1374,7 @@ def _checkpoint_payload(
         "model_state": model.state_dict(),
         "optimizer_state": optimizer.state_dict(),
         "scheduler_state": None if scheduler is None else scheduler.state_dict(),
-        "history": [asdict(item) for item in history],
+        "history": serialized_history,
         "cluster_assignments": dict(cluster_assignments or {}),
         "prototype_bank": (None if prototype_bank is None else prototype_bank.to_checkpoint()),
         "rng_state": _capture_rng_state(),
@@ -1488,6 +1579,15 @@ def validate_terminal_checkpoint(
     for expected_epoch, raw_statistics in enumerate(raw_history, start=1):
         if not isinstance(raw_statistics, dict):
             raise ValueError(f"checkpoint history epoch {expected_epoch} must be a mapping")
+        raw_statistics = dict(raw_statistics)
+        if (
+            expected_stage == "encoder"
+            and "position_permutation_consistency" not in raw_statistics
+            and config.training.position_permutation_consistency_weight == 0.0
+        ):
+            # Checkpoints produced before the inferred PE objective have no
+            # such field. Its disabled value is unambiguously zero.
+            raw_statistics["position_permutation_consistency"] = 0.0
         if set(raw_statistics) != expected_history_fields:
             raise ValueError(
                 f"checkpoint history schema mismatch at epoch {expected_epoch}"
@@ -1822,6 +1922,7 @@ def train_encoder(
         cross_cluster_requested = 0
         cross_cluster_actual = 0
         cross_cluster_shortfall = 0
+        position_permutation_consistency_sum = 0.0
         for raw_batch in loader:
             if not isinstance(raw_batch, PoseBatch):
                 raise TypeError("pose collator returned an unexpected batch type")
@@ -1843,6 +1944,23 @@ def train_encoder(
                 )
             else:
                 embeddings = trained_model.encoder(batch.poses, batch.valid_mask)
+            position_permutation_consistency: Tensor | None = None
+            if config.training.position_permutation_consistency_weight > 0.0:
+                position_indices = _permuted_valid_position_indices(
+                    batch.valid_mask,
+                )
+                permuted_embeddings = trained_model.encoder(
+                    batch.poses,
+                    batch.valid_mask,
+                    position_indices=position_indices,
+                )
+                position_permutation_consistency = (
+                    _position_permutation_consistency_loss(
+                        embeddings,
+                        permuted_embeddings,
+                        batch.valid_mask,
+                    )
+                )
             period_source: PeriodHistorySource
             if config.period.training_mode == "fixed_period_inferred":
                 periods, period_confidences = _estimate_fixed_training_periods(
@@ -1885,7 +2003,16 @@ def train_encoder(
                 bank_cluster_labels=bank_cluster_labels,
                 bank_video_ids=prototype_bank.video_ids,
             )
-            loss = details.total
+            if position_permutation_consistency is None:
+                # Keep the historical graph and numerical path unchanged when
+                # the inferred PE-nuisance objective is disabled.
+                loss = details.total
+            else:
+                loss = (
+                    details.total
+                    + config.training.position_permutation_consistency_weight
+                    * position_permutation_consistency
+                )
             batch_cross_cluster_requested = sum(details.cross_cluster_requested_counts)
             batch_cross_cluster_actual = sum(details.cross_cluster_actual_counts)
             batch_cross_cluster_shortfall = sum(details.cross_cluster_shortfall_counts)
@@ -1898,14 +2025,20 @@ def train_encoder(
                     f"shortfall={batch_cross_cluster_shortfall}"
                 )
 
-            _require_finite_encoder_tensors(
-                (
-                    ("embeddings", embeddings),
-                    ("period estimates", periods),
-                    ("period confidences", period_confidences),
-                    ("loss", loss),
+            finite_tensors = [
+                ("embeddings", embeddings),
+                ("period estimates", periods),
+                ("period confidences", period_confidences),
+                ("loss", loss),
+            ]
+            if position_permutation_consistency is not None:
+                finite_tensors.append(
+                    (
+                        "position-permutation consistency",
+                        position_permutation_consistency,
+                    )
                 )
-            )
+            _require_finite_encoder_tensors(tuple(finite_tensors))
             loss.backward()
             _guard_encoder_gradients_before_step(
                 tuple(trained_model.encoder.named_parameters())
@@ -1917,6 +2050,11 @@ def train_encoder(
             cross_cluster_requested += batch_cross_cluster_requested
             cross_cluster_actual += batch_cross_cluster_actual
             cross_cluster_shortfall += batch_cross_cluster_shortfall
+            if position_permutation_consistency is not None:
+                position_permutation_consistency_sum += (
+                    float(position_permutation_consistency.detach())
+                    * batch.batch_size
+                )
             optimizer.step()
             optimizer.zero_grad(set_to_none=True)
             optimizer_steps += 1
@@ -1939,6 +2077,9 @@ def train_encoder(
                 cross_cluster_requested=cross_cluster_requested,
                 cross_cluster_actual=cross_cluster_actual,
                 cross_cluster_shortfall=cross_cluster_shortfall,
+                position_permutation_consistency=(
+                    position_permutation_consistency_sum / processed_samples
+                ),
             )
         )
         if destination is not None:

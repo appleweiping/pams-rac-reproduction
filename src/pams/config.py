@@ -140,6 +140,7 @@ class TrainingConfig(StrictModel):
     scheduler_factor: float = Field(default=0.5, gt=0, lt=1)
     scheduler_patience: int = Field(default=8, ge=0)
     minimum_learning_rate: float = Field(default=1e-6, gt=0)
+    position_permutation_consistency_weight: float = Field(default=0.0, ge=0)
 
 
 class SSHeadConfig(StrictModel):
@@ -230,6 +231,13 @@ class PAMSConfig(StrictModel):
             # Preserve historical fingerprints for the literal denominator.
             # The opt-in inferred union repair is identity-changing.
             loss.pop("exclude_other_scale_positives_from_denominator")
+        training = payload["training"]
+        if training["position_permutation_consistency_weight"] == 0.0:
+            # Preserve all historical config/checkpoint identities.  A
+            # positive value enables the independently inferred PE-nuisance
+            # consistency objective and therefore remains in the method
+            # identity.
+            training.pop("position_permutation_consistency_weight")
         sshead = payload["sshead"]
         if sshead["architecture"] == "pointwise_mlp":
             # Preserve all historical SSHead config/checkpoint identities.

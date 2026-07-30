@@ -193,6 +193,51 @@ def test_longest_track_v8_changes_only_pose_preprocessing_revision() -> None:
     assert corrected.nonseed_fingerprint != temporal.nonseed_fingerprint
 
 
+def test_pe_permutation_v9_changes_only_inferred_training_weight() -> None:
+    root = Path(__file__).parents[1]
+    v8 = load_config(
+        root / "configs" / "experiments" / "pams_longest_contiguous_track_v8.yaml"
+    )
+    v9 = load_config(
+        root
+        / "configs"
+        / "experiments"
+        / "pams_pe_permutation_consistency_v9.yaml"
+    )
+
+    assert v8.training.position_permutation_consistency_weight == 0.0
+    assert v9.training.position_permutation_consistency_weight == 1.0
+    restored = v9.model_dump()
+    restored["training"]["position_permutation_consistency_weight"] = 0.0
+    assert restored == v8.model_dump()
+    assert v9.fingerprint != v8.fingerprint
+    assert v9.nonseed_fingerprint != v8.nonseed_fingerprint
+    assert v9.pose_fingerprint == v8.pose_fingerprint
+
+
+def test_disabled_pe_permutation_weight_preserves_historical_identity() -> None:
+    explicit = PAMSConfig()
+    implicit_payload = explicit.model_dump()
+    implicit_payload["training"].pop(
+        "position_permutation_consistency_weight"
+    )
+    implicit = PAMSConfig.model_validate(implicit_payload)
+
+    assert explicit.fingerprint == implicit.fingerprint
+    assert explicit.nonseed_fingerprint == implicit.nonseed_fingerprint
+    with pytest.raises(
+        ValidationError,
+        match="position_permutation_consistency_weight",
+    ):
+        PAMSConfig.model_validate(
+            {
+                "training": {
+                    "position_permutation_consistency_weight": -0.1,
+                }
+            }
+        )
+
+
 def test_fixed_period_proxy_is_explicit_identity_and_default_preserves_history() -> None:
     root = Path(__file__).parents[1]
     formal = load_config(root / "configs" / "pams.yaml")

@@ -36,22 +36,65 @@ class SinusoidalPositionalEncoding(nn.Module):
             encoding[:, 1::2] = torch.cos(position * frequencies[: encoding[:, 1::2].shape[1]])
         self.register_buffer("encoding", encoding, persistent=True)
 
-    def forward(self, inputs: Tensor) -> Tensor:
+    def forward(
+        self,
+        inputs: Tensor,
+        *,
+        position_indices: Tensor | None = None,
+    ) -> Tensor:
         """Return ``inputs`` with positions added.
 
         Args:
             inputs: A ``[batch, time, dimension]`` tensor.
+            position_indices: Optional integer ``[batch, time]`` rows of the
+                sinusoidal table.  ``None`` retains the historical canonical
+                ``0..time-1`` path exactly.
         """
 
         if inputs.ndim != 3:
             raise ValueError("positional encoding expects [batch, time, dimension]")
-        time = inputs.shape[1]
+        batch, time, _ = inputs.shape
         if time > self.encoding.shape[0]:
             raise ValueError(
                 f"sequence length {time} exceeds positional capacity {self.encoding.shape[0]}"
             )
-        positions = self.encoding[:time].to(device=inputs.device, dtype=inputs.dtype)
-        return inputs + positions.unsqueeze(0)
+        if position_indices is None:
+            positions = self.encoding[:time].to(
+                device=inputs.device,
+                dtype=inputs.dtype,
+            )
+            return inputs + positions.unsqueeze(0)
+        if not isinstance(position_indices, Tensor):
+            raise TypeError("position_indices must be a tensor")
+        if position_indices.shape != (batch, time):
+            raise ValueError(
+                "position_indices must have shape "
+                f"{(batch, time)}, got {tuple(position_indices.shape)}"
+            )
+        if position_indices.dtype not in {
+            torch.uint8,
+            torch.int8,
+            torch.int16,
+            torch.int32,
+            torch.int64,
+        }:
+            raise TypeError("position_indices must use an integer dtype")
+        indices = position_indices.to(
+            device=self.encoding.device,
+            dtype=torch.long,
+        )
+        if indices.numel() and (
+            bool((indices < 0).any())
+            or bool((indices >= self.encoding.shape[0]).any())
+        ):
+            raise ValueError(
+                "position_indices must lie inside the positional encoding capacity"
+            )
+        positions = self.encoding[indices].to(
+            device=inputs.device,
+            dtype=inputs.dtype,
+        )
+        return inputs + positions
 
 
 class PAMSEncoder(nn.Module):
@@ -157,6 +200,8 @@ class PAMSEncoder(nn.Module):
         self,
         inputs: Tensor,
         valid_mask: Tensor | None,
+        *,
+        position_indices: Tensor | None = None,
     ) -> tuple[Tensor, Tensor]:
         inputs, valid = self._validated_inputs_and_mask(inputs, valid_mask)
         _, time, _ = inputs.shape
@@ -168,7 +213,10 @@ class PAMSEncoder(nn.Module):
             attention_valid[fully_invalid, 0] = True
 
         projected = self._project_pre_pe(inputs)
-        hidden = self.position_encoding(projected)
+        hidden = self.position_encoding(
+            projected,
+            position_indices=position_indices,
+        )
         hidden = self.transformer(
             hidden,
             src_key_padding_mask=~attention_valid,
@@ -181,16 +229,28 @@ class PAMSEncoder(nn.Module):
             projected.masked_fill(invalid, 0.0),
         )
 
-    def forward(self, inputs: Tensor, valid_mask: Tensor | None = None) -> Tensor:
+    def forward(
+        self,
+        inputs: Tensor,
+        valid_mask: Tensor | None = None,
+        *,
+        position_indices: Tensor | None = None,
+    ) -> Tensor:
         """Encode pose frames and L2-normalize every valid embedding."""
 
-        embeddings, _ = self._forward_with_pre_pe(inputs, valid_mask)
+        embeddings, _ = self._forward_with_pre_pe(
+            inputs,
+            valid_mask,
+            position_indices=position_indices,
+        )
         return embeddings
 
     def forward_with_pre_pe(
         self,
         inputs: Tensor,
         valid_mask: Tensor | None = None,
+        *,
+        position_indices: Tensor | None = None,
     ) -> tuple[Tensor, Tensor]:
         """Return embeddings and the projected features immediately before PE.
 
@@ -202,7 +262,11 @@ class PAMSEncoder(nn.Module):
         used for temporal differences.
         """
 
-        return self._forward_with_pre_pe(inputs, valid_mask)
+        return self._forward_with_pre_pe(
+            inputs,
+            valid_mask,
+            position_indices=position_indices,
+        )
 
 
 class PeriodHead(nn.Module):

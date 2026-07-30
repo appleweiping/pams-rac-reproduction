@@ -3,7 +3,13 @@ import math
 import pytest
 import torch
 
-from pams.model import PAMSEncoder, PAMSModel, PeriodHead, TemporalPeriodHead
+from pams.model import (
+    PAMSEncoder,
+    PAMSModel,
+    PeriodHead,
+    SinusoidalPositionalEncoding,
+    TemporalPeriodHead,
+)
 
 
 def test_disclosed_default_architecture() -> None:
@@ -48,6 +54,91 @@ def test_default_projection_scale_is_bitwise_compatible_with_explicit_none() -> 
         explicit_output = explicit_none(inputs, valid)
 
     assert torch.equal(default_output, explicit_output)
+
+
+def test_optional_position_indices_gather_rows_and_none_is_bitwise_unchanged() -> None:
+    encoding = SinusoidalPositionalEncoding(dimension=6, max_length=8)
+    inputs = torch.zeros(2, 3, 6)
+    indices = torch.tensor(
+        [
+            [2, 1, 0],
+            [3, 5, 7],
+        ],
+        dtype=torch.long,
+    )
+
+    omitted = encoding(inputs)
+    explicit_none = encoding(inputs, position_indices=None)
+    selected = encoding(inputs, position_indices=indices)
+
+    assert torch.equal(omitted, explicit_none)
+    assert torch.equal(
+        omitted,
+        encoding.encoding[:3].unsqueeze(0).expand(2, -1, -1),
+    )
+    assert torch.equal(selected, encoding.encoding[indices])
+
+
+@pytest.mark.parametrize(
+    ("indices", "error", "message"),
+    [
+        (torch.tensor([0, 1, 2]), ValueError, "shape"),
+        (torch.zeros(2, 3), TypeError, "integer dtype"),
+        (torch.zeros(2, 3, dtype=torch.bool), TypeError, "integer dtype"),
+        (
+            torch.tensor([[0, 1, -1], [0, 1, 2]]),
+            ValueError,
+            "capacity",
+        ),
+        (
+            torch.tensor([[0, 1, 8], [0, 1, 2]]),
+            ValueError,
+            "capacity",
+        ),
+        ([[0, 1, 2], [0, 1, 2]], TypeError, "tensor"),
+    ],
+)
+def test_position_indices_validate_shape_dtype_and_range(
+    indices: object,
+    error: type[Exception],
+    message: str,
+) -> None:
+    encoding = SinusoidalPositionalEncoding(dimension=6, max_length=8)
+    inputs = torch.zeros(2, 3, 6)
+
+    with pytest.raises(error, match=message):
+        encoding(
+            inputs,
+            position_indices=indices,  # type: ignore[arg-type]
+        )
+
+
+def test_encoder_threads_explicit_position_indices_without_changing_none_path() -> None:
+    torch.manual_seed(17)
+    encoder = PAMSEncoder(
+        input_dim=6,
+        model_dim=8,
+        embedding_dim=8,
+        num_layers=1,
+        num_heads=2,
+        feedforward_dim=16,
+        dropout=0.0,
+    ).eval()
+    inputs = torch.randn(2, 5, 6)
+    valid = torch.ones(2, 5, dtype=torch.bool)
+    reversed_indices = torch.arange(4, -1, -1).expand(2, -1)
+
+    with torch.no_grad():
+        omitted = encoder(inputs, valid)
+        explicit_none = encoder(inputs, valid, position_indices=None)
+        reversed_output = encoder(
+            inputs,
+            valid,
+            position_indices=reversed_indices,
+        )
+
+    assert torch.equal(omitted, explicit_none)
+    assert not torch.equal(omitted, reversed_output)
 
 
 def test_sqrt_model_dim_scales_linear_projection_before_positions() -> None:
