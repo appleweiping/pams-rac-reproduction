@@ -1062,7 +1062,7 @@ printf '%s\n' "$CONTAINER_EXIT" \
   > "${AUDIT_ROOT}/${CONTAINER_NAME}.exit-code.txt"
 docker rm "$CONTAINER_NAME" >/dev/null
 ACTIVE_CONTAINER=""
-if [[ "$attach_exit" -ne 0 || "$still_running" == "true" ]]; then
+if [[ "$still_running" == "true" || "$attach_exit" -ne "$CONTAINER_EXIT" ]]; then
   CONTAINER_EXIT=125
 fi
 flock -u 9

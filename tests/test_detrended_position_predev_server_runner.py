@@ -188,6 +188,10 @@ def test_failure_paths_retain_artifact_receipt_hashes_and_logs() -> None:
     source = _runner()
 
     assert "trap on_exit EXIT" in source
+    assert (
+        '[[ "$still_running" == "true" || "$attach_exit" -ne "$CONTAINER_EXIT" ]]'
+        in source
+    )
     assert "container did not retain a predev artifact" in source
     assert "container exited without retaining predev.json" in source
     assert "pams_position_acf_detrended_predev_receipt" in source
