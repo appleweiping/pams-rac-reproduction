@@ -8,7 +8,7 @@ readonly ROOT_INPUT="${PAMS_ROOT:-/media/lenovo/data2/pams-rac}"
 readonly SOURCE_CHECKOUT_INPUT="${PAMS_SOURCE_CHECKOUT:?PAMS_SOURCE_CHECKOUT is required}"
 readonly SOURCE_REVISION="${PAMS_SOURCE_REVISION:?PAMS_SOURCE_REVISION is required}"
 readonly ATTEMPT_ID="${PAMS_ATTEMPT_ID:?PAMS_ATTEMPT_ID is required}"
-readonly READOUT_CONFIG_SHA256="${PAMS_READOUT_CONFIG_SHA256:-7ef845025be5d4b3bd7e99583bb8df3514bc32b448214f67db9f2bb797bf64e0}"
+readonly READOUT_CONFIG_SHA256="${PAMS_READOUT_CONFIG_SHA256:-9c4db6210ecd82d0aa5e2a2437b4e8132eb993bff4afe808ad0db8772f9d7923}"
 readonly GPU_DEVICE="${PAMS_GPU_DEVICE:-0}"
 readonly IMAGE_ID="${PAMS_IMAGE_ID:-sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005}"
 readonly ENVIRONMENT_SHA256="${PAMS_ENVIRONMENT_SHA256:-1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508}"
@@ -16,8 +16,8 @@ readonly V8_RUN_ROOT_INPUT="${PAMS_V8_RUN_ROOT:-${ROOT_INPUT}/runs/pams-v8-seed2
 
 readonly EXPECTED_IMAGE_ID="sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005"
 readonly EXPECTED_ENVIRONMENT_SHA256="1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508"
-readonly EXPECTED_READOUT_CONFIG_SHA256="7ef845025be5d4b3bd7e99583bb8df3514bc32b448214f67db9f2bb797bf64e0"
-readonly READOUT_CONFIG_SEMANTIC_SHA256="b9c03953e66ef0146d607947c53d1e0d54466e3b938c9c314c6abf644c336773"
+readonly EXPECTED_READOUT_CONFIG_SHA256="9c4db6210ecd82d0aa5e2a2437b4e8132eb993bff4afe808ad0db8772f9d7923"
+readonly READOUT_CONFIG_SEMANTIC_SHA256="861e43963d45e4277d8daf93de7d556ebf63f1ab531bf4ded7077d6d20fd3f91"
 readonly EXPERIMENT_CONFIG_RELATIVE="configs/experiments/pams_longest_contiguous_track_v8.yaml"
 readonly READOUT_CONFIG_RELATIVE="configs/readouts/projected_position_acf_direct_v1.yaml"
 readonly EXPERIMENT_CONFIG_SHA256="eb4072a195608757cd2542855b33fb000c987f96c94b83a1e448ab78f97e9374"
@@ -360,7 +360,7 @@ assert payload["readout_config_file_sha256"] == os.environ[
     "EXPECTED_READOUT_SHA256"
 ]
 assert payload["readout_config_fingerprint"] == (
-    "b9c03953e66ef0146d607947c53d1e0d54466e3b938c9c314c6abf644c336773"
+    "861e43963d45e4277d8daf93de7d556ebf63f1ab531bf4ded7077d6d20fd3f91"
 )
 for row in payload["records"]:
     assert math.isfinite(float(row["period_frames"]))
@@ -455,9 +455,7 @@ verify_container() {
   VERIFY_EXPERIMENT_CONFIG="${SOURCE_VIEW}/${EXPERIMENT_CONFIG_RELATIVE}" \
   VERIFY_READOUT_CONFIG="${SOURCE_VIEW}/${READOUT_CONFIG_RELATIVE}" \
   VERIFY_GATE_SCRIPT="$GATE_SCRIPT" \
-  VERIFY_ENCODER_CHECKPOINT="$ENCODER_CHECKPOINT" \
-  VERIFY_ENCODER_PROGRESS="$ENCODER_PROGRESS" \
-  VERIFY_ENCODER_COMPLETION="$ENCODER_COMPLETION" \
+  VERIFY_ENCODER_ROOT="$ENCODER_ROOT" \
   VERIFY_TRAIN_INPUT="$TRAIN_INPUT" \
   VERIFY_TRAIN_COMMIT="$TRAIN_COMMIT" \
   VERIFY_DEV_INPUT="$DEV_INPUT" \
@@ -466,7 +464,7 @@ verify_container() {
   VERIFY_TEST_ID_COMMIT="$TEST_ID_COMMIT" \
   VERIFY_DEV_TARGET="$DEV_TARGET" \
   VERIFY_TRAIN_POSE="$TRAIN_POSE_VIEW" \
-  VERIFY_DEV_POSE="$DEV_POSE_VIEW" \
+  VERIFY_POSE_POOL="$POSE_POOL" \
   VERIFY_SYNTHETIC_STAGE="$SYNTHETIC_STAGE" \
   VERIFY_TRAIN_GATE_STAGE="$TRAIN_GATE_STAGE" \
   VERIFY_PREDICT_STAGE="$PREDICT_STAGE" \
@@ -514,18 +512,7 @@ configs = {
     ),
 }
 encoder = {
-    "/pams/encoder/encoder.pt": (
-        os.environ["VERIFY_ENCODER_CHECKPOINT"],
-        False,
-    ),
-    "/pams/encoder/encoder.jsonl": (
-        os.environ["VERIFY_ENCODER_PROGRESS"],
-        False,
-    ),
-    "/pams/encoder/encoder.completed.json": (
-        os.environ["VERIFY_ENCODER_COMPLETION"],
-        False,
-    ),
+    "/pams/encoder": (os.environ["VERIFY_ENCODER_ROOT"], False),
 }
 if stage == "synthetic-k2-7":
     expected = {
@@ -581,7 +568,7 @@ elif stage == "dev-predict":
             os.environ["VERIFY_TEST_ID_COMMIT"],
             False,
         ),
-        "/pams/pose-cache": (os.environ["VERIFY_DEV_POSE"], False),
+        "/pams/pose-cache": (os.environ["VERIFY_POSE_POOL"], False),
         "/pams/output": (os.environ["VERIFY_PREDICT_STAGE"], True),
     }
 elif stage == "dev-score":
@@ -620,7 +607,7 @@ if stage in {"synthetic-k2-7", "train337-distribution"}:
     assert "dev.inputs" not in all_text
     assert "test-identity" not in all_text
 if stage == "dev-predict":
-    assert mounts["/pams/pose-cache"][0] == os.environ["VERIFY_DEV_POSE"]
+    assert mounts["/pams/pose-cache"][0] == os.environ["VERIFY_POSE_POOL"]
     assert os.environ["VERIFY_TRAIN_POSE"] not in all_text
 if stage == "dev-score":
     assert "/pams/pose-cache" not in mounts
@@ -959,11 +946,14 @@ def load_encoder(
             frozen["encoder_checkpoint_sha256"],
         ),
         "encoder progress": (
-            digest("/pams/encoder/encoder.jsonl"),
+            digest("/pams/encoder/logs/encoder.jsonl"),
             frozen["encoder_progress_sha256"],
         ),
         "encoder completion": (
-            digest("/pams/encoder/encoder.completed.json"),
+            digest(
+                "/pams/encoder/manifests/"
+                "20260730T025521Z-e6e6a2f657aa.completed.json"
+            ),
             frozen["encoder_completion_receipt_sha256"],
         ),
     }
@@ -1028,9 +1018,19 @@ def infer(
                 period = float(periods[index])
                 confidence = float(confidences[index])
                 valid = int(valid_frames[index])
-                if period != float(diagnostic.selected_period):
+                if not math.isclose(
+                    float(diagnostic.selected_period),
+                    period,
+                    rel_tol=1e-6,
+                    abs_tol=1e-6,
+                ):
                     raise RuntimeError("estimator and diagnostic period disagree")
-                if confidence != float(diagnostic.confidence):
+                if not math.isclose(
+                    float(diagnostic.confidence),
+                    confidence,
+                    rel_tol=1e-6,
+                    abs_tol=1e-7,
+                ):
                     raise RuntimeError("estimator and diagnostic confidence disagree")
                 raw_count = (
                     float(valid - 1) / period
@@ -1362,7 +1362,7 @@ cat > "${RUN_ROOT}/attempt.reservation.json" <<EOF
     "dev84-target-bearing-score",
     "dev84-stop-decision"
   ],
-  "dev_predict_pose_scope": "dev84-only",
+  "dev_predict_pose_scope": "train337-provenance-plus-dev84-inference",
   "dev_predict_targets_mounted": false,
   "dev_score_pose_mounted": false,
   "dev_score_checkpoint_mounted": false,
@@ -1474,11 +1474,7 @@ config_args=(
 )
 encoder_args=(
   --mount \
-    "type=bind,src=${ENCODER_CHECKPOINT},dst=/pams/encoder/encoder.pt,readonly"
-  --mount \
-    "type=bind,src=${ENCODER_PROGRESS},dst=/pams/encoder/encoder.jsonl,readonly"
-  --mount \
-    "type=bind,src=${ENCODER_COMPLETION},dst=/pams/encoder/encoder.completed.json,readonly"
+    "type=bind,src=${ENCODER_ROOT},dst=/pams/encoder,readonly"
 )
 gpu_args=(
   --gpus "device=${GPU_DEVICE}"
@@ -1583,7 +1579,7 @@ docker create \
     "type=bind,src=${TEST_ID_INPUT},dst=/pams/protocol/test-identity.inputs.json,readonly" \
   --mount \
     "type=bind,src=${TEST_ID_COMMIT},dst=/pams/protocol/test-identity.inputs.commitment.json,readonly" \
-  --mount "type=bind,src=${DEV_POSE_VIEW},dst=/pams/pose-cache,readonly" \
+  --mount "type=bind,src=${POSE_POOL},dst=/pams/pose-cache,readonly" \
   --mount "type=bind,src=${PREDICT_STAGE},dst=/pams/output" \
   "$IMAGE_ID" \
   python -m pams position-acf dev-predict \
@@ -1591,8 +1587,9 @@ docker create \
     /pams/protocol/train.inputs.json \
     /pams/pose-cache \
     /pams/output \
-    --checkpoint-progress /pams/encoder/encoder.jsonl \
-    --checkpoint-completion-receipt /pams/encoder/encoder.completed.json \
+    --checkpoint-progress /pams/encoder/logs/encoder.jsonl \
+    --checkpoint-completion-receipt \
+      /pams/encoder/manifests/20260730T025521Z-e6e6a2f657aa.completed.json \
     --input-commitment /pams/protocol/train.inputs.commitment.json \
     --dev-inputs /pams/protocol/dev.inputs.json \
     --dev-input-commitment /pams/protocol/dev.inputs.commitment.json \

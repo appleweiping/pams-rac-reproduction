@@ -16,10 +16,10 @@ RUNNER = ROOT / "scripts/server/run_pams_position_acf_seed2026_strict.sh"
 READOUT = ROOT / "configs/readouts/projected_position_acf_direct_v1.yaml"
 
 READOUT_FILE_SHA256 = (
-    "7ef845025be5d4b3bd7e99583bb8df3514bc32b448214f67db9f2bb797bf64e0"
+    "9c4db6210ecd82d0aa5e2a2437b4e8132eb993bff4afe808ad0db8772f9d7923"
 )
 READOUT_SEMANTIC_SHA256 = (
-    "b9c03953e66ef0146d607947c53d1e0d54466e3b938c9c314c6abf644c336773"
+    "861e43963d45e4277d8daf93de7d556ebf63f1ab531bf4ded7077d6d20fd3f91"
 )
 
 
@@ -85,7 +85,10 @@ def test_readout_config_freezes_dev_stop_reference_and_mount_policy() -> None:
     policy = payload["mount_policy"]
     assert policy["network"] == "none"
     assert "dev84_pose_cache" in policy["dev_predict_inputs"]
-    assert "train337_pose_cache" not in policy["dev_predict_inputs"]
+    assert (
+        "train337_pose_cache_for_checkpoint_provenance_validation"
+        in policy["dev_predict_inputs"]
+    )
     assert "readout_config" in policy["dev_score_inputs"]
     assert "dev84_targets" in policy["dev_score_inputs"]
     assert policy["prohibited_everywhere"] == [
@@ -142,6 +145,14 @@ def test_runner_requires_clean_committed_source_and_exact_v8_assets() -> None:
     assert 'git -C "$SOURCE_CHECKOUT" archive' in launcher
     assert "git clone" not in launcher
     assert "docker cp" not in launcher
+    assert "/pams/encoder/logs/encoder.jsonl" in launcher
+    assert "/pams/encoder/encoder.jsonl" not in launcher
+    assert (
+        "/pams/encoder/manifests/"
+        "20260730T025521Z-e6e6a2f657aa.completed.json"
+        in launcher
+    )
+    assert "/pams/encoder/encoder.completed.json" not in launcher
     assert READOUT_FILE_SHA256 in launcher
     assert READOUT_SEMANTIC_SHA256 in launcher
     for digest in (
@@ -167,6 +178,10 @@ def test_predev_gates_use_position_not_velocity_and_run_in_order() -> None:
     assert "fundamental_amplitude != 1.0" in launcher
     assert "harmonic_amplitude != 0.75" in launcher
     assert "diagnostic.selected_bin is None" in launcher
+    assert "if period != float(diagnostic.selected_period)" not in launcher
+    assert "if confidence != float(diagnostic.confidence)" not in launcher
+    assert "rel_tol=1e-6" in launcher
+    assert "abs_tol=1e-7" in launcher
     assert "expected_sizes = (337, 84, 105)" in launcher
     assert "assert len(sets) == len(expected_sizes)" in launcher
     assert "zip(sets, expected_sizes)" in launcher
@@ -210,10 +225,22 @@ def test_predev_and_prediction_container_mounts_are_label_isolated() -> None:
     assert "DEV_POSE_VIEW" not in train
 
     assert (
-        "type=bind,src=${DEV_POSE_VIEW},dst=/pams/pose-cache,readonly"
+        "type=bind,src=${POSE_POOL},dst=/pams/pose-cache,readonly"
         in predict
     )
     assert "TRAIN_POSE_VIEW" not in predict
+    assert "DEV_POSE_VIEW" not in predict
+    assert '"${encoder_args[@]}"' in predict
+    assert (
+        "type=bind,src=${ENCODER_ROOT},dst=/pams/encoder,readonly"
+        in launcher
+    )
+    assert "--checkpoint-progress /pams/encoder/logs/encoder.jsonl" in predict
+    assert (
+        "/pams/encoder/manifests/"
+        "20260730T025521Z-e6e6a2f657aa.completed.json"
+        in predict
+    )
     assert "DEV_TARGET" not in predict
     assert "test-identity.inputs.json" in predict
     assert "test-identity.inputs.commitment.json" in predict

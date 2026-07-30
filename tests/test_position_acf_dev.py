@@ -392,6 +392,7 @@ def _prediction_bundle(tmp_path: Path) -> tuple[Path, Path]:
     )
     receipt = position.PositionACFPredictionReceipt(
         artifact_type="pams_position_acf_direct_dev_prediction_receipt",
+        test_evaluation_authorized=False,
         protocol="ucfrep_526",
         split="dev",
         method_key=position._METHOD_KEY,
@@ -498,9 +499,11 @@ def test_old_teacher_reconstruction_is_unchanged(
 
 
 def test_serialized_prediction_rows_are_target_free(tmp_path: Path) -> None:
-    predictions, _ = _prediction_bundle(tmp_path)
+    predictions, receipt = _prediction_bundle(tmp_path)
     payload = json.loads(predictions.read_text(encoding="utf-8"))
+    receipt_payload = json.loads(receipt.read_text(encoding="utf-8"))
     assert payload["split"] == "dev"
     assert payload["test_evaluation_authorized"] is False
+    assert receipt_payload["test_evaluation_authorized"] is False
     assert len(payload["records"]) == 84
     assert all("target" not in row and "action" not in row for row in payload["records"])

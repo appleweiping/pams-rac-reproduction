@@ -95,6 +95,7 @@ mount_policy:
     - exact_v8_encoder_package
     - train337_identity_sidecars
     - dev84_identity_sidecars
+    - train337_pose_cache_for_checkpoint_provenance_validation
     - dev84_pose_cache
     - test105_identity_sidecars
   dev_score_inputs:

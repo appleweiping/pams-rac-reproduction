@@ -70,10 +70,10 @@ _ALLOWED_BINS = tuple(range(2, 65))
 _HARMONIC_CANDIDATES = tuple(range(2, 8))
 _HARMONIC_RELATIVE_TOLERANCE = 0.20
 _READOUT_CONFIG_FILE_SHA256 = (
-    "7ef845025be5d4b3bd7e99583bb8df3514bc32b448214f67db9f2bb797bf64e0"
+    "9c4db6210ecd82d0aa5e2a2437b4e8132eb993bff4afe808ad0db8772f9d7923"
 )
 _READOUT_CONFIG_FINGERPRINT = (
-    "b9c03953e66ef0146d607947c53d1e0d54466e3b938c9c314c6abf644c336773"
+    "861e43963d45e4277d8daf93de7d556ebf63f1ab531bf4ded7077d6d20fd3f91"
 )
 
 _V8_CONFIG_FILE_SHA256 = "eb4072a195608757cd2542855b33fb000c987f96c94b83a1e448ab78f97e9374"
@@ -522,6 +522,7 @@ class PositionACFPredictionArtifact(StrictModel):
 class PositionACFPredictionReceipt(StrictModel):
     schema_version: Literal[1] = 1
     artifact_type: Literal["pams_position_acf_direct_dev_prediction_receipt"]
+    test_evaluation_authorized: Literal[False] = False
     protocol: Literal["ucfrep_526"]
     split: Literal["dev"]
     method_key: Literal["pams-position-acf-direct-inferred-v1"]
@@ -1023,6 +1024,7 @@ def run_dev_prediction(
     prediction_sha256 = hashlib.sha256(prediction_encoded).hexdigest()
     receipt = PositionACFPredictionReceipt(
         artifact_type="pams_position_acf_direct_dev_prediction_receipt",
+        test_evaluation_authorized=False,
         protocol="ucfrep_526",
         split="dev",
         method_key=_METHOD_KEY,
@@ -1116,6 +1118,10 @@ def _validate_receipt_binding(
         "protocol": (artifact.protocol, receipt.protocol),
         "split": (artifact.split, receipt.split),
         "method_key": (artifact.method_key, receipt.method_key),
+        "test_evaluation_authorized": (
+            artifact.test_evaluation_authorized,
+            receipt.test_evaluation_authorized,
+        ),
         "prediction_batch_size": (
             artifact.prediction_batch_size,
             receipt.prediction_batch_size,
