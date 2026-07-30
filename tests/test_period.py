@@ -3,6 +3,7 @@ import math
 import pytest
 import torch
 
+import pams.period as period_module
 from pams.model import SinusoidalPositionalEncoding
 from pams.period import (
     autocorrelation_fft,
@@ -14,9 +15,11 @@ from pams.period import (
     estimate_period_from_pose,
     estimate_period_from_projected_pose,
     estimate_period_from_projected_position,
+    estimate_period_from_projected_position_lag_velocity_fallback,
     estimate_period_from_vectors,
     linear_detrend_projected_position,
     projected_position_detrended_vector_acf_diagnostics,
+    projected_position_lag_velocity_fallback_diagnostics,
     projected_position_vector_acf_diagnostics,
     vector_autocorrelation_fft,
 )
@@ -693,3 +696,250 @@ def test_detrended_projected_position_supports_batches_and_masks() -> None:
     assert tuple(item.valid_length for item in diagnostics) == (220, 240)
     assert tuple(item.selected_bin for item in diagnostics) == (16, 8)
     assert torch.count_nonzero(residual[~mask]) == 0
+
+
+@pytest.mark.parametrize("drift", [0.02, 1.0])
+@pytest.mark.parametrize("harmonic", range(2, 8))
+def test_lag_velocity_fallback_preserves_drifted_fundamental(
+    harmonic: int,
+    drift: float,
+) -> None:
+    time = torch.arange(256, dtype=torch.float64)
+    fundamental_angle = 2.0 * math.pi * time / 64.0
+    harmonic_angle = harmonic * fundamental_angle + 0.37
+    projected_pose = torch.stack(
+        (
+            torch.sin(fundamental_angle) + 0.75 * torch.sin(harmonic_angle),
+            torch.cos(fundamental_angle) + 0.75 * torch.cos(harmonic_angle),
+        ),
+        dim=-1,
+    )
+    projected_pose = projected_pose + drift * time.unsqueeze(-1)
+
+    period, confidence = (
+        estimate_period_from_projected_position_lag_velocity_fallback(
+            projected_pose
+        )
+    )
+    diagnostic = projected_position_lag_velocity_fallback_diagnostics(
+        projected_pose
+    )[0]
+
+    assert period.tolist() == [64.0]
+    assert confidence.item() > 0.0
+    assert diagnostic.selected_lag == 64
+    assert diagnostic.selected_period == 64.0
+    assert diagnostic.selection_source == "detrended-position-lag-acf"
+    assert diagnostic.searched_lags == tuple(range(4, 129))
+    assert diagnostic.eligible_peak_lags[0] == 64
+    assert diagnostic.near_best_height_threshold == pytest.approx(
+        0.90 * max(diagnostic.positive_peak_heights)
+    )
+    assert diagnostic.positive_peak_heights[
+        diagnostic.positive_peak_lags.index(64)
+    ] == pytest.approx(diagnostic.confidence)
+
+
+def test_lag_velocity_near_best_rule_avoids_count_two_to_forty_multiples() -> None:
+    time = torch.arange(256, dtype=torch.float64)
+    counts = torch.arange(2, 41, dtype=torch.float64)
+    angles = 2.0 * math.pi * counts[:, None] * time[None, :] / 256.0
+    sequences = torch.stack((torch.sin(angles), torch.cos(angles)), dim=-1)
+    sequences = sequences + time[None, :, None]
+
+    periods, confidence = (
+        estimate_period_from_projected_position_lag_velocity_fallback(sequences)
+    )
+    expected_periods = 256.0 / counts
+    relative_error = (periods - expected_periods).abs() / expected_periods
+    diagnostics = projected_position_lag_velocity_fallback_diagnostics(sequences)
+
+    assert torch.all(confidence > 0.0)
+    assert torch.all(relative_error <= 0.10)
+    assert relative_error.max().item() == pytest.approx(0.06640625)
+    assert all(item.eligible_peak_lags for item in diagnostics)
+    assert tuple(item.selected_lag for item in diagnostics) == tuple(
+        item.eligible_peak_lags[0] for item in diagnostics
+    )
+
+
+@pytest.mark.parametrize(
+    ("early_height", "expected_lag"),
+    [(0.90, 12), (0.899, 24)],
+)
+def test_lag_velocity_near_best_threshold_is_inclusive(
+    monkeypatch: pytest.MonkeyPatch,
+    early_height: float,
+    expected_lag: int,
+) -> None:
+    def controlled_autocorrelation(
+        sequence: torch.Tensor,
+        valid_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        del valid_mask
+        batch = 1 if sequence.ndim == 2 else sequence.shape[0]
+        result = sequence.new_zeros((batch, sequence.shape[-2]))
+        result[:, 0] = 1.0
+        result[:, 12] = early_height
+        result[:, 24] = 1.0
+        return result[0] if sequence.ndim == 2 else result
+
+    monkeypatch.setattr(
+        period_module,
+        "vector_autocorrelation_fft",
+        controlled_autocorrelation,
+    )
+    sequence = torch.stack(
+        (
+            torch.arange(256, dtype=torch.float64),
+            -torch.arange(256, dtype=torch.float64),
+        ),
+        dim=-1,
+    )
+
+    diagnostic = projected_position_lag_velocity_fallback_diagnostics(sequence)[0]
+
+    assert diagnostic.near_best_height_threshold == pytest.approx(0.90)
+    assert diagnostic.selected_lag == expected_lag
+    assert diagnostic.eligible_peak_lags == (
+        (12, 24) if early_height == 0.90 else (24,)
+    )
+    assert diagnostic.confidence == pytest.approx(
+        early_height if expected_lag == 12 else 1.0
+    )
+
+
+def test_lag_velocity_fallback_uses_raw_velocity_only_without_position_peak() -> None:
+    time = torch.arange(256, dtype=torch.float32)
+    angle = 2.0 * math.pi * time / 16.0
+    projected_pose = torch.stack(
+        (
+            100.0 * time + 0.01 * torch.sin(angle),
+            -70.0 * time + 0.01 * torch.cos(angle),
+        ),
+        dim=-1,
+    )
+
+    period, confidence = (
+        estimate_period_from_projected_position_lag_velocity_fallback(
+            projected_pose
+        )
+    )
+    diagnostic = projected_position_lag_velocity_fallback_diagnostics(
+        projected_pose
+    )[0]
+
+    assert period.tolist() == [16.0]
+    assert confidence.item() > 0.0
+    assert diagnostic.positive_peak_lags == ()
+    assert diagnostic.selected_lag is None
+    assert diagnostic.selection_source == "projected-velocity-spectrum-fallback"
+    assert diagnostic.selected_period == diagnostic.fallback_period == 16.0
+    assert diagnostic.confidence == pytest.approx(diagnostic.fallback_confidence)
+
+
+def test_lag_velocity_fallback_mask_ignores_invalid_pollution() -> None:
+    generator = torch.Generator().manual_seed(3407)
+    time = torch.arange(256, dtype=torch.float64)
+    angle = 2.0 * math.pi * time / 32.0
+    clean = torch.stack((torch.sin(angle), torch.cos(angle)), dim=-1)
+    clean = clean + 0.02 * time.unsqueeze(-1)
+    mask = torch.ones(256, dtype=torch.bool)
+    mask[96:112] = False
+    corrupted = clean.clone()
+    corrupted[~mask] = (
+        torch.randn(
+            corrupted[~mask].shape,
+            dtype=corrupted.dtype,
+            generator=generator,
+        )
+        * 1e12
+    )
+
+    clean_period, clean_confidence = (
+        estimate_period_from_projected_position_lag_velocity_fallback(
+            clean,
+            valid_mask=mask,
+        )
+    )
+    corrupted_period, corrupted_confidence = (
+        estimate_period_from_projected_position_lag_velocity_fallback(
+            corrupted,
+            valid_mask=mask,
+        )
+    )
+    clean_diagnostic = projected_position_lag_velocity_fallback_diagnostics(
+        clean,
+        valid_mask=mask,
+    )[0]
+    corrupted_diagnostic = projected_position_lag_velocity_fallback_diagnostics(
+        corrupted,
+        valid_mask=mask,
+    )[0]
+
+    assert clean_period.tolist() == corrupted_period.tolist() == [32.0]
+    assert torch.equal(clean_confidence, corrupted_confidence)
+    assert clean_diagnostic == corrupted_diagnostic
+    assert clean_diagnostic.valid_length == int(mask.sum())
+    assert clean_diagnostic.searched_lags[-1] == int(mask.sum()) // 2
+
+
+def test_lag_velocity_fallback_supports_batches_and_no_evidence() -> None:
+    time = torch.arange(256, dtype=torch.float32)
+    sequences = torch.stack(
+        tuple(
+            torch.stack(
+                (
+                    torch.sin(2.0 * math.pi * time / period),
+                    torch.cos(2.0 * math.pi * time / period),
+                ),
+                dim=-1,
+            )
+            + 0.02 * time.unsqueeze(-1)
+            for period in (16.0, 32.0)
+        )
+    )
+    mask = torch.ones((2, 256), dtype=torch.bool)
+    mask[0, 220:] = False
+    mask[1, 96:112] = False
+
+    periods, confidence = (
+        estimate_period_from_projected_position_lag_velocity_fallback(
+            sequences,
+            valid_mask=mask,
+        )
+    )
+    diagnostics = projected_position_lag_velocity_fallback_diagnostics(
+        sequences,
+        valid_mask=mask,
+    )
+
+    assert periods.tolist() == [16.0, 32.0]
+    assert torch.all(confidence > 0.0)
+    assert len(diagnostics) == 2
+    assert tuple(item.selected_lag for item in diagnostics) == (16, 32)
+    assert tuple(item.valid_length for item in diagnostics) == (220, 240)
+
+    all_valid = torch.ones(256, dtype=torch.bool)
+    all_invalid = torch.zeros(256, dtype=torch.bool)
+    no_evidence_inputs = (
+        (torch.zeros(256, 2), all_valid),
+        (torch.full((256, 2), 17.0), all_valid),
+        (torch.randn(256, 2, generator=torch.Generator().manual_seed(42)), all_invalid),
+    )
+    for sequence, sequence_mask in no_evidence_inputs:
+        period, no_evidence_confidence = (
+            estimate_period_from_projected_position_lag_velocity_fallback(
+                sequence,
+                valid_mask=sequence_mask,
+            )
+        )
+        diagnostic = projected_position_lag_velocity_fallback_diagnostics(
+            sequence,
+            valid_mask=sequence_mask,
+        )[0]
+        assert period.tolist() == [4.0]
+        assert no_evidence_confidence.tolist() == [0.0]
+        assert diagnostic.selected_lag is None
+        assert diagnostic.selection_source == "no-evidence"
+        assert diagnostic.positive_peak_lags == ()

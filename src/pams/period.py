@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import torch
+from scipy.signal import find_peaks
 from torch import Tensor
 
 
@@ -35,6 +36,27 @@ class ProjectedPositionSpectrumDiagnostic:
     selected_bin: int | None
     selected_period: float
     confidence: float
+
+
+@dataclass(frozen=True)
+class ProjectedPositionLagVelocityFallbackDiagnostic:
+    """Auditable lag-ACF peak selection with velocity-spectrum fallback."""
+
+    valid_length: int
+    searched_lags: tuple[int, ...]
+    autocorrelation_values: tuple[float, ...]
+    positive_peak_lags: tuple[int, ...]
+    positive_peak_heights: tuple[float, ...]
+    positive_peak_prominences: tuple[float, ...]
+    near_best_height_threshold: float
+    eligible_peak_lags: tuple[int, ...]
+    eligible_peak_heights: tuple[float, ...]
+    selected_lag: int | None
+    selected_period: float
+    confidence: float
+    selection_source: str
+    fallback_period: float
+    fallback_confidence: float
 
 
 def _as_batch_signal(signal: Tensor) -> tuple[Tensor, bool]:
@@ -775,6 +797,180 @@ def estimate_period_from_detrended_projected_position(
     if batched.dtype not in (torch.float32, torch.float64):
         batched = batched.float()
     diagnostics = projected_position_detrended_vector_acf_diagnostics(
+        projected_pose,
+        minimum=minimum,
+        maximum=maximum,
+        valid_mask=valid_mask,
+    )
+    periods = torch.tensor(
+        [diagnostic.selected_period for diagnostic in diagnostics],
+        dtype=batched.dtype,
+        device=batched.device,
+    )
+    confidences = torch.tensor(
+        [diagnostic.confidence for diagnostic in diagnostics],
+        dtype=batched.dtype,
+        device=batched.device,
+    )
+    if unbatched:
+        return periods[:1], confidences[:1]
+    return periods, confidences
+
+
+def projected_position_lag_velocity_fallback_diagnostics(
+    projected_pose: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> tuple[ProjectedPositionLagVelocityFallbackDiagnostic, ...]:
+    """Select a detrended position-ACF lag, with velocity fallback.
+
+    For each sample, projected positions are linearly detrended per feature
+    using valid frames only.  After computing the mask-normalized vector
+    autocorrelation, :func:`scipy.signal.find_peaks` is applied to the
+    complete ACF with ``distance=minimum`` and zero prominence.  Its peaks are
+    then filtered to
+    lags ``minimum..min(maximum, valid_length // 2)`` and strictly positive
+    heights.  Among peaks whose height is at least 90% of the greatest
+    positive height, the smallest lag wins.  This fixed near-best rule avoids
+    selecting a repeated multiple merely because finite-sample ACF height
+    increases slightly at a later cycle.
+
+    If no positive local peak exists, the existing raw projected-position
+    pairwise-valid velocity spectrum is used.  A non-positive fallback
+    confidence is treated as no evidence and returns ``minimum`` with zero
+    confidence.  This is an independently inferred, target-free readout.
+    """
+
+    if minimum < 2:
+        raise ValueError("minimum period must be at least 2")
+    if maximum <= minimum:
+        raise ValueError("maximum must be greater than minimum")
+    batched, unbatched = _as_batch_vectors(projected_pose)
+    if batched.dtype not in (torch.float32, torch.float64):
+        batched = batched.float()
+    batch, time, _ = batched.shape
+    if valid_mask is None:
+        mask = torch.ones((batch, time), dtype=torch.bool, device=batched.device)
+    else:
+        expected = (time,) if unbatched else (batch, time)
+        if valid_mask.shape != expected:
+            raise ValueError(
+                f"valid_mask must have shape {expected}, got {tuple(valid_mask.shape)}"
+            )
+        mask = valid_mask.unsqueeze(0) if unbatched else valid_mask
+        mask = mask.to(device=batched.device, dtype=torch.bool)
+
+    detrended = linear_detrend_projected_position(
+        batched,
+        valid_mask=mask,
+    )
+    autocorrelation = vector_autocorrelation_fft(detrended, mask)
+    if autocorrelation.ndim == 1:
+        autocorrelation = autocorrelation.unsqueeze(0)
+    fallback_periods, fallback_confidences = estimate_period_from_projected_pose(
+        batched,
+        minimum=minimum,
+        maximum=maximum,
+        valid_mask=mask,
+    )
+
+    diagnostics: list[ProjectedPositionLagVelocityFallbackDiagnostic] = []
+    for sample_ac, sample_mask, fallback_period_tensor, fallback_confidence_tensor in zip(
+        autocorrelation,
+        mask,
+        fallback_periods,
+        fallback_confidences,
+        strict=True,
+    ):
+        valid_length = int(sample_mask.sum())
+        upper_lag = min(maximum, valid_length // 2)
+        searched_lags = tuple(range(minimum, upper_lag + 1))
+        searched_values = tuple(
+            float(value)
+            for value in sample_ac[minimum : upper_lag + 1].detach().cpu()
+        )
+        peaks, properties = find_peaks(
+            sample_ac.detach().cpu().numpy(),
+            distance=minimum,
+            prominence=0.0,
+        )
+        candidates = tuple(
+            (
+                int(lag),
+                float(sample_ac[int(lag)]),
+                float(prominence),
+            )
+            for lag, prominence in zip(
+                peaks,
+                properties["prominences"],
+                strict=True,
+            )
+            if minimum <= int(lag) <= upper_lag and float(sample_ac[int(lag)]) > 0.0
+        )
+        positive_peak_lags = tuple(item[0] for item in candidates)
+        positive_peak_heights = tuple(item[1] for item in candidates)
+        positive_peak_prominences = tuple(item[2] for item in candidates)
+
+        fallback_period = float(fallback_period_tensor)
+        fallback_confidence = float(fallback_confidence_tensor)
+        selected_lag: int | None = None
+        selected_period = float(minimum)
+        confidence = 0.0
+        selection_source = "no-evidence"
+        near_best_height_threshold = 0.0
+        eligible_candidates: tuple[tuple[int, float, float], ...] = ()
+        if candidates:
+            maximum_height = max(item[1] for item in candidates)
+            near_best_height_threshold = 0.90 * maximum_height
+            eligible_candidates = tuple(
+                item
+                for item in candidates
+                if item[1] >= near_best_height_threshold
+            )
+            selected_lag = eligible_candidates[0][0]
+            selected_period = float(selected_lag)
+            confidence = min(max(eligible_candidates[0][1], 0.0), 1.0)
+            selection_source = "detrended-position-lag-acf"
+        elif fallback_confidence > 0.0:
+            selected_period = fallback_period
+            confidence = fallback_confidence
+            selection_source = "projected-velocity-spectrum-fallback"
+
+        diagnostics.append(
+            ProjectedPositionLagVelocityFallbackDiagnostic(
+                valid_length=valid_length,
+                searched_lags=searched_lags,
+                autocorrelation_values=searched_values,
+                positive_peak_lags=positive_peak_lags,
+                positive_peak_heights=positive_peak_heights,
+                positive_peak_prominences=positive_peak_prominences,
+                near_best_height_threshold=near_best_height_threshold,
+                eligible_peak_lags=tuple(item[0] for item in eligible_candidates),
+                eligible_peak_heights=tuple(item[1] for item in eligible_candidates),
+                selected_lag=selected_lag,
+                selected_period=selected_period,
+                confidence=confidence,
+                selection_source=selection_source,
+                fallback_period=fallback_period,
+                fallback_confidence=fallback_confidence,
+            )
+        )
+    return tuple(diagnostics)
+
+
+def estimate_period_from_projected_position_lag_velocity_fallback(
+    projected_pose: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> tuple[Tensor, Tensor]:
+    """Estimate periods from the target-free lag-peak hybrid readout."""
+
+    batched, unbatched = _as_batch_vectors(projected_pose)
+    if batched.dtype not in (torch.float32, torch.float64):
+        batched = batched.float()
+    diagnostics = projected_position_lag_velocity_fallback_diagnostics(
         projected_pose,
         minimum=minimum,
         maximum=maximum,
