@@ -10,6 +10,20 @@ Head and the independently inferred SSHead completion. It is not a test
 result, leaderboard result, successful reproduction claim, or ablation
 result.
 
+## PE-permutation consistency target-free predev rejection
+
+Two independently inferred Encoder repairs completed 150 target-free training
+epochs with PE-permutation consistency weights `1.0` and `10.0`. W1 failed
+all six frozen label-free gates. W10 passed the direct PE-invariance and
+frame-index-probe criteria, but failed zero/random-pose confidence, synthetic
+period recovery, and training-period diversity. Both candidates were rejected
+before any dev84 prediction or scoring, and sealed test105 remained
+untouched. The exact public-safe gate outputs, path-free audit, sanitized
+training aggregates, and hashes are in
+[`pams_pe_permutation_consistency_predev_w1_w10_56f4024`](pams_pe_permutation_consistency_predev_w1_w10_56f4024/README.md).
+This is `inferred` negative evidence under `partial_reproduction`, not a
+paper-table or verified result.
+
 ## Pose spectral consensus dev84 diagnostic
 
 The independently inferred `pose-spectral-consensus-harmonic-v1` candidate
