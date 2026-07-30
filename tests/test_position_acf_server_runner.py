@@ -109,6 +109,32 @@ def test_runner_has_valid_bash_syntax_when_a_real_bash_is_available() -> None:
     assert result.returncode == 0, result.stderr
 
 
+def test_runner_expands_default_v8_root_at_runtime() -> None:
+    bash = _bash()
+    if bash is None:
+        pytest.skip("requires POSIX or Git Bash")
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "PAMS_ROOT": "/definitely-missing-pams-root",
+            "PAMS_SOURCE_CHECKOUT": "/definitely-missing-pams-source",
+            "PAMS_SOURCE_REVISION": "0" * 40,
+            "PAMS_ATTEMPT_ID": "runtime-expansion-probe",
+        }
+    )
+    result = subprocess.run(
+        [bash, str(RUNNER)],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+        env=environment,
+    )
+    assert result.returncode != 0
+    assert "bad substitution" not in result.stderr.lower()
+    assert "错误的替换" not in result.stderr
+
+
 def test_runner_requires_clean_committed_source_and_exact_v8_assets() -> None:
     launcher = _runner()
     assert 'git -C "$SOURCE_CHECKOUT" rev-parse HEAD' in launcher
