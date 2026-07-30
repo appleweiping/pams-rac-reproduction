@@ -473,11 +473,22 @@ def infer(sequences, model, config, device):
                 )
             )
             valid_counts = batch.valid_mask.sum(dim=1)
+            sequence_lengths = batch.lengths
             for index, video_id in enumerate(batch.video_ids):
                 diagnostic = diagnostics[index]
                 period = float(periods[index])
                 confidence = float(confidences[index])
+                sampled_frames = int(sequence_lengths[index])
                 valid_frames = int(valid_counts[index])
+                if int(diagnostic.valid_length) != valid_frames:
+                    raise RuntimeError("diagnostic valid-frame count mismatch")
+                if sampled_frames != config.data.frames:
+                    raise RuntimeError("sampled timeline length drifted")
+                if valid_frames not in {0, sampled_frames}:
+                    raise RuntimeError(
+                        "partial valid-mask coverage would bias the frozen "
+                        "valid-frame-interval count duration"
+                    )
                 if not math.isclose(
                     period,
                     float(diagnostic.selected_period),
@@ -492,6 +503,11 @@ def infer(sequences, model, config, device):
                     abs_tol=1e-7,
                 ):
                     raise RuntimeError("estimator/diagnostic confidence mismatch")
+                if not (
+                    math.isfinite(float(diagnostic.fallback_period))
+                    and math.isfinite(float(diagnostic.fallback_confidence))
+                ):
+                    raise RuntimeError("fallback diagnostic evidence is not finite")
                 raw_count = (
                     float(valid_frames - 1) / period
                     if confidence > 0.0 and valid_frames >= 2
@@ -499,6 +515,8 @@ def infer(sequences, model, config, device):
                 )
                 row = {
                     "video_id": video_id,
+                    "sampled_frames": sampled_frames,
+                    "valid_frames": valid_frames,
                     "period_frames": period,
                     "confidence": confidence,
                     "selection_source": diagnostic.selection_source,
@@ -520,6 +538,11 @@ def infer(sequences, model, config, device):
                     raw_count != 0.0 or row["rounded_count"] != 0
                 ):
                     raise RuntimeError("zero evidence must produce zero count")
+                if valid_frames == 0 and (
+                    confidence != 0.0
+                    or row["selection_source"] != "no-evidence"
+                ):
+                    raise RuntimeError("all-invalid input produced spurious evidence")
                 rows.append(row)
     if batch_sizes != [32, 32, 20]:
         raise RuntimeError("prediction batch partition drifted")
@@ -757,6 +780,8 @@ def validate_predictions(prediction_path, receipt_path):
         raise ValueError("prediction row count mismatch")
     expected_row = {
         "video_id",
+        "sampled_frames",
+        "valid_frames",
         "period_frames",
         "confidence",
         "selection_source",
@@ -770,6 +795,13 @@ def validate_predictions(prediction_path, receipt_path):
         ids.append(row["video_id"])
         if not isinstance(row["video_id"], str) or not row["video_id"]:
             raise ValueError("prediction video identifier is invalid")
+        if type(row["sampled_frames"]) is not int or row["sampled_frames"] != 256:
+            raise ValueError("prediction sampled timeline length drifted")
+        if (
+            type(row["valid_frames"]) is not int
+            or row["valid_frames"] not in {0, row["sampled_frames"]}
+        ):
+            raise ValueError("prediction contains partial valid-mask coverage")
         if row["selection_source"] not in {
             "detrended-position-lag-acf",
             "projected-velocity-spectrum-fallback",
@@ -787,6 +819,12 @@ def validate_predictions(prediction_path, receipt_path):
             raise ValueError("prediction period is outside the frozen range")
         if numeric[1] < 0.0 or numeric[2] < 0.0:
             raise ValueError("prediction confidence/count is negative")
+        if row["valid_frames"] == 0 and (
+            numeric[1] != 0.0
+            or numeric[2] != 0.0
+            or row["selection_source"] != "no-evidence"
+        ):
+            raise ValueError("all-invalid prediction contains spurious evidence")
         if int(row["rounded_count"]) != row["rounded_count"]:
             raise ValueError("rounded count is not integral")
         if int(math.floor(numeric[2] + 0.5)) != int(row["rounded_count"]):
@@ -988,6 +1026,8 @@ def main():
         "per_video": [
             {
                 "video_id": row["video_id"],
+                "sampled_frames": row["sampled_frames"],
+                "valid_frames": row["valid_frames"],
                 "prediction": raw[index],
                 "rounded_prediction": rounded[index],
                 "target": target_counts[index],

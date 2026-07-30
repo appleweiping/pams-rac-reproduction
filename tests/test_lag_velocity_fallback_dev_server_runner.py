@@ -140,6 +140,8 @@ def test_prediction_schema_contains_the_required_near90_fields() -> None:
     program = predict[0]
     for field in (
         '"video_id"',
+        '"sampled_frames"',
+        '"valid_frames"',
         '"period_frames"',
         '"confidence"',
         '"selection_source"',
@@ -151,6 +153,8 @@ def test_prediction_schema_contains_the_required_near90_fields() -> None:
     assert "projected_position_lag_velocity_fallback_diagnostics" in program
     assert "forward_with_pre_pe" in program
     assert "batch_sizes != [32, 32, 20]" in program
+    assert "valid_frames not in {0, sampled_frames}" in program
+    assert "partial valid-mask coverage would bias" in program
     assert '"dev84_targets_mounted": False' in program
 
 
