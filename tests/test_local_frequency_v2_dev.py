@@ -558,7 +558,7 @@ def test_dev_manifest_and_selected_candidate_prediction_are_identity_bound(
             *,
             worker_total: int,
         ) -> dict[str, dict[str, int]]:
-            assert worker_total == 8
+            assert worker_total == runner._DEV_PREDICTION_WORKER_TOTAL == 1
             return {
                 sequence.video_id: {
                     method: (17 if method == selected else 3)

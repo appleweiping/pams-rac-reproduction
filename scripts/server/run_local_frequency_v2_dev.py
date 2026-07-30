@@ -96,6 +96,7 @@ _DEV_RECORD_TOTAL = 84
 _CANDIDATE_TOTAL = 512
 _COUNT_MINIMUM = 2
 _COUNT_MAXIMUM = 40
+_DEV_PREDICTION_WORKER_TOTAL = 1
 _BOOTSTRAP_SAMPLES = 10_000
 _BOOTSTRAP_SEED = 2026
 _REQUIRED_NMAE_AT_MOST = 0.228
@@ -864,9 +865,14 @@ def _predict_selected_candidate(
     items = tuple(sequences)
     if len(items) != _DEV_RECORD_TOTAL:
         raise ValueError("prediction requires exactly 84 pose sequences")
+    # The approved selector is loaded from an exact source hash at runtime.
+    # Its functions therefore do not have a normally importable module
+    # identity for ProcessPool pickling.  Dev84 is small enough to run the
+    # identical frozen grid sequentially, which also removes that platform
+    # dependency from the formal prediction boundary.
     predicted = selector_module._predict_many(
         items,
-        worker_total=selector_module._WORKER_TOTAL,
+        worker_total=_DEV_PREDICTION_WORKER_TOTAL,
     )
     identifiers = tuple(sequence.video_id for sequence in items)
     if tuple(predicted) != identifiers:
