@@ -25,6 +25,14 @@ validated reproduction. Baselines and executable ablation variants remain
 incomplete. The development results below must not be moved into a test
 leaderboard.
 
+The latest direct v8 readout diagnostics produced NMAE/OBO
+`0.664627 / 0.261905` for PAMS-Literal and `0.529058 / 0.333333` for a
+synthetic-frozen pose-only local-frequency readout. The latter is
+paper-table-ineligible but shows that the pose cache retains usable periodic
+signal and that the learned inferred SSHead/period stream is the primary
+remaining bottleneck. Full target-isolated artifacts are under
+[`dev-negative/pams_v8_frozen_readout_diagnostics_seed2026_07192de/`](dev-negative/pams_v8_frozen_readout_diagnostics_seed2026_07192de/).
+
 ## UCFRep-526 development-only negative result
 
 All rows use the same fixed 84-video development split and source revision

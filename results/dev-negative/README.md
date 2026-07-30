@@ -464,6 +464,31 @@ notes are in
 [`pams_sshead_longest_track_v8_seed2026_07192de/`](pams_sshead_longest_track_v8_seed2026_07192de/).
 The result remains an inferred negative partial reproduction.
 
+## PAMS v8 frozen-readout diagnostics
+
+Two direct readout experiments reused the completed v8 assets without
+retraining the Encoder. PAMS-Literal used the disclosed but random, untrained
+Period Head and obtained NMAE `0.664627`, raw MAE `4.071429`, RMSE
+`5.400617`, OBO `0.261905`, and Exact `0.154762`.
+
+The independently inferred, synthetic-frozen local-frequency pose readout
+obtained NMAE `0.529058`, raw MAE `3.523810`, RMSE `4.932883`, OBO
+`0.333333`, and Exact `0.178571`. Against the matched v8 SSHead result, its
+paired NMAE difference was `-0.114065` with 95% interval
+`[-0.193770, -0.031096]`; the OBO difference was `+0.035714` with interval
+`[-0.047619, +0.119048]`. This supports the diagnosis that useful periodic
+signal remains in pose while the learned SSHead/period stream is the primary
+bottleneck.
+
+The local-frequency method does not use the PAMS Encoder or SSHead and is
+permanently ineligible for the paper table. Compared with the same readout on
+v2 pose, v3 was slightly worse on NMAE and tied on OBO, so it does not show a
+causal preprocessing improvement. Both prediction artifacts were frozen
+without development targets; independent CPU scorers opened dev labels
+afterward. Test105 remains untouched. Full predictions, evaluations,
+synthetic replay, paired comparisons, receipts, and hashes are in
+[`pams_v8_frozen_readout_diagnostics_seed2026_07192de/`](pams_v8_frozen_readout_diagnostics_seed2026_07192de/).
+
 ## Inferred JTSPS count-only strict dev diagnostic
 
 The independently implemented `JTSPS-count-only` scaffold completed real

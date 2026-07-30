@@ -13,6 +13,11 @@ Action Counting** (CVPR Findings 2026).
 > seed-2026 NMAE/OBO from `0.735728 / 0.190476` to
 > `0.643123 / 0.297619`, but still failed its preregistered
 > `0.60 / 0.30` expansion gate; seeds 42/3407 were therefore not authorized.
+> A subsequent direct frozen-readout diagnostic obtained
+> `0.664627 / 0.261905` for PAMS-Literal and `0.529058 / 0.333333` for a
+> synthetic-frozen pose-only local-frequency readout. The latter isolates the
+> learned Period Head/period stream as the main remaining bottleneck, but is
+> not an author-disclosed PAMS component or a paper-table result.
 > The official current RepNet checkpoint and official TransRAC and IVAC-P2L
 > checkpoints have separate
 > development-only sanity results; both use explicitly labeled modern
