@@ -10,6 +10,20 @@ Head and the independently inferred SSHead completion. It is not a test
 result, leaderboard result, successful reproduction claim, or ablation
 result.
 
+## No-absolute-position-encoding target-free predev rejection
+
+The independently inferred NoAbsPE repair removed absolute positional
+encoding and completed 150 target-free Encoder epochs for training seeds
+`2026` and `42`. Each run produced 150 contiguous epoch records and 1,500
+optimizer steps. Both checkpoints passed four of six frozen label-free gates,
+but both failed random-pose period confidence and synthetic-period recovery.
+The joint decision is therefore `predev_rejected`. Neither candidate ran
+dev84 prediction/scoring or sealed test105. Exact public-safe gate outputs,
+path-free audit, identity-free training aggregates, and hashes are in
+[`pams_no_absolute_pe_predev_two_seed_1378d6a`](pams_no_absolute_pe_predev_two_seed_1378d6a/README.md).
+This is `inferred` negative evidence under `partial_reproduction`, not a
+verified result.
+
 ## PE-permutation consistency target-free predev rejection
 
 Two independently inferred Encoder repairs completed 150 target-free training
