@@ -1,10 +1,10 @@
-# Superseded before formal execution: a broader target-free count-2--40
-# synthetic suite showed that maximum peak height often selects an integer
-# multiple of the fundamental. Retained only as an auditable rejected
-# candidate; this configuration cannot authorize dev84 or test105 access.
+# Independently inferred target-free pre-dev diagnostic. This configuration
+# supersedes the unexecuted maximum-height v1 after a broader target-free
+# synthetic suite exposed integer-multiple period selection. It cannot
+# authorize dev84 scoring or any test105 access.
 schema_version: 1
-key: pams-projected-position-lag-velocity-fallback-predev-v1
-classification: inferred detrended lag-ACF peak with projected-velocity fallback predev diagnostic
+key: pams-projected-position-lag-velocity-fallback-predev-v2
+classification: inferred detrended near-best lag-ACF fundamental with projected-velocity fallback predev diagnostic
 eligible_for_paper_table: false
 dev84_scoring_authorized: false
 test105_evaluation_authorized: false
@@ -32,7 +32,8 @@ readout:
   primary_peak_minimum_distance_frames: 4
   primary_peak_minimum_prominence: 0
   primary_peak_height_guard: strictly_positive
-  primary_selection: maximum_acf_height_then_smallest_lag
+  primary_near_best_height_fraction: 0.90
+  primary_selection: smallest_lag_at_least_90_percent_of_maximum_positive_peak_height
   fallback_trigger: no_positive_primary_local_peak
   fallback: projected_pose_pairwise_valid_velocity_vector_acf_spectrum
   fallback_selection: maximum_allowed_non_dc_power_share
