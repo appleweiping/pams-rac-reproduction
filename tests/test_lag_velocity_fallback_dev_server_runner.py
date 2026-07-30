@@ -101,6 +101,16 @@ def test_prediction_mounts_only_target_free_dev_inputs() -> None:
     assert "src=${DEV_POSE_VIEW},dst=/pams/pose-cache,readonly" in prediction
 
 
+def test_dev_pose_view_uses_the_canonical_hashed_cache_key() -> None:
+    source = _runner()
+
+    assert 'digest="$(printf \'%s\' "$video_id" | sha256sum' in source
+    assert 'source_pose="${POSE_POOL}/${digest}.npz"' in source
+    assert 'target_pose="${DEV_POSE_VIEW}/${digest}.npz"' in source
+    assert '"$source_pose" -ef "$target_pose"' in source
+    assert "dev84 pose cache copy hash mismatch" in source
+
+
 def test_score_mounts_prediction_targets_and_metric_code_but_no_model_assets() -> None:
     score = _docker_blocks(_runner())[1]
     destinations = set(re.findall(r"dst=([^,\"]+)", score))

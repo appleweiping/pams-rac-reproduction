@@ -368,9 +368,17 @@ chmod 0444 "${AUDIT_ROOT}/predev-validation.json"
 CURRENT_STAGE="dev84-pose-view"
 while IFS= read -r video_id; do
   [[ "$video_id" =~ ^[A-Za-z0-9_]+$ ]] || fail "unsafe dev84 video_id"
-  source_pose="${POSE_POOL}/${video_id}.npz"
+  digest="$(printf '%s' "$video_id" | sha256sum | awk '{print $1}')"
+  source_pose="${POSE_POOL}/${digest}.npz"
+  target_pose="${DEV_POSE_VIEW}/${digest}.npz"
   test -f "$source_pose" || fail "missing dev84 pose cache: $video_id"
-  cp --reflink=auto --preserve=mode,timestamps -- "$source_pose" "$DEV_POSE_VIEW/"
+  test ! -e "$target_pose" || fail "duplicate dev84 pose cache: $video_id"
+  source_pose_sha256="$(sha256_of "$source_pose")"
+  cp --reflink=auto --preserve=mode,timestamps -- "$source_pose" "$target_pose"
+  [[ ! "$source_pose" -ef "$target_pose" ]] \
+    || fail "dev84 pose cache must be an independent file: $video_id"
+  [[ "$(sha256_of "$target_pose")" == "$source_pose_sha256" ]] \
+    || fail "dev84 pose cache copy hash mismatch: $video_id"
 done < <(jq -r '.records[].video_id' "$DEV_INPUT")
 [[ "$(find "$DEV_POSE_VIEW" -maxdepth 1 -type f -name '*.npz' | wc -l)" -eq 84 ]] \
   || fail "dev84 pose view must contain exactly 84 NPZ files"
