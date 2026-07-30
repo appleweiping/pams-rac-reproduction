@@ -436,6 +436,34 @@ and container/artifact audit are in
 The result remains an inferred negative partial reproduction and is
 ineligible for the paper table, preregistered claim, or verified status.
 
+## PAMS-SSHead longest-contiguous-track v8 seed-2026 gate
+
+The v8 protocol correction implements the reproduction plan's longest
+contiguous MediaPipe detection run. A fresh seed-2026 run trained the Encoder
+for 150 epochs and the inferred SSHead for 30 epochs using train337 pose only,
+froze 84 target-free predictions, and scored them in a separate CPU
+container.
+
+It obtained NMAE `0.643123` (95% CI `[0.563462, 0.720873]`), raw MAE
+`4.226190`, RMSE `6.073949`, OBO `0.297619` (95% CI
+`[0.202381, 0.392857]`), and Exact `0.154762`. Relative to matched v7
+seed 2026, the paired `v8 - v7` NMAE difference was `-0.092605`
+(`[−0.178001, −0.008187]`) and the OBO difference was `+0.107143`
+(`[+0.035714, +0.178571]`).
+
+This is a real improvement, but both frozen absolute expansion conditions
+still fail: NMAE is above `0.60` and OBO is below `0.30`. The preregistered
+decision is therefore `do-not-extend`; seeds 42 and 3407 were not run and
+test105 remains untouched.
+
+The label-free v2/v3 pose audit found that mean cached valid-frame rate rose
+from `0.773605` to `0.947743`, while all-invalid videos rose from 13 to 22.
+Nine one-frame tracks were deliberately converted to all-invalid. Complete
+per-video predictions, logs, receipts, cache identities, hashes, and audit
+notes are in
+[`pams_sshead_longest_track_v8_seed2026_07192de/`](pams_sshead_longest_track_v8_seed2026_07192de/).
+The result remains an inferred negative partial reproduction.
+
 ## Inferred JTSPS count-only strict dev diagnostic
 
 The independently implemented `JTSPS-count-only` scaffold completed real

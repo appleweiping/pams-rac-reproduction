@@ -1,0 +1,1 @@
+The cached build completed successfully. Two post-build receipt commands exited because Windows SSH command-line quoting altered their Go-template/Python quotes. No image rebuild or experiment ran between them. The immutable image inspect JSON and labels were independently validated through stdin-fed bash before this receipt was completed.

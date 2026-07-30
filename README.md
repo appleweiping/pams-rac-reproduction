@@ -7,10 +7,14 @@ Period-Adaptive Multi-Scale Consistency for Self-Supervised Repetitive
 Action Counting** (CVPR Findings 2026).
 
 > **Current status: partial reproduction / no verified benchmark claim.**
-> PAMS-Literal and inferred PAMS-SSHead completed all three preregistered
-> seeds on the fixed 84-video development split, but both missed the frozen
-> NMAE/OBO gate by a wide margin. The official current RepNet checkpoint and
-> official TransRAC and IVAC-P2L checkpoints now have separate
+> Historical PAMS-Literal and inferred PAMS-SSHead runs completed all three
+> seeds on the fixed 84-video development split and missed the frozen gate.
+> The v8 longest-contiguous-track protocol correction then improved matched
+> seed-2026 NMAE/OBO from `0.735728 / 0.190476` to
+> `0.643123 / 0.297619`, but still failed its preregistered
+> `0.60 / 0.30` expansion gate; seeds 42/3407 were therefore not authorized.
+> The official current RepNet checkpoint and official TransRAC and IVAC-P2L
+> checkpoints have separate
 > development-only sanity results; both use explicitly labeled modern
 > compatibility environments and are not original-protocol parity. The sealed 105-video
 > UCFRep test split remains untouched, so no test metric or successful

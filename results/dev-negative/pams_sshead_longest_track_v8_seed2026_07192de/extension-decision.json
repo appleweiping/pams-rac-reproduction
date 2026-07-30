@@ -1,0 +1,25 @@
+{
+  "absolute_thresholds": {
+    "nmae_lte": 0.6,
+    "obo_gte": 0.3
+  },
+  "authorized": false,
+  "authorized_seeds": [],
+  "conditions": {
+    "nmae_lte_0_60": false,
+    "nmae_strictly_better_than_v7_seed2026": true,
+    "obo_gte_0_30": false,
+    "obo_strictly_better_than_v7_seed2026": true
+  },
+  "decision": "do-not-extend",
+  "reference_v7_seed2026": {
+    "nmae": 0.7357284358361944,
+    "obo": 0.19047619047619047
+  },
+  "schema_version": 1,
+  "seed2026": {
+    "nmae": 0.643123262319691,
+    "obo": 0.2976190476190476
+  },
+  "test105_evaluation_authorized": false
+}
