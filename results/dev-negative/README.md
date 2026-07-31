@@ -10,6 +10,18 @@ Head and the independently inferred SSHead completion. It is not a test
 result, leaderboard result, successful reproduction claim, or ablation
 result.
 
+## PAMS v14 terminal train337-only rejection
+
+The seed-2026 paper-aligned-corrections v14 run completed all 150 encoder
+epochs and all 30 independently inferred SSHead epochs. Its frozen target-free
+terminal gate passed 8 of 13 criteria and failed 5. Encoder period mode share
+was `0.676558` and time-scale median relative error was `1.000000`; SSHead
+stream-standard-deviation median was `0.003972`, mode share was `0.732938`,
+and time-scale error was `0.750000`. Dev84 prediction/scoring was therefore
+not authorized, and sealed test105 remained untouched. Exact public-safe
+gate output, compact training facts, access audit, and hashes are in
+[`pams_v14_train_only_seed2026_b6d3b07`](pams_v14_train_only_seed2026_b6d3b07/README.md).
+
 ## No-absolute-position-encoding target-free predev rejection
 
 The independently inferred NoAbsPE repair removed absolute positional
