@@ -7,6 +7,7 @@ deterministic, mask-aware implementation of that description.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import torch
@@ -436,6 +437,105 @@ def estimate_period_batch_detrended_fft(
     if unbatched:
         return period_tensor[:1], confidence_tensor[:1]
     return period_tensor, confidence_tensor
+
+
+def estimate_count_from_right_limb_x_consensus(
+    poses: Tensor,
+    valid_mask: Tensor,
+    maximum_count: int = 40,
+) -> tuple[Tensor, Tensor]:
+    """Estimate repetition count from four horizontal limb trajectories.
+
+    This inference-only expert converts the right elbow, wrist, knee, and
+    ankle x-coordinate trajectories into soft count spectra, then takes their
+    elementwise median.  It is independent of the learned SSHead stream.
+    """
+
+    if poses.ndim != 4 or poses.shape[-2:] != (33, 3):
+        raise ValueError("poses must have shape [batch, time, 33, 3]")
+    if valid_mask.shape != poses.shape[:2]:
+        raise ValueError("valid_mask must have shape [batch, time]")
+    if maximum_count < 2:
+        raise ValueError("maximum_count must be at least 2")
+
+    counts: list[int] = []
+    confidences: list[Tensor] = []
+    for sample, sample_mask in zip(poses.detach(), valid_mask, strict=True):
+        selected = sample[sample_mask.to(dtype=torch.bool)].to(dtype=torch.float32)
+        valid_length = int(selected.shape[0])
+        if valid_length < 16:
+            counts.append(0)
+            confidences.append(selected.new_tensor(0.0))
+            continue
+        time = torch.arange(valid_length, dtype=selected.dtype, device=selected.device)
+        centered_time = time - time.mean()
+        time_energy = centered_time.square().sum().clamp_min(1e-12)
+        window = torch.hann_window(
+            valid_length,
+            periodic=False,
+            dtype=selected.dtype,
+            device=selected.device,
+        )
+        distributions: list[Tensor] = []
+        for joint in (14, 16, 26, 28):
+            signal = selected[:, joint, 0]
+            centered = signal - signal.mean()
+            slope = (centered_time * centered).sum() / time_energy
+            detrended = centered - slope * centered_time
+            power = torch.fft.rfft(detrended * window).abs().square()
+            bins = []
+            for count in range(1, maximum_count + 1):
+                low = max(1, count - 1)
+                high = min(int(power.numel()), count + 2)
+                bins.append(
+                    power[low:high].sum()
+                    if low < high
+                    else power.new_tensor(0.0)
+                )
+            distribution = torch.stack(bins)
+            total = distribution.sum()
+            if torch.isfinite(total) and float(total) > 1e-12:
+                distributions.append(distribution / total)
+
+        if not distributions:
+            counts.append(0)
+            confidences.append(selected.new_tensor(0.0))
+            continue
+        if len(distributions) == 1:
+            consensus = distributions[0]
+        elif len(distributions) == 2:
+            consensus = (distributions[0] + distributions[1]) / 2
+        elif len(distributions) == 3:
+            stacked = torch.stack(distributions)
+            consensus = (
+                stacked.sum(dim=0)
+                - stacked.min(dim=0).values
+                - stacked.max(dim=0).values
+            )
+        else:
+            first_low = torch.minimum(distributions[0], distributions[1])
+            first_high = torch.maximum(distributions[0], distributions[1])
+            second_low = torch.minimum(distributions[2], distributions[3])
+            second_high = torch.maximum(distributions[2], distributions[3])
+            lower_middle = torch.minimum(
+                torch.maximum(first_low, second_low),
+                torch.minimum(first_high, second_high),
+            )
+            upper_middle = torch.maximum(
+                torch.minimum(first_high, second_high),
+                torch.maximum(first_low, second_low),
+            )
+            consensus = (lower_middle + upper_middle) / 2
+        consensus = consensus / consensus.sum().clamp_min(1e-12)
+        counts.append(int(torch.argmax(consensus)) + 1)
+        entropy = -(consensus * consensus.clamp_min(1e-12).log()).sum()
+        confidence = 1.0 - entropy / math.log(maximum_count)
+        confidences.append(confidence.clamp(0.0, 1.0))
+
+    return (
+        torch.tensor(counts, dtype=torch.long, device=poses.device),
+        torch.stack(confidences).to(device=poses.device),
+    )
 
 
 def estimate_period_from_vectors(

@@ -7,6 +7,7 @@ from pams.model import SinusoidalPositionalEncoding
 from pams.period import (
     autocorrelation_fft,
     embedding_energy,
+    estimate_count_from_right_limb_x_consensus,
     estimate_period,
     estimate_period_batch,
     estimate_period_batch_detrended_fft,
@@ -21,6 +22,34 @@ from pams.period import (
 def _sine(period: int, length: int) -> torch.Tensor:
     time = torch.arange(length, dtype=torch.float32)
     return torch.sin(2.0 * math.pi * time / period)
+
+
+def test_right_limb_x_consensus_recovers_count_despite_one_noisy_joint() -> None:
+    time = torch.arange(256, dtype=torch.float32)
+    poses = torch.zeros((1, 256, 33, 3), dtype=torch.float32)
+    for joint, phase in zip((14, 16, 26, 28), (0.0, 0.4, 0.8, 1.2), strict=True):
+        poses[0, :, joint, 0] = torch.sin(2 * torch.pi * 16 * time / 256 + phase)
+    poses[0, :, 16, 0] = torch.sin(2 * torch.pi * 7 * time / 256)
+
+    counts, confidence = estimate_count_from_right_limb_x_consensus(
+        poses,
+        torch.ones((1, 256), dtype=torch.bool),
+    )
+
+    assert counts.tolist() == [16]
+    assert confidence.item() > 0
+
+
+def test_right_limb_x_consensus_returns_zero_without_frequency_evidence() -> None:
+    poses = torch.zeros((1, 256, 33, 3), dtype=torch.float32)
+
+    counts, confidence = estimate_count_from_right_limb_x_consensus(
+        poses,
+        torch.ones((1, 256), dtype=torch.bool),
+    )
+
+    assert counts.tolist() == [0]
+    assert confidence.tolist() == [0.0]
 
 
 def test_fft_autocorrelation_recovers_known_period() -> None:

@@ -32,7 +32,7 @@ from pams.consensus import MultiExpertCounter
 from pams.losses import PAMSTCCLoss, SSHeadLoss
 from pams.model import PAMSEncoder, PAMSModel, PeriodHead, TemporalPeriodHead
 from pams.period import (
-    estimate_period_batch,
+    estimate_count_from_right_limb_x_consensus,
     estimate_period_batch_detrended_fft,
     estimate_period_from_embeddings,
     estimate_period_from_pose,
@@ -2303,6 +2303,10 @@ def predict_sequence(
             maximum=config.period.maximum,
             valid_mask=batch.valid_mask,
         )
+        pose_counts, pose_confidences = estimate_count_from_right_limb_x_consensus(
+            batch.poses,
+            batch.valid_mask,
+        )
     stream = stream_batch[0, : sequence.num_frames]
     mask = batch.valid_mask[0, : sequence.num_frames]
     if counter is None:
@@ -2330,6 +2334,9 @@ def predict_sequence(
     reference_count = int(
         math.floor(float(mask.sum()) / float(periods[0]) + 0.5)
     )
+    pose_count = int(pose_counts[0])
+    if float(pose_confidences[0]) > 0 and abs(reference_count - pose_count) > 1:
+        reference_count = pose_count
     compact = consensus_result.to_count_result()
     result = CountResult(
         count=reference_count,
