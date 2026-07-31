@@ -2335,14 +2335,28 @@ def predict_sequence(
         math.floor(float(mask.sum()) / float(periods[0]) + 0.5)
     )
     pose_count = int(pose_counts[0])
-    if float(pose_confidences[0]) > 0 and abs(reference_count - pose_count) > 1:
+    selected_pose = (
+        float(pose_confidences[0]) > 0
+        and abs(reference_count - pose_count) > 1
+    )
+    if selected_pose:
         reference_count = pose_count
     compact = consensus_result.to_count_result()
+    selected_period = (
+        float(mask.sum()) / pose_count
+        if selected_pose
+        else compact.period_frames
+    )
+    selected_confidence = (
+        float(pose_confidences[0])
+        if selected_pose
+        else compact.confidence
+    )
     result = CountResult(
         count=reference_count,
-        period_frames=compact.period_frames,
+        period_frames=selected_period,
         expert_counts=compact.expert_counts,
-        confidence=compact.confidence,
+        confidence=selected_confidence,
         period_stream=compact.period_stream,
     )
     model.train(previous_training)

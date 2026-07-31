@@ -1110,8 +1110,17 @@ def test_prediction_confidence_is_zero_without_spectral_period_evidence() -> Non
     with torch.no_grad():
         for parameter in model.period_head.parameters():
             parameter.zero_()
+    source = _sequence("constant-head")
+    xyz = np.array(source.xyz, copy=True)
+    xyz[:, (14, 16, 26, 28), 0] = 0.0
+    sequence = PoseSequence(
+        video_id=source.video_id,
+        fps=source.fps,
+        xyz=xyz,
+        valid_mask=source.valid_mask,
+    )
 
-    result = predict_sequence(model, _sequence("constant-head"), config, device="cpu")
+    result = predict_sequence(model, sequence, config, device="cpu")
 
     assert result.confidence == 0.0
 
