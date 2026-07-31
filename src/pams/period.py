@@ -7,6 +7,7 @@ deterministic, mask-aware implementation of that description.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import torch
@@ -433,6 +434,107 @@ def estimate_period_batch_detrended_fft(
         device=batched.device,
     )
     confidence_tensor = torch.stack(confidences).to(device=batched.device)
+    if unbatched:
+        return period_tensor[:1], confidence_tensor[:1]
+    return period_tensor, confidence_tensor
+
+
+def estimate_period_from_right_limb_x_consensus(
+    poses: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+    maximum_count: int = 40,
+) -> tuple[Tensor, Tensor]:
+    """Estimate pose periods from a robust right-limb horizontal consensus.
+
+    This independently inferred teacher uses the x-coordinate trajectories of
+    the right elbow, wrist, knee, and ankle (COCO joints 14, 16, 26, and 28).
+    Each trajectory contributes a linearly detrended Hann-windowed count
+    spectrum.  Taking the median distribution prevents one noisy extremity
+    from dominating the pseudo-period used by the label-free objectives.
+    """
+
+    if poses.ndim not in (3, 4) or poses.shape[-2:] != (33, 3):
+        raise ValueError(
+            "poses must have shape [time, 33, 3] or [batch, time, 33, 3]"
+        )
+    if maximum_count < 2:
+        raise ValueError("maximum_count must be at least 2")
+    unbatched = poses.ndim == 3
+    values = poses.unsqueeze(0) if unbatched else poses
+    batch, time = values.shape[:2]
+    if valid_mask is None:
+        mask = torch.ones((batch, time), dtype=torch.bool, device=values.device)
+    else:
+        expected = (time,) if unbatched else (batch, time)
+        if valid_mask.shape != expected:
+            raise ValueError(
+                f"valid_mask must have shape {expected}, got {tuple(valid_mask.shape)}"
+            )
+        mask = valid_mask.unsqueeze(0) if unbatched else valid_mask
+        mask = mask.to(device=values.device, dtype=torch.bool)
+
+    periods: list[float] = []
+    confidences: list[Tensor] = []
+    for sample, sample_mask in zip(values.detach(), mask, strict=True):
+        selected = sample[sample_mask].to(dtype=torch.float32)
+        valid_length = int(selected.shape[0])
+        if valid_length < max(16, minimum * 2):
+            periods.append(float(minimum))
+            confidences.append(selected.new_tensor(0.0))
+            continue
+
+        coordinate_distributions: list[Tensor] = []
+        sample_time = torch.arange(
+            valid_length, dtype=selected.dtype, device=selected.device
+        )
+        centered_time = sample_time - sample_time.mean()
+        time_energy = centered_time.square().sum().clamp_min(1e-12)
+        window = torch.hann_window(
+            valid_length,
+            periodic=False,
+            dtype=selected.dtype,
+            device=selected.device,
+        )
+        for joint in (14, 16, 26, 28):
+            signal = selected[:, joint, 0]
+            centered = signal - signal.mean()
+            slope = (centered_time * centered).sum() / time_energy
+            detrended = centered - slope * centered_time
+            power = torch.fft.rfft(detrended * window).abs().square()
+            bins = []
+            for count in range(1, maximum_count + 1):
+                low = max(1, count - 1)
+                high = min(int(power.numel()), count + 2)
+                bins.append(
+                    power[low:high].sum()
+                    if low < high
+                    else power.new_tensor(0.0)
+                )
+            distribution = torch.stack(bins)
+            total = distribution.sum()
+            if torch.isfinite(total) and float(total) > 1e-12:
+                coordinate_distributions.append(distribution / total)
+
+        if not coordinate_distributions:
+            periods.append(float(minimum))
+            confidences.append(selected.new_tensor(0.0))
+            continue
+        consensus = torch.stack(coordinate_distributions).median(dim=0).values
+        consensus = consensus / consensus.sum().clamp_min(1e-12)
+        count = int(torch.argmax(consensus)) + 1
+        period = min(
+            max(valid_length / float(count), float(minimum)),
+            float(min(maximum, valid_length - 1)),
+        )
+        entropy = -(consensus * consensus.clamp_min(1e-12).log()).sum()
+        confidence = 1.0 - entropy / math.log(maximum_count)
+        periods.append(period)
+        confidences.append(confidence.clamp(0.0, 1.0))
+
+    period_tensor = torch.tensor(periods, dtype=torch.float32, device=values.device)
+    confidence_tensor = torch.stack(confidences).to(device=values.device)
     if unbatched:
         return period_tensor[:1], confidence_tensor[:1]
     return period_tensor, confidence_tensor

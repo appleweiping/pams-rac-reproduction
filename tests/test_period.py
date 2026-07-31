@@ -13,6 +13,7 @@ from pams.period import (
     estimate_period_from_embeddings,
     estimate_period_from_pose,
     estimate_period_from_projected_pose,
+    estimate_period_from_right_limb_x_consensus,
     estimate_period_from_vectors,
     vector_autocorrelation_fft,
 )
@@ -312,3 +313,37 @@ def test_projected_pose_velocity_vector_acf_preserves_fundamental_period() -> No
 
     assert periods.tolist() == [32]
     assert confidence.item() > 0
+
+
+def test_right_limb_x_consensus_recovers_pose_period_with_noisy_joint() -> None:
+    time = torch.arange(256, dtype=torch.float32)
+    pose = torch.zeros((1, 256, 33, 3), dtype=torch.float32)
+    for joint, phase in zip((14, 16, 26, 28), (0.0, 0.4, 0.8, 1.2), strict=True):
+        pose[0, :, joint, 0] = torch.sin(2 * torch.pi * time / 16 + phase)
+    pose[0, :, 16, 0] = torch.sin(2 * torch.pi * time / 7)
+    valid = torch.ones((1, 256), dtype=torch.bool)
+
+    periods, confidence = estimate_period_from_right_limb_x_consensus(
+        pose,
+        minimum=4,
+        maximum=128,
+        valid_mask=valid,
+    )
+
+    assert periods.tolist() == [16.0]
+    assert confidence.item() > 0
+
+
+def test_right_limb_x_consensus_has_zero_confidence_without_evidence() -> None:
+    pose = torch.zeros((2, 256, 33, 3), dtype=torch.float32)
+    valid = torch.ones((2, 256), dtype=torch.bool)
+
+    periods, confidence = estimate_period_from_right_limb_x_consensus(
+        pose,
+        minimum=4,
+        maximum=128,
+        valid_mask=valid,
+    )
+
+    assert periods.tolist() == [4.0, 4.0]
+    assert confidence.tolist() == [0.0, 0.0]

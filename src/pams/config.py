@@ -93,6 +93,7 @@ class PeriodConfig(StrictModel):
     post_warmup_source: Literal[
         "embedding_velocity_coordinate",
         "projected_pose_velocity_vector_acf",
+        "right_limb_x_frequency_consensus",
     ] = "embedding_velocity_coordinate"
 
     @model_validator(mode="after")

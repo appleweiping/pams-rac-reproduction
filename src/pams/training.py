@@ -32,11 +32,11 @@ from pams.consensus import MultiExpertCounter
 from pams.losses import PAMSTCCLoss, SSHeadLoss
 from pams.model import PAMSEncoder, PAMSModel, PeriodHead, TemporalPeriodHead
 from pams.period import (
-    estimate_period_batch,
     estimate_period_batch_detrended_fft,
     estimate_period_from_embeddings,
     estimate_period_from_pose,
     estimate_period_from_projected_pose,
+    estimate_period_from_right_limb_x_consensus,
 )
 from pams.reproducibility import durable_mkdir, fsync_directory, seed_everything
 from pams.types import CountResult, PoseSequence
@@ -51,6 +51,7 @@ PeriodHistorySource = Literal[
     "pose",
     "embedding",
     "projected_pose_velocity_vector_acf",
+    "right_limb_x_frequency_consensus",
     "fixed_period_inferred",
 ]
 
@@ -340,6 +341,8 @@ def _post_warmup_period_history_source(config: PAMSConfig) -> PeriodHistorySourc
         return "embedding"
     if source == "projected_pose_velocity_vector_acf":
         return "projected_pose_velocity_vector_acf"
+    if source == "right_limb_x_frequency_consensus":
+        return "right_limb_x_frequency_consensus"
     raise AssertionError(f"unreachable validated period source: {source!r}")
 
 
@@ -391,6 +394,7 @@ def _estimate_post_warmup_periods(
     *,
     config: PAMSConfig,
     embeddings: Tensor,
+    poses: Tensor,
     projected_pose: Tensor | None,
     valid_mask: Tensor,
 ) -> tuple[Tensor, Tensor, PeriodHistorySource]:
@@ -404,6 +408,14 @@ def _estimate_post_warmup_periods(
     if source == "embedding":
         periods, confidences = estimate_period_from_embeddings(
             embeddings.detach(),
+            minimum=config.period.minimum,
+            maximum=config.period.maximum,
+            valid_mask=valid_mask,
+        )
+        return periods, confidences, source
+    if source == "right_limb_x_frequency_consensus":
+        periods, confidences = estimate_period_from_right_limb_x_consensus(
+            poses.detach(),
             minimum=config.period.minimum,
             maximum=config.period.maximum,
             valid_mask=valid_mask,
@@ -1867,6 +1879,7 @@ def train_encoder(
                 ) = _estimate_post_warmup_periods(
                     config=config,
                     embeddings=embeddings,
+                    poses=batch.poses,
                     projected_pose=projected_pose,
                     valid_mask=batch.valid_mask,
                 )
@@ -2125,6 +2138,7 @@ def train_sshead(
                 ) = _estimate_post_warmup_periods(
                     config=config,
                     embeddings=embeddings,
+                    poses=batch.poses,
                     projected_pose=projected_pose,
                     valid_mask=batch.valid_mask,
                 )
