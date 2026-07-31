@@ -1,0 +1,39 @@
+{
+  "artifact_type": "label_data_free_source_view_receipt",
+  "file_total": 6,
+  "files": [
+    {
+      "bytes": 42992,
+      "path": "scripts/server/run_local_frequency_v2_target_free_selector.py",
+      "sha256": "52d9cc2dc026773e7fb45fcc8328edc28779823215c5cd2a1649e263ce0dd8e1"
+    },
+    {
+      "bytes": 160,
+      "path": "src/pams/__init__.py",
+      "sha256": "8b6ffbf3ac8ed7e43f1f40ef5793baa087f73b303eff342d891380bc9a5d67ce"
+    },
+    {
+      "bytes": 76527,
+      "path": "src/pams/data.py",
+      "sha256": "93dc27fb8bae9c7d2c0d185e883a8608d4ad0550344e7b01802925e11a612cc0"
+    },
+    {
+      "bytes": 19739,
+      "path": "src/pams/stress.py",
+      "sha256": "24f5dfbef6bd620172a58b29f41e1d9f086d49c57e4d57b3a6d59d7224d2f3b1"
+    },
+    {
+      "bytes": 12492,
+      "path": "src/pams/synthetic.py",
+      "sha256": "53c3bd75fdccb699a7900f85722bdfc2e91c49e5d2c435c1ca55ea6d84a74059"
+    },
+    {
+      "bytes": 6210,
+      "path": "src/pams/types.py",
+      "sha256": "78c2ad53e98856425492a1711faa62fc2bb7764767dc48a22f7c4d5e043a3e31"
+    }
+  ],
+  "git_sha": "8e3f33bb9e68ccaf19fe46773888c013d2de3951",
+  "prohibited_directories_absent": true,
+  "schema_version": 1
+}

@@ -225,6 +225,19 @@ the original paper table. The RepNet row is explicitly an
 confidence intervals and hashes are in
 [`server_dev_readouts_repnet_4d4d708.json`](dev-negative/server_dev_readouts_repnet_4d4d708.json).
 
+A successor local-frequency selector was then frozen without development
+inputs, development targets, or any test105 asset. It selected one candidate
+from the exact 512-member grid using train337 perturbation consistency,
+synthetic count/stress accuracy, and a train-only non-degeneracy gate. Its
+isolated dev84 run obtained NMAE/OBO `0.453804 / 0.369048` (95% bootstrap CIs
+`[0.381032, 0.529153] / [0.261905, 0.476190]`). This improves the earlier
+synthetic-only local-frequency NMAE but remains worse than both the official
+RepNet and ESCounts development sanity rows, and `49/84` predictions equal
+two. It therefore fails the frozen gate and remains a target-free-selected,
+paper-table-ineligible negative diagnostic. Exact selector, predictions,
+receipts, source-view audits, and hashes are under
+[`pams_local_frequency_v2_target_free_dev84_2310d09/`](dev-negative/pams_local_frequency_v2_target_free_dev84_2310d09/).
+
 The official TransRAC RepCount-A checkpoint was also restored with exact
 230-key coverage and run on all 84 development videos in a modern
 PyTorch/CUDA compatibility stack. It obtained rounded NMAE `0.690692` and

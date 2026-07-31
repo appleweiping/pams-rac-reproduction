@@ -539,6 +539,28 @@ afterward. Test105 remains untouched. Full predictions, evaluations,
 synthetic replay, paired comparisons, receipts, and hashes are in
 [`pams_v8_frozen_readout_diagnostics_seed2026_07192de/`](pams_v8_frozen_readout_diagnostics_seed2026_07192de/).
 
+## Target-free local-frequency v2 dev diagnostic
+
+The successor selector evaluated the exact 512-member local-frequency grid
+using only a deterministic train337 subset, synthetic count/stress cases, and
+label-free perturbation consistency. A sanitized source-view replay had no
+development or test asset mounted and reproduced the selector artifact
+byte-for-byte. The frozen candidate was then used in a label-isolated
+prediction container; only a separate scorer mounted the dev84 targets.
+
+It obtained NMAE `0.453804` (95% CI `[0.381032, 0.529153]`), raw MAE
+`3.273810`, RMSE `5.029674`, OBO `0.369048`
+(`[0.261905, 0.476190]`), and Exact `0.273810`. The candidate predicts two
+for `49/84` videos, so its train-only non-degeneracy pass did not prevent a
+strong low-count bias on development data. It fails both frozen acceptance
+thresholds and cannot authorize test105.
+
+The method is independently inferred and does not use the PAMS Encoder or
+SSHead, so it is permanently paper-table-ineligible. Exact selector,
+predictions, evaluation, receipts, source-view inventories, and hashes are
+under
+[`pams_local_frequency_v2_target_free_dev84_2310d09/`](pams_local_frequency_v2_target_free_dev84_2310d09/).
+
 ## Inferred JTSPS count-only strict dev diagnostic
 
 The independently implemented `JTSPS-count-only` scaffold completed real

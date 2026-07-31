@@ -1,0 +1,32 @@
+{
+  "completed": true,
+  "container_exit_code": 0,
+  "dev_targets_accessed": false,
+  "dev_targets_mounted": false,
+  "mounted_destinations": [
+    "/inputs/dev.inputs.json",
+    "/inputs/pose-dev84",
+    "/inputs/selector.json",
+    "/output",
+    "/source"
+  ],
+  "network": "none",
+  "prediction_bytes": 44239,
+  "prediction_receipt_sha256": "5c40f625e5dae5c29b24c742638ee919e358d7398ada0e939656cf047d87df27",
+  "prediction_sha256": "99ed1c9c8c4ce0a4d7971901e35ec0e0de7c340ea5989ce75fb834ae82b2a912",
+  "prediction_summary_without_targets": {
+    "distinct_total": 9,
+    "maximum": 12,
+    "mean": 3.142857142857143,
+    "median": 2.0,
+    "minimum": 2,
+    "mode_2_total": 49,
+    "zero_valid_frames_total": 6
+  },
+  "record_total": 84,
+  "schema_version": 1,
+  "selected_candidate": "xyz.trim0.norm.c1.mean.scale_min",
+  "stage": "predict",
+  "test105_accessed": false,
+  "test105_mounted": false
+}
