@@ -10,6 +10,19 @@ Head and the independently inferred SSHead completion. It is not a test
 result, leaderboard result, successful reproduction claim, or ablation
 result.
 
+## PAMS v15 projected-teacher terminal rejection
+
+The seed-2026 v15 causal ablation changed only the post-warm-up TCC period
+teacher from the post-PE embedding to the pre-PE projected-pose vector ACF.
+The teacher passed all four frozen readiness checks, and the encoder completed
+150 train337-only epochs with final loss `3.066710`. Nevertheless, the
+terminal post-PE representation assigned period 8 to `240/337` videos:
+mode share `0.712166`, time-scale median error `0.500000`, and cross-path
+median error `0.687500`. The terminal gate passed 7/10 criteria and rejected
+SSHead training. No dev84 prediction/scoring or test105 evaluation was
+authorized. Exact public-safe artifacts and hashes are in
+[`pams_v15_projected_teacher_seed2026_f4c53b4`](pams_v15_projected_teacher_seed2026_f4c53b4/README.md).
+
 ## PAMS v14 terminal train337-only rejection
 
 The seed-2026 paper-aligned-corrections v14 run completed all 150 encoder
