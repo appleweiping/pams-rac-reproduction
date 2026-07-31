@@ -62,6 +62,12 @@ _EXPECTED_SSHEAD_CHECKPOINT_SHA256 = (
 _EXPECTED_SSHEAD_PROGRESS_SHA256 = (
     "0e820d03b6b4d86b2341074bbcb0d9793839a2bf2bbb4388f44343e397cd5401"
 )
+_EXPECTED_TERMINAL_AUTHORIZATION_ARTIFACT_SHA256 = (
+    "b305114a4db3e45125708b6fbe1d0711ff50e6b4f57dafe65d6ccd27308175aa"
+)
+_EXPECTED_TERMINAL_AUTHORIZATION_RECEIPT_SHA256 = (
+    "93d902ad8d2adb1b5d5e222c83860219c8014368630dbd709325c82238b920ae"
+)
 _EXPECTED_CONFIG_SHA256 = _v16._EXPECTED_CONFIG_SHA256
 _EXPECTED_CONFIG_FINGERPRINT = _v16._EXPECTED_CONFIG_FINGERPRINT
 _EXPECTED_NONSEED_FINGERPRINT = _v16._EXPECTED_NONSEED_FINGERPRINT
@@ -81,6 +87,8 @@ def _validate_exact_inputs(
         "encoder_progress": _EXPECTED_ENCODER_PROGRESS_SHA256,
         "sshead_checkpoint": _EXPECTED_SSHEAD_CHECKPOINT_SHA256,
         "sshead_progress": _EXPECTED_SSHEAD_PROGRESS_SHA256,
+        "terminal_authorization_artifact": (_EXPECTED_TERMINAL_AUTHORIZATION_ARTIFACT_SHA256),
+        "terminal_authorization_receipt": (_EXPECTED_TERMINAL_AUTHORIZATION_RECEIPT_SHA256),
         "config": _EXPECTED_CONFIG_SHA256,
     }
     actual = {name: identities[name][0] for name in expected}
@@ -99,6 +107,55 @@ def _validate_exact_v16_config(
     _v16._validate_exact_v16_config(config, config_sha256=config_sha256)
     if config.sshead.epochs != 30:
         raise ValueError("final v16 gate requires SSHead30")
+
+
+def _validate_terminal_authorization(
+    artifact_path: Path,
+    receipt_path: Path,
+    *,
+    identities: Mapping[str, tuple[str, int]],
+) -> None:
+    try:
+        artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("terminal authorization pair must be valid UTF-8 JSON") from exc
+    if not isinstance(artifact, Mapping) or not isinstance(receipt, Mapping):
+        raise ValueError("terminal authorization pair must contain JSON objects")
+    gate = artifact.get("gate")
+    actual = {
+        "artifact_type": artifact.get("artifact_type"),
+        "artifact_status": artifact.get("status"),
+        "sshead_training_authorized": (
+            gate.get("sshead_training_authorized") if isinstance(gate, Mapping) else None
+        ),
+        "dev84_prediction_authorized": (
+            gate.get("dev84_prediction_authorized") if isinstance(gate, Mapping) else None
+        ),
+        "test105_evaluation_authorized": (
+            gate.get("test105_evaluation_authorized") if isinstance(gate, Mapping) else None
+        ),
+        "receipt_type": receipt.get("artifact_type"),
+        "receipt_artifact_sha256": receipt.get("artifact_sha256"),
+        "receipt_artifact_bytes": receipt.get("artifact_bytes"),
+        "receipt_sshead_training_authorized": receipt.get("sshead_training_authorized"),
+    }
+    expected = {
+        "artifact_type": "pams_v16_terminal_encoder_dual_path_gate",
+        "artifact_status": "train337_sshead_training_authorized",
+        "sshead_training_authorized": True,
+        "dev84_prediction_authorized": False,
+        "test105_evaluation_authorized": False,
+        "receipt_type": "pams_v16_terminal_encoder_dual_path_gate_receipt",
+        "receipt_artifact_sha256": identities["terminal_authorization_artifact"][0],
+        "receipt_artifact_bytes": identities["terminal_authorization_artifact"][1],
+        "receipt_sshead_training_authorized": True,
+    }
+    if actual != expected:
+        raise ValueError(
+            "terminal SSHead authorization binding mismatch: "
+            + json.dumps({"expected": expected, "actual": actual}, sort_keys=True)
+        )
 
 
 def _gate_decision(
@@ -141,6 +198,8 @@ def run_final_gate(
     encoder_progress_path: str | Path,
     sshead_checkpoint_path: str | Path,
     sshead_progress_path: str | Path,
+    terminal_authorization_artifact_path: str | Path,
+    terminal_authorization_receipt_path: str | Path,
     config_path: str | Path,
     pose_cache_dir: str | Path,
     *,
@@ -161,6 +220,8 @@ def run_final_gate(
         "encoder_progress": Path(encoder_progress_path),
         "sshead_checkpoint": Path(sshead_checkpoint_path),
         "sshead_progress": Path(sshead_progress_path),
+        "terminal_authorization_artifact": Path(terminal_authorization_artifact_path),
+        "terminal_authorization_receipt": Path(terminal_authorization_receipt_path),
         "config": Path(config_path),
         "v16_final_gate_runner": Path(__file__),
         "v14_final_gate_dependency": Path(_v14.__file__),
@@ -169,6 +230,11 @@ def run_final_gate(
     }
     identities = _input_identities(paths)
     _validate_exact_inputs(identities)
+    _validate_terminal_authorization(
+        paths["terminal_authorization_artifact"],
+        paths["terminal_authorization_receipt"],
+        identities=identities,
+    )
     gate_code_source_git_sha = _v14._gate_code_source_revision()
     config = load_config(paths["config"])
     _validate_exact_v16_config(config, config_sha256=identities["config"][0])
@@ -370,6 +436,7 @@ def run_final_gate(
                 "exact_v16_experiment_config",
                 "exact_terminal_encoder_checkpoint_and_progress",
                 "exact_terminal_sshead_checkpoint_and_progress",
+                "exact_terminal_sshead_training_authorization_and_receipt",
                 "checkpoint_bound_train337_pose_cache",
             ],
             "dataset_manifest_argument_supported": False,
@@ -472,6 +539,12 @@ def _write_artifact_and_receipt(
         "encoder_progress_sha256": payload["inputs"]["encoder_progress_sha256"],
         "sshead_checkpoint_sha256": payload["inputs"]["sshead_checkpoint_sha256"],
         "sshead_progress_sha256": payload["inputs"]["sshead_progress_sha256"],
+        "terminal_authorization_artifact_sha256": payload["inputs"][
+            "terminal_authorization_artifact_sha256"
+        ],
+        "terminal_authorization_receipt_sha256": payload["inputs"][
+            "terminal_authorization_receipt_sha256"
+        ],
         "config_sha256": payload["inputs"]["config_sha256"],
         "train337_pose_cache_set_sha256": payload["inputs"]["train337_pose_cache_set_sha256"],
         "checkpoint_algorithm_source_git_sha": payload["inputs"][
@@ -492,6 +565,8 @@ def _parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--encoder-progress", type=Path, required=True)
     parser.add_argument("--sshead-checkpoint", type=Path, required=True)
     parser.add_argument("--sshead-progress", type=Path, required=True)
+    parser.add_argument("--terminal-authorization-artifact", type=Path, required=True)
+    parser.add_argument("--terminal-authorization-receipt", type=Path, required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--pose-cache-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -510,6 +585,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         arguments.encoder_progress,
         arguments.sshead_checkpoint,
         arguments.sshead_progress,
+        arguments.terminal_authorization_artifact,
+        arguments.terminal_authorization_receipt,
         arguments.config,
         arguments.pose_cache_dir,
         device=arguments.device,

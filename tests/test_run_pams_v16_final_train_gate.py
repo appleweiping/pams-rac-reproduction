@@ -53,6 +53,8 @@ def _artifact_payload() -> dict[str, object]:
             "encoder_progress_sha256": digest,
             "sshead_checkpoint_sha256": digest,
             "sshead_progress_sha256": digest,
+            "terminal_authorization_artifact_sha256": digest,
+            "terminal_authorization_receipt_sha256": digest,
             "config_sha256": digest,
             "train337_pose_cache_set_sha256": digest,
             "checkpoint_algorithm_source_git_sha": "b" * 40,
@@ -75,6 +77,10 @@ def test_cli_has_only_train337_artifacts_and_no_label_or_dev_test_input() -> Non
             "sshead.pt",
             "--sshead-progress",
             "sshead.jsonl",
+            "--terminal-authorization-artifact",
+            "terminal-gate.json",
+            "--terminal-authorization-receipt",
+            "terminal-gate.json.receipt.json",
             "--config",
             "v16.yaml",
             "--pose-cache-dir",
@@ -88,6 +94,8 @@ def test_cli_has_only_train337_artifacts_and_no_label_or_dev_test_input() -> Non
         "encoder_progress",
         "sshead_checkpoint",
         "sshead_progress",
+        "terminal_authorization_artifact",
+        "terminal_authorization_receipt",
         "config",
         "pose_cache_dir",
         "output",
@@ -99,6 +107,8 @@ def test_cli_has_only_train337_artifacts_and_no_label_or_dev_test_input() -> Non
         "encoder_progress_path",
         "sshead_checkpoint_path",
         "sshead_progress_path",
+        "terminal_authorization_artifact_path",
+        "terminal_authorization_receipt_path",
         "config_path",
         "pose_cache_dir",
         "device",
@@ -146,13 +156,73 @@ def test_exact_v16_config_and_all_four_checkpoint_artifacts_are_bound() -> None:
             "0e820d03b6b4d86b2341074bbcb0d9793839a2bf2bbb4388f44343e397cd5401",
             4,
         ),
-        "config": (config_sha256, 5),
+        "terminal_authorization_artifact": (
+            "b305114a4db3e45125708b6fbe1d0711ff50e6b4f57dafe65d6ccd27308175aa",
+            5,
+        ),
+        "terminal_authorization_receipt": (
+            "93d902ad8d2adb1b5d5e222c83860219c8014368630dbd709325c82238b920ae",
+            6,
+        ),
+        "config": (config_sha256, 7),
     }
     runner._validate_exact_inputs(identities)
     wrong = deepcopy(identities)
     wrong["sshead_checkpoint"] = ("0" * 64, 3)
     with pytest.raises(ValueError, match="exact frozen train-only"):
         runner._validate_exact_inputs(wrong)
+
+
+def test_terminal_sshead_authorization_pair_is_required_and_scope_closed(
+    tmp_path: Path,
+) -> None:
+    artifact = {
+        "artifact_type": "pams_v16_terminal_encoder_dual_path_gate",
+        "status": "train337_sshead_training_authorized",
+        "gate": {
+            "sshead_training_authorized": True,
+            "dev84_prediction_authorized": False,
+            "test105_evaluation_authorized": False,
+        },
+    }
+    artifact_path = tmp_path / "terminal.json"
+    artifact_path.write_bytes(runner._v14._encoded_json(artifact))
+    receipt = {
+        "artifact_type": "pams_v16_terminal_encoder_dual_path_gate_receipt",
+        "artifact_sha256": hashlib.sha256(artifact_path.read_bytes()).hexdigest(),
+        "artifact_bytes": artifact_path.stat().st_size,
+        "sshead_training_authorized": True,
+    }
+    receipt_path = tmp_path / "terminal.json.receipt.json"
+    receipt_path.write_bytes(runner._v14._encoded_json(receipt))
+    identities = {
+        "terminal_authorization_artifact": (
+            hashlib.sha256(artifact_path.read_bytes()).hexdigest(),
+            artifact_path.stat().st_size,
+        ),
+        "terminal_authorization_receipt": (
+            hashlib.sha256(receipt_path.read_bytes()).hexdigest(),
+            receipt_path.stat().st_size,
+        ),
+    }
+    runner._validate_terminal_authorization(
+        artifact_path,
+        receipt_path,
+        identities=identities,
+    )
+
+    artifact["gate"]["dev84_prediction_authorized"] = True
+    artifact_path.write_bytes(runner._v14._encoded_json(artifact))
+    identities["terminal_authorization_artifact"] = (
+        hashlib.sha256(artifact_path.read_bytes()).hexdigest(),
+        artifact_path.stat().st_size,
+    )
+    with pytest.raises(ValueError, match="authorization binding mismatch"):
+        runner._validate_terminal_authorization(
+            artifact_path,
+            receipt_path,
+            identities=identities,
+        )
 
 
 def test_all_thirteen_unchanged_criteria_are_required_for_prediction_only() -> None:
