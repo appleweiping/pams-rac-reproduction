@@ -2,8 +2,8 @@
 # This keeps the v7 temporal head, inputs, teacher, and consensus unchanged.
 # The paired source revision standardizes valid-frame SSHead streams before
 # cycle/spectral/smoothness shape losses so amplitude shrinkage cannot reduce
-# those losses. The explicit anti-collapse variance weight is raised from 0.1
-# to 1.0 because it is now the sole amplitude-control term.
+# those losses. All numeric configuration values stay v7-identical so the
+# frozen v7 encoder remains a valid single-variable comparison.
 schema_version: 1
 protocol: ucfrep_526
 seed: 2026
@@ -59,7 +59,7 @@ sshead:
   period_confidence_mode: normalized_weight
   cycle_weight: 1.0
   spectral_weight: 1.0
-  variance_weight: 1.0
+  variance_weight: 0.1
   smoothness_weight: 0.01
 consensus:
   expert_mode: multi
