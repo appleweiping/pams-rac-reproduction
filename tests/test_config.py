@@ -119,6 +119,32 @@ def test_v14_paper_alignment_bundle_has_frozen_method_identity() -> None:
     assert config.consensus.expert_mode == "multi"
 
 
+def test_v15_projected_teacher_changes_only_post_warmup_source() -> None:
+    root = Path(__file__).parents[1]
+    v14 = load_config(
+        root
+        / "configs"
+        / "experiments"
+        / "pams_paper_aligned_corrections_v14.yaml"
+    )
+    v15 = load_config(
+        root / "configs" / "experiments" / "pams_projected_teacher_v15.yaml"
+    )
+
+    assert (
+        v15.period.post_warmup_source
+        == "projected_pose_velocity_vector_acf"
+    )
+    assert v15.fingerprint != v14.fingerprint
+    assert v15.nonseed_fingerprint != v14.nonseed_fingerprint
+    assert v15.pose_fingerprint == v14.pose_fingerprint
+    restored = v15.model_dump()
+    restored["period"]["post_warmup_source"] = (
+        "embedding_velocity_vector_acf"
+    )
+    assert restored == v14.model_dump()
+
+
 def test_explicit_default_period_source_preserves_historical_fingerprint() -> None:
     implicit = PAMSConfig()
     payload = implicit.model_dump()
