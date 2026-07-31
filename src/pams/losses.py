@@ -500,22 +500,31 @@ class SSHeadLoss(nn.Module):
             confidences,
             strict=True,
         ):
+            count = sample_valid.sum().clamp_min(1)
+            mean = (values * sample_valid).sum() / count
+            centered = (values - mean) * sample_valid
+            # Shape losses must not reward shrinking the complete head stream.
+            # The previous raw-amplitude cycle and smoothness terms pulled the
+            # stream toward zero while the scale-invariant spectral ratio had
+            # no opposing radial gradient. Standardizing valid frames leaves
+            # amplitude control exclusively to the anti-collapse variance
+            # term and removes that near-constant local optimum.
+            rms = centered.square().sum().div(count).add(1e-12).sqrt()
+            normalized = centered / rms
+
             if bool(sample_confidence != 0):
                 period = max(1, int(round(float(sample_period.detach()))))
                 if period < time:
                     pair_valid = sample_valid[:-period] & sample_valid[period:]
                     if pair_valid.any():
-                        difference = values[:-period] - values[period:]
+                        difference = normalized[:-period] - normalized[period:]
                         cycle_losses.append(difference[pair_valid].square().mean())
                         cycle_confidences.append(sample_confidence)
 
-                count = sample_valid.sum().clamp_min(1)
-                mean = (values * sample_valid).sum() / count
-                centered = (values - mean) * sample_valid
                 spectral_values = (
-                    centered.float()
-                    if centered.dtype in (torch.float16, torch.bfloat16)
-                    else centered
+                    normalized.float()
+                    if normalized.dtype in (torch.float16, torch.bfloat16)
+                    else normalized
                 )
                 power = torch.fft.rfft(spectral_values).abs().square()
                 if power.numel() > 1:
@@ -541,7 +550,11 @@ class SSHeadLoss(nn.Module):
             if time >= 3:
                 triplet_valid = sample_valid[:-2] & sample_valid[1:-1] & sample_valid[2:]
                 if triplet_valid.any():
-                    second_difference = values[2:] - 2.0 * values[1:-1] + values[:-2]
+                    second_difference = (
+                        normalized[2:]
+                        - 2.0 * normalized[1:-1]
+                        + normalized[:-2]
+                    )
                     smoothness_losses.append(second_difference[triplet_valid].square().mean())
 
         def mean_or_zero(items: list[Tensor]) -> Tensor:

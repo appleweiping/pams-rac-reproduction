@@ -397,6 +397,31 @@ def test_sshead_weighting_and_anti_collapse() -> None:
     assert collapsed.total > details.total
 
 
+def test_sshead_shape_losses_are_amplitude_invariant() -> None:
+    """Shrinking a stream must not improve its temporal-shape losses."""
+
+    time = torch.arange(64, dtype=torch.float32)
+    stream = torch.sin(2.0 * math.pi * time / 8.0)
+    objective = SSHeadLoss()
+    reference = objective.compute(stream, torch.tensor(8))
+    shrunken = objective.compute(stream * 1e-2, torch.tensor(8))
+
+    assert torch.allclose(shrunken.cycle, reference.cycle, atol=1e-5, rtol=1e-4)
+    assert torch.allclose(
+        shrunken.spectral,
+        reference.spectral,
+        atol=1e-5,
+        rtol=1e-4,
+    )
+    assert torch.allclose(
+        shrunken.smoothness,
+        reference.smoothness,
+        atol=1e-5,
+        rtol=1e-4,
+    )
+    assert shrunken.variance > reference.variance
+
+
 def test_sshead_ignores_invalid_cycle_pairs() -> None:
     stream = torch.randn(2, 20, requires_grad=True)
     mask = torch.ones(2, 20, dtype=torch.bool)
