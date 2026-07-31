@@ -521,7 +521,29 @@ def estimate_period_from_right_limb_x_consensus(
             periods.append(float(minimum))
             confidences.append(selected.new_tensor(0.0))
             continue
-        consensus = torch.stack(coordinate_distributions).median(dim=0).values
+        if len(coordinate_distributions) != 4:
+            periods.append(float(minimum))
+            confidences.append(selected.new_tensor(0.0))
+            continue
+        # ``torch.median(dim=...)`` has no deterministic CUDA implementation
+        # because it also produces indices.  This four-input sorting network
+        # computes the same lower median using deterministic elementwise ops.
+        first_low = torch.minimum(
+            coordinate_distributions[0], coordinate_distributions[1]
+        )
+        first_high = torch.maximum(
+            coordinate_distributions[0], coordinate_distributions[1]
+        )
+        second_low = torch.minimum(
+            coordinate_distributions[2], coordinate_distributions[3]
+        )
+        second_high = torch.maximum(
+            coordinate_distributions[2], coordinate_distributions[3]
+        )
+        consensus = torch.minimum(
+            torch.maximum(first_low, second_low),
+            torch.minimum(first_high, second_high),
+        )
         consensus = consensus / consensus.sum().clamp_min(1e-12)
         count = int(torch.argmax(consensus)) + 1
         period = min(
