@@ -33,6 +33,7 @@ from pams.losses import PAMSTCCLoss, SSHeadLoss
 from pams.model import PAMSEncoder, PAMSModel, PeriodHead, TemporalPeriodHead
 from pams.period import (
     estimate_period_batch,
+    estimate_period_batch_detrended_fft,
     estimate_period_from_embeddings,
     estimate_period_from_pose,
     estimate_period_from_projected_pose,
@@ -2296,7 +2297,7 @@ def predict_sequence(
             batch.valid_mask,
             head_input_source=config.sshead.input_source,
         )
-        periods, period_confidences = estimate_period_batch(
+        periods, period_confidences = estimate_period_batch_detrended_fft(
             stream_batch,
             minimum=config.period.minimum,
             maximum=config.period.maximum,
@@ -2316,11 +2317,26 @@ def predict_sequence(
             long_window_weight=consensus.long_window_weight,
             expert_mode=consensus.expert_mode,
         )
-    result = counter.count(
+    consensus_result = counter.count(
         stream,
         period_frames=float(periods[0]),
         valid_mask=mask,
         period_confidence=float(period_confidences[0]),
-    ).to_count_result()
+    )
+    # Once a period has been estimated, repetitions are the observed valid
+    # duration divided by that period. Peak experts remain in the artifact as
+    # diagnostics, but must not turn a valid periodic estimate into zero merely
+    # because a low-amplitude head stream misses the adaptive peak threshold.
+    reference_count = int(
+        math.floor(float(mask.sum()) / float(periods[0]) + 0.5)
+    )
+    compact = consensus_result.to_count_result()
+    result = CountResult(
+        count=reference_count,
+        period_frames=compact.period_frames,
+        expert_counts=compact.expert_counts,
+        confidence=compact.confidence,
+        period_stream=compact.period_stream,
+    )
     model.train(previous_training)
     return result
