@@ -212,13 +212,15 @@ class PAMSTCCLoss(nn.Module):
 
         normalized = F.normalize(embeddings, dim=-1, eps=1e-12)
         within_logits = torch.einsum("btd,bsd->bts", normalized, normalized) / self.temperature
-        valid_counts = valid.sum(dim=1, keepdim=True).clamp_min(1)
-        prototypes = (normalized * valid.unsqueeze(-1)).sum(dim=1) / valid_counts.to(
-            normalized.dtype
+        # The paper names frames from other videos as negatives.  Keep every
+        # valid frame in the physical batch instead of collapsing each video
+        # into one pooled prototype: pooling changes both the candidate count
+        # and the contrastive geometry.
+        flattened_frames = normalized.reshape(batch * time, dimension)
+        cross_video_logits = (
+            torch.einsum("btd,nd->btn", normalized, flattened_frames)
+            / self.temperature
         )
-        prototypes = F.normalize(prototypes, dim=-1, eps=1e-12)
-        prototype_valid = valid.any(dim=1)
-        cross_video_logits = torch.einsum("btd,cd->btc", normalized, prototypes) / self.temperature
         if supplied_bank_arguments:
             assert bank_features is not None
             normalized_bank = F.normalize(
@@ -233,9 +235,14 @@ class PAMSTCCLoss(nn.Module):
                 torch.einsum("btd,nd->btn", normalized, normalized_bank) / self.temperature
             )
         video_indices = torch.arange(batch, device=embeddings.device)
-        other_video_mask = video_indices.view(1, 1, batch) != video_indices.view(batch, 1, 1)
+        candidate_video_indices = video_indices.repeat_interleave(time)
         other_video_mask = (
-            other_video_mask & valid.unsqueeze(-1) & prototype_valid.view(1, 1, batch)
+            (
+                candidate_video_indices.view(1, 1, batch * time)
+                != video_indices.view(batch, 1, 1)
+            )
+            & valid.unsqueeze(-1)
+            & valid.reshape(1, 1, batch * time)
         )
         negative_infinity = float("-inf")
         scale_losses: list[Tensor] = []
@@ -339,7 +346,17 @@ class PAMSTCCLoss(nn.Module):
             mean_positive_logit = within_logits.masked_fill(~positive_mask, 0.0).sum(
                 dim=-1
             ) / positive_counts.clamp_min(1).to(within_logits.dtype)
-            denominator = torch.logsumexp(torch.cat(denominator_parts, dim=-1), dim=-1)
+            # Reduce each candidate family before combining them.  This is
+            # exactly the same partition function as concatenation, while it
+            # avoids materializing a second [batch, time, batch*time] tensor
+            # for every PAMS scale.
+            family_log_partitions = tuple(
+                torch.logsumexp(part, dim=-1) for part in denominator_parts
+            )
+            denominator = torch.logsumexp(
+                torch.stack(family_log_partitions, dim=-1),
+                dim=-1,
+            )
             # Equation (1) averages one log-softmax term per positive.  A
             # logsumexp positive numerator would instead reward satisfying
             # only the easiest positive and is not the disclosed objective.

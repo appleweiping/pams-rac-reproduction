@@ -546,6 +546,33 @@ def estimate_period_from_embeddings(
     return estimate_period_batch(energy, minimum, maximum, velocity_valid)
 
 
+def estimate_period_from_embedding_velocity_vectors(
+    embeddings: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> tuple[Tensor, Tensor]:
+    """Estimate periods from the full stop-gradient embedding velocity.
+
+    Unlike :func:`estimate_period_from_embeddings`, this route never selects
+    or otherwise reduces the embedding velocity to one scalar coordinate.
+    It reuses the pairwise-valid first differences from
+    :func:`_embedding_velocity` and the orthogonal-basis-invariant vector ACF
+    spectrum from :func:`estimate_period_from_vectors`.  Consequently,
+    missing-frame boundaries cannot introduce synthetic motion, invalid
+    values do not enter the estimate, and neither returned tensor retains an
+    autograd path to the encoder embeddings.
+    """
+
+    velocities, velocity_valid = _embedding_velocity(embeddings, valid_mask)
+    return estimate_period_from_vectors(
+        velocities,
+        minimum=minimum,
+        maximum=maximum,
+        valid_mask=velocity_valid,
+    )
+
+
 def embedding_velocity_harmonic_fundamental_diagnostics(
     embeddings: Tensor,
     minimum: int = 4,

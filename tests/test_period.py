@@ -11,6 +11,7 @@ from pams.period import (
     estimate_period,
     estimate_period_batch,
     estimate_period_from_detrended_projected_position,
+    estimate_period_from_embedding_velocity_vectors,
     estimate_period_from_embeddings,
     estimate_period_from_pose,
     estimate_period_from_projected_pose,
@@ -280,6 +281,132 @@ def test_vector_acf_period_and_confidence_are_orthogonal_basis_invariant() -> No
 
     assert torch.equal(base_period, rotated_period)
     assert torch.allclose(base_confidence, rotated_confidence, rtol=1e-12, atol=1e-12)
+
+
+def test_embedding_velocity_vector_acf_is_orthogonal_basis_invariant() -> None:
+    generator = torch.Generator().manual_seed(2026)
+    time = torch.arange(256, dtype=torch.float32)
+    angle = 2.0 * math.pi * time / 20.0
+    embeddings = torch.stack(
+        (
+            torch.sin(angle),
+            torch.cos(angle),
+            0.7 * torch.sin(angle + 0.2),
+            0.3 * torch.cos(angle - 0.4),
+        ),
+        dim=-1,
+    )
+    orthogonal, _ = torch.linalg.qr(
+        torch.randn(4, 4, dtype=embeddings.dtype, generator=generator)
+    )
+
+    base_period, base_confidence = (
+        estimate_period_from_embedding_velocity_vectors(
+            embeddings,
+            minimum=4,
+            maximum=128,
+        )
+    )
+    rotated_period, rotated_confidence = (
+        estimate_period_from_embedding_velocity_vectors(
+            embeddings @ orthogonal,
+            minimum=4,
+            maximum=128,
+        )
+    )
+
+    assert torch.equal(base_period, rotated_period)
+    assert torch.allclose(base_confidence, rotated_confidence, rtol=1e-5, atol=1e-6)
+
+
+def test_embedding_velocity_vector_acf_recovers_synthetic_counts_two_to_forty() -> None:
+    time = torch.arange(256, dtype=torch.float32)
+    embeddings = []
+    expected_periods = []
+    for count in range(2, 41):
+        angle = 2.0 * math.pi * count * time / 256.0
+        embeddings.append(
+            torch.stack(
+                (
+                    torch.sin(angle),
+                    torch.cos(angle),
+                    0.7 * torch.sin(angle + 0.3),
+                ),
+                dim=-1,
+            )
+        )
+        expected_periods.append(256.0 / count)
+
+    periods, confidence = estimate_period_from_embedding_velocity_vectors(
+        torch.stack(embeddings),
+        minimum=4,
+        maximum=128,
+    )
+    expected = torch.tensor(expected_periods, dtype=periods.dtype)
+    relative_error = (periods - expected).abs() / expected
+
+    assert torch.all(relative_error <= 0.01)
+    assert torch.all((periods >= 4.0) & (periods <= 128.0))
+    assert torch.all(torch.isfinite(periods))
+    assert torch.all(torch.isfinite(confidence))
+    assert torch.all(confidence > 0.0)
+
+
+def test_embedding_velocity_vector_acf_static_input_has_zero_confidence() -> None:
+    periods, confidence = estimate_period_from_embedding_velocity_vectors(
+        torch.full((2, 256, 8), 3.5),
+        minimum=4,
+        maximum=128,
+    )
+
+    assert periods.tolist() == [128.0, 128.0]
+    assert confidence.tolist() == [0.0, 0.0]
+    assert torch.all(torch.isfinite(periods))
+    assert torch.all(torch.isfinite(confidence))
+
+
+def test_embedding_velocity_vector_acf_is_mask_aware_and_stop_gradient() -> None:
+    time = torch.arange(256, dtype=torch.float32)
+    angle = 2.0 * math.pi * time / 32.0
+    clean = torch.stack(
+        (
+            torch.sin(angle),
+            torch.cos(angle),
+            0.5 * torch.sin(angle + 0.7),
+        ),
+        dim=-1,
+    )
+    mask = torch.ones(256, dtype=torch.bool)
+    mask[80:120] = False
+    corrupted = clean.clone()
+    corrupted[~mask] = float("nan")
+    corrupted.requires_grad_(True)
+
+    clean_period, clean_confidence = (
+        estimate_period_from_embedding_velocity_vectors(
+            clean,
+            minimum=4,
+            maximum=128,
+            valid_mask=mask,
+        )
+    )
+    corrupted_period, corrupted_confidence = (
+        estimate_period_from_embedding_velocity_vectors(
+            corrupted,
+            minimum=4,
+            maximum=128,
+            valid_mask=mask,
+        )
+    )
+
+    assert torch.equal(clean_period, corrupted_period)
+    assert torch.equal(clean_confidence, corrupted_confidence)
+    assert clean_period.tolist() == [32.0]
+    assert torch.all(torch.isfinite(corrupted_period))
+    assert torch.all(torch.isfinite(corrupted_confidence))
+    assert not corrupted_period.requires_grad
+    assert not corrupted_confidence.requires_grad
+    assert corrupted.grad is None
 
 
 def test_projected_pose_velocity_vector_acf_preserves_fundamental_period() -> None:

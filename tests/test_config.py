@@ -87,6 +87,38 @@ def test_inferred_projected_vector_period_changes_only_post_warmup_source() -> N
     assert experiment_payload == formal.model_dump()
 
 
+def test_v14_paper_alignment_bundle_has_frozen_method_identity() -> None:
+    root = Path(__file__).parents[1]
+    config = load_config(
+        root
+        / "configs"
+        / "experiments"
+        / "pams_paper_aligned_corrections_v14.yaml"
+    )
+
+    assert config.seed == 2026
+    assert (
+        config.pose.preprocessing_revision
+        == "longest-contiguous-track-minmax-zero-span-invalid-v3"
+    )
+    assert config.period.pose_energy_epochs == 10
+    assert config.period.post_warmup_source == "embedding_velocity_vector_acf"
+    assert config.training.skeleton_augmentation.enabled is True
+    assert config.training.skeleton_augmentation.rotation_degrees == (
+        15.0,
+        15.0,
+        15.0,
+    )
+    assert config.training.skeleton_augmentation.scale_range == (0.85, 1.15)
+    assert config.training.skeleton_augmentation.jitter_std == 0.01
+    assert config.model.position_encoding_mode == "sinusoidal"
+    assert config.sshead.architecture == "pointwise_mlp"
+    assert config.sshead.input_source == "encoder_embedding"
+    assert config.sshead.period_confidence_mode == "nonzero_gate"
+    assert config.loss.scales == (0.5, 1.0, 1.5)
+    assert config.consensus.expert_mode == "multi"
+
+
 def test_explicit_default_period_source_preserves_historical_fingerprint() -> None:
     implicit = PAMSConfig()
     payload = implicit.model_dump()

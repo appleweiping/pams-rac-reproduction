@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Any, Literal
 
@@ -107,6 +108,7 @@ class PeriodConfig(StrictModel):
     fixed_period_frames: int = Field(default=16, ge=2)
     post_warmup_source: Literal[
         "embedding_velocity_coordinate",
+        "embedding_velocity_vector_acf",
         "projected_pose_velocity_vector_acf",
     ] = "embedding_velocity_coordinate"
 
@@ -133,6 +135,50 @@ class LossConfig(StrictModel):
     exclude_other_scale_positives_from_denominator: bool = False
 
 
+class SkeletonAugmentationConfig(StrictModel):
+    """Opt-in, target-free skeleton augmentation used only for encoder training."""
+
+    enabled: bool = Field(default=False, strict=True)
+    rotation_degrees: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    scale_range: tuple[float, float] = (1.0, 1.0)
+    jitter_std: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    @model_validator(mode="after")
+    def validate_transform_ranges(self) -> SkeletonAugmentationConfig:
+        if any(
+            not math.isfinite(value) or value < 0.0 or value > 180.0
+            for value in self.rotation_degrees
+        ):
+            raise ValueError(
+                "rotation_degrees must contain three finite values in [0, 180]"
+            )
+        scale_minimum, scale_maximum = self.scale_range
+        if (
+            not math.isfinite(scale_minimum)
+            or not math.isfinite(scale_maximum)
+            or scale_minimum <= 0.0
+            or scale_maximum < scale_minimum
+            or scale_maximum > 10.0
+        ):
+            raise ValueError(
+                "scale_range must be finite, positive, ordered, and at most 10"
+            )
+        neutral = (
+            self.rotation_degrees == (0.0, 0.0, 0.0)
+            and self.scale_range == (1.0, 1.0)
+            and self.jitter_std == 0.0
+        )
+        if self.enabled and neutral:
+            raise ValueError(
+                "enabled skeleton augmentation requires at least one non-neutral transform"
+            )
+        if not self.enabled and not neutral:
+            raise ValueError(
+                "disabled skeleton augmentation must keep all transform values neutral"
+            )
+        return self
+
+
 class TrainingConfig(StrictModel):
     epochs: int = Field(default=150, ge=1)
     effective_batch_size: int = Field(default=32, ge=1)
@@ -142,6 +188,7 @@ class TrainingConfig(StrictModel):
     scheduler_patience: int = Field(default=8, ge=0)
     minimum_learning_rate: float = Field(default=1e-6, gt=0)
     position_permutation_consistency_weight: float = Field(default=0.0, ge=0)
+    skeleton_augmentation: SkeletonAugmentationConfig = SkeletonAugmentationConfig()
 
 
 class SSHeadConfig(StrictModel):
@@ -252,6 +299,11 @@ class PAMSConfig(StrictModel):
             # consistency objective and therefore remains in the method
             # identity.
             training.pop("position_permutation_consistency_weight")
+        if not training["skeleton_augmentation"]["enabled"]:
+            # Preserve all historical config/checkpoint identities. Disabled
+            # augmentation is strictly required to be neutral by validation;
+            # the opt-in training transform remains in the method identity.
+            training.pop("skeleton_augmentation")
         sshead = payload["sshead"]
         if sshead["architecture"] == "pointwise_mlp":
             # Preserve all historical SSHead config/checkpoint identities.

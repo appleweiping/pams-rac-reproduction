@@ -80,6 +80,12 @@ def _with_projected_vector_period(config: PAMSConfig) -> PAMSConfig:
     return PAMSConfig.model_validate(payload)
 
 
+def _with_embedding_velocity_vector_period(config: PAMSConfig) -> PAMSConfig:
+    payload = config.model_dump()
+    payload["period"]["post_warmup_source"] = "embedding_velocity_vector_acf"
+    return PAMSConfig.model_validate(payload)
+
+
 def _with_pre_pe_head(config: PAMSConfig) -> PAMSConfig:
     payload = config.model_dump()
     payload["sshead"]["input_source"] = "projected_pose_pre_pe"
@@ -697,6 +703,94 @@ def test_projected_vector_period_routes_encoder_and_sshead_to_same_source(
     assert (
         progress_row["stats"]["period_source"]
         == "projected_pose_velocity_vector_acf"
+    )
+
+
+def test_embedding_vector_period_routes_encoder_and_sshead_to_same_source(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    config = _with_embedding_velocity_vector_period(
+        _tiny_config(encoder_epochs=2, head_epochs=1)
+    )
+    calls: list[tuple[int, int]] = []
+
+    def embedding_vector_period(
+        embeddings: torch.Tensor,
+        minimum: int,
+        maximum: int,
+        valid_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        del maximum
+        assert embeddings.shape[:2] == valid_mask.shape
+        assert embeddings.shape[-1] == config.model.model_dim
+        assert not embeddings.requires_grad
+        calls.append((embeddings.shape[0], embeddings.shape[1]))
+        return (
+            torch.full(
+                (embeddings.shape[0],),
+                float(minimum),
+                dtype=embeddings.dtype,
+                device=embeddings.device,
+            ),
+            torch.full(
+                (embeddings.shape[0],),
+                0.75,
+                dtype=embeddings.dtype,
+                device=embeddings.device,
+            ),
+        )
+
+    def forbidden_period_route(*args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        raise AssertionError("embedding-vector config used another period route")
+
+    monkeypatch.setattr(
+        training_module,
+        "estimate_period_from_embedding_velocity_vectors",
+        embedding_vector_period,
+    )
+    monkeypatch.setattr(
+        training_module,
+        "estimate_period_from_embeddings",
+        forbidden_period_route,
+    )
+    monkeypatch.setattr(
+        training_module,
+        "estimate_period_from_projected_pose",
+        forbidden_period_route,
+    )
+    items = (_sequence("a"), _sequence("b", phase=0.4))
+    encoder_result = train_encoder(
+        items,
+        config,
+        device="cpu",
+        microbatch_size=2,
+    )
+    head_result = train_sshead(
+        items,
+        config,
+        model=encoder_result.model,
+        device="cpu",
+        microbatch_size=1,
+        checkpoint_path=tmp_path / "head.pt",
+        progress_path=tmp_path / "head.jsonl",
+    )
+
+    assert [row.period_source for row in encoder_result.history] == [
+        "pose",
+        "embedding_velocity_vector_acf",
+    ]
+    assert head_result.completed_epochs == 1
+    assert len(calls) == 3
+    progress_row = json.loads(
+        (tmp_path / "head.jsonl").read_text(encoding="utf-8")
+    )
+    assert (
+        progress_row["stats"]["period_source"]
+        == "embedding_velocity_vector_acf"
     )
 
 

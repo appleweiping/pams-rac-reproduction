@@ -112,6 +112,92 @@ def test_multiscale_tcc_is_finite_differentiable_and_mask_safe() -> None:
     assert empty_loss == 0
 
 
+def test_other_video_negatives_are_valid_frames_not_pooled_prototypes() -> None:
+    embeddings = torch.tensor(
+        [
+            [[1.0, 0.0], [0.8, 0.2], [0.0, 1.0]],
+            [[1.0, 1.0], [-1.0, 1.0], [20.0, 0.0]],
+        ],
+        requires_grad=True,
+    )
+    valid = torch.tensor([[True, True, True], [True, True, False]])
+    objective = PAMSTCCLoss(scales=(1.0,), temperature=1.0)
+    details = objective.compute(
+        embeddings,
+        torch.tensor([2.0, 2.0]),
+        valid,
+        period_confidence=torch.zeros(2),
+        use_cross_cluster_negatives=False,
+    )
+
+    normalized = torch.nn.functional.normalize(embeddings, dim=-1, eps=1e-12)
+    within_logits = torch.einsum("btd,bsd->bts", normalized, normalized)
+    identity = torch.eye(3, dtype=torch.bool).unsqueeze(0)
+    within_mask = valid.unsqueeze(1) & valid.unsqueeze(2) & ~identity
+
+    frame_logits = torch.einsum("btd,csd->btcs", normalized, normalized).flatten(2)
+    video_indices = torch.arange(2)
+    candidate_video_indices = video_indices.repeat_interleave(3)
+    frame_mask = (
+        (
+            candidate_video_indices.view(1, 1, 6)
+            != video_indices.view(2, 1, 1)
+        )
+        & valid.unsqueeze(-1)
+        & valid.reshape(1, 1, 6)
+    )
+
+    positive_mask = torch.zeros((2, 3, 3), dtype=torch.bool)
+    adjacent = torch.arange(2)
+    positive_mask[:, adjacent, adjacent + 1] = True
+    positive_mask[:, adjacent + 1, adjacent] = True
+    positive_mask &= within_mask
+    positive_counts = positive_mask.sum(dim=-1)
+    valid_anchors = valid & (positive_counts > 0)
+    mean_positive = within_logits.masked_fill(~positive_mask, 0.0).sum(
+        dim=-1
+    ) / positive_counts.clamp_min(1)
+    full_frame_denominator = torch.logsumexp(
+        torch.cat(
+            (
+                within_logits.masked_fill(~within_mask, float("-inf")),
+                frame_logits.masked_fill(~frame_mask, float("-inf")),
+            ),
+            dim=-1,
+        ),
+        dim=-1,
+    )
+    expected = (full_frame_denominator - mean_positive)[valid_anchors].mean()
+    assert torch.allclose(details.total, expected)
+
+    valid_counts = valid.sum(dim=1, keepdim=True).clamp_min(1)
+    prototypes = (normalized * valid.unsqueeze(-1)).sum(dim=1) / valid_counts
+    prototypes = torch.nn.functional.normalize(prototypes, dim=-1, eps=1e-12)
+    prototype_logits = torch.einsum("btd,cd->btc", normalized, prototypes)
+    prototype_mask = (
+        (video_indices.view(1, 1, 2) != video_indices.view(2, 1, 1))
+        & valid.unsqueeze(-1)
+        & valid.any(dim=1).view(1, 1, 2)
+    )
+    prototype_denominator = torch.logsumexp(
+        torch.cat(
+            (
+                within_logits.masked_fill(~within_mask, float("-inf")),
+                prototype_logits.masked_fill(~prototype_mask, float("-inf")),
+            ),
+            dim=-1,
+        ),
+        dim=-1,
+    )
+    old_pooled_loss = (prototype_denominator - mean_positive)[valid_anchors].mean()
+    assert not torch.allclose(details.total, old_pooled_loss)
+
+    details.total.backward()
+    assert embeddings.grad is not None
+    assert torch.isfinite(embeddings.grad).all()
+    assert torch.count_nonzero(embeddings.grad[1, 2]) == 0
+
+
 def test_cross_scale_positive_exclusion_is_default_off_and_bitwise_equivalent() -> None:
     base = _periodic_embeddings()
     default_embeddings = base.clone().requires_grad_()

@@ -52,7 +52,8 @@ table.
 ## Stop-gradient period estimate
 
 The paper says the period is estimated by applying FFT to an autocorrelation
-of stop-gradient embeddings or a pose-energy proxy. The implementation:
+of stop-gradient embeddings or a pose-energy proxy. The historical/default
+implementation:
 
 1. during pose warm-up, selects the highest-variance signed pose coordinate;
    thereafter takes mask-aware first differences of detached embeddings and
@@ -65,6 +66,14 @@ of stop-gradient embeddings or a pose-energy proxy. The implementation:
 
 The first ten encoder epochs use pose coordinates. Later epochs use detached
 encoder embeddings. Period selection has no gradient.
+
+The pre-dev-frozen v14 correction instead keeps the complete detached
+embedding-velocity vector, computes signed cross-time dot products over all
+512 dimensions with a mask-normalized vector autocorrelation, and applies the
+same bounded spectral selector. This route is invariant to an orthogonal
+change of embedding basis. It is an independently inferred interpretation of
+the paper's underspecified "autocorrelation of embeddings," not a recovered
+author implementation.
 
 ## PAMS TCC
 
@@ -90,13 +99,23 @@ L_s(t) =
 L_PAMS = mean_s mean_valid_t L_s(t),       τ = 0.1
 ```
 
-The denominator includes other valid times from the same video and live
-pooled prototypes from other videos in the physical batch. Every five epochs,
-valid-frame mean embeddings for the full training set are frozen and
-clustered with deterministic KMeans (`k=8`). For each anchor, the explicit
-cross-cluster pool contains `positive_count` distinct highest-similarity bank
-prototypes from other clusters, excluding every current-batch video. Requested,
+The denominator includes other valid times from the same video and every
+valid frame from every other video in the physical batch, as stated by the
+paper. Every five epochs, valid-frame mean embeddings for the full training
+set are frozen and clustered with deterministic KMeans (`k=8`). For each
+anchor, the explicit cross-cluster pool contains `positive_count` distinct
+highest-similarity bank prototypes from other clusters, excluding every
+current-batch video. This prototype-bank closure remains inferred because the
+paper does not specify how cross-cluster samples are stored. Requested,
 actual, and shortfall counts are logged; formal runs fail on any shortfall.
+
+V14 also applies one target-free skeleton augmentation per encoder
+optimization sequence: a centered three-axis rotation, isotropic scale, and
+valid-frame Gaussian jitter. Period evidence, prototype refresh, SSHead
+training, and inference retain the clean view. Rotation `+/-15` degrees and
+scale `[0.85, 1.15]` reuse the supplement's robustness ranges; jitter
+standard deviation `0.01` is independently inferred because the training
+augmentation magnitudes are not published.
 
 ## Period Head audit and variants
 

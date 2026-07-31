@@ -24,10 +24,11 @@ retrained on all 421 or 89 permitted training videos.
 
 Encoder contrastive training uses a physical batch of exactly 32 videos;
 gradient accumulation is not treated as an equivalent source of batch-local
-cross-video negatives. The seeded, epoch-shuffled loader drops that epoch's
-incomplete final batch (five videos for the 421-video pool). SSHead training
-may use gradient accumulation because its loss has no cross-video negative
-pool.
+cross-video negatives. Every valid frame from the other 31 physical-batch
+videos enters the denominator; videos are not collapsed to one live
+prototype. The seeded, epoch-shuffled loader drops that epoch's incomplete
+final batch (five videos for the 421-video pool). SSHead training may use
+gradient accumulation because its loss has no cross-video negative pool.
 
 The deterministic KMeans refresh also freezes one prototype for every
 training video. Explicit cross-cluster hard negatives are distinct top-k

@@ -27,12 +27,17 @@ from torch.optim import AdamW, Optimizer
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader, Dataset
 
+from pams.augmentation import (
+    augment_pose_batch,
+    make_skeleton_augmentation_generator,
+)
 from pams.config import PAMSConfig
 from pams.consensus import MultiExpertCounter
 from pams.losses import PAMSTCCLoss, SSHeadLoss
 from pams.model import PAMSEncoder, PAMSModel, PeriodHead, TemporalPeriodHead
 from pams.period import (
     estimate_period_batch,
+    estimate_period_from_embedding_velocity_vectors,
     estimate_period_from_embeddings,
     estimate_period_from_pose,
     estimate_period_from_projected_pose,
@@ -49,6 +54,7 @@ _IMAGE_ID_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 PeriodHistorySource = Literal[
     "pose",
     "embedding",
+    "embedding_velocity_vector_acf",
     "projected_pose_velocity_vector_acf",
     "fixed_period_inferred",
 ]
@@ -338,6 +344,8 @@ def _post_warmup_period_history_source(config: PAMSConfig) -> PeriodHistorySourc
     if source == "embedding_velocity_coordinate":
         # Preserve the exact historical receipt label for the default route.
         return "embedding"
+    if source == "embedding_velocity_vector_acf":
+        return "embedding_velocity_vector_acf"
     if source == "projected_pose_velocity_vector_acf":
         return "projected_pose_velocity_vector_acf"
     raise AssertionError(f"unreachable validated period source: {source!r}")
@@ -403,6 +411,14 @@ def _estimate_post_warmup_periods(
         return periods, confidences, source
     if source == "embedding":
         periods, confidences = estimate_period_from_embeddings(
+            embeddings.detach(),
+            minimum=config.period.minimum,
+            maximum=config.period.maximum,
+            valid_mask=valid_mask,
+        )
+        return periods, confidences, source
+    if source == "embedding_velocity_vector_acf":
+        periods, confidences = estimate_period_from_embedding_velocity_vectors(
             embeddings.detach(),
             minimum=config.period.minimum,
             maximum=config.period.maximum,
@@ -1175,11 +1191,11 @@ def _progress_row(
     elif (
         stage == "sshead"
         and config.period.post_warmup_source
-        == "projected_pose_velocity_vector_acf"
+        != "embedding_velocity_coordinate"
     ):
         # SSHead history predates configurable period evidence. Keep the
         # historical default artifact schema intact, while making every
-        # inferred vector-ACF progress row explicit and terminally auditable.
+        # non-default vector-ACF progress row explicit and auditable.
         statistics["period_source"] = _post_warmup_period_history_source(config)
     return {
         "schema_version": _PROGRESS_SCHEMA_VERSION,
@@ -1924,7 +1940,7 @@ def train_encoder(
         cross_cluster_actual = 0
         cross_cluster_shortfall = 0
         position_permutation_consistency_sum = 0.0
-        for raw_batch in loader:
+        for batch_index, raw_batch in enumerate(loader):
             if not isinstance(raw_batch, PoseBatch):
                 raise TypeError("pose collator returned an unexpected batch type")
             batch = raw_batch.to(resolved_device)
@@ -1932,6 +1948,54 @@ def train_encoder(
                 raise RuntimeError(
                     "encoder loader produced an incomplete physical contrastive batch"
                 )
+            encoder_poses = batch.poses
+            if config.training.skeleton_augmentation.enabled:
+                encoder_poses = augment_pose_batch(
+                    batch.poses,
+                    batch.valid_mask,
+                    config.training.skeleton_augmentation,
+                    generator=make_skeleton_augmentation_generator(
+                        base_seed=config.seed,
+                        epoch_index=epoch_index,
+                        batch_index=batch_index,
+                        device=batch.poses.device,
+                    ),
+                )
+
+            period_embeddings: Tensor | None = None
+            period_projected_pose: Tensor | None = None
+            if (
+                config.training.skeleton_augmentation.enabled
+                and config.period.training_mode == "adaptive"
+                and epoch_index >= config.period.pose_energy_epochs
+            ):
+                # Period evidence stays on the clean view. Forking the global
+                # RNG means this diagnostic forward does not advance the
+                # dropout stream consumed by the augmented optimization view.
+                cuda_devices: list[int] = []
+                if batch.poses.device.type == "cuda":
+                    cuda_devices.append(
+                        batch.poses.device.index
+                        if batch.poses.device.index is not None
+                        else torch.cuda.current_device()
+                    )
+                with torch.random.fork_rng(devices=cuda_devices), torch.no_grad():
+                    if (
+                        config.period.post_warmup_source
+                        == "projected_pose_velocity_vector_acf"
+                    ):
+                        (
+                            period_embeddings,
+                            period_projected_pose,
+                        ) = trained_model.encoder.forward_with_pre_pe(
+                            batch.poses,
+                            batch.valid_mask,
+                        )
+                    else:
+                        period_embeddings = trained_model.encoder(
+                            batch.poses,
+                            batch.valid_mask,
+                        )
             projected_pose: Tensor | None = None
             if (
                 config.period.training_mode == "adaptive"
@@ -1940,18 +2004,18 @@ def train_encoder(
                 == "projected_pose_velocity_vector_acf"
             ):
                 embeddings, projected_pose = trained_model.encoder.forward_with_pre_pe(
-                    batch.poses,
+                    encoder_poses,
                     batch.valid_mask,
                 )
             else:
-                embeddings = trained_model.encoder(batch.poses, batch.valid_mask)
+                embeddings = trained_model.encoder(encoder_poses, batch.valid_mask)
             position_permutation_consistency: Tensor | None = None
             if config.training.position_permutation_consistency_weight > 0.0:
                 position_indices = _permuted_valid_position_indices(
                     batch.valid_mask,
                 )
                 permuted_embeddings = trained_model.encoder(
-                    batch.poses,
+                    encoder_poses,
                     batch.valid_mask,
                     position_indices=position_indices,
                 )
@@ -1984,8 +2048,16 @@ def train_encoder(
                     period_source,
                 ) = _estimate_post_warmup_periods(
                     config=config,
-                    embeddings=embeddings,
-                    projected_pose=projected_pose,
+                    embeddings=(
+                        period_embeddings
+                        if period_embeddings is not None
+                        else embeddings
+                    ),
+                    projected_pose=(
+                        period_projected_pose
+                        if period_projected_pose is not None
+                        else projected_pose
+                    ),
                     valid_mask=batch.valid_mask,
                 )
             batch_clusters = torch.tensor(
