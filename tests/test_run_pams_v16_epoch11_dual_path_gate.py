@@ -234,14 +234,30 @@ def test_checkpoint_and_progress_hashes_must_be_frozen_and_exact(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     identities = {
-        "encoder_checkpoint": ("a" * 64, 123),
-        "encoder_progress": ("b" * 64, 456),
+        "encoder_checkpoint": (
+            "7ee1617fcac65261222a8c37c90977e92580b73c017a3d87465e794b205d7b31",
+            123,
+        ),
+        "encoder_progress": (
+            "c3782c40484916aaec97cd4b853ab6638398b00aa55ae7a3d69c2f3b862fa9ab",
+            456,
+        ),
     }
+    runner._validate_exact_epoch11_artifact_identities(identities)
+
+    monkeypatch.setattr(
+        runner,
+        "_EXPECTED_ENCODER_CHECKPOINT_SHA256",
+        "__FREEZE_AFTER_V16_EPOCH11__",
+    )
     with pytest.raises(RuntimeError, match="have not been frozen"):
         runner._validate_exact_epoch11_artifact_identities(identities)
 
-    monkeypatch.setattr(runner, "_EXPECTED_ENCODER_CHECKPOINT_SHA256", "a" * 64)
-    monkeypatch.setattr(runner, "_EXPECTED_ENCODER_PROGRESS_SHA256", "b" * 64)
+    monkeypatch.setattr(
+        runner,
+        "_EXPECTED_ENCODER_CHECKPOINT_SHA256",
+        identities["encoder_checkpoint"][0],
+    )
     runner._validate_exact_epoch11_artifact_identities(identities)
 
     wrong = deepcopy(identities)

@@ -229,8 +229,18 @@ def _write_evidence(
     )
     monkeypatch.setattr(
         runner,
+        "_EXPECTED_TEACHER_IDENT_RECEIPT_SHA256",
+        hashlib.sha256(teacher_receipt_path.read_bytes()).hexdigest(),
+    )
+    monkeypatch.setattr(
+        runner,
         "_EXPECTED_PEOFF_ARTIFACT_SHA256",
         hashlib.sha256(peoff_path.read_bytes()).hexdigest(),
+    )
+    monkeypatch.setattr(
+        runner,
+        "_EXPECTED_PEOFF_RECEIPT_SHA256",
+        hashlib.sha256(peoff_receipt_path.read_bytes()).hexdigest(),
     )
     return teacher_path, teacher_receipt_path, peoff_path, peoff_receipt_path
 
@@ -372,7 +382,35 @@ def test_exact_artifact_hash_and_receipt_binding_are_mandatory(
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     receipt["artifact_bytes"] += 1
     receipt_path.write_bytes(runner._encoded_json(receipt))
+    with pytest.raises(ValueError, match="evidence identity mismatch"):
+        runner._load_bound_evidence(
+            teacher_path,
+            receipt_path,
+            runner._evidence_specs()[0],
+        )
+    monkeypatch.setattr(
+        runner,
+        "_EXPECTED_TEACHER_IDENT_RECEIPT_SHA256",
+        hashlib.sha256(receipt_path.read_bytes()).hexdigest(),
+    )
     with pytest.raises(ValueError, match="receipt binding mismatch"):
+        runner._load_bound_evidence(
+            teacher_path,
+            receipt_path,
+            runner._evidence_specs()[0],
+        )
+
+
+def test_semantically_equivalent_receipt_with_extra_field_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    teacher_path, receipt_path, _, _ = _write_evidence(tmp_path, monkeypatch)
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["untrusted_extra_field"] = "does not alter the semantic binding"
+    receipt_path.write_bytes(runner._encoded_json(receipt))
+
+    with pytest.raises(ValueError, match="evidence identity mismatch"):
         runner._load_bound_evidence(
             teacher_path,
             receipt_path,

@@ -31,7 +31,11 @@ _CLASSIFICATION = "inferred target-free evidence-only joint authorization"
 _EXPECTED_TEACHER_IDENT_ARTIFACT_SHA256 = (
     "723f678a83492bc43f0239ca64fbe773037c5f4197aceb672fb2a31f387380ac"
 )
+_EXPECTED_TEACHER_IDENT_RECEIPT_SHA256 = (
+    "2519b8a9e7ca9f382f63769fac913ab1fa257ab03fb1152ab98db9daf9168099"
+)
 _EXPECTED_PEOFF_ARTIFACT_SHA256 = "171de419a3ef58c8d86b6fa5b9c2c56b3f3d29db293369fa522f7e16dcdd6bf5"
+_EXPECTED_PEOFF_RECEIPT_SHA256 = "a89560b2fc32cf27606458b2833a81e2efeec107181c894bdfb1e2656a5fa49f"
 _EXPECTED_ENCODER_CHECKPOINT_SHA256 = (
     "aa1750154e0ba36d41188cc023bb382db83db9f5c69b1867f310cdc636a48e19"
 )
@@ -69,6 +73,7 @@ _PEOFF_CRITERIA = {
 class _EvidenceSpec:
     name: str
     artifact_sha256: str
+    receipt_sha256: str
     artifact_type: str
     receipt_type: str
     status: str
@@ -89,6 +94,7 @@ def _evidence_specs() -> tuple[_EvidenceSpec, _EvidenceSpec]:
         _EvidenceSpec(
             name="teacher_identifiability",
             artifact_sha256=_EXPECTED_TEACHER_IDENT_ARTIFACT_SHA256,
+            receipt_sha256=_EXPECTED_TEACHER_IDENT_RECEIPT_SHA256,
             artifact_type="pams_v15_teacher_identifiability_probe",
             receipt_type="pams_v15_teacher_identifiability_probe_receipt",
             status="v16_short_continuation_rejected",
@@ -96,6 +102,7 @@ def _evidence_specs() -> tuple[_EvidenceSpec, _EvidenceSpec]:
         _EvidenceSpec(
             name="peoff",
             artifact_sha256=_EXPECTED_PEOFF_ARTIFACT_SHA256,
+            receipt_sha256=_EXPECTED_PEOFF_RECEIPT_SHA256,
             artifact_type=("pams_v15_terminal_encoder_in_memory_peoff_dual_path_probe"),
             receipt_type=("pams_v15_terminal_encoder_in_memory_peoff_dual_path_probe_receipt"),
             status="peoff_gate_pass",
@@ -170,12 +177,14 @@ def _load_bound_evidence(
     )
     expected = {
         "artifact_sha256": spec.artifact_sha256,
+        "receipt_sha256": spec.receipt_sha256,
         "artifact_type": spec.artifact_type,
         "artifact_status": spec.status,
         "receipt_type": spec.receipt_type,
     }
     actual = {
         "artifact_sha256": artifact_sha256,
+        "receipt_sha256": receipt_sha256,
         "artifact_type": artifact.get("artifact_type"),
         "artifact_status": artifact.get("status"),
         "receipt_type": receipt.get("artifact_type"),

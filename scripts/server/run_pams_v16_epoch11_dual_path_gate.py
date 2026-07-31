@@ -63,8 +63,12 @@ _EXPECTED_POSE_FINGERPRINT = "3dd0388320095796f42aa82d904073b6478b073ed351394ef8
 # These two identities are frozen in a follow-up gate-code-only commit after
 # the deterministic epoch-11 artifacts exist.  A sentinel can never authorize
 # or even execute the scientific gate.
-_EXPECTED_ENCODER_CHECKPOINT_SHA256 = "__FREEZE_AFTER_V16_EPOCH11__"
-_EXPECTED_ENCODER_PROGRESS_SHA256 = "__FREEZE_AFTER_V16_EPOCH11__"
+_EXPECTED_ENCODER_CHECKPOINT_SHA256 = (
+    "7ee1617fcac65261222a8c37c90977e92580b73c017a3d87465e794b205d7b31"
+)
+_EXPECTED_ENCODER_PROGRESS_SHA256 = (
+    "c3782c40484916aaec97cd4b853ab6638398b00aa55ae7a3d69c2f3b862fa9ab"
+)
 
 
 def _validate_exact_v16_config(
