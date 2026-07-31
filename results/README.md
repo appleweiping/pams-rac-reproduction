@@ -238,6 +238,13 @@ paper-table-ineligible negative diagnostic. Exact selector, predictions,
 receipts, source-view audits, and hashes are under
 [`pams_local_frequency_v2_target_free_dev84_2310d09/`](dev-negative/pams_local_frequency_v2_target_free_dev84_2310d09/).
 
+A strict same-video comparison against frozen local-frequency v1, RepNet,
+ESCounts, and three-seed JTSPS results confirms that the v2 NMAE gain over v1
+is not statistically resolved. Its OBO is significantly worse than both
+official-checkpoint sanity rows. The evaluation-only server replay, all paired
+intervals, and 84 reconstructible component rows are under
+[`pams_local_frequency_v2_dev84_paired_baselines_c573af3/`](dev-negative/pams_local_frequency_v2_dev84_paired_baselines_c573af3/).
+
 The official TransRAC RepCount-A checkpoint was also restored with exact
 230-key coverage and run on all 84 development videos in a modern
 PyTorch/CUDA compatibility stack. It obtained rounded NMAE `0.690692` and

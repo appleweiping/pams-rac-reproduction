@@ -561,6 +561,15 @@ predictions, evaluation, receipts, source-view inventories, and hashes are
 under
 [`pams_local_frequency_v2_target_free_dev84_2310d09/`](pams_local_frequency_v2_target_free_dev84_2310d09/).
 
+The subsequent strict paired-video comparison found that the v2 NMAE
+difference from local-frequency v1 is `-0.060762` with interval
+`[-0.144508, +0.017356]`, while its OBO deficits to RepNet and ESCounts are
+`-0.214286` and `-0.226190`, with both intervals excluding zero. None of its
+five differences from the three-seed JTSPS-count-only estimand excludes zero.
+The evaluation-only server run, deterministic replay, complete paired rows,
+and source/input hashes are under
+[`pams_local_frequency_v2_dev84_paired_baselines_c573af3/`](pams_local_frequency_v2_dev84_paired_baselines_c573af3/).
+
 ## Inferred JTSPS count-only strict dev diagnostic
 
 The independently implemented `JTSPS-count-only` scaffold completed real
