@@ -17,9 +17,11 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 from pams.data import (
+    INCOMPLETE_CLIP_POLICIES,
     PoseCacheMetadata,
     load_pose_cache,
     longest_valid_span,
+    normalize_clip_provenance,
     pose_cache_path,
     preprocess_pose_sequence,
     write_pose_cache,
@@ -31,10 +33,12 @@ DETECTED_SPAN_PREPROCESSING_REVISION = "detected-span-minmax-zero-span-invalid-v
 LONGEST_TRACK_PREPROCESSING_REVISION = (
     "longest-contiguous-track-minmax-zero-span-invalid-v3"
 )
+OFFICIAL_SEGMENT_PREPROCESSING_REVISION = "official-segment-full-timeline-v1"
 SUPPORTED_PREPROCESSING_REVISIONS = frozenset(
     {
         DETECTED_SPAN_PREPROCESSING_REVISION,
         LONGEST_TRACK_PREPROCESSING_REVISION,
+        OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
     }
 )
 
@@ -59,6 +63,7 @@ class PoseExtractorConfig:
     min_tracking_confidence: float = 0.5
     smooth_landmarks: bool = True
     crop_to_detected_span: bool = True
+    incomplete_clip_policy: str = "error"
 
     def __post_init__(self) -> None:
         if self.target_frames < 1:
@@ -76,6 +81,21 @@ class PoseExtractorConfig:
                 "longest-contiguous-track preprocessing requires "
                 "crop_to_detected_span=true"
             )
+        if (
+            self.preprocessing_revision == OFFICIAL_SEGMENT_PREPROCESSING_REVISION
+            and self.crop_to_detected_span
+        ):
+            raise ValueError(
+                "official-segment-full-timeline preprocessing requires "
+                "crop_to_detected_span=false"
+            )
+        if (
+            self.preprocessing_revision != OFFICIAL_SEGMENT_PREPROCESSING_REVISION
+            and self.incomplete_clip_policy != "error"
+        ):
+            raise ValueError(
+                "pad_invalid_tail is only valid for official-segment-full-timeline"
+            )
         if not self.model_id.strip():
             raise ValueError("model_id must be non-empty")
         if self.model_complexity not in {0, 1, 2}:
@@ -86,6 +106,12 @@ class PoseExtractorConfig:
         ):
             if not np.isfinite(value) or not 0.0 <= value <= 1.0:
                 raise ValueError(f"{name} must be finite and in [0, 1]")
+        policy = str(self.incomplete_clip_policy).strip()
+        if policy not in INCOMPLETE_CLIP_POLICIES:
+            raise ValueError(
+                "incomplete_clip_policy must be 'error' or 'pad_invalid_tail'"
+            )
+        object.__setattr__(self, "incomplete_clip_policy", policy)
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +130,13 @@ class PoseExtractionSummary:
     cached_valid_frames: int
     fps: float
     pose_model: str
+    annotation_sha256: str | None = None
+    clip_start_frame: int | None = None
+    clip_end_frame: int | None = None
+    expected_clip_frames: int | None = None
+    decoded_clip_frames: int | None = None
+    padded_tail_frames: int | None = None
+    incomplete_clip_policy: str | None = None
     skipped: bool = False
 
     def to_dict(self) -> dict[str, Any]:
@@ -120,6 +153,13 @@ class PoseExtractionSummary:
             "cached_valid_frames": self.cached_valid_frames,
             "fps": self.fps,
             "pose_model": self.pose_model,
+            "annotation_sha256": self.annotation_sha256,
+            "clip_start_frame": self.clip_start_frame,
+            "clip_end_frame": self.clip_end_frame,
+            "expected_clip_frames": self.expected_clip_frames,
+            "decoded_clip_frames": self.decoded_clip_frames,
+            "padded_tail_frames": self.padded_tail_frames,
+            "incomplete_clip_policy": self.incomplete_clip_policy,
             "skipped": self.skipped,
         }
 
@@ -132,13 +172,19 @@ class PoseExtractionFailure:
     video_path: str
     error_type: str
     message: str
+    annotation_sha256: str | None = None
+    clip_start_frame: int | None = None
+    clip_end_frame: int | None = None
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, str | int | None]:
         return {
             "video_id": self.video_id,
             "video_path": self.video_path,
             "error_type": self.error_type,
             "message": self.message,
+            "annotation_sha256": self.annotation_sha256,
+            "clip_start_frame": self.clip_start_frame,
+            "clip_end_frame": self.clip_end_frame,
         }
 
 
@@ -375,12 +421,16 @@ def extract_pose_sequence(
     *,
     video_id: str | None = None,
     config: PoseExtractorConfig | None = None,
+    clip_start_frame: int | None = None,
+    clip_end_frame: int | None = None,
     progress: Callable[[int], None] | None = None,
 ) -> tuple[PoseSequence, int, int, int]:
     """Extract and preprocess one video with MediaPipe Pose.
 
     Returns ``(sequence, decoded_frames, valid_frames_before_track_crop,
-    selected_source_frames)``.
+    selected_source_frames)``. ``clip_start_frame`` and ``clip_end_frame``
+    use 0-based half-open semantics. A ranged extraction preserves that whole
+    timeline and never applies detected-span or longest-track trimming.
     Dependency loading happens only after the input path has been validated.
     """
 
@@ -391,6 +441,26 @@ def extract_pose_sequence(
     identifier = str(video_id or source.stem).strip()
     if not identifier:
         raise ValueError("video_id must be non-empty")
+    if (clip_start_frame is None) != (clip_end_frame is None):
+        raise ValueError("clip_start_frame and clip_end_frame must be supplied together")
+    if clip_start_frame is not None:
+        if isinstance(clip_start_frame, bool | np.bool_) or isinstance(
+            clip_end_frame, bool | np.bool_
+        ):
+            raise TypeError("clip frame indices must be integers, not bool")
+        clip_start_frame = int(clip_start_frame)
+        clip_end_frame = int(clip_end_frame)  # type: ignore[arg-type]
+        if clip_start_frame < 0 or clip_end_frame <= clip_start_frame:
+            raise ValueError("clip must be a non-empty 0-based half-open interval")
+    if settings.preprocessing_revision == OFFICIAL_SEGMENT_PREPROCESSING_REVISION:
+        if clip_start_frame is None:
+            raise ValueError(
+                "official-segment-full-timeline preprocessing requires an input clip"
+            )
+    elif clip_start_frame is not None:
+        raise ValueError(
+            "annotation-bound clips require official-segment-full-timeline preprocessing"
+        )
 
     cv2, mp = _load_pose_dependencies()
     capture = cv2.VideoCapture(str(source))
@@ -403,6 +473,7 @@ def extract_pose_sequence(
         raise PoseExtractionError(f"video reports an invalid FPS: {source}")
 
     frame_candidates: list[NDArray[np.float32] | None] = []
+    decoded_frames = 0
     try:
         with mp.solutions.pose.Pose(
             static_image_mode=False,
@@ -412,30 +483,63 @@ def extract_pose_sequence(
             min_detection_confidence=settings.min_detection_confidence,
             min_tracking_confidence=settings.min_tracking_confidence,
         ) as detector:
-            while True:
+            if clip_start_frame is not None and clip_start_frame:
+                seek_ok = bool(capture.set(cv2.CAP_PROP_POS_FRAMES, clip_start_frame))
+                if not seek_ok:
+                    raise PoseExtractionError(
+                        f"OpenCV could not seek to clip start frame {clip_start_frame} "
+                        f"for {source}"
+                    )
+                positioned = float(capture.get(cv2.CAP_PROP_POS_FRAMES))
+                if np.isfinite(positioned) and abs(positioned - clip_start_frame) > 0.5:
+                    raise PoseExtractionError(
+                        f"OpenCV seek coverage mismatch for {source}: requested frame "
+                        f"{clip_start_frame}, positioned at {positioned}"
+                    )
+            expected_frames = (
+                None
+                if clip_start_frame is None
+                else int(clip_end_frame) - clip_start_frame
+            )
+            while expected_frames is None or decoded_frames < expected_frames:
                 ok, frame = capture.read()
                 if not ok:
+                    if expected_frames is not None:
+                        missing = expected_frames - decoded_frames
+                        if settings.incomplete_clip_policy == "error":
+                            raise PoseExtractionError(
+                                f"incomplete official clip decode for {identifier!r}: "
+                                f"range=[{clip_start_frame},{clip_end_frame}), "
+                                f"expected={expected_frames}, decoded={decoded_frames}, "
+                                f"missing_tail={missing}"
+                            )
+                        frame_candidates.extend([None] * missing)
                     break
                 rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 result = detector.process(rgb)
                 frame_candidates.append(_landmarks_from_result(result))
+                decoded_frames += 1
                 if progress is not None:
-                    progress(len(frame_candidates))
+                    progress(decoded_frames)
     finally:
         capture.release()
 
     raw = assemble_pose_sequence(frame_candidates, video_id=identifier, fps=fps)
     valid_frames = int(np.count_nonzero(raw.valid_mask))
-    selected, selected_source_frames = _select_preprocessing_span(
-        raw,
-        crop_to_detected_span=settings.crop_to_detected_span,
-        preprocessing_revision=settings.preprocessing_revision,
-    )
+    if clip_start_frame is None:
+        selected, selected_source_frames = _select_preprocessing_span(
+            raw,
+            crop_to_detected_span=settings.crop_to_detected_span,
+            preprocessing_revision=settings.preprocessing_revision,
+        )
+    else:
+        selected = raw
+        selected_source_frames = raw.num_frames
     processed = preprocess_pose_sequence(
         selected,
         target_frames=settings.target_frames,
     )
-    return processed, raw.num_frames, valid_frames, selected_source_frames
+    return processed, decoded_frames, valid_frames, selected_source_frames
 
 
 def extract_pose_to_cache(
@@ -445,6 +549,9 @@ def extract_pose_to_cache(
     cache_dir: str | Path,
     pose_fingerprint: str,
     expected_video_sha256: str | None = None,
+    annotation_sha256: str | None = None,
+    clip_start_frame: int | None = None,
+    clip_end_frame: int | None = None,
     extractor_config: PoseExtractorConfig | None = None,
     overwrite: bool = False,
     skip_existing: bool = False,
@@ -461,6 +568,11 @@ def extract_pose_to_cache(
             f"expected {expected_video_sha256}, received {video_digest}"
         )
     settings = extractor_config or PoseExtractorConfig()
+    annotation, clip_start, clip_end = normalize_clip_provenance(
+        annotation_sha256=annotation_sha256,
+        clip_start_frame=clip_start_frame,
+        clip_end_frame=clip_end_frame,
+    )
     target = pose_cache_path(cache_dir, video_id)
     if target.exists():
         if not skip_existing:
@@ -471,6 +583,10 @@ def extract_pose_to_cache(
                 target,
                 expected_video_sha256=video_digest,
                 expected_pose_fingerprint=pose_fingerprint,
+                expected_annotation_sha256=annotation,
+                expected_clip_start_frame=clip_start,
+                expected_clip_end_frame=clip_end,
+                validate_clip_provenance=True,
             )
             if sequence.video_id != video_id:
                 raise ValueError(
@@ -500,6 +616,13 @@ def extract_pose_to_cache(
                 cached_valid_frames=int(np.count_nonzero(sequence.valid_mask)),
                 fps=sequence.fps,
                 pose_model=metadata.pose_model,
+                annotation_sha256=metadata.annotation_sha256,
+                clip_start_frame=metadata.clip_start_frame,
+                clip_end_frame=metadata.clip_end_frame,
+                expected_clip_frames=metadata.expected_clip_frames,
+                decoded_clip_frames=metadata.decoded_clip_frames,
+                padded_tail_frames=metadata.padded_tail_frames,
+                incomplete_clip_policy=metadata.incomplete_clip_policy,
                 skipped=True,
             )
             return summary, metadata
@@ -508,6 +631,12 @@ def extract_pose_to_cache(
         source,
         video_id=video_id,
         config=settings,
+        clip_start_frame=clip_start,
+        clip_end_frame=clip_end,
+    )
+    expected_clip_frames = None if clip_start is None else clip_end - clip_start
+    padded_tail_frames = (
+        None if expected_clip_frames is None else expected_clip_frames - source_frames
     )
     metadata = write_pose_cache(
         target,
@@ -515,6 +644,15 @@ def extract_pose_to_cache(
         video_sha256=video_digest,
         pose_fingerprint=pose_fingerprint,
         pose_model=settings.model_id,
+        annotation_sha256=annotation,
+        clip_start_frame=clip_start,
+        clip_end_frame=clip_end,
+        decoded_clip_frames=(None if clip_start is None else source_frames),
+        expected_clip_frames=expected_clip_frames,
+        padded_tail_frames=padded_tail_frames,
+        incomplete_clip_policy=(
+            None if clip_start is None else settings.incomplete_clip_policy
+        ),
         overwrite=overwrite,
     )
     summary = PoseExtractionSummary(
@@ -530,12 +668,43 @@ def extract_pose_to_cache(
         cached_valid_frames=int(np.count_nonzero(sequence.valid_mask)),
         fps=sequence.fps,
         pose_model=settings.model_id,
+        annotation_sha256=annotation,
+        clip_start_frame=clip_start,
+        clip_end_frame=clip_end,
+        expected_clip_frames=expected_clip_frames,
+        decoded_clip_frames=(None if clip_start is None else source_frames),
+        padded_tail_frames=padded_tail_frames,
+        incomplete_clip_policy=(
+            None if clip_start is None else settings.incomplete_clip_policy
+        ),
     )
     return summary, metadata
 
 
+def _unpack_extraction_row(
+    row: Sequence[Any],
+) -> tuple[str, str | Path, str | None, str | None, int | None, int | None]:
+    """Accept legacy three-field and official-segment six-field rows."""
+
+    values = tuple(row)
+    if len(values) == 3:
+        video_id, video_path, video_sha256 = values
+        return str(video_id), video_path, video_sha256, None, None, None
+    if len(values) == 6:
+        video_id, video_path, video_sha256, annotation_sha256, clip_start, clip_end = values
+        return (
+            str(video_id),
+            video_path,
+            video_sha256,
+            annotation_sha256,
+            clip_start,
+            clip_end,
+        )
+    raise ValueError("pose extraction rows must contain 3 legacy or 6 official fields")
+
+
 def extract_many_to_cache(
-    videos: Iterable[tuple[str, str | Path, str | None]],
+    videos: Iterable[Sequence[Any]],
     *,
     cache_dir: str | Path,
     pose_fingerprint: str,
@@ -543,18 +712,29 @@ def extract_many_to_cache(
     overwrite: bool = False,
     skip_existing: bool = False,
 ) -> tuple[PoseExtractionSummary, ...]:
-    """Extract ``(video_id, path, expected_sha256)`` rows sequentially."""
+    """Extract legacy or annotation-bound official rows sequentially."""
 
     if overwrite and skip_existing:
         raise ValueError("overwrite and skip_existing are mutually exclusive")
     summaries: list[PoseExtractionSummary] = []
-    for video_id, video_path, expected_digest in videos:
+    for row in videos:
+        (
+            video_id,
+            video_path,
+            expected_digest,
+            annotation_sha256,
+            clip_start,
+            clip_end,
+        ) = _unpack_extraction_row(row)
         summary, _ = extract_pose_to_cache(
             video_path,
             video_id=video_id,
             cache_dir=cache_dir,
             pose_fingerprint=pose_fingerprint,
             expected_video_sha256=expected_digest,
+            annotation_sha256=annotation_sha256,
+            clip_start_frame=clip_start,
+            clip_end_frame=clip_end,
             extractor_config=extractor_config,
             overwrite=overwrite,
             skip_existing=skip_existing,
@@ -564,7 +744,7 @@ def extract_many_to_cache(
 
 
 def extract_many_with_failures(
-    videos: Iterable[tuple[str, str | Path, str | None]],
+    videos: Iterable[Sequence[Any]],
     *,
     cache_dir: str | Path,
     pose_fingerprint: str,
@@ -578,7 +758,15 @@ def extract_many_with_failures(
         raise ValueError("overwrite and skip_existing are mutually exclusive")
     summaries: list[PoseExtractionSummary] = []
     failures: list[PoseExtractionFailure] = []
-    for video_id, video_path, expected_digest in videos:
+    for row in videos:
+        (
+            video_id,
+            video_path,
+            expected_digest,
+            annotation_sha256,
+            clip_start,
+            clip_end,
+        ) = _unpack_extraction_row(row)
         try:
             summary, _ = extract_pose_to_cache(
                 video_path,
@@ -586,6 +774,9 @@ def extract_many_with_failures(
                 cache_dir=cache_dir,
                 pose_fingerprint=pose_fingerprint,
                 expected_video_sha256=expected_digest,
+                annotation_sha256=annotation_sha256,
+                clip_start_frame=clip_start,
+                clip_end_frame=clip_end,
                 extractor_config=extractor_config,
                 overwrite=overwrite,
                 skip_existing=skip_existing,
@@ -598,6 +789,9 @@ def extract_many_with_failures(
                     video_path=str(video_path),
                     error_type=type(exc).__name__,
                     message=str(exc),
+                    annotation_sha256=annotation_sha256,
+                    clip_start_frame=clip_start,
+                    clip_end_frame=clip_end,
                 )
             )
     return tuple(summaries), tuple(failures)

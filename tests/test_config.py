@@ -179,6 +179,25 @@ def test_inferred_pre_pe_head_is_explicit_identity_and_preserves_pose_cache() ->
     assert reconstructed_implicit.fingerprint == period_only.fingerprint
 
 
+def test_reference_relative_head_is_opt_in_and_preserves_legacy_identity() -> None:
+    legacy = PAMSConfig()
+    implicit_payload = legacy.model_dump()
+    implicit_payload["sshead"].pop("input_source")
+    reconstructed_legacy = PAMSConfig.model_validate(implicit_payload)
+    inferred_payload = legacy.model_dump()
+    inferred_payload["sshead"][
+        "input_source"
+    ] = "projected_pose_reference_relative"
+    inferred = PAMSConfig.model_validate(inferred_payload)
+
+    assert legacy.fingerprint == reconstructed_legacy.fingerprint
+    assert legacy.nonseed_fingerprint == reconstructed_legacy.nonseed_fingerprint
+    assert inferred.sshead.input_source == "projected_pose_reference_relative"
+    assert inferred.fingerprint != legacy.fingerprint
+    assert inferred.nonseed_fingerprint != legacy.nonseed_fingerprint
+    assert inferred.pose_fingerprint == legacy.pose_fingerprint
+
+
 def test_inferred_confidence_weighting_changes_only_sshead_confidence_mode() -> None:
     root = Path(__file__).parents[1]
     pre_pe = load_config(
@@ -558,6 +577,42 @@ def test_pose_preprocessing_revision_is_frozen() -> None:
     with pytest.raises(ValidationError, match="preprocessing_revision"):
         PAMSConfig.model_validate(
             {"pose": {"preprocessing_revision": "unsupported-revision"}}
+        )
+
+
+def test_official_segment_timeline_and_padding_are_explicit_pose_identities() -> None:
+    repository = Path(__file__).parents[1]
+    legacy = load_config(
+        repository / "configs" / "experiments" / "pams_longest_contiguous_track_v8.yaml"
+    )
+    strict = load_config(
+        repository / "configs" / "experiments" / "pams_official_segment_v1.yaml"
+    )
+    padded = load_config(
+        repository
+        / "configs"
+        / "experiments"
+        / "pams_official_segment_v1_pad_invalid_tail.yaml"
+    )
+
+    assert strict.pose.preprocessing_revision == "official-segment-full-timeline-v1"
+    assert strict.pose.crop_to_detected_span is False
+    assert strict.pose.incomplete_clip_policy == "error"
+    assert padded.pose.incomplete_clip_policy == "pad_invalid_tail"
+    assert len({legacy.pose_fingerprint, strict.pose_fingerprint, padded.pose_fingerprint}) == 3
+    assert len({legacy.fingerprint, strict.fingerprint, padded.fingerprint}) == 3
+    with pytest.raises(ValidationError, match="requires.*false"):
+        PAMSConfig.model_validate(
+            {
+                "pose": {
+                    "preprocessing_revision": "official-segment-full-timeline-v1",
+                    "crop_to_detected_span": True,
+                }
+            }
+        )
+    with pytest.raises(ValidationError, match="only valid"):
+        PAMSConfig.model_validate(
+            {"pose": {"incomplete_clip_policy": "pad_invalid_tail"}}
         )
 
 

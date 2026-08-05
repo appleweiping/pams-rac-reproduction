@@ -13,6 +13,7 @@ from pams import ucfrep
 from pams.data import UCFRepManifest, UCFRepRecord
 from pams.ucfrep import (
     _annotation_count,
+    _annotation_metadata,
     build_official_manifest,
     materialize_standard_split_ids,
     resolve_ucfrep_video_path,
@@ -33,6 +34,8 @@ def _official_archive_fixture(
         annotation,
         {
             "label": {
+                "start_frame": np.asarray([[3]]),
+                "end_frame": np.asarray([[20]]),
                 "temporal_bound": np.asarray([[1], [10], [20]]),
             }
         },
@@ -104,6 +107,29 @@ def test_annotation_count_matches_official_boundary_definition(tmp_path: Path) -
     }
     savemat(path, {"label": label})
     assert _annotation_count(path.read_bytes()) == 4
+
+
+def test_annotation_metadata_converts_one_based_inclusive_clip_once(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "annotation.mat"
+    savemat(
+        path,
+        {
+            "label": {
+                "start_frame": np.asarray([[7]]),
+                "end_frame": np.asarray([[19]]),
+                "temporal_bound": np.asarray([[7], [13], [19]]),
+            }
+        },
+    )
+    payload = path.read_bytes()
+
+    count, clip_start, clip_end, digest = _annotation_metadata(payload)
+
+    assert count == 2
+    assert (clip_start, clip_end) == (6, 19)
+    assert digest == hashlib.sha256(payload).hexdigest()
 
 
 def test_annotation_count_rejects_missing_boundaries() -> None:
@@ -260,6 +286,11 @@ def test_strict_official_manifest_resolves_and_hashes_all_526_videos(
         record.video_sha256 is not None and len(record.video_sha256) == 64
         for record in manifest.records
     )
+    assert all(record.annotation_sha256 is not None for record in manifest.records)
+    assert all(
+        (record.clip_start_frame, record.clip_end_frame) == (2, 20)
+        for record in manifest.records
+    )
 
 
 def test_annotation_only_manifest_explicitly_allows_missing_videos(
@@ -276,6 +307,9 @@ def test_annotation_only_manifest_explicitly_allows_missing_videos(
     )
     assert len(manifest.records) == 526
     assert all(record.video_sha256 is None for record in manifest.records)
+    assert all(record.annotation_sha256 is not None for record in manifest.records)
+    assert all(record.clip_start_frame == 2 for record in manifest.records)
+    assert all(record.clip_end_frame == 20 for record in manifest.records)
     assert all(Path(record.video_path).parent.name == record.action for record in manifest.records)
 
 

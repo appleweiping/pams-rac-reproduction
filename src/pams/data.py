@@ -32,7 +32,15 @@ _EXPECTED_PROTOCOL_SPLITS: Mapping[str, Mapping[str, int]] = {
     "ucfrep_526": {"train": 421, "test": 105},
     "ucfrep_pose_110": {"train": 89, "test": 21},
 }
-_CSV_FIELDS = ("video_id", "video_path", "split", "action", "count", "video_sha256")
+_CSV_REQUIRED_FIELDS = ("video_id", "video_path", "split", "action", "count")
+_CSV_OPTIONAL_FIELDS = (
+    "video_sha256",
+    "annotation_sha256",
+    "clip_start_frame",
+    "clip_end_frame",
+)
+_CSV_FIELDS = (*_CSV_REQUIRED_FIELDS, *_CSV_OPTIONAL_FIELDS)
+INCOMPLETE_CLIP_POLICIES = frozenset({"error", "pad_invalid_tail"})
 _UCFREP_526_CANONICAL_ID_SHA256: Mapping[str, str] = {
     "train": "811d263b61dce27671551326b45799b06ac4b07dba311bdc39d2ed6663729d25",
     "dev": "2199294a1d22da6c67d2fdaaafb4bebaa11e92a5bb3accd4670975815001f2c6",
@@ -62,6 +70,112 @@ def _validate_sha256(value: str | None, name: str) -> str | None:
     if not _SHA256_PATTERN.fullmatch(digest):
         raise ValueError(f"{name} must be a 64-character hexadecimal SHA-256")
     return digest
+
+
+def normalize_clip_provenance(
+    *,
+    annotation_sha256: str | None,
+    clip_start_frame: int | None,
+    clip_end_frame: int | None,
+) -> tuple[str | None, int | None, int | None]:
+    """Validate one optional annotation-bound 0-based half-open clip.
+
+    The three values form one indivisible provenance bundle. Legacy records
+    omit all three. Official-segment records provide the SHA-256 of the exact
+    per-video ``.mat`` payload together with ``[clip_start_frame,
+    clip_end_frame)``. Keeping the end exclusive makes the expected decode
+    length exactly ``clip_end_frame - clip_start_frame``.
+    """
+
+    digest = _validate_sha256(annotation_sha256, "annotation_sha256")
+    supplied = (
+        digest is not None,
+        clip_start_frame is not None,
+        clip_end_frame is not None,
+    )
+    if any(supplied) and not all(supplied):
+        raise ValueError(
+            "annotation_sha256, clip_start_frame, and clip_end_frame "
+            "must be supplied together"
+        )
+    if not any(supplied):
+        return None, None, None
+
+    assert digest is not None
+    normalized: list[int] = []
+    for name, value in (
+        ("clip_start_frame", clip_start_frame),
+        ("clip_end_frame", clip_end_frame),
+    ):
+        if isinstance(value, bool | np.bool_):
+            raise TypeError(f"{name} must be an integer, not bool")
+        try:
+            integer = int(value)  # type: ignore[arg-type]
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise TypeError(f"{name} must be an integer") from exc
+        if integer != value:
+            raise ValueError(f"{name} must be an integer")
+        normalized.append(integer)
+    start, end = normalized
+    if start < 0:
+        raise ValueError("clip_start_frame must be non-negative")
+    if end <= start:
+        raise ValueError("clip_end_frame must be greater than clip_start_frame")
+    return digest, start, end
+
+
+def normalize_clip_decode_coverage(
+    *,
+    clip_start_frame: int | None,
+    clip_end_frame: int | None,
+    decoded_clip_frames: int | None,
+    expected_clip_frames: int | None,
+    padded_tail_frames: int | None,
+    incomplete_clip_policy: str | None,
+) -> tuple[int | None, int | None, int | None, str | None]:
+    """Validate auditable decode coverage stored in schema-v3 pose caches."""
+
+    if clip_start_frame is None or clip_end_frame is None:
+        if any(
+            value is not None
+            for value in (
+                decoded_clip_frames,
+                expected_clip_frames,
+                padded_tail_frames,
+                incomplete_clip_policy,
+            )
+        ):
+            raise ValueError("clip decode coverage requires clip provenance")
+        return None, None, None, None
+
+    expected_from_range = clip_end_frame - clip_start_frame
+    expected = expected_from_range if expected_clip_frames is None else expected_clip_frames
+    decoded = expected if decoded_clip_frames is None else decoded_clip_frames
+    padded = expected - decoded if padded_tail_frames is None else padded_tail_frames
+    policy = "error" if incomplete_clip_policy is None else str(incomplete_clip_policy).strip()
+    for name, value in (
+        ("decoded_clip_frames", decoded),
+        ("expected_clip_frames", expected),
+        ("padded_tail_frames", padded),
+    ):
+        if isinstance(value, bool | np.bool_) or not isinstance(value, int | np.integer):
+            raise TypeError(f"{name} must be an integer")
+        if int(value) < 0:
+            raise ValueError(f"{name} must be non-negative")
+    decoded = int(decoded)
+    expected = int(expected)
+    padded = int(padded)
+    if expected != expected_from_range:
+        raise ValueError("expected_clip_frames must equal clip_end_frame - clip_start_frame")
+    if decoded > expected or padded != expected - decoded:
+        raise ValueError("clip decode coverage must satisfy decoded + padded == expected")
+    if policy not in INCOMPLETE_CLIP_POLICIES:
+        raise ValueError(
+            "incomplete_clip_policy must be 'error' or 'pad_invalid_tail'"
+        )
+    if policy == "error" and padded:
+        raise ValueError("error clip policy cannot record padded tail frames")
+    return decoded, expected, padded, policy
 
 
 def _reject_json_object_keys_before_deserialization(
@@ -125,6 +239,9 @@ class UCFRepRecord:
     action: str
     count: int
     video_sha256: str | None = None
+    annotation_sha256: str | None = None
+    clip_start_frame: int | None = None
+    clip_end_frame: int | None = None
 
     def __post_init__(self) -> None:
         video_id = str(self.video_id).strip()
@@ -152,9 +269,17 @@ class UCFRepRecord:
             "video_sha256",
             _validate_sha256(self.video_sha256, "video_sha256"),
         )
+        annotation, clip_start, clip_end = normalize_clip_provenance(
+            annotation_sha256=self.annotation_sha256,
+            clip_start_frame=self.clip_start_frame,
+            clip_end_frame=self.clip_end_frame,
+        )
+        object.__setattr__(self, "annotation_sha256", annotation)
+        object.__setattr__(self, "clip_start_frame", clip_start)
+        object.__setattr__(self, "clip_end_frame", clip_end)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "video_id": self.video_id,
             "video_path": self.video_path,
             "split": self.split,
@@ -162,6 +287,15 @@ class UCFRepRecord:
             "count": self.count,
             "video_sha256": self.video_sha256,
         }
+        if self.annotation_sha256 is not None:
+            payload.update(
+                {
+                    "annotation_sha256": self.annotation_sha256,
+                    "clip_start_frame": self.clip_start_frame,
+                    "clip_end_frame": self.clip_end_frame,
+                }
+            )
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,6 +305,9 @@ class UnlabeledVideoRecord:
     video_id: str
     video_path: str
     video_sha256: str | None
+    annotation_sha256: str | None = None
+    clip_start_frame: int | None = None
+    clip_end_frame: int | None = None
 
     def __post_init__(self) -> None:
         video_id = str(self.video_id).strip()
@@ -186,13 +323,30 @@ class UnlabeledVideoRecord:
             "video_sha256",
             _validate_sha256(self.video_sha256, "video_sha256"),
         )
+        annotation, clip_start, clip_end = normalize_clip_provenance(
+            annotation_sha256=self.annotation_sha256,
+            clip_start_frame=self.clip_start_frame,
+            clip_end_frame=self.clip_end_frame,
+        )
+        object.__setattr__(self, "annotation_sha256", annotation)
+        object.__setattr__(self, "clip_start_frame", clip_start)
+        object.__setattr__(self, "clip_end_frame", clip_end)
 
-    def to_dict(self) -> dict[str, str | None]:
-        return {
+    def to_dict(self) -> dict[str, str | int | None]:
+        payload: dict[str, str | int | None] = {
             "video_id": self.video_id,
             "video_path": self.video_path,
             "video_sha256": self.video_sha256,
         }
+        if self.annotation_sha256 is not None:
+            payload.update(
+                {
+                    "annotation_sha256": self.annotation_sha256,
+                    "clip_start_frame": self.clip_start_frame,
+                    "clip_end_frame": self.clip_end_frame,
+                }
+            )
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -230,6 +384,11 @@ class PoseInputManifest:
         ]
         if len(set(normalized_paths)) != len(normalized_paths):
             raise ValueError("pose-input video_path values must be unique")
+        clip_modes = {record.annotation_sha256 is not None for record in records}
+        if len(clip_modes) != 1:
+            raise ValueError(
+                "pose-input records cannot mix legacy full-video and official-segment inputs"
+            )
         for record in records:
             locator = record.video_path
             if "\\" in locator:
@@ -262,6 +421,15 @@ class PoseInputManifest:
                     "video_id": record.video_id,
                     "video_sha256": record.video_sha256,
                     "video_locator": record.video_path,
+                    **(
+                        {}
+                        if record.annotation_sha256 is None
+                        else {
+                            "annotation_sha256": record.annotation_sha256,
+                            "clip_start_frame": record.clip_start_frame,
+                            "clip_end_frame": record.clip_end_frame,
+                        }
+                    ),
                 }
                 for record in self.records
             ],
@@ -485,8 +653,10 @@ class LabelFreeProtocolInputs:
         identifiers: dict[str, str] = {}
         locators: dict[str, str] = {}
         digests: dict[str, str] = {}
+        clip_modes: set[bool] = set()
         for split in ("train", "dev", "test"):
             for record in self.records_for(split):
+                clip_modes.add(record.annotation_sha256 is not None)
                 previous_split = identifiers.setdefault(record.video_id, split)
                 if previous_split != split:
                     raise ValueError(
@@ -506,6 +676,11 @@ class LabelFreeProtocolInputs:
                     raise ValueError(
                         "source-video SHA-256 occurs in more than one protocol split"
                     )
+        if len(clip_modes) != 1:
+            raise ValueError(
+                "label-free protocol inputs cannot mix legacy full-video and "
+                "official-segment sidecars"
+            )
         object.__setattr__(self, "protocol", protocol)
 
     @property
@@ -551,6 +726,15 @@ class LabelFreeProtocolInputs:
                     {
                         "video_id": record.video_id,
                         "video_sha256": record.video_sha256,
+                        **(
+                            {}
+                            if record.annotation_sha256 is None
+                            else {
+                                "annotation_sha256": record.annotation_sha256,
+                                "clip_start_frame": record.clip_start_frame,
+                                "clip_end_frame": record.clip_end_frame,
+                            }
+                        ),
                     }
                     for record in records
                 ],
@@ -573,6 +757,15 @@ class LabelFreeProtocolInputs:
                         "video_id": record.video_id,
                         "split": split,
                         "video_sha256": record.video_sha256,
+                        **(
+                            {}
+                            if record.annotation_sha256 is None
+                            else {
+                                "annotation_sha256": record.annotation_sha256,
+                                "clip_start_frame": record.clip_start_frame,
+                                "clip_end_frame": record.clip_end_frame,
+                            }
+                        ),
                     }
                     for split in ("train", "dev", "test")
                     for record in self.records_for(split)
@@ -741,6 +934,11 @@ class UCFRepManifest:
         ]
         if len(set(normalized_paths)) != len(normalized_paths):
             raise ValueError("video_path values must be unique across all splits")
+        clip_modes = {record.annotation_sha256 is not None for record in records}
+        if len(clip_modes) != 1:
+            raise ValueError(
+                "manifest records cannot mix legacy full-video and official-segment inputs"
+            )
 
         object.__setattr__(self, "protocol", protocol)
         object.__setattr__(self, "records", records)
@@ -757,6 +955,15 @@ class UCFRepManifest:
                 "action": record.action,
                 "count": record.count,
                 "video_sha256": record.video_sha256,
+                **(
+                    {}
+                    if record.annotation_sha256 is None
+                    else {
+                        "annotation_sha256": record.annotation_sha256,
+                        "clip_start_frame": record.clip_start_frame,
+                        "clip_end_frame": record.clip_end_frame,
+                    }
+                ),
             }
             for record in self.records
         ]
@@ -814,6 +1021,9 @@ class UCFRepManifest:
                 video_id=record.video_id,
                 video_path=record.video_path,
                 video_sha256=record.video_sha256,
+                annotation_sha256=record.annotation_sha256,
+                clip_start_frame=record.clip_start_frame,
+                clip_end_frame=record.clip_end_frame,
             )
             for record in self.records
             if record.split in allowed
@@ -839,6 +1049,15 @@ class UCFRepManifest:
                     {
                         "video_id": record.video_id,
                         "video_sha256": record.video_sha256,
+                        **(
+                            {}
+                            if record.annotation_sha256 is None
+                            else {
+                                "annotation_sha256": record.annotation_sha256,
+                                "clip_start_frame": record.clip_start_frame,
+                                "clip_end_frame": record.clip_end_frame,
+                            }
+                        ),
                     }
                     for record in records
                 ],
@@ -1001,7 +1220,7 @@ def validate_exact_protocol_splits(manifest: UCFRepManifest) -> None:
 def _record_from_mapping(payload: Mapping[str, Any]) -> UCFRepRecord:
     expected = set(_CSV_FIELDS)
     supplied = set(payload)
-    missing = expected - supplied - {"video_sha256"}
+    missing = set(_CSV_REQUIRED_FIELDS) - supplied
     unknown = supplied - expected
     if missing:
         raise ValueError(f"manifest record is missing fields: {sorted(missing)}")
@@ -1016,22 +1235,59 @@ def _record_from_mapping(payload: Mapping[str, Any]) -> UCFRepRecord:
         video_sha256=(
             None if payload.get("video_sha256") in (None, "") else str(payload["video_sha256"])
         ),
+        annotation_sha256=(
+            None
+            if payload.get("annotation_sha256") in (None, "")
+            else str(payload["annotation_sha256"])
+        ),
+        clip_start_frame=(
+            None
+            if payload.get("clip_start_frame") in (None, "")
+            else int(payload["clip_start_frame"])
+        ),
+        clip_end_frame=(
+            None
+            if payload.get("clip_end_frame") in (None, "")
+            else int(payload["clip_end_frame"])
+        ),
     )
 
 
 def _unlabeled_record_from_mapping(payload: Mapping[str, Any]) -> UnlabeledVideoRecord:
-    expected = {"video_id", "video_path", "video_sha256"}
-    supplied = set(payload)
-    if supplied != expected:
+    legacy = {"video_id", "video_path", "video_sha256"}
+    official_segment = {
+        *legacy,
+        "annotation_sha256",
+        "clip_start_frame",
+        "clip_end_frame",
+    }
+    supplied = frozenset(payload)
+    if supplied not in {frozenset(legacy), frozenset(official_segment)}:
         raise ValueError(
             "pose-input record fields mismatch; "
-            f"missing={sorted(expected - supplied)}, unknown={sorted(supplied - expected)}"
+            "expected either legacy video identity fields or the complete "
+            "official-segment provenance bundle"
         )
     return UnlabeledVideoRecord(
         video_id=str(payload["video_id"]),
         video_path=str(payload["video_path"]),
         video_sha256=(
             None if payload["video_sha256"] in (None, "") else str(payload["video_sha256"])
+        ),
+        annotation_sha256=(
+            None
+            if payload.get("annotation_sha256") in (None, "")
+            else str(payload["annotation_sha256"])
+        ),
+        clip_start_frame=(
+            None
+            if payload.get("clip_start_frame") in (None, "")
+            else int(payload["clip_start_frame"])
+        ),
+        clip_end_frame=(
+            None
+            if payload.get("clip_end_frame") in (None, "")
+            else int(payload["clip_end_frame"])
         ),
     )
 
@@ -1093,11 +1349,12 @@ def load_ucfrep_manifest(
             reader = csv.DictReader(handle)
             if reader.fieldnames is None:
                 raise ValueError("CSV manifest is missing a header")
-            required = set(_CSV_FIELDS) - {"video_sha256"}
+            required = set(_CSV_REQUIRED_FIELDS)
             supplied = set(reader.fieldnames)
             if not required.issubset(supplied) or supplied - set(_CSV_FIELDS):
                 raise ValueError(
-                    f"CSV fields must be {_CSV_FIELDS} (video_sha256 optional), "
+                    f"CSV fields must include {_CSV_REQUIRED_FIELDS}; provenance fields are "
+                    f"optional members of {_CSV_OPTIONAL_FIELDS}, "
                     f"received {reader.fieldnames}"
                 )
             records = tuple(_record_from_mapping(row) for row in reader)
@@ -1600,10 +1857,17 @@ class PoseCacheMetadata:
     frames: int
     keypoints: int = 33
     coordinates: int = 3
+    annotation_sha256: str | None = None
+    clip_start_frame: int | None = None
+    clip_end_frame: int | None = None
+    decoded_clip_frames: int | None = None
+    expected_clip_frames: int | None = None
+    padded_tail_frames: int | None = None
+    incomplete_clip_policy: str | None = None
 
     def __post_init__(self) -> None:
-        if self.schema_version != 2:
-            raise ValueError("only pose cache schema_version=2 is supported")
+        if self.schema_version not in {2, 3}:
+            raise ValueError("only pose cache schema_version=2 or 3 is supported")
         if not self.video_id.strip() or not self.pose_model.strip():
             raise ValueError("video_id and pose_model must be non-empty")
         _validate_sha256(self.video_sha256, "video_sha256")
@@ -1612,9 +1876,33 @@ class PoseCacheMetadata:
             raise ValueError("cache fps must be positive")
         if self.frames < 1 or self.keypoints != 33 or self.coordinates != 3:
             raise ValueError("cache shape metadata must describe [frames, 33, 3]")
+        annotation, clip_start, clip_end = normalize_clip_provenance(
+            annotation_sha256=self.annotation_sha256,
+            clip_start_frame=self.clip_start_frame,
+            clip_end_frame=self.clip_end_frame,
+        )
+        if self.schema_version == 2 and annotation is not None:
+            raise ValueError("pose cache schema_version=2 cannot contain clip provenance")
+        if self.schema_version == 3 and annotation is None:
+            raise ValueError("pose cache schema_version=3 requires clip provenance")
+        object.__setattr__(self, "annotation_sha256", annotation)
+        object.__setattr__(self, "clip_start_frame", clip_start)
+        object.__setattr__(self, "clip_end_frame", clip_end)
+        decoded, expected, padded, policy = normalize_clip_decode_coverage(
+            clip_start_frame=clip_start,
+            clip_end_frame=clip_end,
+            decoded_clip_frames=self.decoded_clip_frames,
+            expected_clip_frames=self.expected_clip_frames,
+            padded_tail_frames=self.padded_tail_frames,
+            incomplete_clip_policy=self.incomplete_clip_policy,
+        )
+        object.__setattr__(self, "decoded_clip_frames", decoded)
+        object.__setattr__(self, "expected_clip_frames", expected)
+        object.__setattr__(self, "padded_tail_frames", padded)
+        object.__setattr__(self, "incomplete_clip_policy", policy)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "schema_version": self.schema_version,
             "video_id": self.video_id,
             "video_sha256": self.video_sha256,
@@ -1625,6 +1913,19 @@ class PoseCacheMetadata:
             "keypoints": self.keypoints,
             "coordinates": self.coordinates,
         }
+        if self.schema_version == 3:
+            payload.update(
+                {
+                    "annotation_sha256": self.annotation_sha256,
+                    "clip_start_frame": self.clip_start_frame,
+                    "clip_end_frame": self.clip_end_frame,
+                    "decoded_clip_frames": self.decoded_clip_frames,
+                    "expected_clip_frames": self.expected_clip_frames,
+                    "padded_tail_frames": self.padded_tail_frames,
+                    "incomplete_clip_policy": self.incomplete_clip_policy,
+                }
+            )
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -1723,18 +2024,37 @@ def write_pose_cache(
     video_sha256: str,
     pose_fingerprint: str,
     pose_model: str = "mediapipe-pose-0.10.14",
+    annotation_sha256: str | None = None,
+    clip_start_frame: int | None = None,
+    clip_end_frame: int | None = None,
+    decoded_clip_frames: int | None = None,
+    expected_clip_frames: int | None = None,
+    padded_tail_frames: int | None = None,
+    incomplete_clip_policy: str | None = None,
     overwrite: bool = False,
 ) -> PoseCacheMetadata:
     """Atomically write a cache whose provenance is validated on every load."""
 
+    annotation, clip_start, clip_end = normalize_clip_provenance(
+        annotation_sha256=annotation_sha256,
+        clip_start_frame=clip_start_frame,
+        clip_end_frame=clip_end_frame,
+    )
     metadata = PoseCacheMetadata(
-        schema_version=2,
+        schema_version=3 if annotation is not None else 2,
         video_id=sequence.video_id,
         video_sha256=_validate_sha256(video_sha256, "video_sha256") or "",
         pose_fingerprint=_validate_sha256(pose_fingerprint, "pose_fingerprint") or "",
         pose_model=str(pose_model),
         fps=sequence.fps,
         frames=sequence.num_frames,
+        annotation_sha256=annotation,
+        clip_start_frame=clip_start,
+        clip_end_frame=clip_end,
+        decoded_clip_frames=decoded_clip_frames,
+        expected_clip_frames=expected_clip_frames,
+        padded_tail_frames=padded_tail_frames,
+        incomplete_clip_policy=incomplete_clip_policy,
     )
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -1786,6 +2106,10 @@ def load_pose_cache_with_receipt(
     *,
     expected_video_sha256: str | None = None,
     expected_pose_fingerprint: str | None = None,
+    expected_annotation_sha256: str | None = None,
+    expected_clip_start_frame: int | None = None,
+    expected_clip_end_frame: int | None = None,
+    validate_clip_provenance: bool = False,
 ) -> tuple[PoseSequence, PoseCacheMetadata, PoseCacheEntryReceipt]:
     """Load exact cache bytes and return their cryptographic receipt."""
 
@@ -1826,10 +2150,29 @@ def load_pose_cache_with_receipt(
         expected_pose_fingerprint,
         "expected_pose_fingerprint",
     )
+    expected_annotation, expected_clip_start, expected_clip_end = normalize_clip_provenance(
+        annotation_sha256=expected_annotation_sha256,
+        clip_start_frame=expected_clip_start_frame,
+        clip_end_frame=expected_clip_end_frame,
+    )
     if expected_video is not None and metadata.video_sha256 != expected_video:
         raise ValueError("pose cache video SHA-256 mismatch")
     if expected_pose is not None and metadata.pose_fingerprint != expected_pose:
         raise ValueError("pose cache fingerprint mismatch")
+    check_clip = validate_clip_provenance or any(
+        value is not None
+        for value in (
+            expected_annotation_sha256,
+            expected_clip_start_frame,
+            expected_clip_end_frame,
+        )
+    )
+    if check_clip and (
+        metadata.annotation_sha256,
+        metadata.clip_start_frame,
+        metadata.clip_end_frame,
+    ) != (expected_annotation, expected_clip_start, expected_clip_end):
+        raise ValueError("pose cache clip provenance mismatch")
     return (
         sequence,
         metadata,
@@ -1846,6 +2189,10 @@ def load_pose_cache(
     *,
     expected_video_sha256: str | None = None,
     expected_pose_fingerprint: str | None = None,
+    expected_annotation_sha256: str | None = None,
+    expected_clip_start_frame: int | None = None,
+    expected_clip_end_frame: int | None = None,
+    validate_clip_provenance: bool = False,
 ) -> tuple[PoseSequence, PoseCacheMetadata]:
     """Load a cache and reject stale video/pose-extractor provenance."""
 
@@ -1853,6 +2200,10 @@ def load_pose_cache(
         path,
         expected_video_sha256=expected_video_sha256,
         expected_pose_fingerprint=expected_pose_fingerprint,
+        expected_annotation_sha256=expected_annotation_sha256,
+        expected_clip_start_frame=expected_clip_start_frame,
+        expected_clip_end_frame=expected_clip_end_frame,
+        validate_clip_provenance=validate_clip_provenance,
     )
     return sequence, metadata
 
@@ -1885,6 +2236,10 @@ def load_pose_cache_set(
             pose_cache_path(directory, record.video_id),
             expected_video_sha256=record.video_sha256,
             expected_pose_fingerprint=validated_pose,
+            expected_annotation_sha256=record.annotation_sha256,
+            expected_clip_start_frame=record.clip_start_frame,
+            expected_clip_end_frame=record.clip_end_frame,
+            validate_clip_provenance=True,
         )
         if sequence.video_id != record.video_id:
             raise ValueError("cache video_id does not match pose-cache record")
@@ -1948,6 +2303,10 @@ class TrainingPoseDataset(Sequence[PoseSequence]):
             pose_cache_path(self._cache_dir, item.video_id),
             expected_video_sha256=item.video_sha256,
             expected_pose_fingerprint=self._pose_fingerprint,
+            expected_annotation_sha256=item.annotation_sha256,
+            expected_clip_start_frame=item.clip_start_frame,
+            expected_clip_end_frame=item.clip_end_frame,
+            validate_clip_provenance=True,
         )
         if sequence.video_id != item.video_id:
             raise ValueError("cache video_id does not match training record")

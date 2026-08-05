@@ -138,6 +138,52 @@ def test_manifest_fingerprint_ignores_local_mount_path() -> None:
     assert first.fingerprint == second.fingerprint
 
 
+@pytest.mark.parametrize("suffix", [".json", ".csv"])
+def test_official_segment_manifest_round_trip_and_fingerprint(
+    tmp_path: Path,
+    suffix: str,
+) -> None:
+    annotation = "c" * 64
+    records = tuple(
+        replace(
+            _record(index, split="train" if index == 1 else "test"),
+            annotation_sha256=annotation,
+            clip_start_frame=6,
+            clip_end_frame=19,
+        )
+        for index in (1, 2)
+    )
+    manifest = UCFRepManifest("ucfrep_526", records)
+    path = tmp_path / f"official-segment{suffix}"
+
+    save_ucfrep_manifest(manifest, path)
+    loaded = load_ucfrep_manifest(path, protocol="ucfrep_526", validate_exact=False)
+
+    assert loaded == manifest
+    changed_range = UCFRepManifest(
+        "ucfrep_526",
+        tuple(replace(record, clip_end_frame=20) for record in records),
+    )
+    changed_annotation = UCFRepManifest(
+        "ucfrep_526",
+        tuple(replace(record, annotation_sha256="d" * 64) for record in records),
+    )
+    assert changed_range.fingerprint != manifest.fingerprint
+    assert changed_annotation.training_fingerprint() != manifest.training_fingerprint()
+
+
+def test_clip_provenance_is_an_all_or_none_half_open_bundle() -> None:
+    with pytest.raises(ValueError, match="must be supplied together"):
+        replace(_record(1), clip_start_frame=0, clip_end_frame=10)
+    with pytest.raises(ValueError, match="greater than"):
+        replace(
+            _record(1),
+            annotation_sha256="a" * 64,
+            clip_start_frame=10,
+            clip_end_frame=10,
+        )
+
+
 def test_pose_input_manifest_is_exact_count_free_and_portable(
     tmp_path: Path,
 ) -> None:
@@ -204,6 +250,32 @@ def test_pose_input_manifest_is_exact_count_free_and_portable(
                 for record in records
             ),
         )
+
+
+def test_pose_input_sidecar_exposes_clip_identity_but_no_cycle_boundaries() -> None:
+    record = UnlabeledVideoRecord(
+        video_id="v_BenchPress_g01_c01",
+        video_path="videos/v_BenchPress_g01_c01.avi",
+        video_sha256="a" * 64,
+        annotation_sha256="b" * 64,
+        clip_start_frame=6,
+        clip_end_frame=19,
+    )
+    manifest = PoseInputManifest("ucfrep_526", "train", (record,))
+    encoded = json.dumps(manifest.to_dict(), sort_keys=True)
+
+    assert '"annotation_sha256"' in encoded
+    assert '"clip_start_frame": 6' in encoded
+    assert '"clip_end_frame": 19' in encoded
+    assert '"count"' not in encoded
+    assert '"action"' not in encoded
+    assert "temporal_bound" not in encoded
+    changed = PoseInputManifest(
+        "ucfrep_526",
+        "train",
+        (replace(record, clip_end_frame=20),),
+    )
+    assert changed.fingerprint != manifest.fingerprint
 
 
 def test_pose_input_manifest_rejects_noncanonical_test_membership() -> None:
@@ -451,6 +523,58 @@ def test_pose_cache_hash_guards_and_training_dataset_no_label_leak(
     )
     _, changed_snapshot = dataset.materialize_snapshot()
     assert changed_snapshot.fingerprint != snapshot.fingerprint
+
+
+def test_official_segment_cache_binds_range_annotation_and_decode_coverage(
+    tmp_path: Path,
+) -> None:
+    sequence = PoseSequence(
+        "official",
+        30,
+        np.ones((256, 33, 3), dtype=np.float32),
+        np.ones(256, dtype=bool),
+    )
+    path = pose_cache_path(tmp_path, sequence.video_id)
+    write_pose_cache(
+        path,
+        sequence,
+        video_sha256="a" * 64,
+        pose_fingerprint="b" * 64,
+        annotation_sha256="c" * 64,
+        clip_start_frame=6,
+        clip_end_frame=19,
+        decoded_clip_frames=10,
+        expected_clip_frames=13,
+        padded_tail_frames=3,
+        incomplete_clip_policy="pad_invalid_tail",
+    )
+    _, metadata = load_pose_cache(
+        path,
+        expected_video_sha256="a" * 64,
+        expected_pose_fingerprint="b" * 64,
+        expected_annotation_sha256="c" * 64,
+        expected_clip_start_frame=6,
+        expected_clip_end_frame=19,
+    )
+
+    assert metadata.schema_version == 3
+    assert metadata.decoded_clip_frames == 10
+    assert metadata.expected_clip_frames == 13
+    assert metadata.padded_tail_frames == 3
+    with pytest.raises(ValueError, match="clip provenance mismatch"):
+        load_pose_cache(
+            path,
+            expected_annotation_sha256="c" * 64,
+            expected_clip_start_frame=6,
+            expected_clip_end_frame=20,
+        )
+    legacy_record = UnlabeledVideoRecord("official", "official.avi", "a" * 64)
+    with pytest.raises(ValueError, match="clip provenance mismatch"):
+        TrainingPoseDataset(
+            (legacy_record,),
+            cache_dir=tmp_path,
+            pose_fingerprint="b" * 64,
+        )[0]
 
 
 @pytest.mark.parametrize("split", ["train", "dev", "test"])

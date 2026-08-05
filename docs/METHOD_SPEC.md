@@ -26,6 +26,18 @@ The implementation does not claim cross-person identity tracking. A one-frame
 v3 run is retained in the denominator as an all-invalid cache, and extraction
 receipts record the selected source-run length.
 
+The separately fingerprinted `official-segment-full-timeline-v1` protocol
+uses each official UCFRep `.mat` file's 1-based inclusive `start_frame` and
+`end_frame` only to define the input clip. The privileged manifest builder
+converts that interval once to 0-based half-open
+`[clip_start_frame, clip_end_frame)`. Count and `temporal_bound` cycle
+locations never enter the label-free pose-input manifest. Pose extraction
+seeks to `clip_start_frame`, decodes at most the exact interval length, keeps
+every pose miss as an invalid frame, and resamples the complete clip timeline;
+it never applies detected-span or longest-track trimming. See
+[OFFICIAL_SEGMENT_PROTOCOL.md](OFFICIAL_SEGMENT_PROTOCOL.md) for schema and
+coverage rules.
+
 ## Encoder
 
 `PAMSEncoder` implements the disclosed network:
@@ -136,6 +148,37 @@ L_head = L_cycle + L_spectral + 0.1 L_variance + 0.01 L_smooth
 the non-DC power share in the fundamental bin and its immediate neighbours;
 `L_variance` penalizes standard deviation below one; `L_smooth` penalizes
 the squared second temporal difference. This is an inferred repair.
+
+The separately fingerprinted
+`sshead.input_source: projected_pose_reference_relative` route is a second,
+more identifiable inferred repair. It never uses counts or action labels. For
+each video it takes the same detached target-free period used during head
+training, selects a dynamic phase anchor by maximizing full-period similarity
+minus half-period similarity, and averages valid projected-pose rows at that
+phase into a reference prototype `r`. Its head input and scalar teacher are:
+
+```text
+R[t,d] = zscore_valid((projected_pose[t,d] - r[d])^2)
+y_ref[t] = zscore_valid(-mean_d (projected_pose[t,d] - r[d])^2)
+P[t] = zscore_valid(H_phi(R[t]))
+
+L_reference_relative = L_reference + L_fundamental + L_lag
+                     + 0.1 L_low_frequency + 0.01 L_smooth
+```
+
+The negative distance makes each recurrence of the reference pose a maximum,
+matching the downstream peak counter. `L_reference` regresses the centered
+head stream to `y_ref`; unlike the legacy variance hinge, it has non-zero
+gradient at a constant output. `L_fundamental` maximizes exact target-bin
+power, `L_lag` aligns valid samples one period apart, and
+`L_low_frequency` penalizes non-DC power below the target fundamental. The
+four existing configured weights retain their stored fields but are
+interpreted as lag, fundamental, low-frequency, and smoothness weights only
+for this opt-in route; reference regression has unit weight. Zero-confidence,
+insufficient-cycle, and constant-reference samples produce no fabricated
+teacher. Training and inference call the same reference builder; inference
+also applies the same continuous masked z-score to the raw head output before
+the unchanged direct-FFT decoder and multi-expert counter consume `P`.
 
 Training monitors this inferred repair without changing its loss. Each epoch
 logs per-video valid-frame stream-standard-deviation summaries and collapse

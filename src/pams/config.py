@@ -47,6 +47,7 @@ class PoseConfig(StrictModel):
     preprocessing_revision: Literal[
         "detected-span-minmax-zero-span-invalid-v2",
         "longest-contiguous-track-minmax-zero-span-invalid-v3",
+        "official-segment-full-timeline-v1",
     ] = "detected-span-minmax-zero-span-invalid-v2"
     model_id: str = "mediapipe-pose-0.10.14"
     model_complexity: int = Field(default=1, ge=0, le=2)
@@ -54,6 +55,7 @@ class PoseConfig(StrictModel):
     min_detection_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     min_tracking_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     crop_to_detected_span: bool = True
+    incomplete_clip_policy: Literal["error", "pad_invalid_tail"] = "error"
 
     @model_validator(mode="after")
     def validate_track_policy(self) -> PoseConfig:
@@ -65,6 +67,21 @@ class PoseConfig(StrictModel):
             raise ValueError(
                 "longest-contiguous-track preprocessing requires "
                 "crop_to_detected_span=true"
+            )
+        if (
+            self.preprocessing_revision == "official-segment-full-timeline-v1"
+            and self.crop_to_detected_span
+        ):
+            raise ValueError(
+                "official-segment-full-timeline preprocessing requires "
+                "crop_to_detected_span=false"
+            )
+        if (
+            self.preprocessing_revision != "official-segment-full-timeline-v1"
+            and self.incomplete_clip_policy != "error"
+        ):
+            raise ValueError(
+                "pad_invalid_tail is only valid for official-segment-full-timeline"
             )
         return self
 
@@ -202,6 +219,7 @@ class SSHeadConfig(StrictModel):
     input_source: Literal[
         "encoder_embedding",
         "projected_pose_pre_pe",
+        "projected_pose_reference_relative",
     ] = "encoder_embedding"
     period_confidence_mode: Literal[
         "nonzero_gate",
@@ -261,6 +279,11 @@ class PAMSConfig(StrictModel):
         """Return the stable JSON-compatible representation used for hashing."""
 
         payload = self.model_dump(mode="json")
+        pose = payload["pose"]
+        if pose["incomplete_clip_policy"] == "error":
+            # Preserve historical fingerprints. The opt-in padding policy is
+            # extraction-affecting and remains in every new method identity.
+            pose.pop("incomplete_clip_policy")
         model = payload["model"]
         if model["input_projection_scale"] == "none":
             # ``none`` is the historical behavior.  Omitting only this default
@@ -312,8 +335,8 @@ class PAMSConfig(StrictModel):
             sshead.pop("architecture")
         if sshead["input_source"] == "encoder_embedding":
             # Preserve historical config/checkpoint identities.  The opt-in
-            # pre-PE route is an independently inferred repair and therefore
-            # remains in the canonical payload.
+            # pre-PE and reference-relative routes are independently inferred
+            # repairs and therefore remain in the canonical payload.
             sshead.pop("input_source")
         if sshead["period_confidence_mode"] == "nonzero_gate":
             # Preserve historical config/checkpoint identities.  Continuous
@@ -337,9 +360,12 @@ class PAMSConfig(StrictModel):
     def pose_canonical_dict(self) -> dict[str, Any]:
         """Return only preprocessing/extractor state used by pose caches."""
 
+        pose = self.pose.model_dump(mode="json")
+        if pose["incomplete_clip_policy"] == "error":
+            pose.pop("incomplete_clip_policy")
         return {
             "data": self.data.model_dump(mode="json"),
-            "pose": self.pose.model_dump(mode="json"),
+            "pose": pose,
         }
 
     @property

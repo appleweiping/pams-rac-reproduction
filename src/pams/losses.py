@@ -10,6 +10,225 @@ from torch import Tensor, nn
 from torch.nn import functional as F
 
 
+def masked_zscore(
+    values: Tensor,
+    valid_mask: Tensor,
+    *,
+    epsilon: float = 1e-4,
+) -> Tensor:
+    """Standardize each sample over valid time rows only.
+
+    ``values`` may be scalar ``[batch, time]`` streams or vector-valued
+    ``[batch, time, feature]`` streams.  Invalid rows are never read into the
+    moments and are returned as exact zero.  Adding ``epsilon`` to the
+    variance keeps the transformation continuous at a constant stream, so a
+    downstream non-constant regression target still supplies a gradient.
+    """
+
+    if values.ndim not in {2, 3}:
+        raise ValueError("values must have shape [batch, time] or [batch, time, feature]")
+    if valid_mask.shape != values.shape[:2]:
+        raise ValueError("valid_mask must match values batch and time dimensions")
+    if epsilon <= 0:
+        raise ValueError("epsilon must be positive")
+    valid = valid_mask.to(device=values.device, dtype=torch.bool)
+    expanded_valid = valid
+    if values.ndim == 3:
+        expanded_valid = expanded_valid.unsqueeze(-1)
+    safe_values = torch.where(expanded_valid, values, torch.zeros_like(values))
+    counts = valid.sum(dim=1).clamp_min(1).to(dtype=values.dtype)
+    if values.ndim == 3:
+        counts = counts.unsqueeze(-1)
+    means = safe_values.sum(dim=1) / counts
+    centered = torch.where(
+        expanded_valid,
+        values - means.unsqueeze(1),
+        torch.zeros_like(values),
+    )
+    variances = centered.square().sum(dim=1) / counts
+    denominator = (variances + epsilon).sqrt().unsqueeze(1)
+    standardized = centered / denominator
+    return standardized.masked_fill(~expanded_valid, 0.0)
+
+
+@dataclass(frozen=True)
+class ReferenceRelativeSignal:
+    """Target-free per-video reference representation for the inferred head."""
+
+    head_inputs: Tensor
+    teacher: Tensor
+    prototypes: Tensor
+    available: Tensor
+
+
+def _reference_anchor_index(
+    projected_pose: Tensor,
+    valid_mask: Tensor,
+    period: int,
+) -> int:
+    """Choose a dynamic, cycle-stable phase anchor without labels.
+
+    The score is mean half-period squared distance minus mean full-period
+    squared distance, which is equivalent to full-period similarity minus
+    half-period similarity under negative squared-distance similarity.  Thus
+    a recurring action extremum outranks a stationary segment.  Ties are
+    deterministic and favor the earliest valid frame.
+    """
+
+    if projected_pose.ndim != 2:
+        raise ValueError("projected_pose must have shape [time, feature]")
+    time, feature = projected_pose.shape
+    if feature < 1 or valid_mask.shape != (time,):
+        raise ValueError("valid_mask must match projected_pose time")
+    if period < 1:
+        raise ValueError("period must be positive")
+    valid = valid_mask.to(device=projected_pose.device, dtype=torch.bool)
+    valid_indices = torch.nonzero(valid, as_tuple=False).flatten()
+    if not valid_indices.numel():
+        raise ValueError("reference anchor requires at least one valid frame")
+
+    def neighbour_distance(offset: int) -> tuple[Tensor, Tensor]:
+        sums = projected_pose.new_zeros(time)
+        counts = projected_pose.new_zeros(time)
+        if offset >= time:
+            return sums, counts
+        pair_valid = valid[:-offset] & valid[offset:]
+        distances = (
+            projected_pose[:-offset] - projected_pose[offset:]
+        ).square().mean(dim=-1)
+        weighted = torch.where(pair_valid, distances, torch.zeros_like(distances))
+        pair_counts = pair_valid.to(dtype=projected_pose.dtype)
+        sums[:-offset] += weighted
+        sums[offset:] += weighted
+        counts[:-offset] += pair_counts
+        counts[offset:] += pair_counts
+        return sums, counts
+
+    full_sum, full_count = neighbour_distance(period)
+    half_sum, half_count = neighbour_distance(max(1, int(round(period / 2.0))))
+    eligible = valid & (full_count > 0) & (half_count > 0)
+    if not bool(eligible.any()):
+        return int(valid_indices[0])
+    score = half_sum / half_count.clamp_min(1.0) - full_sum / full_count.clamp_min(1.0)
+    score = score.masked_fill(~eligible, float("-inf"))
+    return int(score.argmax())
+
+
+def build_reference_relative_signal(
+    projected_pose: Tensor,
+    periods: Tensor,
+    valid_mask: Tensor,
+    *,
+    period_confidence: Tensor,
+    epsilon: float = 1e-4,
+) -> ReferenceRelativeSignal:
+    """Build a phase-anchored squared-distance input and scalar teacher.
+
+    This is an independently inferred closure for the paper's undisclosed
+    Period Head objective.  For each video, full-period similarity minus
+    half-period similarity chooses a deterministic, dynamic phase anchor.
+    Valid projected-pose rows one rounded target-free period apart are
+    averaged into a reference prototype.  Per-coordinate squared distances
+    to that prototype form the head input; the negative feature mean forms
+    the scalar regression teacher, so each reference-pose recurrence is a
+    peak for the downstream peak counter.  Both are mask-aware z-scores,
+    making the representation invariant to a global affine scale/offset of
+    the frozen projected pose apart from the explicit near-zero-variance
+    stabilizer.
+
+    At least two same-phase observations and non-zero period confidence are
+    required.  A missing/constant reference signal is represented by exact
+    zeros with ``available=False`` rather than fabricated periodic evidence.
+    """
+
+    if projected_pose.ndim != 3:
+        raise ValueError("projected_pose must have shape [batch, time, feature]")
+    batch, time, feature = projected_pose.shape
+    if feature < 1:
+        raise ValueError("projected_pose feature dimension must be positive")
+    if valid_mask.shape != (batch, time):
+        raise ValueError("valid_mask must have shape [batch, time]")
+    if periods.shape not in {(batch,), (batch, 1)}:
+        raise ValueError(f"periods must have shape [{batch}]")
+    if period_confidence.shape not in {(batch,), (batch, 1)}:
+        raise ValueError(f"period_confidence must have shape [{batch}]")
+    if epsilon <= 0:
+        raise ValueError("epsilon must be positive")
+
+    valid = valid_mask.to(device=projected_pose.device, dtype=torch.bool)
+    sample_periods = periods.reshape(batch).to(device=projected_pose.device)
+    confidences = period_confidence.reshape(batch).to(device=projected_pose.device)
+    if not bool(torch.isfinite(sample_periods).all()) or bool((sample_periods <= 0).any()):
+        raise ValueError("periods must be finite and positive")
+    if (
+        not bool(torch.isfinite(confidences).all())
+        or bool((confidences < 0).any())
+        or bool((confidences > 1).any())
+    ):
+        raise ValueError("period_confidence must be finite and in [0, 1]")
+
+    raw_inputs = projected_pose.new_zeros(projected_pose.shape)
+    raw_teacher = projected_pose.new_zeros((batch, time))
+    prototypes = projected_pose.new_zeros((batch, feature))
+    available = torch.zeros(batch, dtype=torch.bool, device=projected_pose.device)
+    frame_indices = torch.arange(time, device=projected_pose.device)
+
+    for sample_index in range(batch):
+        sample_valid = valid[sample_index]
+        if not bool(confidences[sample_index] > 0) or int(sample_valid.sum()) < 2:
+            continue
+        period = max(1, int(round(float(sample_periods[sample_index].detach()))))
+        anchor = _reference_anchor_index(
+            projected_pose[sample_index],
+            sample_valid,
+            period,
+        )
+        same_phase = sample_valid & (
+            torch.remainder(frame_indices - anchor, period) == 0
+        )
+        if int(same_phase.sum()) < 2:
+            continue
+        prototype = projected_pose[sample_index, same_phase].mean(dim=0)
+        squared_distance = (projected_pose[sample_index] - prototype).square()
+        squared_distance = squared_distance.masked_fill(
+            ~sample_valid.unsqueeze(-1),
+            0.0,
+        )
+        raw_inputs[sample_index] = squared_distance
+        raw_teacher[sample_index] = -squared_distance.mean(dim=-1)
+        prototypes[sample_index] = prototype
+        available[sample_index] = True
+
+    normalization_mask = valid & available.unsqueeze(1)
+    head_inputs = masked_zscore(
+        raw_inputs,
+        normalization_mask,
+        epsilon=epsilon,
+    )
+    teacher = masked_zscore(
+        raw_teacher,
+        normalization_mask,
+        epsilon=epsilon,
+    )
+    # A geometrically constant distance curve carries no phase target.  Keep
+    # this decision detached because the projected encoder is frozen here.
+    teacher_energy = teacher.detach().abs().sum(dim=1)
+    available = available & (teacher_energy > epsilon)
+    availability_mask = available.unsqueeze(1)
+    head_inputs = head_inputs.masked_fill(
+        ~availability_mask.unsqueeze(-1),
+        0.0,
+    )
+    teacher = teacher.masked_fill(~availability_mask, 0.0)
+    prototypes = prototypes.masked_fill(~available.unsqueeze(-1), 0.0)
+    return ReferenceRelativeSignal(
+        head_inputs=head_inputs,
+        teacher=teacher,
+        prototypes=prototypes,
+        available=available,
+    )
+
+
 def _check_embeddings(embeddings: Tensor) -> tuple[int, int, int]:
     if embeddings.ndim != 3:
         raise ValueError("embeddings must have shape [batch, time, dimension]")
@@ -417,13 +636,17 @@ class PAMSTCCLoss(nn.Module):
 
 @dataclass(frozen=True)
 class SSHeadLossOutput:
-    """Weighted SSHead total and its four unweighted components."""
+    """Weighted SSHead total and legacy/reference-relative components."""
 
     total: Tensor
     cycle: Tensor
     spectral: Tensor
     variance: Tensor
     smoothness: Tensor
+    reference: Tensor
+    fundamental: Tensor
+    lag: Tensor
+    low_frequency: Tensor
 
 
 class SSHeadLoss(nn.Module):
@@ -595,6 +818,10 @@ class SSHeadLoss(nn.Module):
             spectral=spectral,
             variance=variance,
             smoothness=smoothness,
+            reference=zero,
+            fundamental=zero,
+            lag=zero,
+            low_frequency=zero,
         )
 
     def forward(
@@ -610,4 +837,237 @@ class SSHeadLoss(nn.Module):
             periods,
             valid_mask,
             period_confidence=period_confidence,
+        ).total
+
+
+class ReferenceRelativeSSHeadLoss(nn.Module):
+    """Identifiable target-free loss for reference-relative head inputs.
+
+    This opt-in inferred objective deliberately does not reuse the legacy
+    anti-variance term.  Regression to the pose-derived reference curve gives
+    a constant output a non-zero gradient, while the remaining terms enforce
+    the target-free period's fundamental, its time-domain lag recurrence,
+    low-frequency rejection, and local smoothness.  Every component consumes
+    the same continuous mask-aware z-score of the raw head output that is used
+    by reference-relative inference.
+    """
+
+    def __init__(
+        self,
+        reference_weight: float = 1.0,
+        fundamental_weight: float = 1.0,
+        lag_weight: float = 1.0,
+        low_frequency_weight: float = 0.1,
+        smoothness_weight: float = 0.01,
+        *,
+        confidence_weighted_losses: bool = False,
+    ) -> None:
+        super().__init__()
+        weights = (
+            reference_weight,
+            fundamental_weight,
+            lag_weight,
+            low_frequency_weight,
+            smoothness_weight,
+        )
+        if any(weight < 0 for weight in weights):
+            raise ValueError("reference-relative SSHead weights must be non-negative")
+        self.reference_weight = float(reference_weight)
+        self.fundamental_weight = float(fundamental_weight)
+        self.lag_weight = float(lag_weight)
+        self.low_frequency_weight = float(low_frequency_weight)
+        self.smoothness_weight = float(smoothness_weight)
+        self.confidence_weighted_losses = bool(confidence_weighted_losses)
+
+    def compute(
+        self,
+        period_stream: Tensor,
+        reference_teacher: Tensor,
+        periods: Tensor,
+        valid_mask: Tensor,
+        *,
+        period_confidence: Tensor,
+        teacher_available: Tensor,
+    ) -> SSHeadLossOutput:
+        if period_stream.ndim != 2:
+            raise ValueError("period_stream must have shape [batch, time]")
+        batch, time = period_stream.shape
+        if reference_teacher.shape != (batch, time):
+            raise ValueError("reference_teacher must match period_stream")
+        if valid_mask.shape != (batch, time):
+            raise ValueError("valid_mask must match period_stream")
+        if periods.shape not in {(batch,), (batch, 1)}:
+            raise ValueError(f"periods must have shape [{batch}]")
+        if period_confidence.shape not in {(batch,), (batch, 1)}:
+            raise ValueError(f"period_confidence must have shape [{batch}]")
+        if teacher_available.shape != (batch,):
+            raise ValueError(f"teacher_available must have shape [{batch}]")
+
+        stream = period_stream
+        valid = valid_mask.to(device=stream.device, dtype=torch.bool)
+        sample_periods = periods.reshape(batch).to(device=stream.device)
+        confidences = period_confidence.reshape(batch).to(
+            device=stream.device,
+            dtype=stream.dtype,
+        )
+        available = teacher_available.to(device=stream.device, dtype=torch.bool)
+        if not bool(torch.isfinite(sample_periods).all()) or bool(
+            (sample_periods <= 0).any()
+        ):
+            raise ValueError("periods must be finite and positive")
+        if (
+            not bool(torch.isfinite(confidences).all())
+            or bool((confidences < 0).any())
+            or bool((confidences > 1).any())
+        ):
+            raise ValueError("period_confidence must be finite and in [0, 1]")
+        usable_samples = available & (confidences > 0)
+        normalization_mask = valid & usable_samples.unsqueeze(1)
+        normalized_stream = masked_zscore(
+            stream,
+            normalization_mask,
+        )
+        normalized_teacher = masked_zscore(
+            reference_teacher.to(device=stream.device, dtype=stream.dtype),
+            normalization_mask,
+        )
+
+        references: list[Tensor] = []
+        fundamentals: list[Tensor] = []
+        lags: list[Tensor] = []
+        low_frequencies: list[Tensor] = []
+        smoothnesses: list[Tensor] = []
+        weights: list[Tensor] = []
+        zero = stream.sum() * 0.0
+
+        for values, target, sample_period, sample_valid, confidence, usable in zip(
+            normalized_stream,
+            normalized_teacher,
+            sample_periods,
+            valid,
+            confidences,
+            available,
+            strict=True,
+        ):
+            if not bool(usable) or not bool(confidence > 0) or int(sample_valid.sum()) < 2:
+                continue
+            selected = values[sample_valid]
+            references.append(
+                (selected - target[sample_valid]).square().mean()
+            )
+
+            period = max(1, int(round(float(sample_period.detach()))))
+            if period < time:
+                pair_valid = sample_valid[:-period] & sample_valid[period:]
+                if pair_valid.any():
+                    difference = values[:-period] - values[period:]
+                    lags.append(difference[pair_valid].square().mean())
+                else:
+                    lags.append(zero)
+            else:
+                lags.append(zero)
+
+            count = sample_valid.sum().to(dtype=values.dtype)
+            sample_mean = torch.where(
+                sample_valid,
+                values,
+                torch.zeros_like(values),
+            ).sum() / count
+            centered = torch.where(
+                sample_valid,
+                values - sample_mean,
+                torch.zeros_like(values),
+            )
+            spectral_values = (
+                centered.float()
+                if centered.dtype in (torch.float16, torch.bfloat16)
+                else centered
+            )
+            power = torch.fft.rfft(spectral_values).abs().square()
+            if power.numel() > 1:
+                power = power.clone()
+                power[0] = 0.0
+                total_power = power.sum().clamp_min(1e-12)
+                target_bin = int(round(time / period))
+                target_bin = min(max(target_bin, 1), power.numel() - 1)
+                fundamentals.append(1.0 - power[target_bin] / total_power)
+                low_frequencies.append(power[1:target_bin].sum() / total_power)
+            else:
+                fundamentals.append(zero)
+                low_frequencies.append(zero)
+
+            if time >= 3:
+                triplet_valid = (
+                    sample_valid[:-2]
+                    & sample_valid[1:-1]
+                    & sample_valid[2:]
+                )
+                if triplet_valid.any():
+                    second_difference = (
+                        values[2:] - 2.0 * values[1:-1] + values[:-2]
+                    )
+                    smoothnesses.append(
+                        second_difference[triplet_valid].square().mean()
+                    )
+                else:
+                    smoothnesses.append(zero)
+            else:
+                smoothnesses.append(zero)
+            weights.append(confidence.detach())
+
+        def reduce(items: list[Tensor]) -> Tensor:
+            if not items:
+                return zero
+            stacked = torch.stack(items)
+            if not self.confidence_weighted_losses:
+                return stacked.mean()
+            sample_weights = torch.stack(weights).to(
+                device=stream.device,
+                dtype=stream.dtype,
+            )
+            return (
+                stacked * sample_weights
+            ).sum() / sample_weights.sum().clamp_min(1e-12)
+
+        reference = reduce(references)
+        fundamental = reduce(fundamentals)
+        lag = reduce(lags)
+        low_frequency = reduce(low_frequencies)
+        smoothness = reduce(smoothnesses)
+        total = (
+            self.reference_weight * reference
+            + self.fundamental_weight * fundamental
+            + self.lag_weight * lag
+            + self.low_frequency_weight * low_frequency
+            + self.smoothness_weight * smoothness
+        )
+        return SSHeadLossOutput(
+            total=total,
+            cycle=zero,
+            spectral=zero,
+            variance=zero,
+            smoothness=smoothness,
+            reference=reference,
+            fundamental=fundamental,
+            lag=lag,
+            low_frequency=low_frequency,
+        )
+
+    def forward(
+        self,
+        period_stream: Tensor,
+        reference_teacher: Tensor,
+        periods: Tensor,
+        valid_mask: Tensor,
+        *,
+        period_confidence: Tensor,
+        teacher_available: Tensor,
+    ) -> Tensor:
+        return self.compute(
+            period_stream,
+            reference_teacher,
+            periods,
+            valid_mask,
+            period_confidence=period_confidence,
+            teacher_available=teacher_available,
         ).total

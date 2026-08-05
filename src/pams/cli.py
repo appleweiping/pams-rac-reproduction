@@ -790,6 +790,9 @@ def _cached_sequences(
             video_id=record.video_id,
             video_path=record.video_path,
             video_sha256=record.video_sha256,
+            annotation_sha256=getattr(record, "annotation_sha256", None),
+            clip_start_frame=getattr(record, "clip_start_frame", None),
+            clip_end_frame=getattr(record, "clip_end_frame", None),
         )
         for record in records
     )
@@ -1210,6 +1213,9 @@ def data_pose_inputs(
                     video_id=record.video_id,
                     video_path=portable_path,
                     video_sha256=record.video_sha256,
+                    annotation_sha256=record.annotation_sha256,
+                    clip_start_frame=record.clip_start_frame,
+                    clip_end_frame=record.clip_end_frame,
                 )
             )
         pose_inputs = PoseInputManifest(
@@ -1521,7 +1527,11 @@ def pose_extract(
     """Extract pose caches for a manifest, loading MediaPipe only on demand."""
 
     try:
-        from pams.pose import PoseExtractorConfig, extract_many_with_failures
+        from pams.pose import (
+            OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
+            PoseExtractorConfig,
+            extract_many_with_failures,
+        )
 
         config = load_config(config_path)
         if overwrite and skip_existing:
@@ -1586,12 +1596,22 @@ def pose_extract(
             records = records[:limit]
         if not records:
             raise ValueError(f"no records selected by split {split!r}")
+        official_segment_inputs = getattr(records[0], "annotation_sha256", None) is not None
+        official_segment_config = (
+            config.pose.preprocessing_revision == OFFICIAL_SEGMENT_PREPROCESSING_REVISION
+        )
+        if official_segment_inputs != official_segment_config:
+            raise ValueError(
+                "pose preprocessing revision and manifest timeline protocol disagree: "
+                "official-segment-full-timeline requires annotation-bound clip records, "
+                "and clip records require that explicit revision"
+            )
         root = (
             video_root.resolve(strict=True)
             if label_free_manifest and video_root is not None
             else manifest_path.resolve().parent
         )
-        video_rows: list[tuple[str, Path, str | None]] = []
+        video_rows: list[tuple[str, Path, str | None, str | None, int | None, int | None]] = []
         for record in records:
             locator = Path(record.video_path)
             resolved_video = (locator if locator.is_absolute() else root / locator).resolve(
@@ -1604,7 +1624,16 @@ def pose_extract(
                     raise ValueError(
                         f"pose-input locator for {record.video_id!r} escapes --video-root"
                     ) from None
-            video_rows.append((record.video_id, resolved_video, record.video_sha256))
+            video_rows.append(
+                (
+                    record.video_id,
+                    resolved_video,
+                    record.video_sha256,
+                    getattr(record, "annotation_sha256", None),
+                    getattr(record, "clip_start_frame", None),
+                    getattr(record, "clip_end_frame", None),
+                )
+            )
         videos = tuple(video_rows)
         summaries, failures = extract_many_with_failures(
             videos,
@@ -1619,6 +1648,7 @@ def pose_extract(
                 min_detection_confidence=config.pose.min_detection_confidence,
                 min_tracking_confidence=config.pose.min_tracking_confidence,
                 crop_to_detected_span=config.pose.crop_to_detected_span,
+                incomplete_clip_policy=config.pose.incomplete_clip_policy,
             ),
             overwrite=overwrite,
             skip_existing=skip_existing,
@@ -1644,6 +1674,9 @@ def pose_extract(
                     video_id=record.video_id,
                     video_path=str(record.video_path),
                     video_sha256=record.video_sha256,
+                    annotation_sha256=getattr(record, "annotation_sha256", None),
+                    clip_start_frame=getattr(record, "clip_start_frame", None),
+                    clip_end_frame=getattr(record, "clip_end_frame", None),
                 )
                 for record in records
             )
@@ -1668,6 +1701,7 @@ def pose_extract(
                 "commitment_fingerprint": commitment_fingerprint,
                 "identity_sha256": selected_identity_sha256,
                 "pose_fingerprint": config.pose_fingerprint,
+                "incomplete_clip_policy": config.pose.incomplete_clip_policy,
                 "successful_cache_snapshot": successful_cache_snapshot,
                 "selected": len(records),
                 "completed": len(summaries),
@@ -1687,6 +1721,7 @@ def pose_extract(
         {
             "pose_model": config.pose.model_id,
             "pose_fingerprint": config.pose_fingerprint,
+            "incomplete_clip_policy": config.pose.incomplete_clip_policy,
             "label_free_manifest": label_free_manifest,
             "input_manifest_fingerprint": input_manifest_fingerprint,
             "identity_sha256": selected_identity_sha256,

@@ -1,0 +1,73 @@
+# V8-specific official-segment run paired with pams_official_segment_v1.yaml.
+# It inherits v8's inferred temporal-convolution/pre-PE Period Head and is not
+# the paper-literal baseline. The explicit compatibility policy is used only
+# when an annotation end exceeds the decodable video tail. Missing suffix
+# frames are retained as invalid-mask
+# frames and the exact shortfall is written into cache provenance.
+schema_version: 1
+protocol: ucfrep_526
+seed: 2026
+data:
+  frames: 256
+  keypoints: 33
+  coordinates: 3
+  normalization: per_frame_minmax
+  missing_value: 0.0
+pose:
+  preprocessing_revision: official-segment-full-timeline-v1
+  model_id: mediapipe-pose-0.10.14
+  model_complexity: 1
+  smooth_landmarks: true
+  min_detection_confidence: 0.5
+  min_tracking_confidence: 0.5
+  crop_to_detected_span: false
+  incomplete_clip_policy: pad_invalid_tail
+model:
+  input_dim: 99
+  model_dim: 512
+  embedding_dim: 512
+  layers: 4
+  heads: 16
+  feedforward_dim: 2048
+  dropout: 0.1
+  norm_first: false
+  period_head_hidden_dim: 128
+period:
+  minimum: 4
+  maximum: 128
+  pose_energy_epochs: 10
+  post_warmup_source: projected_pose_velocity_vector_acf
+loss:
+  scales: [0.5, 1.0, 1.5]
+  temperature: 0.1
+  kmeans_clusters: 8
+  kmeans_refresh_epochs: 5
+  exclude_other_scale_positives_from_denominator: false
+training:
+  epochs: 150
+  effective_batch_size: 32
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  scheduler_factor: 0.5
+  scheduler_patience: 8
+  minimum_learning_rate: 0.000001
+sshead:
+  epochs: 30
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  architecture: temporal_conv
+  input_source: projected_pose_pre_pe
+  period_confidence_mode: normalized_weight
+  cycle_weight: 1.0
+  spectral_weight: 1.0
+  variance_weight: 0.1
+  smoothness_weight: 0.01
+consensus:
+  expert_mode: multi
+  sigma_multipliers: [0.05, 0.12, 0.15]
+  distance_multipliers: [0.5, 0.8, 1.2]
+  short_window_multiplier: 0.5
+  long_window_multiplier: 2.0
+  height_factor: 0.6
+  prominence_factor: 0.25
+  long_window_weight: 0.6

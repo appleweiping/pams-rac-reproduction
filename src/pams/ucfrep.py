@@ -10,6 +10,7 @@ manifest used by this project.
 from __future__ import annotations
 
 import io
+import hashlib
 import os
 import re
 import tempfile
@@ -81,8 +82,30 @@ def download_official_annotations(
     return target
 
 
-def _annotation_count(payload: bytes) -> int:
-    """Read the original MATLAB label and return ``len(boundaries) - 1``."""
+def _matlab_positive_integer(label: object, field: str) -> int:
+    if not hasattr(label, field):
+        raise ValueError(f"UCFRep label is missing {field}")
+    values = np.asarray(getattr(label, field)).reshape(-1)
+    if values.size != 1:
+        raise ValueError(f"UCFRep label {field} must contain exactly one value")
+    value = values[0]
+    if isinstance(value, bool | np.bool_) or not np.isfinite(value):
+        raise ValueError(f"UCFRep label {field} must be a finite positive integer")
+    integer = int(value)
+    if integer != value or integer < 1:
+        raise ValueError(f"UCFRep label {field} must be a positive integer")
+    return integer
+
+
+def _annotation_metadata(payload: bytes) -> tuple[int, int, int, str]:
+    """Return count and the audited 0-based half-open official input clip.
+
+    The MATLAB annotation stores ``start_frame`` and ``end_frame`` as
+    1-based inclusive indices. They are converted once at this privileged
+    boundary to ``[start - 1, end)``. Cycle boundaries are used only to
+    recover the evaluator count and are never copied into pose-input
+    sidecars.
+    """
 
     annotation = loadmat(
         io.BytesIO(payload),
@@ -98,7 +121,22 @@ def _annotation_count(payload: bytes) -> int:
     count = int(boundaries.size - 1)
     if count <= 0:
         raise ValueError("UCFRep annotation must contain at least one cycle")
-    return count
+    start_inclusive = _matlab_positive_integer(label, "start_frame")
+    end_inclusive = _matlab_positive_integer(label, "end_frame")
+    if end_inclusive < start_inclusive:
+        raise ValueError("UCFRep label end_frame must not precede start_frame")
+    return (
+        count,
+        start_inclusive - 1,
+        end_inclusive,
+        hashlib.sha256(payload).hexdigest(),
+    )
+
+
+def _annotation_count(payload: bytes) -> int:
+    """Read the original MATLAB label and return ``len(boundaries) - 1``."""
+
+    return _annotation_metadata(payload)[0]
 
 
 def _video_path_candidates(
@@ -224,13 +262,17 @@ def _record_from_annotation(
     video_digest = (
         sha256_file(video_path) if hash_existing_videos and video_path.is_file() else None
     )
+    count, clip_start, clip_end, annotation_digest = _annotation_metadata(payload)
     return UCFRepRecord(
         video_id=video_id,
         video_path=video_path.as_posix(),
         split=split,
         action=action,
-        count=_annotation_count(payload),
+        count=count,
         video_sha256=video_digest,
+        annotation_sha256=annotation_digest,
+        clip_start_frame=clip_start,
+        clip_end_frame=clip_end,
     )
 
 

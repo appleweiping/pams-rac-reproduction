@@ -4,7 +4,15 @@ import pytest
 import torch
 
 import pams.losses as losses_module
-from pams.losses import PAMSTCCLoss, SSHeadLoss, periodic_correspondence_indices
+from pams.losses import (
+    PAMSTCCLoss,
+    ReferenceRelativeSSHeadLoss,
+    SSHeadLoss,
+    _reference_anchor_index,
+    build_reference_relative_signal,
+    masked_zscore,
+    periodic_correspondence_indices,
+)
 
 
 def _periodic_embeddings(batch: int = 2, time: int = 24, period: int = 6) -> torch.Tensor:
@@ -573,6 +581,259 @@ def test_sshead_can_normalize_period_losses_by_continuous_confidence() -> None:
     )
     assert torch.allclose(equal_weighted.cycle, equal_unweighted.cycle)
     assert torch.allclose(equal_weighted.spectral, equal_unweighted.spectral)
+
+
+def _circular_projected_pose(*, batch: int = 1, time: int = 32, period: int = 8) -> torch.Tensor:
+    phase = 2.0 * math.pi * torch.arange(time, dtype=torch.float32) / period
+    sample = torch.stack(
+        (
+            torch.cos(phase),
+            torch.sin(phase),
+            0.4 * torch.cos(phase + 0.3),
+        ),
+        dim=-1,
+    )
+    return sample.unsqueeze(0).repeat(batch, 1, 1)
+
+
+def test_masked_zscore_is_continuous_at_a_constant_stream() -> None:
+    time = 32
+    stream = torch.zeros((1, time), requires_grad=True)
+    valid = torch.ones((1, time), dtype=torch.bool)
+    target = torch.sin(2.0 * math.pi * torch.arange(time) / 8.0).unsqueeze(0)
+
+    standardized = masked_zscore(stream, valid)
+    loss = (standardized - target).square().mean()
+    gradient = torch.autograd.grad(loss, stream)[0]
+
+    assert torch.equal(standardized.detach(), torch.zeros_like(standardized))
+    assert torch.isfinite(gradient).all()
+    assert float(gradient.norm()) > 0.0
+
+
+def test_reference_relative_signal_is_affine_invariant_and_peaks_at_reference() -> None:
+    projected = _circular_projected_pose()
+    valid = torch.ones((1, 32), dtype=torch.bool)
+    periods = torch.tensor([8.0])
+    confidence = torch.ones(1)
+
+    base = build_reference_relative_signal(
+        projected,
+        periods,
+        valid,
+        period_confidence=confidence,
+    )
+    transformed = build_reference_relative_signal(
+        3.5 * projected - 2.25,
+        periods,
+        valid,
+        period_confidence=confidence,
+    )
+
+    assert base.available.tolist() == [True]
+    assert transformed.available.tolist() == [True]
+    assert torch.allclose(base.head_inputs, transformed.head_inputs, atol=3e-3, rtol=3e-3)
+    assert torch.allclose(base.teacher, transformed.teacher, atol=3e-3, rtol=3e-3)
+    anchor = _reference_anchor_index(projected[0], valid[0], period=8)
+    same_phase = torch.arange(32).remainder(8) == anchor % 8
+    assert torch.all(base.teacher[0, same_phase] >= base.teacher[0, ~same_phase].max())
+    assert torch.allclose(
+        transformed.prototypes[0],
+        3.5 * base.prototypes[0] - 2.25,
+    )
+
+
+def test_reference_anchor_rejects_an_early_stationary_phase() -> None:
+    projected = _circular_projected_pose()[0]
+    projected[[0, 4, 8]] = projected[0]
+    valid = torch.ones(32, dtype=torch.bool)
+
+    anchor = _reference_anchor_index(projected, valid, period=8)
+
+    assert anchor != 0
+    full_neighbor = anchor + 8 if anchor + 8 < len(projected) else anchor - 8
+    half_neighbor = anchor + 4 if anchor + 4 < len(projected) else anchor - 4
+    full_distance = (projected[anchor] - projected[full_neighbor]).square().mean()
+    half_distance = (projected[anchor] - projected[half_neighbor]).square().mean()
+    assert half_distance > full_distance
+
+
+def test_reference_relative_signal_ignores_mask_gaps_and_zero_confidence() -> None:
+    projected = _circular_projected_pose(batch=2)
+    valid = torch.ones((2, 32), dtype=torch.bool)
+    valid[:, [3, 11, 19]] = False
+    corrupted = projected.clone()
+    corrupted[~valid] = 1_000_000.0
+    periods = torch.tensor([8.0, 8.0])
+    confidence = torch.tensor([1.0, 0.0])
+
+    clean = build_reference_relative_signal(
+        projected,
+        periods,
+        valid,
+        period_confidence=confidence,
+    )
+    polluted = build_reference_relative_signal(
+        corrupted,
+        periods,
+        valid,
+        period_confidence=confidence,
+    )
+
+    assert clean.available.tolist() == [True, False]
+    assert torch.allclose(clean.head_inputs[0], polluted.head_inputs[0])
+    assert torch.allclose(clean.teacher[0], polluted.teacher[0])
+    assert torch.count_nonzero(polluted.head_inputs[0, ~valid[0]]) == 0
+    assert torch.count_nonzero(polluted.teacher[0, ~valid[0]]) == 0
+    assert torch.count_nonzero(polluted.head_inputs[1]) == 0
+    assert torch.count_nonzero(polluted.teacher[1]) == 0
+    assert torch.count_nonzero(polluted.prototypes[1]) == 0
+
+
+def test_reference_regression_has_nonzero_gradient_at_constant_output() -> None:
+    time = 64
+    phase = 2.0 * math.pi * torch.arange(time, dtype=torch.float32) / 8.0
+    teacher = torch.sin(phase).unsqueeze(0)
+    stream = torch.zeros((1, time), requires_grad=True)
+    objective = ReferenceRelativeSSHeadLoss(
+        fundamental_weight=0.0,
+        lag_weight=0.0,
+        low_frequency_weight=0.0,
+        smoothness_weight=0.0,
+    )
+
+    details = objective.compute(
+        stream,
+        teacher,
+        torch.tensor([8.0]),
+        torch.ones((1, time), dtype=torch.bool),
+        period_confidence=torch.ones(1),
+        teacher_available=torch.ones(1, dtype=torch.bool),
+    )
+    gradient = torch.autograd.grad(details.total, stream)[0]
+
+    assert details.reference > 0
+    assert torch.isfinite(gradient).all()
+    assert float(gradient.norm()) > 0.0
+    assert int(torch.count_nonzero(gradient)) == time
+
+
+def test_reference_objective_prefers_target_fundamental_over_low_frequency() -> None:
+    time = 64
+    indices = torch.arange(time, dtype=torch.float32)
+    teacher = torch.sin(2.0 * math.pi * indices / 8.0).unsqueeze(0)
+    target = teacher.clone()
+    low_frequency = torch.sin(2.0 * math.pi * indices / 32.0).unsqueeze(0)
+    objective = ReferenceRelativeSSHeadLoss()
+    arguments = {
+        "reference_teacher": teacher,
+        "periods": torch.tensor([8.0]),
+        "valid_mask": torch.ones((1, time), dtype=torch.bool),
+        "period_confidence": torch.ones(1),
+        "teacher_available": torch.ones(1, dtype=torch.bool),
+    }
+
+    target_details = objective.compute(target, **arguments)
+    low_details = objective.compute(low_frequency, **arguments)
+
+    assert target_details.fundamental < low_details.fundamental
+    assert target_details.low_frequency < low_details.low_frequency
+    assert target_details.lag < low_details.lag
+    assert target_details.total < low_details.total
+
+
+def test_reference_objective_is_output_scale_and_offset_invariant() -> None:
+    time = 64
+    indices = torch.arange(time, dtype=torch.float32)
+    teacher = torch.sin(2.0 * math.pi * indices / 8.0).unsqueeze(0)
+    stream = (
+        teacher + 0.2 * torch.sin(4.0 * math.pi * indices / 8.0).unsqueeze(0)
+    )
+    objective = ReferenceRelativeSSHeadLoss()
+    arguments = {
+        "reference_teacher": teacher,
+        "periods": torch.tensor([8.0]),
+        "valid_mask": torch.ones((1, time), dtype=torch.bool),
+        "period_confidence": torch.ones(1),
+        "teacher_available": torch.ones(1, dtype=torch.bool),
+    }
+
+    base = objective.compute(stream, **arguments)
+    transformed = objective.compute(4.0 * stream - 7.0, **arguments)
+
+    for field in (
+        "total",
+        "reference",
+        "fundamental",
+        "lag",
+        "low_frequency",
+        "smoothness",
+    ):
+        assert torch.allclose(
+            getattr(base, field),
+            getattr(transformed, field),
+            atol=2e-4,
+            rtol=2e-4,
+        )
+
+
+def test_reference_objective_zero_confidence_disables_every_component() -> None:
+    stream = torch.randn(1, 32, requires_grad=True)
+    teacher = torch.randn(1, 32)
+    details = ReferenceRelativeSSHeadLoss().compute(
+        stream,
+        teacher,
+        torch.tensor([8.0]),
+        torch.ones((1, 32), dtype=torch.bool),
+        period_confidence=torch.zeros(1),
+        teacher_available=torch.ones(1, dtype=torch.bool),
+    )
+
+    assert details.total == 0
+    assert details.reference == 0
+    assert details.fundamental == 0
+    assert details.lag == 0
+    assert details.low_frequency == 0
+    assert details.smoothness == 0
+    details.total.backward()
+    assert torch.equal(stream.grad, torch.zeros_like(stream.grad))
+
+
+def test_reference_objective_ignores_values_inside_mask_gaps() -> None:
+    time = 64
+    indices = torch.arange(time, dtype=torch.float32)
+    stream = torch.sin(2.0 * math.pi * indices / 8.0).unsqueeze(0)
+    teacher = stream.clone()
+    valid = torch.ones((1, time), dtype=torch.bool)
+    valid[0, [5, 6, 21, 37]] = False
+    polluted_stream = stream.clone()
+    polluted_teacher = teacher.clone()
+    polluted_stream[~valid] = 1_000_000.0
+    polluted_teacher[~valid] = -1_000_000.0
+    objective = ReferenceRelativeSSHeadLoss()
+    arguments = {
+        "periods": torch.tensor([8.0]),
+        "valid_mask": valid,
+        "period_confidence": torch.ones(1),
+        "teacher_available": torch.ones(1, dtype=torch.bool),
+    }
+
+    clean = objective.compute(stream, teacher, **arguments)
+    polluted = objective.compute(
+        polluted_stream,
+        polluted_teacher,
+        **arguments,
+    )
+
+    for field in (
+        "total",
+        "reference",
+        "fundamental",
+        "lag",
+        "low_frequency",
+        "smoothness",
+    ):
+        assert torch.equal(getattr(clean, field), getattr(polluted, field))
 
 
 @torch.no_grad()

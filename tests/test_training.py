@@ -92,6 +92,12 @@ def _with_pre_pe_head(config: PAMSConfig) -> PAMSConfig:
     return PAMSConfig.model_validate(payload)
 
 
+def _with_reference_relative_head(config: PAMSConfig) -> PAMSConfig:
+    payload = config.model_dump()
+    payload["sshead"]["input_source"] = "projected_pose_reference_relative"
+    return PAMSConfig.model_validate(payload)
+
+
 def _with_temporal_head(config: PAMSConfig) -> PAMSConfig:
     payload = config.model_dump()
     payload["sshead"]["architecture"] = "temporal_conv"
@@ -890,6 +896,81 @@ def test_sshead_pre_pe_source_routes_training_and_prediction_consistently(
     assert result.period_frames == pytest.approx(4.0)
 
 
+def test_reference_relative_head_routes_training_and_prediction_consistently(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    config = _with_reference_relative_head(
+        _with_fixed_period(
+            _tiny_config(encoder_epochs=1, head_epochs=1),
+            frames=4,
+        )
+    )
+    model = build_pams_model(config)
+    reference_inputs: list[torch.Tensor] = []
+    real_builder = training_module.build_reference_relative_signal
+
+    def recording_builder(*args: Any, **kwargs: Any) -> Any:
+        result = real_builder(*args, **kwargs)
+        reference_inputs.append(result.head_inputs.detach().cpu().clone())
+        return result
+
+    def forbidden_legacy_forward(*args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        raise AssertionError("reference-relative prediction used a legacy head source")
+
+    monkeypatch.setattr(
+        training_module,
+        "build_reference_relative_signal",
+        recording_builder,
+    )
+    monkeypatch.setattr(
+        model,
+        "forward_with_head_source",
+        forbidden_legacy_forward,
+    )
+    items = (_sequence("a"), _sequence("b", phase=0.7))
+    trained = train_sshead(
+        items,
+        config,
+        model=model,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=tmp_path / "reference-relative.pt",
+        progress_path=tmp_path / "reference-relative.jsonl",
+    )
+
+    assert len(reference_inputs) == 1
+    assert torch.count_nonzero(reference_inputs[0]) > 0
+    statistics = trained.history[0]
+    assert isinstance(
+        statistics,
+        training_module.ReferenceRelativeSSHeadEpochStats,
+    )
+    assert statistics.reference > 0.0
+    assert statistics.fundamental >= 0.0
+    assert statistics.lag >= 0.0
+    assert statistics.low_frequency >= 0.0
+    progress = json.loads(
+        (tmp_path / "reference-relative.jsonl").read_text(encoding="utf-8")
+    )
+    assert progress["stats"]["reference"] == statistics.reference
+    assert progress["stats"]["fundamental"] == statistics.fundamental
+    assert progress["stats"]["lag"] == statistics.lag
+    assert progress["stats"]["low_frequency"] == statistics.low_frequency
+
+    result = predict_sequence(trained.model, items[0], config, device="cpu")
+    assert len(reference_inputs) == 2
+    assert any(
+        torch.allclose(reference_inputs[-1][0], row)
+        for row in reference_inputs[0]
+    )
+    assert result.count >= 0
+    assert result.period_stream.shape == (16,)
+
+
 def test_temporal_sshead_routes_the_same_valid_mask_through_training_and_prediction(
     tmp_path: Path,
 ) -> None:
@@ -1266,6 +1347,21 @@ def test_sshead_keeps_encoder_frozen_and_prediction_is_well_formed(
     assert [row["epoch"] for row in rows] == [1, 2]
     assert all(row["stats"]["period_confidence_mean"] == 0.0 for row in rows)
     assert all(row["stats"]["period_valid_fraction"] == 0.0 for row in rows)
+    assert all(
+        field not in row["stats"]
+        for row in rows
+        for field in ("reference", "fundamental", "lag", "low_frequency")
+    )
+    checkpoint_payload = torch.load(
+        checkpoint,
+        map_location="cpu",
+        weights_only=False,
+    )
+    assert all(
+        field not in epoch
+        for epoch in checkpoint_payload["history"]
+        for field in ("reference", "fundamental", "lag", "low_frequency")
+    )
     assert trained.history[0] == partial.history[0]
     monitor_fields = {
         "stream_std_min",

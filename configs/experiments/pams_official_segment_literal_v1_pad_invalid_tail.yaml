@@ -1,0 +1,75 @@
+# PAPER-LITERAL DATA-PROTOCOL REPAIR (seed 2026 first).
+#
+# Relative to configs/pams.yaml, this changes only the UCFRep temporal input
+# protocol: the annotation-defined action segment is preserved as a complete
+# timeline, and the one audited media shortfall is explicit invalid-tail
+# padding.  The disclosed pointwise 512->128->1 head path and all training,
+# period, and consensus settings remain unchanged.  The Period Head objective
+# is still an inferred closure because the paper does not publish one.
+schema_version: 1
+protocol: ucfrep_526
+seed: 2026
+data:
+  frames: 256
+  keypoints: 33
+  coordinates: 3
+  normalization: per_frame_minmax
+  missing_value: 0.0
+pose:
+  preprocessing_revision: official-segment-full-timeline-v1
+  model_id: mediapipe-pose-0.10.14
+  model_complexity: 1
+  smooth_landmarks: true
+  min_detection_confidence: 0.5
+  min_tracking_confidence: 0.5
+  crop_to_detected_span: false
+  incomplete_clip_policy: pad_invalid_tail
+model:
+  input_dim: 99
+  model_dim: 512
+  embedding_dim: 512
+  layers: 4
+  heads: 16
+  feedforward_dim: 2048
+  dropout: 0.1
+  norm_first: false
+  period_head_hidden_dim: 128
+period:
+  minimum: 4
+  maximum: 128
+  pose_energy_epochs: 10
+  post_warmup_source: embedding_velocity_coordinate
+loss:
+  scales: [0.5, 1.0, 1.5]
+  temperature: 0.1
+  kmeans_clusters: 8
+  kmeans_refresh_epochs: 5
+  exclude_other_scale_positives_from_denominator: false
+training:
+  epochs: 150
+  effective_batch_size: 32
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  scheduler_factor: 0.5
+  scheduler_patience: 8
+  minimum_learning_rate: 0.000001
+sshead:
+  epochs: 30
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  architecture: pointwise_mlp
+  input_source: encoder_embedding
+  period_confidence_mode: nonzero_gate
+  cycle_weight: 1.0
+  spectral_weight: 1.0
+  variance_weight: 0.1
+  smoothness_weight: 0.01
+consensus:
+  expert_mode: multi
+  sigma_multipliers: [0.05, 0.12, 0.15]
+  distance_multipliers: [0.5, 0.8, 1.2]
+  short_window_multiplier: 0.5
+  long_window_multiplier: 2.0
+  height_factor: 0.6
+  prominence_factor: 0.25
+  long_window_weight: 0.6

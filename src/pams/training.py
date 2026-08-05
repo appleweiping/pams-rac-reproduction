@@ -33,7 +33,13 @@ from pams.augmentation import (
 )
 from pams.config import PAMSConfig
 from pams.consensus import MultiExpertCounter
-from pams.losses import PAMSTCCLoss, SSHeadLoss
+from pams.losses import (
+    PAMSTCCLoss,
+    ReferenceRelativeSSHeadLoss,
+    SSHeadLoss,
+    build_reference_relative_signal,
+    masked_zscore,
+)
 from pams.model import PAMSEncoder, PAMSModel, PeriodHead, TemporalPeriodHead
 from pams.period import (
     estimate_period_batch_direct_fft,
@@ -351,6 +357,12 @@ def _post_warmup_period_history_source(config: PAMSConfig) -> PeriodHistorySourc
     raise AssertionError(f"unreachable validated period source: {source!r}")
 
 
+def _uses_reference_relative_sshead(config: PAMSConfig) -> bool:
+    """Return whether the opt-in inferred reference-relative route is active."""
+
+    return config.sshead.input_source == "projected_pose_reference_relative"
+
+
 def _encoder_period_history_source(
     config: PAMSConfig,
     *,
@@ -567,6 +579,16 @@ class SSHeadEpochStats:
     zero_grad_steps: int
     learning_rate: float
     optimizer_steps: int
+
+
+@dataclass(frozen=True, slots=True)
+class ReferenceRelativeSSHeadEpochStats(SSHeadEpochStats):
+    """Extra components emitted only by the opt-in inferred objective."""
+
+    reference: float
+    fundamental: float
+    lag: float
+    low_frequency: float
 
 
 def _validate_encoder_period_history(
@@ -1577,7 +1599,12 @@ def validate_terminal_checkpoint(
     raw_history = payload["history"]
     if not isinstance(raw_history, list) or len(raw_history) != completed_epochs:
         raise ValueError("terminal checkpoint history length does not match completed_epochs")
-    statistics_type = EncoderEpochStats if expected_stage == "encoder" else SSHeadEpochStats
+    if expected_stage == "encoder":
+        statistics_type = EncoderEpochStats
+    elif _uses_reference_relative_sshead(config):
+        statistics_type = ReferenceRelativeSSHeadEpochStats
+    else:
+        statistics_type = SSHeadEpochStats
     integer_fields = (
         {
             "epoch",
@@ -2244,15 +2271,30 @@ def train_sshead(
         lr=config.sshead.learning_rate,
         weight_decay=config.sshead.weight_decay,
     )
-    objective = SSHeadLoss(
-        cycle_weight=config.sshead.cycle_weight,
-        spectral_weight=config.sshead.spectral_weight,
-        variance_weight=config.sshead.variance_weight,
-        smoothness_weight=config.sshead.smoothness_weight,
-        confidence_weighted_period_losses=(
-            config.sshead.period_confidence_mode == "normalized_weight"
-        ),
-    )
+    if _uses_reference_relative_sshead(config):
+        # The opt-in objective reinterprets the four historical scalar weights
+        # as lag, fundamental, low-frequency, and smoothness weights.  The
+        # identifiable pose-reference regression has fixed unit weight.
+        objective: SSHeadLoss | ReferenceRelativeSSHeadLoss = ReferenceRelativeSSHeadLoss(
+            reference_weight=1.0,
+            fundamental_weight=config.sshead.spectral_weight,
+            lag_weight=config.sshead.cycle_weight,
+            low_frequency_weight=config.sshead.variance_weight,
+            smoothness_weight=config.sshead.smoothness_weight,
+            confidence_weighted_losses=(
+                config.sshead.period_confidence_mode == "normalized_weight"
+            ),
+        )
+    else:
+        objective = SSHeadLoss(
+            cycle_weight=config.sshead.cycle_weight,
+            spectral_weight=config.sshead.spectral_weight,
+            variance_weight=config.sshead.variance_weight,
+            smoothness_weight=config.sshead.smoothness_weight,
+            confidence_weighted_period_losses=(
+                config.sshead.period_confidence_mode == "normalized_weight"
+            ),
+        )
     history: list[SSHeadEpochStats] = []
     completed_epochs = 0
 
@@ -2268,7 +2310,12 @@ def train_sshead(
             expected_provenance=provenance,
         )
         completed_epochs = int(payload["completed_epochs"])
-        history = [SSHeadEpochStats(**row) for row in payload["history"]]
+        statistics_type = (
+            ReferenceRelativeSSHeadEpochStats
+            if _uses_reference_relative_sshead(config)
+            else SSHeadEpochStats
+        )
+        history = [statistics_type(**row) for row in payload["history"]]
         if progress_destination is not None:
             _validate_and_reconcile_progress(
                 progress_destination,
@@ -2299,6 +2346,10 @@ def train_sshead(
             "spectral": 0.0,
             "variance": 0.0,
             "smoothness": 0.0,
+            "reference": 0.0,
+            "fundamental": 0.0,
+            "lag": 0.0,
+            "low_frequency": 0.0,
         }
         optimizer_steps = 0
         batch_count = len(loader)
@@ -2316,7 +2367,11 @@ def train_sshead(
             batch = raw_batch.to(resolved_device)
             with torch.no_grad():
                 needs_projected_pose = (
-                    config.sshead.input_source == "projected_pose_pre_pe"
+                    config.sshead.input_source
+                    in {
+                        "projected_pose_pre_pe",
+                        "projected_pose_reference_relative",
+                    }
                     or (
                         config.period.training_mode == "adaptive"
                         and config.period.post_warmup_source
@@ -2341,6 +2396,17 @@ def train_sshead(
                     projected_pose=projected_pose,
                     valid_mask=batch.valid_mask,
                 )
+                reference_signal = (
+                    build_reference_relative_signal(
+                        projected_pose,
+                        periods,
+                        batch.valid_mask,
+                        period_confidence=period_confidences,
+                    )
+                    if _uses_reference_relative_sshead(config)
+                    and projected_pose is not None
+                    else None
+                )
             if config.sshead.input_source == "encoder_embedding":
                 head_inputs = embeddings
             elif config.sshead.input_source == "projected_pose_pre_pe":
@@ -2349,6 +2415,12 @@ def train_sshead(
                         "projected-pose SSHead input was not materialized"
                     )
                 head_inputs = projected_pose
+            elif config.sshead.input_source == "projected_pose_reference_relative":
+                if reference_signal is None:
+                    raise RuntimeError(
+                        "reference-relative SSHead input was not materialized"
+                    )
+                head_inputs = reference_signal.head_inputs
             else:
                 raise AssertionError(
                     "unreachable validated SSHead input source: "
@@ -2371,12 +2443,26 @@ def train_sshead(
             )
             batch_std_values = [float(value) for value in batch_stream_stds.detach().cpu()]
             stream_standard_deviations.extend(batch_std_values)
-            details = objective.compute(
-                stream,
-                periods,
-                batch.valid_mask,
-                period_confidence=period_confidences,
-            )
+            if isinstance(objective, ReferenceRelativeSSHeadLoss):
+                if reference_signal is None:
+                    raise RuntimeError(
+                        "reference-relative SSHead teacher was not materialized"
+                    )
+                details = objective.compute(
+                    stream,
+                    reference_signal.teacher,
+                    periods,
+                    batch.valid_mask,
+                    period_confidence=period_confidences,
+                    teacher_available=reference_signal.available,
+                )
+            else:
+                details = objective.compute(
+                    stream,
+                    periods,
+                    batch.valid_mask,
+                    period_confidence=period_confidences,
+                )
             for name in sums:
                 _require_finite_sshead_tensor(
                     getattr(details, name),
@@ -2431,29 +2517,42 @@ def train_sshead(
 
         completed_epochs = epoch_index + 1
         stream_std_array = np.asarray(stream_standard_deviations, dtype=np.float64)
-        history.append(
-            SSHeadEpochStats(
-                epoch=completed_epochs,
-                total=sums["total"] / len(items),
-                cycle=sums["cycle"] / len(items),
-                spectral=sums["spectral"] / len(items),
-                variance=sums["variance"] / len(items),
-                smoothness=sums["smoothness"] / len(items),
-                period_confidence_mean=confidence_sum / len(items),
-                period_valid_fraction=period_valid_samples / len(items),
-                stream_std_min=float(np.min(stream_std_array)),
-                stream_std_p10=float(np.percentile(stream_std_array, 10.0)),
-                stream_std_median=float(np.median(stream_std_array)),
-                stream_std_mean=float(np.mean(stream_std_array)),
-                collapsed_fraction_1e6=float(np.mean(stream_std_array <= 1e-6)),
-                near_collapsed_fraction_1e3=float(np.mean(stream_std_array <= 1e-3)),
-                head_grad_rms_max=head_grad_rms_max,
-                head_grad_to_param_ratio_max=head_grad_to_param_ratio_max,
-                zero_grad_steps=zero_grad_steps,
-                learning_rate=float(optimizer.param_groups[0]["lr"]),
-                optimizer_steps=optimizer_steps,
+        statistics_arguments: dict[str, Any] = {
+            "epoch": completed_epochs,
+            "total": sums["total"] / len(items),
+            "cycle": sums["cycle"] / len(items),
+            "spectral": sums["spectral"] / len(items),
+            "variance": sums["variance"] / len(items),
+            "smoothness": sums["smoothness"] / len(items),
+            "period_confidence_mean": confidence_sum / len(items),
+            "period_valid_fraction": period_valid_samples / len(items),
+            "stream_std_min": float(np.min(stream_std_array)),
+            "stream_std_p10": float(np.percentile(stream_std_array, 10.0)),
+            "stream_std_median": float(np.median(stream_std_array)),
+            "stream_std_mean": float(np.mean(stream_std_array)),
+            "collapsed_fraction_1e6": float(np.mean(stream_std_array <= 1e-6)),
+            "near_collapsed_fraction_1e3": float(
+                np.mean(stream_std_array <= 1e-3)
+            ),
+            "head_grad_rms_max": head_grad_rms_max,
+            "head_grad_to_param_ratio_max": head_grad_to_param_ratio_max,
+            "zero_grad_steps": zero_grad_steps,
+            "learning_rate": float(optimizer.param_groups[0]["lr"]),
+            "optimizer_steps": optimizer_steps,
+        }
+        if _uses_reference_relative_sshead(config):
+            statistics_arguments.update(
+                {
+                    "reference": sums["reference"] / len(items),
+                    "fundamental": sums["fundamental"] / len(items),
+                    "lag": sums["lag"] / len(items),
+                    "low_frequency": sums["low_frequency"] / len(items),
+                }
             )
-        )
+            statistics = ReferenceRelativeSSHeadEpochStats(**statistics_arguments)
+        else:
+            statistics = SSHeadEpochStats(**statistics_arguments)
+        history.append(statistics)
         if destination is not None:
             _atomic_torch_save(
                 _checkpoint_payload(
@@ -2505,11 +2604,42 @@ def predict_sequence(
     model.eval()
     batch = collate_pose_sequences((sequence,)).to(resolved_device)
     with torch.inference_mode():
-        _, stream_batch = model.forward_with_head_source(
-            batch.poses,
-            batch.valid_mask,
-            head_input_source=config.sshead.input_source,
-        )
+        if _uses_reference_relative_sshead(config):
+            embeddings, projected_pose = model.encoder.forward_with_pre_pe(
+                batch.poses,
+                batch.valid_mask,
+            )
+            bootstrap_periods, bootstrap_confidences, _ = (
+                _estimate_post_warmup_periods(
+                    config=config,
+                    embeddings=embeddings,
+                    projected_pose=projected_pose,
+                    valid_mask=batch.valid_mask,
+                )
+            )
+            reference_signal = build_reference_relative_signal(
+                projected_pose,
+                bootstrap_periods,
+                batch.valid_mask,
+                period_confidence=bootstrap_confidences,
+            )
+            stream_batch = model.period_head(
+                reference_signal.head_inputs,
+                valid_mask=batch.valid_mask,
+            ).masked_fill(~batch.valid_mask, 0.0)
+            stream_batch = masked_zscore(
+                stream_batch,
+                batch.valid_mask & reference_signal.available.unsqueeze(1),
+            )
+        else:
+            _, stream_batch = model.forward_with_head_source(
+                batch.poses,
+                batch.valid_mask,
+                head_input_source=cast(
+                    Literal["encoder_embedding", "projected_pose_pre_pe"],
+                    config.sshead.input_source,
+                ),
+            )
         periods, period_confidences = estimate_period_batch_direct_fft(
             stream_batch,
             minimum=config.period.minimum,

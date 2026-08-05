@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import builtins
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -11,10 +12,12 @@ from pams.data import load_pose_cache
 from pams.pose import (
     DETECTED_SPAN_PREPROCESSING_REVISION,
     LONGEST_TRACK_PREPROCESSING_REVISION,
+    OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
     PoseDependencyError,
     PoseExtractorConfig,
     assemble_pose_sequence,
     extract_many_with_failures,
+    extract_pose_sequence,
     extract_pose_to_cache,
     preprocess_extracted_pose,
     select_dominant_pose,
@@ -118,6 +121,11 @@ def test_longest_track_revision_requires_crop_and_rejects_unknown_revision() -> 
         )
     with pytest.raises(ValueError, match="unsupported pose preprocessing"):
         PoseExtractorConfig(preprocessing_revision="future")
+    with pytest.raises(ValueError, match="requires crop_to_detected_span=false"):
+        PoseExtractorConfig(
+            preprocessing_revision=OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
+            crop_to_detected_span=True,
+        )
 
 
 def test_single_frame_longest_track_becomes_full_duration_invalid_cache() -> None:
@@ -164,6 +172,161 @@ def test_optional_dependency_error_names_install_extra(monkeypatch: pytest.Monke
     monkeypatch.setattr(builtins, "__import__", guarded_import)
     with pytest.raises(PoseDependencyError, match=r"\.\[pose\]"):
         pose._load_pose_dependencies()
+
+
+class _FakeCapture:
+    def __init__(self, frames: list[int]) -> None:
+        self.frames = frames
+        self.position = 0
+
+    def isOpened(self) -> bool:
+        return True
+
+    def get(self, field: int) -> float:
+        if field == _FakeCV2.CAP_PROP_FPS:
+            return 30.0
+        if field == _FakeCV2.CAP_PROP_POS_FRAMES:
+            return float(self.position)
+        return 0.0
+
+    def set(self, field: int, value: float) -> bool:
+        if field != _FakeCV2.CAP_PROP_POS_FRAMES:
+            return False
+        self.position = int(value)
+        return True
+
+    def read(self) -> tuple[bool, int | None]:
+        if self.position >= len(self.frames):
+            return False, None
+        frame = self.frames[self.position]
+        self.position += 1
+        return True, frame
+
+    def release(self) -> None:
+        return None
+
+
+class _FakeCV2:
+    CAP_PROP_POS_FRAMES = 1
+    CAP_PROP_FPS = 5
+    COLOR_BGR2RGB = 4
+
+    def __init__(self, frames: list[int]) -> None:
+        self.frames = frames
+
+    def VideoCapture(self, _path: str) -> _FakeCapture:  # noqa: N802
+        return _FakeCapture(self.frames)
+
+    @staticmethod
+    def cvtColor(frame: int, _conversion: int) -> int:  # noqa: N802
+        return frame
+
+
+class _FakeDetector:
+    def __enter__(self) -> _FakeDetector:
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        return None
+
+    @staticmethod
+    def process(frame: int) -> int:
+        return frame
+
+
+def _fake_pose_dependencies(frames: list[int]) -> tuple[_FakeCV2, SimpleNamespace]:
+    detector = _FakeDetector()
+    mediapipe = SimpleNamespace(
+        solutions=SimpleNamespace(
+            pose=SimpleNamespace(Pose=lambda **_kwargs: detector),
+        )
+    )
+    return _FakeCV2(frames), mediapipe
+
+
+def test_official_clip_decodes_only_range_and_preserves_missing_timeline(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import pose
+
+    video = tmp_path / "clip.avi"
+    video.write_bytes(b"fixture")
+    monkeypatch.setattr(pose, "_load_pose_dependencies", lambda: _fake_pose_dependencies(list(range(8))))
+    monkeypatch.setattr(
+        pose,
+        "_landmarks_from_result",
+        lambda result: None if result == 3 else _person(1.0),
+    )
+    config = PoseExtractorConfig(
+        target_frames=3,
+        preprocessing_revision=OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
+        crop_to_detected_span=False,
+    )
+
+    sequence, decoded, valid, selected = extract_pose_sequence(
+        video,
+        config=config,
+        clip_start_frame=2,
+        clip_end_frame=5,
+    )
+
+    assert (decoded, valid, selected) == (3, 2, 3)
+    np.testing.assert_array_equal(sequence.valid_mask, [True, False, True])
+
+
+def test_official_clip_shortfall_is_failure_by_default_and_opt_in_padding_is_audited(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import pose
+
+    video = tmp_path / "short.avi"
+    video.write_bytes(b"fixture")
+    monkeypatch.setattr(pose, "_load_pose_dependencies", lambda: _fake_pose_dependencies(list(range(5))))
+    monkeypatch.setattr(pose, "_landmarks_from_result", lambda _result: _person(1.0))
+    strict = PoseExtractorConfig(
+        target_frames=4,
+        preprocessing_revision=OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
+        crop_to_detected_span=False,
+    )
+
+    summaries, failures = extract_many_with_failures(
+        (("short", video, None, "a" * 64, 2, 6),),
+        cache_dir=tmp_path / "strict-cache",
+        pose_fingerprint="b" * 64,
+        extractor_config=strict,
+    )
+
+    assert summaries == ()
+    assert len(failures) == 1
+    assert "expected=4, decoded=3, missing_tail=1" in failures[0].message
+    assert (failures[0].clip_start_frame, failures[0].clip_end_frame) == (2, 6)
+
+    padded = PoseExtractorConfig(
+        target_frames=4,
+        preprocessing_revision=OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
+        crop_to_detected_span=False,
+        incomplete_clip_policy="pad_invalid_tail",
+    )
+    summary, metadata = extract_pose_to_cache(
+        video,
+        video_id="short",
+        cache_dir=tmp_path / "padded-cache",
+        pose_fingerprint="c" * 64,
+        annotation_sha256="a" * 64,
+        clip_start_frame=2,
+        clip_end_frame=6,
+        extractor_config=padded,
+    )
+
+    assert summary.decoded_clip_frames == 3
+    assert summary.expected_clip_frames == 4
+    assert summary.padded_tail_frames == 1
+    assert metadata.schema_version == 3
+    assert metadata.incomplete_clip_policy == "pad_invalid_tail"
+    cached, _ = load_pose_cache(summary.cache_path)
+    np.testing.assert_array_equal(cached.valid_mask, [True, True, True, False])
 
 
 def test_extract_to_cache_verifies_video_and_config_hash(
