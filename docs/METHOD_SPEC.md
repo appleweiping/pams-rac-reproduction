@@ -228,6 +228,20 @@ neutral multiplier of one.
 Per-expert peaks, thresholds and counts are retained for audit, while the
 public `CountResult` contains the compact final result.
 
+`consensus.expert_mode: reference_nearest` (or the prediction-only CLI
+override `--expert-mode reference_nearest`) is a separate, opt-in unlabeled
+diagnostic repair. All three experts still run, but their majority is ignored:
+the result is always the expert count nearest
+`floor(valid_frames / T_hat)`, with ties ordered Medium, Fast, Slow. Its vote
+confidence is `(1/3) / (1 + distance_to_reference)` before multiplication by
+period confidence. This rule is **not** the paper's Algorithm 1 majority rule,
+is never enabled by default, and changes the inference fingerprint while the
+historical `multi` fingerprint remains unchanged. Target-free prediction,
+receipt, and evaluation artifacts record `selection_mode: reference_nearest`
+and classify it as an inferred diagnostic. Their compact `CountResult` cannot
+unambiguously recover the selected expert when counts tie, so
+`selected_expert` remains null in those artifacts.
+
 ## Optimization and checkpoint state
 
 Encoder training uses AdamW with learning rate and weight decay `1e-4`,

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from pams.types import CountResult
 
 ExpertName = Literal["fast", "medium", "slow"]
-ExpertMode = Literal["multi", "medium_only"]
+ExpertMode = Literal["multi", "medium_only", "reference_nearest"]
 
 
 @dataclass(frozen=True)
@@ -161,6 +161,26 @@ def vote_expert_counts(
     return counts[selected], selected, confidence
 
 
+def select_reference_nearest_count(
+    counts: tuple[int, int, int],
+    reference_count: int,
+) -> tuple[int, int, float]:
+    """Select the expert nearest the label-free FFT reference.
+
+    This inference-only diagnostic deliberately bypasses majority voting.
+    Ties prefer Medium, then Fast, then Slow, matching the existing fallback
+    ordering and confidence definition.
+    """
+
+    best_distance = min(abs(value - reference_count) for value in counts)
+    priority = (1, 0, 2)
+    selected = next(
+        index for index in priority if abs(counts[index] - reference_count) == best_distance
+    )
+    confidence = (1.0 / 3.0) / (1.0 + best_distance)
+    return counts[selected], selected, confidence
+
+
 class MultiExpertCounter:
     """Gaussian smoothing, adaptive thresholds, and three-expert voting."""
 
@@ -191,8 +211,10 @@ class MultiExpertCounter:
             raise ValueError("experts must be ordered fast, medium, slow")
         if height_factor < 0 or prominence_factor < 0:
             raise ValueError("height and prominence factors must be non-negative")
-        if expert_mode not in {"multi", "medium_only"}:
-            raise ValueError("expert_mode must be 'multi' or 'medium_only'")
+        if expert_mode not in {"multi", "medium_only", "reference_nearest"}:
+            raise ValueError(
+                "expert_mode must be 'multi', 'medium_only', or 'reference_nearest'"
+            )
         self.experts = experts
         self.short_window_multiplier = short_window_multiplier
         self.long_window_multiplier = long_window_multiplier
@@ -314,6 +336,11 @@ class MultiExpertCounter:
             count = counts[1]
             selected_index = 1
             vote_confidence = 1.0
+        elif self.expert_mode == "reference_nearest":
+            count, selected_index, vote_confidence = select_reference_nearest_count(
+                counts,
+                reference_count,
+            )
         else:
             count, selected_index, vote_confidence = vote_expert_counts(
                 counts,

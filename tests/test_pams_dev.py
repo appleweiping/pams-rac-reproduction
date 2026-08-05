@@ -612,6 +612,49 @@ def test_prediction_records_inferred_medium_only_identity(
     assert result["consensus_expert_mode"] == "medium_only"
 
 
+def test_prediction_records_reference_nearest_diagnostic_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    result, predictions_path, receipt_path = _run_prediction(
+        tmp_path,
+        monkeypatch,
+        expert_mode="reference_nearest",
+    )
+    payload = json.loads(predictions_path.read_text(encoding="utf-8"))
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    training_config = dev_module.load_config(CONFIG)
+    inference_config = dev_module._inference_config(
+        training_config,
+        "reference_nearest",
+    )
+
+    assert payload["consensus_expert_mode"] == "reference_nearest"
+    assert payload["ablation_status"] == "inferred reference-nearest diagnostic"
+    assert payload["training_config_fingerprint"] == training_config.fingerprint
+    assert payload["config_fingerprint"] == inference_config.fingerprint
+    assert payload["config_fingerprint"] != payload["training_config_fingerprint"]
+    assert all(
+        row["selection_mode"] == "reference_nearest"
+        and row["selected_expert"] is None
+        for row in payload["records"]
+    )
+    assert receipt["consensus_expert_mode"] == "reference_nearest"
+    assert receipt["ablation_status"] == "inferred reference-nearest diagnostic"
+    assert receipt["config_fingerprint"] == payload["config_fingerprint"]
+    assert result["consensus_expert_mode"] == "reference_nearest"
+
+    invalid = {
+        **payload,
+        "records": [
+            {**payload["records"][0], "selected_expert": "fast"},
+            *payload["records"][1:],
+        ],
+    }
+    with pytest.raises(ValidationError, match="cannot infer an unambiguous"):
+        dev_module.PAMSDevPredictionArtifact.model_validate(invalid)
+
+
 def test_json_bundle_rolls_back_first_file_on_late_collision(
     tmp_path: Path,
 ) -> None:
@@ -723,7 +766,11 @@ def test_score_emits_independent_10k_paired_metrics(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _, predictions_path, receipt_path = _run_prediction(tmp_path, monkeypatch)
+    _, predictions_path, receipt_path = _run_prediction(
+        tmp_path,
+        monkeypatch,
+        expert_mode="reference_nearest",
+    )
     targets_path = _write_dev_targets(tmp_path, monkeypatch)
     output = tmp_path / "score"
     result = score_pams_dev_predictions(
@@ -739,6 +786,13 @@ def test_score_emits_independent_10k_paired_metrics(
     report = payload["report"]
 
     assert payload["bootstrap_pairing"] == "paired_prediction_target_rows"
+    assert payload["consensus_expert_mode"] == "reference_nearest"
+    assert payload["ablation_status"] == "inferred reference-nearest diagnostic"
+    assert all(
+        row["selection_mode"] == "reference_nearest"
+        and row["selected_expert"] is None
+        for row in payload["predictions"]
+    )
     assert report["bootstrap_samples"] == 10_000
     assert report["bootstrap_seed"] == 2026
     assert report["nmae"] == report["mae"] == report["rmse"] == 0.0

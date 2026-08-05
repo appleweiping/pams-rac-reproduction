@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 import torch
+from pydantic import ValidationError
 
 import pams.stress_dev as stress_dev_module
 from pams.stress import (
@@ -191,6 +192,18 @@ def test_stress_prediction_row_reconstructs_count_result() -> None:
     result = row.to_count_result()
     assert result.count == 4
     assert result.expert_counts == (3, 4, 5)
+
+    diagnostic = row.model_copy(
+        update={"selection_mode": "reference_nearest"},
+    )
+    StressPredictionRow.model_validate(diagnostic.model_dump())
+    with pytest.raises(ValidationError, match="multi/reference_nearest"):
+        StressPredictionRow.model_validate(
+            {
+                **diagnostic.model_dump(),
+                "selected_expert": "fast",
+            }
+        )
 
 
 def test_formal_checkpoint_replay_supplies_verified_bound_provenance(

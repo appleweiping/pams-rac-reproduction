@@ -89,7 +89,10 @@ class StressPredictionRow(StrictModel):
             if self.selected_expert != "medium" or self.count != self.expert_counts[1]:
                 raise ValueError("medium_only stress row must select the medium expert")
         elif self.selected_expert is not None:
-            raise ValueError("multi stress rows cannot infer one selected expert")
+            raise ValueError(
+                "compact multi/reference_nearest stress rows cannot infer one "
+                "selected expert"
+            )
         return self
 
     def to_count_result(self) -> CountResult:

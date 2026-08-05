@@ -59,8 +59,13 @@ from pams.training import (
 from pams.types import CountResult
 
 PAMSDevVariant = Literal["literal", "sshead"]
-PAMSInferenceExpertMode = Literal["multi", "medium_only"]
+PAMSInferenceExpertMode = Literal["multi", "medium_only", "reference_nearest"]
 PAMSSelectedExpert = Literal["fast", "medium", "slow"]
+PAMSAblationStatus = Literal[
+    "default multi-expert",
+    "inferred single-expert ablation",
+    "inferred reference-nearest diagnostic",
+]
 
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _IMAGE_ID_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -302,8 +307,10 @@ def _inference_config(
         if expert_mode is None
         else expert_mode
     )
-    if resolved_mode not in {"multi", "medium_only"}:
-        raise ValueError("expert_mode must be 'multi' or 'medium_only'")
+    if resolved_mode not in {"multi", "medium_only", "reference_nearest"}:
+        raise ValueError(
+            "expert_mode must be 'multi', 'medium_only', or 'reference_nearest'"
+        )
     consensus = training_config.consensus.model_copy(
         update={"expert_mode": resolved_mode}
     )
@@ -312,12 +319,12 @@ def _inference_config(
 
 def _ablation_status(
     expert_mode: PAMSInferenceExpertMode,
-) -> Literal["default multi-expert", "inferred single-expert ablation"]:
-    return (
-        "default multi-expert"
-        if expert_mode == "multi"
-        else "inferred single-expert ablation"
-    )
+) -> PAMSAblationStatus:
+    if expert_mode == "multi":
+        return "default multi-expert"
+    if expert_mode == "medium_only":
+        return "inferred single-expert ablation"
+    return "inferred reference-nearest diagnostic"
 
 
 class PAMSDevPredictionRow(StrictModel):
@@ -367,10 +374,7 @@ class PAMSDevPredictionArtifact(StrictModel):
     training_config_fingerprint: str
     config_fingerprint: str
     consensus_expert_mode: PAMSInferenceExpertMode
-    ablation_status: Literal[
-        "default multi-expert",
-        "inferred single-expert ablation",
-    ]
+    ablation_status: PAMSAblationStatus
     pose_fingerprint: str
     protocol_identity_sha256: str
     training_identity_sha256: str
@@ -447,11 +451,7 @@ class PAMSDevPredictionArtifact(StrictModel):
         )
         if self.method_key != _method_key(self.variant):
             raise ValueError("method_key does not match checkpoint variant")
-        expected_status = (
-            "default multi-expert"
-            if self.consensus_expert_mode == "multi"
-            else "inferred single-expert ablation"
-        )
+        expected_status = _ablation_status(self.consensus_expert_mode)
         if self.ablation_status != expected_status:
             raise ValueError("ablation_status does not match consensus_expert_mode")
         if any(
@@ -463,11 +463,12 @@ class PAMSDevPredictionArtifact(StrictModel):
             row.selected_expert != "medium" for row in self.records
         ):
             raise ValueError("medium_only predictions must select the medium expert")
-        if self.consensus_expert_mode == "multi" and any(
+        if self.consensus_expert_mode != "medium_only" and any(
             row.selected_expert is not None for row in self.records
         ):
             raise ValueError(
-                "multi predictions cannot infer a selected expert from compact counts"
+                "compact multi/reference_nearest predictions cannot infer an "
+                "unambiguous selected expert"
             )
         if self.variant == "literal" and any(value is not None for value in optional_hashes):
             raise ValueError("literal predictions cannot name an upstream encoder")
@@ -510,10 +511,7 @@ class PAMSDevPredictionReceipt(StrictModel):
     training_config_fingerprint: str
     config_fingerprint: str
     consensus_expert_mode: PAMSInferenceExpertMode
-    ablation_status: Literal[
-        "default multi-expert",
-        "inferred single-expert ablation",
-    ]
+    ablation_status: PAMSAblationStatus
     protocol_identity_sha256: str
     training_identity_sha256: str
     dev_identity_sha256: str
@@ -568,11 +566,7 @@ class PAMSDevPredictionReceipt(StrictModel):
         )
         if self.method_key != _method_key(self.variant):
             raise ValueError("receipt method_key does not match checkpoint variant")
-        expected_status = (
-            "default multi-expert"
-            if self.consensus_expert_mode == "multi"
-            else "inferred single-expert ablation"
-        )
+        expected_status = _ablation_status(self.consensus_expert_mode)
         if self.ablation_status != expected_status:
             raise ValueError("receipt ablation_status does not match expert mode")
         optional_hashes = (
@@ -1025,7 +1019,8 @@ def _prediction_row(
         # ``CountResult`` intentionally does not expose the full
         # ``ConsensusResult``.  Reconstructing an expert from matching counts
         # would be ambiguous when multiple experts agree, so v2 records no
-        # per-row expert for the multi-expert path.
+        # per-row expert for the multi or reference-nearest path.  The explicit
+        # selection_mode still makes the inference rule auditable.
         selected_expert = None
     return PAMSDevPredictionRow(
         video_id=prediction.video_id,

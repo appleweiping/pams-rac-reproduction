@@ -2,7 +2,12 @@ import numpy as np
 import pytest
 import torch
 
-from pams.consensus import MultiExpertCounter, dynamic_threshold, vote_expert_counts
+from pams.consensus import (
+    MultiExpertCounter,
+    dynamic_threshold,
+    select_reference_nearest_count,
+    vote_expert_counts,
+)
 
 
 def _peak_stream(length: int, peaks: list[int], width: float = 1.5) -> np.ndarray:
@@ -50,6 +55,36 @@ def test_medium_only_returns_medium_without_vote_or_fft_fallback() -> None:
 
     with pytest.raises(ValueError, match="expert_mode"):
         MultiExpertCounter(expert_mode="oracle")  # type: ignore[arg-type]
+
+
+def test_reference_nearest_bypasses_majority_and_uses_fallback_tie_order() -> None:
+    assert select_reference_nearest_count((4, 4, 7), reference_count=7) == (
+        7,
+        2,
+        1 / 3,
+    )
+    assert select_reference_nearest_count((5, 7, 9), reference_count=8) == (
+        7,
+        1,
+        1 / 6,
+    )
+    assert select_reference_nearest_count((7, 5, 9), reference_count=8) == (
+        7,
+        0,
+        1 / 6,
+    )
+
+    stream = _peak_stream(120, [10, 30, 50, 70, 90, 110])
+    result = MultiExpertCounter(expert_mode="reference_nearest").count(
+        stream,
+        period_frames=20,
+        period_confidence=0.6,
+    )
+    assert result.selection_mode == "reference_nearest"
+    assert tuple(expert.count for expert in result.experts) == result.expert_counts
+    assert result.selected_expert == "medium"
+    assert result.count == 6
+    assert result.confidence == pytest.approx(0.2)
 
 
 def test_dynamic_threshold_and_invalid_frames_are_safe() -> None:

@@ -232,7 +232,7 @@ class SSHeadConfig(StrictModel):
 
 
 class ConsensusConfig(StrictModel):
-    expert_mode: Literal["multi", "medium_only"] = "multi"
+    expert_mode: Literal["multi", "medium_only", "reference_nearest"] = "multi"
     sigma_multipliers: tuple[float, float, float] = (0.05, 0.12, 0.15)
     distance_multipliers: tuple[float, float, float] = (0.5, 0.8, 1.2)
     short_window_multiplier: float = Field(default=0.5, gt=0)
@@ -345,8 +345,9 @@ class PAMSConfig(StrictModel):
         consensus = payload["consensus"]
         if consensus["expert_mode"] == "multi":
             # Preserve every historical checkpoint/config fingerprint.  The
-            # opt-in ``medium_only`` value is an inferred inference ablation
-            # and therefore changes the effective inference identity.
+            # opt-in ``medium_only`` and ``reference_nearest`` values are
+            # inferred inference diagnostics and therefore change the
+            # effective inference identity.
             consensus.pop("expert_mode")
         return payload
 

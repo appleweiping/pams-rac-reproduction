@@ -3044,8 +3044,8 @@ def evaluate_dev_predict_command(
         typer.Option(
             "--expert-mode",
             help=(
-                "Inference-only consensus override: multi or medium_only. "
-                "medium_only is an inferred single-expert ablation."
+                "Inference-only consensus override: multi, medium_only, or "
+                "reference_nearest. The non-default modes are inferred diagnostics."
             ),
         ),
     ] = None,
@@ -3088,8 +3088,16 @@ def evaluate_dev_predict_command(
         if normalized_variant not in {"literal", "sshead"}:
             raise ValueError("--variant must be 'literal' or 'sshead'")
         normalized_expert_mode = None if expert_mode is None else expert_mode.strip().lower()
-        if normalized_expert_mode not in {None, "multi", "medium_only"}:
-            raise ValueError("--expert-mode must be 'multi' or 'medium_only'")
+        if normalized_expert_mode not in {
+            None,
+            "multi",
+            "medium_only",
+            "reference_nearest",
+        }:
+            raise ValueError(
+                "--expert-mode must be 'multi', 'medium_only', or "
+                "'reference_nearest'"
+            )
         payload = run_pams_dev_prediction(
             checkpoint_path=checkpoint_path,
             checkpoint_progress_path=checkpoint_progress_path,
@@ -3105,7 +3113,7 @@ def evaluate_dev_predict_command(
             config_path=config_path,
             variant=cast(Literal["literal", "sshead"], normalized_variant),
             expert_mode=cast(
-                Literal["multi", "medium_only"] | None,
+                Literal["multi", "medium_only", "reference_nearest"] | None,
                 normalized_expert_mode,
             ),
             upstream_encoder_checkpoint_path=upstream_encoder_checkpoint,

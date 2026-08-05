@@ -478,6 +478,15 @@ def test_medium_only_is_inference_identity_and_default_preserves_history() -> No
             },
         }
     )
+    reference_nearest = PAMSConfig.model_validate(
+        {
+            **implicit.model_dump(),
+            "consensus": {
+                **implicit.consensus.model_dump(),
+                "expert_mode": "reference_nearest",
+            },
+        }
+    )
 
     assert explicit_default.fingerprint == reconstructed_implicit.fingerprint
     assert explicit_default.nonseed_fingerprint == (
@@ -486,6 +495,10 @@ def test_medium_only_is_inference_identity_and_default_preserves_history() -> No
     assert medium_only.fingerprint != implicit.fingerprint
     assert medium_only.nonseed_fingerprint != implicit.nonseed_fingerprint
     assert medium_only.pose_fingerprint == implicit.pose_fingerprint
+    assert reference_nearest.fingerprint != implicit.fingerprint
+    assert reference_nearest.nonseed_fingerprint != implicit.nonseed_fingerprint
+    assert reference_nearest.pose_fingerprint == implicit.pose_fingerprint
+    assert reference_nearest.fingerprint != medium_only.fingerprint
 
 
 def test_config_rejects_unknown_input_projection_scale() -> None:
