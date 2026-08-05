@@ -10,6 +10,7 @@ from pams.period import (
     embedding_energy,
     estimate_period,
     estimate_period_batch,
+    estimate_period_batch_direct_fft,
     estimate_period_from_detrended_projected_position,
     estimate_period_from_embedding_velocity_vectors,
     estimate_period_from_embeddings,
@@ -50,6 +51,31 @@ def test_fft_period_preserves_fractional_dominant_bin() -> None:
 
     assert estimate.period == pytest.approx(6.4)
     assert estimate.frequency == pytest.approx(40.0 / 256.0)
+
+
+def test_direct_fft_rejects_low_frequency_linear_drift() -> None:
+    time = torch.arange(256, dtype=torch.float32)
+    signal = torch.sin(2.0 * math.pi * time / 16.0) + 0.02 * time
+
+    period, confidence = estimate_period_batch_direct_fft(
+        signal,
+        minimum=4,
+        maximum=128,
+    )
+
+    assert period.item() == pytest.approx(16.0)
+    assert confidence.item() > 0.5
+
+
+def test_direct_fft_constant_stream_has_no_period_evidence() -> None:
+    period, confidence = estimate_period_batch_direct_fft(
+        torch.ones(64),
+        minimum=4,
+        maximum=32,
+    )
+
+    assert period.tolist() == [32.0]
+    assert confidence.tolist() == [0.0]
 
 
 def test_period_estimator_respects_mask_and_bounds() -> None:

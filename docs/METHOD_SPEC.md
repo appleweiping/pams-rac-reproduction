@@ -154,6 +154,12 @@ guards do not inspect benchmark counts.
 The raw stream `P` supplies a fresh FFT period `T_hat` and reference count
 `floor(valid_frames/T_hat)`. Three experts use:
 
+The inference FFT is applied directly to valid samples of `P`, as ordered in
+Algorithm 1.  The independent executable closure removes an affine trend,
+applies one non-periodic Hann window, suppresses DC, and searches only the
+configured period band.  It does not FFT an autocorrelation of `P`; that legacy
+decoder is retained only in historical artifact identities.
+
 | Expert | Gaussian sigma | minimum peak distance |
 |---|---:|---:|
 | Fast | `0.05 T_hat` | `0.5 T_hat` |

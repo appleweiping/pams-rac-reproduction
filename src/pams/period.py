@@ -401,6 +401,109 @@ def estimate_period_batch(
     return period_tensor, confidence_tensor
 
 
+def estimate_period_batch_direct_fft(
+    signal: Tensor,
+    minimum: int = 4,
+    maximum: int = 128,
+    valid_mask: Tensor | None = None,
+) -> tuple[Tensor, Tensor]:
+    """Estimate a dominant period directly from the observed action curve.
+
+    PAMS Algorithm 1 applies an FFT to the period stream itself.  The legacy
+    reproduction instead transformed the stream autocorrelation and then
+    windowed that lag signal, which is a different decoder and can bias a weak
+    stream toward the longest allowed period.  This implementation follows the
+    disclosed inference order while making the usual, explicit signal-processing
+    choices: valid samples only, affine detrending, one Hann window, and a
+    bounded non-DC frequency band.
+    """
+
+    if minimum < 2:
+        raise ValueError("minimum period must be at least 2")
+    if maximum <= minimum:
+        raise ValueError("maximum must be greater than minimum")
+    batched, unbatched = _as_batch_signal(signal)
+    if batched.dtype not in (torch.float32, torch.float64):
+        batched = batched.float()
+    mask = _validated_mask(
+        batched,
+        (
+            valid_mask.unsqueeze(0)
+            if unbatched and valid_mask is not None
+            else valid_mask
+        ),
+    )
+
+    periods: list[float] = []
+    confidences: list[Tensor] = []
+    for sample_signal, sample_mask in zip(batched, mask, strict=True):
+        selected = sample_signal[sample_mask]
+        valid_length = int(selected.numel())
+        upper_period = min(maximum, max(minimum, valid_length - 1))
+        if valid_length < minimum * 2:
+            periods.append(float(minimum))
+            confidences.append(sample_signal.new_tensor(0.0))
+            continue
+
+        time = torch.arange(
+            valid_length,
+            dtype=selected.dtype,
+            device=selected.device,
+        )
+        centered_time = time - time.mean()
+        centered = selected - selected.mean()
+        slope = (centered_time * centered).sum() / centered_time.square().sum().clamp_min(
+            1e-12
+        )
+        detrended = centered - slope * centered_time
+        if float(detrended.square().mean()) <= 1e-12:
+            periods.append(float(upper_period))
+            confidences.append(sample_signal.new_tensor(0.0))
+            continue
+
+        window = torch.hann_window(
+            valid_length,
+            periodic=False,
+            dtype=detrended.dtype,
+            device=detrended.device,
+        )
+        power = torch.fft.rfft(detrended * window).abs().square()
+        frequencies = torch.fft.rfftfreq(
+            valid_length,
+            d=1.0,
+            device=detrended.device,
+        )
+        allowed = (frequencies >= 1.0 / upper_period) & (
+            frequencies <= 1.0 / minimum
+        )
+        allowed[0] = False
+        band = power.masked_fill(~allowed, 0.0)
+        total = band.sum()
+        if not torch.isfinite(total) or float(total) <= 1e-12:
+            periods.append(float(upper_period))
+            confidences.append(sample_signal.new_tensor(0.0))
+            continue
+
+        index = int(torch.argmax(band))
+        frequency = index / valid_length
+        estimate = min(
+            max(1.0 / frequency, float(minimum)),
+            float(upper_period),
+        )
+        periods.append(estimate)
+        confidences.append((band[index] / total).clamp(0.0, 1.0))
+
+    period_tensor = torch.tensor(
+        periods,
+        dtype=batched.dtype,
+        device=batched.device,
+    )
+    confidence_tensor = torch.stack(confidences).to(device=batched.device)
+    if unbatched:
+        return period_tensor[:1], confidence_tensor[:1]
+    return period_tensor, confidence_tensor
+
+
 def estimate_period_from_vectors(
     sequence: Tensor,
     minimum: int = 4,

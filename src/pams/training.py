@@ -36,7 +36,7 @@ from pams.consensus import MultiExpertCounter
 from pams.losses import PAMSTCCLoss, SSHeadLoss
 from pams.model import PAMSEncoder, PAMSModel, PeriodHead, TemporalPeriodHead
 from pams.period import (
-    estimate_period_batch,
+    estimate_period_batch_direct_fft,
     estimate_period_from_embedding_velocity_vectors,
     estimate_period_from_embeddings,
     estimate_period_from_pose,
@@ -2510,7 +2510,7 @@ def predict_sequence(
             batch.valid_mask,
             head_input_source=config.sshead.input_source,
         )
-        periods, period_confidences = estimate_period_batch(
+        periods, period_confidences = estimate_period_batch_direct_fft(
             stream_batch,
             minimum=config.period.minimum,
             maximum=config.period.maximum,

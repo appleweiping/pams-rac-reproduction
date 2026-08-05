@@ -37,6 +37,7 @@ all other values are frozen **inferences**, not claims about author code.
 | Threshold windows | short .5×period, long 2×period | inferred | Boundary padding is deterministic |
 | Thresholds | height .6, prominence .25, long weight .6 | inferred from supplement centers | No result-dependent test tuning |
 | Consensus fallback | majority vote; otherwise closest to FFT reference; ties favor Medium; confidence is vote confidence × period confidence | disclosed plus inferred tie/confidence rule | Expert counts and the composite confidence are saved per video |
+| Inference period decoder | affine detrend valid `P`, one Hann window, direct FFT, suppress DC, then bounded dominant-frequency selection | direct FFT order disclosed by Algorithm 1; detrend/window/bounds inferred | Replaces the historical autocorrelation-of-`P` decoder without bypassing expert voting |
 | Metric | NMAE with rounded prediction, OBO within 1 | recovered/corrected | Also publish raw MAE and RMSE |
 | Seeds | 42, 2026, 3407 | preregistered | Publish every seed, mean, standard deviation and paired bootstrap CI |
 | Verification | mean NMAE ≤ .228 and OBO ≥ .666; 2/3 seeds pass; ablation order holds | preregistered | Otherwise release is explicitly partial |
