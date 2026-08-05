@@ -1213,9 +1213,9 @@ def data_pose_inputs(
                     video_id=record.video_id,
                     video_path=portable_path,
                     video_sha256=record.video_sha256,
-                    annotation_sha256=record.annotation_sha256,
-                    clip_start_frame=record.clip_start_frame,
-                    clip_end_frame=record.clip_end_frame,
+                    annotation_sha256=getattr(record, "annotation_sha256", None),
+                    clip_start_frame=getattr(record, "clip_start_frame", None),
+                    clip_end_frame=getattr(record, "clip_end_frame", None),
                 )
             )
         pose_inputs = PoseInputManifest(

@@ -645,7 +645,7 @@ def test_reference_relative_signal_is_affine_invariant_and_peaks_at_reference() 
 
 def test_reference_anchor_rejects_an_early_stationary_phase() -> None:
     projected = _circular_projected_pose()[0]
-    projected[[0, 4, 8]] = projected[0]
+    projected[[0, 4, 8]] = projected[0].clone()
     valid = torch.ones(32, dtype=torch.bool)
 
     anchor = _reference_anchor_index(projected, valid, period=8)
