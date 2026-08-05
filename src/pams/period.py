@@ -721,7 +721,7 @@ def embedding_velocity_harmonic_fundamental_diagnostics(
     if not isinstance(maximum_harmonic, int):
         raise TypeError("maximum_harmonic must be an integer")
     if (
-        not isinstance(fundamental_only_weight, (int, float))
+        not isinstance(fundamental_only_weight, int | float)
         or isinstance(fundamental_only_weight, bool)
         or not torch.isfinite(torch.tensor(float(fundamental_only_weight)))
         or not 0.0 <= float(fundamental_only_weight) <= 1.0

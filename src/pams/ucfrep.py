@@ -9,8 +9,8 @@ manifest used by this project.
 
 from __future__ import annotations
 
-import io
 import hashlib
+import io
 import os
 import re
 import tempfile
