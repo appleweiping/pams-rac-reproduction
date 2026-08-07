@@ -1,0 +1,23 @@
+# PRE-RUN FROZEN, LABEL-FREE EPOCH-11 MECHANISM GATE.
+#
+# This gate can authorize only continuation of a fixed-period, single-scale
+# encoder run on the checkpoint-bound UCFRep train337 pose cache.  It never
+# authorizes prediction or scoring.  The thresholds were fixed before any
+# native-timeline baseline candidate was trained.
+schema_version: 1
+artifact_type: pams_native_epoch11_train_mechanism_gate_v1
+classification: inferred label-free train337 mechanism gate
+expected_protocol: ucfrep_526
+expected_seed: 2026
+expected_training_video_total: 337
+expected_completed_epochs: 11
+minimum_lag_pair_total: 8
+near_collapse_rms: 0.001
+thresholds:
+  loss_relative_drop_minimum: 0.10
+  fixed_period_evidence_fraction_minimum: 0.75
+  near_collapsed_fraction_maximum: 0.10
+  lag_eligible_fraction_minimum: 0.50
+  real_cycle_margin_median_minimum: 0.01
+  stronger_null_separation_median_minimum: 0.01
+  real_beats_both_nulls_fraction_minimum: 0.55
