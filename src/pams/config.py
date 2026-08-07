@@ -253,14 +253,16 @@ class ConsensusConfig(StrictModel):
 class ReadoutConfig(StrictModel):
     """Inference-only source of the scalar action curve.
 
-    ``embedding_frequency_projection`` is an independently inferred,
-    target-free alternative to the paper's under-specified Period Head.  It
-    does not change encoder or SSHead training.
+    ``embedding_frequency_projection`` and
+    ``embedding_recurrence_carrier`` are independently inferred, target-free
+    alternatives to the paper's under-specified Period Head.  Neither changes
+    encoder or SSHead training.
     """
 
     action_curve_source: Literal[
         "learned_period_head",
         "embedding_frequency_projection",
+        "embedding_recurrence_carrier",
     ] = "learned_period_head"
 
 

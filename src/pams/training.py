@@ -2735,8 +2735,31 @@ def predict_sequence(
     previous_training = model.training
     model.eval()
     batch = collate_pose_sequences((sequence,)).to(resolved_device)
+    active_mask_batch: Tensor | None = None
+    reference_count_override: int | None = None
     with torch.inference_mode():
-        if config.readout.action_curve_source == "embedding_frequency_projection":
+        if config.readout.action_curve_source == "embedding_recurrence_carrier":
+            from pams.recurrence_carrier import estimate_recurrence_carrier_curves
+
+            embeddings = model.encoder(
+                batch.poses,
+                batch.valid_mask,
+            )
+            recurrence_readout = estimate_recurrence_carrier_curves(
+                embeddings,
+                minimum_period=config.period.minimum,
+                maximum_period=config.period.maximum,
+                valid_mask=batch.valid_mask,
+                timeline_lengths=batch.lengths,
+            )
+            stream_batch = recurrence_readout.curves
+            periods = recurrence_readout.periods
+            period_confidences = recurrence_readout.period_confidences
+            active_mask_batch = recurrence_readout.active_masks
+            reference_count_override = int(
+                recurrence_readout.active_reference_counts[0]
+            )
+        elif config.readout.action_curve_source == "embedding_frequency_projection":
             from pams.embedding_curve import estimate_embedding_action_curves
 
             embeddings = model.encoder(
@@ -2803,7 +2826,11 @@ def predict_sequence(
                 ),
             )
     stream = stream_batch[0, : sequence.num_frames]
-    mask = batch.valid_mask[0, : sequence.num_frames]
+    mask = (
+        batch.valid_mask[0, : sequence.num_frames]
+        if active_mask_batch is None
+        else active_mask_batch[0, : sequence.num_frames]
+    )
     if counter is None:
         consensus = config.consensus
         counter = MultiExpertCounter(
@@ -2821,6 +2848,7 @@ def predict_sequence(
         period_frames=float(periods[0]),
         valid_mask=mask,
         period_confidence=float(period_confidences[0]),
+        reference_count_override=reference_count_override,
         reference_frames=(
             sequence.num_frames
             if (

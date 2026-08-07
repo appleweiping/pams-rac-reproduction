@@ -1,0 +1,203 @@
+from __future__ import annotations
+
+import math
+
+import pytest
+import torch
+
+from pams.config import PAMSConfig
+from pams.consensus import MultiExpertCounter
+from pams.recurrence_carrier import (
+    build_recurrence_carrier_curves,
+    validate_recurrence_carrier_compatibility,
+)
+
+
+def _localized_embeddings(
+    *,
+    frames: int = 160,
+    period: float = 16.0,
+    active_start: int = 32,
+    active_stop: int = 128,
+    phase: float = 0.0,
+) -> torch.Tensor:
+    time = torch.arange(frames, dtype=torch.float32)
+    values = torch.zeros((frames, 8), dtype=torch.float32)
+    values[:, 6] = 1.0
+    values[:active_start, 4] = 1.5
+    values[active_stop:, 5] = -1.5
+    active = (time >= active_start) & (time < active_stop)
+    angle = 2.0 * math.pi * time / period + phase
+    values[active, 0] = torch.cos(angle[active])
+    values[active, 1] = torch.sin(angle[active])
+    values[active, 2] = 0.5 * torch.cos(2.0 * angle[active] + 0.2)
+    values[active, 3] = 0.5 * torch.sin(2.0 * angle[active] + 0.2)
+    values[:, 7] = 0.002 * time
+    return values
+
+
+def _build(
+    embeddings: torch.Tensor,
+    *,
+    period: float,
+    mask: torch.Tensor | None = None,
+):
+    if mask is None:
+        mask = torch.ones(embeddings.shape[0], dtype=torch.bool)
+    return build_recurrence_carrier_curves(
+        embeddings,
+        torch.tensor([period]),
+        mask,
+        timeline_lengths=torch.tensor([embeddings.shape[0]]),
+        period_confidences=torch.tensor([0.8]),
+    )
+
+
+def test_recurrence_carrier_compatibility_allows_only_readout_marker() -> None:
+    upstream = PAMSConfig()
+    payload = upstream.model_dump()
+    payload["readout"]["action_curve_source"] = "embedding_recurrence_carrier"
+    candidate = PAMSConfig.model_validate(payload)
+
+    validate_recurrence_carrier_compatibility(upstream, candidate)
+
+    changed = candidate.model_dump()
+    changed["consensus"]["height_factor"] = 0.7
+    with pytest.raises(ValueError, match="may differ only"):
+        validate_recurrence_carrier_compatibility(
+            upstream,
+            PAMSConfig.model_validate(changed),
+        )
+
+
+def test_local_recurrence_suppresses_static_context_and_modulates_carrier() -> None:
+    embeddings = _localized_embeddings()
+    result = _build(embeddings, period=16.0)
+    active = result.active_masks[0]
+
+    assert result.available.tolist() == [True]
+    assert active[40:120].float().mean().item() > 0.8
+    assert torch.cat((active[:20], active[140:])).float().mean().item() < 0.2
+    assert torch.count_nonzero(result.curves[0, ~active]) == 0
+    assert result.curve_standard_deviations.item() == pytest.approx(1.0)
+    assert 0.0 < result.active_support_fractions.item() < 1.0
+    assert result.recurrence_gate_energies.item() > 0.0
+
+    shifted = _build(
+        _localized_embeddings(active_start=16, active_stop=112),
+        period=16.0,
+    )
+    assert not torch.equal(shifted.active_masks, result.active_masks)
+    assert not torch.equal(shifted.curves, result.curves)
+
+
+def test_quadrature_phase_shift_preserves_active_reference_and_expert_count() -> None:
+    base = _build(_localized_embeddings(phase=0.0), period=16.0)
+    shifted = _build(_localized_embeddings(phase=0.7), period=16.0)
+    counter = MultiExpertCounter()
+
+    outputs = []
+    for readout in (base, shifted):
+        output = counter.count(
+            readout.curves[0],
+            period_frames=16.0,
+            valid_mask=readout.active_masks[0],
+            period_confidence=0.8,
+            reference_count_override=int(readout.active_reference_counts[0]),
+        )
+        outputs.append(output)
+        assert abs(output.count - output.reference_count) <= 1
+        assert len(set(output.expert_counts)) <= 2
+    assert abs(outputs[0].count - outputs[1].count) <= 1
+
+
+def test_off_frequency_amplitude_does_not_dominate_recurrence_carrier() -> None:
+    embeddings = _localized_embeddings()
+    time = torch.arange(embeddings.shape[0], dtype=torch.float32)
+    distractor = torch.stack(
+        (
+            100.0 * torch.cos(2.0 * math.pi * time / 5.0),
+            80.0 * torch.sin(2.0 * math.pi * time / 7.0),
+        ),
+        dim=1,
+    )
+    polluted = torch.cat((embeddings, distractor), dim=1)
+    clean = _build(embeddings, period=16.0)
+    noisy = _build(polluted, period=16.0)
+
+    assert noisy.available.tolist() == [True]
+    assert abs(
+        int(noisy.active_reference_counts[0])
+        - int(clean.active_reference_counts[0])
+    ) <= 1
+
+
+def test_shuffle_and_null_do_not_retain_an_unconditioned_carrier() -> None:
+    embeddings = _localized_embeddings()
+    baseline = _build(embeddings, period=16.0)
+    generator = torch.Generator().manual_seed(2026)
+    shuffled = _build(
+        embeddings[torch.randperm(embeddings.shape[0], generator=generator)],
+        period=16.0,
+    )
+    zero = _build(torch.zeros_like(embeddings), period=16.0)
+
+    assert shuffled.active_support_fractions.item() < (
+        0.75 * baseline.active_support_fractions.item()
+    )
+    assert shuffled.recurrence_gate_energies.item() < (
+        0.75 * baseline.recurrence_gate_energies.item()
+    )
+    assert zero.available.tolist() == [False]
+    assert zero.active_support_fractions.tolist() == [0.0]
+    assert torch.count_nonzero(zero.curves) == 0
+
+
+def test_time_scaling_preserves_count_and_invalid_holes_are_not_bridged() -> None:
+    counter = MultiExpertCounter()
+    counts: list[int] = []
+    for factor in (1.0, 0.75, 0.5):
+        frames = int(round(160 * factor))
+        period = 16.0 * factor
+        start = int(round(32 * factor))
+        stop = int(round(128 * factor))
+        embeddings = _localized_embeddings(
+            frames=frames,
+            period=period,
+            active_start=start,
+            active_stop=stop,
+        )
+        mask = torch.ones(frames, dtype=torch.bool)
+        if factor == 1.0:
+            mask[72:80] = False
+        readout = _build(embeddings, period=period, mask=mask)
+        if factor == 1.0:
+            assert not bool(readout.active_masks[0, 72:80].any())
+        output = counter.count(
+            readout.curves[0],
+            period_frames=period,
+            valid_mask=readout.active_masks[0],
+            period_confidence=0.8,
+            reference_count_override=int(readout.active_reference_counts[0]),
+        )
+        assert abs(output.count - output.reference_count) <= 1
+        counts.append(output.count)
+    assert max(counts) - min(counts) <= 1
+
+
+def test_reference_override_is_explicit_and_does_not_change_experts() -> None:
+    time = torch.arange(96, dtype=torch.float32)
+    curve = torch.cos(2.0 * math.pi * time / 16.0)
+    counter = MultiExpertCounter()
+    ordinary = counter.count(curve, 16.0)
+    overridden = counter.count(curve, 16.0, reference_count_override=2)
+
+    assert overridden.reference_count == 2
+    assert overridden.expert_counts == ordinary.expert_counts
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        counter.count(
+            curve,
+            16.0,
+            reference_frames=96,
+            reference_count_override=2,
+        )

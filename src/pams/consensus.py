@@ -209,11 +209,16 @@ class MultiExpertCounter:
         *,
         period_confidence: float = 1.0,
         reference_frames: int | None = None,
+        reference_count_override: int | None = None,
     ) -> ConsensusResult:
         """Count peaks without consulting an action label or ground-truth count.
 
         ``reference_frames`` only changes the label-free FFT fallback reference;
         it never changes any expert's smoothing, peak detection, or count.
+        ``reference_count_override`` is reserved for independently inferred
+        readouts whose analytic reference and experts share an identical
+        target-free active mask.  It is mutually exclusive with
+        ``reference_frames`` and never changes an expert result.
         """
 
         if period_frames <= 0 or not np.isfinite(period_frames):
@@ -228,6 +233,20 @@ class MultiExpertCounter:
             ):
                 raise ValueError("reference_frames must be a positive integer or None")
             reference_frames = int(reference_frames)
+        if reference_count_override is not None:
+            if reference_frames is not None:
+                raise ValueError(
+                    "reference_count_override and reference_frames are mutually exclusive"
+                )
+            if (
+                isinstance(reference_count_override, bool | np.bool_)
+                or not isinstance(reference_count_override, int | np.integer)
+                or reference_count_override < 0
+            ):
+                raise ValueError(
+                    "reference_count_override must be a non-negative integer or None"
+                )
+            reference_count_override = int(reference_count_override)
         original = _to_numpy_1d(period_stream)
         if original.size == 0:
             raise ValueError("period_stream must contain at least one frame")
@@ -333,7 +352,11 @@ class MultiExpertCounter:
             expert_results[2].count,
         )
         reference_length = valid.sum() if reference_frames is None else reference_frames
-        reference_count = int(np.floor(reference_length / period_frames))
+        reference_count = (
+            int(np.floor(reference_length / period_frames))
+            if reference_count_override is None
+            else reference_count_override
+        )
         if self.expert_mode == "medium_only":
             count = counts[1]
             selected_index = 1
