@@ -1,0 +1,50 @@
+# Frozen, count-free decision gate for the 39-record Tasks multipose pilot.
+# Passing authorizes a full train337 v4c extraction only; it does not authorize
+# model training, dev/test evaluation, counting claims, or threshold changes.
+schema_version: 1
+artifact_type: pams_pose_recovery_v4c_train337_long_tail_pilot_gate
+protocol: ucfrep_526
+split: train
+expected_pilot_records: 39
+
+bindings:
+  train_sidecar_sha256: f95df0050df21f05bbc9b42d0154470714dde279e04cb8b00d0212bf49057d16
+  train_commitment_sha256: 85d41d2f59872e0900e9058481efbdf6bce91407d4c26bcde0a6547776454e53
+  train_identity_sha256: 88367535e296213377c366ed69abbd1e808c38049d79bb948091688e4c5b7b3f
+  v4a_ledger_sha256: 4cbba0d0f678cfdbd2c99752bbb55a8ceeb3aaa0b0b994bb6195b55cd0bc6018
+  v4a_paired_gate_sha256: faf086277f4d0a0687a266b64edc6ae45a2ca0ab4b39cc8fc4da644350c571e5
+  v4a_long_tail_audit_sha256: d2eeb9d0f5ef75e6fc92f87357d530061c91326c8b97dfd5345a600deab1f398
+  v4c_config_file_sha256: 1ad3d3a111fa4e381e1aa2e7c1c0ddb2cc97c9229a1cd0452fd631e71c8b8ef8
+  v4c_config_fingerprint: 0116f161eb33e5f77fa6ebad3e15fb02e62fd9098edbe09b7644691867aaadd0
+  v4c_pose_fingerprint: a2a875dd5b80e82fd2e01be21574c1c3ce96e720f31c0343996ae09e9b31f491
+  heavy_model_asset_sha256: 64437af838a65d18e5ba7a0d39b465540069bc8aae8308de3e318aad31fcbc7b
+  container_image_id: sha256:0a4d42c2d9911f147a17860e4e15095746b21c4e618e4fc1b20b62dd443c5898
+
+thresholds:
+  v4_zero_video_maximum: 8
+  recovered_reference_zero_video_minimum: 8
+  reference_usable_to_v4_zero_video_maximum: 0
+  source_coverage_mean_minimum: 0.80
+  source_coverage_p10_minimum: 0.25
+  source_coverage_p25_minimum: 0.60
+  source_coverage_median_minimum: 0.97
+  observed_at_most_8_video_maximum: 4
+  longest_run_fraction_p10_minimum: 0.15
+  longest_run_fraction_median_minimum: 0.80
+  pass0_source_valid_count_mismatch_maximum: 0
+  pass0_shared_coordinate_max_abs_error_maximum: 0.000001
+
+# This cost gate is frozen before the 39-record run. It may authorize paying
+# for a full train337 extraction when the strict projection fails solely
+# because non-pilot longest runs are unobservable. It never relaxes or replaces
+# the unchanged full337 thresholds above.
+full_extraction_escalation_thresholds:
+  pilot_invariant_failure_maximum: 0
+  pass0_mask_mismatch_maximum: 0
+  recovered_valid_frames_total_minimum: 390
+  pass0_zero_video_reduction_minimum: 3
+  pass0_at_most_8_video_reduction_minimum: 6
+  source_coverage_mean_gain_over_pass0_minimum: 0.15
+  source_coverage_mean_gain_over_v4a_minimum: 0.10
+  longest_run_fraction_mean_gain_over_v4a_minimum: 0.05
+  candidate_longest_run_fraction_p25_minimum: 0.10
