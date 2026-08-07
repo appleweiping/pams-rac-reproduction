@@ -136,6 +136,14 @@ def _with_masked_rms_sshead(config: PAMSConfig) -> PAMSConfig:
     return PAMSConfig.model_validate(payload)
 
 
+def _with_embedding_frequency_readout(config: PAMSConfig) -> PAMSConfig:
+    payload = config.model_dump()
+    payload["readout"]["action_curve_source"] = (
+        "embedding_frequency_projection"
+    )
+    return PAMSConfig.model_validate(payload)
+
+
 def test_sshead_shape_compatibility_rejects_every_other_config_change() -> None:
     upstream = _tiny_config()
     candidate = _with_masked_rms_sshead(upstream)
@@ -1144,6 +1152,52 @@ def test_predict_sequence_routes_direct_fft_timebase_and_dense_reference_frames(
         torch.tensor([sequence.num_frames]),
     )
     assert observed_reference_frames == [None, sequence.num_frames]
+
+
+def test_predict_sequence_embedding_curve_bypasses_head_but_keeps_consensus(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    config = _with_embedding_frequency_readout(
+        _with_no_absolute_position_encoding(
+            _tiny_config(encoder_epochs=1, head_epochs=1)
+        )
+    )
+    model = build_pams_model(config)
+    mask = np.ones(16, dtype=np.bool_)
+    mask[[4, 11]] = False
+    sequence = replace(_sequence("embedding-curve"), valid_mask=mask)
+
+    def forbidden_head(*args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        raise AssertionError("embedding action curve called the learned Period Head")
+
+    monkeypatch.setattr(model.period_head, "forward", forbidden_head)
+    counter = training_module.MultiExpertCounter()
+    real_count = counter.count
+    observed: list[Any] = []
+
+    def capture_count(*args: Any, **kwargs: Any) -> Any:
+        result = real_count(*args, **kwargs)
+        observed.append((result, kwargs.get("reference_frames")))
+        return result
+
+    monkeypatch.setattr(counter, "count", capture_count)
+    result = predict_sequence(
+        model,
+        sequence,
+        config,
+        device="cpu",
+        counter=counter,
+    )
+
+    assert len(observed) == 1
+    consensus, reference_frames = observed[0]
+    assert reference_frames == sequence.num_frames
+    assert result.count == consensus.count
+    assert result.count in result.expert_counts
+    assert np.count_nonzero(result.period_stream[~mask]) == 0
 
 
 def test_temporal_sshead_routes_the_same_valid_mask_through_training_and_prediction(

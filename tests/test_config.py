@@ -26,6 +26,7 @@ def test_default_config_matches_disclosed_dimensions() -> None:
     assert config.sshead.period_confidence_mode == "nonzero_gate"
     assert config.sshead.shape_normalization == "raw"
     assert config.consensus.expert_mode == "multi"
+    assert config.readout.action_curve_source == "learned_period_head"
 
 
 def test_config_rejects_dimension_mismatch() -> None:
@@ -171,6 +172,40 @@ def test_masked_rms_sshead_candidate_changes_only_one_config_field() -> None:
     restored = candidate.model_dump()
     restored["sshead"]["shape_normalization"] = "raw"
     assert restored == upstream.model_dump()
+
+
+def test_v16_embedding_curve_candidate_changes_only_inference_readout() -> None:
+    root = Path(__file__).parents[1]
+    upstream = load_config(
+        root / "configs" / "experiments" / "pams_noabs_projected_teacher_v16.yaml"
+    )
+    candidate = load_config(
+        root
+        / "configs"
+        / "experiments"
+        / "pams_noabs_projected_teacher_v16_embedding_curve_v1.yaml"
+    )
+
+    assert upstream.readout.action_curve_source == "learned_period_head"
+    assert candidate.readout.action_curve_source == (
+        "embedding_frequency_projection"
+    )
+    assert candidate.fingerprint != upstream.fingerprint
+    assert candidate.nonseed_fingerprint != upstream.nonseed_fingerprint
+    assert candidate.pose_fingerprint == upstream.pose_fingerprint
+    restored = candidate.model_dump()
+    restored["readout"]["action_curve_source"] = "learned_period_head"
+    assert restored == upstream.model_dump()
+
+
+def test_explicit_default_action_curve_preserves_historical_fingerprint() -> None:
+    explicit = PAMSConfig()
+    implicit_payload = explicit.model_dump()
+    implicit_payload.pop("readout")
+    implicit = PAMSConfig.model_validate(implicit_payload)
+
+    assert explicit.fingerprint == implicit.fingerprint
+    assert explicit.nonseed_fingerprint == implicit.nonseed_fingerprint
 
 
 def test_explicit_raw_sshead_shape_preserves_historical_fingerprint() -> None:

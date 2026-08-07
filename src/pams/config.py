@@ -250,6 +250,20 @@ class ConsensusConfig(StrictModel):
     long_window_weight: float = Field(default=0.6, ge=0, le=1)
 
 
+class ReadoutConfig(StrictModel):
+    """Inference-only source of the scalar action curve.
+
+    ``embedding_frequency_projection`` is an independently inferred,
+    target-free alternative to the paper's under-specified Period Head.  It
+    does not change encoder or SSHead training.
+    """
+
+    action_curve_source: Literal[
+        "learned_period_head",
+        "embedding_frequency_projection",
+    ] = "learned_period_head"
+
+
 class PAMSConfig(StrictModel):
     schema_version: int = 1
     protocol: str = "ucfrep_526"
@@ -262,6 +276,7 @@ class PAMSConfig(StrictModel):
     training: TrainingConfig = TrainingConfig()
     sshead: SSHeadConfig = SSHeadConfig()
     consensus: ConsensusConfig = ConsensusConfig()
+    readout: ReadoutConfig = ReadoutConfig()
 
     @model_validator(mode="after")
     def validate_input_dimensions(self) -> PAMSConfig:
@@ -366,6 +381,12 @@ class PAMSConfig(StrictModel):
             # opt-in ``medium_only`` value is an inferred inference ablation
             # and therefore changes the effective inference identity.
             consensus.pop("expert_mode")
+        readout = payload["readout"]
+        if readout["action_curve_source"] == "learned_period_head":
+            # Preserve every historical config/checkpoint identity.  The
+            # target-frequency embedding projection is an explicit inferred
+            # inference method and remains in the candidate identity.
+            payload.pop("readout")
         return payload
 
     def nonseed_canonical_dict(self) -> dict[str, Any]:

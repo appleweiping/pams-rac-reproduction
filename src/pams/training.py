@@ -2726,7 +2726,7 @@ def predict_sequence(
     device: str | torch.device | None = None,
     counter: MultiExpertCounter | None = None,
 ) -> CountResult:
-    """Predict one count from the head stream, its FFT period, and consensus."""
+    """Predict from the configured target-free curve and expert consensus."""
 
     if not isinstance(sequence, PoseSequence):
         raise TypeError("sequence must be a PoseSequence")
@@ -2736,7 +2736,24 @@ def predict_sequence(
     model.eval()
     batch = collate_pose_sequences((sequence,)).to(resolved_device)
     with torch.inference_mode():
-        if _uses_reference_relative_sshead(config):
+        if config.readout.action_curve_source == "embedding_frequency_projection":
+            from pams.embedding_curve import estimate_embedding_action_curves
+
+            embeddings = model.encoder(
+                batch.poses,
+                batch.valid_mask,
+            )
+            embedding_readout = estimate_embedding_action_curves(
+                embeddings,
+                minimum_period=config.period.minimum,
+                maximum_period=config.period.maximum,
+                valid_mask=batch.valid_mask,
+                timeline_lengths=batch.lengths,
+            )
+            stream_batch = embedding_readout.curves
+            periods = embedding_readout.periods
+            period_confidences = embedding_readout.period_confidences
+        elif _uses_reference_relative_sshead(config):
             embeddings, projected_pose = model.encoder.forward_with_pre_pe(
                 batch.poses,
                 batch.valid_mask,
@@ -2772,18 +2789,19 @@ def predict_sequence(
                     config.sshead.input_source,
                 ),
             )
-        periods, period_confidences = estimate_period_batch_direct_fft(
-            stream_batch,
-            minimum=config.period.minimum,
-            maximum=config.period.maximum,
-            valid_mask=batch.valid_mask,
-            timebase=config.period.direct_fft_timebase,
-            timeline_lengths=(
-                batch.lengths
-                if config.period.direct_fft_timebase == "dense_resampled"
-                else None
-            ),
-        )
+        if config.readout.action_curve_source == "learned_period_head":
+            periods, period_confidences = estimate_period_batch_direct_fft(
+                stream_batch,
+                minimum=config.period.minimum,
+                maximum=config.period.maximum,
+                valid_mask=batch.valid_mask,
+                timebase=config.period.direct_fft_timebase,
+                timeline_lengths=(
+                    batch.lengths
+                    if config.period.direct_fft_timebase == "dense_resampled"
+                    else None
+                ),
+            )
     stream = stream_batch[0, : sequence.num_frames]
     mask = batch.valid_mask[0, : sequence.num_frames]
     if counter is None:
@@ -2805,7 +2823,11 @@ def predict_sequence(
         period_confidence=float(period_confidences[0]),
         reference_frames=(
             sequence.num_frames
-            if config.period.direct_fft_timebase == "dense_resampled"
+            if (
+                config.period.direct_fft_timebase == "dense_resampled"
+                or config.readout.action_curve_source
+                == "embedding_frequency_projection"
+            )
             else None
         ),
     ).to_count_result()
