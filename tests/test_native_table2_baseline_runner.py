@@ -12,7 +12,6 @@ from scripts.server.validate_pams_native_baseline_inputs import (
     _validate_v4a_gate_payload,
 )
 
-
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs/experiments/pams_native_table2_baseline_proxy_v1.yaml"
 V4A_CONFIG = ROOT / "configs/experiments/pams_pose_recovery_v4a.yaml"
