@@ -5,8 +5,8 @@
 # a fixed-window conventional-TCC baseline, frame negatives from other videos,
 # and skeleton rotation/scale/jitter augmentation.  It does not uniquely
 # disclose the fixed period, sparse-anchor indexing convention, augmentation
-# magnitudes, or every optimization detail.  Accordingly, this config is not
-# the authors' baseline and is never eligible to claim their Table-2 number.
+# magnitudes, or every optimization detail.  This is not the authors' baseline
+# and is never eligible to claim their Table-2 number.
 #
 # The pose block is exactly the passed v4a official-segment/native-timeline
 # input definition.  data.frames remains the historical schema field; v4a
