@@ -57,6 +57,10 @@ _ARTIFACT_TYPE = "pams_dense_timebase_v1_train337_gate"
 _RECEIPT_TYPE = "pams_dense_timebase_v1_train337_gate_receipt"
 _EXPECTED_CANDIDATE = "pams-reference-relative-dense-resampled-masked-dft-multi-v1"
 _EXPECTED_POLICY_SHA256 = "828a6e64565274bfed1ff5c1822d98d1e3720bd0bea625d4c065ccc7aee63da4"
+_EXPECTED_V2_CANDIDATE = "pams-reference-relative-dense-resampled-masked-dft-multi-v2"
+_EXPECTED_V2_POLICY_SHA256 = (
+    "197da26bc0cb8c42ccded4c4678f5537b78876a13a082920937dfad2b5b240d6"
+)
 _EXPECTED_RECORDS = 337
 _INFERENCE_BATCH_SIZE = 16
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -134,6 +138,22 @@ _EXPECTED_SYNTHETIC_CHECKS = {
     "invalid_payload_exact_invariance",
     "all_selected_modes_multi",
     "existing_576_counter_gate",
+}
+_EXPECTED_V2_SYNTHETIC_CHECKS = {
+    "predecessor_only_expected_failures",
+    "predecessor_output_quality_checks",
+    "clean_no_majority_fft_nearest_fraction",
+    "harmonic_no_majority_fft_nearest_fraction",
+    "clean_no_majority_selected_expert_fraction",
+    "harmonic_no_majority_selected_expert_fraction",
+    "clean_no_majority_generated_truth_fraction",
+    "harmonic_no_majority_generated_truth_fraction",
+    "no_majority_case_counts_exact",
+    "candidate_source_files_unchanged",
+}
+_EXPECTED_V2_PREDECESSOR = {
+    "artifact_sha256": "944648276d146bd92c938425c0be72242ddb5e36066e1430cc8c84ed93f0fa02",
+    "receipt_sha256": "5587f370347aa20aba80002b7904236955051b08775ac78ff2e066b03de798c5",
 }
 _EXPECTED_POLICY_METRIC_DEFINITIONS = {
     "stream_std": "population_std_over_original_valid_samples_valid_lt_2_is_zero",
@@ -265,21 +285,54 @@ def _stable_file_identity(path: str | Path) -> tuple[str, int]:
 def _load_policy(path: str | Path) -> tuple[dict[str, Any], str, str]:
     source = Path(path)
     digest, _ = _stable_file_identity(source)
-    if digest != _EXPECTED_POLICY_SHA256:
-        raise ValueError("train337 gate requires the exact frozen dense-timebase v1 policy")
+    if digest not in {_EXPECTED_POLICY_SHA256, _EXPECTED_V2_POLICY_SHA256}:
+        raise ValueError(
+            "train337 gate requires an exact frozen dense-timebase v1/v2 policy"
+        )
     raw = source.read_text(encoding="utf-8")
     parsed = yaml.safe_load(raw)
     if not isinstance(parsed, dict):
         raise ValueError("dense-timebase policy root must be a mapping")
     policy = dict(parsed)
+    is_v2 = digest == _EXPECTED_V2_POLICY_SHA256
     if policy.get("schema_version") != 1:
         raise ValueError("dense-timebase policy requires schema_version=1")
-    if policy.get("candidate_id") != _EXPECTED_CANDIDATE:
+    expected_candidate = _EXPECTED_V2_CANDIDATE if is_v2 else _EXPECTED_CANDIDATE
+    if policy.get("candidate_id") != expected_candidate:
         raise ValueError("dense-timebase policy candidate_id drifted")
+    if is_v2 and (
+        policy.get("model_candidate_id") != _EXPECTED_CANDIDATE
+        or policy.get("protocol_revision") != "post-synthetic-v2"
+    ):
+        raise ValueError("dense-timebase v2 protocol identity drifted")
     if policy.get("table2_eligible") is not False:
         raise ValueError("dense-timebase candidate must remain Table-2 ineligible")
     if policy.get("frozen_base") != _EXPECTED_FROZEN_BASE:
         raise ValueError("dense-timebase frozen-base hashes or fingerprints drifted")
+    if is_v2:
+        source_lock = policy.get("candidate_source_lock")
+        expected_source_lock = {
+            "predecessor_source_git_sha": (
+                "61adcdec6f89aa22faba45a59a32b902dc70880a"
+            ),
+            "period_py_sha256": (
+                "2409fe1ce341f72b3304236031f639c17a62e35133f680165d90550bcc28a85c"
+            ),
+            "consensus_py_sha256": (
+                "20f3e33651b44288327374b5810adadaad81ce2544d5ef47921b19988ac1cb51"
+            ),
+            "config_py_sha256": (
+                "699b90929a5f94cdba922894e1ffe527e702b2809d749d816722b70903a250eb"
+            ),
+        }
+        if source_lock != expected_source_lock:
+            raise ValueError("dense-timebase v2 candidate source lock drifted")
+        predecessor = policy.get("predecessor_gate")
+        if not isinstance(predecessor, Mapping) or any(
+            predecessor.get(key) != value
+            for key, value in _EXPECTED_V2_PREDECESSOR.items()
+        ):
+            raise ValueError("dense-timebase v2 predecessor binding drifted")
 
     readout = policy.get("readout")
     expected_readout = {
@@ -347,6 +400,26 @@ def _load_policy(path: str | Path) -> tuple[dict[str, Any], str, str]:
     }
     if authorization != expected_authorization:
         raise ValueError("dense-timebase authorization boundary drifted")
+    if is_v2:
+        adjudication = policy.get("synthetic_adjudication_gate")
+        thresholds = (
+            adjudication.get("thresholds")
+            if isinstance(adjudication, Mapping)
+            else None
+        )
+        if not isinstance(thresholds, Mapping) or set(thresholds) != {
+            "predecessor_only_expected_failures",
+            "predecessor_output_quality_checks",
+            "clean_no_majority_fft_nearest_fraction_minimum",
+            "harmonic_no_majority_fft_nearest_fraction_minimum",
+            "clean_no_majority_selected_expert_fraction_minimum",
+            "harmonic_no_majority_selected_expert_fraction_minimum",
+            "clean_no_majority_generated_truth_fraction_minimum",
+            "harmonic_no_majority_generated_truth_fraction_minimum",
+            "no_majority_case_counts_exact",
+            "candidate_source_files_unchanged",
+        }:
+            raise ValueError("dense-timebase v2 adjudication thresholds drifted")
     if _stable_file_identity(source)[0] != digest:
         raise RuntimeError("dense-timebase policy changed while it was validated")
     return policy, digest, sha256_json(policy)
@@ -627,6 +700,165 @@ def _validate_synthetic_gate_pair(
         "runner_sha256": synthetic_runner_sha256,
         "runner_source_git_sha": runtime_source_git_sha,
         "status": "passed",
+        "train337_gate_authorized": True,
+    }
+
+
+def _validate_v2_adjudication_gate_pair(
+    artifact_path: Path,
+    receipt_path: Path,
+    *,
+    identities: Mapping[str, tuple[str, int]],
+    policy: Mapping[str, Any],
+    policy_sha256: str,
+    policy_semantic_sha256: str,
+    runtime_source_git_sha: str,
+) -> dict[str, Any]:
+    artifact = _load_strict_json_object(
+        artifact_path,
+        document_name="synthetic dense-timebase v2 adjudication artifact",
+    )
+    receipt = _load_strict_json_object(
+        receipt_path,
+        document_name="synthetic dense-timebase v2 adjudication receipt",
+    )
+    checks = artifact.get("checks")
+    if (
+        not isinstance(checks, Mapping)
+        or set(checks) != _EXPECTED_V2_SYNTHETIC_CHECKS
+        or not all(value is True for value in checks.values())
+    ):
+        raise ValueError("v2 adjudication artifact does not contain an all-pass check set")
+    expected_artifact = {
+        "schema_version": 1,
+        "artifact_type": "pams_dense_timebase_v2_synthetic_adjudication_gate",
+        "candidate_id": _EXPECTED_V2_CANDIDATE,
+        "model_candidate_id": _EXPECTED_CANDIDATE,
+        "classification": policy["classification"],
+        "status": "passed",
+        "passed": True,
+        "table2_eligible": False,
+        "labels_accessed": False,
+        "dataset_inputs_accessed": False,
+        "checkpoint_inputs_accessed": False,
+        "dev84_inputs_accessed": False,
+        "test105_inputs_accessed": False,
+    }
+    for key, expected in expected_artifact.items():
+        if artifact.get(key) != expected:
+            raise ValueError(f"v2 adjudication artifact field {key!r} drifted")
+    source = artifact.get("source")
+    if not isinstance(source, Mapping):
+        raise ValueError("v2 adjudication artifact is missing source binding")
+    synthetic_runner_sha256 = identities["synthetic_gate_runner"][0]
+    expected_source = {
+        "runner_source_git_sha": runtime_source_git_sha,
+        "runner_sha256": synthetic_runner_sha256,
+        "policy_sha256": policy_sha256,
+        "policy_semantic_sha256": policy_semantic_sha256,
+        "candidate_source_sha256": {
+            "src/pams/period.py": policy["candidate_source_lock"][
+                "period_py_sha256"
+            ],
+            "src/pams/consensus.py": policy["candidate_source_lock"][
+                "consensus_py_sha256"
+            ],
+            "src/pams/config.py": policy["candidate_source_lock"][
+                "config_py_sha256"
+            ],
+        },
+    }
+    if dict(source) != expected_source:
+        raise ValueError("v2 adjudication artifact source binding drifted")
+    expected_inputs = {
+        "predecessor_artifact_sha256": _EXPECTED_V2_PREDECESSOR[
+            "artifact_sha256"
+        ],
+        "predecessor_receipt_sha256": _EXPECTED_V2_PREDECESSOR["receipt_sha256"],
+    }
+    inputs = artifact.get("inputs")
+    if not isinstance(inputs, Mapping) or any(
+        inputs.get(key) != value for key, value in expected_inputs.items()
+    ):
+        raise ValueError("v2 adjudication predecessor inputs drifted")
+    gate = policy["synthetic_adjudication_gate"]
+    if artifact.get("thresholds") != gate["thresholds"]:
+        raise ValueError("v2 adjudication thresholds differ from frozen policy")
+    metrics = artifact.get("metrics")
+    if not isinstance(metrics, Mapping):
+        raise ValueError("v2 adjudication metrics are missing")
+    expected_metrics = {
+        "predecessor_only_expected_failures": True,
+        "predecessor_output_quality_checks": True,
+        "clean_no_majority_case_count": 16,
+        "harmonic_no_majority_case_count": 19,
+        "clean_no_majority_fft_nearest_fraction": 1.0,
+        "harmonic_no_majority_fft_nearest_fraction": 1.0,
+        "clean_no_majority_selected_expert_fraction": 1.0,
+        "harmonic_no_majority_selected_expert_fraction": 1.0,
+        "clean_no_majority_generated_truth_fraction": 1.0,
+        "harmonic_no_majority_generated_truth_fraction": 1.0,
+        "candidate_source_files_unchanged": True,
+    }
+    if dict(metrics) != expected_metrics:
+        raise ValueError("v2 adjudication metrics drifted from the exact evidence")
+    correction = artifact.get("protocol_correction")
+    if not isinstance(correction, Mapping) or any(
+        correction.get(key) is not False
+        for key in (
+            "candidate_algorithm_changed",
+            "expert_parameters_changed",
+            "synthetic_cases_changed",
+            "generated_truth_changed",
+        )
+    ):
+        raise ValueError("v2 adjudication does not preserve the frozen candidate")
+    expected_authorization = {
+        "predecessor_failure_verified": True,
+        "train337_gate_authorized": True,
+        "dev84_prediction_authorized": False,
+        "dev84_scoring_authorized": False,
+        "test105_evaluation_authorized": False,
+    }
+    if artifact.get("authorization") != expected_authorization:
+        raise ValueError("v2 adjudication authorization boundary drifted")
+
+    artifact_digest, artifact_bytes = identities["synthetic_gate_artifact"]
+    expected_receipt = {
+        "schema_version": 1,
+        "artifact_type": "pams_dense_timebase_v2_synthetic_adjudication_gate_receipt",
+        "artifact_locator": artifact_path.name,
+        "artifact_sha256": artifact_digest,
+        "artifact_bytes": artifact_bytes,
+        "artifact_status": "passed",
+        "candidate_id": _EXPECTED_V2_CANDIDATE,
+        "model_candidate_id": _EXPECTED_CANDIDATE,
+        "policy_sha256": policy_sha256,
+        "policy_semantic_sha256": policy_semantic_sha256,
+        "runner_source_git_sha": runtime_source_git_sha,
+        "runner_sha256": synthetic_runner_sha256,
+        "predecessor_artifact_sha256": _EXPECTED_V2_PREDECESSOR[
+            "artifact_sha256"
+        ],
+        "predecessor_receipt_sha256": _EXPECTED_V2_PREDECESSOR["receipt_sha256"],
+        "labels_accessed": False,
+        "dataset_inputs_accessed": False,
+        "checkpoint_inputs_accessed": False,
+        "train337_gate_authorized": True,
+        "dev84_prediction_authorized": False,
+        "dev84_scoring_authorized": False,
+        "test105_evaluation_authorized": False,
+    }
+    if receipt != expected_receipt:
+        raise ValueError("v2 adjudication receipt schema or binding drifted")
+    return {
+        "artifact_sha256": artifact_digest,
+        "receipt_sha256": identities["synthetic_gate_receipt"][0],
+        "runner_sha256": synthetic_runner_sha256,
+        "runner_source_git_sha": runtime_source_git_sha,
+        "status": "passed",
+        "protocol_revision": "post-synthetic-v2",
+        "predecessor_failure_verified": True,
         "train337_gate_authorized": True,
     }
 
@@ -1517,8 +1749,16 @@ def run_train337_gate(
         container_image_id=container_image_id,
         container_environment_sha256=container_environment_sha256,
     )
+    policy_path = Path(policy_path)
+    preliminary_policy_sha256, _ = _stable_file_identity(policy_path)
+    is_v2 = preliminary_policy_sha256 == _EXPECTED_V2_POLICY_SHA256
+    if preliminary_policy_sha256 not in {
+        _EXPECTED_POLICY_SHA256,
+        _EXPECTED_V2_POLICY_SHA256,
+    }:
+        raise ValueError("train337 gate policy is not an exact frozen v1/v2 policy")
     paths = {
-        "policy": Path(policy_path),
+        "policy": policy_path,
         "training_config": Path(training_config_path),
         "sshead_checkpoint": Path(sshead_checkpoint_path),
         "sshead_progress": Path(sshead_progress_path),
@@ -1532,7 +1772,11 @@ def run_train337_gate(
         "synthetic_gate_artifact": Path(synthetic_gate_artifact_path),
         "synthetic_gate_receipt": Path(synthetic_gate_receipt_path),
         "synthetic_gate_runner": Path(__file__).resolve().with_name(
-            "run_pams_dense_timebase_v1_gate.py"
+            (
+                "run_pams_dense_timebase_v2_adjudication_gate.py"
+                if is_v2
+                else "run_pams_dense_timebase_v1_gate.py"
+            )
         ),
         "runner": Path(__file__).resolve(),
     }
@@ -1567,15 +1811,26 @@ def run_train337_gate(
         paths["train337_pose_snapshot"],
         config=config,
     )
-    synthetic_binding = _validate_synthetic_gate_pair(
-        paths["synthetic_gate_artifact"],
-        paths["synthetic_gate_receipt"],
-        identities=identities,
-        policy_sha256=policy_sha256,
-        policy_semantic_sha256=policy_semantic_sha256,
-        synthetic_thresholds=policy["synthetic_gate"]["thresholds"],
-        runtime_source_git_sha=runtime_provenance["source_git_sha"],
-    )
+    if is_v2:
+        synthetic_binding = _validate_v2_adjudication_gate_pair(
+            paths["synthetic_gate_artifact"],
+            paths["synthetic_gate_receipt"],
+            identities=identities,
+            policy=policy,
+            policy_sha256=policy_sha256,
+            policy_semantic_sha256=policy_semantic_sha256,
+            runtime_source_git_sha=runtime_provenance["source_git_sha"],
+        )
+    else:
+        synthetic_binding = _validate_synthetic_gate_pair(
+            paths["synthetic_gate_artifact"],
+            paths["synthetic_gate_receipt"],
+            identities=identities,
+            policy_sha256=policy_sha256,
+            policy_semantic_sha256=policy_semantic_sha256,
+            synthetic_thresholds=policy["synthetic_gate"]["thresholds"],
+            runtime_source_git_sha=runtime_provenance["source_git_sha"],
+        )
     sidecar = load_pose_input_manifest(paths["train337_sidecar"], validate_exact=True)
     commitment = load_pose_input_commitment(paths["train337_commitment"])
     validate_pose_input_binding(
@@ -1700,7 +1955,9 @@ def run_train337_gate(
     hardware = hardware_fingerprint()
     return {
         "schema_version": 1,
-        "artifact_type": _ARTIFACT_TYPE,
+        "artifact_type": (
+            "pams_dense_timebase_v2_train337_gate" if is_v2 else _ARTIFACT_TYPE
+        ),
         "candidate_id": policy["candidate_id"],
         "classification": policy["classification"],
         "status": "passed" if passed else "failed",
@@ -1813,9 +2070,14 @@ def _write_artifact_and_receipt(
         raise FileExistsError("train337 report and receipt destinations must both be new")
     artifact = _encoded_json(payload)
     artifact_sha256 = hashlib.sha256(artifact).hexdigest()
+    is_v2 = payload["candidate_id"] == _EXPECTED_V2_CANDIDATE
     receipt = {
         "schema_version": 1,
-        "artifact_type": _RECEIPT_TYPE,
+        "artifact_type": (
+            "pams_dense_timebase_v2_train337_gate_receipt"
+            if is_v2
+            else _RECEIPT_TYPE
+        ),
         "artifact_locator": destination.name,
         "artifact_sha256": artifact_sha256,
         "artifact_bytes": len(artifact),
@@ -1848,6 +2110,9 @@ def _write_artifact_and_receipt(
         "dev84_scoring_authorized": False,
         "test105_evaluation_authorized": False,
     }
+    if is_v2:
+        receipt["model_candidate_id"] = _EXPECTED_CANDIDATE
+        receipt["protocol_revision"] = "post-synthetic-v2"
     _write_new_regular_file(destination, artifact)
     try:
         _write_new_regular_file(receipt_path, _encoded_json(receipt))

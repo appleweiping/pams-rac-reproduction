@@ -1,0 +1,198 @@
+# Post-synthetic protocol correction for the already frozen dense-resampled
+# readout candidate.  The candidate implementation, checkpoints, expert
+# parameters, and synthetic cases are unchanged from v1.  V2 replaces two
+# incidental majority-prevalence checks with direct checks of Algorithm 1's
+# specified FFT-nearest fallback.  The failed v1 artifact is a mandatory input.
+schema_version: 1
+candidate_id: pams-reference-relative-dense-resampled-masked-dft-multi-v2
+model_candidate_id: pams-reference-relative-dense-resampled-masked-dft-multi-v1
+protocol_revision: post-synthetic-v2
+classification: post-synthetic protocol correction; candidate algorithm unchanged
+table2_eligible: false
+
+frozen_base:
+  source_git_sha: 15cc1ec3c1d2c243ac3d01696207e96061e65515
+  config_sha256: eed60fd1c5795b3783f44d893f4bc4bd3764f4e8e546785218afcd7a37fba0f8
+  training_config_fingerprint: 32d086e1c2f76ee1c2beb76c984e0a6e6c60a05e1330c510fc9d0dde6b32054e
+  pose_fingerprint: f89cfc3e520cd3f45282ec06f42d5702f5e7c30c28ee6a3655ebfb5e58766047
+  encoder_checkpoint_sha256: 3f0591866b4c2691dc9b4bca5ddda75fac20dc55d767dcb3f24eacf31541b568
+  encoder_progress_sha256: a5b77345c59d258ab13cc8fbe31fa31de0e803dbbb9af421fad5046ff29f59e3
+  encoder_completion_receipt_sha256: a132815aadbdf7beebbe50255e314f00589c3c03691396cfc3d126b905572ff5
+  sshead_checkpoint_sha256: 4a37446c39ba4a73dfcfcfa569fa54800245bb14db82eeb353dae787e9742529
+  sshead_progress_sha256: 3b39d58633a431c60d8618f596158dc70af5632e263138ef3d523a00b3dd6325
+  sshead_completion_receipt_sha256: 18c974591cd7ff26d7b8283f498806f366256d4e7768215e117a440ea57b4e0f
+  train337_inputs_sha256: f95df0050df21f05bbc9b42d0154470714dde279e04cb8b00d0212bf49057d16
+  train337_commitment_sha256: 85d41d2f59872e0900e9058481efbdf6bce91407d4c26bcde0a6547776454e53
+  train337_pose_snapshot_file_sha256: 214403d675d5483eedb831fd8f8a629a4635bf075271103a02a23fead513e5f2
+  train337_pose_cache_set_sha256: 03259ec8d914af5613785ba2eee3003d276b638bda5f0cc993e425188a4259bd
+
+candidate_source_lock:
+  predecessor_source_git_sha: 61adcdec6f89aa22faba45a59a32b902dc70880a
+  period_py_sha256: 2409fe1ce341f72b3304236031f639c17a62e35133f680165d90550bcc28a85c
+  consensus_py_sha256: 20f3e33651b44288327374b5810adadaad81ce2544d5ef47921b19988ac1cb51
+  config_py_sha256: 699b90929a5f94cdba922894e1ffe527e702b2809d749d816722b70903a250eb
+
+predecessor_gate:
+  policy_sha256: 828a6e64565274bfed1ff5c1822d98d1e3720bd0bea625d4c065ccc7aee63da4
+  policy_semantic_sha256: e5b057305d17fb71c91d7fd746aa0cfa56871a9495fa52414abe3dd80858c126
+  runner_sha256: a2b04d5321f5ceea1c09d039f34cf200fc99897d71bd7401bc9c601eefca9684
+  artifact_sha256: 944648276d146bd92c938425c0be72242ddb5e36066e1430cc8c84ed93f0fa02
+  receipt_sha256: 5587f370347aa20aba80002b7904236955051b08775ac78ff2e066b03de798c5
+  required_status: failed
+  required_failed_checks:
+    - clean_majority_fraction
+    - harmonic_majority_fraction
+  adjudication_basis: >-
+    Algorithm 1 requires majority voting when a mode exists and FFT-nearest
+    expert selection otherwise; it does not require a minimum prevalence of
+    majority cases in an arbitrary synthetic suite.
+
+readout:
+  scope: final_period_head_stream_fft_and_fallback_only
+  direct_fft_timebase: dense_resampled
+  timeline: full_resampled_clip
+  timeline_frames: 256
+  detrend_fit: valid_samples_at_dense_indices
+  invalid_sample_contribution: zero_after_valid_only_affine_detrend
+  interpolation_across_invalid_frames: false
+  frequency_definition: k_over_timeline_frames
+  period_definition: timeline_frames_over_k
+  reference_count: floor_timeline_frames_over_period
+  reference_support: full_timeline_label_free_extrapolation
+  expert_support: contiguous_valid_runs_only
+  support_asymmetry_frozen: true
+  consensus_expert_mode: multi
+  expert_parameters: unchanged_from_frozen_training_config
+  majority_first: true
+  no_majority_fallback: fft_reference_nearest
+  checkpoint_retraining: false
+  bootstrap_period_estimator: unchanged
+  bootstrap_valid_count_upper_bound: unchanged
+  sparse_mask_bootstrap_truncation: known_coverage_gated_limitation
+
+selection_boundary:
+  design_time_information_already_available:
+    - all information disclosed in the v1 policy
+    - complete failed v1 synthetic artifact and receipt
+  revision_changes:
+    - remove clean and harmonic majority-prevalence thresholds
+    - directly verify every observed no-majority fallback against Algorithm 1
+  revision_does_not_change:
+    - source implementation of the candidate decoder and counter
+    - checkpoints or period-head streams
+    - expert parameters
+    - synthetic cases or generated truth
+    - train337 thresholds
+    - dev84 attempt budget or success thresholds
+  gate_execution_inputs:
+    - exact failed v1 synthetic artifact and receipt
+    - frozen label-free train337 sidecar and pose cache
+    - frozen encoder and SSHead checkpoints
+  permitted_label_source: deterministic_synthetic_generation_truth_only
+  train337_use: target_free_pass_fail_only
+  prohibited_inputs:
+    - UCFRep train counts or action labels
+    - UCFRep dev counts or action labels during prediction or gating
+    - UCFRep test counts or action labels
+    - prior dev predictions or evaluations during gating
+    - test105 video, pose cache, predictions, or targets
+  candidate_count: 1
+  parameter_sweep: false
+
+synthetic_adjudication_gate:
+  source_cases: exact_predecessor_v1_audit_rows
+  expected_case_counts:
+    clean_count: 156
+    harmonic: 72
+    clean_no_majority: 16
+    harmonic_no_majority: 19
+  metric_definitions:
+    predecessor_only_expected_failures: >-
+      exact failed-check set equals clean_majority_fraction and
+      harmonic_majority_fraction
+    predecessor_output_quality_checks: all non-majority-prevalence v1 checks pass
+    fft_nearest_fallback: >-
+      final count is an expert candidate at minimum absolute distance from the
+      frozen FFT reference count for every no-majority row
+    selected_expert_consistency: selected expert name resolves to final count
+    generated_truth_exact: final count equals deterministic generated truth
+  thresholds:
+    predecessor_only_expected_failures: true
+    predecessor_output_quality_checks: true
+    clean_no_majority_fft_nearest_fraction_minimum: 1.0
+    harmonic_no_majority_fft_nearest_fraction_minimum: 1.0
+    clean_no_majority_selected_expert_fraction_minimum: 1.0
+    harmonic_no_majority_selected_expert_fraction_minimum: 1.0
+    clean_no_majority_generated_truth_fraction_minimum: 1.0
+    harmonic_no_majority_generated_truth_fraction_minimum: 1.0
+    no_majority_case_counts_exact: true
+    candidate_source_files_unchanged: true
+
+train337_gate:
+  metric_definitions:
+    stream_std: population_std_over_original_valid_samples_valid_lt_2_is_zero
+    collapsed: stream_std_le_1e-6
+    period_evidence: direct_fft_confidence_gt_zero
+    period_bin_closure: abs_period_minus_timeline_over_rounded_bin_div_period
+    invalid_payload: alternating_plus_minus_1e6_at_original_invalid_positions
+    invalid_payload_exact_fields:
+      - period
+      - period_confidence
+      - final_count
+      - expert_counts
+      - reference_count
+      - selected_expert
+      - selection_mode
+      - consensus_confidence
+    internal_gap_interval: half_open_floor_7L_over_16_to_ceil_9L_over_16
+    internal_gap_affected: at_least_one_original_valid_sample_removed
+    dense_period_bin: round_timeline_frames_over_period
+    compact_period_bin: round_valid_frames_over_period
+    fixed_internal_gap_period_bin_retention: mean_gap_bin_equal_base_bin_on_affected_dual_evidence_rows
+    fixed_internal_gap_count_within_one: mean_abs_final_gap_count_minus_base_count_le_one_on_all_affected_rows
+    two_x_resample: repeat_interleave_stream_and_mask_and_double_period_bounds
+    two_x_resample_period_scaling_error: abs_resampled_period_over_twice_base_period_minus_one_on_dual_evidence_rows
+    two_x_resample_count_equal: mean_resampled_final_count_equal_base_final_count_over_all_records
+    mask_robustness_row_error: abs_log2_gap_period_over_base_period_plus_abs_gap_count_minus_base_count_over_max_1_base_count
+    mask_robustness_metric: mean_row_error_on_shared_affected_dual_decoder_evidence_rows
+    mask_robustness_relative_improvement: compact_minus_dense_over_max_compact_1e-12
+    compact_decoder_non_regression: dense_mask_robustness_le_compact_plus_1e-12
+    boundary_rate: fraction_selected_bins_at_either_configured_fft_band_edge_over_paired_base_and_gap_evidence_decodes
+    boundary_rate_increase: dense_boundary_rate_minus_compact_boundary_rate
+    fail_closed:
+      - no_eligible_rows_for_a_required_metric
+      - compact_mask_robustness_metric_le_1e-12
+    coverage_strata:
+      empty: coverage_eq_zero
+      low: coverage_gt_zero_and_lt_0.25
+      medium: coverage_ge_0.25_and_lt_0.75
+      high: coverage_ge_0.75_and_lt_one
+      full: coverage_eq_one
+  thresholds:
+    completed_records: 337
+    finite_records: 337
+    period_evidence_records_minimum: 300
+    collapsed_fraction_maximum: 0.10
+    invalid_payload_exact_invariance_fraction: 1.0
+    period_bin_closure_error_maximum: 0.000001
+    fixed_internal_gap_period_bin_retention_minimum: 0.85
+    fixed_internal_gap_count_within_one_minimum: 0.90
+    two_x_resample_period_scaling_median_error_maximum: 0.01
+    two_x_resample_period_scaling_p90_error_maximum: 0.05
+    two_x_resample_count_equal_fraction_minimum: 0.95
+    compact_decoder_non_regression_required: true
+    one_mask_robustness_metric_relative_improvement_minimum: 0.10
+    boundary_rate_increase_maximum: 0.02
+    coverage_strata_report_required: true
+    all_selected_modes_multi: true
+
+authorization:
+  synthetic_must_pass_before_train337: true
+  train337_must_pass_before_dev84: true
+  dev84_prediction_attempt_budget: 1
+  dev84_score_attempt_budget: 1
+  dev84_success_nmae_maximum: 0.60
+  dev84_success_obo_minimum: 0.30
+  test105_attempt_budget: 0
+  on_any_gate_failure: stop_without_dev84
+  on_dev84_failure: archive_without_readout_switch
