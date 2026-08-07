@@ -221,6 +221,22 @@ def audit_pose_recovery_v4a(
         bindings.get("heavy_model_asset_sha256"),
         "heavy model asset SHA-256",
     )
+    expected_sidecar_sha256 = _digest(
+        bindings.get("train_sidecar_sha256"),
+        "frozen train337 sidecar SHA-256",
+    )
+    expected_commitment_sha256 = _digest(
+        bindings.get("train_commitment_sha256"),
+        "frozen train337 commitment SHA-256",
+    )
+    expected_identity_sha256 = _digest(
+        bindings.get("train_identity_sha256"),
+        "frozen train337 identity SHA-256",
+    )
+    expected_reference_ledger_sha256 = _digest(
+        bindings.get("reference_ledger_sha256"),
+        "frozen official-segment reference ledger SHA-256",
+    )
 
     sidecar_payload, sidecar_sha256 = _load_label_free_json(
         train_input_path,
@@ -230,6 +246,13 @@ def audit_pose_recovery_v4a(
     manifest = load_pose_input_manifest(train_input_path, validate_exact=True)
     commitment = load_pose_input_commitment(train_commitment_path)
     identity_sha256 = pose_input_identity_sha256(manifest.records)
+    commitment_sha256 = _sha256_file(train_commitment_path.resolve(strict=True))
+    _require(sidecar_sha256 == expected_sidecar_sha256, "frozen sidecar SHA mismatch")
+    _require(
+        commitment_sha256 == expected_commitment_sha256,
+        "frozen commitment SHA mismatch",
+    )
+    _require(identity_sha256 == expected_identity_sha256, "frozen identity mismatch")
     _require(len(manifest.records) == expected_records, "sidecar is not train337")
     _require(commitment.protocol == manifest.protocol, "commitment protocol mismatch")
     _require(commitment.split == manifest.split, "commitment split mismatch")
@@ -243,6 +266,10 @@ def audit_pose_recovery_v4a(
         role="official-segment reference ledger",
     )
     v4_payload, v4_ledger_sha256 = _load_label_free_json(v4_ledger_path, role="v4a ledger")
+    _require(
+        reference_ledger_sha256 == expected_reference_ledger_sha256,
+        "frozen official-segment reference ledger SHA mismatch",
+    )
     reference_rows = _validate_ledger(
         reference_payload,
         role="official-segment reference",
@@ -271,6 +298,10 @@ def audit_pose_recovery_v4a(
     _require(
         recovery_binding.get("pose_coordinate_interpolation") is False,
         "v4a ledger permits pose-coordinate interpolation",
+    )
+    _require(
+        recovery_binding.get("temporal_resampling") == "none_native_timeline",
+        "v4a ledger does not preserve the native timeline",
     )
 
     reference_sequences, reference_snapshot = load_pose_cache_set(
@@ -308,7 +339,7 @@ def audit_pose_recovery_v4a(
     preservation_failures = 0
     maximum_shared_error = 0.0
     coordinate_interpolation_true = 0
-    cache_span_failures = 0
+    native_timeline_failures = 0
     official_timeline_failures = 0
     audit_rows: list[dict[str, Any]] = []
     for record, reference_sequence, v4_sequence in zip(
@@ -383,6 +414,8 @@ def audit_pose_recovery_v4a(
         maximum_shared_error = max(maximum_shared_error, shared_error)
         if recovery.get("pose_coordinate_interpolation") is not False:
             coordinate_interpolation_true += 1
+        if recovery.get("temporal_resampling") != "none_native_timeline":
+            native_timeline_failures += 1
         _require(
             recovery.get("heavy_model_asset_sha256") == expected_asset_sha256,
             "per-video heavy asset SHA-256 mismatch",
@@ -397,13 +430,17 @@ def audit_pose_recovery_v4a(
             reference_usable_to_v4_zero += 1
         if final_valid <= 8:
             observed_at_most_8 += 1
-        if final_valid >= 2 and observed_span != _integer(
-            v4_row.get("selected_source_frames"),
-            "v4a selected_source_frames",
+        cached_frames = _integer(v4_row.get("cached_frames"), "v4a cached_frames")
+        final_mask_sha256 = hashlib.sha256(
+            bytes(int(value) for value in v4_sequence.valid_mask)
+        ).hexdigest()
+        if not (
+            v4_sequence.num_frames == expected_segment_frames
+            and cached_frames == expected_segment_frames
+            and v4_cached_valid == final_valid
+            and final_mask_sha256 == recovery.get("final_valid_mask_sha256")
         ):
-            cache_span_failures += 1
-        if final_valid < observed_span and v4_cached_valid == v4_sequence.num_frames:
-            cache_span_failures += 1
+            native_timeline_failures += 1
         coverage = final_valid / source_frames
         longest_fraction = longest_run / source_frames
         coverages.append(coverage)
@@ -440,7 +477,7 @@ def audit_pose_recovery_v4a(
         "pass0_preservation_failure_total": preservation_failures,
         "pass0_shared_coordinate_max_abs_error": maximum_shared_error,
         "pose_coordinate_interpolation_true_total": coordinate_interpolation_true,
-        "cache_span_invariant_failure_total": cache_span_failures,
+        "native_timeline_invariant_failure_total": native_timeline_failures,
         "official_segment_timeline_invariant_failure_total": official_timeline_failures,
     }
     criteria = {
@@ -519,8 +556,8 @@ def audit_pose_recovery_v4a(
             relation="at_most",
             threshold=0,
         ),
-        "cache_span_invariant_failure_total": _criterion(
-            cache_span_failures,
+        "native_timeline_invariant_failure_total": _criterion(
+            native_timeline_failures,
             relation="at_most",
             threshold=0,
         ),
@@ -540,7 +577,7 @@ def audit_pose_recovery_v4a(
         "bindings": {
             "gate_sha256": _sha256_file(gate_path.resolve(strict=True)),
             "sidecar_sha256": sidecar_sha256,
-            "commitment_sha256": _sha256_file(train_commitment_path.resolve(strict=True)),
+            "commitment_sha256": commitment_sha256,
             "identity_sha256": identity_sha256,
             "reference_pose_fingerprint": reference_pose_fingerprint,
             "reference_pose_cache_set_sha256": reference_snapshot.fingerprint,

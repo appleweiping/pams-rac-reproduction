@@ -1846,6 +1846,31 @@ def preprocess_pose_sequence(sequence: PoseSequence, *, target_frames: int = 256
     )
 
 
+def preprocess_native_pose_sequence(sequence: PoseSequence) -> PoseSequence:
+    """Normalize poses without changing the native frame timeline.
+
+    Unlike :func:`preprocess_pose_sequence`, this path performs no temporal
+    interpolation or resampling.  Every source index is preserved, including
+    leading, trailing, and internal invalid holes.  This is the frozen v4a
+    behavior for official-segment clips whose native duration carries counting
+    information that a 256-frame projection would destroy.
+    """
+
+    effective_mask = np.array(sequence.valid_mask, dtype=np.bool_, copy=True)
+    valid_indices = np.flatnonzero(effective_mask)
+    if valid_indices.size:
+        valid_coordinates = sequence.xyz[valid_indices]
+        spans = valid_coordinates.max(axis=(1, 2)) - valid_coordinates.min(axis=(1, 2))
+        effective_mask[valid_indices[spans <= 1e-8]] = False
+    normalized = per_frame_minmax(sequence.xyz, effective_mask)
+    return PoseSequence(
+        video_id=sequence.video_id,
+        fps=sequence.fps,
+        xyz=normalized,
+        valid_mask=effective_mask,
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class PoseCacheMetadata:
     schema_version: int

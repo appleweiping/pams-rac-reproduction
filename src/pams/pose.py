@@ -24,6 +24,7 @@ from pams.data import (
     longest_valid_span,
     normalize_clip_provenance,
     pose_cache_path,
+    preprocess_native_pose_sequence,
     preprocess_pose_sequence,
     write_pose_cache,
 )
@@ -63,6 +64,7 @@ class PoseRecoveryExtractorConfig:
     heavy_model_id: str
     heavy_model_asset_path: Path
     heavy_model_asset_sha256: str
+    temporal_resampling: str = "none_native_timeline"
     model_complexity: int = 2
     static_image_mode: bool = True
     smooth_landmarks: bool = False
@@ -90,6 +92,8 @@ class PoseRecoveryExtractorConfig:
             for character in self.heavy_model_asset_sha256
         ):
             raise ValueError("heavy_model_asset_sha256 must be lowercase SHA-256")
+        if self.temporal_resampling != "none_native_timeline":
+            raise ValueError("v4a requires temporal_resampling=none_native_timeline")
         if not self.static_image_mode or self.smooth_landmarks:
             raise ValueError("v4a heavy retry must be static and unsmoothed")
         if not self.full_frame_retry or not self.roi_retry:
@@ -213,6 +217,7 @@ class PoseRecoveryAudit:
     pass0_shared_coordinate_max_abs_error: float
     pass0_observations_preserved: bool
     pose_coordinate_interpolation: bool
+    temporal_resampling: str
     heavy_model_id: str
     heavy_model_asset_sha256: str
     pass0_valid_mask_sha256: str
@@ -240,6 +245,7 @@ class PoseRecoveryAudit:
             ),
             "pass0_observations_preserved": self.pass0_observations_preserved,
             "pose_coordinate_interpolation": self.pose_coordinate_interpolation,
+            "temporal_resampling": self.temporal_resampling,
             "heavy_model_id": self.heavy_model_id,
             "heavy_model_asset_sha256": self.heavy_model_asset_sha256,
             "pass0_valid_mask_sha256": self.pass0_valid_mask_sha256,
@@ -1069,7 +1075,9 @@ def extract_pose_sequence_recovery(
     # The official annotation-bound segment is the complete timebase. Leading,
     # trailing, and internal misses stay in place as invalid frames.
     selected_source_frames = raw.num_frames
-    processed = preprocess_pose_sequence(raw, target_frames=config.target_frames)
+    processed = preprocess_native_pose_sequence(raw)
+    if processed.num_frames != expected_frames or processed.fps != raw.fps:
+        raise RuntimeError("v4a preprocessing changed the native official-segment timeline")
     audit = PoseRecoveryAudit(
         source_frames=raw.num_frames,
         expected_segment_frames=expected_frames,
@@ -1088,6 +1096,7 @@ def extract_pose_sequence_recovery(
         pass0_shared_coordinate_max_abs_error=shared_max_error,
         pass0_observations_preserved=preserved,
         pose_coordinate_interpolation=recovery.pose_coordinate_interpolation,
+        temporal_resampling=recovery.temporal_resampling,
         heavy_model_id=recovery.heavy_model_id,
         heavy_model_asset_sha256=recovery.heavy_model_asset_sha256,
         pass0_valid_mask_sha256=_valid_mask_sha256(pass0_track),

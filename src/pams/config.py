@@ -55,6 +55,7 @@ class PoseRecoveryConfig(StrictModel):
     heavy_model_asset_sha256: str = Field(
         pattern=r"^[0-9a-f]{64}$",
     )
+    temporal_resampling: Literal["none_native_timeline"] = "none_native_timeline"
     static_image_mode: Literal[True] = True
     smooth_landmarks: Literal[False] = False
     min_detection_confidence: float = Field(default=0.5, ge=0.0, le=1.0)

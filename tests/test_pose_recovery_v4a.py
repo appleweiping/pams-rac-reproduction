@@ -8,8 +8,10 @@ from typing import Any
 
 import numpy as np
 import pytest
+import torch
 
 from pams.config import PAMSConfig, load_config
+from pams.period import estimate_period_batch_direct_fft
 from pams.pose import (
     RECOVERY_PREPROCESSING_REVISION,
     PoseDependencyError,
@@ -20,6 +22,8 @@ from pams.pose import (
     extract_pose_sequence_recovery,
     select_global_dominant_track,
 )
+from pams.training import collate_pose_sequences
+from pams.types import PoseSequence
 
 
 def _candidate(
@@ -70,6 +74,7 @@ def test_v4a_config_freezes_asset_retry_roi_association_and_no_pose_interpolatio
         "59e42d71bcd44cbdbabc419f0ff76686595fd265419566bd4009ef703ea8e1fe"
     )
     assert recovery.model_complexity == 2
+    assert recovery.temporal_resampling == "none_native_timeline"
     assert recovery.static_image_mode is True
     assert recovery.full_frame_retry is True
     assert recovery.roi_retry is True
@@ -262,7 +267,155 @@ def test_recovery_locks_pass0_and_uses_roi_only_after_full_frame_miss(
     assert audit.pass0_observations_preserved is True
     assert audit.pass0_shared_coordinate_max_abs_error == 0.0
     assert audit.pose_coordinate_interpolation is False
+    assert audit.temporal_resampling == "none_native_timeline"
+    assert sequence.num_frames == 5
+    assert sequence.fps == 20.0
     assert sequence.valid_mask.all()
+
+
+def test_v4a_preserves_more_than_1000_native_frames_and_invalid_decode_tail(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import pose
+
+    video = tmp_path / "long-clip.mp4"
+    video.write_bytes(b"fixture")
+    package = tmp_path / "mediapipe"
+    module = package / "__init__.py"
+    module.parent.mkdir()
+    module.write_text("", encoding="utf-8")
+    asset = package / "modules/pose_landmark/pose_landmark_heavy.tflite"
+    asset.parent.mkdir(parents=True)
+    asset.write_bytes(b"verified-heavy")
+    digest = hashlib.sha256(asset.read_bytes()).hexdigest()
+    candidate = _candidate(0.5)
+    decoded_frames = 1001
+    expected_frames = 1005
+
+    class FakeCapture:
+        def __init__(self) -> None:
+            self.offset = 0
+
+        def isOpened(self) -> bool:
+            return True
+
+        def get(self, _: object) -> float:
+            return 24.0
+
+        def read(self) -> tuple[bool, np.ndarray | None]:
+            if self.offset == decoded_frames:
+                return False, None
+            frame = np.full((8, 8, 3), self.offset % 255, dtype=np.uint8)
+            self.offset += 1
+            return True, frame
+
+        def release(self) -> None:
+            return None
+
+    class FakeDetector:
+        def __init__(self, *, static: bool) -> None:
+            self.static = static
+
+        def __enter__(self) -> FakeDetector:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def process(self, _: np.ndarray) -> Any:
+            if self.static:
+                raise AssertionError("decode-tail padding must not invoke heavy retry")
+            return _result(candidate)
+
+    class FakePoseFactory:
+        def __call__(self, **kwargs: Any) -> FakeDetector:
+            return FakeDetector(static=bool(kwargs["static_image_mode"]))
+
+    fake_cv2 = SimpleNamespace(
+        CAP_PROP_FPS=5,
+        COLOR_BGR2RGB=7,
+        VideoCapture=lambda _: FakeCapture(),
+        cvtColor=lambda frame, _: frame,
+    )
+    fake_mp = SimpleNamespace(
+        __file__=str(module),
+        solutions=SimpleNamespace(pose=SimpleNamespace(Pose=FakePoseFactory())),
+    )
+    monkeypatch.setattr(pose, "_load_pose_dependencies", lambda: (fake_cv2, fake_mp))
+    settings = PoseExtractorConfig(
+        preprocessing_revision=RECOVERY_PREPROCESSING_REVISION,
+        crop_to_detected_span=False,
+        incomplete_clip_policy="pad_invalid_tail",
+        recovery=_recovery(asset, digest),
+    )
+
+    sequence, decoded, pass0_valid, selected, audit = extract_pose_sequence_recovery(
+        video,
+        video_id="long-clip",
+        config=settings,
+        clip_start_frame=0,
+        clip_end_frame=expected_frames,
+    )
+
+    assert sequence.num_frames == expected_frames
+    assert sequence.fps == 24.0
+    assert decoded == decoded_frames
+    assert pass0_valid == decoded_frames
+    assert selected == expected_frames
+    assert sequence.valid_mask[:decoded_frames].all()
+    assert not sequence.valid_mask[decoded_frames:].any()
+    assert np.count_nonzero(sequence.xyz[decoded_frames:]) == 0
+    assert audit.padded_tail_frames == expected_frames - decoded_frames
+    assert audit.temporal_resampling == "none_native_timeline"
+
+
+def test_native_frame_indices_and_short_period_survive_batch_padding() -> None:
+    native_frames = 1200
+    longer_frames = 1237
+    native_period = 6
+
+    def sequence(identifier: str, frames: int) -> PoseSequence:
+        time = np.arange(frames, dtype=np.float32)
+        xyz = np.zeros((frames, 33, 3), dtype=np.float32)
+        xyz[:, 0, 0] = np.sin(2.0 * np.pi * time / native_period)
+        xyz[:, 1, 1] = time
+        return PoseSequence(
+            video_id=identifier,
+            fps=30.0,
+            xyz=xyz,
+            valid_mask=np.ones(frames, dtype=np.bool_),
+        )
+
+    native = sequence("native", native_frames)
+    longer = sequence("longer", longer_frames)
+    batch = collate_pose_sequences((native, longer))
+
+    assert batch.lengths.tolist() == [native_frames, longer_frames]
+    assert batch.fps.tolist() == [30.0, 30.0]
+    torch.testing.assert_close(
+        batch.poses[0, :native_frames],
+        torch.from_numpy(np.asarray(native.xyz).copy()),
+    )
+    assert not batch.valid_mask[0, native_frames:].any()
+    assert torch.count_nonzero(batch.poses[0, native_frames:]) == 0
+    assert batch.poses[0, 997, 1, 1].item() == 997.0
+
+    unpadded_period, _ = estimate_period_batch_direct_fft(
+        torch.from_numpy(np.asarray(native.xyz[:, 0, 0]).copy()),
+        minimum=4,
+        maximum=128,
+    )
+    padded_period, _ = estimate_period_batch_direct_fft(
+        batch.poses[0, :, 0, 0],
+        minimum=4,
+        maximum=128,
+        valid_mask=batch.valid_mask[0],
+    )
+    assert unpadded_period.item() == pytest.approx(native_period, rel=0.01)
+    assert padded_period.item() == pytest.approx(unpadded_period.item())
+    old_resampled_period = native_period * (256 - 1) / (native_frames - 1)
+    assert old_resampled_period < 4
 
 
 def test_audit_source_has_no_dev_test_or_target_cli_inputs(tmp_path: Path) -> None:
