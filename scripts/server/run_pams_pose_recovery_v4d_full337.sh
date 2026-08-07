@@ -74,7 +74,10 @@ readonly LEDGER="${LEDGER_DIR}/train337.json"
 readonly GATE_AUDIT="${GATE_OUTPUT_DIR}/full337-gate.json"
 readonly TRAIN_AUTH="${GATE_OUTPUT_DIR}/training.authorization.json"
 readonly TRAIN_DENIAL="${GATE_OUTPUT_DIR}/training.denial.json"
+readonly FAILURE_WRITER="${SCRIPT_DIR}/write_pose_recovery_v4d_failure_receipt.py"
+readonly FALLBACK_FAILURE_RECEIPT="${RUN_ROOT}.failure.receipt.json"
 
+[[ -f "$FAILURE_WRITER" ]] || fail 'failure-receipt writer missing'
 [[ "$(docker image inspect "$IMAGE" --format '{{.Id}}')" == "$IMAGE_ID" ]] || fail 'image ID mismatch'
 [[ -d "$VIDEOS" && -d "$V4A_CACHE" && -d "$SAME39_CACHE" ]] || fail 'missing input directory'
 require_sha256 "$SIDECAR" "$SIDECAR_SHA256" sidecar
@@ -88,8 +91,8 @@ require_sha256 "$SAME39_SELECTION" "$SAME39_SELECTION_SHA256" same39-selection
 require_sha256 "$EXTRACTION_AUTH" "$PAMS_V4D_EXPECTED_EXTRACTION_AUTH_SHA256" extraction-authorization
 [[ -f "$EXTRACTION_AUTH_RUN_RECEIPT" ]] || fail 'extraction-authorization wrapper receipt missing'
 require_sha256 "$MODEL_ASSET" "$MODEL_SHA256" model-asset
-[[ -z "$(find "$SAME39_ROOT" -xdev -perm /022 -print -quit)" ]] || fail 'same39 root is not sealed'
-[[ -z "$(find "$EXTRACTION_AUTH_ROOT" -xdev -perm /022 -print -quit)" ]] || fail 'authorization root is not sealed'
+[[ -z "$(find "$SAME39_ROOT" -xdev -perm /222 -print -quit)" ]] || fail 'same39 root is not sealed'
+[[ -z "$(find "$EXTRACTION_AUTH_ROOT" -xdev -perm /222 -print -quit)" ]] || fail 'authorization root is not sealed'
 python3 - "$EXTRACTION_AUTH" "$EXTRACTION_AUTH_RUN_RECEIPT" "$PAMS_V4D_EXPECTED_EXTRACTION_AUTH_SHA256" "$SOURCE_REVISION" "$IMAGE_ID" <<'PY'
 import hashlib,json,sys
 x=json.load(open(sys.argv[1])); r=json.load(open(sys.argv[2]))
@@ -112,40 +115,58 @@ GPU_USED_MIB='-1'
 GPU_UTIL_PERCENT='-1'
 FAILURE_PHASE='run-root-initialize'
 cleanup() { docker rm -f "$EXTRACT_NAME" "$GATE_NAME" >/dev/null 2>&1 || true; }
-finalize() {
-  local status="$?"
-  trap - EXIT
-  cleanup
-  if [[ "$status" -ne 0 && -d "$RUN_ROOT" && ! -e "$AUDIT_DIR/failure.receipt.json" && ! -e "$AUDIT_DIR/run.receipt.json" ]]; then
-    python3 - "$RUN_ROOT" "$SOURCE_REVISION" "$IMAGE_ID" "$FAILURE_PHASE" "$status" \
-      "$GPU_UUID" "$GPU_USED_MIB" "$GPU_UTIL_PERCENT" <<'PY'
-import hashlib,json,sys
-from pathlib import Path
-root=Path(sys.argv[1]); artifacts={}
-for relative in ('audit/extract.inspect.pre.json','audit/extract.inspect.post.json','audit/gate.inspect.pre.json','audit/gate.inspect.post.json','ledgers/train337.json','gate-output/full337-gate.json','gate-output/training.denial.json'):
- path=root/relative
- if path.is_file(): artifacts[relative]=hashlib.sha256(path.read_bytes()).hexdigest()
-oom=False
-inspect=root/'audit/extract.inspect.post.json'
-if inspect.is_file(): oom=bool(json.loads(inspect.read_text())[0]['State'].get('OOMKilled'))
-payload={'schema_version':1,'artifact_type':'pams_pose_recovery_v4d_full337_failure_receipt',
- 'source_revision':sys.argv[2],'container_image_id':sys.argv[3],'failed_phase':sys.argv[4],
- 'exit_status':int(sys.argv[5]),'oom_killed':oom,'baseline_training_authorized':False,
- 'physical_gpu_index':1,'gpu_uuid':sys.argv[6],'gpu_memory_used_mib_preflight':int(sys.argv[7]),
- 'gpu_utilization_percent_preflight':int(sys.argv[8]),'artifacts':artifacts,
- 'observed_container_image_ids':sorted({
-   json.loads((root/relative).read_text())[0]['Image']
-   for relative in ('audit/extract.inspect.pre.json','audit/extract.inspect.post.json','audit/gate.inspect.pre.json','audit/gate.inspect.post.json')
-   if (root/relative).is_file()})}
-target=root/'audit/failure.receipt.json'; target.parent.mkdir(parents=True,exist_ok=True)
-with target.open('x',encoding='utf-8',newline='\n') as f:
- json.dump(payload,f,indent=2,sort_keys=True,allow_nan=False); f.write('\n')
-PY
+seal_run_outputs() {
+  local result=0 writable=''
+  if [[ -d "$RUN_ROOT" ]]; then
+    chmod -R a-w -- "$RUN_ROOT" || result=1
+    if ! writable="$(find "$RUN_ROOT" -xdev -perm /222 -print -quit)"; then result=1; fi
+    [[ -z "$writable" ]] || { printf 'unsealed run output: %s\n' "$writable" >&2; result=1; }
+  else
+    result=1
   fi
-  [[ ! -d "$RUN_ROOT" ]] || chmod -R a-w -- "$RUN_ROOT"
-  exit "$status"
+  if [[ -e "$FALLBACK_FAILURE_RECEIPT" ]]; then
+    chmod a-w -- "$FALLBACK_FAILURE_RECEIPT" || result=1
+    if ! writable="$(find "$FALLBACK_FAILURE_RECEIPT" -xdev -perm /222 -print -quit)"; then
+      result=1
+    fi
+    [[ -z "$writable" ]] || { printf 'unsealed fallback receipt: %s\n' "$writable" >&2; result=1; }
+  fi
+  return "$result"
 }
-[[ ! -e "$RUN_ROOT" ]] || fail "run root already exists: ${RUN_ROOT}"
+write_failure_receipt() {
+  local phase="$1" status="$2"
+  python3 "$FAILURE_WRITER" --kind full337 --run-root "$RUN_ROOT" \
+    --fallback-output "$FALLBACK_FAILURE_RECEIPT" --source-revision "$SOURCE_REVISION" \
+    --container-image-id "$IMAGE_ID" --failed-phase "$phase" --exit-status "$status" \
+    --gpu-uuid "$GPU_UUID" --gpu-memory-used-mib "$GPU_USED_MIB" \
+    --gpu-utilization-percent "$GPU_UTIL_PERCENT"
+}
+finalize() {
+  local status="$?" final_status receipt_status seal_status
+  final_status="$status"
+  trap - EXIT
+  set +e
+  cleanup
+  if [[ "$status" -ne 0 ]]; then
+    write_failure_receipt "$FAILURE_PHASE" "$status" >/dev/null
+    receipt_status="$?"
+    [[ "$receipt_status" -eq 0 ]] || final_status=2
+  fi
+  seal_run_outputs
+  seal_status="$?"
+  if [[ "$seal_status" -ne 0 ]]; then
+    final_status=2
+    write_failure_receipt run-root-sealing "$final_status" >/dev/null
+    receipt_status="$?"
+    [[ "$receipt_status" -eq 0 ]] || printf 'sealing-failure receipt unavailable\n' >&2
+    seal_run_outputs
+    seal_status="$?"
+    [[ "$seal_status" -eq 0 ]] || printf 'run outputs remain incompletely sealed\n' >&2
+  fi
+  exit "$final_status"
+}
+[[ ! -e "$RUN_ROOT" && ! -e "$FALLBACK_FAILURE_RECEIPT" ]] || \
+  fail "run output already exists: ${RUN_ROOT}"
 mkdir -p -- "$RUN_PARENT"
 mkdir -- "$RUN_ROOT"
 trap finalize EXIT
@@ -336,7 +357,8 @@ payload['extraction_authorization_sha256']=digest(Path(sys.argv[9]))
 with (root/'audit/run.receipt.json').open('x',encoding='utf-8',newline='\n') as f:
  json.dump(payload,f,indent=2,sort_keys=True,allow_nan=False); f.write('\n')
 PY
-chmod -R a-w -- "$RUN_ROOT"
+FAILURE_PHASE='run-root-sealing'
+seal_run_outputs || exit 2
 trap - EXIT
 if [[ "$GATE_STATUS" -eq 0 ]]; then
   printf 'v4d full337 gate passed; baseline training authorized: %s\n' "$RUN_ROOT"

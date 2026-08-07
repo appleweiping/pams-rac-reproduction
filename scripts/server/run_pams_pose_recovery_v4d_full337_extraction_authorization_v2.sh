@@ -54,7 +54,10 @@ readonly OUTPUT_DIR="${RUN_ROOT}/authorization"
 readonly AUDIT_DIR="${RUN_ROOT}/audit"
 readonly LOG_DIR="${RUN_ROOT}/logs"
 readonly AUTHORIZATION="${OUTPUT_DIR}/extraction.authorization.json"
+readonly FAILURE_WRITER="${SCRIPT_DIR}/write_pose_recovery_v4d_failure_receipt.py"
+readonly FALLBACK_FAILURE_RECEIPT="${RUN_ROOT}.failure.receipt.json"
 
+[[ -f "$FAILURE_WRITER" ]] || fail 'failure-receipt writer missing'
 [[ "$(docker image inspect "$IMAGE" --format '{{.Id}}')" == "$IMAGE_ID" ]] || fail 'image ID mismatch'
 require_sha256 "$SIDECAR" "$SIDECAR_SHA256" sidecar
 require_sha256 "$COMMITMENT" "$COMMITMENT_SHA256" commitment
@@ -65,38 +68,60 @@ require_sha256 "$SAME39_AUDIT" "$SAME39_AUDIT_SHA256" same39-audit
 require_sha256 "$SAME39_LEDGER" "$SAME39_LEDGER_SHA256" same39-ledger
 require_sha256 "$SAME39_SELECTION" "$SAME39_SELECTION_SHA256" same39-selection
 [[ -d "$V4A_CACHE" && -d "$SAME39_CACHE" ]] || fail 'missing pose-cache input'
-[[ -z "$(find "$SAME39_ROOT" -xdev -perm /022 -print -quit)" ]] || fail 'same39 root is not read-only sealed'
+[[ -z "$(find "$SAME39_ROOT" -xdev -perm /222 -print -quit)" ]] || fail 'same39 root is not read-only sealed'
 readonly NAME="pams-v4d-full337-auth-v2-${SOURCE_REVISION:0:12}-${PAMS_V4D_AUTH_ATTEMPT_ID,,}"
 FAILURE_PHASE='run-root-initialize'
 cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
-finalize() {
-  local status="$?"
-  trap - EXIT
-  cleanup
-  if [[ "$status" -ne 0 && -d "$RUN_ROOT" && ! -e "$AUDIT_DIR/failure.receipt.json" ]]; then
-    python3 - "$RUN_ROOT" "$SOURCE_REVISION" "$IMAGE_ID" "$FAILURE_PHASE" "$status" <<'PY'
-import hashlib,json,sys
-from pathlib import Path
-root=Path(sys.argv[1]); artifacts={}
-for relative in ('audit/container.inspect.pre.json','audit/container.inspect.post.json','authorization/extraction.authorization.json'):
- path=root/relative
- if path.is_file(): artifacts[relative]=hashlib.sha256(path.read_bytes()).hexdigest()
-payload={'schema_version':1,'artifact_type':'pams_pose_recovery_v4d_full337_extraction_authorization_v2_failure',
- 'source_revision':sys.argv[2],'container_image_id':sys.argv[3],'failed_phase':sys.argv[4],
- 'exit_status':int(sys.argv[5]),'baseline_training_authorized':False,'artifacts':artifacts,
- 'observed_container_image_ids':sorted({
-   json.loads((root/relative).read_text())[0]['Image']
-   for relative in ('audit/container.inspect.pre.json','audit/container.inspect.post.json')
-   if (root/relative).is_file()})}
-target=root/'audit/failure.receipt.json'; target.parent.mkdir(parents=True,exist_ok=True)
-with target.open('x',encoding='utf-8',newline='\n') as f:
- json.dump(payload,f,indent=2,sort_keys=True,allow_nan=False); f.write('\n')
-PY
+seal_run_outputs() {
+  local result=0 writable=''
+  if [[ -d "$RUN_ROOT" ]]; then
+    chmod -R a-w -- "$RUN_ROOT" || result=1
+    if ! writable="$(find "$RUN_ROOT" -xdev -perm /222 -print -quit)"; then result=1; fi
+    [[ -z "$writable" ]] || { printf 'unsealed run output: %s\n' "$writable" >&2; result=1; }
+  else
+    result=1
   fi
-  [[ ! -d "$RUN_ROOT" ]] || chmod -R a-w -- "$RUN_ROOT"
-  exit "$status"
+  if [[ -e "$FALLBACK_FAILURE_RECEIPT" ]]; then
+    chmod a-w -- "$FALLBACK_FAILURE_RECEIPT" || result=1
+    if ! writable="$(find "$FALLBACK_FAILURE_RECEIPT" -xdev -perm /222 -print -quit)"; then
+      result=1
+    fi
+    [[ -z "$writable" ]] || { printf 'unsealed fallback receipt: %s\n' "$writable" >&2; result=1; }
+  fi
+  return "$result"
 }
-[[ ! -e "$RUN_ROOT" ]] || fail "run root already exists: ${RUN_ROOT}"
+write_failure_receipt() {
+  local phase="$1" status="$2"
+  python3 "$FAILURE_WRITER" --kind authorization --run-root "$RUN_ROOT" \
+    --fallback-output "$FALLBACK_FAILURE_RECEIPT" --source-revision "$SOURCE_REVISION" \
+    --container-image-id "$IMAGE_ID" --failed-phase "$phase" --exit-status "$status"
+}
+finalize() {
+  local status="$?" final_status receipt_status seal_status
+  final_status="$status"
+  trap - EXIT
+  set +e
+  cleanup
+  if [[ "$status" -ne 0 ]]; then
+    write_failure_receipt "$FAILURE_PHASE" "$status" >/dev/null
+    receipt_status="$?"
+    [[ "$receipt_status" -eq 0 ]] || final_status=2
+  fi
+  seal_run_outputs
+  seal_status="$?"
+  if [[ "$seal_status" -ne 0 ]]; then
+    final_status=2
+    write_failure_receipt run-root-sealing "$final_status" >/dev/null
+    receipt_status="$?"
+    [[ "$receipt_status" -eq 0 ]] || printf 'sealing-failure receipt unavailable\n' >&2
+    seal_run_outputs
+    seal_status="$?"
+    [[ "$seal_status" -eq 0 ]] || printf 'run outputs remain incompletely sealed\n' >&2
+  fi
+  exit "$final_status"
+}
+[[ ! -e "$RUN_ROOT" && ! -e "$FALLBACK_FAILURE_RECEIPT" ]] || \
+  fail "run output already exists: ${RUN_ROOT}"
 mkdir -p -- "$RUN_PARENT"
 mkdir -- "$RUN_ROOT"
 trap finalize EXIT
@@ -192,6 +217,7 @@ payload={'schema_version':1,'artifact_type':'pams_pose_recovery_v4d_full337_extr
 with (root/'audit/run.receipt.json').open('x',encoding='utf-8',newline='\n') as f:
  json.dump(payload,f,indent=2,sort_keys=True,allow_nan=False); f.write('\n')
 PY
-chmod -R a-w -- "$RUN_ROOT"
+FAILURE_PHASE='run-root-sealing'
+seal_run_outputs || exit 2
 trap - EXIT
 printf 'v4d full337 extraction-only authorization issued: %s sha256=%s\n' "$RUN_ROOT" "$(sha256_file "$AUTHORIZATION")"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,7 @@ from audit_pose_recovery_v4d_full337 import (  # noqa: E402
     _longest_same_origin_run,
     _mask_transition_rate,
     _period_evidence,
+    _recovery_count_audit,
 )
 from pose_recovery_v4d_full337_contract import (  # noqa: E402
     SAME39_AUDIT_SHA256,
@@ -28,6 +30,7 @@ from pose_recovery_v4d_full337_contract import (  # noqa: E402
     SAME39_SELECTION_SHA256,
     validate_full337_gate,
 )
+from write_pose_recovery_v4d_failure_receipt import write_failure_receipt  # noqa: E402
 
 GATE_SHA256 = "304af8669703a73bf3d953e19848633986b682d478ee3a5f8be78114c26f11b8"
 
@@ -141,8 +144,26 @@ def test_shells_keep_authorizer_cpu_only_and_full_extraction_on_canonical_gpu1()
         < full_shell.index("trap finalize EXIT")
         < full_shell.index('mkdir -- "$SOURCE_EXPORT"')
     )
-    assert '! -e "$AUDIT_DIR/run.receipt.json"' in full_shell
-    assert '&& ! -e "$TRAIN_DENIAL"' not in full_shell
+    authorization_finalize = authorization_shell.split("finalize() {", maxsplit=1)[1].split(
+        '\n[[ ! -e "$RUN_ROOT"', maxsplit=1
+    )[0]
+    full_finalize = full_shell.split("finalize() {", maxsplit=1)[1].split(
+        '\n[[ ! -e "$RUN_ROOT"', maxsplit=1
+    )[0]
+    assert "set +e" in authorization_finalize
+    assert "set +e" in full_finalize
+    assert "write_failure_receipt" in authorization_finalize
+    assert "write_failure_receipt" in full_finalize
+    assert "seal_run_outputs" in authorization_finalize
+    assert "seal_run_outputs" in full_finalize
+    assert "TRAIN_DENIAL" not in authorization_finalize
+    assert "TRAIN_DENIAL" not in full_finalize
+    assert "-perm /022" not in authorization_shell
+    assert "-perm /022" not in full_shell
+    assert authorization_shell.count("-perm /222") >= 3
+    assert full_shell.count("-perm /222") >= 4
+    assert "FAILURE_PHASE='run-root-sealing'\nseal_run_outputs || exit 2" in authorization_shell
+    assert "FAILURE_PHASE='run-root-sealing'\nseal_run_outputs || exit 2" in full_shell
     assert (
         "pams_pose_recovery_v4d_full337_extraction_authorization_v2_run_receipt"
         in authorization_shell
@@ -195,6 +216,109 @@ def test_anchor_support_requires_two_frames_and_two_percent() -> None:
     assert _anchor_supported(2, 100)
     assert _anchor_supported(3, 101)
     assert not _anchor_supported(5, 0)
+
+
+def _valid_recovery_count_ledger() -> dict[str, int]:
+    return {
+        "source_frames": 100,
+        "expected_segment_frames": 100,
+        "decoded_segment_frames": 100,
+        "padded_tail_frames": 0,
+        "pass0_valid_frames": 60,
+        "base_v4a_valid_frames": 70,
+        "final_valid_frames": 80,
+        "recovered_valid_frames": 20,
+        "final_longest_valid_run": 50,
+        "keypointrcnn_fill_candidates": 10,
+        "keypointrcnn_frames_attempted": 100,
+        "keypointrcnn_frames_observed": 100,
+        "keypointrcnn_frames_with_candidates": 35,
+        "keypointrcnn_missing_frames_eligible": 30,
+        "keypointrcnn_missing_frames_with_candidates": 15,
+        "keypointrcnn_v4a_anchor_frames": 10,
+        "keypointrcnn_v4a_anchor_rejected_frames": 5,
+        "keypointrcnn_v4a_anchor_unusable_shape_frames": 5,
+        "keypointrcnn_candidate_total": 70,
+        "keypointrcnn_max_candidates_per_frame": 3,
+        "keypointrcnn_maximum_candidates_per_frame": 4,
+    }
+
+
+def test_recovery_count_audit_rejects_tampered_fill_and_anchor_ledger_fields() -> None:
+    ledger = _valid_recovery_count_ledger()
+    expected = {
+        "source_frames": 100,
+        "base_valid_frames": 70,
+        "final_valid_frames": 80,
+        "final_longest_valid_run": 50,
+    }
+    assert _recovery_count_audit(ledger, **expected)["passed"] is True
+
+    bad_fill = {**ledger, "keypointrcnn_fill_candidates": 9}
+    assert _recovery_count_audit(bad_fill, **expected)["passed"] is False
+    bad_anchor = {**ledger, "keypointrcnn_v4a_anchor_frames": 36}
+    assert _recovery_count_audit(bad_anchor, **expected)["passed"] is False
+    negative_anchor = {**ledger, "keypointrcnn_v4a_anchor_frames": -1}
+    assert _recovery_count_audit(negative_anchor, **expected)["passed"] is False
+
+
+def test_failure_receipt_tolerates_empty_and_corrupt_authorizer_inspects(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "authorization-run"
+    audit = root / "audit"
+    audit.mkdir(parents=True)
+    (audit / "container.inspect.pre.json").write_bytes(b"")
+    (audit / "container.inspect.post.json").write_text("{broken", encoding="utf-8")
+    fallback = tmp_path / "authorization-fallback.json"
+
+    output = write_failure_receipt(
+        kind="authorization",
+        run_root=root,
+        fallback_output=fallback,
+        source_revision="a" * 40,
+        container_image_id="sha256:" + "b" * 64,
+        failed_phase="authorization",
+        exit_status=2,
+    )
+    receipt = json.loads(output.read_text(encoding="utf-8"))
+    evidence = receipt["inspect_evidence"]
+    assert evidence["audit/container.inspect.pre.json"]["status"] == "empty"
+    assert evidence["audit/container.inspect.post.json"]["status"] == "corrupt"
+    assert receipt["observed_container_image_ids"] == []
+    assert receipt["receipt_location_scope"] == "run_root_audit"
+
+
+def test_failure_receipt_uses_o_excl_fallback_for_completed_run_sealing_failure(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "full337-run"
+    audit = root / "audit"
+    audit.mkdir(parents=True)
+    primary = audit / "failure.receipt.json"
+    primary.write_bytes(b"do-not-overwrite")
+    (audit / "run.receipt.json").write_text("{}\n", encoding="utf-8")
+    (audit / "extract.inspect.post.json").write_text("not-json", encoding="utf-8")
+    fallback = tmp_path / "full337-fallback.json"
+
+    output = write_failure_receipt(
+        kind="full337",
+        run_root=root,
+        fallback_output=fallback,
+        source_revision="a" * 40,
+        container_image_id="sha256:" + "b" * 64,
+        failed_phase="run-root-sealing",
+        exit_status=2,
+    )
+    receipt = json.loads(output.read_text(encoding="utf-8"))
+    assert output == fallback.resolve()
+    assert primary.read_bytes() == b"do-not-overwrite"
+    assert receipt["completed_run_receipt_present"] is True
+    assert receipt["sealing_failure_after_completed_run_receipt"] is True
+    assert receipt["inspect_evidence"]["audit/extract.inspect.post.json"]["status"] == (
+        "corrupt"
+    )
+    assert receipt["receipt_location_scope"] == "run_parent_fallback"
 
 
 def _audit_fixture(*, passed: bool) -> dict[str, Any]:

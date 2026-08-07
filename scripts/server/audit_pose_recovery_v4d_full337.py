@@ -226,6 +226,106 @@ def _anchor_supported(anchor_frames: int, final_valid_frames: int) -> bool:
     return anchor_frames >= 2 and anchor_frames / final_valid_frames >= 0.02
 
 
+def _recovery_count_audit(
+    recovery: Mapping[str, Any],
+    *,
+    source_frames: int,
+    base_valid_frames: int,
+    final_valid_frames: int,
+    final_longest_valid_run: int,
+) -> dict[str, Any]:
+    """Recompute fill and validate every v4d detector-count partition."""
+
+    derived_fill = final_valid_frames - base_valid_frames
+    roles = {
+        "source_frames": "ledger source frames",
+        "expected_segment_frames": "ledger expected frames",
+        "decoded_segment_frames": "ledger decoded frames",
+        "padded_tail_frames": "ledger padded frames",
+        "pass0_valid_frames": "ledger pass0 valid frames",
+        "base_v4a_valid_frames": "ledger base valid frames",
+        "final_valid_frames": "ledger final valid frames",
+        "recovered_valid_frames": "ledger recovered valid frames",
+        "final_longest_valid_run": "ledger final longest run",
+        "keypointrcnn_fill_candidates": "ledger KPRCNN fills",
+        "keypointrcnn_frames_attempted": "ledger KPRCNN attempts",
+        "keypointrcnn_frames_observed": "ledger KPRCNN observations",
+        "keypointrcnn_frames_with_candidates": "ledger KPRCNN detected frames",
+        "keypointrcnn_missing_frames_eligible": "ledger KPRCNN eligible missing frames",
+        "keypointrcnn_missing_frames_with_candidates": (
+            "ledger KPRCNN detected missing frames"
+        ),
+        "keypointrcnn_v4a_anchor_frames": "ledger KPRCNN anchor frames",
+        "keypointrcnn_v4a_anchor_rejected_frames": "ledger KPRCNN rejected anchors",
+        "keypointrcnn_v4a_anchor_unusable_shape_frames": (
+            "ledger KPRCNN unusable anchors"
+        ),
+        "keypointrcnn_candidate_total": "ledger KPRCNN candidates",
+        "keypointrcnn_max_candidates_per_frame": "ledger KPRCNN observed maximum",
+        "keypointrcnn_maximum_candidates_per_frame": "ledger KPRCNN configured maximum",
+    }
+    try:
+        counts = {key: integer(recovery.get(key), role) for key, role in roles.items()}
+    except Full337ContractError:
+        return {
+            "passed": False,
+            "count_fields_parseable": False,
+            "derived_fill_frames": derived_fill,
+            "ledger_fill_frames": 0,
+            "anchor_frames": 0,
+            "frames_with_candidates": 0,
+        }
+
+    pass0 = counts["pass0_valid_frames"]
+    base = counts["base_v4a_valid_frames"]
+    final = counts["final_valid_frames"]
+    fill = counts["keypointrcnn_fill_candidates"]
+    attempted = counts["keypointrcnn_frames_attempted"]
+    observed = counts["keypointrcnn_frames_observed"]
+    detected = counts["keypointrcnn_frames_with_candidates"]
+    missing_eligible = counts["keypointrcnn_missing_frames_eligible"]
+    missing_detected = counts["keypointrcnn_missing_frames_with_candidates"]
+    anchors = counts["keypointrcnn_v4a_anchor_frames"]
+    rejected = counts["keypointrcnn_v4a_anchor_rejected_frames"]
+    unusable = counts["keypointrcnn_v4a_anchor_unusable_shape_frames"]
+    candidates = counts["keypointrcnn_candidate_total"]
+    observed_maximum = counts["keypointrcnn_max_candidates_per_frame"]
+    configured_maximum = counts["keypointrcnn_maximum_candidates_per_frame"]
+    decoded = counts["decoded_segment_frames"]
+    padded = counts["padded_tail_frames"]
+    passed = (
+        counts["source_frames"] == source_frames
+        and counts["expected_segment_frames"] == source_frames
+        and decoded + padded == source_frames
+        and counts["base_v4a_valid_frames"] == base_valid_frames
+        and counts["final_valid_frames"] == final_valid_frames
+        and counts["final_longest_valid_run"] == final_longest_valid_run
+        and counts["recovered_valid_frames"] == final - pass0
+        and 0 <= pass0 <= base <= final <= source_frames
+        and derived_fill >= 0
+        and fill == derived_fill
+        and base <= decoded
+        and observed == attempted == decoded
+        and missing_eligible == decoded - base
+        and fill <= missing_detected <= missing_eligible
+        and detected <= observed
+        and anchors <= base
+        and anchors <= detected
+        and anchors + rejected + unusable == detected - missing_detected
+        and detected <= candidates <= configured_maximum * detected
+        and observed_maximum <= configured_maximum == 4
+        and final_longest_valid_run <= final
+    )
+    return {
+        "passed": bool(passed),
+        "count_fields_parseable": True,
+        "derived_fill_frames": derived_fill,
+        "ledger_fill_frames": fill,
+        "anchor_frames": anchors,
+        "frames_with_candidates": detected,
+    }
+
+
 def _mask_transition_rate(mask: np.ndarray) -> float:
     values = np.asarray(mask, dtype=np.bool_)
     if values.size < 2:
@@ -485,6 +585,13 @@ def audit_full337(
         base_valid = int(np.count_nonzero(base.valid_mask))
         longest = _longest_run(final.valid_mask)
         longest_same_origin = _longest_same_origin_run(final.valid_mask, base.valid_mask)
+        count_audit = _recovery_count_audit(
+            recovery,
+            source_frames=source_frames,
+            base_valid_frames=base_valid,
+            final_valid_frames=final_valid,
+            final_longest_valid_run=longest,
+        )
         row_ok = (
             row.get("pose_fingerprint") == V4D_POSE_FINGERPRINT
             and row.get("video_sha256") == record.video_sha256
@@ -519,6 +626,8 @@ def audit_full337(
             == record.video_sha256
         )
         if not row_ok:
+            invariant_failures += 1
+        if count_audit["passed"] is not True:
             invariant_failures += 1
         if not (
             np.all(final.valid_mask[base.valid_mask])
@@ -583,11 +692,8 @@ def audit_full337(
             confidence >= periodic_confidence_minimum
             and max(0, longest_same_origin - 1) >= period
         )
-        anchor_frames = integer(
-            recovery.get("keypointrcnn_v4a_anchor_frames"),
-            "anchor frames",
-        )
-        filled = integer(recovery.get("keypointrcnn_fill_candidates"), "fill candidates")
+        anchor_frames = int(count_audit["anchor_frames"])
+        filled = int(count_audit["derived_fill_frames"])
         anchor_supported = _anchor_supported(anchor_frames, final_valid)
         weakly_anchored = filled > 0 and not anchor_supported
         zero_anchor = filled > 0 and anchor_frames == 0
@@ -620,6 +726,9 @@ def audit_full337(
                 "source_frames": source_frames,
                 "base_v4a_valid_frames": base_valid,
                 "final_valid_frames": final_valid,
+                "derived_fill_frames": filled,
+                "ledger_fill_frames": count_audit["ledger_fill_frames"],
+                "recovery_count_invariants_passed": count_audit["passed"],
                 "source_coverage": coverage,
                 "longest_run_fraction": longest_fraction,
                 "longest_same_origin_valid_run": longest_same_origin,
@@ -632,6 +741,9 @@ def audit_full337(
                 "periodic_track": periodic,
                 "contiguous_cycle_supported": contiguous,
                 "v4a_anchor_frames": anchor_frames,
+                "keypointrcnn_frames_with_candidates": count_audit[
+                    "frames_with_candidates"
+                ],
                 "anchor_fraction_of_final_valid_frames": (
                     anchor_frames / final_valid if final_valid > 0 else 0.0
                 ),
