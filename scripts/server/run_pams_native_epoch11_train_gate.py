@@ -47,6 +47,7 @@ from pams.diagnostics import (
 )
 from pams.recurrence_carrier import build_recurrence_carrier_curves
 from pams.reproducibility import clean_git_revision
+from pams.run_manifest import CompletedRunReceipt
 from pams.training import (
     EncoderEpochStats,
     _progress_row,
@@ -85,6 +86,7 @@ _GATE_KEYS = {
     "expected_seed",
     "expected_training_video_total",
     "expected_completed_epochs",
+    "expected_completion_receipt_schema_version",
     "minimum_lag_pair_total",
     "near_collapse_rms",
     "thresholds",
@@ -108,6 +110,7 @@ class GateSpecification:
     expected_seed: int
     expected_training_video_total: int
     expected_completed_epochs: int
+    expected_completion_receipt_schema_version: int
     minimum_lag_pair_total: int
     near_collapse_rms: float
     thresholds: Mapping[str, float]
@@ -242,6 +245,10 @@ def load_gate_specification(path: str | Path) -> GateSpecification:
             raw["expected_completed_epochs"],
             name="expected_completed_epochs",
         ),
+        expected_completion_receipt_schema_version=_positive_integer(
+            raw["expected_completion_receipt_schema_version"],
+            name="expected_completion_receipt_schema_version",
+        ),
         minimum_lag_pair_total=_positive_integer(
             raw["minimum_lag_pair_total"],
             name="minimum_lag_pair_total",
@@ -278,6 +285,122 @@ def _validate_candidate_config(
         raise ValueError("native baseline gate requires one conventional-TCC scale")
     if actual["use_cross_cluster_negatives"] is not False:
         raise ValueError("native baseline gate requires prototype-bank negatives off")
+
+
+def _validate_encoder_completion_receipt(
+    path: Path,
+    *,
+    expected_sha256: str,
+    identities: Mapping[str, tuple[str, int]],
+    config: PAMSConfig,
+    specification: GateSpecification,
+    provenance: Any,
+    runtime_image: str,
+    runtime_environment: str,
+    runtime_source: str,
+) -> dict[str, Any]:
+    """Bind the gate to the caller-pinned, exact epoch-11 completion receipt."""
+
+    if re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is None:
+        raise ValueError("expected encoder completion receipt SHA-256 is invalid")
+    actual_sha256, actual_bytes = _stable_file_sha256(path)
+    if actual_sha256 != expected_sha256:
+        raise ValueError("encoder completion receipt SHA-256 differs from caller pin")
+    raw = _strict_json(
+        path.read_text(encoding="utf-8"),
+        document="encoder completion receipt",
+    )
+    receipt = CompletedRunReceipt.model_validate(raw)
+    if receipt.model_dump(mode="json") != raw:
+        raise ValueError("encoder completion receipt is not canonical schema-v3 JSON")
+    if (
+        receipt.schema_version
+        != specification.expected_completion_receipt_schema_version
+        or receipt.receipt_type != "completed"
+        or receipt.status != "completed"
+    ):
+        raise ValueError("encoder completion receipt is not the expected completed schema")
+    started = receipt.started
+    if (
+        started.schema_version != 2
+        or started.receipt_type != "started"
+        or started.status != "started"
+    ):
+        raise ValueError("encoder completion receipt does not embed a started schema-v2 receipt")
+    if started.git_sha != runtime_source or started.git_sha != provenance.source_git_sha:
+        raise ValueError("encoder completion receipt source revision mismatch")
+    if started.config_sha256 != config.fingerprint:
+        raise ValueError("encoder completion receipt config fingerprint mismatch")
+    if started.dataset_sha256 != provenance.dataset_fingerprint:
+        raise ValueError("encoder completion receipt dataset fingerprint mismatch")
+    if started.protocol != specification.expected_protocol or started.seed != specification.expected_seed:
+        raise ValueError("encoder completion receipt protocol or seed mismatch")
+    container = started.hardware.get("container")
+    expected_container = {
+        "image_id": runtime_image,
+        "environment_sha256": runtime_environment,
+        "source_revision": runtime_source,
+    }
+    if container != expected_container:
+        raise ValueError("encoder completion receipt container identity mismatch")
+    if set(receipt.metrics) != {"completed_epochs", "final_epoch"}:
+        raise ValueError("encoder completion receipt metrics schema mismatch")
+    if receipt.metrics["completed_epochs"] != specification.expected_completed_epochs:
+        raise ValueError("encoder completion receipt is not from epoch 11")
+    final_epoch = receipt.metrics["final_epoch"]
+    if (
+        not isinstance(final_epoch, Mapping)
+        or final_epoch.get("epoch") != specification.expected_completed_epochs
+    ):
+        raise ValueError("encoder completion receipt final epoch summary mismatch")
+
+    command = "\0".join(started.command)
+    if "train\0encoder" not in command or command.count("train\0encoder") != 1:
+        raise ValueError("encoder completion receipt command is not one encoder training run")
+    if "--epochs\0" + str(specification.expected_completed_epochs) not in command:
+        raise ValueError("encoder completion receipt command does not stop at epoch 11")
+    if "--resume" in command:
+        raise ValueError("epoch-11 encoder completion receipt unexpectedly names resume inputs")
+
+    expected_roles = {
+        "input_config",
+        "input_dataset_manifest",
+        "input_pose_cache_snapshot",
+        "input_train_pose_inputs",
+        "input_train_pose_input_commitment",
+        "input_dev_pose_inputs",
+        "input_dev_pose_input_commitment",
+        "input_test_identity_pose_inputs",
+        "input_test_identity_pose_input_commitment",
+        "output_encoder_checkpoint",
+        "progress_log",
+    }
+    artifacts = {artifact.role: artifact for artifact in receipt.artifacts}
+    if set(artifacts) != expected_roles:
+        raise ValueError("encoder completion receipt artifact roles differ from the frozen set")
+    expected_live_roles = {
+        "output_encoder_checkpoint": identities["encoder_checkpoint"],
+        "progress_log": identities["encoder_progress"],
+        "input_config": identities["experiment_config"],
+        "input_pose_cache_snapshot": identities["pose_snapshot"],
+    }
+    for role, (digest, byte_count) in expected_live_roles.items():
+        artifact = artifacts[role]
+        if artifact.sha256 != digest or artifact.bytes != byte_count:
+            raise ValueError(f"encoder completion receipt does not bind live {role} bytes")
+    if (
+        artifacts["input_dataset_manifest"].sha256
+        != artifacts["input_train_pose_inputs"].sha256
+    ):
+        raise ValueError("encoder completion receipt train manifest bindings differ")
+    return {
+        "schema_version": receipt.schema_version,
+        "run_id": receipt.run_id,
+        "sha256": actual_sha256,
+        "bytes": actual_bytes,
+        "completed_epochs": receipt.metrics["completed_epochs"],
+        "artifact_roles": sorted(artifacts),
+    }
 
 
 def _checkpoint_epoch_metadata(
@@ -561,7 +684,8 @@ def _cycle_margin(
     if any(value is None for value in values):
         return None
     half, full, three_half = values
-    assert half is not None and full is not None and three_half is not None
+    if half is None or full is None or three_half is None:
+        raise RuntimeError("lag values changed after eligibility validation")
     return full - 0.5 * (half + three_half)
 
 
@@ -624,9 +748,8 @@ def mechanism_samples_from_embeddings(
         separation: float | None = None
         beats_nulls: bool | None = None
         if eligible:
-            assert real_margin is not None
-            assert shuffled_margin is not None
-            assert zero_margin is not None
+            if real_margin is None or shuffled_margin is None or zero_margin is None:
+                raise RuntimeError("cycle margins changed after eligibility validation")
             separation = real_margin - max(shuffled_margin, zero_margin)
             beats_nulls = separation > 0.0
         samples.append(
@@ -847,6 +970,8 @@ def _model_state_sha256(model: nn.Module) -> str:
 def run_gate(
     encoder_checkpoint_path: str | Path,
     encoder_progress_path: str | Path,
+    encoder_completion_receipt_path: str | Path,
+    expected_encoder_completion_receipt_sha256: str,
     config_path: str | Path,
     gate_specification_path: str | Path,
     pose_cache_dir: str | Path,
@@ -860,6 +985,7 @@ def run_gate(
     paths = {
         "encoder_checkpoint": Path(encoder_checkpoint_path),
         "encoder_progress": Path(encoder_progress_path),
+        "encoder_completion_receipt": Path(encoder_completion_receipt_path),
         "experiment_config": Path(config_path),
         "gate_specification": Path(gate_specification_path),
         "pose_cache_directory": Path(pose_cache_dir),
@@ -902,6 +1028,17 @@ def run_gate(
         or runtime_source != provenance.source_git_sha
     ):
         raise ValueError("runtime container identity differs from checkpoint provenance")
+    completion_receipt = _validate_encoder_completion_receipt(
+        paths["encoder_completion_receipt"],
+        expected_sha256=expected_encoder_completion_receipt_sha256,
+        identities=identities,
+        config=config,
+        specification=specification,
+        provenance=provenance,
+        runtime_image=runtime_image,
+        runtime_environment=runtime_environment,
+        runtime_source=runtime_source,
+    )
     schedule, _ = _checkpoint_epoch_metadata(
         paths["encoder_checkpoint"],
         paths["encoder_progress"],
@@ -997,6 +1134,7 @@ def run_gate(
             "accepted_scientific_inputs": [
                 "epoch11_encoder_checkpoint",
                 "epoch11_encoder_progress",
+                "caller_pinned_epoch11_encoder_completion_receipt",
                 "checkpoint_bound_train337_pose_cache",
                 "train337_pose_snapshot",
             ],
@@ -1018,6 +1156,7 @@ def run_gate(
             "source_receipt_covered_paths": source_covered_paths,
             "container_image_id": provenance.container_image_id,
             "container_environment_sha256": provenance.container_environment_sha256,
+            "encoder_completion_receipt": completion_receipt,
         },
         "schedule": schedule,
         "representation": distribution,
@@ -1094,6 +1233,9 @@ def write_gate_artifact(output: Path, payload: Mapping[str, Any]) -> tuple[Path,
         "encoder_continuation_authorized": payload["gate"]["encoder_continuation_authorized"],
         "encoder_checkpoint_sha256": payload["inputs"]["encoder_checkpoint_sha256"],
         "encoder_progress_sha256": payload["inputs"]["encoder_progress_sha256"],
+        "encoder_completion_receipt_sha256": payload["inputs"][
+            "encoder_completion_receipt_sha256"
+        ],
         "pose_cache_set_sha256": payload["inputs"]["pose_cache_set_sha256"],
         "gate_specification_sha256": payload["inputs"]["gate_specification_sha256"],
         "source_git_sha": payload["inputs"]["source_git_sha"],
@@ -1106,6 +1248,11 @@ def _parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--encoder-checkpoint", type=Path, required=True)
     parser.add_argument("--encoder-progress", type=Path, required=True)
+    parser.add_argument("--encoder-completion-receipt", type=Path, required=True)
+    parser.add_argument(
+        "--expected-encoder-completion-receipt-sha256",
+        required=True,
+    )
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--gate-specification", type=Path, required=True)
     parser.add_argument("--pose-cache-dir", type=Path, required=True)
@@ -1122,6 +1269,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     payload = run_gate(
         arguments.encoder_checkpoint,
         arguments.encoder_progress,
+        arguments.encoder_completion_receipt,
+        arguments.expected_encoder_completion_receipt_sha256,
         arguments.config,
         arguments.gate_specification,
         arguments.pose_cache_dir,

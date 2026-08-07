@@ -1,4 +1,4 @@
-# CANDIDATE A - NATIVE TABLE-2 PROXY: WINDOW 16 / ANCHOR STRIDE 4.
+# CANDIDATE B - NATIVE TABLE-2 PROXY: WINDOW 16 / ANCHOR STRIDE 2.
 #
 # This is an independently inferred executable proxy for the conventional-TCC
 # baseline named in PAMS Table 2.  The paper discloses the broad architecture,
@@ -83,8 +83,8 @@ loss:
   # Table 2 describes the conventional-TCC baseline as non-multi-scale.
   scales: [1.0]
   temperature: 0.1
-  # Candidate A uses one preregistered point from the paper's disclosed sweep.
-  anchor_stride: 4
+  # Candidate B uses one preregistered point from the paper's disclosed sweep.
+  anchor_stride: 2
   kmeans_clusters: 8
   kmeans_refresh_epochs: 5
   # Disable the reproduction's inferred prototype-bank negatives.  The TCC

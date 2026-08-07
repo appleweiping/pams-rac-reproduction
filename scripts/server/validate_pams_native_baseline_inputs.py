@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
 import sys
 from collections.abc import Mapping, Sequence
@@ -22,6 +23,7 @@ from typing import Any
 
 from pams.config import PAMSConfig, load_config
 from pams.data import (
+    _reject_json_object_keys_before_deserialization,
     load_pose_cache_set,
     load_pose_input_commitment,
     load_pose_input_manifest,
@@ -53,6 +55,221 @@ _EXPECTED_COMMITMENT_SHA256 = {
     "dev": "15083106499f6917c8c7c91f6e3985e4938eedbe370e1f40c281dd00884bcef0",
     "test": "634eb578de8b9d96aa33c128ff2cff8e4e4759304297d331f924ae2b354be6c0",
 }
+_FORBIDDEN_UPSTREAM_KEYS = frozenset(
+    {
+        "action",
+        "actions",
+        "count",
+        "counts",
+        "cycle_boundaries",
+        "cycle_boundary",
+        "label",
+        "labels",
+        "metrics_result",
+        "nmae",
+        "obo",
+        "prediction",
+        "predictions",
+        "target",
+        "targets",
+    }
+)
+_POSE_GATE_ROOT_KEYS = frozenset(
+    {
+        "schema_version",
+        "artifact_type",
+        "protocol",
+        "split",
+        "passed",
+        "bindings",
+        "metrics",
+        "criteria",
+        "paired_rows",
+        "paired_rows_sha256",
+        "mount_audit",
+    }
+)
+_POSE_GATE_METRIC_KEYS = frozenset(
+    {
+        "record_total",
+        "v4_zero_video_total",
+        "recovered_reference_zero_video_total",
+        "reference_usable_to_v4_zero_video_total",
+        "source_coverage_mean",
+        "source_coverage_p10",
+        "source_coverage_p25",
+        "source_coverage_median",
+        "final_below_pass0_video_total",
+        "observed_at_most_8_video_total",
+        "longest_run_fraction_p10",
+        "longest_run_fraction_median",
+        "pose_coordinate_interpolation_true_total",
+        "official_segment_timeline_invariant_failure_total",
+        "pass0_source_valid_count_mismatch_total",
+        "pass0_preservation_failure_total",
+        "pass0_shared_coordinate_max_abs_error",
+        "native_timeline_invariant_failure_total",
+    }
+)
+_POSE_GATE_CRITERION_KEYS = _POSE_GATE_METRIC_KEYS - {"record_total"}
+_POSE_GATE_BINDING_KEYS = frozenset(
+    {
+        "gate_sha256",
+        "sidecar_sha256",
+        "commitment_sha256",
+        "identity_sha256",
+        "reference_ledger_sha256",
+        "reference_pose_fingerprint",
+        "reference_pose_cache_set_sha256",
+        "v4_ledger_sha256",
+        "v4_pose_fingerprint",
+        "v4_pose_cache_set_sha256",
+        "heavy_model_asset_sha256",
+    }
+)
+_POSE_GATE_MOUNT_KEYS = frozenset(
+    {
+        "train_identity_mounted",
+        "train_pose_caches_mounted",
+        "source_videos_mounted",
+        "dev84_mounted",
+        "test105_mounted",
+        "targets_mounted",
+    }
+)
+_POSE_GATE_PAIRED_ROW_KEYS = frozenset(
+    {
+        "video_id_sha256",
+        "source_frames",
+        "reference_cached_valid_frames",
+        "pass0_valid_frames",
+        "recovered_valid_frames",
+        "v4_cached_valid_frames",
+        "final_valid_frames",
+        "observed_span_frames",
+        "source_coverage",
+        "longest_run_fraction",
+        "pass0_preserved",
+    }
+)
+_POSE_RUN_RECEIPT_KEYS = frozenset(
+    {
+        "schema_version",
+        "artifact_type",
+        "source_revision",
+        "container_image_id",
+        "config_file_sha256",
+        "config_fingerprint",
+        "pose_fingerprint",
+        "heavy_model_asset_sha256",
+        "temporal_resampling",
+        "scope",
+        "paired_gate_exit_status",
+        "paired_gate_sha256",
+    }
+)
+_POSE_LEDGER_ROOT_KEYS = frozenset(
+    {
+        "schema_version",
+        "artifact_type",
+        "input_kind",
+        "protocol",
+        "split",
+        "sidecar_sha256",
+        "commitment_file_sha256",
+        "full_train_identity_sha256",
+        "identity_sha256",
+        "selection_sha256",
+        "pose_fingerprint",
+        "pose_recovery",
+        "successful_cache_snapshot",
+        "selected",
+        "completed",
+        "extracted",
+        "skipped",
+        "failed",
+        "recovery_version",
+        "caches",
+        "failures",
+    }
+)
+_POSE_LEDGER_RECOVERY_KEYS = frozenset(
+    {
+        "schema_version",
+        "preprocessing_revision",
+        "recovery_mode",
+        "heavy_model_id",
+        "heavy_model_asset_sha256",
+        "temporal_resampling",
+        "pose_coordinate_interpolation",
+    }
+)
+_POSE_SNAPSHOT_KEYS = frozenset(
+    {"schema_version", "pose_fingerprint", "fingerprint", "entry_count", "entries"}
+)
+_POSE_SNAPSHOT_ENTRY_KEYS = frozenset({"video_id", "cache_sha256", "bytes"})
+_POSE_LEDGER_CACHE_KEYS = frozenset(
+    {
+        "video_id",
+        "video_path",
+        "video_sha256",
+        "annotation_sha256",
+        "pose_fingerprint",
+        "pose_model",
+        "source_frames",
+        "source_valid_frames",
+        "selected_source_frames",
+        "fps",
+        "cached_frames",
+        "cached_valid_frames",
+        "clip_start_frame",
+        "clip_end_frame",
+        "decoded_clip_frames",
+        "expected_clip_frames",
+        "padded_tail_frames",
+        "incomplete_clip_policy",
+        "recovery_audit",
+        "cache_path",
+        "skipped",
+    }
+)
+_POSE_LEDGER_RECOVERY_AUDIT_KEYS = frozenset(
+    {
+        "schema_version",
+        "source_frames",
+        "decoded_segment_frames",
+        "expected_segment_frames",
+        "padded_tail_frames",
+        "pass0_valid_frames",
+        "pass0_valid_mask_sha256",
+        "recovered_valid_frames",
+        "final_valid_frames",
+        "final_valid_mask_sha256",
+        "final_longest_valid_run",
+        "observed_span_frames",
+        "pass0_observations_preserved",
+        "pass0_shared_coordinate_max_abs_error",
+        "heavy_full_frame_attempted",
+        "heavy_full_frame_detected",
+        "roi_retry_eligible",
+        "roi_retry_attempted",
+        "roi_retry_detected",
+        "heavy_model_id",
+        "heavy_model_asset_sha256",
+        "temporal_resampling",
+        "pose_coordinate_interpolation",
+        "recovery_mode",
+        "heavy_video_frames_observed",
+        "heavy_video_valid_frames",
+        "heavy_video_pass0_overlap_valid_frames",
+        "heavy_video_fill_candidates",
+        "heavy_video_valid_mask_sha256",
+        "heavy_video_candidate_total",
+        "heavy_video_max_candidates_per_frame",
+        "heavy_video_num_poses",
+        "heavy_video_timestamp_sha256",
+    }
+)
 
 
 class NativeBaselineInputError(RuntimeError):
@@ -70,6 +287,17 @@ def _sha256_file(path: Path) -> str:
         while chunk := handle.read(1024 * 1024):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _canonical_sha256(value: Any) -> str:
+    encoded = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _sha256(value: Any, role: str) -> str:
@@ -98,13 +326,21 @@ def _load_json(path: Path, *, role: str) -> tuple[dict[str, Any], str]:
     source = path.resolve(strict=True)
     encoded = source.read_bytes()
     try:
+        text = encoded.decode("utf-8")
+        _reject_json_object_keys_before_deserialization(
+            text,
+            forbidden=_FORBIDDEN_UPSTREAM_KEYS,
+            document_name=role,
+        )
         payload = json.loads(
-            encoded.decode("utf-8"),
+            text,
             object_pairs_hook=_reject_duplicate_fields,
             parse_constant=_reject_non_finite,
         )
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise NativeBaselineInputError(f"{role} must be strict UTF-8 JSON") from exc
+    except ValueError as exc:
+        raise NativeBaselineInputError(str(exc)) from exc
     _require(isinstance(payload, dict), f"{role} root must be an object")
     return payload, hashlib.sha256(encoded).hexdigest()
 
@@ -112,6 +348,19 @@ def _load_json(path: Path, *, role: str) -> tuple[dict[str, Any], str]:
 def _mapping(value: Any, role: str) -> Mapping[str, Any]:
     _require(isinstance(value, Mapping), f"{role} must be an object")
     return value
+
+
+def _require_exact_keys(
+    value: Mapping[str, Any],
+    expected: set[str] | frozenset[str],
+    role: str,
+) -> None:
+    actual = set(value)
+    _require(
+        actual == set(expected),
+        f"{role} schema mismatch: missing={sorted(set(expected) - actual)}, "
+        f"extra={sorted(actual - set(expected))}",
+    )
 
 
 def _validate_proxy_config(
@@ -149,9 +398,8 @@ def _validate_proxy_config(
         "Table-2 proxy must retain sinusoidal positional encoding",
     )
     _require(
-        candidate.period.training_mode == "fixed_period_inferred"
-        and candidate.period.fixed_period_frames == 16,
-        "Table-2 proxy must use the inferred fixed period 16",
+        candidate.period.training_mode == "fixed_period_inferred",
+        "Table-2 proxy must use an inferred fixed period",
     )
     _require(
         candidate.period.minimum == 4
@@ -169,7 +417,14 @@ def _validate_proxy_config(
     )
     _require(candidate.loss.scales == (1.0,), "proxy must use one TCC scale")
     _require(candidate.loss.temperature == 0.1, "proxy temperature must be 0.1")
-    _require(candidate.loss.anchor_stride == 4, "proxy anchor stride must be 4")
+    _require(
+        (
+            candidate.period.fixed_period_frames,
+            candidate.loss.anchor_stride,
+        )
+        in {(16, 4), (16, 2), (24, 4)},
+        "proxy period/stride pair is outside the frozen A/B/C matrix",
+    )
     _require(
         candidate.loss.use_cross_cluster_negatives is False,
         "inferred cross-cluster prototype negatives must be disabled",
@@ -270,11 +525,28 @@ def _validate_pose_recovery_authorization(
         expected_version not in _REJECTED_POSE_RECOVERY_VERSIONS,
         f"pose-recovery version is formally rejected: {expected_version}",
     )
-    _require(authorization.get("schema_version") == 1, "pose authorization schema mismatch")
     _require(
         "authorization_sha256" not in authorization,
         "pose authorization must not contain a self-reported SHA",
     )
+    _require_exact_keys(
+        authorization,
+        {
+            "schema_version",
+            "artifact_type",
+            "version",
+            "authorized",
+            "authorized_consumer",
+            "classification",
+            "protocol",
+            "split",
+            "record_total",
+            "bindings",
+            "scope",
+        },
+        "pose authorization",
+    )
+    _require(authorization.get("schema_version") == 1, "pose authorization schema mismatch")
     _require(
         authorization.get("artifact_type") == _POSE_AUTHORIZATION_TYPE,
         "unexpected pose authorization artifact type",
@@ -296,6 +568,21 @@ def _validate_pose_recovery_authorization(
         "pose authorization is not scoped to train337",
     )
     bindings = _mapping(authorization.get("bindings"), "pose authorization bindings")
+    _require_exact_keys(
+        bindings,
+        {
+            "source_revision",
+            "container_image_id",
+            "config_file_sha256",
+            "config_fingerprint",
+            "pose_fingerprint",
+            "paired_gate_sha256",
+            "run_receipt_sha256",
+            "ledger_sha256",
+            "pose_cache_set_sha256",
+        },
+        "pose authorization bindings",
+    )
     expected_bindings = {
         "config_file_sha256": config_sha256,
         "config_fingerprint": config_fingerprint,
@@ -333,16 +620,102 @@ def _validate_pose_recovery_authorization(
         "network_mode": "none",
         "source_export_read_only": True,
     }
+    _require_exact_keys(scope, set(expected_scope), "pose authorization scope")
     for field, expected in expected_scope.items():
         _require(scope.get(field) == expected, f"pose authorization scope mismatch: {field}")
 
+    _require_exact_keys(gate, _POSE_GATE_ROOT_KEYS, "pose-recovery paired gate")
     _require(gate.get("schema_version") == 1, "pose-recovery gate schema mismatch")
+    _require(
+        gate.get("artifact_type")
+        == f"pams_pose_recovery_{expected_version}_train337_paired_audit",
+        "pose-recovery gate artifact type mismatch",
+    )
     _require(gate.get("protocol") == _EXPECTED_PROTOCOL, "pose-recovery gate protocol mismatch")
     _require(gate.get("split") == "train", "pose-recovery gate must be train-only")
     _require(gate.get("passed") is True, "pose-recovery paired gate did not pass")
+    gate_bindings = _mapping(gate.get("bindings"), "pose-recovery gate bindings")
+    _require_exact_keys(gate_bindings, _POSE_GATE_BINDING_KEYS, "pose-recovery gate bindings")
+    _require(
+        gate_bindings.get("sidecar_sha256") == _EXPECTED_SIDECAR_SHA256["train"],
+        "pose-recovery gate train sidecar mismatch",
+    )
+    _require(
+        gate_bindings.get("commitment_sha256") == _EXPECTED_COMMITMENT_SHA256["train"],
+        "pose-recovery gate train commitment mismatch",
+    )
+    for field in _POSE_GATE_BINDING_KEYS:
+        _sha256(gate_bindings.get(field), f"pose-recovery gate binding {field}")
+    _require(
+        gate_bindings.get("v4_ledger_sha256") == ledger_sha256,
+        "pose-recovery gate ledger binding mismatch",
+    )
+    _require(
+        gate_bindings.get("v4_pose_fingerprint") == pose_fingerprint,
+        "pose-recovery gate pose fingerprint mismatch",
+    )
+    _require(
+        gate_bindings.get("v4_pose_cache_set_sha256") == pose_cache_set_sha256,
+        "pose-recovery gate pose-cache set mismatch",
+    )
     metrics = _mapping(gate.get("metrics"), "pose-recovery gate metrics")
+    _require_exact_keys(metrics, _POSE_GATE_METRIC_KEYS, "pose-recovery gate metrics")
     _require(metrics.get("record_total") == 337, "pose-recovery gate is not train337")
+    criteria = _mapping(gate.get("criteria"), "pose-recovery gate criteria")
+    _require_exact_keys(criteria, _POSE_GATE_CRITERION_KEYS, "pose-recovery gate criteria")
+    for name, raw_criterion in criteria.items():
+        criterion = _mapping(raw_criterion, f"pose-recovery gate criterion {name}")
+        _require_exact_keys(
+            criterion,
+            {"value", "relation", "threshold", "passed"},
+            f"pose-recovery gate criterion {name}",
+        )
+        _require(
+            criterion.get("relation") in {"at_least", "at_most"},
+            f"pose-recovery gate criterion relation mismatch: {name}",
+        )
+        value = criterion.get("value")
+        threshold = criterion.get("threshold")
+        _require(
+            not isinstance(value, bool)
+            and isinstance(value, int | float)
+            and math.isfinite(float(value))
+            and not isinstance(threshold, bool)
+            and isinstance(threshold, int | float)
+            and math.isfinite(float(threshold)),
+            f"pose-recovery gate criterion is non-numeric: {name}",
+        )
+        _require(
+            value == metrics.get(name),
+            f"pose-recovery gate criterion and metric differ: {name}",
+        )
+        expected_pass = (
+            value >= threshold
+            if criterion.get("relation") == "at_least"
+            else value <= threshold
+        )
+        _require(
+            criterion.get("passed") is expected_pass is True,
+            f"pose-recovery gate criterion did not pass: {name}",
+        )
+    paired_rows = gate.get("paired_rows")
+    _require(
+        isinstance(paired_rows, list) and len(paired_rows) == 337,
+        "pose-recovery gate paired rows must contain train337",
+    )
+    for index, raw_row in enumerate(paired_rows):
+        row = _mapping(raw_row, f"pose-recovery gate paired row {index}")
+        _require_exact_keys(
+            row,
+            _POSE_GATE_PAIRED_ROW_KEYS,
+            f"pose-recovery gate paired row {index}",
+        )
+    _require(
+        gate.get("paired_rows_sha256") == _canonical_sha256(paired_rows),
+        "pose-recovery gate paired-row SHA mismatch",
+    )
     mounts = _mapping(gate.get("mount_audit"), "pose-recovery gate mount audit")
+    _require_exact_keys(mounts, _POSE_GATE_MOUNT_KEYS, "pose-recovery gate mount audit")
     _require(mounts.get("train_identity_mounted") is True, "train identity is absent")
     _require(mounts.get("train_pose_caches_mounted") is True, "train pose is absent")
     for field in (
@@ -353,7 +726,13 @@ def _validate_pose_recovery_authorization(
     ):
         _require(mounts.get(field) is False, f"pose gate violates firewall: {field}")
 
+    _require_exact_keys(receipt, _POSE_RUN_RECEIPT_KEYS, "pose-recovery run receipt")
     _require(receipt.get("schema_version") == 1, "pose-recovery run receipt schema mismatch")
+    _require(
+        receipt.get("artifact_type")
+        == f"pams_pose_recovery_{expected_version}_train337_run_receipt",
+        "pose-recovery run receipt artifact type mismatch",
+    )
     _require(
         receipt.get("source_revision") == source_revision,
         "pose-recovery run receipt source revision mismatch",
@@ -375,6 +754,11 @@ def _validate_pose_recovery_authorization(
         "pose-recovery run receipt pose fingerprint mismatch",
     )
     _require(
+        receipt.get("heavy_model_asset_sha256")
+        == gate_bindings.get("heavy_model_asset_sha256"),
+        "pose-recovery run receipt heavy-model binding mismatch",
+    )
+    _require(
         receipt.get("temporal_resampling") == "none_native_timeline",
         "pose-recovery run receipt is not native timeline",
     )
@@ -386,6 +770,147 @@ def _validate_pose_recovery_authorization(
     _require(
         receipt.get("paired_gate_sha256") == gate_sha256,
         "pose-recovery run receipt does not bind the paired gate",
+    )
+
+
+def _validate_pose_recovery_ledger(
+    ledger: Mapping[str, Any],
+    *,
+    expected_version: str,
+    pose_recovery: PAMSConfig,
+    pose_cache_set_sha256: str,
+) -> None:
+    """Validate the canonical v4c full-train ledger without schema slack."""
+
+    _require_exact_keys(ledger, _POSE_LEDGER_ROOT_KEYS, "pose-recovery train337 ledger")
+    _require(ledger.get("schema_version") == 2, "pose ledger schema mismatch")
+    _require(
+        ledger.get("artifact_type")
+        == f"pams_pose_recovery_{expected_version}_train337_ledger",
+        "pose ledger artifact type mismatch",
+    )
+    _require(
+        ledger.get("input_kind") == "label_free_train337_hashed_full_set",
+        "pose ledger input kind mismatch",
+    )
+    _require(ledger.get("protocol") == _EXPECTED_PROTOCOL, "pose ledger protocol mismatch")
+    _require(ledger.get("split") == "train", "pose ledger split mismatch")
+    _require(
+        ledger.get("sidecar_sha256") == _EXPECTED_SIDECAR_SHA256["train"],
+        "pose ledger train sidecar mismatch",
+    )
+    _require(
+        ledger.get("commitment_file_sha256") == _EXPECTED_COMMITMENT_SHA256["train"],
+        "pose ledger train commitment mismatch",
+    )
+    full_identity = _sha256(ledger.get("full_train_identity_sha256"), "full train identity")
+    _require(
+        ledger.get("identity_sha256") == full_identity,
+        "pose ledger selected identity is not the full train identity",
+    )
+    _sha256(ledger.get("selection_sha256"), "pose ledger selection")
+    _require(
+        ledger.get("pose_fingerprint") == pose_recovery.pose_fingerprint,
+        "pose ledger fingerprint mismatch",
+    )
+    _require(ledger.get("recovery_version") == expected_version, "pose ledger version mismatch")
+    _require(
+        ledger.get("selected") == 337
+        and ledger.get("completed") == 337
+        and ledger.get("extracted") == 337
+        and ledger.get("skipped") == 0
+        and ledger.get("failed") == 0,
+        "pose ledger is not one complete fresh train337 extraction",
+    )
+    _require(ledger.get("failures") == [], "pose ledger contains failures")
+
+    recovery = _mapping(ledger.get("pose_recovery"), "pose ledger recovery declaration")
+    _require_exact_keys(recovery, _POSE_LEDGER_RECOVERY_KEYS, "pose ledger recovery declaration")
+    expected_recovery = pose_recovery.pose.recovery
+    _require(expected_recovery is not None, "pose recovery config has no recovery block")
+    _require(recovery.get("schema_version") == 1, "pose recovery declaration schema mismatch")
+    _require(
+        recovery.get("preprocessing_revision")
+        == pose_recovery.pose.preprocessing_revision,
+        "pose recovery preprocessing revision mismatch",
+    )
+    _require(
+        recovery.get("heavy_model_id") == expected_recovery.heavy_model_id
+        and recovery.get("heavy_model_asset_sha256")
+        == expected_recovery.heavy_model_asset_sha256
+        and recovery.get("temporal_resampling")
+        == expected_recovery.temporal_resampling
+        and recovery.get("pose_coordinate_interpolation")
+        == expected_recovery.pose_coordinate_interpolation,
+        "pose ledger recovery configuration mismatch",
+    )
+    _require(
+        isinstance(recovery.get("recovery_mode"), str)
+        and bool(str(recovery.get("recovery_mode")).strip()),
+        "pose ledger recovery mode is empty",
+    )
+
+    snapshot = _mapping(
+        ledger.get("successful_cache_snapshot"),
+        "pose ledger successful cache snapshot",
+    )
+    _require_exact_keys(snapshot, _POSE_SNAPSHOT_KEYS, "pose ledger successful cache snapshot")
+    _require(snapshot.get("schema_version") == 1, "pose ledger snapshot schema mismatch")
+    _require(
+        snapshot.get("pose_fingerprint") == pose_recovery.pose_fingerprint,
+        "pose ledger snapshot pose fingerprint mismatch",
+    )
+    _require(
+        snapshot.get("fingerprint") == pose_cache_set_sha256,
+        "pose ledger snapshot fingerprint mismatch",
+    )
+    snapshot_entries = snapshot.get("entries")
+    _require(
+        snapshot.get("entry_count") == 337
+        and isinstance(snapshot_entries, list)
+        and len(snapshot_entries) == 337,
+        "pose ledger snapshot is not train337",
+    )
+    for index, raw_entry in enumerate(snapshot_entries):
+        entry = _mapping(raw_entry, f"pose ledger snapshot entry {index}")
+        _require_exact_keys(
+            entry,
+            _POSE_SNAPSHOT_ENTRY_KEYS,
+            f"pose ledger snapshot entry {index}",
+        )
+
+    caches = ledger.get("caches")
+    _require(isinstance(caches, list) and len(caches) == 337, "pose ledger caches are not train337")
+    cache_ids: list[str] = []
+    for index, raw_cache in enumerate(caches):
+        cache = _mapping(raw_cache, f"pose ledger cache row {index}")
+        _require_exact_keys(cache, _POSE_LEDGER_CACHE_KEYS, f"pose ledger cache row {index}")
+        _require(
+            cache.get("pose_fingerprint") == pose_recovery.pose_fingerprint,
+            f"pose ledger cache fingerprint mismatch at row {index}",
+        )
+        _require(cache.get("skipped") is False, f"pose ledger cache row {index} was skipped")
+        video_id = cache.get("video_id")
+        _require(
+            isinstance(video_id, str) and bool(video_id.strip()),
+            f"pose ledger cache video ID is invalid at row {index}",
+        )
+        cache_ids.append(video_id)
+        audit = _mapping(cache.get("recovery_audit"), f"pose ledger recovery audit {index}")
+        _require_exact_keys(
+            audit,
+            _POSE_LEDGER_RECOVERY_AUDIT_KEYS,
+            f"pose ledger recovery audit {index}",
+        )
+        _require(
+            audit.get("recovery_mode") == recovery.get("recovery_mode"),
+            f"pose ledger recovery mode mismatch at row {index}",
+        )
+    snapshot_ids = [str(item["video_id"]) for item in snapshot_entries]
+    _require(len(set(cache_ids)) == 337, "pose ledger contains duplicate cache video IDs")
+    _require(
+        sorted(cache_ids) == sorted(snapshot_ids),
+        "pose ledger caches and snapshot entries name different videos",
     )
 
 
@@ -488,14 +1013,11 @@ def validate_native_baseline_inputs(
     ledger_path = pose_recovery_ledger_path.resolve(strict=True)
     pose_recovery_ledger_sha256 = _sha256_file(ledger_path)
     ledger, _ = _load_json(ledger_path, role="pose-recovery train337 ledger")
-    _require(ledger.get("protocol") == _EXPECTED_PROTOCOL, "pose ledger protocol mismatch")
-    _require(ledger.get("split") == "train", "pose ledger split mismatch")
-    _require(ledger.get("selected") == 337, "pose ledger selected count mismatch")
-    _require(ledger.get("completed") == 337, "pose ledger completed count mismatch")
-    _require(ledger.get("failed") == 0, "pose ledger contains failures")
-    _require(
-        ledger.get("pose_fingerprint") == candidate.pose_fingerprint,
-        "pose ledger fingerprint mismatch",
+    _validate_pose_recovery_ledger(
+        ledger,
+        expected_version=pose_recovery_version,
+        pose_recovery=pose_recovery,
+        pose_cache_set_sha256=pose_snapshot.fingerprint,
     )
     _validate_pose_recovery_authorization(
         authorization,
@@ -519,6 +1041,11 @@ def validate_native_baseline_inputs(
         }
         for split, row in protocol.items()
     }
+    candidate_pair = (
+        candidate.period.fixed_period_frames,
+        candidate.loss.anchor_stride,
+    )
+    candidate_id = {(16, 4): "A", (16, 2): "B", (24, 4): "C"}[candidate_pair]
     return {
         "schema_version": 1,
         "artifact_type": _ARTIFACT_TYPE,
@@ -527,6 +1054,7 @@ def validate_native_baseline_inputs(
         "protocol": _EXPECTED_PROTOCOL,
         "passed": True,
         "candidate": {
+            "candidate_id": candidate_id,
             "config_file_sha256": candidate_config_sha256,
             "config_fingerprint": candidate.fingerprint,
             "pose_fingerprint": candidate.pose_fingerprint,

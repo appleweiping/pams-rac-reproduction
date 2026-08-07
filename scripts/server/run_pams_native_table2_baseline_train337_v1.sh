@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Formal train337-only runner for an independently inferred Table-2 proxy.
 #
-# This launcher trains one encoder and stops. Dev84/test105 identity sidecars
-# are mounted only because the label-free CLI requires their frozen protocol
+# This launcher trains one encoder to epoch 11, runs a read-only train337
+# mechanism gate, and resumes the same immutable lineage to epoch 150 only
+# after explicit authorization. Dev84/test105 identity sidecars are mounted
+# only because the label-free training CLI requires their frozen protocol
 # identities. No dev/test pose cache, target, prediction, scoring, SSHead, or
 # separately trained period head is authorized here.
 set -Eeuo pipefail
@@ -13,6 +15,10 @@ fail() {
   printf 'native-table2-proxy-v1: %s\n' "$*" >&2
   exit 2
 }
+
+[[ -z "${PYTHONOPTIMIZE:-}" ]] \
+  || fail 'PYTHONOPTIMIZE must be unset or empty for fail-closed validation'
+unset PYTHONOPTIMIZE
 
 sha256_file() {
   sha256sum -- "$1" | awk '{print $1}'
@@ -40,11 +46,38 @@ readonly POSE_RECOVERY_RUN_ROOT_INPUT="${PAMS_POSE_RECOVERY_RUN_ROOT:?PAMS_POSE_
 readonly POSE_RECOVERY_VERSION="${PAMS_POSE_RECOVERY_VERSION:?PAMS_POSE_RECOVERY_VERSION is required}"
 readonly POSE_RECOVERY_CONFIG_INPUT="${PAMS_POSE_RECOVERY_CONFIG_PATH:?PAMS_POSE_RECOVERY_CONFIG_PATH is required}"
 readonly POSE_RECOVERY_AUTHORIZATION_SHA256="${PAMS_POSE_RECOVERY_AUTHORIZATION_SHA256:?PAMS_POSE_RECOVERY_AUTHORIZATION_SHA256 is required}"
+readonly CANDIDATE_ID="${PAMS_CANDIDATE_ID:?PAMS_CANDIDATE_ID is required}"
 readonly ATTEMPT_ID="${PAMS_ATTEMPT_ID:?PAMS_ATTEMPT_ID is required}"
 readonly GPU_DEVICE="${PAMS_GPU_DEVICE:-0}"
 
-readonly CONFIG_RELATIVE='configs/experiments/pams_native_table2_baseline_proxy_v1.yaml'
+readonly CONFIG_A_RELATIVE='configs/experiments/pams_native_table2_baseline_proxy_v1.yaml'
+readonly CONFIG_B_RELATIVE='configs/experiments/pams_native_table2_baseline_proxy_b_w16_s2.yaml'
+readonly CONFIG_C_RELATIVE='configs/experiments/pams_native_table2_baseline_proxy_c_w24_s4.yaml'
+case "$CANDIDATE_ID" in
+  A)
+    CONFIG_RELATIVE="$CONFIG_A_RELATIVE"
+    CANDIDATE_WINDOW=16
+    CANDIDATE_STRIDE=4
+    ;;
+  B)
+    CONFIG_RELATIVE="$CONFIG_B_RELATIVE"
+    CANDIDATE_WINDOW=16
+    CANDIDATE_STRIDE=2
+    ;;
+  C)
+    CONFIG_RELATIVE="$CONFIG_C_RELATIVE"
+    CANDIDATE_WINDOW=24
+    CANDIDATE_STRIDE=4
+    ;;
+  *)
+    fail 'PAMS_CANDIDATE_ID must be exactly A, B, or C'
+    ;;
+esac
+readonly CONFIG_RELATIVE CANDIDATE_WINDOW CANDIDATE_STRIDE
 readonly VALIDATOR_RELATIVE='scripts/server/validate_pams_native_baseline_inputs.py'
+readonly RUNNER_RELATIVE='scripts/server/run_pams_native_table2_baseline_train337_v1.sh'
+readonly EPOCH11_GATE_RELATIVE='scripts/server/run_pams_native_epoch11_train_gate.py'
+readonly EPOCH11_GATE_SPEC_RELATIVE='configs/gates/pams_native_epoch11_train_gate_v1.yaml'
 readonly TRAIN_INPUT_SHA256='f95df0050df21f05bbc9b42d0154470714dde279e04cb8b00d0212bf49057d16'
 readonly TRAIN_COMMIT_SHA256='85d41d2f59872e0900e9058481efbdf6bce91407d4c26bcde0a6547776454e53'
 readonly DEV_INPUT_SHA256='74b6628679c3d4c9b48f82ef8cf7e3a678e0a8298a5cb245512af9912e4337ba'
@@ -101,7 +134,18 @@ readonly SOURCE_VIEW="${RUN_ROOT}/source"
 readonly SOURCE_RECEIPT="${RUN_ROOT}/source-export.receipt.json"
 readonly INPUT_ROOT="${RUN_ROOT}/inputs"
 readonly CONFIG_HOST="${INPUT_ROOT}/pams_native_table2_baseline_proxy_v1.yaml"
-readonly ENCODER_STAGE="${RUN_ROOT}/stages/encoder"
+readonly EPOCH11_ENCODER_STAGE="${RUN_ROOT}/stages/encoder-epoch11"
+readonly EPOCH11_GATE_STAGE="${RUN_ROOT}/stages/epoch11-gate"
+readonly FINAL_ENCODER_STAGE="${RUN_ROOT}/stages/encoder-final"
+readonly EPOCH11_ENCODER_RUN="${EPOCH11_ENCODER_STAGE}/run"
+readonly EPOCH11_ENCODER_CHECKPOINT="${EPOCH11_ENCODER_RUN}/encoder.pt"
+readonly EPOCH11_ENCODER_PROGRESS="${EPOCH11_ENCODER_RUN}/logs/encoder.jsonl"
+readonly EPOCH11_POSE_SNAPSHOT="${EPOCH11_ENCODER_RUN}/inputs/training-pose-cache-snapshot.json"
+readonly EPOCH11_GATE_ARTIFACT="${EPOCH11_GATE_STAGE}/gate.json"
+readonly EPOCH11_GATE_RECEIPT="${EPOCH11_GATE_STAGE}/gate.json.receipt.json"
+readonly FINAL_ENCODER_RUN="${FINAL_ENCODER_STAGE}/run"
+readonly FINAL_ENCODER_CHECKPOINT="${FINAL_ENCODER_RUN}/encoder.pt"
+readonly FINAL_ENCODER_PROGRESS="${FINAL_ENCODER_RUN}/logs/encoder.jsonl"
 readonly AUDIT_ROOT="${RUN_ROOT}/audit"
 readonly LOG_ROOT="${RUN_ROOT}/logs"
 readonly LOCK_ROOT="${ROOT}/.pams-gpu-locks"
@@ -120,7 +164,9 @@ readonly POSE_RECOVERY_PAIRED_GATE="${POSE_RECOVERY_RUN_ROOT}/audit/paired-gate.
 readonly POSE_RECOVERY_RUN_RECEIPT="${POSE_RECOVERY_RUN_ROOT}/audit/run.receipt.json"
 
 readonly PREFLIGHT_NAME="pams-native-proxy-preflight-${ATTEMPT_ID}"
-readonly ENCODER_NAME="pams-native-proxy-encoder-${ATTEMPT_ID}"
+readonly EPOCH11_ENCODER_NAME="pams-native-proxy-epoch11-${ATTEMPT_ID}"
+readonly EPOCH11_GATE_NAME="pams-native-proxy-gate-${ATTEMPT_ID}"
+readonly FINAL_ENCODER_NAME="pams-native-proxy-final-${ATTEMPT_ID}"
 
 RUN_RESERVED=0
 CURRENT_STAGE='host-preflight'
@@ -200,6 +246,36 @@ run_created_container() {
   fi
 }
 
+GATE_CONTAINER_EXIT=''
+run_gate_container() {
+  local container_name="$1"
+  local log_path="${LOG_ROOT}/${container_name}.log"
+  CURRENT_STAGE='epoch11-gate'
+  write_status 'running' "$CURRENT_STAGE" 'null'
+  ACTIVE_CONTAINER="$container_name"
+  set +e
+  docker start --attach "$container_name" > "$log_path" 2>&1
+  local attach_exit="$?"
+  set -e
+  local running
+  local container_exit
+  running="$(docker inspect "$container_name" --format '{{.State.Running}}')"
+  if [[ "$running" == 'true' ]]; then
+    docker stop --time 10 "$container_name" >/dev/null
+  fi
+  container_exit="$(docker inspect "$container_name" --format '{{.State.ExitCode}}')"
+  docker inspect "$container_name" \
+    > "${AUDIT_ROOT}/${container_name}.post-run.inspect.json"
+  ACTIVE_CONTAINER=''
+  printf '%s\n' "$container_exit" \
+    > "${AUDIT_ROOT}/${container_name}.exit-code.txt"
+  [[ "$running" == 'false' && "$attach_exit" -eq "$container_exit" ]] \
+    || fail "gate container state mismatch: attach=${attach_exit} running=${running} exit=${container_exit}"
+  [[ "$container_exit" -eq 0 || "$container_exit" -eq 3 ]] \
+    || fail "gate container contract failure: exit=${container_exit}"
+  GATE_CONTAINER_EXIT="$container_exit"
+}
+
 verify_container() {
   local container_name="$1"
   local stage="$2"
@@ -213,7 +289,13 @@ verify_container() {
   VERIFY_OFFICIAL_ROOT="$OFFICIAL_ROOT" \
   VERIFY_POSE_RECOVERY_ROOT="$POSE_RECOVERY_RUN_ROOT" \
   VERIFY_POSE_RECOVERY_CONFIG="$POSE_RECOVERY_CONFIG" \
-  VERIFY_ENCODER_STAGE="$ENCODER_STAGE" \
+  VERIFY_EPOCH11_ENCODER_STAGE="$EPOCH11_ENCODER_STAGE" \
+  VERIFY_EPOCH11_GATE_STAGE="$EPOCH11_GATE_STAGE" \
+  VERIFY_FINAL_ENCODER_STAGE="$FINAL_ENCODER_STAGE" \
+  VERIFY_EPOCH11_CHECKPOINT="$EPOCH11_ENCODER_CHECKPOINT" \
+  VERIFY_EPOCH11_PROGRESS="$EPOCH11_ENCODER_PROGRESS" \
+  VERIFY_EPOCH11_POSE_SNAPSHOT="$EPOCH11_POSE_SNAPSHOT" \
+  VERIFY_EPOCH11_COMPLETION_RECEIPT="${EPOCH11_ENCODER_RECEIPT:-}" \
   VERIFY_AUDIT_ROOT="$AUDIT_ROOT" \
   VERIFY_IMAGE_ID="$IMAGE_ID" \
   VERIFY_SOURCE_REVISION="$SOURCE_REVISION" \
@@ -225,6 +307,10 @@ import json
 import os
 from pathlib import Path
 
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
 stage = os.environ["VERIFY_STAGE"]
 item = json.loads(Path(os.environ["VERIFY_INSPECT"]).read_text(encoding="utf-8"))[0]
 config = item["Config"]
@@ -233,18 +319,24 @@ mounts = {
     row["Destination"]: (row["Source"], bool(row["RW"]))
     for row in item["Mounts"]
 }
-assert config["Image"] == os.environ["VERIFY_IMAGE_ID"]
-assert config["User"] == "1000:1000"
-assert config["WorkingDir"] == "/workspace"
-assert host["NetworkMode"] == "none"
-assert host["ReadonlyRootfs"] is True
-assert "ALL" in (host.get("CapDrop") or [])
-assert "no-new-privileges:true" in (host.get("SecurityOpt") or [])
-assert int(host["PidsLimit"]) == 4096
-assert int(host["Memory"]) == 96 * 1024**3
-assert set(host.get("Tmpfs") or {}) == {
-    "/tmp", "/pams/tmp", "/pams/cache", "/pams/home"
-}
+require(config["Image"] == os.environ["VERIFY_IMAGE_ID"], "image mismatch")
+require(config["User"] == "1000:1000", "container user mismatch")
+require(config["WorkingDir"] == "/workspace", "working directory mismatch")
+require(host["NetworkMode"] == "none", "network must be disabled")
+require(host["ReadonlyRootfs"] is True, "root filesystem must be read-only")
+require("ALL" in (host.get("CapDrop") or []), "all capabilities must be dropped")
+require(
+    "no-new-privileges:true" in (host.get("SecurityOpt") or []),
+    "no-new-privileges is missing",
+)
+require(int(host["PidsLimit"]) == 4096, "PID limit mismatch")
+require(int(host["Memory"]) == 96 * 1024**3, "memory limit mismatch")
+require(
+    set(host.get("Tmpfs") or {}) == {
+        "/tmp", "/pams/tmp", "/pams/cache", "/pams/home"
+    },
+    "tmpfs mount set mismatch",
+)
 
 source = {
     "/workspace": (os.environ["VERIFY_SOURCE_VIEW"], False),
@@ -297,16 +389,47 @@ if stage == "preflight":
         "/pams/pose-cache": (pose_recovery_root + "/pose-cache", False),
         "/pams/output": (os.environ["VERIFY_AUDIT_ROOT"], True),
     }
-elif stage == "encoder":
+elif stage == "encoder-epoch11":
     expected = {
         **source,
         **protocol,
         "/pams/pose-cache": (pose_recovery_root + "/pose-cache", False),
-        "/pams/output": (os.environ["VERIFY_ENCODER_STAGE"], True),
+        "/pams/output": (os.environ["VERIFY_EPOCH11_ENCODER_STAGE"], True),
+    }
+elif stage == "epoch11-gate":
+    expected = {
+        **source,
+        "/pams/pose-cache": (pose_recovery_root + "/pose-cache", False),
+        "/pams/epoch11/encoder.pt": (
+            os.environ["VERIFY_EPOCH11_CHECKPOINT"], False
+        ),
+        "/pams/epoch11/encoder.jsonl": (
+            os.environ["VERIFY_EPOCH11_PROGRESS"], False
+        ),
+        "/pams/epoch11/training-pose-cache-snapshot.json": (
+            os.environ["VERIFY_EPOCH11_POSE_SNAPSHOT"], False
+        ),
+        "/pams/epoch11/completion.receipt.json": (
+            os.environ["VERIFY_EPOCH11_COMPLETION_RECEIPT"], False
+        ),
+        "/pams/output": (os.environ["VERIFY_EPOCH11_GATE_STAGE"], True),
+    }
+elif stage == "encoder-final":
+    expected = {
+        **source,
+        **protocol,
+        "/pams/pose-cache": (pose_recovery_root + "/pose-cache", False),
+        "/pams/resume/encoder.pt": (
+            os.environ["VERIFY_EPOCH11_CHECKPOINT"], False
+        ),
+        "/pams/resume/encoder.jsonl": (
+            os.environ["VERIFY_EPOCH11_PROGRESS"], False
+        ),
+        "/pams/output": (os.environ["VERIFY_FINAL_ENCODER_STAGE"], True),
     }
 else:
-    raise AssertionError(stage)
-assert mounts == expected, (stage, mounts, expected)
+    raise RuntimeError(f"unexpected container verification stage: {stage}")
+require(mounts == expected, f"mount set mismatch for {stage}: {mounts!r}")
 
 command = "\0".join(config.get("Cmd") or [])
 all_text = "\0".join([command, *mounts, *(row[0] for row in mounts.values())])
@@ -314,45 +437,75 @@ for forbidden in (
     ".targets", "/dev-pose", "/test-pose", "--include-dev",
     "train sshead", "evaluate", "dev-predict", "dev-score",
 ):
-    assert forbidden not in all_text, forbidden
-if stage == "encoder":
-    assert "python\0-m\0pams\0train\0encoder" in command
-    assert command.count("train\0encoder") == 1
+    require(forbidden not in all_text, f"forbidden container token: {forbidden}")
+if stage == "encoder-epoch11":
+    require("python\0-m\0pams\0train\0encoder" in command, "epoch11 command mismatch")
+    require(command.count("train\0encoder") == 1, "epoch11 encoder invocation count")
+    require("--epochs\0" + "11" in command, "epoch11 stop epoch missing")
+    require("--resume" not in command, "epoch11 must be a fresh run")
+elif stage == "encoder-final":
+    require("python\0-m\0pams\0train\0encoder" in command, "final command mismatch")
+    require(command.count("train\0encoder") == 1, "final encoder invocation count")
+    require("--epochs\0" + "150" in command, "final stop epoch missing")
+    require("--resume" in command, "final run must resume")
+    require(
+        "--resume-checkpoint\0/pams/resume/encoder.pt" in command,
+        "resume checkpoint binding missing",
+    )
+    require(
+        "--resume-progress\0/pams/resume/encoder.jsonl" in command,
+        "resume progress binding missing",
+    )
+elif stage == "epoch11-gate":
+    require("run_pams_native_epoch11_train_gate.py" in command, "gate command mismatch")
+    require("train\0encoder" not in command, "gate must not train")
+    require(
+        "--encoder-completion-receipt\0/pams/epoch11/completion.receipt.json"
+        in command,
+        "gate completion receipt binding missing",
+    )
 else:
-    assert "validate_pams_native_baseline_inputs.py" in command
+    require("validate_pams_native_baseline_inputs.py" in command, "preflight command mismatch")
 
 environment = set(config.get("Env") or [])
-assert "PYTHONPATH=/workspace/src" in environment
-assert "PAMS_AUDIT_MODE=formal" in environment
-assert f'PAMS_CONTAINER_IMAGE_ID={os.environ["VERIFY_IMAGE_ID"]}' in environment
-assert f'PAMS_CONTAINER_SOURCE_REVISION={os.environ["VERIFY_SOURCE_REVISION"]}' in environment
-assert (
-    "PAMS_CONTAINER_ENVIRONMENT_SHA256="
-    + os.environ["VERIFY_ENVIRONMENT_SHA256"]
-) in environment
-assert "PAMS_SOURCE_EXPORT_RECEIPT=/pams/source-export-receipt.json" in environment
-assert (
+required_environment = {
+    "PYTHONPATH=/workspace/src",
+    "PYTHONOPTIMIZE=",
+    "PAMS_AUDIT_MODE=formal",
+    f'PAMS_CONTAINER_IMAGE_ID={os.environ["VERIFY_IMAGE_ID"]}',
+    f'PAMS_CONTAINER_SOURCE_REVISION={os.environ["VERIFY_SOURCE_REVISION"]}',
+    "PAMS_CONTAINER_ENVIRONMENT_SHA256=" + os.environ["VERIFY_ENVIRONMENT_SHA256"],
+    "PAMS_SOURCE_EXPORT_RECEIPT=/pams/source-export-receipt.json",
     "PAMS_SOURCE_EXPORT_RECEIPT_SHA256="
-    + os.environ["VERIFY_SOURCE_RECEIPT_SHA256"]
-) in environment
+    + os.environ["VERIFY_SOURCE_RECEIPT_SHA256"],
+}
+require(required_environment <= environment, "required container environment is incomplete")
 
 devices = host.get("DeviceRequests") or []
-if stage == "encoder":
-    assert len(devices) == 1
-    assert "gpu" in devices[0]["Capabilities"][0]
-    assert devices[0].get("DeviceIDs") == [os.environ["VERIFY_GPU_DEVICE"]]
-    assert "CUDA_VISIBLE_DEVICES=0" in environment
-    assert "CUBLAS_WORKSPACE_CONFIG=:4096:8" in environment
+if stage != "preflight":
+    require(len(devices) == 1, "exactly one GPU request is required")
+    require("gpu" in devices[0]["Capabilities"][0], "GPU capability is missing")
+    require(
+        devices[0].get("DeviceIDs") == [os.environ["VERIFY_GPU_DEVICE"]],
+        "GPU device binding mismatch",
+    )
+    require("CUDA_VISIBLE_DEVICES=0" in environment, "CUDA remap is missing")
+    require(
+        "CUBLAS_WORKSPACE_CONFIG=:4096:8" in environment,
+        "deterministic cuBLAS environment is missing",
+    )
 else:
-    assert not devices
-    assert "CUDA_VISIBLE_DEVICES=" in environment
+    require(not devices, "preflight must not request a GPU")
+    require("CUDA_VISIBLE_DEVICES=" in environment, "preflight CUDA disablement missing")
 
 source_view = Path(os.environ["VERIFY_SOURCE_VIEW"])
-assert {entry.name for entry in source_view.iterdir()} == {
-    "configs", "pyproject.toml", "scripts", "src"
-}
+require(
+    {entry.name for entry in source_view.iterdir()}
+    == {"configs", "pyproject.toml", "scripts", "src"},
+    "source export top-level set mismatch",
+)
 for forbidden in (".git", "data", "results", "tests"):
-    assert not (source_view / forbidden).exists()
+    require(not (source_view / forbidden).exists(), f"forbidden source path: {forbidden}")
 
 report = {
     "schema_version": 1,
@@ -379,6 +532,18 @@ validate_completion_receipt() {
   local checkpoint="$2"
   local progress="$3"
   local pose_cache_set_sha256="$4"
+  local expected_epochs="$5"
+  local resume_checkpoint="${6:-}"
+  local resume_progress="${7:-}"
+  [[ "$expected_epochs" == 11 || "$expected_epochs" == 150 ]] \
+    || fail 'completion receipt validator expected epoch must be 11 or 150'
+  if [[ "$expected_epochs" == 11 ]]; then
+    [[ -z "$resume_checkpoint" && -z "$resume_progress" ]] \
+      || fail 'epoch11 completion must not name resume inputs'
+  else
+    [[ -n "$resume_checkpoint" && -n "$resume_progress" ]] \
+      || fail 'epoch150 completion requires both immutable resume inputs'
+  fi
   VERIFY_RECEIPT="$receipt" \
   VERIFY_CHECKPOINT="$checkpoint" \
   VERIFY_PROGRESS="$progress" \
@@ -395,6 +560,9 @@ validate_completion_receipt() {
   VERIFY_DEV_COMMIT_SHA256="$DEV_COMMIT_SHA256" \
   VERIFY_TEST_INPUT_SHA256="$TEST_ID_INPUT_SHA256" \
   VERIFY_TEST_COMMIT_SHA256="$TEST_ID_COMMIT_SHA256" \
+  VERIFY_EXPECTED_EPOCHS="$expected_epochs" \
+  VERIFY_RESUME_CHECKPOINT="$resume_checkpoint" \
+  VERIFY_RESUME_PROGRESS="$resume_progress" \
   python3 - <<'PY'
 import hashlib
 import json
@@ -404,36 +572,94 @@ from pathlib import Path, PurePosixPath
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+def load_strict(path: Path):
+    def reject_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise RuntimeError(f"duplicate JSON field: {key!r}")
+            result[key] = value
+        return result
+    return json.loads(
+        path.read_text(encoding="utf-8"),
+        object_pairs_hook=reject_pairs,
+        parse_constant=lambda value: (_ for _ in ()).throw(
+            RuntimeError(f"non-finite JSON constant: {value}")
+        ),
+    )
+
 receipt_path = Path(os.environ["VERIFY_RECEIPT"])
-payload = json.loads(receipt_path.read_text(encoding="utf-8"))
-assert payload["schema_version"] == 3
-assert payload["receipt_type"] == "completed"
-assert payload["status"] == "completed"
+payload = load_strict(receipt_path)
+require(
+    set(payload)
+    == {
+        "schema_version", "receipt_type", "run_id", "status", "finished_at",
+        "start_manifest_sha256", "started", "artifacts", "metrics",
+    },
+    "completion receipt top-level schema mismatch",
+)
+require(payload["schema_version"] == 3, "completion receipt schema mismatch")
+require(payload["receipt_type"] == "completed", "completion receipt type mismatch")
+require(payload["status"] == "completed", "completion receipt status mismatch")
 started = payload["started"]
-assert started["schema_version"] == 2
-assert started["receipt_type"] == "started"
-assert started["status"] == "started"
-assert started["git_sha"] == os.environ["VERIFY_SOURCE_REVISION"]
-assert started["config_sha256"] == os.environ["VERIFY_CONFIG_FINGERPRINT"]
-assert started["seed"] == 2026
-assert started["protocol"] == "ucfrep_526"
+require(
+    set(started)
+    == {
+        "schema_version", "receipt_type", "run_id", "created_at_utc", "command",
+        "git_sha", "config_sha256", "dataset_sha256", "seed", "protocol",
+        "status", "hardware", "notes",
+    },
+    "started receipt schema mismatch",
+)
+require(started["schema_version"] == 2, "started receipt schema version mismatch")
+require(started["receipt_type"] == "started", "started receipt type mismatch")
+require(started["status"] == "started", "started receipt status mismatch")
+require(started["git_sha"] == os.environ["VERIFY_SOURCE_REVISION"], "source mismatch")
+require(
+    started["config_sha256"] == os.environ["VERIFY_CONFIG_FINGERPRINT"],
+    "config fingerprint mismatch",
+)
+require(started["seed"] == 2026, "seed mismatch")
+require(started["protocol"] == "ucfrep_526", "protocol mismatch")
 container = started["hardware"]["container"]
-assert container["image_id"] == os.environ["VERIFY_IMAGE_ID"]
-assert container["environment_sha256"] == os.environ["VERIFY_ENVIRONMENT_SHA256"]
-assert container["source_revision"] == os.environ["VERIFY_SOURCE_REVISION"]
-assert payload["metrics"]["completed_epochs"] == 150
+require(
+    container
+    == {
+        "image_id": os.environ["VERIFY_IMAGE_ID"],
+        "environment_sha256": os.environ["VERIFY_ENVIRONMENT_SHA256"],
+        "source_revision": os.environ["VERIFY_SOURCE_REVISION"],
+    },
+    "completion receipt container identity mismatch",
+)
+expected_epochs = int(os.environ["VERIFY_EXPECTED_EPOCHS"])
+require(
+    set(payload["metrics"]) == {"completed_epochs", "final_epoch"},
+    "completion receipt metrics schema mismatch",
+)
+require(
+    payload["metrics"]["completed_epochs"] == expected_epochs,
+    "completed epoch mismatch",
+)
 
 started_path = receipt_path.with_name(f'{payload["run_id"]}.started.json')
-assert started_path.is_file()
-assert digest(started_path) == payload["start_manifest_sha256"]
-assert json.loads(started_path.read_text(encoding="utf-8")) == started
+require(started_path.is_file(), "sibling started receipt is missing")
+require(
+    digest(started_path) == payload["start_manifest_sha256"],
+    "started receipt SHA mismatch",
+)
+require(load_strict(started_path) == started, "embedded and sibling started receipts differ")
 
 roles = {item["role"]: item for item in payload["artifacts"]}
-assert len(roles) == len(payload["artifacts"])
+require(len(roles) == len(payload["artifacts"]), "duplicate artifact role")
 required = {
     "output_encoder_checkpoint",
     "progress_log",
     "input_config",
+    "input_dataset_manifest",
     "input_pose_cache_snapshot",
     "input_train_pose_inputs",
     "input_train_pose_input_commitment",
@@ -442,24 +668,51 @@ required = {
     "input_test_identity_pose_inputs",
     "input_test_identity_pose_input_commitment",
 }
-assert required <= set(roles)
+resume_checkpoint = os.environ["VERIFY_RESUME_CHECKPOINT"]
+resume_progress = os.environ["VERIFY_RESUME_PROGRESS"]
+if expected_epochs == 11:
+    require(set(roles) == required, "epoch11 completion artifact role set mismatch")
+else:
+    require(bool(resume_checkpoint and resume_progress), "resume input paths are missing")
+    require(
+        set(roles) == required | {"input_resume_checkpoint", "input_resume_progress"},
+        "epoch150 completion artifact role set mismatch",
+    )
 package_root = receipt_path.parent.parent.resolve(strict=True)
 resolved = {}
 for item in payload["artifacts"]:
     locator = PurePosixPath(item["locator"])
-    assert isinstance(item["locator"], str) and "\\" not in item["locator"]
-    assert locator.parts and not locator.is_absolute()
+    require(
+        set(item) == {"role", "locator", "sha256", "bytes"},
+        "artifact receipt schema mismatch",
+    )
+    require(
+        isinstance(item["locator"], str) and "\\" not in item["locator"],
+        "artifact locator is not portable",
+    )
+    require(bool(locator.parts) and not locator.is_absolute(), "artifact locator is unsafe")
     path = receipt_path.parent.joinpath(*locator.parts).resolve(strict=True)
-    path.relative_to(package_root)
-    assert path.is_file()
-    assert path.stat().st_size == item["bytes"]
-    assert digest(path) == item["sha256"]
+    try:
+        path.relative_to(package_root)
+    except ValueError as exc:
+        raise RuntimeError("artifact locator escapes the run package") from exc
+    require(path.is_file(), "artifact locator is not a file")
+    require(path.stat().st_size == item["bytes"], "artifact byte count mismatch")
+    require(digest(path) == item["sha256"], "artifact SHA mismatch")
     resolved[item["role"]] = path
 
-assert digest(Path(os.environ["VERIFY_CHECKPOINT"])) == roles["output_encoder_checkpoint"]["sha256"]
-assert digest(Path(os.environ["VERIFY_PROGRESS"])) == roles["progress_log"]["sha256"]
+require(
+    digest(Path(os.environ["VERIFY_CHECKPOINT"]))
+    == roles["output_encoder_checkpoint"]["sha256"],
+    "live checkpoint SHA differs from completion receipt",
+)
+require(
+    digest(Path(os.environ["VERIFY_PROGRESS"])) == roles["progress_log"]["sha256"],
+    "live progress SHA differs from completion receipt",
+)
 expected_hashes = {
     "input_config": os.environ["VERIFY_CONFIG_SHA256"],
+    "input_dataset_manifest": os.environ["VERIFY_TRAIN_INPUT_SHA256"],
     "input_train_pose_inputs": os.environ["VERIFY_TRAIN_INPUT_SHA256"],
     "input_train_pose_input_commitment": os.environ["VERIFY_TRAIN_COMMIT_SHA256"],
     "input_dev_pose_inputs": os.environ["VERIFY_DEV_INPUT_SHA256"],
@@ -468,14 +721,276 @@ expected_hashes = {
     "input_test_identity_pose_input_commitment": os.environ["VERIFY_TEST_COMMIT_SHA256"],
 }
 for role, expected in expected_hashes.items():
-    assert roles[role]["sha256"] == expected
+    require(roles[role]["sha256"] == expected, f"input binding mismatch: {role}")
+if expected_epochs == 150:
+    require(
+        roles["input_resume_checkpoint"]["sha256"] == digest(Path(resume_checkpoint)),
+        "resume checkpoint SHA mismatch",
+    )
+    require(
+        roles["input_resume_progress"]["sha256"] == digest(Path(resume_progress)),
+        "resume progress SHA mismatch",
+    )
 
-snapshot = json.loads(resolved["input_pose_cache_snapshot"].read_text(encoding="utf-8"))
-assert snapshot["schema_version"] == 1
-assert snapshot["pose_fingerprint"] == os.environ["VERIFY_POSE_FINGERPRINT"]
-assert snapshot["fingerprint"] == os.environ["VERIFY_POSE_CACHE_SET_SHA256"]
-assert snapshot["entry_count"] == 337
-assert len(snapshot["entries"]) == 337
+snapshot = load_strict(resolved["input_pose_cache_snapshot"])
+require(
+    set(snapshot)
+    == {"schema_version", "pose_fingerprint", "fingerprint", "entry_count", "entries"},
+    "pose snapshot schema mismatch",
+)
+require(snapshot["schema_version"] == 1, "pose snapshot schema version mismatch")
+require(
+    snapshot["pose_fingerprint"] == os.environ["VERIFY_POSE_FINGERPRINT"],
+    "pose fingerprint mismatch",
+)
+require(
+    snapshot["fingerprint"] == os.environ["VERIFY_POSE_CACHE_SET_SHA256"],
+    "pose-cache set fingerprint mismatch",
+)
+require(snapshot["entry_count"] == 337, "pose snapshot entry count mismatch")
+require(len(snapshot["entries"]) == 337, "pose snapshot entries length mismatch")
+PY
+}
+
+validate_epoch11_gate_artifacts() {
+  local gate_exit="$1"
+  local checkpoint_sha256="$2"
+  local progress_sha256="$3"
+  local completion_receipt_sha256="$4"
+  local snapshot_sha256="$5"
+  local pose_cache_set_sha256="$6"
+  local gate_specification_sha256="$7"
+  VERIFY_GATE_ARTIFACT="$EPOCH11_GATE_ARTIFACT" \
+  VERIFY_GATE_RECEIPT="$EPOCH11_GATE_RECEIPT" \
+  VERIFY_GATE_EXIT="$gate_exit" \
+  VERIFY_CHECKPOINT_SHA256="$checkpoint_sha256" \
+  VERIFY_PROGRESS_SHA256="$progress_sha256" \
+  VERIFY_COMPLETION_RECEIPT_SHA256="$completion_receipt_sha256" \
+  VERIFY_SNAPSHOT_SHA256="$snapshot_sha256" \
+  VERIFY_POSE_CACHE_SET_SHA256="$pose_cache_set_sha256" \
+  VERIFY_GATE_SPECIFICATION_SHA256="$gate_specification_sha256" \
+  VERIFY_CONFIG_SHA256="$CONFIG_SHA256" \
+  VERIFY_CONFIG_FINGERPRINT="$CONFIG_FINGERPRINT" \
+  VERIFY_POSE_FINGERPRINT="$POSE_FINGERPRINT" \
+  VERIFY_SOURCE_REVISION="$SOURCE_REVISION" \
+  VERIFY_IMAGE_ID="$IMAGE_ID" \
+  VERIFY_ENVIRONMENT_SHA256="$ENVIRONMENT_SHA256" \
+  VERIFY_CONFIG_RELATIVE="$CONFIG_RELATIVE" \
+  VERIFY_GATE_RELATIVE="$EPOCH11_GATE_RELATIVE" \
+  VERIFY_GATE_SPEC_RELATIVE="$EPOCH11_GATE_SPEC_RELATIVE" \
+  python3 - <<'PY'
+import hashlib
+import json
+import os
+from pathlib import Path
+
+def digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+artifact_path = Path(os.environ["VERIFY_GATE_ARTIFACT"])
+receipt_path = Path(os.environ["VERIFY_GATE_RECEIPT"])
+
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+artifact_bytes = artifact_path.read_bytes()
+artifact = json.loads(artifact_bytes)
+receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+exit_code = int(os.environ["VERIFY_GATE_EXIT"])
+authorized = exit_code == 0
+require(exit_code in {0, 3}, "gate exit status is outside the contract")
+require(artifact["schema_version"] == 1, "gate artifact schema mismatch")
+require(
+    artifact["artifact_type"] == "pams_native_epoch11_train_mechanism_gate_v1",
+    "gate artifact type mismatch",
+)
+require(
+    artifact["status"]
+    == (
+        "encoder_continuation_authorized"
+        if authorized
+        else "encoder_continuation_rejected"
+    ),
+    "gate artifact status disagrees with exit code",
+)
+require(artifact["protocol"] == "ucfrep_526", "gate protocol mismatch")
+require(artifact["seed"] == 2026, "gate seed mismatch")
+inputs = artifact["inputs"]
+expected_input_hashes = {
+    "encoder_checkpoint_sha256": os.environ["VERIFY_CHECKPOINT_SHA256"],
+    "encoder_progress_sha256": os.environ["VERIFY_PROGRESS_SHA256"],
+    "encoder_completion_receipt_sha256": os.environ[
+        "VERIFY_COMPLETION_RECEIPT_SHA256"
+    ],
+    "pose_snapshot_sha256": os.environ["VERIFY_SNAPSHOT_SHA256"],
+    "pose_cache_set_sha256": os.environ["VERIFY_POSE_CACHE_SET_SHA256"],
+    "gate_specification_sha256": os.environ["VERIFY_GATE_SPECIFICATION_SHA256"],
+    "experiment_config_sha256": os.environ["VERIFY_CONFIG_SHA256"],
+    "config_fingerprint": os.environ["VERIFY_CONFIG_FINGERPRINT"],
+    "pose_fingerprint": os.environ["VERIFY_POSE_FINGERPRINT"],
+    "source_git_sha": os.environ["VERIFY_SOURCE_REVISION"],
+    "container_image_id": os.environ["VERIFY_IMAGE_ID"],
+    "container_environment_sha256": os.environ["VERIFY_ENVIRONMENT_SHA256"],
+}
+for field, expected in expected_input_hashes.items():
+    require(inputs[field] == expected, f"gate input binding mismatch: {field}")
+require(inputs["training_video_total"] == 337, "gate training set size mismatch")
+require(
+    inputs["source_receipt_covered_paths"]
+    == {
+        "experiment_config": os.environ["VERIFY_CONFIG_RELATIVE"],
+        "gate_runner": os.environ["VERIFY_GATE_RELATIVE"],
+        "gate_specification": os.environ["VERIFY_GATE_SPEC_RELATIVE"],
+    },
+    "gate source receipt coverage mismatch",
+)
+require(
+    inputs["encoder_completion_receipt"]
+    == {
+        "schema_version": 3,
+        "run_id": inputs["encoder_completion_receipt"]["run_id"],
+        "sha256": os.environ["VERIFY_COMPLETION_RECEIPT_SHA256"],
+        "bytes": inputs["encoder_completion_receipt_bytes"],
+        "completed_epochs": 11,
+        "artifact_roles": [
+            "input_config",
+            "input_dataset_manifest",
+            "input_dev_pose_input_commitment",
+            "input_dev_pose_inputs",
+            "input_pose_cache_snapshot",
+            "input_test_identity_pose_input_commitment",
+            "input_test_identity_pose_inputs",
+            "input_train_pose_input_commitment",
+            "input_train_pose_inputs",
+            "output_encoder_checkpoint",
+            "progress_log",
+        ],
+    },
+    "gate completion receipt summary mismatch",
+)
+gate = artifact["gate"]
+require(
+    gate["thresholds_frozen_before_native_candidate_training"] is True,
+    "gate thresholds were not frozen",
+)
+require(gate["all_core_criteria_pass"] is authorized, "gate criterion aggregate mismatch")
+require(
+    gate["encoder_continuation_authorized"] is authorized,
+    "gate continuation decision mismatch",
+)
+require(
+    gate["prediction_or_scoring_authorized"] is False,
+    "gate must never authorize prediction or scoring",
+)
+criterion_results = [bool(item["pass"]) for item in gate["criteria"].values()]
+require(bool(criterion_results), "gate criteria are empty")
+require(all(criterion_results) is authorized, "gate criteria disagree with decision")
+require(artifact["schedule"]["completed_epochs"] == 11, "gate epoch mismatch")
+read_only = artifact["read_only_verification"]
+require(read_only["all_file_inputs_unchanged"] is True, "gate input changed")
+require(read_only["pose_cache_set_unchanged"] is True, "gate pose cache changed")
+require(
+    read_only["model_or_optimizer_state_updated"] is False,
+    "gate updated model or optimizer state",
+)
+require(read_only["training_steps_executed"] == 0, "gate executed training steps")
+require(read_only["pose_cache_write_operations"] == 0, "gate wrote pose caches")
+
+artifact_sha256 = hashlib.sha256(artifact_bytes).hexdigest()
+require(
+    receipt
+    == {
+        "schema_version": 1,
+        "artifact_type": "pams_native_epoch11_train_mechanism_gate_receipt_v1",
+        "artifact_sha256": artifact_sha256,
+        "artifact_bytes": len(artifact_bytes),
+        "artifact_status": artifact["status"],
+        "encoder_continuation_authorized": authorized,
+        "encoder_checkpoint_sha256": os.environ["VERIFY_CHECKPOINT_SHA256"],
+        "encoder_progress_sha256": os.environ["VERIFY_PROGRESS_SHA256"],
+        "encoder_completion_receipt_sha256": os.environ[
+            "VERIFY_COMPLETION_RECEIPT_SHA256"
+        ],
+        "pose_cache_set_sha256": os.environ["VERIFY_POSE_CACHE_SET_SHA256"],
+        "gate_specification_sha256": os.environ["VERIFY_GATE_SPECIFICATION_SHA256"],
+        "source_git_sha": os.environ["VERIFY_SOURCE_REVISION"],
+    },
+    "gate receipt does not exactly bind the artifact",
+)
+PY
+}
+
+validate_resume_lineage() {
+  local epoch11_checkpoint_sha256="$1"
+  local epoch11_progress_sha256="$2"
+  local epoch11_snapshot_sha256="$3"
+  local gate_artifact_sha256="$4"
+  local gate_receipt_sha256="$5"
+  VERIFY_EPOCH11_CHECKPOINT="$EPOCH11_ENCODER_CHECKPOINT" \
+  VERIFY_EPOCH11_PROGRESS="$EPOCH11_ENCODER_PROGRESS" \
+  VERIFY_EPOCH11_SNAPSHOT="$EPOCH11_POSE_SNAPSHOT" \
+  VERIFY_FINAL_PROGRESS="$FINAL_ENCODER_PROGRESS" \
+  VERIFY_GATE_ARTIFACT="$EPOCH11_GATE_ARTIFACT" \
+  VERIFY_GATE_RECEIPT="$EPOCH11_GATE_RECEIPT" \
+  VERIFY_EPOCH11_CHECKPOINT_SHA256="$epoch11_checkpoint_sha256" \
+  VERIFY_EPOCH11_PROGRESS_SHA256="$epoch11_progress_sha256" \
+  VERIFY_EPOCH11_SNAPSHOT_SHA256="$epoch11_snapshot_sha256" \
+  VERIFY_GATE_ARTIFACT_SHA256="$gate_artifact_sha256" \
+  VERIFY_GATE_RECEIPT_SHA256="$gate_receipt_sha256" \
+  python3 - <<'PY'
+import hashlib
+import json
+import os
+from pathlib import Path
+
+def digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+epoch11_checkpoint = Path(os.environ["VERIFY_EPOCH11_CHECKPOINT"])
+epoch11_progress = Path(os.environ["VERIFY_EPOCH11_PROGRESS"])
+epoch11_snapshot = Path(os.environ["VERIFY_EPOCH11_SNAPSHOT"])
+gate_artifact = Path(os.environ["VERIFY_GATE_ARTIFACT"])
+gate_receipt = Path(os.environ["VERIFY_GATE_RECEIPT"])
+require(
+    digest(epoch11_checkpoint) == os.environ["VERIFY_EPOCH11_CHECKPOINT_SHA256"],
+    "epoch11 checkpoint changed before resume completion",
+)
+require(
+    digest(epoch11_progress) == os.environ["VERIFY_EPOCH11_PROGRESS_SHA256"],
+    "epoch11 progress changed before resume completion",
+)
+require(
+    digest(epoch11_snapshot) == os.environ["VERIFY_EPOCH11_SNAPSHOT_SHA256"],
+    "epoch11 pose snapshot changed before resume completion",
+)
+require(
+    digest(gate_artifact) == os.environ["VERIFY_GATE_ARTIFACT_SHA256"],
+    "gate artifact changed before resume completion",
+)
+require(
+    digest(gate_receipt) == os.environ["VERIFY_GATE_RECEIPT_SHA256"],
+    "gate receipt changed before resume completion",
+)
+
+epoch11_bytes = epoch11_progress.read_bytes()
+final_bytes = Path(os.environ["VERIFY_FINAL_PROGRESS"]).read_bytes()
+require(final_bytes.startswith(epoch11_bytes), "final progress is not an epoch11 prefix resume")
+epoch11_rows = tuple(
+    json.loads(line) for line in epoch11_bytes.decode("utf-8").splitlines()
+)
+final_rows = tuple(json.loads(line) for line in final_bytes.decode("utf-8").splitlines())
+require(len(epoch11_rows) == 11, "epoch11 progress row count mismatch")
+require(len(final_rows) == 150, "final progress row count mismatch")
+require(final_rows[:11] == epoch11_rows, "final progress prefix changed")
+require(
+    [row["epoch"] for row in final_rows] == list(range(1, 151)),
+    "final progress epochs are not consecutive 1..150",
+)
 PY
 }
 
@@ -675,6 +1190,20 @@ jq -e \
 readonly CONFIG_SOURCE="${SOURCE_CHECKOUT}/${CONFIG_RELATIVE}"
 require_sha256 "$CONFIG_SOURCE" "$CONFIG_SHA256" 'native proxy config'
 [[ -f "${SOURCE_CHECKOUT}/${VALIDATOR_RELATIVE}" ]] || fail 'native proxy validator is missing'
+[[ -f "${SOURCE_CHECKOUT}/${RUNNER_RELATIVE}" ]] || fail 'native proxy runner is missing'
+[[ -f "${SOURCE_CHECKOUT}/${EPOCH11_GATE_RELATIVE}" ]] \
+  || fail 'native epoch11 gate runner is missing'
+[[ -f "${SOURCE_CHECKOUT}/${EPOCH11_GATE_SPEC_RELATIVE}" ]] \
+  || fail 'native epoch11 gate specification is missing'
+for candidate_config in \
+  "$CONFIG_A_RELATIVE" \
+  "$CONFIG_B_RELATIVE" \
+  "$CONFIG_C_RELATIVE"; do
+  [[ -f "${SOURCE_CHECKOUT}/${candidate_config}" ]] \
+    || fail "frozen candidate config is missing: ${candidate_config}"
+  [[ ! -L "${SOURCE_CHECKOUT}/${candidate_config}" ]] \
+    || fail "frozen candidate config must not be a symlink: ${candidate_config}"
+done
 source "${SOURCE_CHECKOUT}/scripts/server/environment_fingerprint.sh"
 [[ "$(pams_environment_fingerprint "${SOURCE_CHECKOUT}/docker/server")" == "$ENVIRONMENT_SHA256" ]] \
   || fail 'source environment fingerprint mismatch'
@@ -692,12 +1221,14 @@ mkdir -p -- "$RUN_PARENT"
 mkdir -- "$RUN_ROOT" || fail "immutable run root already exists: ${RUN_ROOT}"
 RUN_RESERVED=1
 mkdir -- "$SOURCE_VIEW" "$INPUT_ROOT" "${RUN_ROOT}/stages" \
-  "$ENCODER_STAGE" "$AUDIT_ROOT" "$LOG_ROOT"
+  "$EPOCH11_ENCODER_STAGE" "$AUDIT_ROOT" "$LOG_ROOT"
 write_status 'preparing' 'source-export' 'null'
 
 git -C "$SOURCE_CHECKOUT" archive --format=tar "$SOURCE_REVISION" \
-  src pyproject.toml "$CONFIG_RELATIVE" \
-  "$VALIDATOR_RELATIVE" \
+  src pyproject.toml \
+  "$CONFIG_A_RELATIVE" "$CONFIG_B_RELATIVE" "$CONFIG_C_RELATIVE" \
+  "$EPOCH11_GATE_SPEC_RELATIVE" \
+  "$RUNNER_RELATIVE" "$VALIDATOR_RELATIVE" "$EPOCH11_GATE_RELATIVE" \
   | tar -xf - -C "$SOURCE_VIEW"
 [[ ! -e "${SOURCE_VIEW}/.git" && ! -e "${SOURCE_VIEW}/data" \
   && ! -e "${SOURCE_VIEW}/results" && ! -e "${SOURCE_VIEW}/tests" ]] \
@@ -707,6 +1238,9 @@ git -C "$SOURCE_CHECKOUT" archive --format=tar "$SOURCE_REVISION" \
 [[ -z "$(find "$SOURCE_VIEW" -type l -print -quit)" ]] \
   || fail 'source export contains a symlink'
 require_sha256 "${SOURCE_VIEW}/${CONFIG_RELATIVE}" "$CONFIG_SHA256" 'exported native proxy config'
+readonly EPOCH11_GATE_SPEC_SHA256="$(
+  sha256_file "${SOURCE_VIEW}/${EPOCH11_GATE_SPEC_RELATIVE}"
+)"
 
 SOURCE_EXPORT_ROOT="$SOURCE_VIEW" \
 SOURCE_EXPORT_REVISION="$SOURCE_REVISION" \
@@ -760,6 +1294,10 @@ RESERVATION_IMAGE="$IMAGE_ID" \
 RESERVATION_ENVIRONMENT="$ENVIRONMENT_SHA256" \
 RESERVATION_CONFIG_SHA="$CONFIG_SHA256" \
 RESERVATION_CONFIG_FP="$CONFIG_FINGERPRINT" \
+RESERVATION_CANDIDATE_ID="$CANDIDATE_ID" \
+RESERVATION_CANDIDATE_WINDOW="$CANDIDATE_WINDOW" \
+RESERVATION_CANDIDATE_STRIDE="$CANDIDATE_STRIDE" \
+RESERVATION_GATE_SPEC_SHA="$EPOCH11_GATE_SPEC_SHA256" \
 RESERVATION_POSE_FP="$POSE_FINGERPRINT" \
 RESERVATION_POSE_VERSION="$POSE_RECOVERY_VERSION" \
 RESERVATION_POSE_ROOT="$POSE_RECOVERY_RUN_ROOT" \
@@ -792,6 +1330,9 @@ payload = {
     "container_environment_sha256": os.environ["RESERVATION_ENVIRONMENT"],
     "config_file_sha256": os.environ["RESERVATION_CONFIG_SHA"],
     "config_fingerprint": os.environ["RESERVATION_CONFIG_FP"],
+    "candidate_id": os.environ["RESERVATION_CANDIDATE_ID"],
+    "fixed_period_frames": int(os.environ["RESERVATION_CANDIDATE_WINDOW"]),
+    "anchor_stride": int(os.environ["RESERVATION_CANDIDATE_STRIDE"]),
     "pose_fingerprint": os.environ["RESERVATION_POSE_FP"],
     "upstream_pose_recovery": {
         "version": os.environ["RESERVATION_POSE_VERSION"],
@@ -807,6 +1348,12 @@ payload = {
         "pose_cache_set_sha256": os.environ["RESERVATION_POSE_CACHE_SET"],
     },
     "encoder_epochs": 150,
+    "epoch11_gate": {
+        "gate_epoch": 11,
+        "gate_specification_sha256": os.environ["RESERVATION_GATE_SPEC_SHA"],
+        "continuation_requires_exact_authorization": True,
+        "resume_inputs_must_be_immutable_epoch11_checkpoint_and_progress": True,
+    },
     "physical_batch_size": 32,
     "encoder_training_scope": "train337_only",
     "period_head_training_authorized": False,
@@ -839,6 +1386,10 @@ chmod 0444 "${RUN_ROOT}/attempt.reservation.json"
   printf 'environment_sha256 %s\n' "$ENVIRONMENT_SHA256"
   printf 'config_file_sha256 %s\n' "$CONFIG_SHA256"
   printf 'config_fingerprint %s\n' "$CONFIG_FINGERPRINT"
+  printf 'candidate_id %s\n' "$CANDIDATE_ID"
+  printf 'fixed_period_frames %s\n' "$CANDIDATE_WINDOW"
+  printf 'anchor_stride %s\n' "$CANDIDATE_STRIDE"
+  printf 'epoch11_gate_specification_sha256 %s\n' "$EPOCH11_GATE_SPEC_SHA256"
   printf 'pose_fingerprint %s\n' "$POSE_FINGERPRINT"
   printf 'pose_recovery_version %s\n' "$POSE_RECOVERY_VERSION"
   printf 'pose_recovery_source_revision %s\n' "$POSE_RECOVERY_SOURCE_REVISION"
@@ -866,7 +1417,11 @@ docker version > "${AUDIT_ROOT}/docker-version.txt"
 git --version > "${AUDIT_ROOT}/git-version.txt"
 docker image inspect "$IMAGE_ID" > "${AUDIT_ROOT}/image.inspect.json"
 
-for container_name in "$PREFLIGHT_NAME" "$ENCODER_NAME"; do
+for container_name in \
+  "$PREFLIGHT_NAME" \
+  "$EPOCH11_ENCODER_NAME" \
+  "$EPOCH11_GATE_NAME" \
+  "$FINAL_ENCODER_NAME"; do
   if docker inspect "$container_name" >/dev/null 2>&1; then
     fail "container name already exists: ${container_name}"
   fi
@@ -887,6 +1442,7 @@ common_args=(
   --env HOME=/pams/home
   --env XDG_CACHE_HOME=/pams/cache/xdg
   --env PYTHONPATH=/workspace/src
+  --env PYTHONOPTIMIZE=
   --env PYTHONDONTWRITEBYTECODE=1
   --env PAMS_AUDIT_MODE=formal
   --env "PAMS_CONTAINER_IMAGE_ID=${IMAGE_ID}"
@@ -954,6 +1510,7 @@ run_created_container "$PREFLIGHT_NAME" 'input-preflight'
   || fail 'input preflight artifact was not created'
 jq -e \
   --arg classification "$CLASSIFICATION" \
+  --arg candidate_id "$CANDIDATE_ID" \
   --arg config_sha "$CONFIG_SHA256" \
   --arg config_fp "$CONFIG_FINGERPRINT" \
   --arg pose_fp "$POSE_FINGERPRINT" \
@@ -963,16 +1520,21 @@ jq -e \
   --arg receipt_sha "$POSE_RECOVERY_RUN_RECEIPT_SHA256" \
   --arg ledger_sha "$POSE_RECOVERY_LEDGER_SHA256" \
   --arg cache_set_sha "$AUTHORIZED_POSE_CACHE_SET_SHA256" \
+  --argjson candidate_window "$CANDIDATE_WINDOW" \
+  --argjson candidate_stride "$CANDIDATE_STRIDE" \
   '
     .schema_version == 1
     and .passed == true
     and .classification == $classification
     and .paper_table2_value_claim_eligible == false
+    and .candidate.candidate_id == $candidate_id
     and .candidate.config_file_sha256 == $config_sha
     and .candidate.config_fingerprint == $config_fp
     and .candidate.pose_fingerprint == $pose_fp
     and .candidate.encoder_epochs == 150
     and .candidate.physical_batch_size == 32
+    and .candidate.fixed_period_frames == $candidate_window
+    and .candidate.anchor_stride == $candidate_stride
     and .pose_recovery.version == $version
     and .pose_recovery.authorization_sha256 == $authorization_sha
     and .pose_recovery.paired_gate_sha256 == $gate_sha
@@ -1012,9 +1574,21 @@ if ! flock -n 9; then
   exit 75
 fi
 
-CURRENT_STAGE='encoder-create'
+encoder_cli_args=(
+  --config /pams/input/config.yaml
+  --device cuda:0
+  --microbatch-size 32
+  --label-free-inputs
+  --input-commitment /pams/protocol/train.inputs.commitment.json
+  --dev-inputs /pams/protocol/dev.inputs.json
+  --dev-input-commitment /pams/protocol/dev.inputs.commitment.json
+  --test-identity-inputs /pams/protocol/test-identity.inputs.json
+  --test-identity-commitment /pams/protocol/test-identity.inputs.commitment.json
+)
+
+CURRENT_STAGE='encoder-epoch11-create'
 docker create \
-  --name "$ENCODER_NAME" \
+  --name "$EPOCH11_ENCODER_NAME" \
   --gpus "device=${GPU_DEVICE}" \
   "${common_args[@]}" \
   --env CUDA_VISIBLE_DEVICES=0 \
@@ -1022,44 +1596,223 @@ docker create \
   "${source_args[@]}" \
   "${protocol_args[@]}" \
   --mount "type=bind,src=${POSE_RECOVERY_CACHE},dst=/pams/pose-cache,readonly" \
-  --mount "type=bind,src=${ENCODER_STAGE},dst=/pams/output" \
+  --mount "type=bind,src=${EPOCH11_ENCODER_STAGE},dst=/pams/output" \
   "$IMAGE_ID" \
   python -m pams train encoder \
     /pams/protocol/train.inputs.json \
     /pams/pose-cache \
     /pams/output/run \
-    --config /pams/input/config.yaml \
+    --epochs 11 \
+    "${encoder_cli_args[@]}" \
+  > "${AUDIT_ROOT}/${EPOCH11_ENCODER_NAME}.create-id.txt"
+verify_container "$EPOCH11_ENCODER_NAME" 'encoder-epoch11'
+run_created_container "$EPOCH11_ENCODER_NAME" 'encoder-epoch11'
+
+readonly EPOCH11_ENCODER_RECEIPT="$(single_completion_receipt "$EPOCH11_ENCODER_STAGE")"
+[[ -s "$EPOCH11_ENCODER_CHECKPOINT" ]] || fail 'epoch11 encoder checkpoint is missing'
+[[ -s "$EPOCH11_ENCODER_PROGRESS" ]] || fail 'epoch11 encoder progress is missing'
+[[ -s "$EPOCH11_POSE_SNAPSHOT" ]] || fail 'epoch11 pose snapshot is missing'
+validate_completion_receipt \
+  "$EPOCH11_ENCODER_RECEIPT" \
+  "$EPOCH11_ENCODER_CHECKPOINT" \
+  "$EPOCH11_ENCODER_PROGRESS" \
+  "$POSE_CACHE_SET_SHA256" \
+  11
+readonly EPOCH11_CHECKPOINT_SHA256="$(sha256_file "$EPOCH11_ENCODER_CHECKPOINT")"
+readonly EPOCH11_PROGRESS_SHA256="$(sha256_file "$EPOCH11_ENCODER_PROGRESS")"
+readonly EPOCH11_SNAPSHOT_SHA256="$(sha256_file "$EPOCH11_POSE_SNAPSHOT")"
+readonly EPOCH11_COMPLETION_RECEIPT_SHA256="$(
+  sha256_file "$EPOCH11_ENCODER_RECEIPT"
+)"
+sha256sum -- \
+  "$EPOCH11_ENCODER_CHECKPOINT" \
+  "$EPOCH11_ENCODER_PROGRESS" \
+  "$EPOCH11_POSE_SNAPSHOT" \
+  "$EPOCH11_ENCODER_RECEIPT" \
+  > "${AUDIT_ROOT}/encoder-epoch11-sha256.txt"
+chmod -R a-w -- "$EPOCH11_ENCODER_STAGE"
+
+CURRENT_STAGE='epoch11-gate-create'
+mkdir -- "$EPOCH11_GATE_STAGE"
+docker create \
+  --name "$EPOCH11_GATE_NAME" \
+  --gpus "device=${GPU_DEVICE}" \
+  "${common_args[@]}" \
+  --env CUDA_VISIBLE_DEVICES=0 \
+  --env CUBLAS_WORKSPACE_CONFIG=:4096:8 \
+  "${source_args[@]}" \
+  --mount "type=bind,src=${POSE_RECOVERY_CACHE},dst=/pams/pose-cache,readonly" \
+  --mount "type=bind,src=${EPOCH11_ENCODER_CHECKPOINT},dst=/pams/epoch11/encoder.pt,readonly" \
+  --mount "type=bind,src=${EPOCH11_ENCODER_PROGRESS},dst=/pams/epoch11/encoder.jsonl,readonly" \
+  --mount "type=bind,src=${EPOCH11_ENCODER_RECEIPT},dst=/pams/epoch11/completion.receipt.json,readonly" \
+  --mount "type=bind,src=${EPOCH11_POSE_SNAPSHOT},dst=/pams/epoch11/training-pose-cache-snapshot.json,readonly" \
+  --mount "type=bind,src=${EPOCH11_GATE_STAGE},dst=/pams/output" \
+  "$IMAGE_ID" \
+  python "$EPOCH11_GATE_RELATIVE" \
+    --encoder-checkpoint /pams/epoch11/encoder.pt \
+    --encoder-progress /pams/epoch11/encoder.jsonl \
+    --encoder-completion-receipt /pams/epoch11/completion.receipt.json \
+    --expected-encoder-completion-receipt-sha256 "$EPOCH11_COMPLETION_RECEIPT_SHA256" \
+    --config "/workspace/${CONFIG_RELATIVE}" \
+    --gate-specification "/workspace/${EPOCH11_GATE_SPEC_RELATIVE}" \
+    --pose-cache-dir /pams/pose-cache \
+    --pose-snapshot /pams/epoch11/training-pose-cache-snapshot.json \
+    --output /pams/output/gate.json \
     --device cuda:0 \
+    --batch-size 16 \
+  > "${AUDIT_ROOT}/${EPOCH11_GATE_NAME}.create-id.txt"
+verify_container "$EPOCH11_GATE_NAME" 'epoch11-gate'
+run_gate_container "$EPOCH11_GATE_NAME"
+[[ -s "$EPOCH11_GATE_ARTIFACT" ]] || fail 'epoch11 gate artifact is missing'
+[[ -s "$EPOCH11_GATE_RECEIPT" ]] || fail 'epoch11 gate receipt is missing'
+validate_epoch11_gate_artifacts \
+  "$GATE_CONTAINER_EXIT" \
+  "$EPOCH11_CHECKPOINT_SHA256" \
+  "$EPOCH11_PROGRESS_SHA256" \
+  "$EPOCH11_COMPLETION_RECEIPT_SHA256" \
+  "$EPOCH11_SNAPSHOT_SHA256" \
+  "$POSE_CACHE_SET_SHA256" \
+  "$EPOCH11_GATE_SPEC_SHA256"
+readonly EPOCH11_GATE_ARTIFACT_SHA256="$(sha256_file "$EPOCH11_GATE_ARTIFACT")"
+readonly EPOCH11_GATE_RECEIPT_SHA256="$(sha256_file "$EPOCH11_GATE_RECEIPT")"
+sha256sum -- "$EPOCH11_GATE_ARTIFACT" "$EPOCH11_GATE_RECEIPT" \
+  > "${AUDIT_ROOT}/epoch11-gate-sha256.txt"
+chmod -R a-w -- "$EPOCH11_GATE_STAGE"
+
+if [[ "$GATE_CONTAINER_EXIT" -eq 3 ]]; then
+  [[ ! -e "$FINAL_ENCODER_STAGE" ]] \
+    || fail 'resume stage exists despite a rejected epoch11 gate'
+  CURRENT_STAGE='epoch11-gate-rejected'
+  REJECTION_PATH="${AUDIT_ROOT}/continuation-rejected.json" \
+  REJECTION_ATTEMPT_ID="$ATTEMPT_ID" \
+  REJECTION_CANDIDATE_ID="$CANDIDATE_ID" \
+  REJECTION_WINDOW="$CANDIDATE_WINDOW" \
+  REJECTION_STRIDE="$CANDIDATE_STRIDE" \
+  REJECTION_EPOCH11_CHECKPOINT_SHA256="$EPOCH11_CHECKPOINT_SHA256" \
+  REJECTION_EPOCH11_PROGRESS_SHA256="$EPOCH11_PROGRESS_SHA256" \
+  REJECTION_GATE_ARTIFACT_SHA256="$EPOCH11_GATE_ARTIFACT_SHA256" \
+  REJECTION_GATE_RECEIPT_SHA256="$EPOCH11_GATE_RECEIPT_SHA256" \
+  python3 - <<'PY'
+import json
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+
+payload = {
+    "schema_version": 1,
+    "artifact_type": "pams_native_table2_proxy_continuation_rejection_receipt",
+    "status": "encoder_continuation_rejected",
+    "completed_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "attempt_id": os.environ["REJECTION_ATTEMPT_ID"],
+    "candidate_id": os.environ["REJECTION_CANDIDATE_ID"],
+    "fixed_period_frames": int(os.environ["REJECTION_WINDOW"]),
+    "anchor_stride": int(os.environ["REJECTION_STRIDE"]),
+    "epoch11_encoder_checkpoint_sha256": os.environ[
+        "REJECTION_EPOCH11_CHECKPOINT_SHA256"
+    ],
+    "epoch11_encoder_progress_sha256": os.environ[
+        "REJECTION_EPOCH11_PROGRESS_SHA256"
+    ],
+    "epoch11_gate_artifact_sha256": os.environ[
+        "REJECTION_GATE_ARTIFACT_SHA256"
+    ],
+    "epoch11_gate_receipt_sha256": os.environ["REJECTION_GATE_RECEIPT_SHA256"],
+    "resume_stage_created": False,
+    "encoder_continuation_authorized": False,
+    "dev_or_test_access_authorized": False,
+}
+with Path(os.environ["REJECTION_PATH"]).open(
+    "x", encoding="utf-8", newline="\n"
+) as handle:
+    json.dump(payload, handle, indent=2, sort_keys=True, allow_nan=False)
+    handle.write("\n")
+PY
+  chmod 0444 "${AUDIT_ROOT}/continuation-rejected.json"
+  write_status 'failed' 'epoch11-gate-rejected' '3'
+  flock -u 9
+  find "$RUN_ROOT" -type f \
+    -not -path "${AUDIT_ROOT}/artifact-sha256.txt" \
+    -print0 | sort -z | xargs -0 sha256sum \
+    > "${AUDIT_ROOT}/artifact-sha256.txt"
+  chmod -R a-w -- "$RUN_ROOT"
+  RUN_RESERVED=0
+  exit 3
+fi
+
+[[ "$GATE_CONTAINER_EXIT" -eq 0 ]] \
+  || fail 'unreachable epoch11 gate exit status'
+jq -e \
+  '.gate.encoder_continuation_authorized == true
+   and .status == "encoder_continuation_authorized"' \
+  "$EPOCH11_GATE_ARTIFACT" >/dev/null \
+  || fail 'epoch11 gate did not authorize encoder continuation'
+[[ ! -e "$FINAL_ENCODER_STAGE" ]] \
+  || fail 'resume stage was created before gate authorization'
+mkdir -- "$FINAL_ENCODER_STAGE"
+
+CURRENT_STAGE='encoder-final-create'
+docker create \
+  --name "$FINAL_ENCODER_NAME" \
+  --gpus "device=${GPU_DEVICE}" \
+  "${common_args[@]}" \
+  --env CUDA_VISIBLE_DEVICES=0 \
+  --env CUBLAS_WORKSPACE_CONFIG=:4096:8 \
+  "${source_args[@]}" \
+  "${protocol_args[@]}" \
+  --mount "type=bind,src=${POSE_RECOVERY_CACHE},dst=/pams/pose-cache,readonly" \
+  --mount "type=bind,src=${EPOCH11_ENCODER_CHECKPOINT},dst=/pams/resume/encoder.pt,readonly" \
+  --mount "type=bind,src=${EPOCH11_ENCODER_PROGRESS},dst=/pams/resume/encoder.jsonl,readonly" \
+  --mount "type=bind,src=${FINAL_ENCODER_STAGE},dst=/pams/output" \
+  "$IMAGE_ID" \
+  python -m pams train encoder \
+    /pams/protocol/train.inputs.json \
+    /pams/pose-cache \
+    /pams/output/run \
     --epochs 150 \
-    --microbatch-size 32 \
-    --label-free-inputs \
-    --input-commitment /pams/protocol/train.inputs.commitment.json \
-    --dev-inputs /pams/protocol/dev.inputs.json \
-    --dev-input-commitment /pams/protocol/dev.inputs.commitment.json \
-    --test-identity-inputs /pams/protocol/test-identity.inputs.json \
-    --test-identity-commitment /pams/protocol/test-identity.inputs.commitment.json \
-  > "${AUDIT_ROOT}/${ENCODER_NAME}.create-id.txt"
-verify_container "$ENCODER_NAME" 'encoder'
-run_created_container "$ENCODER_NAME" 'encoder'
+    --resume \
+    --resume-checkpoint /pams/resume/encoder.pt \
+    --resume-progress /pams/resume/encoder.jsonl \
+    "${encoder_cli_args[@]}" \
+  > "${AUDIT_ROOT}/${FINAL_ENCODER_NAME}.create-id.txt"
+verify_container "$FINAL_ENCODER_NAME" 'encoder-final'
+run_created_container "$FINAL_ENCODER_NAME" 'encoder-final'
 flock -u 9
 
-readonly ENCODER_RECEIPT="$(single_completion_receipt "$ENCODER_STAGE")"
-readonly ENCODER_CHECKPOINT="${ENCODER_STAGE}/run/encoder.pt"
-readonly ENCODER_PROGRESS="${ENCODER_STAGE}/run/logs/encoder.jsonl"
-[[ -s "$ENCODER_CHECKPOINT" ]] || fail 'encoder checkpoint is missing'
-[[ -s "$ENCODER_PROGRESS" ]] || fail 'encoder progress log is missing'
+readonly FINAL_ENCODER_RECEIPT="$(single_completion_receipt "$FINAL_ENCODER_STAGE")"
+[[ -s "$FINAL_ENCODER_CHECKPOINT" ]] || fail 'final encoder checkpoint is missing'
+[[ -s "$FINAL_ENCODER_PROGRESS" ]] || fail 'final encoder progress is missing'
 validate_completion_receipt \
-  "$ENCODER_RECEIPT" \
-  "$ENCODER_CHECKPOINT" \
-  "$ENCODER_PROGRESS" \
-  "$POSE_CACHE_SET_SHA256"
-sha256sum -- "$ENCODER_CHECKPOINT" "$ENCODER_PROGRESS" "$ENCODER_RECEIPT" \
-  > "${AUDIT_ROOT}/encoder-terminal-sha256.txt"
-chmod -R a-w -- "${ENCODER_STAGE}/run"
+  "$FINAL_ENCODER_RECEIPT" \
+  "$FINAL_ENCODER_CHECKPOINT" \
+  "$FINAL_ENCODER_PROGRESS" \
+  "$POSE_CACHE_SET_SHA256" \
+  150 \
+  "$EPOCH11_ENCODER_CHECKPOINT" \
+  "$EPOCH11_ENCODER_PROGRESS"
+readonly FINAL_CHECKPOINT_SHA256="$(sha256_file "$FINAL_ENCODER_CHECKPOINT")"
+readonly FINAL_PROGRESS_SHA256="$(sha256_file "$FINAL_ENCODER_PROGRESS")"
+readonly FINAL_COMPLETION_RECEIPT_SHA256="$(
+  sha256_file "$FINAL_ENCODER_RECEIPT"
+)"
+validate_resume_lineage \
+  "$EPOCH11_CHECKPOINT_SHA256" \
+  "$EPOCH11_PROGRESS_SHA256" \
+  "$EPOCH11_SNAPSHOT_SHA256" \
+  "$EPOCH11_GATE_ARTIFACT_SHA256" \
+  "$EPOCH11_GATE_RECEIPT_SHA256"
+sha256sum -- \
+  "$FINAL_ENCODER_CHECKPOINT" \
+  "$FINAL_ENCODER_PROGRESS" \
+  "$FINAL_ENCODER_RECEIPT" \
+  > "${AUDIT_ROOT}/encoder-final-sha256.txt"
+chmod -R a-w -- "$FINAL_ENCODER_STAGE"
 
 CURRENT_STAGE='final-receipt'
 RUN_RECEIPT_PATH="${AUDIT_ROOT}/run.receipt.json" \
 RUN_ATTEMPT_ID="$ATTEMPT_ID" \
+RUN_CANDIDATE_ID="$CANDIDATE_ID" \
+RUN_CANDIDATE_WINDOW="$CANDIDATE_WINDOW" \
+RUN_CANDIDATE_STRIDE="$CANDIDATE_STRIDE" \
 RUN_SOURCE_REVISION="$SOURCE_REVISION" \
 RUN_SOURCE_RECEIPT_SHA256="$SOURCE_RECEIPT_SHA256" \
 RUN_IMAGE_ID="$IMAGE_ID" \
@@ -1078,18 +1831,21 @@ RUN_POSE_GATE_SHA256="$POSE_RECOVERY_PAIRED_GATE_SHA256" \
 RUN_POSE_RECEIPT_SHA256="$POSE_RECOVERY_RUN_RECEIPT_SHA256" \
 RUN_POSE_LEDGER_SHA256="$POSE_RECOVERY_LEDGER_SHA256" \
 RUN_PREFLIGHT_SHA256="$INPUT_PREFLIGHT_SHA256" \
-RUN_ENCODER_CHECKPOINT="$ENCODER_CHECKPOINT" \
-RUN_ENCODER_PROGRESS="$ENCODER_PROGRESS" \
-RUN_ENCODER_RECEIPT="$ENCODER_RECEIPT" \
+RUN_GATE_SPECIFICATION_SHA256="$EPOCH11_GATE_SPEC_SHA256" \
+RUN_EPOCH11_CHECKPOINT_SHA256="$EPOCH11_CHECKPOINT_SHA256" \
+RUN_EPOCH11_PROGRESS_SHA256="$EPOCH11_PROGRESS_SHA256" \
+RUN_EPOCH11_SNAPSHOT_SHA256="$EPOCH11_SNAPSHOT_SHA256" \
+RUN_EPOCH11_COMPLETION_RECEIPT_SHA256="$EPOCH11_COMPLETION_RECEIPT_SHA256" \
+RUN_GATE_ARTIFACT_SHA256="$EPOCH11_GATE_ARTIFACT_SHA256" \
+RUN_GATE_RECEIPT_SHA256="$EPOCH11_GATE_RECEIPT_SHA256" \
+RUN_FINAL_CHECKPOINT_SHA256="$FINAL_CHECKPOINT_SHA256" \
+RUN_FINAL_PROGRESS_SHA256="$FINAL_PROGRESS_SHA256" \
+RUN_FINAL_COMPLETION_RECEIPT_SHA256="$FINAL_COMPLETION_RECEIPT_SHA256" \
 python3 - <<'PY'
-import hashlib
 import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-
-def digest(name: str) -> str:
-    return hashlib.sha256(Path(os.environ[name]).read_bytes()).hexdigest()
 
 payload = {
     "schema_version": 1,
@@ -1101,6 +1857,9 @@ payload = {
     "paper_table2_value_claim_eligible": False,
     "protocol": "ucfrep_526",
     "seed": 2026,
+    "candidate_id": os.environ["RUN_CANDIDATE_ID"],
+    "fixed_period_frames": int(os.environ["RUN_CANDIDATE_WINDOW"]),
+    "anchor_stride": int(os.environ["RUN_CANDIDATE_STRIDE"]),
     "source_revision": os.environ["RUN_SOURCE_REVISION"],
     "source_export_receipt_sha256": os.environ["RUN_SOURCE_RECEIPT_SHA256"],
     "container_image_id": os.environ["RUN_IMAGE_ID"],
@@ -1121,10 +1880,41 @@ payload = {
         "ledger_sha256": os.environ["RUN_POSE_LEDGER_SHA256"],
     },
     "input_preflight_sha256": os.environ["RUN_PREFLIGHT_SHA256"],
-    "encoder_checkpoint_sha256": digest("RUN_ENCODER_CHECKPOINT"),
-    "encoder_progress_sha256": digest("RUN_ENCODER_PROGRESS"),
-    "encoder_completion_receipt_sha256": digest("RUN_ENCODER_RECEIPT"),
-    "encoder_epochs": 150,
+    "epoch11_gate": {
+        "gate_epoch": 11,
+        "gate_specification_sha256": os.environ[
+            "RUN_GATE_SPECIFICATION_SHA256"
+        ],
+        "encoder_checkpoint_sha256": os.environ[
+            "RUN_EPOCH11_CHECKPOINT_SHA256"
+        ],
+        "encoder_progress_sha256": os.environ["RUN_EPOCH11_PROGRESS_SHA256"],
+        "pose_snapshot_sha256": os.environ["RUN_EPOCH11_SNAPSHOT_SHA256"],
+        "encoder_completion_receipt_sha256": os.environ[
+            "RUN_EPOCH11_COMPLETION_RECEIPT_SHA256"
+        ],
+        "gate_artifact_sha256": os.environ["RUN_GATE_ARTIFACT_SHA256"],
+        "gate_receipt_sha256": os.environ["RUN_GATE_RECEIPT_SHA256"],
+        "encoder_continuation_authorized": True,
+        "gate_exit_code": 0,
+        "read_only": True,
+    },
+    "final_encoder": {
+        "checkpoint_sha256": os.environ["RUN_FINAL_CHECKPOINT_SHA256"],
+        "progress_sha256": os.environ["RUN_FINAL_PROGRESS_SHA256"],
+        "completion_receipt_sha256": os.environ[
+            "RUN_FINAL_COMPLETION_RECEIPT_SHA256"
+        ],
+        "completed_epochs": 150,
+        "immutable_resume_checkpoint_sha256": os.environ[
+            "RUN_EPOCH11_CHECKPOINT_SHA256"
+        ],
+        "immutable_resume_progress_sha256": os.environ[
+            "RUN_EPOCH11_PROGRESS_SHA256"
+        ],
+        "progress_has_exact_epoch11_prefix": True,
+        "resume_stage_created_after_gate_authorization": True,
+    },
     "physical_batch_size": 32,
     "encoder_training_scope": "train337_only",
     "period_head_training_authorized": False,
@@ -1148,9 +1938,10 @@ with Path(os.environ["RUN_RECEIPT_PATH"]).open(
     handle.write("\n")
 PY
 chmod 0444 "${AUDIT_ROOT}/run.receipt.json"
-write_status 'completed' 'encoder-only' '0'
+write_status 'completed' 'encoder-final' '0'
 find "$RUN_ROOT" -type f -not -path "${AUDIT_ROOT}/artifact-sha256.txt" \
   -print0 | sort -z | xargs -0 sha256sum \
   > "${AUDIT_ROOT}/artifact-sha256.txt"
 chmod -R a-w -- "$RUN_ROOT"
+RUN_RESERVED=0
 printf '%s\n' "$RUN_ROOT"
