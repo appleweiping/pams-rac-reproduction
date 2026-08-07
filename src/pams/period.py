@@ -15,6 +15,15 @@ import torch
 from scipy.signal import find_peaks
 from torch import Tensor
 
+MaximumPeriodMode = Literal["fixed", "half_timeline"]
+_INTEGER_DTYPES = {
+    torch.uint8,
+    torch.int8,
+    torch.int16,
+    torch.int32,
+    torch.int64,
+}
+
 
 @dataclass(frozen=True)
 class PeriodEstimate:
@@ -114,6 +123,104 @@ def _validated_mask(signal: Tensor, valid_mask: Tensor | None) -> Tensor:
             f"valid_mask must have shape {tuple(signal.shape)}, got {tuple(valid_mask.shape)}"
         )
     return valid_mask.to(device=signal.device, dtype=torch.bool)
+
+
+def _validated_timeline_lengths(
+    *,
+    batch: int,
+    padded_time: int,
+    timeline_lengths: Tensor | None,
+    maximum_mode: MaximumPeriodMode,
+    valid_mask: Tensor | None = None,
+) -> tuple[int, ...] | None:
+    """Validate explicit unpadded timeline lengths.
+
+    A validity mask cannot distinguish collate padding from a real frame at
+    which pose extraction failed.  Native-timeline callers must therefore
+    provide the lengths carried by :class:`pams.training.PoseBatch` instead of
+    deriving a duration from ``mask.sum()`` or the last valid pose.
+    """
+
+    if maximum_mode not in {"fixed", "half_timeline"}:
+        raise ValueError("maximum_mode must be 'fixed' or 'half_timeline'")
+    if timeline_lengths is None:
+        if maximum_mode == "half_timeline":
+            raise ValueError("half_timeline maximum_mode requires timeline_lengths")
+        return None
+    if not isinstance(timeline_lengths, Tensor):
+        raise TypeError("timeline_lengths must be a torch.Tensor")
+    if timeline_lengths.shape != (batch,):
+        raise ValueError(f"timeline_lengths must have shape [{batch}]")
+    if timeline_lengths.dtype not in _INTEGER_DTYPES:
+        raise TypeError("timeline_lengths must use an integer dtype")
+    lengths = tuple(int(value) for value in timeline_lengths.detach().cpu().tolist())
+    if any(length < 1 or length > padded_time for length in lengths):
+        raise ValueError(
+            "timeline_lengths must lie in "
+            f"[1, {padded_time}] within the signal time dimension"
+        )
+    if valid_mask is not None:
+        if valid_mask.shape != (batch, padded_time):
+            raise ValueError(
+                "valid_mask must match the padded batch when timeline_lengths "
+                "are supplied"
+            )
+        frame_indices = torch.arange(padded_time, device=valid_mask.device)
+        length_tensor = torch.tensor(
+            lengths,
+            dtype=torch.long,
+            device=valid_mask.device,
+        )
+        outside_timeline = frame_indices.unsqueeze(0) >= length_tensor.unsqueeze(1)
+        if bool(torch.any(valid_mask.to(dtype=torch.bool) & outside_timeline)):
+            raise ValueError(
+                "valid_mask cannot mark samples beyond timeline_lengths as valid"
+            )
+    return lengths
+
+
+def _estimate_from_autocorrelation_spectrum(
+    sample_ac: Tensor,
+    sample_mask: Tensor,
+    *,
+    minimum: int,
+    upper_period: int,
+) -> tuple[float, Tensor]:
+    """Estimate one period from an already timeline-sized autocorrelation."""
+
+    valid_length = int(sample_mask.sum())
+    if valid_length < minimum * 2:
+        return float(minimum), sample_ac.new_tensor(0.0)
+
+    window = torch.hann_window(
+        sample_ac.numel(),
+        periodic=False,
+        dtype=sample_ac.dtype,
+        device=sample_ac.device,
+    )
+    power = torch.fft.rfft(sample_ac * window).abs().square()
+    frequencies = torch.fft.rfftfreq(
+        sample_ac.numel(),
+        d=1.0,
+        device=sample_ac.device,
+    )
+    allowed = (frequencies >= 1.0 / upper_period) & (
+        frequencies <= 1.0 / minimum
+    )
+    allowed[0] = False
+    band = power.masked_fill(~allowed, 0.0)
+    total = band.sum()
+    if not torch.isfinite(total) or float(total) <= 1e-12:
+        return float(upper_period), sample_ac.new_tensor(0.0)
+
+    index = int(torch.argmax(band))
+    frequency = index / sample_ac.numel()
+    estimate = min(
+        max(1.0 / frequency, float(minimum)),
+        float(upper_period),
+    )
+    confidence = (band[index] / total.clamp_min(1e-12)).clamp(0.0, 1.0)
+    return estimate, confidence
 
 
 def temporal_component(
@@ -329,6 +436,9 @@ def estimate_period_batch(
     minimum: int = 4,
     maximum: int = 128,
     valid_mask: Tensor | None = None,
+    *,
+    timeline_lengths: Tensor | None = None,
+    maximum_mode: MaximumPeriodMode = "fixed",
 ) -> tuple[Tensor, Tensor]:
     """Estimate integer periods through the spectrum of autocorrelation.
 
@@ -349,51 +459,60 @@ def estimate_period_batch(
         batched,
         valid_mask.unsqueeze(0) if unbatched and valid_mask is not None else valid_mask,
     )
-    autocorrelation = autocorrelation_fft(batched, mask)
-    if autocorrelation.ndim == 1:
-        autocorrelation = autocorrelation.unsqueeze(0)
+    lengths = _validated_timeline_lengths(
+        batch=batched.shape[0],
+        padded_time=batched.shape[1],
+        timeline_lengths=timeline_lengths,
+        maximum_mode=maximum_mode,
+        valid_mask=mask,
+    )
+
+    if lengths is None:
+        autocorrelation = autocorrelation_fft(batched, mask)
+        if autocorrelation.ndim == 1:
+            autocorrelation = autocorrelation.unsqueeze(0)
+        sample_inputs = tuple(
+            (sample_ac, sample_mask, sample_ac.numel())
+            for sample_ac, sample_mask in zip(autocorrelation, mask, strict=True)
+        )
+    else:
+        sample_inputs = tuple(
+            (
+                autocorrelation_fft(
+                    sample_signal[:timeline_length],
+                    sample_mask[:timeline_length],
+                ),
+                sample_mask[:timeline_length],
+                timeline_length,
+            )
+            for sample_signal, sample_mask, timeline_length in zip(
+                batched,
+                mask,
+                lengths,
+                strict=True,
+            )
+        )
 
     periods: list[float] = []
     confidences: list[Tensor] = []
-    for sample_ac, sample_signal, sample_mask in zip(autocorrelation, batched, mask, strict=True):
+    for sample_ac, sample_mask, timeline_length in sample_inputs:
         valid_length = int(sample_mask.sum())
-        upper_period = min(maximum, max(minimum, valid_length - 1))
-        if valid_length < minimum * 2:
-            periods.append(float(minimum))
-            confidences.append(sample_signal.new_tensor(0.0))
-            continue
-
-        # Windowing reduces leakage when the video contains a partial cycle.
-        window = torch.hann_window(
-            sample_ac.numel(),
-            periodic=False,
-            dtype=sample_ac.dtype,
-            device=sample_ac.device,
+        if maximum_mode == "half_timeline":
+            if timeline_length < minimum * 2:
+                periods.append(float(minimum))
+                confidences.append(sample_ac.new_tensor(0.0))
+                continue
+            upper_period = min(maximum, max(minimum, timeline_length // 2))
+        else:
+            upper_period = min(maximum, max(minimum, valid_length - 1))
+        estimate, confidence = _estimate_from_autocorrelation_spectrum(
+            sample_ac,
+            sample_mask,
+            minimum=minimum,
+            upper_period=upper_period,
         )
-        power = torch.fft.rfft(sample_ac * window).abs().square()
-        frequencies = torch.fft.rfftfreq(
-            sample_ac.numel(),
-            d=1.0,
-            device=sample_ac.device,
-        )
-        allowed = (frequencies >= 1.0 / upper_period) & (frequencies <= 1.0 / minimum)
-        allowed[0] = False
-        band = power.masked_fill(~allowed, 0.0)
-        total = band.sum()
-        if not torch.isfinite(total) or float(total) <= 1e-12:
-            periods.append(float(upper_period))
-            confidences.append(sample_signal.new_tensor(0.0))
-            continue
-
-        index = int(torch.argmax(band))
-        frequency = index / sample_ac.numel()
-        # Preserve the FFT bin's fractional period (for example, 256/40 =
-        # 6.4 frames). TCC/SSHead round only where integer indexing is
-        # unavoidable, while inference smoothing and reference counting use
-        # the disclosed dominant period without premature quantization.
-        estimate = min(max(1.0 / frequency, float(minimum)), float(upper_period))
         periods.append(estimate)
-        confidences.append((band[index] / total.clamp_min(1e-12)).clamp(0.0, 1.0))
+        confidences.append(confidence)
 
     period_tensor = torch.tensor(periods, dtype=batched.dtype, device=batched.device)
     confidence_tensor = torch.stack(confidences).to(device=batched.device)
@@ -410,6 +529,7 @@ def estimate_period_batch_direct_fft(
     *,
     timebase: Literal["compact_valid", "dense_resampled"] = "compact_valid",
     timeline_lengths: Tensor | None = None,
+    maximum_mode: MaximumPeriodMode = "fixed",
 ) -> tuple[Tensor, Tensor]:
     """Estimate a dominant period directly from the observed action curve.
 
@@ -428,6 +548,11 @@ def estimate_period_batch_direct_fft(
     contributes exact zeros at invalid locations, and performs the FFT over
     each sample's explicit ``timeline_lengths`` extent.  Its returned period is
     therefore measured in dense resampled frames.
+
+    ``maximum_mode='half_timeline'`` is valid only for ``dense_resampled`` and
+    caps the searched period at ``floor(timeline_length / 2)``.  This prevents
+    a putative period from exceeding the two-cycle evidence available on that
+    sample's real, unpadded frame clock.
     """
 
     if minimum < 2:
@@ -438,6 +563,8 @@ def estimate_period_batch_direct_fft(
         raise ValueError(
             "timebase must be 'compact_valid' or 'dense_resampled'"
         )
+    if maximum_mode not in {"fixed", "half_timeline"}:
+        raise ValueError("maximum_mode must be 'fixed' or 'half_timeline'")
     batched, unbatched = _as_batch_signal(signal)
     if batched.dtype not in (torch.float32, torch.float64):
         batched = batched.float()
@@ -450,44 +577,28 @@ def estimate_period_batch_direct_fft(
         ),
     )
     if timebase == "compact_valid":
+        if maximum_mode == "half_timeline":
+            raise ValueError(
+                "half_timeline maximum_mode requires timebase='dense_resampled'"
+            )
         if timeline_lengths is not None:
             raise ValueError(
                 "timeline_lengths is only valid with timebase='dense_resampled'"
             )
-        lengths: Tensor | None = None
+        lengths: tuple[int, ...] | None = None
     else:
         if timeline_lengths is None:
             raise ValueError(
                 "timeline_lengths is required with timebase='dense_resampled'"
             )
-        if not isinstance(timeline_lengths, Tensor):
-            raise TypeError("timeline_lengths must be a torch.Tensor")
-        if timeline_lengths.shape != (batched.shape[0],):
-            raise ValueError(
-                "timeline_lengths must have shape "
-                f"({batched.shape[0]},), got {tuple(timeline_lengths.shape)}"
-            )
-        if timeline_lengths.dtype not in {
-            torch.uint8,
-            torch.int8,
-            torch.int16,
-            torch.int32,
-            torch.int64,
-        }:
-            raise TypeError("timeline_lengths must have an integer dtype")
-        lengths = timeline_lengths.to(device=batched.device, dtype=torch.long)
-        if bool(torch.any(lengths < 1)) or bool(
-            torch.any(lengths > batched.shape[1])
-        ):
-            raise ValueError(
-                "timeline_lengths values must lie within the signal time dimension"
-            )
-        frame_indices = torch.arange(batched.shape[1], device=batched.device)
-        outside_timeline = frame_indices.unsqueeze(0) >= lengths.unsqueeze(1)
-        if bool(torch.any(mask & outside_timeline)):
-            raise ValueError(
-                "valid_mask cannot mark samples beyond timeline_lengths as valid"
-            )
+        lengths = _validated_timeline_lengths(
+            batch=batched.shape[0],
+            padded_time=batched.shape[1],
+            timeline_lengths=timeline_lengths,
+            maximum_mode=maximum_mode,
+            valid_mask=mask,
+        )
+        assert lengths is not None
 
     periods: list[float] = []
     confidences: list[Tensor] = []
@@ -505,7 +616,7 @@ def estimate_period_batch_direct_fft(
             )
         else:
             assert lengths is not None
-            fft_length = int(lengths[sample_index])
+            fft_length = lengths[sample_index]
             timeline_mask = sample_mask[:fft_length]
             timeline_signal = sample_signal[:fft_length]
             valid_length = int(timeline_mask.sum())
@@ -516,7 +627,14 @@ def estimate_period_batch_direct_fft(
                 device=selected.device,
             )[timeline_mask]
 
-        upper_period = min(maximum, max(minimum, fft_length - 1))
+        if maximum_mode == "half_timeline":
+            if fft_length < minimum * 2:
+                periods.append(float(minimum))
+                confidences.append(sample_signal.new_tensor(0.0))
+                continue
+            upper_period = min(maximum, max(minimum, fft_length // 2))
+        else:
+            upper_period = min(maximum, max(minimum, fft_length - 1))
         if valid_length < minimum * 2:
             periods.append(float(minimum))
             confidences.append(sample_signal.new_tensor(0.0))
@@ -595,6 +713,9 @@ def estimate_period_from_vectors(
     minimum: int = 4,
     maximum: int = 128,
     valid_mask: Tensor | None = None,
+    *,
+    timeline_lengths: Tensor | None = None,
+    maximum_mode: MaximumPeriodMode = "fixed",
 ) -> tuple[Tensor, Tensor]:
     """Estimate periods from the full signed vector autocorrelation.
 
@@ -622,52 +743,60 @@ def estimate_period_from_vectors(
             )
         mask = valid_mask.unsqueeze(0) if unbatched else valid_mask
         mask = mask.to(device=batched.device, dtype=torch.bool)
+    lengths = _validated_timeline_lengths(
+        batch=batch,
+        padded_time=time,
+        timeline_lengths=timeline_lengths,
+        maximum_mode=maximum_mode,
+        valid_mask=mask,
+    )
 
-    autocorrelation = vector_autocorrelation_fft(batched, mask)
-    if autocorrelation.ndim == 1:
-        autocorrelation = autocorrelation.unsqueeze(0)
+    if lengths is None:
+        autocorrelation = vector_autocorrelation_fft(batched, mask)
+        if autocorrelation.ndim == 1:
+            autocorrelation = autocorrelation.unsqueeze(0)
+        sample_inputs = tuple(
+            (sample_ac, sample_mask, sample_ac.numel())
+            for sample_ac, sample_mask in zip(autocorrelation, mask, strict=True)
+        )
+    else:
+        sample_inputs = tuple(
+            (
+                vector_autocorrelation_fft(
+                    sample_sequence[:timeline_length],
+                    sample_mask[:timeline_length],
+                ),
+                sample_mask[:timeline_length],
+                timeline_length,
+            )
+            for sample_sequence, sample_mask, timeline_length in zip(
+                batched,
+                mask,
+                lengths,
+                strict=True,
+            )
+        )
 
     periods: list[float] = []
     confidences: list[Tensor] = []
-    for sample_ac, sample_mask in zip(autocorrelation, mask, strict=True):
+    for sample_ac, sample_mask, timeline_length in sample_inputs:
         valid_length = int(sample_mask.sum())
-        upper_period = min(maximum, max(minimum, valid_length - 1))
-        if valid_length < minimum * 2:
-            periods.append(float(minimum))
-            confidences.append(sample_ac.new_tensor(0.0))
-            continue
-
-        window = torch.hann_window(
-            sample_ac.numel(),
-            periodic=False,
-            dtype=sample_ac.dtype,
-            device=sample_ac.device,
-        )
-        power = torch.fft.rfft(sample_ac * window).abs().square()
-        frequencies = torch.fft.rfftfreq(
-            sample_ac.numel(),
-            d=1.0,
-            device=sample_ac.device,
-        )
-        allowed = (frequencies >= 1.0 / upper_period) & (
-            frequencies <= 1.0 / minimum
-        )
-        allowed[0] = False
-        band = power.masked_fill(~allowed, 0.0)
-        total = band.sum()
-        if not torch.isfinite(total) or float(total) <= 1e-12:
-            periods.append(float(upper_period))
-            confidences.append(sample_ac.new_tensor(0.0))
-            continue
-
-        index = int(torch.argmax(band))
-        frequency = index / sample_ac.numel()
-        estimate = min(
-            max(1.0 / frequency, float(minimum)),
-            float(upper_period),
+        if maximum_mode == "half_timeline":
+            if timeline_length < minimum * 2:
+                periods.append(float(minimum))
+                confidences.append(sample_ac.new_tensor(0.0))
+                continue
+            upper_period = min(maximum, max(minimum, timeline_length // 2))
+        else:
+            upper_period = min(maximum, max(minimum, valid_length - 1))
+        estimate, confidence = _estimate_from_autocorrelation_spectrum(
+            sample_ac,
+            sample_mask,
+            minimum=minimum,
+            upper_period=upper_period,
         )
         periods.append(estimate)
-        confidences.append((band[index] / total.clamp_min(1e-12)).clamp(0.0, 1.0))
+        confidences.append(confidence)
 
     period_tensor = torch.tensor(
         periods,
@@ -685,6 +814,9 @@ def estimate_period(
     minimum: int = 4,
     maximum: int = 128,
     valid_mask: Tensor | None = None,
+    *,
+    timeline_lengths: Tensor | None = None,
+    maximum_mode: MaximumPeriodMode = "fixed",
 ) -> PeriodEstimate:
     """Return a scalar diagnostic estimate for one activity signal."""
 
@@ -695,6 +827,8 @@ def estimate_period(
         minimum=minimum,
         maximum=maximum,
         valid_mask=valid_mask,
+        timeline_lengths=timeline_lengths,
+        maximum_mode=maximum_mode,
     )
     mask = (
         torch.ones_like(signal, dtype=torch.bool)
@@ -715,11 +849,21 @@ def estimate_period_from_pose(
     minimum: int = 4,
     maximum: int = 128,
     valid_mask: Tensor | None = None,
+    *,
+    timeline_lengths: Tensor | None = None,
+    maximum_mode: MaximumPeriodMode = "fixed",
 ) -> tuple[Tensor, Tensor]:
     """Estimate periods from the warm-up pose proxy."""
 
     energy = pose_energy(poses, valid_mask)
-    return estimate_period_batch(energy, minimum, maximum, valid_mask)
+    return estimate_period_batch(
+        energy,
+        minimum,
+        maximum,
+        valid_mask,
+        timeline_lengths=timeline_lengths,
+        maximum_mode=maximum_mode,
+    )
 
 
 def estimate_period_from_embeddings(
@@ -727,12 +871,22 @@ def estimate_period_from_embeddings(
     minimum: int = 4,
     maximum: int = 128,
     valid_mask: Tensor | None = None,
+    *,
+    timeline_lengths: Tensor | None = None,
+    maximum_mode: MaximumPeriodMode = "fixed",
 ) -> tuple[Tensor, Tensor]:
     """Estimate periods from stop-gradient encoder embeddings."""
 
     velocities, velocity_valid = _embedding_velocity(embeddings, valid_mask)
     energy = temporal_component(velocities, velocity_valid)
-    return estimate_period_batch(energy, minimum, maximum, velocity_valid)
+    return estimate_period_batch(
+        energy,
+        minimum,
+        maximum,
+        velocity_valid,
+        timeline_lengths=timeline_lengths,
+        maximum_mode=maximum_mode,
+    )
 
 
 def estimate_period_from_embedding_velocity_vectors(
@@ -740,6 +894,9 @@ def estimate_period_from_embedding_velocity_vectors(
     minimum: int = 4,
     maximum: int = 128,
     valid_mask: Tensor | None = None,
+    *,
+    timeline_lengths: Tensor | None = None,
+    maximum_mode: MaximumPeriodMode = "fixed",
 ) -> tuple[Tensor, Tensor]:
     """Estimate periods from the full stop-gradient embedding velocity.
 
@@ -759,6 +916,8 @@ def estimate_period_from_embedding_velocity_vectors(
         minimum=minimum,
         maximum=maximum,
         valid_mask=velocity_valid,
+        timeline_lengths=timeline_lengths,
+        maximum_mode=maximum_mode,
     )
 
 
@@ -1171,6 +1330,9 @@ def estimate_period_from_projected_pose(
     minimum: int = 4,
     maximum: int = 128,
     valid_mask: Tensor | None = None,
+    *,
+    timeline_lengths: Tensor | None = None,
+    maximum_mode: MaximumPeriodMode = "fixed",
 ) -> tuple[Tensor, Tensor]:
     """Estimate period from pre-position-encoding projected-pose velocity.
 
@@ -1186,6 +1348,8 @@ def estimate_period_from_projected_pose(
         minimum=minimum,
         maximum=maximum,
         valid_mask=velocity_valid,
+        timeline_lengths=timeline_lengths,
+        maximum_mode=maximum_mode,
     )
 
 

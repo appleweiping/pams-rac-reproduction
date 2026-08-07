@@ -501,6 +501,7 @@ def diagnose(args: argparse.Namespace) -> dict[str, Any]:
                 embeddings=embeddings,
                 projected_pose=projected,
                 valid_mask=batch.valid_mask,
+                timeline_lengths=batch.lengths,
             )
             teacher, available = pose_band_phase_teacher(
                 projected,

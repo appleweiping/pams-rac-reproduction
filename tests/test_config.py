@@ -17,6 +17,7 @@ def test_default_config_matches_disclosed_dimensions() -> None:
     assert config.pose.preprocessing_revision == "detected-span-minmax-zero-span-invalid-v2"
     assert config.period.training_mode == "adaptive"
     assert config.period.fixed_period_frames == 16
+    assert config.period.maximum_mode == "fixed"
     assert config.period.post_warmup_source == "embedding_velocity_coordinate"
     assert config.period.direct_fft_timebase == "compact_valid"
     assert config.loss.anchor_stride == 1
@@ -562,6 +563,36 @@ def test_tcc_anchor_stride_is_identity_changing_and_default_preserves_history() 
     assert sparse.fingerprint != implicit.fingerprint
     assert sparse.nonseed_fingerprint != implicit.nonseed_fingerprint
     assert sparse.pose_fingerprint == implicit.pose_fingerprint
+
+
+def test_half_timeline_period_ceiling_is_identity_changing_and_default_preserves_history() -> None:
+    implicit = PAMSConfig()
+    payload = implicit.model_dump()
+    payload["period"].pop("maximum_mode")
+    reconstructed_implicit = PAMSConfig.model_validate(payload)
+    explicit_default = PAMSConfig.model_validate(implicit.model_dump())
+    native = PAMSConfig.model_validate(
+        {
+            **implicit.model_dump(),
+            "period": {
+                **implicit.period.model_dump(),
+                "maximum_mode": "half_timeline",
+            },
+        }
+    )
+
+    assert explicit_default.fingerprint == reconstructed_implicit.fingerprint
+    assert explicit_default.nonseed_fingerprint == (
+        reconstructed_implicit.nonseed_fingerprint
+    )
+    assert native.fingerprint != implicit.fingerprint
+    assert native.nonseed_fingerprint != implicit.nonseed_fingerprint
+    assert native.pose_fingerprint == implicit.pose_fingerprint
+
+
+def test_period_maximum_mode_rejects_unknown_value() -> None:
+    with pytest.raises(ValidationError, match="maximum_mode"):
+        PAMSConfig.model_validate({"period": {"maximum_mode": "last_valid"}})
 
 
 @pytest.mark.parametrize("value", [0, -1, True, 1.5])

@@ -285,6 +285,7 @@ def diagnose(args: argparse.Namespace) -> dict[str, Any]:
                 embeddings=embeddings,
                 projected_pose=projected_pose,
                 valid_mask=batch.valid_mask,
+                timeline_lengths=batch.lengths,
             )
         target_periods.extend(periods.cpu().tolist())
         confidences.extend(period_confidence.cpu().tolist())

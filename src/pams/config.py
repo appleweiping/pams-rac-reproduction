@@ -188,6 +188,7 @@ class ModelConfig(StrictModel):
 class PeriodConfig(StrictModel):
     minimum: int = Field(default=4, ge=2)
     maximum: int = Field(default=128, ge=3)
+    maximum_mode: Literal["fixed", "half_timeline"] = "fixed"
     pose_energy_epochs: int = Field(default=10, ge=0)
     training_mode: Literal[
         "adaptive",
@@ -402,6 +403,11 @@ class PAMSConfig(StrictModel):
             # candidate and therefore remains in the method identity.
             model.pop("position_encoding_mode")
         period = payload["period"]
+        if period["maximum_mode"] == "fixed":
+            # Preserve every historical config/checkpoint fingerprint.  The
+            # native-timeline ceiling is an explicit inferred repair and must
+            # therefore remain in the experiment identity when enabled.
+            period.pop("maximum_mode")
         if period["post_warmup_source"] == "embedding_velocity_coordinate":
             # Preserve every historical f99 config/checkpoint fingerprint.
             # Only the opt-in inferred vector-ACF route changes method

@@ -279,6 +279,7 @@ def test_post_warmup_period_evidence_uses_clean_not_augmented_view(
         embeddings: torch.Tensor,
         projected_pose: torch.Tensor | None,
         valid_mask: torch.Tensor,
+        timeline_lengths: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, str]:
         nonlocal observed
         observed = True
@@ -293,6 +294,7 @@ def test_post_warmup_period_evidence_uses_clean_not_augmented_view(
             embeddings=embeddings,
             projected_pose=projected_pose,
             valid_mask=valid_mask,
+            timeline_lengths=timeline_lengths,
         )
 
     monkeypatch.setattr(

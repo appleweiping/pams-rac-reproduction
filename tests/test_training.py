@@ -709,9 +709,14 @@ def test_projected_vector_period_routes_encoder_and_sshead_to_same_source(
         minimum: int,
         maximum: int,
         valid_mask: torch.Tensor,
+        *,
+        timeline_lengths: torch.Tensor,
+        maximum_mode: str,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         del maximum
         assert projected_pose.shape[:2] == valid_mask.shape
+        assert timeline_lengths.tolist() == [projected_pose.shape[1]] * projected_pose.shape[0]
+        assert maximum_mode == "fixed"
         assert projected_pose.shape[-1] == config.model.model_dim
         assert not projected_pose.requires_grad
         calls.append((projected_pose.shape[0], projected_pose.shape[1]))
@@ -828,9 +833,14 @@ def test_embedding_vector_period_routes_encoder_and_sshead_to_same_source(
         minimum: int,
         maximum: int,
         valid_mask: torch.Tensor,
+        *,
+        timeline_lengths: torch.Tensor,
+        maximum_mode: str,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         del maximum
         assert embeddings.shape[:2] == valid_mask.shape
+        assert timeline_lengths.tolist() == [embeddings.shape[1]] * embeddings.shape[0]
+        assert maximum_mode == "fixed"
         assert embeddings.shape[-1] == config.model.model_dim
         assert not embeddings.requires_grad
         calls.append((embeddings.shape[0], embeddings.shape[1]))
@@ -933,8 +943,13 @@ def test_sshead_pre_pe_source_routes_training_and_prediction_consistently(
         minimum: int,
         maximum: int,
         valid_mask: torch.Tensor,
+        *,
+        timeline_lengths: torch.Tensor,
+        maximum_mode: str,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         del minimum, maximum, valid_mask
+        assert timeline_lengths.tolist() == [embeddings.shape[1]] * embeddings.shape[0]
+        assert maximum_mode == "fixed"
         return (
             torch.full(
                 (embeddings.shape[0],),
@@ -1392,8 +1407,13 @@ def test_encoder_drops_incomplete_tail_and_records_zero_period_evidence(
         minimum: int,
         maximum: int,
         valid_mask: torch.Tensor,
+        *,
+        timeline_lengths: torch.Tensor,
+        maximum_mode: str,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         del maximum, valid_mask
+        assert timeline_lengths.tolist() == [poses.shape[1]] * poses.shape[0]
+        assert maximum_mode == "fixed"
         batch = poses.shape[0]
         return (
             torch.full((batch,), minimum, dtype=torch.long, device=poses.device),
@@ -1578,8 +1598,13 @@ def test_sshead_keeps_encoder_frozen_and_prediction_is_well_formed(
         minimum: int,
         maximum: int,
         valid_mask: torch.Tensor,
+        *,
+        timeline_lengths: torch.Tensor,
+        maximum_mode: str,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         del maximum, valid_mask
+        assert timeline_lengths.tolist() == [embeddings.shape[1]] * embeddings.shape[0]
+        assert maximum_mode == "fixed"
         batch = embeddings.shape[0]
         return (
             torch.full(

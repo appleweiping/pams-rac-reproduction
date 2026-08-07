@@ -413,6 +413,7 @@ def _estimate_post_warmup_periods(
     embeddings: Tensor,
     projected_pose: Tensor | None,
     valid_mask: Tensor,
+    timeline_lengths: Tensor,
 ) -> tuple[Tensor, Tensor, PeriodHistorySource]:
     source = _post_warmup_period_history_source(config)
     if source == "fixed_period_inferred":
@@ -427,6 +428,8 @@ def _estimate_post_warmup_periods(
             minimum=config.period.minimum,
             maximum=config.period.maximum,
             valid_mask=valid_mask,
+            timeline_lengths=timeline_lengths,
+            maximum_mode=config.period.maximum_mode,
         )
         return periods, confidences, source
     if source == "embedding_velocity_vector_acf":
@@ -435,6 +438,8 @@ def _estimate_post_warmup_periods(
             minimum=config.period.minimum,
             maximum=config.period.maximum,
             valid_mask=valid_mask,
+            timeline_lengths=timeline_lengths,
+            maximum_mode=config.period.maximum_mode,
         )
         return periods, confidences, source
     if projected_pose is None:
@@ -446,6 +451,8 @@ def _estimate_post_warmup_periods(
         minimum=config.period.minimum,
         maximum=config.period.maximum,
         valid_mask=valid_mask,
+        timeline_lengths=timeline_lengths,
+        maximum_mode=config.period.maximum_mode,
     )
     return periods, confidences, source
 
@@ -2198,6 +2205,8 @@ def train_encoder(
                     minimum=config.period.minimum,
                     maximum=config.period.maximum,
                     valid_mask=batch.valid_mask,
+                    timeline_lengths=batch.lengths,
+                    maximum_mode=config.period.maximum_mode,
                 )
                 period_source = "pose"
             else:
@@ -2218,6 +2227,7 @@ def train_encoder(
                         else projected_pose
                     ),
                     valid_mask=batch.valid_mask,
+                    timeline_lengths=batch.lengths,
                 )
             batch_clusters = torch.tensor(
                 [cluster_assignments[identifier] for identifier in batch.video_ids],
@@ -2531,6 +2541,7 @@ def train_sshead(
                     embeddings=embeddings,
                     projected_pose=projected_pose,
                     valid_mask=batch.valid_mask,
+                    timeline_lengths=batch.lengths,
                 )
                 reference_signal = (
                     build_reference_relative_signal(
@@ -2791,6 +2802,7 @@ def predict_sequence(
                     embeddings=embeddings,
                     projected_pose=projected_pose,
                     valid_mask=batch.valid_mask,
+                    timeline_lengths=batch.lengths,
                 )
             )
             reference_signal = build_reference_relative_signal(
@@ -2828,6 +2840,7 @@ def predict_sequence(
                     if config.period.direct_fft_timebase == "dense_resampled"
                     else None
                 ),
+                maximum_mode=config.period.maximum_mode,
             )
     stream = stream_batch[0, : sequence.num_frames]
     mask = (

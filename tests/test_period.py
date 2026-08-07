@@ -1,4 +1,5 @@
 import math
+from collections.abc import Callable
 
 import pytest
 import torch
@@ -273,6 +274,41 @@ def test_direct_fft_dense_resampled_rejects_valid_samples_outside_timeline() -> 
         )
 
 
+def test_direct_fft_uses_true_timeline_length_in_padded_batch() -> None:
+    short_length = 96
+    long_length = 160
+    padded = torch.zeros(2, long_length)
+    padded[0, :short_length] = _sine(12, short_length)
+    padded[0, short_length:] = 50_000.0
+    padded[1] = _sine(20, long_length)
+    mask = torch.zeros(2, long_length, dtype=torch.bool)
+    mask[0, :short_length] = True
+    mask[1] = True
+
+    single_period, single_confidence = estimate_period_batch_direct_fft(
+        padded[0, :short_length],
+        minimum=4,
+        maximum=512,
+        valid_mask=mask[0, :short_length],
+        timebase="dense_resampled",
+        timeline_lengths=torch.tensor([short_length]),
+        maximum_mode="half_timeline",
+    )
+    batch_period, batch_confidence = estimate_period_batch_direct_fft(
+        padded,
+        minimum=4,
+        maximum=512,
+        valid_mask=mask,
+        timebase="dense_resampled",
+        timeline_lengths=torch.tensor([short_length, long_length]),
+        maximum_mode="half_timeline",
+    )
+
+    assert torch.equal(batch_period[:1], single_period)
+    assert torch.equal(batch_confidence[:1], single_confidence)
+    assert batch_period.tolist() == pytest.approx([12.0, 20.0], rel=0.02)
+
+
 def test_period_estimator_respects_mask_and_bounds() -> None:
     signal = torch.cat((_sine(20, 200), torch.randn(56) * 20.0))
     mask = torch.zeros(256, dtype=torch.bool)
@@ -289,6 +325,110 @@ def test_period_estimator_respects_mask_and_bounds() -> None:
     constant = estimate_period(torch.ones(24), minimum=4, maximum=12)
     assert 4 <= constant.period <= 12
     assert constant.confidence == 0.0
+
+
+def test_explicit_timeline_length_makes_scalar_period_padding_invariant() -> None:
+    short_length = 96
+    long_length = 160
+    short = _sine(12, short_length)
+    long = _sine(20, long_length)
+    padded = torch.zeros(2, long_length)
+    padded[0, :short_length] = short
+    padded[0, short_length:] = torch.linspace(10_000.0, 20_000.0, long_length - short_length)
+    padded[1] = long
+    mask = torch.zeros(2, long_length, dtype=torch.bool)
+    mask[0, :short_length] = True
+    mask[1] = True
+    lengths = torch.tensor([short_length, long_length])
+
+    single_period, single_confidence = estimate_period_batch(
+        short,
+        minimum=4,
+        maximum=512,
+        valid_mask=torch.ones(short_length, dtype=torch.bool),
+        timeline_lengths=torch.tensor([short_length]),
+        maximum_mode="half_timeline",
+    )
+    batch_period, batch_confidence = estimate_period_batch(
+        padded,
+        minimum=4,
+        maximum=512,
+        valid_mask=mask,
+        timeline_lengths=lengths,
+        maximum_mode="half_timeline",
+    )
+
+    assert torch.equal(batch_period[:1], single_period)
+    assert torch.equal(batch_confidence[:1], single_confidence)
+    assert batch_period[0].item() == pytest.approx(12.0)
+    assert batch_period[1].item() == pytest.approx(20.0)
+
+
+def test_explicit_full_length_fixed_mode_preserves_legacy_numerics() -> None:
+    signal = _sine(16, 128)
+    mask = torch.ones(128, dtype=torch.bool)
+
+    legacy_period, legacy_confidence = estimate_period_batch(
+        signal,
+        minimum=4,
+        maximum=64,
+        valid_mask=mask,
+    )
+    explicit_period, explicit_confidence = estimate_period_batch(
+        signal,
+        minimum=4,
+        maximum=64,
+        valid_mask=mask,
+        timeline_lengths=torch.tensor([128]),
+    )
+
+    assert torch.equal(explicit_period, legacy_period)
+    assert torch.equal(explicit_confidence, legacy_confidence)
+
+
+def test_half_timeline_ceiling_never_admits_fewer_than_two_cycles() -> None:
+    timeline_length = 100
+    signal = _sine(80, timeline_length)
+    period, confidence = estimate_period_batch(
+        signal,
+        minimum=4,
+        maximum=512,
+        timeline_lengths=torch.tensor([timeline_length]),
+        maximum_mode="half_timeline",
+    )
+
+    assert 4.0 <= period.item() <= timeline_length // 2
+    assert torch.isfinite(confidence).all()
+
+
+@pytest.mark.parametrize(
+    ("timeline_lengths", "error", "message"),
+    [
+        (torch.tensor([[64]]), ValueError, "shape"),
+        (torch.tensor([0]), ValueError, "lie in"),
+        (torch.tensor([65]), ValueError, "lie in"),
+        (torch.tensor([64.0]), TypeError, "integer dtype"),
+        (torch.tensor([True]), TypeError, "integer dtype"),
+    ],
+)
+def test_period_estimator_rejects_invalid_timeline_lengths(
+    timeline_lengths: torch.Tensor,
+    error: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(error, match=message):
+        estimate_period_batch(
+            _sine(8, 64),
+            timeline_lengths=timeline_lengths,
+        )
+
+
+def test_half_timeline_mode_requires_explicit_timeline_lengths() -> None:
+    with pytest.raises(ValueError, match="requires timeline_lengths"):
+        estimate_period_batch(
+            _sine(8, 64),
+            maximum_mode="half_timeline",
+        )
 
 
 def test_pose_and_embedding_proxies_preserve_cycle_phase() -> None:
@@ -470,6 +610,111 @@ def test_vector_acf_is_mask_aware_and_ignores_invalid_corruption() -> None:
     assert torch.equal(clean_period, corrupted_period)
     assert torch.equal(clean_confidence, corrupted_confidence)
     assert corrupted_period.item() == pytest.approx(20.0, rel=0.03)
+
+
+@pytest.mark.parametrize(
+    "estimator",
+    [
+        estimate_period_from_vectors,
+        estimate_period_from_embeddings,
+        estimate_period_from_embedding_velocity_vectors,
+        estimate_period_from_projected_pose,
+    ],
+)
+def test_vector_period_routes_are_padding_invariant_with_explicit_lengths(
+    estimator: Callable[..., tuple[torch.Tensor, torch.Tensor]],
+) -> None:
+    short_length = 96
+    long_length = 160
+    short_phase = 2.0 * math.pi * torch.arange(short_length) / 12.0
+    long_phase = 2.0 * math.pi * torch.arange(long_length) / 20.0
+    short = torch.stack(
+        (torch.sin(short_phase), torch.cos(short_phase), torch.sin(short_phase + 0.3)),
+        dim=-1,
+    )
+    long = torch.stack(
+        (torch.sin(long_phase), torch.cos(long_phase), torch.sin(long_phase + 0.3)),
+        dim=-1,
+    )
+    padded = torch.zeros(2, long_length, 3)
+    padded[0, :short_length] = short
+    padded[0, short_length:] = 100_000.0
+    padded[1] = long
+    mask = torch.zeros(2, long_length, dtype=torch.bool)
+    mask[0, : short_length - 8] = True
+    mask[1] = True
+    single_mask = mask[0, :short_length]
+
+    single_period, single_confidence = estimator(
+        short,
+        minimum=4,
+        maximum=512,
+        valid_mask=single_mask,
+        timeline_lengths=torch.tensor([short_length]),
+        maximum_mode="half_timeline",
+    )
+    batch_period, batch_confidence = estimator(
+        padded,
+        minimum=4,
+        maximum=512,
+        valid_mask=mask,
+        timeline_lengths=torch.tensor([short_length, long_length]),
+        maximum_mode="half_timeline",
+    )
+
+    assert torch.equal(batch_period[:1], single_period)
+    assert torch.equal(batch_confidence[:1], single_confidence)
+    assert batch_period[0].item() == pytest.approx(12.0, rel=0.04)
+    assert batch_period[1].item() == pytest.approx(20.0, rel=0.04)
+
+
+def test_pose_period_route_is_padding_invariant_with_explicit_lengths() -> None:
+    short_length = 96
+    long_length = 160
+    short = torch.stack(
+        (
+            _sine(12, short_length),
+            torch.roll(_sine(12, short_length), 3),
+            -_sine(12, short_length),
+        ),
+        dim=-1,
+    ).reshape(short_length, 1, 3)
+    long = torch.stack(
+        (
+            _sine(20, long_length),
+            torch.roll(_sine(20, long_length), 5),
+            -_sine(20, long_length),
+        ),
+        dim=-1,
+    ).reshape(long_length, 1, 3)
+    padded = torch.zeros(2, long_length, 1, 3)
+    padded[0, :short_length] = short
+    padded[0, short_length:] = -100_000.0
+    padded[1] = long
+    mask = torch.zeros(2, long_length, dtype=torch.bool)
+    mask[0, :short_length] = True
+    mask[1] = True
+
+    single_period, single_confidence = estimate_period_from_pose(
+        short,
+        minimum=4,
+        maximum=512,
+        valid_mask=mask[0, :short_length],
+        timeline_lengths=torch.tensor([short_length]),
+        maximum_mode="half_timeline",
+    )
+    batch_period, batch_confidence = estimate_period_from_pose(
+        padded,
+        minimum=4,
+        maximum=512,
+        valid_mask=mask,
+        timeline_lengths=torch.tensor([short_length, long_length]),
+        maximum_mode="half_timeline",
+    )
+
+    assert torch.equal(batch_period[:1], single_period)
+    assert torch.equal(batch_confidence[:1], single_confidence)
+    assert batch_period.tolist() == pytest.approx([12.0, 20.0], rel=0.04)
 
 
 def test_vector_acf_period_and_confidence_are_orthogonal_basis_invariant() -> None:
