@@ -14,25 +14,6 @@ from typing import Any
 
 import numpy as np
 
-from pams.config import load_config
-from pams.data import (
-    load_pose_cache,
-    load_pose_cache_set,
-    load_pose_input_commitment,
-    load_pose_input_manifest,
-    pose_cache_path,
-    pose_input_identity_sha256,
-    validate_pose_input_binding,
-    write_pose_cache,
-)
-from pams.keypoint_recovery import (
-    V4D_PREPROCESSING_REVISION,
-    V4D_RECOVERY_MODE,
-    KeypointRecoveryError,
-    load_keypointrcnn_runtime,
-    recover_v4a_locked_video,
-)
-
 from pose_recovery_v4d_full337_contract import (
     CONTAINER_IMAGE_ID,
     MODEL_ASSET_SHA256,
@@ -54,6 +35,24 @@ from pose_recovery_v4d_full337_contract import (
     validate_v4a_inputs,
     write_bytes_exclusive,
     write_json_exclusive,
+)
+from pams.config import load_config
+from pams.data import (
+    load_pose_cache,
+    load_pose_cache_set,
+    load_pose_input_commitment,
+    load_pose_input_manifest,
+    pose_cache_path,
+    pose_input_identity_sha256,
+    validate_pose_input_binding,
+    write_pose_cache,
+)
+from pams.keypoint_recovery import (
+    V4D_PREPROCESSING_REVISION,
+    V4D_RECOVERY_MODE,
+    KeypointRecoveryError,
+    load_keypointrcnn_runtime,
+    recover_v4a_locked_video,
 )
 
 

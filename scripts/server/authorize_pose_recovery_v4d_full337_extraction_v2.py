@@ -10,13 +10,6 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from pams.data import (
-    load_pose_input_commitment,
-    load_pose_input_manifest,
-    pose_input_identity_sha256,
-    validate_pose_input_binding,
-)
-
 from pose_recovery_v4d_full337_contract import (
     CONTAINER_IMAGE_ID,
     MODEL_ASSET_SHA256,
@@ -39,6 +32,12 @@ from pose_recovery_v4d_full337_contract import (
     validate_same39_failed_pilot,
     validate_v4a_inputs,
     write_json_exclusive,
+)
+from pams.data import (
+    load_pose_input_commitment,
+    load_pose_input_manifest,
+    pose_input_identity_sha256,
+    validate_pose_input_binding,
 )
 
 
