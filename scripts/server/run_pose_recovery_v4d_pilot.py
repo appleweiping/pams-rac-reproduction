@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -264,6 +265,10 @@ def _integer(value: Any, role: str) -> int:
 def run_pilot(
     *,
     cohort: str,
+    source_revision: str,
+    container_image_id: str,
+    expected_config_file_sha256: str,
+    expected_config_fingerprint: str,
     config_path: Path,
     train_input_path: Path,
     train_commitment_path: Path,
@@ -280,7 +285,31 @@ def run_pilot(
     """Extract one frozen v4d pilot cohort."""
 
     _require(cohort in {"zero11", "same39"}, "unsupported v4d pilot cohort")
+    _require(
+        len(source_revision) == 40
+        and all(character in "0123456789abcdef" for character in source_revision),
+        "source revision must be lowercase 40-hex",
+    )
+    _require(
+        container_image_id
+        == "sha256:0a4d42c2d9911f147a17860e4e15095746b21c4e618e4fc1b20b62dd443c5898",
+        "container image ID mismatch",
+    )
+    _require(
+        os.environ.get("PAMS_CONTAINER_SOURCE_REVISION") == source_revision,
+        "container source-revision environment binding mismatch",
+    )
+    _require(
+        os.environ.get("PAMS_CONTAINER_IMAGE_ID") == container_image_id,
+        "container image-ID environment binding mismatch",
+    )
+    config_file_sha256 = sha256_file(config_path.resolve(strict=True))
+    _require(
+        config_file_sha256 == expected_config_file_sha256,
+        "config file SHA mismatch",
+    )
     config = load_config(config_path.resolve(strict=True))
+    _require(config.fingerprint == expected_config_fingerprint, "config fingerprint mismatch")
     _require(
         config.pose.preprocessing_revision == V4D_PREPROCESSING_REVISION,
         "pilot config is not v4d",
@@ -650,6 +679,10 @@ def run_pilot(
     ledger = {
         "schema_version": 2,
         "artifact_type": f"pams_pose_recovery_v4d_train337_{cohort}_pilot_ledger",
+        "source_revision": source_revision,
+        "container_image_id": container_image_id,
+        "config_file_sha256": config_file_sha256,
+        "config_fingerprint": config.fingerprint,
         "input_kind": "label_free_train337_hashed_pilot_subset",
         "protocol": manifest.protocol,
         "split": "train",
@@ -700,6 +733,10 @@ def run_pilot(
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cohort", choices=("zero11", "same39"), required=True)
+    parser.add_argument("--source-revision", required=True)
+    parser.add_argument("--container-image-id", required=True)
+    parser.add_argument("--config-file-sha256", required=True)
+    parser.add_argument("--config-fingerprint", required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--train-input", type=Path, required=True)
     parser.add_argument("--train-commitment", type=Path, required=True)
@@ -716,6 +753,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         result = run_pilot(
             cohort=args.cohort,
+            source_revision=args.source_revision,
+            container_image_id=args.container_image_id,
+            expected_config_file_sha256=args.config_file_sha256,
+            expected_config_fingerprint=args.config_fingerprint,
             config_path=args.config,
             train_input_path=args.train_input,
             train_commitment_path=args.train_commitment,

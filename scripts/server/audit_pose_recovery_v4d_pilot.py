@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -47,6 +48,129 @@ _FORBIDDEN_KEYS = frozenset(
         "targets",
         "test",
         "dev",
+    }
+)
+_SELECTION_ROW_KEYS = frozenset({"video_id_sha256", "v4a_final_valid_frames"})
+_CANDIDATE_CACHE_ROW_KEYS = frozenset(
+    {
+        "annotation_sha256",
+        "base_v4a_cache_sha256",
+        "cache_path",
+        "cached_frames",
+        "cached_valid_frames",
+        "clip_end_frame",
+        "clip_start_frame",
+        "decoded_clip_frames",
+        "expected_clip_frames",
+        "fps",
+        "incomplete_clip_policy",
+        "padded_tail_frames",
+        "pose_fingerprint",
+        "pose_model",
+        "recovery_audit",
+        "selected_source_frames",
+        "skipped",
+        "source_frames",
+        "source_valid_frames",
+        "video_id",
+        "video_path",
+        "video_sha256",
+    }
+)
+_RUNTIME_RECEIPT_KEYS = frozenset(
+    {
+        "allow_tf32",
+        "batchnorm_modules",
+        "cache_tmpfs_gid",
+        "cache_tmpfs_mount_options",
+        "cache_tmpfs_sticky",
+        "cache_tmpfs_super_options",
+        "cache_tmpfs_uid",
+        "cublas_workspace_config",
+        "cuda_version",
+        "cudnn_allow_tf32",
+        "cudnn_version",
+        "deterministic_algorithms",
+        "frozen_batchnorm_eps",
+        "frozen_batchnorm_modules",
+        "gpu_compute_capability",
+        "gpu_name",
+        "model_asset_bytes",
+        "model_asset_read_only",
+        "model_asset_stat_stable",
+        "offline_weights_cache_path",
+        "python_optimize",
+        "torch_version",
+        "torchvision_version",
+    }
+)
+_RECOVERY_AUDIT_KEYS = frozenset(
+    {
+        "base_v4a_coordinate_sha256",
+        "base_v4a_observations_preserved",
+        "base_v4a_shared_coordinate_max_abs_error",
+        "base_v4a_valid_frames",
+        "base_v4a_valid_mask_sha256",
+        "decoded_segment_frames",
+        "decoder_fps_matches_v4a",
+        "decoder_frame_bytes_sha256",
+        "expected_segment_frames",
+        "final_base_v4a_coordinate_sha256",
+        "final_longest_valid_run",
+        "final_valid_frames",
+        "final_valid_mask_sha256",
+        "heavy_full_frame_attempted",
+        "heavy_full_frame_detected",
+        "heavy_model_asset_sha256",
+        "heavy_model_id",
+        "keypointrcnn_association_coordinate_space",
+        "keypointrcnn_box_score_threshold",
+        "keypointrcnn_candidate_total",
+        "keypointrcnn_coco_to_mediapipe_mapping",
+        "keypointrcnn_fill_candidates",
+        "keypointrcnn_fill_coordinate_space",
+        "keypointrcnn_frames_attempted",
+        "keypointrcnn_frames_observed",
+        "keypointrcnn_frames_with_candidates",
+        "keypointrcnn_input_scale_policy",
+        "keypointrcnn_keypoint_logit_threshold",
+        "keypointrcnn_max_candidates_per_frame",
+        "keypointrcnn_maximum_candidates_per_frame",
+        "keypointrcnn_minimum_confident_keypoints",
+        "keypointrcnn_missing_frames_eligible",
+        "keypointrcnn_missing_frames_with_candidates",
+        "keypointrcnn_model_asset_sha256",
+        "keypointrcnn_model_id",
+        "keypointrcnn_parameter_count",
+        "keypointrcnn_runtime_receipt",
+        "keypointrcnn_state_dict_keys",
+        "keypointrcnn_v4a_anchor_distance_maximum",
+        "keypointrcnn_v4a_anchor_distance_mean",
+        "keypointrcnn_v4a_anchor_distance_observed_maximum",
+        "keypointrcnn_v4a_anchor_distance_sha256",
+        "keypointrcnn_v4a_anchor_frames",
+        "keypointrcnn_v4a_anchor_policy",
+        "keypointrcnn_v4a_anchor_rejected_frames",
+        "keypointrcnn_v4a_anchor_unusable_shape_frames",
+        "keypointrcnn_z_coordinate_policy",
+        "observed_span_frames",
+        "padded_tail_frames",
+        "pass0_observations_preserved",
+        "pass0_shared_coordinate_max_abs_error",
+        "pass0_valid_frames",
+        "pass0_valid_mask_sha256",
+        "pose_coordinate_interpolation",
+        "recovered_valid_frames",
+        "recovery_mode",
+        "roi_retry_attempted",
+        "roi_retry_detected",
+        "roi_retry_eligible",
+        "schema_version",
+        "source_frames",
+        "source_video_sha256_after",
+        "source_video_sha256_before",
+        "source_video_stat_stable",
+        "temporal_resampling",
     }
 )
 
@@ -206,6 +330,8 @@ def _write_exclusive(path: Path, payload: Mapping[str, Any]) -> None:
 def audit_pilot(
     *,
     cohort: str,
+    expected_source_revision: str,
+    expected_container_image_id: str,
     gate_path: Path,
     train_input_path: Path,
     train_commitment_path: Path,
@@ -219,6 +345,19 @@ def audit_pilot(
     """Return actual cohort metrics and the v4a-retaining full projection."""
 
     _require(cohort in {"zero11", "same39"}, "unsupported v4d cohort")
+    _require(
+        len(expected_source_revision) == 40
+        and all(character in "0123456789abcdef" for character in expected_source_revision),
+        "expected source revision must be lowercase 40-hex",
+    )
+    _require(
+        os.environ.get("PAMS_CONTAINER_SOURCE_REVISION") == expected_source_revision,
+        "audit source-revision environment binding mismatch",
+    )
+    _require(
+        os.environ.get("PAMS_CONTAINER_IMAGE_ID") == expected_container_image_id,
+        "audit image-ID environment binding mismatch",
+    )
     gate = yaml.load(
         gate_path.resolve(strict=True).read_text(encoding="utf-8"),
         Loader=_UniqueKeyLoader,
@@ -249,6 +388,66 @@ def audit_pilot(
     zero_thresholds = _mapping(gate.get("zero11_thresholds"), "zero11 thresholds")
     same_thresholds = _mapping(gate.get("same39_thresholds"), "same39 thresholds")
     full_thresholds = _mapping(gate.get("full337_thresholds"), "full337 thresholds")
+    _require(
+        set(bindings)
+        == {
+            "container_image_id",
+            "frozen_same39_identity_sha256",
+            "frozen_same39_selection_sha256",
+            "frozen_zero11_identity_sha256",
+            "keypointrcnn_model_asset_sha256",
+            "train337_commitment_sha256",
+            "train337_identity_sha256",
+            "train337_sidecar_sha256",
+            "v4a_ledger_sha256",
+            "v4a_paired_gate_sha256",
+            "v4a_pose_cache_set_sha256",
+            "v4a_pose_fingerprint",
+            "v4d_config_file_sha256",
+            "v4d_config_fingerprint",
+            "v4d_pose_fingerprint",
+        },
+        "gate binding schema mismatch",
+    )
+    _require(
+        set(zero_thresholds)
+        == {
+            "candidate_at_most_8_video_maximum",
+            "candidate_zero_video_maximum",
+            "keypointrcnn_fill_frames_minimum",
+            "recovered_base_zero_video_minimum",
+            "source_coverage_mean_gain_minimum",
+        },
+        "zero11 threshold schema mismatch",
+    )
+    _require(
+        set(same_thresholds)
+        == {
+            "candidate_at_most_8_video_maximum",
+            "candidate_longest_run_fraction_p25_minimum",
+            "candidate_zero_video_maximum",
+            "keypointrcnn_fill_frames_minimum",
+            "longest_run_fraction_mean_gain_minimum",
+            "source_coverage_mean_gain_minimum",
+        },
+        "same39 threshold schema mismatch",
+    )
+    _require(
+        set(full_thresholds)
+        == {
+            "longest_run_fraction_median_minimum",
+            "longest_run_fraction_p10_minimum",
+            "observed_at_most_8_video_maximum",
+            "recovered_reference_zero_video_minimum",
+            "reference_usable_to_v4_zero_video_maximum",
+            "source_coverage_mean_minimum",
+            "source_coverage_median_minimum",
+            "source_coverage_p10_minimum",
+            "source_coverage_p25_minimum",
+            "v4_zero_video_maximum",
+        },
+        "full337 threshold schema mismatch",
+    )
     expected_records = 11 if cohort == "zero11" else 39
     _require(
         gate.get("expected_zero11_records") == 11 and gate.get("expected_same39_records") == 39,
@@ -290,6 +489,67 @@ def audit_pilot(
     v4a_gate = _load_json(v4a_paired_gate_path, role="v4a paired gate")
     candidate = _load_json(candidate_ledger_path, role="v4d candidate ledger")
     _require(
+        set(selection)
+        == {
+            "artifact_type",
+            "bindings",
+            "label_free",
+            "protocol",
+            "record_total",
+            "rows",
+            "schema_version",
+            "selected_identity_sha256",
+            "selection_rule",
+            "split",
+        },
+        "selection root schema mismatch",
+    )
+    _require(
+        selection.get("schema_version") == 1
+        and selection.get("artifact_type")
+        == f"pams_pose_recovery_v4d_train337_{cohort}_pilot_selection"
+        and selection.get("protocol") == "ucfrep_526"
+        and selection.get("split") == "train"
+        and selection.get("label_free") is True,
+        "selection protocol/schema mismatch",
+    )
+    expected_selection_rule = (
+        "v4a_final_valid_frames==0 within frozen same39"
+        if cohort == "zero11"
+        else "exact frozen v4c same39 long-tail selection"
+    )
+    _require(selection.get("selection_rule") == expected_selection_rule, "selection rule mismatch")
+    selection_bindings = _mapping(selection.get("bindings"), "selection bindings")
+    _require(
+        set(selection_bindings)
+        == {
+            "frozen_same39_selection_sha256",
+            "train337_commitment_sha256",
+            "train337_identity_sha256",
+            "train337_sidecar_sha256",
+            "v4a_ledger_sha256",
+            "v4a_paired_gate_sha256",
+            "v4a_pose_cache_set_sha256",
+        },
+        "selection binding schema mismatch",
+    )
+    _require(
+        selection_bindings.get("frozen_same39_selection_sha256")
+        == bindings.get("frozen_same39_selection_sha256")
+        and selection_bindings.get("train337_sidecar_sha256")
+        == bindings.get("train337_sidecar_sha256")
+        and selection_bindings.get("train337_commitment_sha256")
+        == bindings.get("train337_commitment_sha256")
+        and selection_bindings.get("train337_identity_sha256")
+        == bindings.get("train337_identity_sha256")
+        and selection_bindings.get("v4a_ledger_sha256") == bindings.get("v4a_ledger_sha256")
+        and selection_bindings.get("v4a_paired_gate_sha256")
+        == bindings.get("v4a_paired_gate_sha256")
+        and selection_bindings.get("v4a_pose_cache_set_sha256")
+        == bindings.get("v4a_pose_cache_set_sha256"),
+        "selection bindings mismatch",
+    )
+    _require(
         set(candidate)
         == {
             "artifact_type",
@@ -297,6 +557,9 @@ def audit_pilot(
             "cohort",
             "commitment_file_sha256",
             "completed",
+            "config_file_sha256",
+            "config_fingerprint",
+            "container_image_id",
             "extracted",
             "failed",
             "failures",
@@ -312,6 +575,7 @@ def audit_pilot(
             "selection_sha256",
             "sidecar_sha256",
             "skipped",
+            "source_revision",
             "split",
             "successful_cache_snapshot",
         },
@@ -319,6 +583,33 @@ def audit_pilot(
     )
     _require(selection.get("record_total") == expected_records, "selection record count mismatch")
     _require(candidate.get("cohort") == cohort, "candidate cohort mismatch")
+    _require(
+        candidate.get("schema_version") == 2
+        and candidate.get("artifact_type")
+        == f"pams_pose_recovery_v4d_train337_{cohort}_pilot_ledger"
+        and candidate.get("input_kind") == "label_free_train337_hashed_pilot_subset"
+        and candidate.get("protocol") == "ucfrep_526"
+        and candidate.get("split") == "train"
+        and candidate.get("recovery_version") == "v4d",
+        "candidate ledger protocol/schema mismatch",
+    )
+    _require(
+        candidate.get("source_revision") == expected_source_revision,
+        "candidate source revision mismatch",
+    )
+    _require(
+        candidate.get("container_image_id") == expected_container_image_id
+        == bindings.get("container_image_id"),
+        "candidate container image mismatch",
+    )
+    _require(
+        candidate.get("config_file_sha256") == bindings.get("v4d_config_file_sha256"),
+        "candidate config-file SHA mismatch",
+    )
+    _require(
+        candidate.get("config_fingerprint") == bindings.get("v4d_config_fingerprint"),
+        "candidate config fingerprint mismatch",
+    )
     _require(candidate.get("selected") == expected_records, "candidate selected count mismatch")
     _require(candidate.get("completed") == expected_records, "candidate completion mismatch")
     _require(candidate.get("failed") == 0 and candidate.get("failures") == [], "candidate failed")
@@ -333,6 +624,25 @@ def audit_pilot(
     )
     recovery_binding = _mapping(candidate.get("pose_recovery"), "candidate recovery binding")
     _require(
+        set(recovery_binding)
+        == {
+            "base_pose_cache_set_sha256",
+            "base_pose_fingerprint",
+            "detector_observes_all_decoded_frames",
+            "fill_missing_only",
+            "keypointrcnn_model_asset_sha256",
+            "keypointrcnn_model_id",
+            "keypointrcnn_model_topology",
+            "keypointrcnn_runtime_receipt",
+            "pose_coordinate_interpolation",
+            "preprocessing_revision",
+            "recovery_mode",
+            "schema_version",
+            "temporal_resampling",
+        },
+        "candidate recovery binding schema mismatch",
+    )
+    _require(
         recovery_binding.get("recovery_mode") == V4D_RECOVERY_MODE,
         "candidate recovery mode mismatch",
     )
@@ -343,11 +653,23 @@ def audit_pilot(
         recovery_binding.get("keypointrcnn_model_asset_sha256") == expected_asset_sha,
         "candidate model asset mismatch",
     )
+    binding_runtime_receipt = _mapping(
+        recovery_binding.get("keypointrcnn_runtime_receipt"),
+        "candidate binding runtime receipt",
+    )
+    _require(
+        set(binding_runtime_receipt) == _RUNTIME_RECEIPT_KEYS,
+        "candidate binding runtime receipt schema mismatch",
+    )
 
     selection_rows = selection.get("rows")
     _require(
         isinstance(selection_rows, list) and len(selection_rows) == expected_records,
         "selection rows mismatch",
+    )
+    _require(
+        all(isinstance(row, Mapping) and set(row) == _SELECTION_ROW_KEYS for row in selection_rows),
+        "selection row schema mismatch",
     )
     selected_hashes = {
         _digest(_mapping(row, "selection row").get("video_id_sha256"), "selected video hash")
@@ -360,6 +682,27 @@ def audit_pilot(
         if hashlib.sha256(record.video_id.encode("utf-8")).hexdigest() in selected_hashes
     )
     _require(len(selected_records) == expected_records, "selection does not map to train337")
+    selected_identity_sha256 = pose_input_identity_sha256(selected_records)
+    expected_selected_identity = _digest(
+        bindings.get(
+            "frozen_zero11_identity_sha256"
+            if cohort == "zero11"
+            else "frozen_same39_identity_sha256"
+        ),
+        f"{cohort} frozen identity",
+    )
+    _require(
+        selected_identity_sha256
+        == expected_selected_identity
+        == selection.get("selected_identity_sha256")
+        == candidate.get("identity_sha256"),
+        "cohort identity binding mismatch",
+    )
+    _require(
+        candidate.get("full_train_identity_sha256")
+        == bindings.get("train337_identity_sha256"),
+        "candidate full train identity mismatch",
+    )
     candidate_pose_fingerprint = _digest(
         bindings.get("v4d_pose_fingerprint"),
         "v4d pose fingerprint",
@@ -448,18 +791,22 @@ def audit_pilot(
     delta_rows: list[dict[str, Any]] = []
     for value in candidate_rows:
         row = _mapping(value, "candidate row")
+        _require(set(row) == _CANDIDATE_CACHE_ROW_KEYS, "candidate cache row schema mismatch")
         video_hash = hashlib.sha256(str(row.get("video_id", "")).encode("utf-8")).hexdigest()
         _require(
             video_hash in selected_hashes and video_hash not in seen, "candidate identity mismatch"
         )
         seen.add(video_hash)
         recovery = _mapping(row.get("recovery_audit"), "candidate recovery audit")
+        _require(set(recovery) == _RECOVERY_AUDIT_KEYS, "candidate recovery audit schema mismatch")
         base_row = v4a_by_hash[video_hash]
         base_recovery = _mapping(base_row.get("recovery_audit"), "v4a recovery audit")
         runtime_receipt = _mapping(
             recovery.get("keypointrcnn_runtime_receipt"),
             "KPRCNN runtime receipt",
         )
+        _require(set(runtime_receipt) == _RUNTIME_RECEIPT_KEYS, "runtime receipt schema mismatch")
+        _require(runtime_receipt == binding_runtime_receipt, "runtime receipt changed across caches")
         runtime_ok = (
             runtime_receipt.get("torch_version") == "2.5.1+cu124"
             and runtime_receipt.get("torchvision_version") == "0.20.1+cu124"
@@ -474,6 +821,15 @@ def audit_pilot(
             and runtime_receipt.get("frozen_batchnorm_modules", 0) > 0
             and runtime_receipt.get("batchnorm_modules") == 0
             and runtime_receipt.get("frozen_batchnorm_eps") == 0.0
+            and runtime_receipt.get("python_optimize") == 0
+            and "rw" in runtime_receipt.get("cache_tmpfs_mount_options", [])
+            and "noexec" not in runtime_receipt.get("cache_tmpfs_mount_options", [])
+            and {"nosuid", "nodev"}.issubset(
+                runtime_receipt.get("cache_tmpfs_mount_options", [])
+            )
+            and runtime_receipt.get("cache_tmpfs_uid") == 1000
+            and runtime_receipt.get("cache_tmpfs_gid") == 1000
+            and runtime_receipt.get("cache_tmpfs_sticky") is True
         )
         source_frames = _integer(recovery.get("source_frames"), "source frames")
         decoded_frames = _integer(recovery.get("decoded_segment_frames"), "decoded frames")
@@ -839,9 +1195,14 @@ def audit_pilot(
     same_cost_passed = all(item["passed"] for item in same_criteria.values())
     projected_passed = all(item["passed"] for item in projected_criteria.values())
     passed = zero_passed if cohort == "zero11" else same_cost_passed and projected_passed
+    full337_pose_extraction_authorized = cohort == "same39" and passed
     return {
         "schema_version": 1,
         "artifact_type": f"pams_pose_recovery_v4d_train337_{cohort}_pilot_audit",
+        "source_revision": expected_source_revision,
+        "container_image_id": expected_container_image_id,
+        "config_file_sha256": candidate.get("config_file_sha256"),
+        "config_fingerprint": candidate.get("config_fingerprint"),
         "protocol": "ucfrep_526",
         "split": "train",
         "label_free": True,
@@ -849,6 +1210,15 @@ def audit_pilot(
         "zero11_passed": bool(zero_passed),
         "same39_cost_gate_passed": bool(same_cost_passed),
         "projected_full337_gate_passed": bool(projected_passed),
+        "full337_pose_extraction_authorized": bool(full337_pose_extraction_authorized),
+        "baseline_training_authorized": False,
+        "training_authorization_requires": (
+            "completed-full337-v4d-plus-frozen-label-free-track-quality-periodicity-gate"
+        ),
+        "track_identity_risk": (
+            "KPRCNN Viterbi has no null state; zero-anchor videos can select a bystander. "
+            "Coverage alone cannot authorize baseline training."
+        ),
         "projection": {
             "kind": "retain_exact_v4a_nonpilot_plus_observed_v4d_pilot",
             "justification": (
@@ -863,6 +1233,10 @@ def audit_pilot(
             "v4a_paired_gate_sha256": _sha256_file(v4a_paired_gate_path.resolve(strict=True)),
             "candidate_ledger_sha256": _sha256_file(candidate_ledger_path.resolve(strict=True)),
             "candidate_pose_fingerprint": candidate.get("pose_fingerprint"),
+            "source_revision": expected_source_revision,
+            "container_image_id": expected_container_image_id,
+            "config_file_sha256": candidate.get("config_file_sha256"),
+            "config_fingerprint": candidate.get("config_fingerprint"),
             "candidate_cache_set_sha256": candidate_snapshot.fingerprint,
         },
         "actual_metrics": actual_metrics,
@@ -886,6 +1260,8 @@ def audit_pilot(
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cohort", choices=("zero11", "same39"), required=True)
+    parser.add_argument("--expected-source-revision", required=True)
+    parser.add_argument("--expected-container-image-id", required=True)
     parser.add_argument("--gate", type=Path, required=True)
     parser.add_argument("--train-input", type=Path, required=True)
     parser.add_argument("--train-commitment", type=Path, required=True)
@@ -900,6 +1276,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         result = audit_pilot(
             cohort=args.cohort,
+            expected_source_revision=args.expected_source_revision,
+            expected_container_image_id=args.expected_container_image_id,
             gate_path=args.gate,
             train_input_path=args.train_input,
             train_commitment_path=args.train_commitment,

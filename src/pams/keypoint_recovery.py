@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import math
 import os
+import stat
+import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -206,6 +208,8 @@ def load_keypointrcnn_runtime(
         os.environ.get("CUBLAS_WORKSPACE_CONFIG") == settings.cublas_workspace_config,
         "CUBLAS_WORKSPACE_CONFIG mismatch",
     )
+    _require(os.environ.get("PYTHONOPTIMIZE", "") == "", "PYTHONOPTIMIZE must be empty")
+    _require(sys.flags.optimize == 0, "optimized Python mode is forbidden")
     torch_home = Path(os.environ.get("TORCH_HOME", "")).resolve()
     expected_cache_asset = (
         torch_home / "hub" / "checkpoints" / settings.model_asset_filename
@@ -226,6 +230,19 @@ def load_keypointrcnn_runtime(
             f"{variable} must use the ephemeral /pams/cache tmpfs",
         )
         _require(os.access(cache_path, os.W_OK), f"{variable} is not writable")
+    cache_stat = Path("/pams/cache").stat()
+    _require(cache_stat.st_uid == 1000 and cache_stat.st_gid == 1000, "cache tmpfs owner mismatch")
+    _require(bool(cache_stat.st_mode & stat.S_ISVTX), "cache tmpfs must have the sticky bit")
+    mountinfo_lines = Path("/proc/self/mountinfo").read_text(encoding="utf-8").splitlines()
+    cache_mounts = [line for line in mountinfo_lines if line.split()[4] == "/pams/cache"]
+    _require(len(cache_mounts) == 1, "cache tmpfs mountinfo entry mismatch")
+    mount_fields = cache_mounts[0].split()
+    separator = mount_fields.index("-")
+    mount_options = frozenset(mount_fields[5].split(","))
+    super_options = frozenset(mount_fields[separator + 3].split(","))
+    _require("rw" in mount_options and "rw" in super_options, "cache tmpfs is not read-write")
+    _require("noexec" not in mount_options, "cache tmpfs is unexpectedly noexec")
+    _require({"nosuid", "nodev"}.issubset(mount_options), "cache tmpfs safety flags mismatch")
 
     _require(torch.cuda.is_available(), "v4d requires the preregistered CUDA device")
     torch.manual_seed(2026)
@@ -324,6 +341,12 @@ def load_keypointrcnn_runtime(
             "model_asset_read_only": True,
             "model_asset_stat_stable": True,
             "model_asset_bytes": source_stat_after.st_size,
+            "python_optimize": sys.flags.optimize,
+            "cache_tmpfs_mount_options": sorted(mount_options),
+            "cache_tmpfs_super_options": sorted(super_options),
+            "cache_tmpfs_uid": cache_stat.st_uid,
+            "cache_tmpfs_gid": cache_stat.st_gid,
+            "cache_tmpfs_sticky": True,
         },
     )
 
