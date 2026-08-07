@@ -52,6 +52,34 @@ as invalid frames. The extraction summary and schema-v3 cache metadata record:
 
 No internal decode gap is skipped and no short clip is silently accepted.
 
+### Native-timeline v4a recovery
+
+The opt-in recovery revision is a separate cache identity:
+
+```yaml
+pose:
+  preprocessing_revision: official-segment-heavy-missing-retry-full-timeline-v4a
+  crop_to_detected_span: false
+  incomplete_clip_policy: pad_invalid_tail
+  recovery:
+    temporal_resampling: none_native_timeline
+```
+
+It still seeks within the selected full source video and consumes exactly the
+sidecar's half-open range. Its stored length is
+`T = clip_end_frame - clip_start_frame`, not the full-video length and not 256.
+Decoded frames retain their interval-relative indices. Early EOF adds only an
+invalid suffix; an internal pose miss remains an exact-zero invalid hole.
+Collation may temporarily extend shorter samples to the batch maximum using
+the same zero/mask convention, without changing native FPS, indices, or period
+units.
+
+This native closure combines recovered evidence from the standard UCFRep
+loader's explicit frame-range iteration and tail padding with strong, but not
+code-exact, evidence from the PAMS supplement's long-sequence plots (including
+frames 800–1000). The v4a heavy detector may inspect only complexity-1 pass
+misses, and pose coordinates are never interpolated.
+
 ## Provenance and compatibility
 
 Legacy records omit all clip fields and keep schema-v2 pose caches. Official
@@ -76,3 +104,9 @@ For the first paper-architecture comparison, use
 `pams_official_segment_literal_v1_pad_invalid_tail.yaml`. The separate
 `pams_official_segment_reference_relative_v1_pad_invalid_tail.yaml` is an
 explicitly inferred Period Head ablation.
+
+`pams_pose_recovery_v4a.yaml` is currently authorized only for the frozen
+train337 pose-recovery gate. Its inherited 4–128 period bounds, position mode,
+and training settings are not a validated native-timeline baseline recipe.
+Gate success cannot authorize training or a performance claim; any dynamic
+native-period repair must use a new configuration fingerprint.

@@ -16,9 +16,10 @@ Z = Eθ(X): [B,T,512]
 P = Hφ(Z): [B,T]
 ```
 
-The paper defines the general input as `K×3`; `K=33`, 256-frame resampling,
-MediaPipe extraction and per-frame min-max normalization are independent
-closures. The current v3 preprocessing selects the earliest longest
+The paper defines the general input as `K×3`; `K=33`, MediaPipe extraction,
+and per-frame min-max normalization are independent closures. Uniform
+256-frame resampling is the historical closure used by v2/v3 and the existing
+`official-segment-full-timeline-v1` caches. The current v3 preprocessing selects the earliest longest
 contiguous main-subject detection run before normalization and resampling.
 Invalid videos remain all zero and masked. Historical v2 results retain their
 first-to-last-detection-span identity and are never overwritten by v3 caches.
@@ -37,6 +38,27 @@ every pose miss as an invalid frame, and resamples the complete clip timeline;
 it never applies detected-span or longest-track trimming. See
 [OFFICIAL_SEGMENT_PROTOCOL.md](OFFICIAL_SEGMENT_PROTOCOL.md) for schema and
 coverage rules.
+
+The separately fingerprinted recovery revision
+`official-segment-heavy-missing-retry-full-timeline-v4a` retains the same
+count-free interval but uses `temporal_resampling: none_native_timeline`.
+Its output has exactly
+`T = clip_end_frame - clip_start_frame`: decoded frames keep their original
+interval-relative indices, an early-EOF suffix is exact-zero/mask-false, and
+internal misses remain holes. Variable-length sequences are padded only to the
+maximum `T` of the current batch; that temporary zero/mask padding does not
+alter stored indices, FPS, or period units. This closure is supported by the
+recovered standard UCFRep loader's frame-range/padding behavior and by strong
+evidence in the PAMS supplement's long native-timeline plots, including
+pause/activity structure around frames 800–1000. It is not claimed as exact
+author code.
+
+V4a currently authorizes only a paired, label-free train337 pose-input gate.
+The inherited period bounds (`4–128`), position mode, and training block in
+its experiment YAML have not been validated for native timelines. A passing
+pose gate therefore does not authorize baseline training or establish a
+native-timeline PAMS result; a dynamic-period repair must receive a new
+configuration fingerprint before optimization.
 
 ## Encoder
 

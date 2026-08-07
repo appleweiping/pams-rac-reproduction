@@ -118,10 +118,14 @@ run_created_container() {
   local inspect_path="$3"
   docker inspect "$name" >"${inspect_path%.json}.pre.json"
   local status
+  local restore_errexit=0
+  [[ $- == *e* ]] && restore_errexit=1
   set +e
   docker start -a "$name" 2>&1 | tee "$log_path"
   status="${PIPESTATUS[0]}"
-  set -e
+  if [[ "$restore_errexit" -eq 1 ]]; then
+    set -e
+  fi
   docker inspect "$name" >"$inspect_path"
   docker rm "$name" >/dev/null
   return "$status"
