@@ -9,7 +9,11 @@ the continuous temporal spans in which the carrier is observable.
 
 Local repeatness is a contrast between recurrence at one period and the two
 off-phase lags at half and one-and-a-half periods.  Fractional dense-frame
-lags are interpolated without compacting or bridging invalid frames.  A
+lags are interpolated without compacting or bridging invalid frames.  Feature
+weights use phase agreement across alternating target-period cycles, so the
+same chance Fourier coefficient is not both selected and accepted as its own
+recurrence evidence.  Every non-constant feature retains a uniform base
+weight; cross-cycle agreement supplies only a bounded uplift.  A
 constant/static trajectory therefore has zero contrast, while a genuinely
 periodic trajectory has positive contrast.  The returned active mask is the
 only mask used by both the three peak experts and the analytic reference.
@@ -288,11 +292,105 @@ def _align_active_spans_to_carrier_troughs(
     return aligned
 
 
+def _masked_harmonic_coefficients(
+    centered: Tensor,
+    mask: Tensor,
+    period: float,
+) -> Tensor | None:
+    """Return fixed-axis target-harmonic coefficients on one temporal fold."""
+
+    if centered.ndim != 2 or mask.shape != centered.shape[:1]:
+        raise ValueError("harmonic coefficient inputs have incompatible shapes")
+    selected_total = int(mask.sum())
+    if selected_total < 3:
+        return None
+    time = centered.shape[0]
+    dense_time = torch.arange(
+        time,
+        dtype=centered.dtype,
+        device=centered.device,
+    )
+    omega = (2.0 * math.pi) / period
+    cosine = torch.cos(omega * dense_time)
+    sine = torch.sin(omega * dense_time)
+    mask_values = mask.to(centered.dtype)
+    cosine = (cosine - cosine[mask].mean()) * mask_values
+    sine = (sine - sine[mask].mean()) * mask_values
+    cosine_norm = cosine.norm()
+    sine_norm = sine.norm()
+    if float(cosine_norm) <= 1e-12 or float(sine_norm) <= 1e-12:
+        return None
+    safe = torch.where(mask.unsqueeze(1), centered, torch.zeros_like(centered))
+    fold_mean = safe.sum(dim=0) / float(selected_total)
+    fold_centered = torch.where(
+        mask.unsqueeze(1),
+        centered - fold_mean,
+        torch.zeros_like(centered),
+    )
+    return torch.stack(
+        (
+            (cosine / cosine_norm) @ fold_centered,
+            (sine / sine_norm) @ fold_centered,
+        ),
+        dim=0,
+    )
+
+
+def _cross_cycle_harmonic_feature_weights(
+    centered: Tensor,
+    valid: Tensor,
+    period: float,
+) -> Tensor:
+    """Give only a bounded uplift to phase-stable target-frequency features.
+
+    Global target-frequency coefficients are data-dependent.  Reusing their
+    unbounded magnitudes as recurrence weights lets a shuffled trajectory's
+    largest chance coefficient select the very coordinate on which it is
+    subsequently judged.  Here coefficients are estimated independently on
+    alternating target-period cycles.  Only positive phase agreement between
+    the two folds earns an uplift, and the all-feature unit baseline remains.
+    Consequently, recurrence is still evaluated in the full diagonal-whitened
+    representation rather than in a chance-selected low-dimensional slice.
+    """
+
+    if centered.ndim != 2 or valid.shape != centered.shape[:1]:
+        raise ValueError("cross-cycle support inputs have incompatible shapes")
+    if not math.isfinite(period) or period <= 0.0:
+        raise ValueError("cross-cycle support period must be finite and positive")
+    dimension = centered.shape[1]
+    uniform = torch.ones(
+        dimension,
+        dtype=centered.dtype,
+        device=centered.device,
+    )
+    dense_time = torch.arange(
+        centered.shape[0],
+        dtype=centered.dtype,
+        device=centered.device,
+    )
+    cycle_index = torch.floor(dense_time / period).to(dtype=torch.long)
+    first_mask = valid & ((cycle_index % 2) == 0)
+    second_mask = valid & ((cycle_index % 2) == 1)
+    first = _masked_harmonic_coefficients(centered, first_mask, period)
+    second = _masked_harmonic_coefficients(centered, second_mask, period)
+    if first is None or second is None:
+        return uniform
+    coherent_energy = (first * second).sum(dim=0).clamp_min(0.0)
+    maximum = coherent_energy.max()
+    if not bool(torch.isfinite(maximum)) or float(maximum) <= 1e-12:
+        return uniform
+    # Similarity normalizes states after weighting.  sqrt(1 + support) gives
+    # a parameter-free [1, sqrt(2)] uplift and cannot collapse the effective
+    # feature dimension to a single chance Fourier coordinate.
+    normalized = (coherent_energy / maximum).clamp(0.0, 1.0)
+    return torch.sqrt(1.0 + normalized)
+
+
 def _recurrence_score(
     centered: Tensor,
     valid: Tensor,
     period: float,
-    harmonic_feature_support: Tensor,
+    harmonic_feature_weights: Tensor,
 ) -> Tensor:
     valid_total = int(valid.sum())
     feature_rms = (
@@ -303,13 +401,15 @@ def _recurrence_score(
         centered / feature_rms.clamp_min(1e-6).unsqueeze(0),
         torch.zeros_like(centered),
     )
-    if harmonic_feature_support.shape != centered.shape[1:]:
-        raise ValueError("harmonic feature support must match embedding dimension")
-    support = harmonic_feature_support / harmonic_feature_support.max().clamp_min(
-        1e-12
-    )
+    if harmonic_feature_weights.shape != centered.shape[1:]:
+        raise ValueError("harmonic feature weights must match embedding dimension")
+    if (
+        not bool(torch.isfinite(harmonic_feature_weights).all())
+        or bool((harmonic_feature_weights <= 0.0).any())
+    ):
+        raise ValueError("harmonic feature weights must be finite and positive")
     states = F.normalize(
-        whitened * support.unsqueeze(0),
+        whitened * harmonic_feature_weights.unsqueeze(0),
         p=2,
         dim=1,
         eps=1e-12,
@@ -447,12 +547,22 @@ def build_recurrence_carrier_curves(
         phase = torch.atan2(-phase_sine, phase_cosine)
         carrier = torch.cos(omega * dense_time + phase)
 
-        harmonic_feature_support = coefficients.square().sum(dim=0).sqrt()
+        total_energy = centered.square().sum()
+        harmonic_energy = coefficients.square().sum()
+        harmonic_fractions[index] = (
+            harmonic_energy / total_energy.clamp_min(1e-12)
+        ).clamp(0.0, 1.0)
+        phase_offsets[index] = phase
+        harmonic_feature_weights = _cross_cycle_harmonic_feature_weights(
+            centered,
+            sample_valid,
+            period,
+        )
         score = _recurrence_score(
             centered,
             sample_valid,
             period,
-            harmonic_feature_support,
+            harmonic_feature_weights,
         )
         active = _active_mask_from_score(score, sample_valid, period)
         active = _align_active_spans_to_carrier_troughs(active, carrier, period)
@@ -471,8 +581,6 @@ def build_recurrence_carrier_curves(
         if not bool(torch.isfinite(raw_std)) or float(raw_std) <= 1e-12:
             continue
         curve = (raw_curve / raw_std).masked_fill(~active, 0.0)
-        total_energy = centered.square().sum()
-        harmonic_energy = coefficients.square().sum()
 
         curves[index, :length] = curve
         active_masks[index, :length] = active
@@ -480,12 +588,8 @@ def build_recurrence_carrier_curves(
         recurrence_gates[index, :length] = gate
         normalized_stds[index] = curve[active].square().mean().sqrt()
         raw_stds[index] = raw_std
-        harmonic_fractions[index] = (
-            harmonic_energy / total_energy.clamp_min(1e-12)
-        ).clamp(0.0, 1.0)
         support_fractions[index] = active.sum().to(work.dtype) / float(valid_total)
         gate_energies[index] = gate[sample_valid].square().mean()
-        phase_offsets[index] = phase
         active_references[index] = _analytic_peak_reference(carrier, active)
         available[index] = True
 

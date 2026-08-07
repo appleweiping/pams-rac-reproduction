@@ -8,6 +8,7 @@ import torch
 from pams.config import PAMSConfig
 from pams.consensus import MultiExpertCounter
 from pams.recurrence_carrier import (
+    _cross_cycle_harmonic_feature_weights,
     build_recurrence_carrier_curves,
     validate_recurrence_carrier_compatibility,
 )
@@ -151,6 +152,92 @@ def test_shuffle_and_null_do_not_retain_an_unconditioned_carrier() -> None:
     assert zero.available.tolist() == [False]
     assert zero.active_support_fractions.tolist() == [0.0]
     assert torch.count_nonzero(zero.curves) == 0
+
+
+def test_cross_cycle_support_only_uplifts_phase_stable_features() -> None:
+    frames = 192
+    period = 12.0
+    time = torch.arange(frames, dtype=torch.float32)
+    angle = 2.0 * math.pi * time / period
+    cycle = torch.floor(time / period).to(dtype=torch.long)
+    alternating_sign = torch.where(
+        (cycle % 2) == 0,
+        torch.ones_like(time),
+        -torch.ones_like(time),
+    )
+    centered = torch.stack(
+        (
+            torch.cos(angle),
+            alternating_sign * torch.cos(angle),
+            torch.sin(2.0 * math.pi * time / 7.0),
+        ),
+        dim=1,
+    )
+    weights = _cross_cycle_harmonic_feature_weights(
+        centered,
+        torch.ones(frames, dtype=torch.bool),
+        period,
+    )
+
+    assert weights.shape == (3,)
+    assert weights[0].item() == pytest.approx(math.sqrt(2.0), rel=1e-4)
+    assert weights[1].item() == pytest.approx(1.0, abs=1e-4)
+    assert 1.0 <= weights[2].item() < weights[0].item()
+
+
+def test_unavailable_span_still_reports_observed_harmonic_energy() -> None:
+    frames = 160
+    period = 16.0
+    embeddings = _localized_embeddings(
+        frames=frames,
+        period=period,
+        active_start=64,
+        active_stop=80,
+    )
+    result = _build(embeddings, period=period)
+
+    assert result.available.tolist() == [False]
+    assert result.active_support_fractions.tolist() == [0.0]
+    assert result.harmonic_energy_fractions.item() > 0.0
+    assert torch.count_nonzero(result.curves) == 0
+
+
+def test_short_period_distributed_recurrence_is_scale_consistent() -> None:
+    counter = MultiExpertCounter()
+    counts: list[int] = []
+    energies: list[float] = []
+    for factor in (1.0, 0.75, 0.5):
+        frames = int(round(192 * factor))
+        period = 6.0 * factor
+        time = torch.arange(frames, dtype=torch.float32)
+        angle = 2.0 * math.pi * time / period
+        phases = torch.linspace(0.0, math.pi, 24)
+        periodic = torch.stack(
+            [0.05 * torch.cos(angle + phase) for phase in phases],
+            dim=1,
+        )
+        distractors = torch.stack(
+            [
+                torch.sin(2.0 * math.pi * time / (7.0 + index))
+                for index in range(8)
+            ],
+            dim=1,
+        )
+        embeddings = torch.cat((periodic, distractors), dim=1)
+        readout = _build(embeddings, period=period)
+        output = counter.count(
+            readout.curves[0],
+            period_frames=period,
+            valid_mask=readout.active_masks[0],
+            period_confidence=0.8,
+            reference_count_override=int(readout.active_reference_counts[0]),
+        )
+        assert readout.available.tolist() == [True]
+        counts.append(output.count)
+        energies.append(float(readout.recurrence_gate_energies[0]))
+
+    assert max(counts) - min(counts) <= 1
+    assert min(energies) > 0.0
 
 
 def test_time_scaling_preserves_count_and_invalid_holes_are_not_bridged() -> None:

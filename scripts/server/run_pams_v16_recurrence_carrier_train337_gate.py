@@ -62,11 +62,20 @@ except ModuleNotFoundError:
     import run_pams_v16_terminal_dual_path_gate as _v16  # type: ignore[no-redef]
 
 
-_ARTIFACT_TYPE = "pams_v16_recurrence_carrier_train337_mechanism_gate"
-_RECEIPT_TYPE = "pams_v16_recurrence_carrier_train337_mechanism_gate_receipt"
-_CLASSIFICATION = "inferred target-free recurrence-gated quadrature carrier"
+_ARTIFACT_TYPE = (
+    "pams_v16_cross_cycle_recurrence_carrier_train337_mechanism_gate"
+)
+_RECEIPT_TYPE = (
+    "pams_v16_cross_cycle_recurrence_carrier_train337_mechanism_gate_receipt"
+)
+_CLASSIFICATION = (
+    "inferred target-free cross-cycle recurrence-gated quadrature carrier"
+)
 _EXPECTED_TRAINING_VIDEOS = 337
 _TIME_SCALE_FACTORS = (0.50, 0.75)
+_REJECTED_PREDECESSOR_ARTIFACT_SHA256 = (
+    "02710a0a92c16f1c3bc77283ed8f8922d69f7c948076fa1681b260ad1b9fa50f"
+)
 _EXPECTED_CANDIDATE_CONFIG_SHA256 = (
     "51e1fd487eb43ac970e585fa30f1be420021196446fe4749cb9bd3c639043224"
 )
@@ -1026,6 +1035,13 @@ def run_train337_gate(
         },
         "algorithm": {
             "period_estimator": "embedding_velocity_full_vector_acf",
+            "feature_conditioning": (
+                "full diagonal-whitened embedding recurrence with only a bounded "
+                "uplift for target-harmonic phase agreement across alternating cycles"
+            ),
+            "rejected_predecessor_artifact_sha256": (
+                _REJECTED_PREDECESSOR_ARTIFACT_SHA256
+            ),
             "action_curve": (
                 "dense fractional-lag recurrence contrast gates an analytic "
                 "carrier whose phase is fixed by real embedding quadrature"
@@ -1078,6 +1094,11 @@ def run_train337_gate(
         "gate": decision,
         "scientific_caveats": [
             "The recurrence carrier is independently inferred, not author-disclosed.",
+            (
+                "This successor changes feature conditioning after the predecessor "
+                "failed its frozen train337 gate; all sixteen decision thresholds "
+                "remain byte-for-byte unchanged."
+            ),
             (
                 "This mechanism gate uses the historical 256-frame resampled-v3 cache, "
                 "not the author native timeline, and cannot authorize paper-baseline dev."
