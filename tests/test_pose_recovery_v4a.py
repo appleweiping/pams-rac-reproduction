@@ -94,7 +94,7 @@ def test_v4a_config_rejects_non_complexity1_pass0_and_non_v4_recovery() -> None:
         PAMSConfig.model_validate(payload)
     payload = candidate.model_dump(mode="json")
     payload["pose"]["preprocessing_revision"] = (
-        "longest-contiguous-track-minmax-zero-span-invalid-v3"
+        "detected-span-minmax-zero-span-invalid-v2"
     )
     with pytest.raises(ValueError, match="accepted only by the v4a"):
         PAMSConfig.model_validate(payload)
@@ -368,6 +368,104 @@ def test_v4a_preserves_more_than_1000_native_frames_and_invalid_decode_tail(
     assert np.count_nonzero(sequence.xyz[decoded_frames:]) == 0
     assert audit.padded_tail_frames == expected_frames - decoded_frames
     assert audit.temporal_resampling == "none_native_timeline"
+
+
+def test_v4a_nonzero_clip_start_seeks_before_decoding_exact_half_open_range(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import pose
+
+    video = tmp_path / "source-video.mp4"
+    video.write_bytes(b"fixture")
+    package = tmp_path / "mediapipe"
+    module = package / "__init__.py"
+    module.parent.mkdir()
+    module.write_text("", encoding="utf-8")
+    asset = package / "modules/pose_landmark/pose_landmark_heavy.tflite"
+    asset.parent.mkdir(parents=True)
+    asset.write_bytes(b"verified-heavy")
+    digest = hashlib.sha256(asset.read_bytes()).hexdigest()
+    seen_source_indices: list[int] = []
+
+    class FakeCapture:
+        def __init__(self) -> None:
+            self.offset = 0
+
+        def isOpened(self) -> bool:
+            return True
+
+        def set(self, prop: object, value: float) -> bool:
+            assert prop == 1
+            self.offset = int(value)
+            return True
+
+        def get(self, prop: object) -> float:
+            return 25.0 if prop == 5 else float(self.offset)
+
+        def read(self) -> tuple[bool, np.ndarray | None]:
+            if self.offset == 8:
+                return False, None
+            frame = np.full((8, 8, 3), self.offset, dtype=np.uint8)
+            self.offset += 1
+            return True, frame
+
+        def release(self) -> None:
+            return None
+
+    class FakeDetector:
+        def __init__(self, *, static: bool) -> None:
+            self.static = static
+
+        def __enter__(self) -> FakeDetector:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def process(self, frame: np.ndarray) -> Any:
+            if self.static:
+                raise AssertionError("all pass0 clip frames are valid")
+            source_index = int(frame[0, 0, 0])
+            seen_source_indices.append(source_index)
+            return _result(_candidate(0.3 + source_index * 0.01))
+
+    class FakePoseFactory:
+        def __call__(self, **kwargs: Any) -> FakeDetector:
+            return FakeDetector(static=bool(kwargs["static_image_mode"]))
+
+    fake_cv2 = SimpleNamespace(
+        CAP_PROP_POS_FRAMES=1,
+        CAP_PROP_FPS=5,
+        COLOR_BGR2RGB=7,
+        VideoCapture=lambda _: FakeCapture(),
+        cvtColor=lambda frame, _: frame,
+    )
+    fake_mp = SimpleNamespace(
+        __file__=str(module),
+        solutions=SimpleNamespace(pose=SimpleNamespace(Pose=FakePoseFactory())),
+    )
+    monkeypatch.setattr(pose, "_load_pose_dependencies", lambda: (fake_cv2, fake_mp))
+    settings = PoseExtractorConfig(
+        preprocessing_revision=RECOVERY_PREPROCESSING_REVISION,
+        crop_to_detected_span=False,
+        incomplete_clip_policy="pad_invalid_tail",
+        recovery=_recovery(asset, digest),
+    )
+
+    sequence, decoded, pass0_valid, selected, audit = extract_pose_sequence_recovery(
+        video,
+        video_id="nonzero-start",
+        config=settings,
+        clip_start_frame=3,
+        clip_end_frame=7,
+    )
+
+    assert seen_source_indices == [3, 4, 5, 6]
+    assert sequence.num_frames == 4
+    assert decoded == pass0_valid == selected == 4
+    assert audit.expected_segment_frames == 4
+    assert audit.padded_tail_frames == 0
 
 
 def test_native_frame_indices_and_short_period_survive_batch_padding() -> None:
