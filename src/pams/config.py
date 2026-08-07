@@ -229,6 +229,7 @@ class LossConfig(StrictModel):
     anchor_stride: int = Field(default=1, ge=1, strict=True)
     kmeans_clusters: int = Field(default=8, ge=2)
     kmeans_refresh_epochs: int = Field(default=5, ge=1)
+    use_cross_cluster_negatives: bool = Field(default=True, strict=True)
     exclude_other_scale_positives_from_denominator: bool = False
 
 
@@ -424,6 +425,10 @@ class PAMSConfig(StrictModel):
             # Preserve all historical identities.  A stride above one is an
             # independently inferred interpretation of Supplementary Fig. 12.
             loss.pop("anchor_stride")
+        if loss["use_cross_cluster_negatives"]:
+            # Preserve historical identities.  Disabling the independently
+            # closed hard-negative bank is an explicit baseline ablation.
+            loss.pop("use_cross_cluster_negatives")
         if not loss["exclude_other_scale_positives_from_denominator"]:
             # Preserve historical fingerprints for the literal denominator.
             # The opt-in inferred union repair is identity-changing.

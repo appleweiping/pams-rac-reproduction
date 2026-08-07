@@ -19,6 +19,7 @@ from pams.config import (
     SSHeadConfig,
     TrainingConfig,
 )
+from pams.losses import PAMSTCCLoss
 from pams.model import TemporalPeriodHead
 from pams.training import (
     CheckpointProvenance,
@@ -1322,6 +1323,46 @@ def test_encoder_routes_inferred_tcc_anchor_stride(
     )
 
     assert observed == [4]
+
+
+def test_encoder_routes_cross_cluster_negative_switch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    payload = _tiny_config(encoder_epochs=1).model_dump()
+    payload["loss"]["use_cross_cluster_negatives"] = False
+    config = PAMSConfig.model_validate(payload)
+    observed: list[bool] = []
+    original_compute = training_module.PAMSTCCLoss.compute
+
+    def capturing_compute(
+        self: PAMSTCCLoss,
+        *args: Any,
+        use_cross_cluster_negatives: bool = True,
+        **kwargs: Any,
+    ) -> Any:
+        observed.append(use_cross_cluster_negatives)
+        return original_compute(
+            self,
+            *args,
+            use_cross_cluster_negatives=use_cross_cluster_negatives,
+            **kwargs,
+        )
+
+    monkeypatch.setattr(
+        training_module.PAMSTCCLoss,
+        "compute",
+        capturing_compute,
+    )
+    train_encoder(
+        (_sequence("a"), _sequence("b", phase=0.4)),
+        config,
+        device="cpu",
+        microbatch_size=2,
+    )
+
+    assert observed == [False]
 
 
 def test_encoder_rejects_gradient_accumulation_as_contrastive_batch_substitute() -> None:

@@ -2234,6 +2234,9 @@ def train_encoder(
                 bank_features=bank_features,
                 bank_cluster_labels=bank_cluster_labels,
                 bank_video_ids=prototype_bank.video_ids,
+                use_cross_cluster_negatives=(
+                    config.loss.use_cross_cluster_negatives
+                ),
             )
             if position_permutation_consistency is None:
                 # Keep the historical graph and numerical path unchanged when

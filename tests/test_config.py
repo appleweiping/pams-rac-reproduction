@@ -20,6 +20,7 @@ def test_default_config_matches_disclosed_dimensions() -> None:
     assert config.period.post_warmup_source == "embedding_velocity_coordinate"
     assert config.period.direct_fft_timebase == "compact_valid"
     assert config.loss.anchor_stride == 1
+    assert config.loss.use_cross_cluster_negatives is True
     assert config.loss.exclude_other_scale_positives_from_denominator is False
     assert config.model.position_encoding_mode == "sinusoidal"
     assert config.sshead.architecture == "pointwise_mlp"
@@ -567,6 +568,39 @@ def test_tcc_anchor_stride_is_identity_changing_and_default_preserves_history() 
 def test_tcc_anchor_stride_rejects_invalid_values(value: object) -> None:
     with pytest.raises(ValidationError, match="anchor_stride"):
         PAMSConfig.model_validate({"loss": {"anchor_stride": value}})
+
+
+def test_cross_cluster_negative_switch_is_identity_changing_and_default_preserves_history() -> None:
+    implicit = PAMSConfig()
+    payload = implicit.model_dump()
+    payload["loss"].pop("use_cross_cluster_negatives")
+    reconstructed_implicit = PAMSConfig.model_validate(payload)
+    explicit_default = PAMSConfig.model_validate(implicit.model_dump())
+    disabled = PAMSConfig.model_validate(
+        {
+            **implicit.model_dump(),
+            "loss": {
+                **implicit.loss.model_dump(),
+                "use_cross_cluster_negatives": False,
+            },
+        }
+    )
+
+    assert explicit_default.fingerprint == reconstructed_implicit.fingerprint
+    assert explicit_default.nonseed_fingerprint == (
+        reconstructed_implicit.nonseed_fingerprint
+    )
+    assert disabled.fingerprint != implicit.fingerprint
+    assert disabled.nonseed_fingerprint != implicit.nonseed_fingerprint
+    assert disabled.pose_fingerprint == implicit.pose_fingerprint
+
+
+@pytest.mark.parametrize("value", [0, 1, "true"])
+def test_cross_cluster_negative_switch_requires_strict_boolean(value: object) -> None:
+    with pytest.raises(ValidationError, match="use_cross_cluster_negatives"):
+        PAMSConfig.model_validate(
+            {"loss": {"use_cross_cluster_negatives": value}}
+        )
 
 
 def test_medium_only_is_inference_identity_and_default_preserves_history() -> None:
