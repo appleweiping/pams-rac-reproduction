@@ -29,8 +29,8 @@ from pams.training import (
     predict_sequence,
     train_encoder,
     train_sshead,
-    validate_sshead_shape_normalization_compatibility,
     validate_sshead_encoder_binding,
+    validate_sshead_shape_normalization_compatibility,
     validate_terminal_checkpoint,
 )
 from pams.types import PoseSequence
