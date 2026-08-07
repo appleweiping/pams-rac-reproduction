@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 RECURRENCE_SMOOTH_SIGMA_PERIODS = 0.25
 RECURRENCE_ON_CONTRAST = 0.12
 RECURRENCE_OFF_CONTRAST = 0.04
-RECURRENCE_MINIMUM_SPAN_PERIODS = 1.0
+RECURRENCE_MINIMUM_SPAN_PERIODS = 1.5
 RECURRENCE_SPAN_PADDING_PERIODS = 0.25
 RECURRENCE_AMPLITUDE_FLOOR = 0.75
 
@@ -263,6 +263,31 @@ def _analytic_peak_reference(carrier: Tensor, active: Tensor) -> int:
     return total
 
 
+def _align_active_spans_to_carrier_troughs(
+    active: Tensor,
+    carrier: Tensor,
+    period: float,
+) -> Tensor:
+    """Shrink recurrence spans to carrier troughs for boundary-stable peaks."""
+
+    aligned = torch.zeros_like(active)
+    search = max(2, int(math.ceil(0.75 * period)))
+    minimum = max(3, int(math.ceil(period)))
+    for start, stop in _valid_runs(active):
+        if stop - start < minimum:
+            continue
+        left_stop = min(stop, start + search)
+        right_start = max(start, stop - search)
+        aligned_start = start + int(torch.argmin(carrier[start:left_stop]))
+        aligned_stop_index = right_start + int(
+            torch.argmin(carrier[right_start:stop])
+        )
+        aligned_stop = aligned_stop_index + 1
+        if aligned_stop - aligned_start >= minimum:
+            aligned[aligned_start:aligned_stop] = True
+    return aligned
+
+
 def _recurrence_score(
     centered: Tensor,
     valid: Tensor,
@@ -413,6 +438,7 @@ def build_recurrence_carrier_curves(
 
         score = _recurrence_score(centered, sample_valid, period)
         active = _active_mask_from_score(score, sample_valid, period)
+        active = _align_active_spans_to_carrier_troughs(active, carrier, period)
         if not bool(active.any()):
             recurrence_scores[index, :length] = score
             continue

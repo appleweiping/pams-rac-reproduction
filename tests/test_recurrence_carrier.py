@@ -168,11 +168,7 @@ def test_time_scaling_preserves_count_and_invalid_holes_are_not_bridged() -> Non
             active_stop=stop,
         )
         mask = torch.ones(frames, dtype=torch.bool)
-        if factor == 1.0:
-            mask[72:80] = False
         readout = _build(embeddings, period=period, mask=mask)
-        if factor == 1.0:
-            assert not bool(readout.active_masks[0, 72:80].any())
         output = counter.count(
             readout.curves[0],
             period_frames=period,
@@ -183,6 +179,13 @@ def test_time_scaling_preserves_count_and_invalid_holes_are_not_bridged() -> Non
         assert abs(output.count - output.reference_count) <= 1
         counts.append(output.count)
     assert max(counts) - min(counts) <= 1
+
+    embeddings = _localized_embeddings()
+    hole_mask = torch.ones(embeddings.shape[0], dtype=torch.bool)
+    hole_mask[72:80] = False
+    with_hole = _build(embeddings, period=16.0, mask=hole_mask)
+    assert not bool(with_hole.active_masks[0, 72:80].any())
+    assert torch.count_nonzero(with_hole.curves[0, 72:80]) == 0
 
 
 def test_reference_override_is_explicit_and_does_not_change_experts() -> None:
