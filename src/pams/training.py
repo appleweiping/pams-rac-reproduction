@@ -2002,6 +2002,7 @@ def train_encoder(
     objective = PAMSTCCLoss(
         scales=config.loss.scales,
         temperature=config.loss.temperature,
+        anchor_stride=config.loss.anchor_stride,
         exclude_other_scale_positives_from_denominator=(
             config.loss.exclude_other_scale_positives_from_denominator
         ),

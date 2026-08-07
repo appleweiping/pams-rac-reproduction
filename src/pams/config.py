@@ -222,6 +222,11 @@ class PeriodConfig(StrictModel):
 class LossConfig(StrictModel):
     scales: tuple[float, ...] = (0.5, 1.0, 1.5)
     temperature: float = Field(default=0.1, gt=0)
+    # Supplementary Figure 12 discloses a TCC stride sweep but not the exact
+    # selected value or indexing convention.  Keep the historical dense
+    # behavior as the default and make every inferred sparse-anchor run an
+    # explicit, fingerprint-changing experiment.
+    anchor_stride: int = Field(default=1, ge=1, strict=True)
     kmeans_clusters: int = Field(default=8, ge=2)
     kmeans_refresh_epochs: int = Field(default=5, ge=1)
     exclude_other_scale_positives_from_denominator: bool = False
@@ -415,6 +420,10 @@ class PAMSConfig(StrictModel):
             period.pop("training_mode")
             period.pop("fixed_period_frames")
         loss = payload["loss"]
+        if loss["anchor_stride"] == 1:
+            # Preserve all historical identities.  A stride above one is an
+            # independently inferred interpretation of Supplementary Fig. 12.
+            loss.pop("anchor_stride")
         if not loss["exclude_other_scale_positives_from_denominator"]:
             # Preserve historical fingerprints for the literal denominator.
             # The opt-in inferred union repair is identity-changing.

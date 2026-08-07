@@ -1292,6 +1292,38 @@ def test_encoder_routes_cross_scale_denominator_switch(
     assert observed == [True]
 
 
+def test_encoder_routes_inferred_tcc_anchor_stride(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    payload = _tiny_config(encoder_epochs=1).model_dump()
+    payload["loss"]["anchor_stride"] = 4
+    config = PAMSConfig.model_validate(payload)
+    observed: list[int] = []
+    real_loss = training_module.PAMSTCCLoss
+
+    class CapturingLoss(real_loss):
+        def __init__(
+            self,
+            *args: Any,
+            anchor_stride: int = 1,
+            **kwargs: Any,
+        ) -> None:
+            observed.append(anchor_stride)
+            super().__init__(*args, anchor_stride=anchor_stride, **kwargs)
+
+    monkeypatch.setattr(training_module, "PAMSTCCLoss", CapturingLoss)
+    train_encoder(
+        (_sequence("a"), _sequence("b", phase=0.4)),
+        config,
+        device="cpu",
+        microbatch_size=2,
+    )
+
+    assert observed == [4]
+
+
 def test_encoder_rejects_gradient_accumulation_as_contrastive_batch_substitute() -> None:
     items = (_sequence("a"), _sequence("b", phase=0.4))
     config = _tiny_config(encoder_epochs=1)

@@ -234,6 +234,72 @@ def test_cross_scale_positive_exclusion_is_default_off_and_bitwise_equivalent() 
     assert torch.equal(default_embeddings.grad, explicit_embeddings.grad)
 
 
+def test_anchor_stride_one_is_bitwise_equivalent_to_the_historical_default() -> None:
+    base = _periodic_embeddings()
+    default_embeddings = base.clone().requires_grad_()
+    explicit_embeddings = base.clone().requires_grad_()
+    arguments = {
+        "periods": torch.tensor([6, 6]),
+        "cluster_labels": torch.tensor([0, 1]),
+        "use_cross_cluster_negatives": False,
+    }
+
+    default = PAMSTCCLoss(scales=(0.5, 1.0, 1.5)).compute(
+        default_embeddings,
+        **arguments,
+    )
+    explicit = PAMSTCCLoss(
+        scales=(0.5, 1.0, 1.5),
+        anchor_stride=1,
+    ).compute(explicit_embeddings, **arguments)
+
+    _assert_tcc_outputs_identical(default, explicit)
+    default.total.backward()
+    explicit.total.backward()
+    assert torch.equal(default_embeddings.grad, explicit_embeddings.grad)
+
+
+def test_anchor_stride_selects_global_timeline_anchors_after_masking() -> None:
+    embeddings = _periodic_embeddings(batch=1)[:, :9].requires_grad_()
+    valid = torch.tensor(
+        [[False, True, True, True, False, True, True, True, True]],
+    )
+    dense = PAMSTCCLoss(scales=(1.0,), temperature=1.0).compute(
+        embeddings,
+        torch.tensor([3.0]),
+        valid,
+        use_cross_cluster_negatives=False,
+    )
+    sparse = PAMSTCCLoss(
+        scales=(1.0,),
+        temperature=1.0,
+        anchor_stride=3,
+    ).compute(
+        embeddings,
+        torch.tensor([3.0]),
+        valid,
+        use_cross_cluster_negatives=False,
+    )
+
+    # Global indices 3 and 6 are the only valid stride-three anchors.  Index
+    # zero remains excluded by the validity mask instead of shifting the
+    # stride origin to the first observed pose.
+    assert sparse.valid_anchor_counts == (2,)
+    assert dense.valid_anchor_counts == (7,)
+    assert torch.isfinite(sparse.total)
+    sparse.total.backward()
+    assert embeddings.grad is not None
+    assert torch.isfinite(embeddings.grad).all()
+
+
+@pytest.mark.parametrize("anchor_stride", [0, -1, True, 1.5])
+def test_anchor_stride_rejects_nonpositive_or_boolean_values(
+    anchor_stride: object,
+) -> None:
+    with pytest.raises(ValueError, match="anchor_stride"):
+        PAMSTCCLoss(anchor_stride=anchor_stride)
+
+
 def test_cross_scale_positive_exclusion_is_a_noop_for_one_scale() -> None:
     base = _periodic_embeddings()
     default_embeddings = base.clone().requires_grad_()

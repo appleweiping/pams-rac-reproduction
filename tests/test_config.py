@@ -19,6 +19,7 @@ def test_default_config_matches_disclosed_dimensions() -> None:
     assert config.period.fixed_period_frames == 16
     assert config.period.post_warmup_source == "embedding_velocity_coordinate"
     assert config.period.direct_fft_timebase == "compact_valid"
+    assert config.loss.anchor_stride == 1
     assert config.loss.exclude_other_scale_positives_from_denominator is False
     assert config.model.position_encoding_mode == "sinusoidal"
     assert config.sshead.architecture == "pointwise_mlp"
@@ -535,6 +536,37 @@ def test_explicit_default_union_repair_preserves_historical_fingerprint() -> Non
 
     assert explicit.fingerprint == reconstructed_implicit.fingerprint
     assert explicit.nonseed_fingerprint == reconstructed_implicit.nonseed_fingerprint
+
+
+def test_tcc_anchor_stride_is_identity_changing_and_default_preserves_history() -> None:
+    implicit = PAMSConfig()
+    payload = implicit.model_dump()
+    payload["loss"].pop("anchor_stride")
+    reconstructed_implicit = PAMSConfig.model_validate(payload)
+    explicit_default = PAMSConfig.model_validate(implicit.model_dump())
+    sparse = PAMSConfig.model_validate(
+        {
+            **implicit.model_dump(),
+            "loss": {
+                **implicit.loss.model_dump(),
+                "anchor_stride": 4,
+            },
+        }
+    )
+
+    assert explicit_default.fingerprint == reconstructed_implicit.fingerprint
+    assert explicit_default.nonseed_fingerprint == (
+        reconstructed_implicit.nonseed_fingerprint
+    )
+    assert sparse.fingerprint != implicit.fingerprint
+    assert sparse.nonseed_fingerprint != implicit.nonseed_fingerprint
+    assert sparse.pose_fingerprint == implicit.pose_fingerprint
+
+
+@pytest.mark.parametrize("value", [0, -1, True, 1.5])
+def test_tcc_anchor_stride_rejects_invalid_values(value: object) -> None:
+    with pytest.raises(ValidationError, match="anchor_stride"):
+        PAMSConfig.model_validate({"loss": {"anchor_stride": value}})
 
 
 def test_medium_only_is_inference_identity_and_default_preserves_history() -> None:

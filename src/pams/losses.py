@@ -381,6 +381,7 @@ class PAMSTCCLoss(nn.Module):
         self,
         scales: tuple[float, ...] = (0.5, 1.0, 1.5),
         temperature: float = 0.1,
+        anchor_stride: int = 1,
         exclude_other_scale_positives_from_denominator: bool = False,
     ) -> None:
         super().__init__()
@@ -388,8 +389,15 @@ class PAMSTCCLoss(nn.Module):
             raise ValueError("scales must contain positive values")
         if temperature <= 0:
             raise ValueError("temperature must be positive")
+        if (
+            isinstance(anchor_stride, bool)
+            or not isinstance(anchor_stride, int)
+            or anchor_stride < 1
+        ):
+            raise ValueError("anchor_stride must be a positive integer")
         self.scales = tuple(float(scale) for scale in scales)
         self.temperature = float(temperature)
+        self.anchor_stride = int(anchor_stride)
         self.exclude_other_scale_positives_from_denominator = (
             exclude_other_scale_positives_from_denominator
         )
@@ -521,6 +529,9 @@ class PAMSTCCLoss(nn.Module):
 
         identity = torch.eye(time, dtype=torch.bool, device=embeddings.device).unsqueeze(0)
         within_candidate_mask = valid.unsqueeze(1) & valid.unsqueeze(2) & ~identity
+        anchor_selector = (
+            torch.arange(time, device=embeddings.device) % self.anchor_stride == 0
+        ).unsqueeze(0)
 
         def positive_mask_for_scale(scale: float) -> Tensor:
             correspondences = _correspondences_from_similarities(
@@ -563,7 +574,7 @@ class PAMSTCCLoss(nn.Module):
             else:
                 positive_mask = positive_masks[scale_index]
             positive_counts = positive_mask.sum(dim=-1)
-            valid_anchors = valid & (positive_counts > 0)
+            valid_anchors = valid & anchor_selector & (positive_counts > 0)
 
             scale_within_candidate_mask = within_candidate_mask
             if all_scale_positive_mask is not None:
