@@ -64,14 +64,14 @@ class PoseRecoveryConfig(StrictModel):
     roi_retry: bool = True
     roi_margin_fraction: float = Field(default=0.20, ge=0.0, le=1.0)
     roi_min_side_fraction: float = Field(default=0.08, gt=0.0, le=1.0)
-    association_cost: Literal[
+    association_cost: Literal["normalized-center-l2-plus-log-scale-v1"] = (
         "normalized-center-l2-plus-log-scale-v1"
-    ] = "normalized-center-l2-plus-log-scale-v1"
+    )
     association_center_weight: float = Field(default=1.0, ge=0.0)
     association_log_scale_weight: float = Field(default=0.25, ge=0.0)
-    dominant_track_strategy: Literal[
+    dominant_track_strategy: Literal["global-viterbi-visible-extent-v1"] = (
         "global-viterbi-visible-extent-v1"
-    ] = "global-viterbi-visible-extent-v1"
+    )
     maximum_gap_frames: int = Field(default=8, ge=1)
     maximum_gap_seconds: float = Field(default=0.25, gt=0.0)
     pose_coordinate_interpolation: Literal[False] = False
@@ -91,6 +91,94 @@ class PoseRecoveryConfig(StrictModel):
         return model_id
 
 
+class KeypointRCNNRecoveryConfig(StrictModel):
+    """Frozen identity for v4a-locked torchvision keypoint recovery."""
+
+    model_id: str = "torchvision-keypointrcnn-resnet50-fpn-coco-v1-0.20.1"
+    model_asset_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    model_asset_filename: Literal["keypointrcnn_resnet50_fpn_coco-fc266e95.pth"] = (
+        "keypointrcnn_resnet50_fpn_coco-fc266e95.pth"
+    )
+    model_topology: Literal["torchvision-coco-v1-frozen-batchnorm-overwrite-eps-zero-v1"] = (
+        "torchvision-coco-v1-frozen-batchnorm-overwrite-eps-zero-v1"
+    )
+    expected_state_dict_keys: Literal[313] = 313
+    expected_parameter_count: Literal[59137258] = 59137258
+    expected_torch_version: Literal["2.5.1+cu124"] = "2.5.1+cu124"
+    expected_torchvision_version: Literal["0.20.1+cu124"] = "0.20.1+cu124"
+    expected_cuda_version: Literal["12.4"] = "12.4"
+    expected_cudnn_version: Literal[90100] = 90100
+    expected_gpu_name: Literal["NVIDIA RTX A6000"] = "NVIDIA RTX A6000"
+    expected_compute_capability: Literal["8.6"] = "8.6"
+    base_pose_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+    base_pose_cache_set_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    base_pose_ledger_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    base_paired_gate_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    frozen_same39_selection_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    frozen_same39_identity_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    frozen_zero11_identity_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    base_preprocessing_revision: Literal[
+        "official-segment-heavy-missing-retry-full-timeline-v4a"
+    ] = "official-segment-heavy-missing-retry-full-timeline-v4a"
+    temporal_resampling: Literal["none_native_timeline"] = "none_native_timeline"
+    detector_observes_all_decoded_frames: Literal[True] = True
+    fill_missing_only: Literal[True] = True
+    base_observations_bitwise_locked: Literal[True] = True
+    box_score_threshold: Literal[0.2] = 0.2
+    keypoint_logit_threshold: Literal[2.0] = 2.0
+    minimum_confident_keypoints: Literal[4] = 4
+    maximum_candidates_per_frame: Literal[4] = 4
+    person_label: Literal[1] = 1
+    coco_keypoints: Literal[17] = 17
+    coco_to_mediapipe_mapping: Literal["duplicate-eyes-wrists-ankles-nose-mouth-v1"] = (
+        "duplicate-eyes-wrists-ankles-nose-mouth-v1"
+    )
+    z_coordinate_policy: Literal["zero"] = "zero"
+    visibility_policy: Literal["sigmoid-keypoint-logit-times-box-score-v1"] = (
+        "sigmoid-keypoint-logit-times-box-score-v1"
+    )
+    input_scale_policy: Literal["torchvision-fpn-min800-max1333-v1"] = (
+        "torchvision-fpn-min800-max1333-v1"
+    )
+    input_min_size: Literal[800] = 800
+    input_max_size: Literal[1333] = 1333
+    box_nms_threshold: Literal[0.5] = 0.5
+    box_detections_per_image: Literal[100] = 100
+    inference_batch_size: Literal[4] = 4
+    inference_device: Literal["cuda:0"] = "cuda:0"
+    deterministic_algorithms: Literal[True] = True
+    allow_tf32: Literal[False] = False
+    cublas_workspace_config: Literal[":4096:8"] = ":4096:8"
+    runtime_cache_policy: Literal["ephemeral-exec-tmpfs-user1000-v1"] = (
+        "ephemeral-exec-tmpfs-user1000-v1"
+    )
+    association_cost: Literal["normalized-center-l2-plus-log-scale-v1"] = (
+        "normalized-center-l2-plus-log-scale-v1"
+    )
+    association_coordinate_space: Literal["frame-normalized-absolute-xy-v1"] = (
+        "frame-normalized-absolute-xy-v1"
+    )
+    v4a_anchor_policy: Literal["nearest-shared-coco17-xy-minmax-singleton-threshold-v1"] = (
+        "nearest-shared-coco17-xy-minmax-singleton-threshold-v1"
+    )
+    v4a_anchor_distance_maximum: Literal[0.25] = 0.25
+    fill_coordinate_space: Literal["selected-candidate-per-frame-minmax-xyz-v1"] = (
+        "selected-candidate-per-frame-minmax-xyz-v1"
+    )
+    association_center_weight: float = Field(default=1.0, ge=0.0)
+    association_log_scale_weight: float = Field(default=0.25, ge=0.0)
+    dominant_track_strategy: Literal["global-viterbi-visible-extent-v1"] = (
+        "global-viterbi-visible-extent-v1"
+    )
+    pose_coordinate_interpolation: Literal[False] = False
+
+    @model_validator(mode="after")
+    def validate_non_degenerate_association(self) -> KeypointRCNNRecoveryConfig:
+        if self.association_center_weight == 0.0 and self.association_log_scale_weight == 0.0:
+            raise ValueError("keypoint recovery association requires a positive cost weight")
+        return self
+
+
 class PoseConfig(StrictModel):
     """Frozen MediaPipe extractor settings included in pose-cache identity."""
 
@@ -101,6 +189,7 @@ class PoseConfig(StrictModel):
         "official-segment-heavy-missing-retry-full-timeline-v4a",
         "official-segment-heavy-video-fill-missing-full-timeline-v4b",
         "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c",
+        "official-segment-v4a-locked-keypointrcnn-fill-missing-full-timeline-v4d",
     ] = "detected-span-minmax-zero-span-invalid-v2"
     model_id: str = "mediapipe-pose-0.10.14"
     model_complexity: int = Field(default=1, ge=0, le=2)
@@ -110,17 +199,16 @@ class PoseConfig(StrictModel):
     crop_to_detected_span: bool = True
     incomplete_clip_policy: Literal["error", "pad_invalid_tail"] = "error"
     recovery: PoseRecoveryConfig | None = None
+    keypoint_recovery: KeypointRCNNRecoveryConfig | None = None
 
     @model_validator(mode="after")
     def validate_track_policy(self) -> PoseConfig:
         if (
-            self.preprocessing_revision
-            == "longest-contiguous-track-minmax-zero-span-invalid-v3"
+            self.preprocessing_revision == "longest-contiguous-track-minmax-zero-span-invalid-v3"
             and not self.crop_to_detected_span
         ):
             raise ValueError(
-                "longest-contiguous-track preprocessing requires "
-                "crop_to_detected_span=true"
+                "longest-contiguous-track preprocessing requires crop_to_detected_span=true"
             )
         if (
             self.preprocessing_revision
@@ -129,12 +217,12 @@ class PoseConfig(StrictModel):
                 "official-segment-heavy-missing-retry-full-timeline-v4a",
                 "official-segment-heavy-video-fill-missing-full-timeline-v4b",
                 "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c",
+                "official-segment-v4a-locked-keypointrcnn-fill-missing-full-timeline-v4d",
             }
             and self.crop_to_detected_span
         ):
             raise ValueError(
-                "official-segment-full-timeline preprocessing requires "
-                "crop_to_detected_span=false"
+                "official-segment-full-timeline preprocessing requires crop_to_detected_span=false"
             )
         if (
             self.preprocessing_revision
@@ -143,15 +231,13 @@ class PoseConfig(StrictModel):
                 "official-segment-heavy-missing-retry-full-timeline-v4a",
                 "official-segment-heavy-video-fill-missing-full-timeline-v4b",
                 "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c",
+                "official-segment-v4a-locked-keypointrcnn-fill-missing-full-timeline-v4d",
             }
             and self.incomplete_clip_policy != "error"
         ):
-            raise ValueError(
-                "pad_invalid_tail is only valid for official-segment-full-timeline"
-            )
+            raise ValueError("pad_invalid_tail is only valid for official-segment-full-timeline")
         v4a_revision = (
-            self.preprocessing_revision
-            == "official-segment-heavy-missing-retry-full-timeline-v4a"
+            self.preprocessing_revision == "official-segment-heavy-missing-retry-full-timeline-v4a"
         )
         v4b_revision = (
             self.preprocessing_revision
@@ -160,6 +246,10 @@ class PoseConfig(StrictModel):
         v4c_revision = (
             self.preprocessing_revision
             == "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c"
+        )
+        v4d_revision = (
+            self.preprocessing_revision
+            == "official-segment-v4a-locked-keypointrcnn-fill-missing-full-timeline-v4d"
         )
         recovery_revision = v4a_revision or v4b_revision or v4c_revision
         if recovery_revision:
@@ -189,6 +279,13 @@ class PoseConfig(StrictModel):
             raise ValueError(
                 "pose.recovery is accepted only by the v4a/v4b/v4c preprocessing revisions"
             )
+        if v4d_revision:
+            if self.model_complexity != 1:
+                raise ValueError("v4d base pose must use model_complexity=1")
+            if self.keypoint_recovery is None:
+                raise ValueError("v4d requires pose.keypoint_recovery settings")
+        elif self.keypoint_recovery is not None:
+            raise ValueError("pose.keypoint_recovery is accepted only by v4d")
         return self
 
     @field_validator("model_id")
@@ -272,9 +369,7 @@ class SkeletonAugmentationConfig(StrictModel):
             not math.isfinite(value) or value < 0.0 or value > 180.0
             for value in self.rotation_degrees
         ):
-            raise ValueError(
-                "rotation_degrees must contain three finite values in [0, 180]"
-            )
+            raise ValueError("rotation_degrees must contain three finite values in [0, 180]")
         scale_minimum, scale_maximum = self.scale_range
         if (
             not math.isfinite(scale_minimum)
@@ -283,9 +378,7 @@ class SkeletonAugmentationConfig(StrictModel):
             or scale_maximum < scale_minimum
             or scale_maximum > 10.0
         ):
-            raise ValueError(
-                "scale_range must be finite, positive, ordered, and at most 10"
-            )
+            raise ValueError("scale_range must be finite, positive, ordered, and at most 10")
         neutral = (
             self.rotation_degrees == (0.0, 0.0, 0.0)
             and self.scale_range == (1.0, 1.0)
@@ -376,8 +469,7 @@ class PAMSConfig(StrictModel):
             and self.training.position_permutation_consistency_weight != 0.0
         ):
             raise ValueError(
-                "position-permutation consistency requires "
-                "model.position_encoding_mode=sinusoidal"
+                "position-permutation consistency requires model.position_encoding_mode=sinusoidal"
             )
         return self
 
@@ -393,6 +485,9 @@ class PAMSConfig(StrictModel):
         if pose["recovery"] is None:
             # Preserve every pre-v4a whole-experiment fingerprint.
             pose.pop("recovery")
+        if pose["keypoint_recovery"] is None:
+            # Preserve every pre-v4d whole-experiment fingerprint.
+            pose.pop("keypoint_recovery")
         model = payload["model"]
         if model["input_projection_scale"] == "none":
             # ``none`` is the historical behavior.  Omitting only this default
@@ -476,6 +571,9 @@ class PAMSConfig(StrictModel):
             # Keep every historical v2/v3/official-segment fingerprint byte-for-byte
             # stable. Recovery is opt-in and identity-changing.
             pose.pop("recovery")
+        if pose["keypoint_recovery"] is None:
+            # Keep every historical pre-v4d pose fingerprint stable.
+            pose.pop("keypoint_recovery")
         return {
             "data": self.data.model_dump(mode="json"),
             "pose": pose,

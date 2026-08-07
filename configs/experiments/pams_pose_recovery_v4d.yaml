@@ -1,0 +1,140 @@
+# TRAIN337-ONLY POSE-INPUT REPAIR (v4d; no model training authorized here).
+#
+# The immutable v4a native-timeline cache is the primary input. Official
+# official torchvision Keypoint R-CNN COCO_V1 observes every decoded frame so
+# subject association remains entirely in frame-normalized image coordinates.
+# On a v4a-valid frame, both sources are reduced to the same 17 joints and
+# independently xy-minmax normalized. The nearest candidate is a singleton
+# anchor only at distance <= 0.25. Every v4a coordinate is still bitwise locked;
+# only missing frames are filled after global Viterbi.
+schema_version: 1
+protocol: ucfrep_526
+seed: 2026
+data:
+  frames: 256
+  keypoints: 33
+  coordinates: 3
+  normalization: per_frame_minmax
+  missing_value: 0.0
+pose:
+  preprocessing_revision: official-segment-v4a-locked-keypointrcnn-fill-missing-full-timeline-v4d
+  model_id: mediapipe-pose-0.10.14
+  model_complexity: 1
+  smooth_landmarks: true
+  min_detection_confidence: 0.5
+  min_tracking_confidence: 0.5
+  crop_to_detected_span: false
+  incomplete_clip_policy: pad_invalid_tail
+  keypoint_recovery:
+    model_id: torchvision-keypointrcnn-resnet50-fpn-coco-v1-0.20.1
+    model_asset_sha256: fc266e953d2b302cdcbb9ae66f71f6b0d4649928bf02dc573961e361e4918926
+    model_asset_filename: keypointrcnn_resnet50_fpn_coco-fc266e95.pth
+    model_topology: torchvision-coco-v1-frozen-batchnorm-overwrite-eps-zero-v1
+    expected_state_dict_keys: 313
+    expected_parameter_count: 59137258
+    expected_torch_version: 2.5.1+cu124
+    expected_torchvision_version: 0.20.1+cu124
+    expected_cuda_version: "12.4"
+    expected_cudnn_version: 90100
+    expected_gpu_name: NVIDIA RTX A6000
+    expected_compute_capability: "8.6"
+    base_pose_fingerprint: 817013890533cd19e6c791969c35c3699d56d0e6656768ce64199bc30ceebe9c
+    base_pose_cache_set_sha256: 22629d0ddc5d892bb53bcef78c887da4ff9e054f5a17bd5e7ea4fbc43a03c662
+    base_pose_ledger_sha256: 4cbba0d0f678cfdbd2c99752bbb55a8ceeb3aaa0b0b994bb6195b55cd0bc6018
+    base_paired_gate_sha256: faf086277f4d0a0687a266b64edc6ae45a2ca0ab4b39cc8fc4da644350c571e5
+    frozen_same39_selection_sha256: dada14719c5a48e9dd6ed3f68e53063330f845cef22a07eecd5ae2b5b21e89d4
+    frozen_same39_identity_sha256: afc8c7a10dfc624f1635e792e49a8c08180ca9f32fab29ff24e3972a0718f554
+    frozen_zero11_identity_sha256: bf98461648cf649ea34f5d0f4121e87619c1bf69aadadcda54f97a39960f51c7
+    base_preprocessing_revision: official-segment-heavy-missing-retry-full-timeline-v4a
+    temporal_resampling: none_native_timeline
+    detector_observes_all_decoded_frames: true
+    fill_missing_only: true
+    base_observations_bitwise_locked: true
+    box_score_threshold: 0.20
+    keypoint_logit_threshold: 2.0
+    minimum_confident_keypoints: 4
+    maximum_candidates_per_frame: 4
+    person_label: 1
+    coco_keypoints: 17
+    coco_to_mediapipe_mapping: duplicate-eyes-wrists-ankles-nose-mouth-v1
+    z_coordinate_policy: zero
+    visibility_policy: sigmoid-keypoint-logit-times-box-score-v1
+    input_scale_policy: torchvision-fpn-min800-max1333-v1
+    input_min_size: 800
+    input_max_size: 1333
+    box_nms_threshold: 0.5
+    box_detections_per_image: 100
+    inference_batch_size: 4
+    inference_device: cuda:0
+    deterministic_algorithms: true
+    allow_tf32: false
+    cublas_workspace_config: ":4096:8"
+    runtime_cache_policy: ephemeral-exec-tmpfs-user1000-v1
+    association_cost: normalized-center-l2-plus-log-scale-v1
+    association_coordinate_space: frame-normalized-absolute-xy-v1
+    v4a_anchor_policy: nearest-shared-coco17-xy-minmax-singleton-threshold-v1
+    v4a_anchor_distance_maximum: 0.25
+    fill_coordinate_space: selected-candidate-per-frame-minmax-xyz-v1
+    association_center_weight: 1.0
+    association_log_scale_weight: 0.25
+    dominant_track_strategy: global-viterbi-visible-extent-v1
+    pose_coordinate_interpolation: false
+model:
+  input_dim: 99
+  model_dim: 512
+  input_projection_scale: none
+  position_encoding_mode: none
+  embedding_dim: 512
+  layers: 4
+  heads: 16
+  feedforward_dim: 2048
+  dropout: 0.1
+  norm_first: false
+  period_head_hidden_dim: 128
+period:
+  minimum: 4
+  maximum: 128
+  pose_energy_epochs: 10
+  training_mode: adaptive
+  fixed_period_frames: 16
+  post_warmup_source: projected_pose_velocity_vector_acf
+loss:
+  scales: [0.5, 1.0, 1.5]
+  temperature: 0.1
+  kmeans_clusters: 8
+  kmeans_refresh_epochs: 5
+  exclude_other_scale_positives_from_denominator: false
+training:
+  epochs: 150
+  effective_batch_size: 32
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  scheduler_factor: 0.5
+  scheduler_patience: 8
+  minimum_learning_rate: 0.000001
+  position_permutation_consistency_weight: 0.0
+  skeleton_augmentation:
+    enabled: true
+    rotation_degrees: [15.0, 15.0, 15.0]
+    scale_range: [0.85, 1.15]
+    jitter_std: 0.01
+sshead:
+  epochs: 30
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  architecture: pointwise_mlp
+  input_source: encoder_embedding
+  period_confidence_mode: nonzero_gate
+  cycle_weight: 1.0
+  spectral_weight: 1.0
+  variance_weight: 0.1
+  smoothness_weight: 0.01
+consensus:
+  expert_mode: multi
+  sigma_multipliers: [0.05, 0.12, 0.15]
+  distance_multipliers: [0.5, 0.8, 1.2]
+  short_window_multiplier: 0.5
+  long_window_multiplier: 2.0
+  height_factor: 0.6
+  prominence_factor: 0.25
+  long_window_weight: 0.6
