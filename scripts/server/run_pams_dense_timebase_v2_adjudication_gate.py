@@ -348,7 +348,7 @@ def _validate_dense_decode(raw: Any, *, row_name: str) -> dict[str, Any]:
         raise ValueError(f"{row_name} reference count drifted")
     if selected not in _EXPERT_INDEX:
         raise ValueError(f"{row_name} selected expert drifted")
-    if not isinstance(period, (int, float)) or not math.isfinite(float(period)):
+    if not isinstance(period, int | float) or not math.isfinite(float(period)):
         raise ValueError(f"{row_name} period drifted")
     computed_majority = max(counts.count(value) for value in set(counts)) >= 2
     if dense.get("has_majority") is not computed_majority:

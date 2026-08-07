@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from scripts.server import run_pams_dense_timebase_v2_adjudication_gate as runner
 from scripts.server import run_pams_dense_timebase_v1_train337_gate as train_runner
+from scripts.server import run_pams_dense_timebase_v2_adjudication_gate as runner
 
 POLICY = (
     Path(__file__).resolve().parents[1]

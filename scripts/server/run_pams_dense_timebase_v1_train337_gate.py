@@ -1772,11 +1772,9 @@ def run_train337_gate(
         "synthetic_gate_artifact": Path(synthetic_gate_artifact_path),
         "synthetic_gate_receipt": Path(synthetic_gate_receipt_path),
         "synthetic_gate_runner": Path(__file__).resolve().with_name(
-            (
-                "run_pams_dense_timebase_v2_adjudication_gate.py"
-                if is_v2
-                else "run_pams_dense_timebase_v1_gate.py"
-            )
+            "run_pams_dense_timebase_v2_adjudication_gate.py"
+            if is_v2
+            else "run_pams_dense_timebase_v1_gate.py"
         ),
         "runner": Path(__file__).resolve(),
     }
