@@ -961,7 +961,8 @@ def _period_upper_bound_metadata(config: PAMSConfig) -> dict[str, Any]:
             f"min({maximum}, max({minimum}, floor(timeline_length/2)))"
         ),
         "short_valid_fallback": (
-            f"if valid_pose_total < {2 * minimum}: "
+            f"if timeline_length < {2 * minimum} or "
+            f"valid_embedding_velocity_total < {2 * minimum}: "
             f"period={minimum}, confidence=0"
         ),
     }
@@ -2657,11 +2658,13 @@ def _validate_epoch11_gate_pair(
         {
             "encoder_checkpoint_sha256",
             "encoder_progress_sha256",
+            "encoder_completion_receipt_sha256",
             "experiment_config_sha256",
             "gate_specification_sha256",
             "pose_snapshot_sha256",
             "encoder_checkpoint_bytes",
             "encoder_progress_bytes",
+            "encoder_completion_receipt_bytes",
             "experiment_config_bytes",
             "gate_specification_bytes",
             "pose_snapshot_bytes",
@@ -2674,10 +2677,15 @@ def _validate_epoch11_gate_pair(
             "source_receipt_covered_paths",
             "container_image_id",
             "container_environment_sha256",
+            "encoder_completion_receipt",
         },
         role="epoch11 gate inputs",
     )
-    for role in ("encoder_checkpoint", "encoder_progress"):
+    for role in (
+        "encoder_checkpoint",
+        "encoder_progress",
+        "encoder_completion_receipt",
+    ):
         if not isinstance(inputs.get(f"{role}_sha256"), str):
             raise ValueError(f"epoch11 gate lacks {role} SHA-256")
         if (
@@ -2686,6 +2694,43 @@ def _validate_epoch11_gate_pair(
             or inputs[f"{role}_bytes"] < 1
         ):
             raise ValueError(f"epoch11 gate lacks canonical {role} byte total")
+    completion = _require_exact_mapping(
+        inputs["encoder_completion_receipt"],
+        {
+            "schema_version",
+            "run_id",
+            "sha256",
+            "bytes",
+            "completed_epochs",
+            "artifact_roles",
+        },
+        role="epoch11 encoder completion summary",
+    )
+    expected_epoch11_roles = sorted(
+        {
+            "input_config",
+            "input_dataset_manifest",
+            "input_pose_cache_snapshot",
+            "input_train_pose_inputs",
+            "input_train_pose_input_commitment",
+            "input_dev_pose_inputs",
+            "input_dev_pose_input_commitment",
+            "input_test_identity_pose_inputs",
+            "input_test_identity_pose_input_commitment",
+            "input_candidate_launch_authorization",
+            "input_candidate_launch_authorization_receipt",
+            "output_encoder_checkpoint",
+            "progress_log",
+        }
+    )
+    if (
+        completion["schema_version"] != 3
+        or completion["completed_epochs"] != 11
+        or completion["sha256"] != inputs["encoder_completion_receipt_sha256"]
+        or completion["bytes"] != inputs["encoder_completion_receipt_bytes"]
+        or completion["artifact_roles"] != expected_epoch11_roles
+    ):
+        raise ValueError("epoch11 encoder completion summary is not canonical")
     expected_inputs = {
         "experiment_config_sha256": config_sha256,
         "pose_snapshot_sha256": pose_snapshot_sha256,
@@ -2709,6 +2754,7 @@ def _validate_epoch11_gate_pair(
         "encoder_continuation_authorized",
         "encoder_checkpoint_sha256",
         "encoder_progress_sha256",
+        "encoder_completion_receipt_sha256",
         "pose_cache_set_sha256",
         "gate_specification_sha256",
         "source_git_sha",
@@ -2726,6 +2772,8 @@ def _validate_epoch11_gate_pair(
         or receipt["encoder_checkpoint_sha256"]
         != inputs["encoder_checkpoint_sha256"]
         or receipt["encoder_progress_sha256"] != inputs["encoder_progress_sha256"]
+        or receipt["encoder_completion_receipt_sha256"]
+        != inputs["encoder_completion_receipt_sha256"]
         or receipt["pose_cache_set_sha256"] != pose_cache_set_sha256
         or receipt["gate_specification_sha256"]
         != inputs["gate_specification_sha256"]

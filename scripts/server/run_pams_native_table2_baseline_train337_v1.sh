@@ -47,6 +47,10 @@ readonly POSE_RECOVERY_VERSION="${PAMS_POSE_RECOVERY_VERSION:?PAMS_POSE_RECOVERY
 readonly POSE_RECOVERY_CONFIG_INPUT="${PAMS_POSE_RECOVERY_CONFIG_PATH:?PAMS_POSE_RECOVERY_CONFIG_PATH is required}"
 readonly POSE_RECOVERY_AUTHORIZATION_SHA256="${PAMS_POSE_RECOVERY_AUTHORIZATION_SHA256:?PAMS_POSE_RECOVERY_AUTHORIZATION_SHA256 is required}"
 readonly CANDIDATE_ID="${PAMS_CANDIDATE_ID:?PAMS_CANDIDATE_ID is required}"
+readonly PRIOR_A_REJECTION_ARTIFACT_INPUT="${PAMS_PRIOR_A_REJECTION_ARTIFACT:-}"
+readonly PRIOR_A_REJECTION_RECEIPT_INPUT="${PAMS_PRIOR_A_REJECTION_RECEIPT:-}"
+readonly PRIOR_B_REJECTION_ARTIFACT_INPUT="${PAMS_PRIOR_B_REJECTION_ARTIFACT:-}"
+readonly PRIOR_B_REJECTION_RECEIPT_INPUT="${PAMS_PRIOR_B_REJECTION_RECEIPT:-}"
 readonly ATTEMPT_ID="${PAMS_ATTEMPT_ID:?PAMS_ATTEMPT_ID is required}"
 readonly GPU_DEVICE="${PAMS_GPU_DEVICE:-0}"
 
@@ -58,26 +62,47 @@ case "$CANDIDATE_ID" in
     CONFIG_RELATIVE="$CONFIG_A_RELATIVE"
     CANDIDATE_WINDOW=16
     CANDIDATE_STRIDE=4
+    CANDIDATE_PRIOR_IDS_JSON='[]'
+    [[ -z "$PRIOR_A_REJECTION_ARTIFACT_INPUT" \
+      && -z "$PRIOR_A_REJECTION_RECEIPT_INPUT" \
+      && -z "$PRIOR_B_REJECTION_ARTIFACT_INPUT" \
+      && -z "$PRIOR_B_REJECTION_RECEIPT_INPUT" ]] \
+      || fail 'candidate A forbids predecessor rejection inputs'
     ;;
   B)
     CONFIG_RELATIVE="$CONFIG_B_RELATIVE"
     CANDIDATE_WINDOW=16
     CANDIDATE_STRIDE=2
+    CANDIDATE_PRIOR_IDS_JSON='["A"]'
+    [[ -n "$PRIOR_A_REJECTION_ARTIFACT_INPUT" \
+      && -n "$PRIOR_A_REJECTION_RECEIPT_INPUT" \
+      && -z "$PRIOR_B_REJECTION_ARTIFACT_INPUT" \
+      && -z "$PRIOR_B_REJECTION_RECEIPT_INPUT" ]] \
+      || fail 'candidate B requires exactly the candidate-A rejection pair'
     ;;
   C)
     CONFIG_RELATIVE="$CONFIG_C_RELATIVE"
     CANDIDATE_WINDOW=24
     CANDIDATE_STRIDE=4
+    CANDIDATE_PRIOR_IDS_JSON='["A","B"]'
+    [[ -n "$PRIOR_A_REJECTION_ARTIFACT_INPUT" \
+      && -n "$PRIOR_A_REJECTION_RECEIPT_INPUT" \
+      && -n "$PRIOR_B_REJECTION_ARTIFACT_INPUT" \
+      && -n "$PRIOR_B_REJECTION_RECEIPT_INPUT" ]] \
+      || fail 'candidate C requires the ordered A and B rejection pairs'
     ;;
   *)
     fail 'PAMS_CANDIDATE_ID must be exactly A, B, or C'
     ;;
 esac
-readonly CONFIG_RELATIVE CANDIDATE_WINDOW CANDIDATE_STRIDE
+readonly CONFIG_RELATIVE CANDIDATE_WINDOW CANDIDATE_STRIDE CANDIDATE_PRIOR_IDS_JSON
 readonly VALIDATOR_RELATIVE='scripts/server/validate_pams_native_baseline_inputs.py'
 readonly RUNNER_RELATIVE='scripts/server/run_pams_native_table2_baseline_train337_v1.sh'
 readonly EPOCH11_GATE_RELATIVE='scripts/server/run_pams_native_epoch11_train_gate.py'
 readonly EPOCH11_GATE_SPEC_RELATIVE='configs/gates/pams_native_epoch11_train_gate_v1.yaml'
+readonly TERMINAL_GATE_RELATIVE='scripts/server/run_pams_native_terminal_readout_gate.py'
+readonly TERMINAL_GATE_SPEC_RELATIVE='configs/gates/pams_native_terminal_readout_gate_v1.yaml'
+readonly LAUNCH_AUTHORIZATION_RELATIVE='scripts/server/prepare_pams_native_candidate_launch_authorization.py'
 readonly TRAIN_INPUT_SHA256='f95df0050df21f05bbc9b42d0154470714dde279e04cb8b00d0212bf49057d16'
 readonly TRAIN_COMMIT_SHA256='85d41d2f59872e0900e9058481efbdf6bce91407d4c26bcde0a6547776454e53'
 readonly DEV_INPUT_SHA256='74b6628679c3d4c9b48f82ef8cf7e3a678e0a8298a5cb245512af9912e4337ba'
@@ -127,6 +152,34 @@ readonly ROOT="$(realpath -e -- "$ROOT_INPUT")"
 readonly SOURCE_CHECKOUT="$(realpath -e -- "$SOURCE_CHECKOUT_INPUT")"
 readonly POSE_RECOVERY_RUN_ROOT="$(realpath -e -- "$POSE_RECOVERY_RUN_ROOT_INPUT")"
 readonly POSE_RECOVERY_CONFIG="$(realpath -e -- "$POSE_RECOVERY_CONFIG_INPUT")"
+for prior_input in \
+  "$PRIOR_A_REJECTION_ARTIFACT_INPUT" \
+  "$PRIOR_A_REJECTION_RECEIPT_INPUT" \
+  "$PRIOR_B_REJECTION_ARTIFACT_INPUT" \
+  "$PRIOR_B_REJECTION_RECEIPT_INPUT"; do
+  if [[ -n "$prior_input" ]]; then
+    [[ "$prior_input" == /* && "$prior_input" != *','* ]] \
+      || fail "prior rejection path must be absolute and comma-free: ${prior_input}"
+    [[ -f "$prior_input" && ! -L "$prior_input" ]] \
+      || fail "prior rejection input must be a regular non-symlink file: ${prior_input}"
+  fi
+done
+readonly PRIOR_A_REJECTION_ARTIFACT="$({
+  [[ -z "$PRIOR_A_REJECTION_ARTIFACT_INPUT" ]] \
+    || realpath -e -- "$PRIOR_A_REJECTION_ARTIFACT_INPUT"
+})"
+readonly PRIOR_A_REJECTION_RECEIPT="$({
+  [[ -z "$PRIOR_A_REJECTION_RECEIPT_INPUT" ]] \
+    || realpath -e -- "$PRIOR_A_REJECTION_RECEIPT_INPUT"
+})"
+readonly PRIOR_B_REJECTION_ARTIFACT="$({
+  [[ -z "$PRIOR_B_REJECTION_ARTIFACT_INPUT" ]] \
+    || realpath -e -- "$PRIOR_B_REJECTION_ARTIFACT_INPUT"
+})"
+readonly PRIOR_B_REJECTION_RECEIPT="$({
+  [[ -z "$PRIOR_B_REJECTION_RECEIPT_INPUT" ]] \
+    || realpath -e -- "$PRIOR_B_REJECTION_RECEIPT_INPUT"
+})"
 readonly OFFICIAL_ROOT="${ROOT}/runs/official-segment-v1/15cc1ec3c1d2-20260805T063653Z"
 readonly RUN_PARENT="${ROOT}/runs/pams-native-table2-baseline-v1"
 readonly RUN_ROOT="${RUN_PARENT}/${ATTEMPT_ID}"
@@ -135,6 +188,7 @@ readonly SOURCE_RECEIPT="${RUN_ROOT}/source-export.receipt.json"
 readonly INPUT_ROOT="${RUN_ROOT}/inputs"
 readonly CONFIG_HOST="${INPUT_ROOT}/pams_native_table2_baseline_proxy_v1.yaml"
 readonly EPOCH11_ENCODER_STAGE="${RUN_ROOT}/stages/encoder-epoch11"
+readonly LAUNCH_AUTHORIZATION_STAGE="${RUN_ROOT}/stages/launch-authorization"
 readonly EPOCH11_GATE_STAGE="${RUN_ROOT}/stages/epoch11-gate"
 readonly FINAL_ENCODER_STAGE="${RUN_ROOT}/stages/encoder-final"
 readonly EPOCH11_ENCODER_RUN="${EPOCH11_ENCODER_STAGE}/run"
@@ -143,9 +197,13 @@ readonly EPOCH11_ENCODER_PROGRESS="${EPOCH11_ENCODER_RUN}/logs/encoder.jsonl"
 readonly EPOCH11_POSE_SNAPSHOT="${EPOCH11_ENCODER_RUN}/inputs/training-pose-cache-snapshot.json"
 readonly EPOCH11_GATE_ARTIFACT="${EPOCH11_GATE_STAGE}/gate.json"
 readonly EPOCH11_GATE_RECEIPT="${EPOCH11_GATE_STAGE}/gate.json.receipt.json"
+readonly LAUNCH_POSE_SNAPSHOT="${INPUT_ROOT}/launch-training-pose-cache-snapshot.json"
+readonly LAUNCH_AUTHORIZATION_ARTIFACT="${LAUNCH_AUTHORIZATION_STAGE}/authorization.json"
+readonly LAUNCH_AUTHORIZATION_RECEIPT="${LAUNCH_AUTHORIZATION_ARTIFACT}.receipt.json"
 readonly FINAL_ENCODER_RUN="${FINAL_ENCODER_STAGE}/run"
 readonly FINAL_ENCODER_CHECKPOINT="${FINAL_ENCODER_RUN}/encoder.pt"
 readonly FINAL_ENCODER_PROGRESS="${FINAL_ENCODER_RUN}/logs/encoder.jsonl"
+readonly FINAL_ENCODER_POSE_SNAPSHOT="${FINAL_ENCODER_RUN}/inputs/training-pose-cache-snapshot.json"
 readonly AUDIT_ROOT="${RUN_ROOT}/audit"
 readonly LOG_ROOT="${RUN_ROOT}/logs"
 readonly LOCK_ROOT="${ROOT}/.pams-gpu-locks"
@@ -164,6 +222,7 @@ readonly POSE_RECOVERY_PAIRED_GATE="${POSE_RECOVERY_RUN_ROOT}/audit/paired-gate.
 readonly POSE_RECOVERY_RUN_RECEIPT="${POSE_RECOVERY_RUN_ROOT}/audit/run.receipt.json"
 
 readonly PREFLIGHT_NAME="pams-native-proxy-preflight-${ATTEMPT_ID}"
+readonly LAUNCH_AUTHORIZATION_NAME="pams-native-proxy-launch-${ATTEMPT_ID}"
 readonly EPOCH11_ENCODER_NAME="pams-native-proxy-epoch11-${ATTEMPT_ID}"
 readonly EPOCH11_GATE_NAME="pams-native-proxy-gate-${ATTEMPT_ID}"
 readonly FINAL_ENCODER_NAME="pams-native-proxy-final-${ATTEMPT_ID}"
@@ -290,6 +349,10 @@ verify_container() {
   VERIFY_POSE_RECOVERY_ROOT="$POSE_RECOVERY_RUN_ROOT" \
   VERIFY_POSE_RECOVERY_CONFIG="$POSE_RECOVERY_CONFIG" \
   VERIFY_EPOCH11_ENCODER_STAGE="$EPOCH11_ENCODER_STAGE" \
+  VERIFY_LAUNCH_AUTHORIZATION_STAGE="$LAUNCH_AUTHORIZATION_STAGE" \
+  VERIFY_LAUNCH_POSE_SNAPSHOT="$LAUNCH_POSE_SNAPSHOT" \
+  VERIFY_LAUNCH_AUTHORIZATION="$LAUNCH_AUTHORIZATION_ARTIFACT" \
+  VERIFY_LAUNCH_RECEIPT="$LAUNCH_AUTHORIZATION_RECEIPT" \
   VERIFY_EPOCH11_GATE_STAGE="$EPOCH11_GATE_STAGE" \
   VERIFY_FINAL_ENCODER_STAGE="$FINAL_ENCODER_STAGE" \
   VERIFY_EPOCH11_CHECKPOINT="$EPOCH11_ENCODER_CHECKPOINT" \
@@ -302,6 +365,11 @@ verify_container() {
   VERIFY_ENVIRONMENT_SHA256="$ENVIRONMENT_SHA256" \
   VERIFY_SOURCE_RECEIPT_SHA256="$SOURCE_RECEIPT_SHA256" \
   VERIFY_GPU_DEVICE="$GPU_DEVICE" \
+  VERIFY_CANDIDATE_ID="$CANDIDATE_ID" \
+  VERIFY_PRIOR_A_ARTIFACT="$PRIOR_A_REJECTION_ARTIFACT" \
+  VERIFY_PRIOR_A_RECEIPT="$PRIOR_A_REJECTION_RECEIPT" \
+  VERIFY_PRIOR_B_ARTIFACT="$PRIOR_B_REJECTION_ARTIFACT" \
+  VERIFY_PRIOR_B_RECEIPT="$PRIOR_B_REJECTION_RECEIPT" \
   python3 - <<'PY'
 import json
 import os
@@ -367,6 +435,34 @@ protocol = {
     ),
 }
 pose_recovery_root = os.environ["VERIFY_POSE_RECOVERY_ROOT"]
+launch_inputs = {
+    "/pams/launch/authorization.json": (
+        os.environ["VERIFY_LAUNCH_AUTHORIZATION"], False
+    ),
+    "/pams/launch/authorization.json.receipt.json": (
+        os.environ["VERIFY_LAUNCH_RECEIPT"], False
+    ),
+}
+candidate_id = os.environ["VERIFY_CANDIDATE_ID"]
+prior_mounts = {}
+if candidate_id in {"B", "C"}:
+    prior_mounts.update({
+        "/pams/prior/A/rejection.json": (
+            os.environ["VERIFY_PRIOR_A_ARTIFACT"], False
+        ),
+        "/pams/prior/A/rejection.json.receipt.json": (
+            os.environ["VERIFY_PRIOR_A_RECEIPT"], False
+        ),
+    })
+if candidate_id == "C":
+    prior_mounts.update({
+        "/pams/prior/B/rejection.json": (
+            os.environ["VERIFY_PRIOR_B_ARTIFACT"], False
+        ),
+        "/pams/prior/B/rejection.json.receipt.json": (
+            os.environ["VERIFY_PRIOR_B_RECEIPT"], False
+        ),
+    })
 if stage == "preflight":
     expected = {
         **source,
@@ -389,10 +485,22 @@ if stage == "preflight":
         "/pams/pose-cache": (pose_recovery_root + "/pose-cache", False),
         "/pams/output": (os.environ["VERIFY_AUDIT_ROOT"], True),
     }
+elif stage == "launch-authorization":
+    expected = {
+        **source,
+        **prior_mounts,
+        "/pams/input/launch-training-pose-cache-snapshot.json": (
+            os.environ["VERIFY_LAUNCH_POSE_SNAPSHOT"], False
+        ),
+        "/pams/output": (
+            os.environ["VERIFY_LAUNCH_AUTHORIZATION_STAGE"], True
+        ),
+    }
 elif stage == "encoder-epoch11":
     expected = {
         **source,
         **protocol,
+        **launch_inputs,
         "/pams/pose-cache": (pose_recovery_root + "/pose-cache", False),
         "/pams/output": (os.environ["VERIFY_EPOCH11_ENCODER_STAGE"], True),
     }
@@ -418,6 +526,7 @@ elif stage == "encoder-final":
     expected = {
         **source,
         **protocol,
+        **launch_inputs,
         "/pams/pose-cache": (pose_recovery_root + "/pose-cache", False),
         "/pams/resume/encoder.pt": (
             os.environ["VERIFY_EPOCH11_CHECKPOINT"], False
@@ -431,18 +540,73 @@ else:
     raise RuntimeError(f"unexpected container verification stage: {stage}")
 require(mounts == expected, f"mount set mismatch for {stage}: {mounts!r}")
 
-command = "\0".join(config.get("Cmd") or [])
+argv = config.get("Cmd") or []
+command = "\0".join(argv)
 all_text = "\0".join([command, *mounts, *(row[0] for row in mounts.values())])
 for forbidden in (
     ".targets", "/dev-pose", "/test-pose", "--include-dev",
     "train sshead", "evaluate", "dev-predict", "dev-score",
 ):
     require(forbidden not in all_text, f"forbidden container token: {forbidden}")
-if stage == "encoder-epoch11":
+def option_values(option):
+    return [argv[index + 1] for index, value in enumerate(argv[:-1]) if value == option]
+
+if stage == "launch-authorization":
+    require(
+        "prepare_pams_native_candidate_launch_authorization.py" in command,
+        "launch authorization command mismatch",
+    )
+    require("train\0encoder" not in command, "launch authorization must not train")
+    expected_config = {
+        "A": "/workspace/configs/experiments/pams_native_table2_baseline_proxy_v1.yaml",
+        "B": "/workspace/configs/experiments/pams_native_table2_baseline_proxy_b_w16_s2.yaml",
+        "C": "/workspace/configs/experiments/pams_native_table2_baseline_proxy_c_w24_s4.yaml",
+    }[candidate_id]
+    expected_options = {
+        "--source-receipt": ["/pams/source-export-receipt.json"],
+        "--config": [expected_config],
+        "--gate-specification": [
+            "/workspace/configs/gates/pams_native_terminal_readout_gate_v1.yaml"
+        ],
+        "--pose-snapshot": [
+            "/pams/input/launch-training-pose-cache-snapshot.json"
+        ],
+        "--candidate-id": [candidate_id],
+        "--output": ["/pams/output/authorization.json"],
+    }
+    for option, expected_values in expected_options.items():
+        require(option_values(option) == expected_values, f"launch option mismatch: {option}")
+    expected_prior_artifacts = []
+    expected_prior_receipts = []
+    if candidate_id in {"B", "C"}:
+        expected_prior_artifacts.append("/pams/prior/A/rejection.json")
+        expected_prior_receipts.append("/pams/prior/A/rejection.json.receipt.json")
+    if candidate_id == "C":
+        expected_prior_artifacts.append("/pams/prior/B/rejection.json")
+        expected_prior_receipts.append("/pams/prior/B/rejection.json.receipt.json")
+    require(
+        option_values("--prior-rejection-artifact") == expected_prior_artifacts,
+        "launch predecessor artifact order mismatch",
+    )
+    require(
+        option_values("--prior-rejection-receipt") == expected_prior_receipts,
+        "launch predecessor receipt order mismatch",
+    )
+elif stage == "encoder-epoch11":
     require("python\0-m\0pams\0train\0encoder" in command, "epoch11 command mismatch")
     require(command.count("train\0encoder") == 1, "epoch11 encoder invocation count")
     require("--epochs\0" + "11" in command, "epoch11 stop epoch missing")
     require("--resume" not in command, "epoch11 must be a fresh run")
+    require(
+        option_values("--candidate-launch-authorization")
+        == ["/pams/launch/authorization.json"],
+        "epoch11 launch authorization binding mismatch",
+    )
+    require(
+        option_values("--candidate-launch-receipt")
+        == ["/pams/launch/authorization.json.receipt.json"],
+        "epoch11 launch receipt binding mismatch",
+    )
 elif stage == "encoder-final":
     require("python\0-m\0pams\0train\0encoder" in command, "final command mismatch")
     require(command.count("train\0encoder") == 1, "final encoder invocation count")
@@ -455,6 +619,16 @@ elif stage == "encoder-final":
     require(
         "--resume-progress\0/pams/resume/encoder.jsonl" in command,
         "resume progress binding missing",
+    )
+    require(
+        option_values("--candidate-launch-authorization")
+        == ["/pams/launch/authorization.json"],
+        "final launch authorization binding mismatch",
+    )
+    require(
+        option_values("--candidate-launch-receipt")
+        == ["/pams/launch/authorization.json.receipt.json"],
+        "final launch receipt binding mismatch",
     )
 elif stage == "epoch11-gate":
     require("run_pams_native_epoch11_train_gate.py" in command, "gate command mismatch")
@@ -482,7 +656,7 @@ required_environment = {
 require(required_environment <= environment, "required container environment is incomplete")
 
 devices = host.get("DeviceRequests") or []
-if stage != "preflight":
+if stage in {"encoder-epoch11", "epoch11-gate", "encoder-final"}:
     require(len(devices) == 1, "exactly one GPU request is required")
     require("gpu" in devices[0]["Capabilities"][0], "GPU capability is missing")
     require(
@@ -495,8 +669,11 @@ if stage != "preflight":
         "deterministic cuBLAS environment is missing",
     )
 else:
-    require(not devices, "preflight must not request a GPU")
-    require("CUDA_VISIBLE_DEVICES=" in environment, "preflight CUDA disablement missing")
+    require(not devices, f"{stage} must not request a GPU")
+    require(
+        "CUDA_VISIBLE_DEVICES=" in environment,
+        f"{stage} CUDA disablement missing",
+    )
 
 source_view = Path(os.environ["VERIFY_SOURCE_VIEW"])
 require(
@@ -563,6 +740,8 @@ validate_completion_receipt() {
   VERIFY_EXPECTED_EPOCHS="$expected_epochs" \
   VERIFY_RESUME_CHECKPOINT="$resume_checkpoint" \
   VERIFY_RESUME_PROGRESS="$resume_progress" \
+  VERIFY_LAUNCH_AUTHORIZATION="$LAUNCH_AUTHORIZATION_ARTIFACT" \
+  VERIFY_LAUNCH_RECEIPT="$LAUNCH_AUTHORIZATION_RECEIPT" \
   python3 - <<'PY'
 import hashlib
 import json
@@ -625,6 +804,14 @@ require(
 )
 require(started["seed"] == 2026, "seed mismatch")
 require(started["protocol"] == "ucfrep_526", "protocol mismatch")
+require(
+    started["command"].count("--candidate-launch-authorization") == 1,
+    "started command launch authorization flag mismatch",
+)
+require(
+    started["command"].count("--candidate-launch-receipt") == 1,
+    "started command launch receipt flag mismatch",
+)
 container = started["hardware"]["container"]
 require(
     container
@@ -667,6 +854,8 @@ required = {
     "input_dev_pose_input_commitment",
     "input_test_identity_pose_inputs",
     "input_test_identity_pose_input_commitment",
+    "input_candidate_launch_authorization",
+    "input_candidate_launch_authorization_receipt",
 }
 resume_checkpoint = os.environ["VERIFY_RESUME_CHECKPOINT"]
 resume_progress = os.environ["VERIFY_RESUME_PROGRESS"]
@@ -719,6 +908,12 @@ expected_hashes = {
     "input_dev_pose_input_commitment": os.environ["VERIFY_DEV_COMMIT_SHA256"],
     "input_test_identity_pose_inputs": os.environ["VERIFY_TEST_INPUT_SHA256"],
     "input_test_identity_pose_input_commitment": os.environ["VERIFY_TEST_COMMIT_SHA256"],
+    "input_candidate_launch_authorization": digest(
+        Path(os.environ["VERIFY_LAUNCH_AUTHORIZATION"])
+    ),
+    "input_candidate_launch_authorization_receipt": digest(
+        Path(os.environ["VERIFY_LAUNCH_RECEIPT"])
+    ),
 }
 for role, expected in expected_hashes.items():
     require(roles[role]["sha256"] == expected, f"input binding mismatch: {role}")
@@ -854,6 +1049,8 @@ require(
         "bytes": inputs["encoder_completion_receipt_bytes"],
         "completed_epochs": 11,
         "artifact_roles": [
+            "input_candidate_launch_authorization",
+            "input_candidate_launch_authorization_receipt",
             "input_config",
             "input_dataset_manifest",
             "input_dev_pose_input_commitment",
@@ -1195,6 +1392,12 @@ require_sha256 "$CONFIG_SOURCE" "$CONFIG_SHA256" 'native proxy config'
   || fail 'native epoch11 gate runner is missing'
 [[ -f "${SOURCE_CHECKOUT}/${EPOCH11_GATE_SPEC_RELATIVE}" ]] \
   || fail 'native epoch11 gate specification is missing'
+[[ -f "${SOURCE_CHECKOUT}/${TERMINAL_GATE_RELATIVE}" ]] \
+  || fail 'native terminal gate runner is missing'
+[[ -f "${SOURCE_CHECKOUT}/${TERMINAL_GATE_SPEC_RELATIVE}" ]] \
+  || fail 'native terminal gate specification is missing'
+[[ -f "${SOURCE_CHECKOUT}/${LAUNCH_AUTHORIZATION_RELATIVE}" ]] \
+  || fail 'native launch authorization runner is missing'
 for candidate_config in \
   "$CONFIG_A_RELATIVE" \
   "$CONFIG_B_RELATIVE" \
@@ -1221,14 +1424,15 @@ mkdir -p -- "$RUN_PARENT"
 mkdir -- "$RUN_ROOT" || fail "immutable run root already exists: ${RUN_ROOT}"
 RUN_RESERVED=1
 mkdir -- "$SOURCE_VIEW" "$INPUT_ROOT" "${RUN_ROOT}/stages" \
-  "$EPOCH11_ENCODER_STAGE" "$AUDIT_ROOT" "$LOG_ROOT"
+  "$LAUNCH_AUTHORIZATION_STAGE" "$EPOCH11_ENCODER_STAGE" "$AUDIT_ROOT" "$LOG_ROOT"
 write_status 'preparing' 'source-export' 'null'
 
 git -C "$SOURCE_CHECKOUT" archive --format=tar "$SOURCE_REVISION" \
   src pyproject.toml \
   "$CONFIG_A_RELATIVE" "$CONFIG_B_RELATIVE" "$CONFIG_C_RELATIVE" \
-  "$EPOCH11_GATE_SPEC_RELATIVE" \
+  "$EPOCH11_GATE_SPEC_RELATIVE" "$TERMINAL_GATE_SPEC_RELATIVE" \
   "$RUNNER_RELATIVE" "$VALIDATOR_RELATIVE" "$EPOCH11_GATE_RELATIVE" \
+  "$TERMINAL_GATE_RELATIVE" "$LAUNCH_AUTHORIZATION_RELATIVE" \
   | tar -xf - -C "$SOURCE_VIEW"
 [[ ! -e "${SOURCE_VIEW}/.git" && ! -e "${SOURCE_VIEW}/data" \
   && ! -e "${SOURCE_VIEW}/results" && ! -e "${SOURCE_VIEW}/tests" ]] \
@@ -1240,6 +1444,9 @@ git -C "$SOURCE_CHECKOUT" archive --format=tar "$SOURCE_REVISION" \
 require_sha256 "${SOURCE_VIEW}/${CONFIG_RELATIVE}" "$CONFIG_SHA256" 'exported native proxy config'
 readonly EPOCH11_GATE_SPEC_SHA256="$(
   sha256_file "${SOURCE_VIEW}/${EPOCH11_GATE_SPEC_RELATIVE}"
+)"
+readonly TERMINAL_GATE_SPEC_SHA256="$(
+  sha256_file "${SOURCE_VIEW}/${TERMINAL_GATE_SPEC_RELATIVE}"
 )"
 
 SOURCE_EXPORT_ROOT="$SOURCE_VIEW" \
@@ -1298,6 +1505,8 @@ RESERVATION_CANDIDATE_ID="$CANDIDATE_ID" \
 RESERVATION_CANDIDATE_WINDOW="$CANDIDATE_WINDOW" \
 RESERVATION_CANDIDATE_STRIDE="$CANDIDATE_STRIDE" \
 RESERVATION_GATE_SPEC_SHA="$EPOCH11_GATE_SPEC_SHA256" \
+RESERVATION_TERMINAL_GATE_SPEC_SHA="$TERMINAL_GATE_SPEC_SHA256" \
+RESERVATION_CANDIDATE_PRIOR_IDS_JSON="$CANDIDATE_PRIOR_IDS_JSON" \
 RESERVATION_POSE_FP="$POSE_FINGERPRINT" \
 RESERVATION_POSE_VERSION="$POSE_RECOVERY_VERSION" \
 RESERVATION_POSE_ROOT="$POSE_RECOVERY_RUN_ROOT" \
@@ -1333,6 +1542,16 @@ payload = {
     "candidate_id": os.environ["RESERVATION_CANDIDATE_ID"],
     "fixed_period_frames": int(os.environ["RESERVATION_CANDIDATE_WINDOW"]),
     "anchor_stride": int(os.environ["RESERVATION_CANDIDATE_STRIDE"]),
+    "candidate_launch_policy": {
+        "terminal_gate_specification_sha256": os.environ[
+            "RESERVATION_TERMINAL_GATE_SPEC_SHA"
+        ],
+        "required_prior_scientific_rejection_candidate_ids": json.loads(
+            os.environ["RESERVATION_CANDIDATE_PRIOR_IDS_JSON"]
+        ),
+        "authorization_must_exist_before_encoder_container_creation": True,
+        "same_authorization_pair_required_for_epoch11_and_final": True,
+    },
     "pose_fingerprint": os.environ["RESERVATION_POSE_FP"],
     "upstream_pose_recovery": {
         "version": os.environ["RESERVATION_POSE_VERSION"],
@@ -1390,6 +1609,9 @@ chmod 0444 "${RUN_ROOT}/attempt.reservation.json"
   printf 'fixed_period_frames %s\n' "$CANDIDATE_WINDOW"
   printf 'anchor_stride %s\n' "$CANDIDATE_STRIDE"
   printf 'epoch11_gate_specification_sha256 %s\n' "$EPOCH11_GATE_SPEC_SHA256"
+  printf 'terminal_gate_specification_sha256 %s\n' "$TERMINAL_GATE_SPEC_SHA256"
+  printf 'candidate_prior_ids_json %s\n' "$CANDIDATE_PRIOR_IDS_JSON"
+  printf 'candidate_launch_authorization_required true\n'
   printf 'pose_fingerprint %s\n' "$POSE_FINGERPRINT"
   printf 'pose_recovery_version %s\n' "$POSE_RECOVERY_VERSION"
   printf 'pose_recovery_source_revision %s\n' "$POSE_RECOVERY_SOURCE_REVISION"
@@ -1419,6 +1641,7 @@ docker image inspect "$IMAGE_ID" > "${AUDIT_ROOT}/image.inspect.json"
 
 for container_name in \
   "$PREFLIGHT_NAME" \
+  "$LAUNCH_AUTHORIZATION_NAME" \
   "$EPOCH11_ENCODER_NAME" \
   "$EPOCH11_GATE_NAME" \
   "$FINAL_ENCODER_NAME"; do
@@ -1468,6 +1691,28 @@ protocol_args=(
   --mount "type=bind,src=${TEST_ID_INPUT},dst=/pams/protocol/test-identity.inputs.json,readonly"
   --mount "type=bind,src=${TEST_ID_COMMIT},dst=/pams/protocol/test-identity.inputs.commitment.json,readonly"
 )
+launch_prior_mount_args=()
+launch_prior_cli_args=()
+if [[ "$CANDIDATE_ID" == 'B' || "$CANDIDATE_ID" == 'C' ]]; then
+  launch_prior_mount_args+=(
+    --mount "type=bind,src=${PRIOR_A_REJECTION_ARTIFACT},dst=/pams/prior/A/rejection.json,readonly"
+    --mount "type=bind,src=${PRIOR_A_REJECTION_RECEIPT},dst=/pams/prior/A/rejection.json.receipt.json,readonly"
+  )
+  launch_prior_cli_args+=(
+    --prior-rejection-artifact /pams/prior/A/rejection.json
+    --prior-rejection-receipt /pams/prior/A/rejection.json.receipt.json
+  )
+fi
+if [[ "$CANDIDATE_ID" == 'C' ]]; then
+  launch_prior_mount_args+=(
+    --mount "type=bind,src=${PRIOR_B_REJECTION_ARTIFACT},dst=/pams/prior/B/rejection.json,readonly"
+    --mount "type=bind,src=${PRIOR_B_REJECTION_RECEIPT},dst=/pams/prior/B/rejection.json.receipt.json,readonly"
+  )
+  launch_prior_cli_args+=(
+    --prior-rejection-artifact /pams/prior/B/rejection.json
+    --prior-rejection-receipt /pams/prior/B/rejection.json.receipt.json
+  )
+fi
 
 CURRENT_STAGE='input-preflight-create'
 docker create \
@@ -1561,6 +1806,213 @@ readonly POSE_CACHE_SET_SHA256="$(jq -er '.pose_recovery.pose_cache_set_sha256' 
   || fail 'validated pose-cache set differs from the authorization binding'
 chmod 0444 "${AUDIT_ROOT}/input-preflight.json"
 
+CURRENT_STAGE='launch-pose-snapshot'
+POSE_LEDGER_SOURCE="$POSE_RECOVERY_LEDGER" \
+LAUNCH_SNAPSHOT_OUTPUT="$LAUNCH_POSE_SNAPSHOT" \
+LAUNCH_SNAPSHOT_POSE_FINGERPRINT="$POSE_FINGERPRINT" \
+LAUNCH_SNAPSHOT_CACHE_SET_SHA256="$POSE_CACHE_SET_SHA256" \
+python3 - <<'PY'
+import hashlib
+import json
+import os
+from pathlib import Path
+
+
+def reject_pairs(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise RuntimeError(f"duplicate JSON field: {key!r}")
+        result[key] = value
+    return result
+
+
+ledger = json.loads(
+    Path(os.environ["POSE_LEDGER_SOURCE"]).read_text(encoding="utf-8"),
+    object_pairs_hook=reject_pairs,
+    parse_constant=lambda value: (_ for _ in ()).throw(
+        RuntimeError(f"non-finite JSON constant: {value}")
+    ),
+)
+snapshot = ledger.get("successful_cache_snapshot")
+if not isinstance(snapshot, dict) or set(snapshot) != {
+    "schema_version", "pose_fingerprint", "fingerprint", "entry_count", "entries"
+}:
+    raise RuntimeError("pose ledger lacks the canonical successful cache snapshot")
+if (
+    snapshot["schema_version"] != 1
+    or snapshot["pose_fingerprint"]
+    != os.environ["LAUNCH_SNAPSHOT_POSE_FINGERPRINT"]
+    or snapshot["fingerprint"]
+    != os.environ["LAUNCH_SNAPSHOT_CACHE_SET_SHA256"]
+    or snapshot["entry_count"] != 337
+    or not isinstance(snapshot["entries"], list)
+    or len(snapshot["entries"]) != 337
+):
+    raise RuntimeError("pose ledger snapshot does not match validated train337 inputs")
+entries = []
+for index, value in enumerate(snapshot["entries"]):
+    if not isinstance(value, dict) or set(value) != {
+        "video_id", "cache_sha256", "bytes"
+    }:
+        raise RuntimeError(f"pose snapshot entry schema mismatch at row {index}")
+    video_id = value["video_id"]
+    cache_sha256 = value["cache_sha256"]
+    byte_total = value["bytes"]
+    if not isinstance(video_id, str) or not video_id.strip():
+        raise RuntimeError(f"pose snapshot video ID is invalid at row {index}")
+    if (
+        not isinstance(cache_sha256, str)
+        or len(cache_sha256) != 64
+        or any(character not in "0123456789abcdef" for character in cache_sha256)
+    ):
+        raise RuntimeError(f"pose snapshot SHA-256 is invalid at row {index}")
+    if isinstance(byte_total, bool) or not isinstance(byte_total, int) or byte_total < 1:
+        raise RuntimeError(f"pose snapshot byte total is invalid at row {index}")
+    entries.append({
+        "video_id": video_id.strip(),
+        "cache_sha256": cache_sha256,
+        "bytes": byte_total,
+    })
+entries.sort(key=lambda value: value["video_id"])
+if len({value["video_id"] for value in entries}) != 337:
+    raise RuntimeError("pose snapshot video IDs are not unique")
+fingerprint_payload = {
+    "schema_version": 1,
+    "pose_fingerprint": snapshot["pose_fingerprint"],
+    "entries": entries,
+}
+fingerprint = hashlib.sha256(
+    json.dumps(
+        fingerprint_payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+).hexdigest()
+if fingerprint != snapshot["fingerprint"]:
+    raise RuntimeError("pose ledger snapshot fingerprint is not canonical")
+payload = {
+    "schema_version": 1,
+    "pose_fingerprint": snapshot["pose_fingerprint"],
+    "fingerprint": fingerprint,
+    "entry_count": len(entries),
+    "entries": entries,
+}
+with Path(os.environ["LAUNCH_SNAPSHOT_OUTPUT"]).open(
+    "x", encoding="utf-8", newline="\n"
+) as handle:
+    json.dump(
+        payload,
+        handle,
+        indent=2,
+        sort_keys=True,
+        ensure_ascii=False,
+        allow_nan=False,
+    )
+    handle.write("\n")
+PY
+chmod 0444 "$LAUNCH_POSE_SNAPSHOT"
+readonly LAUNCH_POSE_SNAPSHOT_SHA256="$(sha256_file "$LAUNCH_POSE_SNAPSHOT")"
+
+CURRENT_STAGE='launch-authorization-create'
+docker create \
+  --name "$LAUNCH_AUTHORIZATION_NAME" \
+  "${common_args[@]}" \
+  --env CUDA_VISIBLE_DEVICES= \
+  "${source_args[@]}" \
+  "${launch_prior_mount_args[@]}" \
+  --mount "type=bind,src=${LAUNCH_POSE_SNAPSHOT},dst=/pams/input/launch-training-pose-cache-snapshot.json,readonly" \
+  --mount "type=bind,src=${LAUNCH_AUTHORIZATION_STAGE},dst=/pams/output" \
+  "$IMAGE_ID" \
+  python "$LAUNCH_AUTHORIZATION_RELATIVE" \
+    --source-receipt /pams/source-export-receipt.json \
+    --config "/workspace/${CONFIG_RELATIVE}" \
+    --gate-specification "/workspace/${TERMINAL_GATE_SPEC_RELATIVE}" \
+    --pose-snapshot /pams/input/launch-training-pose-cache-snapshot.json \
+    --candidate-id "$CANDIDATE_ID" \
+    "${launch_prior_cli_args[@]}" \
+    --output /pams/output/authorization.json \
+  > "${AUDIT_ROOT}/${LAUNCH_AUTHORIZATION_NAME}.create-id.txt"
+verify_container "$LAUNCH_AUTHORIZATION_NAME" 'launch-authorization'
+run_created_container "$LAUNCH_AUTHORIZATION_NAME" 'launch-authorization'
+[[ -f "$LAUNCH_AUTHORIZATION_ARTIFACT" && ! -L "$LAUNCH_AUTHORIZATION_ARTIFACT" ]] \
+  || fail 'candidate launch authorization artifact is missing or unsafe'
+[[ -f "$LAUNCH_AUTHORIZATION_RECEIPT" && ! -L "$LAUNCH_AUTHORIZATION_RECEIPT" ]] \
+  || fail 'candidate launch authorization receipt is missing or unsafe'
+readonly LAUNCH_AUTHORIZATION_SHA256="$(sha256_file "$LAUNCH_AUTHORIZATION_ARTIFACT")"
+readonly LAUNCH_AUTHORIZATION_BYTES="$(stat -c '%s' -- "$LAUNCH_AUTHORIZATION_ARTIFACT")"
+readonly LAUNCH_AUTHORIZATION_RECEIPT_SHA256="$(sha256_file "$LAUNCH_AUTHORIZATION_RECEIPT")"
+jq -e \
+  --arg candidate_id "$CANDIDATE_ID" \
+  --arg config_sha "$CONFIG_SHA256" \
+  --arg config_fp "$CONFIG_FINGERPRINT" \
+  --arg gate_sha "$TERMINAL_GATE_SPEC_SHA256" \
+  --arg snapshot_sha "$LAUNCH_POSE_SNAPSHOT_SHA256" \
+  --arg cache_set_sha "$POSE_CACHE_SET_SHA256" \
+  --arg source_receipt_sha "$SOURCE_RECEIPT_SHA256" \
+  --arg source_revision "$SOURCE_REVISION" \
+  --argjson prior_ids "$CANDIDATE_PRIOR_IDS_JSON" \
+  '
+    .schema_version == 1
+    and .artifact_type == "pams_native_candidate_train337_launch_authorization_v1"
+    and .status == "candidate_training_authorized"
+    and .candidate.id == $candidate_id
+    and (.candidate.prior_scientific_rejections | map(.candidate_id)) == $prior_ids
+    and .inputs.experiment_config_sha256 == $config_sha
+    and .inputs.config_fingerprint == $config_fp
+    and .inputs.gate_specification_sha256 == $gate_sha
+    and .inputs.pose_snapshot_sha256 == $snapshot_sha
+    and .inputs.pose_cache_set_sha256 == $cache_set_sha
+    and .inputs.source_export_receipt_sha256 == $source_receipt_sha
+    and .inputs.source_git_sha == $source_revision
+    and .inputs.training_video_total == 337
+    and .authorization.gate_frozen_before_candidate_a == true
+    and .authorization.candidate_training_authorized == true
+    and .authorization.encoder_training_scope == "train337_only"
+    and .authorization.terminal_checkpoint_or_prediction_authorized == false
+    and .authorization.dev84_identity_media_pose_or_scoring_authorized == false
+    and .authorization.test105_evaluation_authorized == false
+    and .authorization.aggregate_only_prior_receipts == true
+  ' "$LAUNCH_AUTHORIZATION_ARTIFACT" >/dev/null \
+  || fail 'candidate launch authorization violates the frozen policy'
+jq -e \
+  --arg artifact_sha "$LAUNCH_AUTHORIZATION_SHA256" \
+  --argjson artifact_bytes "$LAUNCH_AUTHORIZATION_BYTES" \
+  --arg candidate_id "$CANDIDATE_ID" \
+  --arg config_sha "$CONFIG_SHA256" \
+  --arg gate_sha "$TERMINAL_GATE_SPEC_SHA256" \
+  --arg snapshot_sha "$LAUNCH_POSE_SNAPSHOT_SHA256" \
+  --arg cache_set_sha "$POSE_CACHE_SET_SHA256" \
+  --arg source_receipt_sha "$SOURCE_RECEIPT_SHA256" \
+  --arg source_revision "$SOURCE_REVISION" \
+  '
+    .schema_version == 1
+    and .artifact_type == "pams_native_candidate_train337_launch_authorization_receipt_v1"
+    and .artifact_locator == "authorization.json"
+    and .artifact_sha256 == $artifact_sha
+    and .artifact_bytes == $artifact_bytes
+    and .artifact_status == "candidate_training_authorized"
+    and .candidate_id == $candidate_id
+    and .experiment_config_sha256 == $config_sha
+    and .gate_specification_sha256 == $gate_sha
+    and .pose_snapshot_sha256 == $snapshot_sha
+    and .pose_cache_set_sha256 == $cache_set_sha
+    and .source_export_receipt_sha256 == $source_receipt_sha
+    and .source_git_sha == $source_revision
+    and .candidate_training_authorized == true
+    and .dev84_pose_or_scoring_authorized == false
+    and .test105_evaluation_authorized == false
+  ' "$LAUNCH_AUTHORIZATION_RECEIPT" >/dev/null \
+  || fail 'candidate launch authorization receipt is malformed or unbound'
+sha256sum -- \
+  "$LAUNCH_POSE_SNAPSHOT" \
+  "$LAUNCH_AUTHORIZATION_ARTIFACT" \
+  "$LAUNCH_AUTHORIZATION_RECEIPT" \
+  > "${AUDIT_ROOT}/launch-authorization-sha256.txt"
+chmod -R a-w -- "$LAUNCH_AUTHORIZATION_STAGE"
+
 mkdir -p -- "$LOCK_ROOT"
 [[ ! -L "$LOCK_ROOT" ]] || fail 'GPU lock root must not be a symlink'
 [[ "$(realpath -e -- "$LOCK_ROOT")" == "${ROOT}/.pams-gpu-locks" ]] \
@@ -1584,8 +2036,18 @@ encoder_cli_args=(
   --dev-input-commitment /pams/protocol/dev.inputs.commitment.json
   --test-identity-inputs /pams/protocol/test-identity.inputs.json
   --test-identity-commitment /pams/protocol/test-identity.inputs.commitment.json
+  --candidate-launch-authorization /pams/launch/authorization.json
+  --candidate-launch-receipt /pams/launch/authorization.json.receipt.json
 )
 
+require_sha256 \
+  "$LAUNCH_AUTHORIZATION_ARTIFACT" \
+  "$LAUNCH_AUTHORIZATION_SHA256" \
+  'candidate launch authorization before epoch11 training'
+require_sha256 \
+  "$LAUNCH_AUTHORIZATION_RECEIPT" \
+  "$LAUNCH_AUTHORIZATION_RECEIPT_SHA256" \
+  'candidate launch authorization receipt before epoch11 training'
 CURRENT_STAGE='encoder-epoch11-create'
 docker create \
   --name "$EPOCH11_ENCODER_NAME" \
@@ -1595,6 +2057,8 @@ docker create \
   --env CUBLAS_WORKSPACE_CONFIG=:4096:8 \
   "${source_args[@]}" \
   "${protocol_args[@]}" \
+  --mount "type=bind,src=${LAUNCH_AUTHORIZATION_ARTIFACT},dst=/pams/launch/authorization.json,readonly" \
+  --mount "type=bind,src=${LAUNCH_AUTHORIZATION_RECEIPT},dst=/pams/launch/authorization.json.receipt.json,readonly" \
   --mount "type=bind,src=${POSE_RECOVERY_CACHE},dst=/pams/pose-cache,readonly" \
   --mount "type=bind,src=${EPOCH11_ENCODER_STAGE},dst=/pams/output" \
   "$IMAGE_ID" \
@@ -1612,6 +2076,10 @@ readonly EPOCH11_ENCODER_RECEIPT="$(single_completion_receipt "$EPOCH11_ENCODER_
 [[ -s "$EPOCH11_ENCODER_CHECKPOINT" ]] || fail 'epoch11 encoder checkpoint is missing'
 [[ -s "$EPOCH11_ENCODER_PROGRESS" ]] || fail 'epoch11 encoder progress is missing'
 [[ -s "$EPOCH11_POSE_SNAPSHOT" ]] || fail 'epoch11 pose snapshot is missing'
+require_sha256 \
+  "$EPOCH11_POSE_SNAPSHOT" \
+  "$LAUNCH_POSE_SNAPSHOT_SHA256" \
+  'epoch11 pose snapshot bound by launch authorization'
 validate_completion_receipt \
   "$EPOCH11_ENCODER_RECEIPT" \
   "$EPOCH11_ENCODER_CHECKPOINT" \
@@ -1748,6 +2216,14 @@ jq -e \
   || fail 'epoch11 gate did not authorize encoder continuation'
 [[ ! -e "$FINAL_ENCODER_STAGE" ]] \
   || fail 'resume stage was created before gate authorization'
+require_sha256 \
+  "$LAUNCH_AUTHORIZATION_ARTIFACT" \
+  "$LAUNCH_AUTHORIZATION_SHA256" \
+  'candidate launch authorization before final training'
+require_sha256 \
+  "$LAUNCH_AUTHORIZATION_RECEIPT" \
+  "$LAUNCH_AUTHORIZATION_RECEIPT_SHA256" \
+  'candidate launch authorization receipt before final training'
 mkdir -- "$FINAL_ENCODER_STAGE"
 
 CURRENT_STAGE='encoder-final-create'
@@ -1759,6 +2235,8 @@ docker create \
   --env CUBLAS_WORKSPACE_CONFIG=:4096:8 \
   "${source_args[@]}" \
   "${protocol_args[@]}" \
+  --mount "type=bind,src=${LAUNCH_AUTHORIZATION_ARTIFACT},dst=/pams/launch/authorization.json,readonly" \
+  --mount "type=bind,src=${LAUNCH_AUTHORIZATION_RECEIPT},dst=/pams/launch/authorization.json.receipt.json,readonly" \
   --mount "type=bind,src=${POSE_RECOVERY_CACHE},dst=/pams/pose-cache,readonly" \
   --mount "type=bind,src=${EPOCH11_ENCODER_CHECKPOINT},dst=/pams/resume/encoder.pt,readonly" \
   --mount "type=bind,src=${EPOCH11_ENCODER_PROGRESS},dst=/pams/resume/encoder.jsonl,readonly" \
@@ -1781,6 +2259,11 @@ flock -u 9
 readonly FINAL_ENCODER_RECEIPT="$(single_completion_receipt "$FINAL_ENCODER_STAGE")"
 [[ -s "$FINAL_ENCODER_CHECKPOINT" ]] || fail 'final encoder checkpoint is missing'
 [[ -s "$FINAL_ENCODER_PROGRESS" ]] || fail 'final encoder progress is missing'
+[[ -s "$FINAL_ENCODER_POSE_SNAPSHOT" ]] || fail 'final encoder pose snapshot is missing'
+require_sha256 \
+  "$FINAL_ENCODER_POSE_SNAPSHOT" \
+  "$LAUNCH_POSE_SNAPSHOT_SHA256" \
+  'final pose snapshot bound by launch authorization'
 validate_completion_receipt \
   "$FINAL_ENCODER_RECEIPT" \
   "$FINAL_ENCODER_CHECKPOINT" \
@@ -1791,9 +2274,18 @@ validate_completion_receipt \
   "$EPOCH11_ENCODER_PROGRESS"
 readonly FINAL_CHECKPOINT_SHA256="$(sha256_file "$FINAL_ENCODER_CHECKPOINT")"
 readonly FINAL_PROGRESS_SHA256="$(sha256_file "$FINAL_ENCODER_PROGRESS")"
+readonly FINAL_POSE_SNAPSHOT_SHA256="$(sha256_file "$FINAL_ENCODER_POSE_SNAPSHOT")"
 readonly FINAL_COMPLETION_RECEIPT_SHA256="$(
   sha256_file "$FINAL_ENCODER_RECEIPT"
 )"
+require_sha256 \
+  "$LAUNCH_AUTHORIZATION_ARTIFACT" \
+  "$LAUNCH_AUTHORIZATION_SHA256" \
+  'candidate launch authorization after final training'
+require_sha256 \
+  "$LAUNCH_AUTHORIZATION_RECEIPT" \
+  "$LAUNCH_AUTHORIZATION_RECEIPT_SHA256" \
+  'candidate launch authorization receipt after final training'
 validate_resume_lineage \
   "$EPOCH11_CHECKPOINT_SHA256" \
   "$EPOCH11_PROGRESS_SHA256" \
@@ -1803,6 +2295,7 @@ validate_resume_lineage \
 sha256sum -- \
   "$FINAL_ENCODER_CHECKPOINT" \
   "$FINAL_ENCODER_PROGRESS" \
+  "$FINAL_ENCODER_POSE_SNAPSHOT" \
   "$FINAL_ENCODER_RECEIPT" \
   > "${AUDIT_ROOT}/encoder-final-sha256.txt"
 chmod -R a-w -- "$FINAL_ENCODER_STAGE"
@@ -1831,6 +2324,10 @@ RUN_POSE_GATE_SHA256="$POSE_RECOVERY_PAIRED_GATE_SHA256" \
 RUN_POSE_RECEIPT_SHA256="$POSE_RECOVERY_RUN_RECEIPT_SHA256" \
 RUN_POSE_LEDGER_SHA256="$POSE_RECOVERY_LEDGER_SHA256" \
 RUN_PREFLIGHT_SHA256="$INPUT_PREFLIGHT_SHA256" \
+RUN_TERMINAL_GATE_SPECIFICATION_SHA256="$TERMINAL_GATE_SPEC_SHA256" \
+RUN_LAUNCH_POSE_SNAPSHOT_SHA256="$LAUNCH_POSE_SNAPSHOT_SHA256" \
+RUN_LAUNCH_AUTHORIZATION_SHA256="$LAUNCH_AUTHORIZATION_SHA256" \
+RUN_LAUNCH_AUTHORIZATION_RECEIPT_SHA256="$LAUNCH_AUTHORIZATION_RECEIPT_SHA256" \
 RUN_GATE_SPECIFICATION_SHA256="$EPOCH11_GATE_SPEC_SHA256" \
 RUN_EPOCH11_CHECKPOINT_SHA256="$EPOCH11_CHECKPOINT_SHA256" \
 RUN_EPOCH11_PROGRESS_SHA256="$EPOCH11_PROGRESS_SHA256" \
@@ -1840,6 +2337,7 @@ RUN_GATE_ARTIFACT_SHA256="$EPOCH11_GATE_ARTIFACT_SHA256" \
 RUN_GATE_RECEIPT_SHA256="$EPOCH11_GATE_RECEIPT_SHA256" \
 RUN_FINAL_CHECKPOINT_SHA256="$FINAL_CHECKPOINT_SHA256" \
 RUN_FINAL_PROGRESS_SHA256="$FINAL_PROGRESS_SHA256" \
+RUN_FINAL_POSE_SNAPSHOT_SHA256="$FINAL_POSE_SNAPSHOT_SHA256" \
 RUN_FINAL_COMPLETION_RECEIPT_SHA256="$FINAL_COMPLETION_RECEIPT_SHA256" \
 python3 - <<'PY'
 import json
@@ -1880,6 +2378,22 @@ payload = {
         "ledger_sha256": os.environ["RUN_POSE_LEDGER_SHA256"],
     },
     "input_preflight_sha256": os.environ["RUN_PREFLIGHT_SHA256"],
+    "candidate_launch_authorization": {
+        "terminal_gate_specification_sha256": os.environ[
+            "RUN_TERMINAL_GATE_SPECIFICATION_SHA256"
+        ],
+        "pose_snapshot_sha256": os.environ[
+            "RUN_LAUNCH_POSE_SNAPSHOT_SHA256"
+        ],
+        "authorization_sha256": os.environ[
+            "RUN_LAUNCH_AUTHORIZATION_SHA256"
+        ],
+        "authorization_receipt_sha256": os.environ[
+            "RUN_LAUNCH_AUTHORIZATION_RECEIPT_SHA256"
+        ],
+        "generated_before_encoder_container_creation": True,
+        "consumed_by_epoch11_and_final_encoder_commands": True,
+    },
     "epoch11_gate": {
         "gate_epoch": 11,
         "gate_specification_sha256": os.environ[
@@ -1902,6 +2416,7 @@ payload = {
     "final_encoder": {
         "checkpoint_sha256": os.environ["RUN_FINAL_CHECKPOINT_SHA256"],
         "progress_sha256": os.environ["RUN_FINAL_PROGRESS_SHA256"],
+        "pose_snapshot_sha256": os.environ["RUN_FINAL_POSE_SNAPSHOT_SHA256"],
         "completion_receipt_sha256": os.environ[
             "RUN_FINAL_COMPLETION_RECEIPT_SHA256"
         ],

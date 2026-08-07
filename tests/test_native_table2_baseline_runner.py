@@ -468,6 +468,7 @@ def test_validator_cli_exposes_no_target_or_dev_test_pose_surface() -> None:
 
 def test_runner_has_epoch11_gate_then_immutable_resume_boundary() -> None:
     source = RUNNER.read_text(encoding="utf-8")
+    launch = source.index("CURRENT_STAGE='launch-authorization-create'")
     epoch11 = source.index("CURRENT_STAGE='encoder-epoch11-create'")
     gate = source.index("CURRENT_STAGE='epoch11-gate-create'")
     rejection = source.index('if [[ "$GATE_CONTAINER_EXIT" -eq 3 ]]')
@@ -475,14 +476,22 @@ def test_runner_has_epoch11_gate_then_immutable_resume_boundary() -> None:
     final = source.index("CURRENT_STAGE='encoder-final-create'")
 
     assert source.count("python -m pams train encoder") == 2
+    assert source.count(
+        'python "$LAUNCH_AUTHORIZATION_RELATIVE"'
+    ) == 1
     assert source.count('--gpus "device=${GPU_DEVICE}"') == 3
-    assert epoch11 < gate < rejection < final_creation < final
+    assert launch < epoch11 < gate < rejection < final_creation < final
     assert "--epochs 11" in source
     assert "--epochs 150" in source
     assert "--resume-checkpoint /pams/resume/encoder.pt" in source
     assert "--resume-progress /pams/resume/encoder.jsonl" in source
     assert "--encoder-completion-receipt /pams/epoch11/completion.receipt.json" in source
     assert "--expected-encoder-completion-receipt-sha256" in source
+    assert "--candidate-launch-authorization /pams/launch/authorization.json" in source
+    assert (
+        "--candidate-launch-receipt "
+        "/pams/launch/authorization.json.receipt.json"
+    ) in source
     assert "\n    --include-dev" not in source
     assert "dst=/pams/dev-pose" not in source
     assert "dst=/pams/test-pose" not in source
@@ -492,7 +501,7 @@ def test_runner_has_epoch11_gate_then_immutable_resume_boundary() -> None:
 def test_runner_mounts_only_train_pose_and_identity_only_protocol_sidecars() -> None:
     source = RUNNER.read_text(encoding="utf-8")
     protocol_block = source.split("protocol_args=(", maxsplit=1)[1].split(
-        ")\n\nCURRENT_STAGE='input-preflight-create'", maxsplit=1
+        ")\nlaunch_prior_mount_args=(", maxsplit=1
     )[0]
 
     assert protocol_block.count("dst=/pams/protocol/") == 6
@@ -524,6 +533,10 @@ def test_runner_enforces_clean_source_image_gate_and_immutable_receipts() -> Non
         "validate_pams_native_baseline_inputs.py",
         "run_pams_native_epoch11_train_gate.py",
         "pams_native_epoch11_train_gate_v1.yaml",
+        "prepare_pams_native_candidate_launch_authorization.py",
+        "pams_native_terminal_readout_gate_v1.yaml",
+        "PAMS_PRIOR_A_REJECTION_ARTIFACT",
+        "PAMS_PRIOR_B_REJECTION_ARTIFACT",
         "PAMS_CANDIDATE_ID",
         "PYTHONOPTIMIZE=",
         "input-preflight.json",
@@ -538,6 +551,9 @@ def test_runner_enforces_clean_source_image_gate_and_immutable_receipts() -> Non
     assert "PAMS_V4A" not in source
     assert "/pams/v4a" not in source
     assert source.index("run_created_container \"$PREFLIGHT_NAME\"") < source.index(
+        "CURRENT_STAGE='launch-authorization-create'"
+    )
+    assert source.index("CURRENT_STAGE='launch-authorization-create'") < source.index(
         "exec 9>\"$LOCK_PATH\""
     )
     assert source.index("exec 9>\"$LOCK_PATH\"") < source.index(

@@ -2066,6 +2066,14 @@ def test_encoder_cli_resume_copies_immutable_inputs_into_a_new_run(
     prior_progress.write_bytes(b"immutable-prior-progress\n")
     prior_checkpoint_sha256 = hashlib.sha256(prior_checkpoint.read_bytes()).hexdigest()
     prior_progress_sha256 = hashlib.sha256(prior_progress.read_bytes()).hexdigest()
+    launch_authorization = tmp_path / "candidate-launch-authorization.json"
+    launch_receipt = tmp_path / "candidate-launch-authorization.json.receipt.json"
+    launch_authorization.write_bytes(b"immutable-launch-authorization\n")
+    launch_receipt.write_bytes(b"immutable-launch-receipt\n")
+    launch_authorization_sha256 = hashlib.sha256(
+        launch_authorization.read_bytes()
+    ).hexdigest()
+    launch_receipt_sha256 = hashlib.sha256(launch_receipt.read_bytes()).hexdigest()
     output_dir = tmp_path / "resumed-output"
     completion: dict[str, object] = {}
 
@@ -2132,6 +2140,10 @@ def test_encoder_cli_resume_copies_immutable_inputs_into_a_new_run(
             str(prior_checkpoint),
             "--resume-progress",
             str(prior_progress),
+            "--candidate-launch-authorization",
+            str(launch_authorization),
+            "--candidate-launch-receipt",
+            str(launch_receipt),
             "--config",
             str(REPOSITORY / "configs" / "pams.yaml"),
         ],
@@ -2150,6 +2162,18 @@ def test_encoder_cli_resume_copies_immutable_inputs_into_a_new_run(
     assert artifacts["input_resume_progress"] == prior_progress
     assert expected["input_resume_checkpoint"] == prior_checkpoint_sha256
     assert expected["input_resume_progress"] == prior_progress_sha256
+    assert artifacts["input_candidate_launch_authorization"] == launch_authorization
+    assert (
+        artifacts["input_candidate_launch_authorization_receipt"] == launch_receipt
+    )
+    assert (
+        expected["input_candidate_launch_authorization"]
+        == launch_authorization_sha256
+    )
+    assert (
+        expected["input_candidate_launch_authorization_receipt"]
+        == launch_receipt_sha256
+    )
 
 
 def test_report_metrics_reserves_canonical_test_attempt_after_prediction_preflight(

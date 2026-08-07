@@ -1903,6 +1903,26 @@ def train_encoder_command(
             help="Immutable prior encoder progress log copied into this new output run.",
         ),
     ] = None,
+    candidate_launch_authorization: Annotated[
+        Path | None,
+        typer.Option(
+            "--candidate-launch-authorization",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Immutable candidate launch authorization consumed before training.",
+        ),
+    ] = None,
+    candidate_launch_receipt: Annotated[
+        Path | None,
+        typer.Option(
+            "--candidate-launch-receipt",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Receipt binding the immutable candidate launch authorization.",
+        ),
+    ] = None,
     include_dev: Annotated[bool, typer.Option("--include-dev")] = False,
     label_free_inputs: Annotated[
         bool,
@@ -1953,6 +1973,22 @@ def train_encoder_command(
             raise ValueError("--resume requires both --resume-checkpoint and --resume-progress")
         if not resume and (resume_checkpoint is not None or resume_progress is not None):
             raise ValueError("resume input options require --resume")
+        if (candidate_launch_authorization is None) != (
+            candidate_launch_receipt is None
+        ):
+            raise ValueError(
+                "candidate launch authorization and receipt must be supplied together"
+            )
+        candidate_launch_authorization_sha256 = (
+            None
+            if candidate_launch_authorization is None
+            else _sha256_file(candidate_launch_authorization)
+        )
+        candidate_launch_receipt_sha256 = (
+            None
+            if candidate_launch_receipt is None
+            else _sha256_file(candidate_launch_receipt)
+        )
         label_free_bundle: _LabelFreeInputBundle | None = None
         manifest: UCFRepManifest | LabelFreeProtocolInputs
         if label_free_inputs:
@@ -2079,6 +2115,18 @@ def train_encoder_command(
             raise RuntimeError("resume encoder checkpoint changed during training")
         if resume_progress is not None and _sha256_file(resume_progress) != resume_progress_sha256:
             raise RuntimeError("resume encoder progress changed during training")
+        if (
+            candidate_launch_authorization is not None
+            and _sha256_file(candidate_launch_authorization)
+            != candidate_launch_authorization_sha256
+        ):
+            raise RuntimeError("candidate launch authorization changed during training")
+        if (
+            candidate_launch_receipt is not None
+            and _sha256_file(candidate_launch_receipt)
+            != candidate_launch_receipt_sha256
+        ):
+            raise RuntimeError("candidate launch receipt changed during training")
         final_epoch = asdict(result.history[-1]) if result.history else None
         checkpoint_sha256 = _sha256_file(checkpoint_path)
         progress_sha256 = _sha256_file(progress_path)
@@ -2107,6 +2155,24 @@ def train_encoder_command(
             assert resume_progress_sha256 is not None
             completion_artifacts["input_resume_progress"] = resume_progress
             completion_expected_sha256["input_resume_progress"] = resume_progress_sha256
+        if candidate_launch_authorization is not None:
+            if candidate_launch_authorization_sha256 is None:
+                raise RuntimeError("candidate launch authorization SHA is unavailable")
+            completion_artifacts["input_candidate_launch_authorization"] = (
+                candidate_launch_authorization
+            )
+            completion_expected_sha256[
+                "input_candidate_launch_authorization"
+            ] = candidate_launch_authorization_sha256
+        if candidate_launch_receipt is not None:
+            if candidate_launch_receipt_sha256 is None:
+                raise RuntimeError("candidate launch receipt SHA is unavailable")
+            completion_artifacts["input_candidate_launch_authorization_receipt"] = (
+                candidate_launch_receipt
+            )
+            completion_expected_sha256[
+                "input_candidate_launch_authorization_receipt"
+            ] = candidate_launch_receipt_sha256
         completed_manifest_path, completed_manifest_sha256 = _complete_cli_run_manifest(
             started_manifest_path,
             artifacts=completion_artifacts,

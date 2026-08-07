@@ -5,6 +5,7 @@ import inspect
 import math
 import tempfile
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -77,6 +78,7 @@ def _passing_aggregates() -> dict[str, object]:
         "representation": {
             "near_collapsed_share": 0.0,
             "lag_eligible_share": 0.8,
+            "all_real_eligible_null_margins_complete": True,
             "real_cycle_margin": _summary(0.2),
             "real_minus_strongest_null": _summary(0.1),
             "real_beats_all_nulls_share": 0.8,
@@ -158,7 +160,121 @@ def _minimal_terminal_payload(
     prior: list[dict[str, str]],
     passed: bool,
 ) -> dict[str, object]:
+    specification = runner.load_gate_specification(SPECIFICATION)
+    profile = specification.candidate_profiles[candidate_id]
     digest = "d" * 64
+    summary = _summary(0.2)
+    aggregates: dict[str, object] = {
+        "representation": {
+            "record_total": 337,
+            "temporal_rms": summary,
+            "near_collapsed_share": 0.0 if passed else 1.0,
+            "lag_eligible_total": 337,
+            "lag_eligible_share": 1.0,
+            "null_complete_total": 337,
+            "null_complete_share_of_real_eligible": 1.0,
+            "all_real_eligible_null_margins_complete": True,
+            "real_cycle_margin": summary,
+            "pose_shuffle_cycle_margin": _summary(0.0),
+            "embedding_shuffle_cycle_margin": _summary(0.0),
+            "zero_pose_cycle_margin": _summary(0.0),
+            "static_pose_cycle_margin": _summary(0.0),
+            "real_minus_strongest_null": _summary(0.2),
+            "real_beats_all_nulls_share": 1.0,
+        },
+        "period": {
+            "record_total": 337,
+            "per_sample_upper_bound_used": True,
+            "boundary_share": 0.0,
+            "minimum_boundary_share": 0.0,
+            "upper_boundary_share": 0.0,
+            "mode_period_frames": 16.0,
+            "mode_frequency": 10,
+            "mode_share": 0.1,
+            "unique_period_total": 20,
+            "positive_confidence_share": 1.0,
+            "period_frames": _summary(16.0),
+            "period_confidence_non_authorizing": _summary(0.8),
+            "period_histogram_aggregate_only": {"16": 10},
+        },
+        "readout": {
+            "record_total": 337,
+            "carrier_eligible_available_total": 337,
+            "carrier_eligible_available_share": 1.0,
+            "raw_carrier_available_share_non_authorizing": 1.0,
+            "expert_majority_share": 1.0,
+            "expert_fft_nearest_fallback_share": 0.0,
+            "selected_vs_active_reference_absolute_gap": _summary(0.0),
+            "normalized_curve_rms_non_authorizing": _summary(1.0),
+            "raw_curve_rms_non_authorizing": _summary(0.5),
+            "harmonic_energy_fraction_non_authorizing": _summary(0.4),
+            "active_support_fraction_non_authorizing": _summary(0.8),
+            "recurrence_gate_energy_non_authorizing": _summary(0.2),
+        },
+        "peak_total": {
+            "record_total": 337,
+            "eligible_readout_total": 337,
+            "eligible_readout_share": 1.0,
+            "zero_share": 0.0,
+            "mode_peak_total": 8,
+            "mode_frequency": 10,
+            "mode_share": 0.1,
+            "unique_peak_total": 20,
+            "absolute_distribution_non_authorizing": _summary(8.0),
+            "histogram_aggregate_only": {"8": 10},
+        },
+        "time_scale": {
+            "factors": [0.75, 1.25],
+            "period": {
+                "candidate_comparison_total": 674,
+                "eligible_comparison_total": 674,
+                "eligible_comparison_share": 1.0,
+                "relative_error": _summary(0.0),
+            },
+            "peak_total": {
+                "candidate_comparison_total": 674,
+                "eligible_comparison_total": 674,
+                "eligible_comparison_share": 1.0,
+                "absolute_difference": _summary(0.0),
+                "exact_share": 1.0,
+                "within_one_share": 1.0,
+            },
+            "per_video_rows_persisted": False,
+        },
+        "embedding_shuffle_fixed_real_period": {
+            "real_eligibility_sets_denominator": True,
+            "real_eligible_total": 337,
+            "real_harmonic_energy_fraction": _summary(1.0),
+            "shuffled_harmonic_energy_fraction": _summary(0.0),
+            "shuffled_to_real_harmonic_median_ratio": 0.0,
+            "real_recurrence_gate_energy": _summary(1.0),
+            "shuffled_recurrence_gate_energy": _summary(0.0),
+            "shuffled_to_real_gate_energy_median_ratio": 0.0,
+        },
+        "zero_pose": {
+            "record_total": 337,
+            "positive_period_confidence_share": 0.0,
+            "carrier_available_share": 0.0,
+            "confidence_and_structure_eligible_share_non_authorizing": 0.0,
+            "positive_support_share": 0.0,
+        },
+        "static_pose": {
+            "record_total": 337,
+            "positive_period_confidence_share": 0.0,
+            "carrier_available_share": 0.0,
+            "confidence_and_structure_eligible_share_non_authorizing": 0.0,
+            "positive_support_share": 0.0,
+        },
+        "per_video_rows_persisted": False,
+    }
+    decision = runner.gate_decision(
+        candidate_id=candidate_id,
+        aggregates=aggregates,
+        thresholds=specification.thresholds,
+    )
+    if decision["overall_pass"] is not passed:
+        raise RuntimeError("terminal fixture did not produce the requested decision")
+    code_hashes = {"gate_runner": digest}
     inputs = {
         "encoder_checkpoint_sha256": digest,
         "encoder_progress_sha256": digest,
@@ -171,42 +287,84 @@ def _minimal_terminal_payload(
         "pose_cache_set_sha256": pose_cache_set_sha256,
         "epoch11_gate_artifact_sha256": digest,
         "epoch11_gate_receipt_sha256": digest,
+        "candidate_launch_authorization_sha256": digest,
+        "candidate_launch_authorization_receipt_sha256": digest,
         "source_git_sha": source_git_sha,
-        "code_files_sha256_commitment": digest,
+        "training_video_total": 337,
+        "read_only_post_run_identity_verified": True,
+        "code_files_sha256": code_hashes,
+        "code_files_sha256_commitment": runner.sha256_json(code_hashes),
     }
-    next_candidate = None
-    if not passed and candidate_id != "C":
-        next_candidate = runner._CANDIDATE_ORDER[
-            runner._CANDIDATE_ORDER.index(candidate_id) + 1
-        ]
+    hardware = {"fixture": "hardware"}
+    runtime = {"source_git_sha": source_git_sha}
     return {
         "schema_version": 1,
         "artifact_type": runner._EXPECTED_ARTIFACT_TYPE,
         "status": "terminal_readout_eligible" if passed else "scientific_rejection",
-        "classification": "fixture",
-        "protocol": "ucfrep_526",
-        "seed": 2026,
+        "classification": specification.classification,
+        "protocol": specification.expected_protocol,
+        "seed": specification.expected_seed,
         "candidate": {
             "id": candidate_id,
+            "fixed_training_period_frames_provenance_only": (
+                profile.fixed_training_period_frames
+            ),
+            "anchor_stride": profile.anchor_stride,
+            "first_pass_only": True,
             "prior_scientific_rejections": prior,
+            "cross_candidate_metric_ranking_forbidden": True,
         },
-        "label_firewall": {},
+        "label_firewall": {
+            "accepted_scientific_inputs": ["fixture"],
+            "manifest_interface_supported": False,
+            "media_interface_supported": False,
+            "development_identity_media_pose_or_target_interface_supported": False,
+            "sealed_evaluation_identity_media_pose_or_target_interface_supported": False,
+            "action_class_interface_supported": False,
+            "repetition_annotation_interface_supported": False,
+            "external_label_fields_accessed": [],
+            "training_interface_supported": False,
+        },
         "inputs": inputs,
-        "algorithm": {},
-        "thresholds": {},
-        "aggregates": {"per_video_rows_persisted": False},
-        "hard_invariants": {"per_video_predictions_persisted": False},
-        "gate": {
-            "overall_pass": passed,
-            "eligible_for_single_frozen_dev84_protocol_build": passed,
-            "next_candidate_training_authorized": next_candidate,
+        "algorithm": {
+            "period_estimator": "full_vector_embedding_velocity_acf",
+            "per_sample_period_upper_bound": runner._period_upper_bound_metadata(
+                _config(candidate_id=candidate_id)
+            ),
+            "period_confidence_part_of_carrier_eligibility": True,
+            "carrier_eligibility": "fixture",
+            "pose_time_shuffle": "fixture",
+            "embedding_time_shuffle": "fixture",
+            "zero_pose": "fixture",
+            "static_pose": "fixture",
+            "cycle_margin": "fixture",
+            "time_scale_factors": [0.75, 1.25],
+            "peak_readout": "fixture",
+            "full_timeline_reference_authorizing": False,
+            "fixed_training_period_used_at_inference": False,
         },
-        "scientific_caveats": [],
-        "hardware": {},
-        "hardware_sha256": digest,
-        "runtime": {},
-        "runtime_sha256": digest,
-        "read_only_verification": {},
+        "thresholds": dict(specification.thresholds),
+        "aggregates": aggregates,
+        "hard_invariants": {
+            **{key: True for key in runner._HARD_INVARIANT_KEYS},
+            "per_video_predictions_persisted": False,
+        },
+        "gate": decision,
+        "scientific_caveats": list(runner._SCIENTIFIC_CAVEATS),
+        "hardware": hardware,
+        "hardware_sha256": runner.sha256_json(hardware),
+        "runtime": runtime,
+        "runtime_sha256": runner.sha256_json(runtime),
+        "read_only_verification": {
+            "all_file_inputs_unchanged": True,
+            "train337_pose_cache_set_unchanged": True,
+            "model_state_sha256_before": digest,
+            "model_state_sha256_after": digest,
+            "model_or_optimizer_state_updated": False,
+            "training_steps_executed": 0,
+            "pose_cache_write_operations": 0,
+            "per_video_prediction_write_operations": 0,
+        },
     }
 
 
@@ -244,6 +402,28 @@ def test_gate_yaml_rejects_duplicate_and_privileged_fields() -> None:
         privileged.write_text(yaml.safe_dump(payload), encoding="utf-8")
         with pytest.raises(ValueError, match="forbidden privileged field"):
             runner.load_gate_specification(privileged)
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("norm_first", 0),
+        ("skeleton_augmentation_enabled", 1),
+        ("model_input_dim", 99.0),
+        ("loss_scales", [1]),
+    ],
+)
+def test_gate_yaml_rejects_candidate_invariant_scalar_type_drift(
+    key: str,
+    value: object,
+) -> None:
+    payload = yaml.safe_load(SPECIFICATION.read_text(encoding="utf-8"))
+    payload["candidate_invariants"][key] = value
+    with tempfile.TemporaryDirectory(prefix="pams-gate-") as directory:
+        path = Path(directory) / "type-drift.yaml"
+        path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+        with pytest.raises((TypeError, ValueError)):
+            runner.load_gate_specification(path)
 
 
 def test_progress_firewall_runs_before_checkpoint_deserialization() -> None:
@@ -299,6 +479,8 @@ def test_interface_has_no_privileged_scientific_surface() -> None:
         "source_receipt_path",
         "config_path",
         "gate_specification_path",
+        "candidate_launch_authorization_path",
+        "candidate_launch_receipt_path",
         "epoch11_gate_artifact_path",
         "epoch11_gate_receipt_path",
         "pose_cache_dir",
@@ -394,7 +576,10 @@ def test_representation_nulls_reject_position_only_adversary() -> None:
         static_pose_embeddings=real,
         valid_mask=valid,
         timeline_lengths=lengths,
-        periods=torch.full((4,), 16.0),
+        real_periods=torch.full((4,), 16.0),
+        pose_shuffle_periods=torch.full((4,), 16.0),
+        zero_pose_periods=torch.full((4,), 16.0),
+        static_pose_periods=torch.full((4,), 16.0),
         minimum_pairs=8,
     )
     distribution = runner._representation_distribution(
@@ -411,6 +596,153 @@ def test_representation_nulls_reject_position_only_adversary() -> None:
     )
     assert decision["overall_pass"] is False
     assert decision["criteria"]["real_minus_strongest_null_median"]["pass"] is False
+
+
+def test_null_views_use_their_own_period_and_missing_null_fails_closed() -> None:
+    frames = 192
+    generator = torch.Generator(device="cpu")
+    generator.manual_seed(144)
+    real = _periodic_embeddings(16, frames=frames)
+    real = real + 0.35 * torch.randn(real.shape, generator=generator)
+    pose_null = _periodic_embeddings(24, frames=frames)
+    valid = torch.ones((1, frames), dtype=torch.bool)
+    complete = runner.representation_samples_from_embeddings(
+        real_embeddings=real,
+        pose_shuffle_embeddings=pose_null,
+        embedding_shuffle_embeddings=torch.zeros_like(real),
+        zero_pose_embeddings=torch.zeros_like(real),
+        static_pose_embeddings=torch.zeros_like(real),
+        valid_mask=valid,
+        timeline_lengths=torch.tensor([frames]),
+        real_periods=torch.tensor([16.0]),
+        pose_shuffle_periods=torch.tensor([24.0]),
+        zero_pose_periods=torch.tensor([16.0]),
+        static_pose_periods=torch.tensor([16.0]),
+        minimum_pairs=8,
+    )[0]
+    assert complete.pose_shuffle_cycle_margin is not None
+    assert complete.real_cycle_margin is not None
+    assert complete.pose_shuffle_cycle_margin > complete.real_cycle_margin
+    assert complete.real_beats_all_nulls is False
+
+    missing = runner.representation_samples_from_embeddings(
+        real_embeddings=_periodic_embeddings(8, frames=64),
+        pose_shuffle_embeddings=_periodic_embeddings(8, frames=64),
+        embedding_shuffle_embeddings=_periodic_embeddings(8, frames=64),
+        zero_pose_embeddings=_periodic_embeddings(8, frames=64),
+        static_pose_embeddings=_periodic_embeddings(8, frames=64),
+        valid_mask=torch.ones((1, 64), dtype=torch.bool),
+        timeline_lengths=torch.tensor([64]),
+        real_periods=torch.tensor([8.0]),
+        pose_shuffle_periods=torch.tensor([48.0]),
+        zero_pose_periods=torch.tensor([8.0]),
+        static_pose_periods=torch.tensor([8.0]),
+        minimum_pairs=8,
+    )[0]
+    assert missing.lag_eligible is True
+    assert missing.null_margins_complete is False
+    assert missing.real_beats_all_nulls is False
+    distribution = runner._representation_distribution(
+        (missing,), near_collapse_rms=1e-3
+    )
+    assert distribution["all_real_eligible_null_margins_complete"] is False
+    aggregates = _passing_aggregates()
+    aggregates["representation"] = distribution
+    decision = runner.gate_decision(
+        candidate_id="A",
+        aggregates=aggregates,
+        thresholds=runner.load_gate_specification(SPECIFICATION).thresholds,
+    )
+    assert decision["criteria"]["real_minus_strongest_null_median"]["pass"] is False
+
+
+def test_pose_control_raw_availability_is_not_confidence_gated() -> None:
+    distribution = runner._pose_control_distribution(
+        (
+            runner.PoseControlSample(
+                positive_period_confidence=False,
+                carrier_eligible=False,
+                raw_carrier_available=True,
+                positive_support=False,
+            ),
+        )
+    )
+    assert distribution["carrier_available_share"] == 1.0
+    assert distribution["confidence_and_structure_eligible_share_non_authorizing"] == 0.0
+
+
+def test_peak_distribution_excludes_ineligible_placeholder_zeros() -> None:
+    samples = (
+        _readout_sample(video_id="eligible", period=16.0, peak_total=5),
+        *(
+            _readout_sample(
+                video_id=f"ineligible-{index}",
+                period=16.0,
+                peak_total=0,
+                carrier_eligible=False,
+            )
+            for index in range(3)
+        ),
+    )
+    distribution = runner._peak_total_distribution(samples)
+    assert distribution["record_total"] == 4
+    assert distribution["eligible_readout_total"] == 1
+    assert distribution["eligible_readout_share"] == 0.25
+    assert distribution["zero_share"] == 0.0
+    assert distribution["mode_peak_total"] == 5
+
+
+def test_every_carrier_batch_rejects_nonfinite_scores() -> None:
+    embeddings = _periodic_embeddings(16, frames=96)
+    valid = torch.ones((1, 96), dtype=torch.bool)
+    lengths = torch.tensor([96])
+    readout = runner.estimate_recurrence_carrier_curves(
+        embeddings,
+        minimum_period=4,
+        maximum_period=4096,
+        valid_mask=valid,
+        timeline_lengths=lengths,
+        maximum_mode="half_timeline",
+    )
+    corrupted_scores = readout.recurrence_scores.clone()
+    corrupted_scores[0, 0] = float("nan")
+    corrupted = replace(readout, recurrence_scores=corrupted_scores)
+    with pytest.raises(RuntimeError, match="non-finite recurrence score"):
+        runner._validate_recurrence_carrier_batch(
+            corrupted,
+            valid_mask=valid,
+            timeline_lengths=lengths,
+            role="fixture",
+        )
+
+
+def test_period_bound_metadata_matches_short_timeline_helper() -> None:
+    config = _config()
+    metadata = runner._period_upper_bound_metadata(config)
+    assert metadata == {
+        "mode": "half_timeline",
+        "formula": "min(4096, max(4, floor(timeline_length/2)))",
+        "short_valid_fallback": (
+            "if timeline_length < 8 or valid_embedding_velocity_total < 8: "
+            "period=4, confidence=0"
+        ),
+    }
+    assert runner._period_upper_bound(
+        6,
+        minimum=config.period.minimum,
+        maximum=config.period.maximum,
+        maximum_mode=config.period.maximum_mode,
+    ) == 4
+    periods, confidence = runner.estimate_period_from_embedding_velocity_vectors(
+        torch.randn((1, 8, 4)),
+        minimum=4,
+        maximum=4096,
+        valid_mask=torch.ones((1, 8), dtype=torch.bool),
+        timeline_lengths=torch.tensor([8]),
+        maximum_mode="half_timeline",
+    )
+    assert periods.tolist() == [4.0]
+    assert confidence.tolist() == [0.0]
 
 
 def test_invalid_padding_payload_cannot_change_readout() -> None:
@@ -605,6 +937,7 @@ def test_candidate_order_requires_scientific_rejection_receipts() -> None:
             profile=runner.CandidateProfile(16, 2, ("A",)),
             artifact_paths=(output,),
             receipt_paths=(receipt,),
+            specification=runner.load_gate_specification(SPECIFICATION),
             gate_specification_sha256=specification_sha256,
             pose_cache_set_sha256=pose_sha256,
             source_git_sha=source_sha,
@@ -622,9 +955,117 @@ def test_candidate_order_requires_scientific_rejection_receipts() -> None:
                 profile=runner.CandidateProfile(16, 2, ("A",)),
                 artifact_paths=(),
                 receipt_paths=(),
+                specification=runner.load_gate_specification(SPECIFICATION),
                 gate_specification_sha256=specification_sha256,
                 pose_cache_set_sha256=pose_sha256,
                 source_git_sha=source_sha,
+            )
+
+
+def test_launch_authorization_pair_binds_candidate_and_training_inputs() -> None:
+    specification = runner.load_gate_specification(SPECIFICATION)
+    config = _config()
+    profile = specification.candidate_profiles["A"]
+    digest = "a" * 64
+    source_sha = "b" * 40
+    identities = {
+        "experiment_config": (digest, 10),
+        "gate_specification": ("c" * 64, 11),
+        "pose_snapshot": ("d" * 64, 12),
+        "source_export_receipt": ("e" * 64, 13),
+        "launch_authorization_runner": ("f" * 64, 14),
+        "gate_runner": ("1" * 64, 15),
+    }
+    covered = {
+        "launch_authorization_runner": (
+            "scripts/server/prepare_pams_native_candidate_launch_authorization.py"
+        ),
+        "terminal_gate_runner": (
+            "scripts/server/run_pams_native_terminal_readout_gate.py"
+        ),
+        "experiment_config": (
+            "configs/experiments/pams_native_table2_baseline_proxy_v1.yaml"
+        ),
+        "gate_specification": (
+            "configs/gates/pams_native_terminal_readout_gate_v1.yaml"
+        ),
+    }
+    inputs = {
+        "experiment_config_sha256": identities["experiment_config"][0],
+        "experiment_config_bytes": identities["experiment_config"][1],
+        "gate_specification_sha256": identities["gate_specification"][0],
+        "gate_specification_bytes": identities["gate_specification"][1],
+        "pose_snapshot_sha256": identities["pose_snapshot"][0],
+        "pose_snapshot_bytes": identities["pose_snapshot"][1],
+        "pose_cache_set_sha256": "2" * 64,
+        "source_export_receipt_sha256": identities["source_export_receipt"][0],
+        "source_export_receipt_bytes": identities["source_export_receipt"][1],
+        "launch_authorization_runner_sha256": identities[
+            "launch_authorization_runner"
+        ][0],
+        "launch_authorization_runner_bytes": identities[
+            "launch_authorization_runner"
+        ][1],
+        "terminal_gate_runner_sha256": identities["gate_runner"][0],
+        "terminal_gate_runner_bytes": identities["gate_runner"][1],
+        "config_fingerprint": config.fingerprint,
+        "pose_fingerprint": config.pose_fingerprint,
+        "training_video_total": 337,
+        "source_git_sha": source_sha,
+        "source_receipt_covered_paths": covered,
+    }
+    payload = {
+        "schema_version": 1,
+        "artifact_type": runner._CANDIDATE_LAUNCH_ARTIFACT_TYPE,
+        "status": "candidate_training_authorized",
+        "classification": specification.classification,
+        "protocol": specification.expected_protocol,
+        "seed": specification.expected_seed,
+        "candidate": runner._candidate_mapping("A", profile, ()),
+        "inputs": inputs,
+        "authorization": {
+            "gate_frozen_before_candidate_a": True,
+            "candidate_training_authorized": True,
+            "encoder_training_scope": "train337_only",
+            "terminal_checkpoint_or_prediction_authorized": False,
+            "dev84_identity_media_pose_or_scoring_authorized": False,
+            "test105_evaluation_authorized": False,
+            "aggregate_only_prior_receipts": True,
+        },
+    }
+    with tempfile.TemporaryDirectory(prefix="pams-gate-") as directory:
+        output = Path(directory) / "launch.json"
+        receipt, _ = runner.write_candidate_launch_authorization(output, payload)
+        runner._validate_candidate_launch_authorization(
+            output,
+            receipt,
+            candidate_id="A",
+            profile=profile,
+            prior_chain=(),
+            specification=specification,
+            config=config,
+            identities=identities,
+            pose_cache_set_sha256="2" * 64,
+            source_git_sha=source_sha,
+            source_covered_paths=covered,
+        )
+        broken = runner._strict_json(receipt, document="launch receipt fixture")
+        broken["candidate_id"] = "B"
+        receipt.unlink()
+        runner._write_new(receipt, runner._encoded_json(broken))
+        with pytest.raises(ValueError, match="receipt binding mismatch"):
+            runner._validate_candidate_launch_authorization(
+                output,
+                receipt,
+                candidate_id="A",
+                profile=profile,
+                prior_chain=(),
+                specification=specification,
+                config=config,
+                identities=identities,
+                pose_cache_set_sha256="2" * 64,
+                source_git_sha=source_sha,
+                source_covered_paths=covered,
             )
 
 
@@ -673,7 +1114,14 @@ def test_epoch11_artifact_and_receipt_are_hash_and_lineage_bound() -> None:
             "classification": "fixture",
             "protocol": "ucfrep_526",
             "seed": 2026,
-            "label_firewall": {},
+            "label_firewall": {
+                "accepted_scientific_inputs": ["fixture"],
+                "manifest_interface_supported": False,
+                "media_interface_supported": False,
+                "external_label_fields_accessed": [],
+                "privileged_interface_fields_and_paths_rejected": True,
+                "training_interface_supported": False,
+            },
             "inputs": {
                 "experiment_config_sha256": config_sha,
                 "pose_snapshot_sha256": snapshot_sha,
@@ -686,16 +1134,118 @@ def test_epoch11_artifact_and_receipt_are_hash_and_lineage_bound() -> None:
                 "encoder_checkpoint_bytes": 11,
                 "encoder_progress_sha256": "2" * 64,
                 "encoder_progress_bytes": 12,
+                "encoder_completion_receipt_sha256": "4" * 64,
+                "encoder_completion_receipt_bytes": 13,
+                "experiment_config_bytes": 14,
+                "gate_specification_sha256": "3" * 64,
+                "gate_specification_bytes": 15,
+                "pose_snapshot_bytes": 16,
+                "training_video_ids_sha256": "5" * 64,
+                "source_receipt_covered_paths": {},
+                "container_image_id": "sha256:" + "6" * 64,
+                "container_environment_sha256": "7" * 64,
+                "encoder_completion_receipt": {
+                    "schema_version": 3,
+                    "run_id": "epoch11-fixture",
+                    "sha256": "4" * 64,
+                    "bytes": 13,
+                    "completed_epochs": 11,
+                    "artifact_roles": sorted(
+                        {
+                            "input_config",
+                            "input_dataset_manifest",
+                            "input_pose_cache_snapshot",
+                            "input_train_pose_inputs",
+                            "input_train_pose_input_commitment",
+                            "input_dev_pose_inputs",
+                            "input_dev_pose_input_commitment",
+                            "input_test_identity_pose_inputs",
+                            "input_test_identity_pose_input_commitment",
+                            "input_candidate_launch_authorization",
+                            "input_candidate_launch_authorization_receipt",
+                            "output_encoder_checkpoint",
+                            "progress_log",
+                        }
+                    ),
+                },
             },
-            "schedule": {},
-            "representation": {},
+            "schedule": {
+                "completed_epochs": 11,
+                "period_source": "fixed_period_inferred",
+                "loss_first_three_median": 1.0,
+                "loss_final_three_median": 0.5,
+                "loss_relative_drop": 0.5,
+                "fixed_period_evidence_fraction_mean": 1.0,
+                "optimizer_steps_total": 11,
+                "prototype_bank_negative_tallies_all_zero": True,
+                "progress_exactly_matches_checkpoint_history": True,
+            },
+            "representation": {
+                "record_total": 337,
+                "temporal_rms": _summary(1.0),
+                "near_collapse_rms": 0.001,
+                "near_collapsed_fraction": 0.0,
+                "lag_eligible_total": 337,
+                "lag_eligible_fraction": 1.0,
+                "real_cycle_margin": _summary(1.0),
+                "shuffled_cycle_margin": _summary(0.0),
+                "zero_cycle_margin": _summary(0.0),
+                "stronger_null_separation": _summary(1.0),
+                "real_beats_both_nulls_fraction": 1.0,
+                "fixed_period_carrier_advisory": {
+                    "authorization_role": "diagnostic_only",
+                    "real_available_fraction": 1.0,
+                    "real_support": _summary(1.0),
+                    "real_gate_energy": _summary(1.0),
+                    "shuffled_available_fraction": 0.0,
+                    "shuffled_support": _summary(0.0),
+                    "shuffled_gate_energy": _summary(0.0),
+                    "zero_available_fraction": 0.0,
+                    "zero_support": _summary(0.0),
+                    "zero_gate_energy": _summary(0.0),
+                    "shuffled_to_real_gate_energy_median_ratio": 0.0,
+                },
+            },
             "gate": {
+                "thresholds_frozen_before_native_candidate_training": True,
+                "criteria": {
+                    name: {
+                        "value": 1.0,
+                        "operator": ">=",
+                        "threshold": 0.0,
+                        "pass": True,
+                    }
+                    for name in {
+                        "loss_relative_drop",
+                        "fixed_period_evidence_fraction",
+                        "near_collapsed_fraction",
+                        "lag_eligible_fraction",
+                        "real_cycle_margin_median",
+                        "stronger_null_separation_median",
+                        "real_beats_both_nulls_fraction",
+                    }
+                },
                 "encoder_continuation_authorized": True,
                 "prediction_or_scoring_authorized": False,
                 "all_core_criteria_pass": True,
             },
-            "scientific_scope": {},
-            "read_only_verification": {},
+            "scientific_scope": {
+                "fixed_training_period_frames": 16,
+                "dense_frame_indices_preserved": True,
+                "invalid_slots_never_compacted": True,
+                "real_shuffled_and_zero_views_share_one_valid_mask": True,
+                "fixed_period_carrier_is_advisory_at_epoch11": True,
+                "adaptive_time_scale_criterion_used": False,
+            },
+            "read_only_verification": {
+                "all_file_inputs_unchanged": True,
+                "pose_cache_set_unchanged": True,
+                "model_state_sha256_before": "8" * 64,
+                "model_state_sha256_after": "8" * 64,
+                "model_or_optimizer_state_updated": False,
+                "training_steps_executed": 0,
+                "pose_cache_write_operations": 0,
+            },
         }
         encoded = runner._encoded_json(artifact)
         runner._write_new(artifact_path, encoded)
@@ -708,6 +1258,7 @@ def test_epoch11_artifact_and_receipt_are_hash_and_lineage_bound() -> None:
             "encoder_continuation_authorized": True,
             "encoder_checkpoint_sha256": "1" * 64,
             "encoder_progress_sha256": "2" * 64,
+            "encoder_completion_receipt_sha256": "4" * 64,
             "pose_cache_set_sha256": pose_sha,
             "gate_specification_sha256": "3" * 64,
             "source_git_sha": source_sha,
@@ -725,7 +1276,7 @@ def test_epoch11_artifact_and_receipt_are_hash_and_lineage_bound() -> None:
         )
         assert validated_receipt["artifact_sha256"] == hashlib.sha256(encoded).hexdigest()
         broken = deepcopy(receipt)
-        broken["artifact_sha256"] = "0" * 64
+        broken["encoder_completion_receipt_sha256"] = "0" * 64
         receipt_path.unlink()
         runner._write_new(receipt_path, runner._encoded_json(broken))
         with pytest.raises(ValueError, match="does not bind"):
@@ -755,67 +1306,90 @@ def test_completion_receipt_requires_epoch11_resume_lineage_and_started_bytes() 
         container_environment_sha256=container["environment_sha256"],
         source_git_sha=source_sha,
     )
-    identities = {
-        "experiment_config": ("a" * 64, 1),
-        "pose_snapshot": ("b" * 64, 1),
-        "encoder_checkpoint": ("d" * 64, 1),
-        "encoder_progress": ("e" * 64, 1),
-    }
-    epoch11_receipt = {
-        "encoder_checkpoint_sha256": "f" * 64,
-        "encoder_progress_sha256": "9" * 64,
-    }
-    epoch11_artifact = {
-        "inputs": {
-            "encoder_checkpoint_bytes": 1,
-            "encoder_progress_bytes": 1,
-        }
-    }
-    started = RunManifest(
-        schema_version=2,
-        receipt_type="started",
-        run_id="terminal-fixture",
-        created_at_utc="2026-08-07T00:00:00+00:00",
-        command=["pams", "train", "encoder"],
-        git_sha=source_sha,
-        config_sha256=config.fingerprint,
-        dataset_sha256=provenance.dataset_fingerprint,
-        seed=2026,
-        protocol="ucfrep_526",
-        status="started",
-        hardware={"container": container},
-    )
-    started_encoded = runner._encoded_json(started.model_dump(mode="json"))
-    artifact_hashes = {
-        "input_config": identities["experiment_config"][0],
-        "input_pose_cache_snapshot": identities["pose_snapshot"][0],
-        "input_resume_checkpoint": epoch11_receipt["encoder_checkpoint_sha256"],
-        "input_resume_progress": epoch11_receipt["encoder_progress_sha256"],
-        "output_encoder_checkpoint": identities["encoder_checkpoint"][0],
-        "progress_log": identities["encoder_progress"][0],
-    }
-    artifacts = tuple(
-        ArtifactReceipt(
-            role=role,
-            locator=f"{role}.bin",
-            sha256=sha256,
-            bytes=1,
-        )
-        for role, sha256 in artifact_hashes.items()
-    )
-    completion = CompletedRunReceipt(
-        schema_version=3,
-        receipt_type="completed",
-        run_id=started.run_id,
-        status="completed",
-        finished_at="2026-08-07T00:01:00+00:00",
-        start_manifest_sha256=hashlib.sha256(started_encoded).hexdigest(),
-        started=started,
-        artifacts=artifacts,
-        metrics={"completed_epochs": 150},
-    )
     with tempfile.TemporaryDirectory(prefix="pams-gate-") as directory:
         root = Path(directory)
+        role_to_identity_key = {
+            "input_config": "experiment_config",
+            "input_pose_cache_snapshot": "pose_snapshot",
+            "output_encoder_checkpoint": "encoder_checkpoint",
+            "progress_log": "encoder_progress",
+            "input_candidate_launch_authorization": (
+                "candidate_launch_authorization"
+            ),
+            "input_candidate_launch_authorization_receipt": (
+                "candidate_launch_authorization_receipt"
+            ),
+        }
+        role_paths: dict[str, Path] = {}
+        identities: dict[str, tuple[str, int]] = {}
+        for role, identity_key in role_to_identity_key.items():
+            target = root / f"{role}.bin"
+            runner._write_new(target, f"fixture:{role}".encode())
+            role_paths[role] = target
+            identities[identity_key] = runner._stable_file_sha256(target)
+        for role in ("input_resume_checkpoint", "input_resume_progress"):
+            target = root / f"{role}.bin"
+            runner._write_new(target, f"fixture:{role}".encode())
+            role_paths[role] = target
+        resume_checkpoint_identity = runner._stable_file_sha256(
+            role_paths["input_resume_checkpoint"]
+        )
+        resume_progress_identity = runner._stable_file_sha256(
+            role_paths["input_resume_progress"]
+        )
+        epoch11_receipt = {
+            "encoder_checkpoint_sha256": resume_checkpoint_identity[0],
+            "encoder_progress_sha256": resume_progress_identity[0],
+        }
+        epoch11_artifact = {
+            "inputs": {
+                "encoder_checkpoint_bytes": resume_checkpoint_identity[1],
+                "encoder_progress_bytes": resume_progress_identity[1],
+            }
+        }
+        started = RunManifest(
+            schema_version=2,
+            receipt_type="started",
+            run_id="terminal-fixture",
+            created_at_utc="2026-08-07T00:00:00+00:00",
+            command=[
+                "pams",
+                "train",
+                "encoder",
+                "--candidate-launch-authorization",
+                "authorization.json",
+                "--candidate-launch-receipt",
+                "authorization.receipt.json",
+            ],
+            git_sha=source_sha,
+            config_sha256=config.fingerprint,
+            dataset_sha256=provenance.dataset_fingerprint,
+            seed=2026,
+            protocol="ucfrep_526",
+            status="started",
+            hardware={"container": container},
+        )
+        started_encoded = runner._encoded_json(started.model_dump(mode="json"))
+        artifacts = tuple(
+            ArtifactReceipt(
+                role=role,
+                locator=path.name,
+                sha256=runner._stable_file_sha256(path)[0],
+                bytes=runner._stable_file_sha256(path)[1],
+            )
+            for role, path in role_paths.items()
+        )
+        completion = CompletedRunReceipt(
+            schema_version=3,
+            receipt_type="completed",
+            run_id=started.run_id,
+            status="completed",
+            finished_at="2026-08-07T00:01:00+00:00",
+            start_manifest_sha256=hashlib.sha256(started_encoded).hexdigest(),
+            started=started,
+            artifacts=artifacts,
+            metrics={"completed_epochs": 150},
+        )
         started_path = root / f"{started.run_id}.started.json"
         completion_path = root / "terminal.completed.json"
         runner._write_new(started_path, started_encoded)
@@ -823,17 +1397,20 @@ def test_completion_receipt_requires_epoch11_resume_lineage_and_started_bytes() 
             completion_path,
             runner._encoded_json(completion.model_dump(mode="json")),
         )
-        parsed, validated_started_path, _ = runner._validate_encoder_completion_receipt(
-            completion_path,
-            expected_source_git_sha=source_sha,
-            specification=runner.load_gate_specification(SPECIFICATION),
-            config=config,
-            identities=identities,
-            epoch11_artifact=epoch11_artifact,
-            epoch11_receipt=epoch11_receipt,
+        parsed, validated_started_path, _, resolved = (
+            runner._validate_encoder_completion_receipt(
+                completion_path,
+                expected_source_git_sha=source_sha,
+                specification=runner.load_gate_specification(SPECIFICATION),
+                config=config,
+                identities=identities,
+                epoch11_artifact=epoch11_artifact,
+                epoch11_receipt=epoch11_receipt,
+            )
         )
         assert parsed.run_id == started.run_id
         assert validated_started_path == started_path
+        assert set(resolved) == set(role_paths)
         runner._validate_completion_provenance(parsed, provenance)
         with pytest.raises(ValueError, match="dataset fingerprint mismatch"):
             runner._validate_completion_provenance(

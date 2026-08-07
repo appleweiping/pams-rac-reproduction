@@ -361,6 +361,12 @@ def _validate_encoder_completion_receipt(
         raise ValueError("encoder completion receipt command does not stop at epoch 11")
     if "--resume" in command:
         raise ValueError("epoch-11 encoder completion receipt unexpectedly names resume inputs")
+    for option in (
+        "--candidate-launch-authorization",
+        "--candidate-launch-receipt",
+    ):
+        if command.count(option) != 1:
+            raise ValueError(f"epoch-11 encoder command must consume {option} once")
 
     expected_roles = {
         "input_config",
@@ -374,6 +380,8 @@ def _validate_encoder_completion_receipt(
         "input_test_identity_pose_input_commitment",
         "output_encoder_checkpoint",
         "progress_log",
+        "input_candidate_launch_authorization",
+        "input_candidate_launch_authorization_receipt",
     }
     artifacts = {artifact.role: artifact for artifact in receipt.artifacts}
     if set(artifacts) != expected_roles:
