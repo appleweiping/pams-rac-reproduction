@@ -486,11 +486,29 @@ def audit_full337(
         coverage = final_valid / source_frames
         longest_fraction = longest / source_frames
         transition_rate = _mask_transition_rate(final.valid_mask)
-        jumps = _base_fill_boundary_jumps(final.xyz, final.valid_mask, base.valid_mask)
-        period, confidence = _period_evidence(final.xyz, final.valid_mask)
-        for value in (coverage, longest_fraction, transition_rate, period, confidence, *jumps):
+        raw_jumps = _base_fill_boundary_jumps(final.xyz, final.valid_mask, base.valid_mask)
+        raw_period, raw_confidence = _period_evidence(final.xyz, final.valid_mask)
+        for value in (
+            coverage,
+            longest_fraction,
+            transition_rate,
+            raw_period,
+            raw_confidence,
+            *raw_jumps,
+        ):
             if not math.isfinite(float(value)):
                 nonfinite_metrics += 1
+        if raw_period <= 0.0 or not 0.0 <= raw_confidence <= 1.0:
+            invariant_failures += 1
+        if any(value < 0.0 for value in raw_jumps):
+            invariant_failures += 1
+        period = raw_period if math.isfinite(raw_period) and raw_period > 0.0 else 128.0
+        confidence = (
+            raw_confidence
+            if math.isfinite(raw_confidence) and 0.0 <= raw_confidence <= 1.0
+            else 0.0
+        )
+        jumps = tuple(value if math.isfinite(value) and value >= 0.0 else 1.0 for value in raw_jumps)
         periodic = confidence >= 0.03 and final_valid >= 2.0 * period
         contiguous = confidence >= 0.03 and longest >= period
         anchor_frames = integer(

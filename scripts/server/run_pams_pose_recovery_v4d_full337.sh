@@ -45,6 +45,9 @@ readonly MODEL_FILENAME='keypointrcnn_resnet50_fpn_coco-fc266e95.pth'
 readonly OFFICIAL_ROOT='/media/lenovo/data2/pams-rac/runs/official-segment-v1/15cc1ec3c1d2-20260805T063653Z'
 readonly V4A_ROOT='/media/lenovo/data2/pams-rac/runs/pose-recovery-v4a/83c877007392-20260807T113023Z'
 readonly SAME39_ROOT='/media/lenovo/data2/pams-rac/runs/pose-recovery-v4d-same39-pilot/081c3c138395-20260807T150913Z'
+readonly EXTRACTION_AUTH_PARENT='/media/lenovo/data2/pams-rac/runs/pose-recovery-v4d-full337-extraction-authorization-v2'
+readonly EXTRACTION_AUTH_ROOT="$(realpath -e -- "$PAMS_V4D_EXTRACTION_AUTH_ROOT")"
+[[ "$EXTRACTION_AUTH_ROOT" == "${EXTRACTION_AUTH_PARENT}/"* ]] || fail 'authorization root is outside the frozen parent'
 readonly VIDEOS="${OFFICIAL_ROOT}/video-views/train337"
 readonly SIDECAR="${OFFICIAL_ROOT}/protocol/train.inputs.json"
 readonly COMMITMENT="${OFFICIAL_ROOT}/protocol/train.inputs.commitment.json"
@@ -56,7 +59,7 @@ readonly SAME39_AUDIT="${SAME39_ROOT}/gate-output/pilot-gate.json"
 readonly SAME39_LEDGER="${SAME39_ROOT}/ledgers/same39.json"
 readonly SAME39_SELECTION="${SAME39_ROOT}/audit/selection.json"
 readonly SAME39_CACHE="${SAME39_ROOT}/pose-cache"
-readonly EXTRACTION_AUTH="${PAMS_V4D_EXTRACTION_AUTH_ROOT}/authorization/extraction.authorization.json"
+readonly EXTRACTION_AUTH="${EXTRACTION_AUTH_ROOT}/authorization/extraction.authorization.json"
 readonly MODEL_ASSET="/media/lenovo/data2/pams-rac/assets/torchvision/${MODEL_FILENAME}"
 readonly RUN_PARENT='/media/lenovo/data2/pams-rac/runs/pose-recovery-v4d-full337'
 readonly RUN_ROOT="${RUN_PARENT}/${SOURCE_REVISION:0:12}-${PAMS_V4D_FULL337_ATTEMPT_ID}"
@@ -84,7 +87,7 @@ require_sha256 "$SAME39_SELECTION" "$SAME39_SELECTION_SHA256" same39-selection
 require_sha256 "$EXTRACTION_AUTH" "$PAMS_V4D_EXPECTED_EXTRACTION_AUTH_SHA256" extraction-authorization
 require_sha256 "$MODEL_ASSET" "$MODEL_SHA256" model-asset
 [[ -z "$(find "$SAME39_ROOT" -xdev -perm /022 -print -quit)" ]] || fail 'same39 root is not sealed'
-[[ -z "$(find "$PAMS_V4D_EXTRACTION_AUTH_ROOT" -xdev -perm /022 -print -quit)" ]] || fail 'authorization root is not sealed'
+[[ -z "$(find "$EXTRACTION_AUTH_ROOT" -xdev -perm /022 -print -quit)" ]] || fail 'authorization root is not sealed'
 python3 - "$EXTRACTION_AUTH" "$SOURCE_REVISION" <<'PY'
 import json,sys
 x=json.load(open(sys.argv[1]))
