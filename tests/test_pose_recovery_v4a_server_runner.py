@@ -6,7 +6,6 @@ import yaml
 
 from pams.config import load_config
 
-
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "scripts/server/run_pams_pose_recovery_v4a_train337.sh"
 GATE = ROOT / "configs/gates/pams_pose_recovery_v4a_train337.yaml"

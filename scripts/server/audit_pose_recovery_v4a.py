@@ -452,6 +452,7 @@ def audit_pose_recovery_v4a(
                 "pass0_valid_frames": pass0_valid,
                 "recovered_valid_frames": recovered,
                 "final_valid_frames": final_valid,
+                "observed_span_frames": observed_span,
                 "reference_cached_valid_frames": reference_cached_valid,
                 "v4_cached_valid_frames": v4_cached_valid,
                 "source_coverage": coverage,
