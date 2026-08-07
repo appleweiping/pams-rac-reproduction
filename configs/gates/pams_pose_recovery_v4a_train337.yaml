@@ -1,0 +1,35 @@
+# Frozen, count-free paired gate for the train337 pose-input repair only.
+# Passing this gate validates input recovery; it does not authorize or claim
+# model training, dev/test evaluation, or counting performance.
+schema_version: 1
+artifact_type: pams_pose_recovery_v4a_train337_gate
+protocol: ucfrep_526
+split: train
+expected_records: 337
+
+bindings:
+  train_sidecar_sha256: f95df0050df21f05bbc9b42d0154470714dde279e04cb8b00d0212bf49057d16
+  train_commitment_sha256: 85d41d2f59872e0900e9058481efbdf6bce91407d4c26bcde0a6547776454e53
+  train_identity_sha256: 88367535e296213377c366ed69abbd1e808c38049d79bb948091688e4c5b7b3f
+  reference_pose_fingerprint: f89cfc3e520cd3f45282ec06f42d5702f5e7c30c28ee6a3655ebfb5e58766047
+  reference_pose_cache_set_sha256: 03259ec8d914af5613785ba2eee3003d276b638bda5f0cc993e425188a4259bd
+  reference_ledger_sha256: 2b356adac8efa6d9c8a184230a7fc09d9a8cc3645b0bbab7c8aa00faf76c2a35
+  v4_config_file_sha256: c6fe33584f768e774d975059b7a899a4471aacc4cdda9f4821cc13c57bbaabc5
+  v4_config_fingerprint: c4b2dfae47581750281a43cf8eae92e4ceab91d113af601a4155ad3e2dd2f99a
+  v4_pose_fingerprint: 817013890533cd19e6c791969c35c3699d56d0e6656768ce64199bc30ceebe9c
+  heavy_model_asset_sha256: 59e42d71bcd44cbdbabc419f0ff76686595fd265419566bd4009ef703ea8e1fe
+  container_image_id: sha256:0a4d42c2d9911f147a17860e4e15095746b21c4e618e4fc1b20b62dd443c5898
+
+thresholds:
+  v4_zero_video_maximum: 8
+  recovered_reference_zero_video_minimum: 8
+  reference_usable_to_v4_zero_video_maximum: 0
+  source_coverage_mean_minimum: 0.80
+  source_coverage_p10_minimum: 0.25
+  source_coverage_p25_minimum: 0.60
+  source_coverage_median_minimum: 0.97
+  observed_at_most_8_video_maximum: 4
+  longest_run_fraction_p10_minimum: 0.15
+  longest_run_fraction_median_minimum: 0.80
+  pass0_source_valid_count_mismatch_maximum: 0
+  pass0_shared_coordinate_max_abs_error_maximum: 0.000001

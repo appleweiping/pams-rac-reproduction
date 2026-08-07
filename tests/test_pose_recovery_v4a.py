@@ -96,6 +96,7 @@ def test_v4a_config_rejects_non_complexity1_pass0_and_non_v4_recovery() -> None:
     payload["pose"]["preprocessing_revision"] = (
         "detected-span-minmax-zero-span-invalid-v2"
     )
+    payload["pose"]["incomplete_clip_policy"] = "error"
     with pytest.raises(ValueError, match="accepted only by the v4a"):
         PAMSConfig.model_validate(payload)
 
