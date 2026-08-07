@@ -52,6 +52,54 @@ def masked_zscore(
     return standardized.masked_fill(~expanded_valid, 0.0)
 
 
+def _masked_rms_shape(
+    values: Tensor,
+    valid_mask: Tensor,
+    *,
+    epsilon: float = 1e-4,
+) -> Tensor:
+    """Normalize valid scalar shapes with an RMS floor after the square root.
+
+    Unlike the historical :func:`masked_zscore`, the stabilizer is not added
+    to the variance.  Non-zero streams therefore retain amplitude-scale
+    invariance, while the RMS floor keeps constant streams and their gradients
+    finite.
+    """
+
+    if values.ndim != 2:
+        raise ValueError("values must have shape [batch, time]")
+    if valid_mask.shape != values.shape:
+        raise ValueError("valid_mask must match values")
+    if epsilon <= 0:
+        raise ValueError("epsilon must be positive")
+    valid = valid_mask.to(device=values.device, dtype=torch.bool)
+    safe_values = torch.where(valid, values, torch.zeros_like(values))
+    counts = valid.sum(dim=1).clamp_min(1).to(dtype=values.dtype)
+    means = safe_values.sum(dim=1) / counts
+    centered = torch.where(
+        valid,
+        values - means.unsqueeze(1),
+        torch.zeros_like(values),
+    )
+    mean_square = centered.square().sum(dim=1) / counts
+    nonzero = mean_square > 0
+    # Avoid evaluating sqrt backward at exactly zero: clamp-after-sqrt alone
+    # can otherwise form 0 * inf in autograd on a constant stream.
+    safe_mean_square = torch.where(
+        nonzero,
+        mean_square,
+        torch.ones_like(mean_square),
+    )
+    rms = safe_mean_square.sqrt()
+    denominator = torch.where(
+        nonzero,
+        rms.clamp_min(epsilon),
+        torch.full_like(rms, epsilon),
+    )
+    normalized = centered / denominator.unsqueeze(1)
+    return normalized.masked_fill(~valid, 0.0)
+
+
 @dataclass(frozen=True)
 class ReferenceRelativeSignal:
     """Target-free per-video reference representation for the inferred head."""
@@ -752,7 +800,7 @@ class SSHeadLoss(nn.Module):
                 # rewarding a uniform amplitude shrink.  The variance term
                 # below deliberately remains on the raw stream and is still
                 # the sole amplitude-control term.
-                shape_values = masked_zscore(
+                shape_values = _masked_rms_shape(
                     values.unsqueeze(0),
                     sample_valid.unsqueeze(0),
                 )[0]

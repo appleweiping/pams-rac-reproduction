@@ -546,8 +546,10 @@ def test_sshead_masked_rms_normalizes_shape_only_and_has_finite_gradients() -> N
     assert torch.isfinite(streams.grad).all()
 
     constant = torch.zeros(48, requires_grad=True)
-    constant_loss = objective(constant, torch.tensor(8.0))
-    constant_loss.backward()
+    constant_details = objective.compute(constant, torch.tensor(8.0))
+    for field in ("total", "cycle", "spectral", "variance", "smoothness"):
+        assert torch.isfinite(getattr(constant_details, field))
+    constant_details.total.backward()
     assert constant.grad is not None
     assert torch.isfinite(constant.grad).all()
 

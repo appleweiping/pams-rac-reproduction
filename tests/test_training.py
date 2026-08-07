@@ -159,12 +159,22 @@ def test_sshead_shape_compatibility_rejects_every_other_config_change() -> None:
 
 
 def test_masked_rms_candidate_copies_exact_encoder_tensors_only(tmp_path: Path) -> None:
-    upstream = _tiny_config(encoder_epochs=1)
+    upstream_payload = _tiny_config(encoder_epochs=1).model_dump()
+    upstream_payload["loss"]["kmeans_clusters"] = 8
+    upstream = PAMSConfig.model_validate(upstream_payload)
     candidate = _with_masked_rms_sshead(upstream)
-    items = (_sequence("a"), _sequence("b", phase=0.4))
+    items = tuple(
+        _sequence(
+            f"video-{index}",
+            phase=0.2 * index,
+            offset=float(index),
+        )
+        for index in range(8)
+    )
     checkpoint = tmp_path / "encoder.pt"
     progress = tmp_path / "encoder.jsonl"
-    provenance = _provenance(upstream)
+    identifiers = tuple(item.video_id for item in items)
+    provenance = _provenance(upstream, identifiers)
     trained = train_encoder(
         items,
         upstream,
@@ -173,7 +183,9 @@ def test_masked_rms_candidate_copies_exact_encoder_tensors_only(tmp_path: Path) 
         checkpoint_path=checkpoint,
         progress_path=progress,
         provenance=provenance,
+        allow_negative_shortfall=False,
     )
+    assert all(stats.cross_cluster_shortfall == 0 for stats in trained.history)
 
     loaded, observed_provenance = load_encoder_for_sshead_shape_candidate(
         checkpoint,
@@ -181,7 +193,7 @@ def test_masked_rms_candidate_copies_exact_encoder_tensors_only(tmp_path: Path) 
         candidate,
         progress_path=progress,
         expected_dataset_fingerprint=provenance.dataset_fingerprint,
-        expected_training_video_ids=("a", "b"),
+        expected_training_video_ids=identifiers,
         expected_pose_cache_set_sha256=provenance.pose_cache_set_sha256,
         device="cpu",
     )
@@ -199,13 +211,21 @@ def test_masked_rms_candidate_copies_exact_encoder_tensors_only(tmp_path: Path) 
     )
 
 
-def _sequence(identifier: str, *, phase: float = 0.0, frames: int = 16) -> PoseSequence:
+def _sequence(
+    identifier: str,
+    *,
+    phase: float = 0.0,
+    frames: int = 16,
+    offset: float = 0.0,
+) -> PoseSequence:
     time = np.arange(frames, dtype=np.float32)
     wave = np.sin(2.0 * math.pi * time / 4.0 + phase)
     xyz = np.zeros((frames, 33, 3), dtype=np.float32)
     xyz[:, :, 0] = wave[:, None]
     xyz[:, :, 1] = np.cos(2.0 * math.pi * time / 4.0 + phase)[:, None]
-    xyz[:, :, 2] = np.linspace(0.0, 1.0, frames, dtype=np.float32)[:, None]
+    xyz[:, :, 2] = (
+        np.linspace(0.0, 1.0, frames, dtype=np.float32)[:, None] + offset
+    )
     return PoseSequence(
         video_id=identifier,
         fps=16.0,
