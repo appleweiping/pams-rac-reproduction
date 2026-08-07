@@ -42,7 +42,7 @@ class DataConfig(StrictModel):
 
 
 class PoseRecoveryConfig(StrictModel):
-    """Identity-bearing settings for the opt-in v4a recovery pass.
+    """Identity-bearing settings for the opt-in v4 recovery pass.
 
     The heavy model file is supplied separately at runtime because filesystem
     locations are host-specific.  Its content digest, model identity, retry
@@ -56,12 +56,12 @@ class PoseRecoveryConfig(StrictModel):
         pattern=r"^[0-9a-f]{64}$",
     )
     temporal_resampling: Literal["none_native_timeline"] = "none_native_timeline"
-    static_image_mode: Literal[True] = True
-    smooth_landmarks: Literal[False] = False
+    static_image_mode: bool = True
+    smooth_landmarks: bool = False
     min_detection_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     min_tracking_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
-    full_frame_retry: Literal[True] = True
-    roi_retry: Literal[True] = True
+    full_frame_retry: bool = True
+    roi_retry: bool = True
     roi_margin_fraction: float = Field(default=0.20, ge=0.0, le=1.0)
     roi_min_side_fraction: float = Field(default=0.08, gt=0.0, le=1.0)
     association_cost: Literal[
@@ -99,6 +99,7 @@ class PoseConfig(StrictModel):
         "longest-contiguous-track-minmax-zero-span-invalid-v3",
         "official-segment-full-timeline-v1",
         "official-segment-heavy-missing-retry-full-timeline-v4a",
+        "official-segment-heavy-video-fill-missing-full-timeline-v4b",
     ] = "detected-span-minmax-zero-span-invalid-v2"
     model_id: str = "mediapipe-pose-0.10.14"
     model_complexity: int = Field(default=1, ge=0, le=2)
@@ -125,6 +126,7 @@ class PoseConfig(StrictModel):
             in {
                 "official-segment-full-timeline-v1",
                 "official-segment-heavy-missing-retry-full-timeline-v4a",
+                "official-segment-heavy-video-fill-missing-full-timeline-v4b",
             }
             and self.crop_to_detected_span
         ):
@@ -137,23 +139,49 @@ class PoseConfig(StrictModel):
             not in {
                 "official-segment-full-timeline-v1",
                 "official-segment-heavy-missing-retry-full-timeline-v4a",
+                "official-segment-heavy-video-fill-missing-full-timeline-v4b",
             }
             and self.incomplete_clip_policy != "error"
         ):
             raise ValueError(
                 "pad_invalid_tail is only valid for official-segment-full-timeline"
             )
-        recovery_revision = (
+        v4a_revision = (
             self.preprocessing_revision
             == "official-segment-heavy-missing-retry-full-timeline-v4a"
         )
+        v4b_revision = (
+            self.preprocessing_revision
+            == "official-segment-heavy-video-fill-missing-full-timeline-v4b"
+        )
+        recovery_revision = v4a_revision or v4b_revision
         if recovery_revision:
             if self.model_complexity != 1:
-                raise ValueError("v4a pass0 must use model_complexity=1")
+                raise ValueError("v4 pass0 must use model_complexity=1")
             if self.recovery is None:
-                raise ValueError("v4a pose recovery requires pose.recovery settings")
+                raise ValueError("v4 pose recovery requires pose.recovery settings")
+            if v4a_revision and not (
+                self.recovery.static_image_mode
+                and not self.recovery.smooth_landmarks
+                and self.recovery.full_frame_retry
+                and self.recovery.roi_retry
+            ):
+                raise ValueError(
+                    "v4a recovery requires static unsmoothed full-frame and ROI retries"
+                )
+            if v4b_revision and not (
+                not self.recovery.static_image_mode
+                and self.recovery.smooth_landmarks
+                and self.recovery.full_frame_retry
+                and not self.recovery.roi_retry
+            ):
+                raise ValueError(
+                    "v4b recovery requires a smoothed full-timeline VIDEO pass without ROI"
+                )
         elif self.recovery is not None:
-            raise ValueError("pose.recovery is accepted only by the v4a preprocessing revision")
+            raise ValueError(
+                "pose.recovery is accepted only by the v4a/v4b preprocessing revisions"
+            )
         return self
 
     @field_validator("model_id")

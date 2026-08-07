@@ -1511,7 +1511,7 @@ def pose_extract(
             dir_okay=False,
             readable=True,
             help=(
-                "Preseeded MediaPipe heavy model. Required by v4a and verified "
+                "Preseeded MediaPipe heavy model. Required by v4 recovery and verified "
                 "against the identity-bearing SHA-256 in the config."
             ),
         ),
@@ -1543,6 +1543,7 @@ def pose_extract(
         from pams.pose import (
             OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
             RECOVERY_PREPROCESSING_REVISION,
+            VIDEO_RECOVERY_PREPROCESSING_REVISION,
             PoseExtractorConfig,
             PoseRecoveryExtractorConfig,
             extract_many_with_failures,
@@ -1617,6 +1618,7 @@ def pose_extract(
             in {
                 OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
                 RECOVERY_PREPROCESSING_REVISION,
+                VIDEO_RECOVERY_PREPROCESSING_REVISION,
             }
         )
         if official_segment_inputs != official_segment_config:
@@ -1657,12 +1659,12 @@ def pose_extract(
         if config.pose.recovery is None:
             if heavy_model_asset is not None:
                 raise ValueError(
-                    "--heavy-model-asset is accepted only by the v4a pose recovery config"
+                    "--heavy-model-asset is accepted only by a v4 pose recovery config"
                 )
             recovery_settings = None
         else:
             if heavy_model_asset is None:
-                raise ValueError("v4a pose recovery requires --heavy-model-asset")
+                raise ValueError("v4 pose recovery requires --heavy-model-asset")
             recovery = config.pose.recovery
             recovery_settings = PoseRecoveryExtractorConfig(
                 heavy_model_id=recovery.heavy_model_id,
@@ -1685,6 +1687,12 @@ def pose_extract(
                 maximum_gap_frames=recovery.maximum_gap_frames,
                 maximum_gap_seconds=recovery.maximum_gap_seconds,
                 pose_coordinate_interpolation=recovery.pose_coordinate_interpolation,
+                recovery_mode=(
+                    "full-timeline-video-fill-missing-v4b"
+                    if config.pose.preprocessing_revision
+                    == VIDEO_RECOVERY_PREPROCESSING_REVISION
+                    else "missing-frame-static-plus-short-roi-v4a"
+                ),
             )
         summaries, failures = extract_many_with_failures(
             videos,
@@ -1770,6 +1778,16 @@ def pose_extract(
                             ),
                             "pose_coordinate_interpolation": (
                                 config.pose.recovery.pose_coordinate_interpolation
+                            ),
+                            **(
+                                {
+                                    "recovery_mode": (
+                                        "full-timeline-video-fill-missing-v4b"
+                                    )
+                                }
+                                if config.pose.preprocessing_revision
+                                == VIDEO_RECOVERY_PREPROCESSING_REVISION
+                                else {}
                             ),
                         }
                     }
