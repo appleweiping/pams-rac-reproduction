@@ -133,8 +133,18 @@ def _validate_proxy_config(candidate: PAMSConfig, v4a: PAMSConfig) -> None:
         "Table-2 proxy must use the inferred fixed period 16",
     )
     _require(
-        candidate.period.minimum == 4 and candidate.period.maximum == 512,
-        "temporary native period bounds must be [4, 512]",
+        candidate.period.minimum == 4
+        and candidate.period.maximum == 4096
+        and candidate.period.maximum_mode == "half_timeline",
+        "native period bounds must use [4, half_timeline] with ceiling 4096",
+    )
+    _require(
+        candidate.period.direct_fft_timebase == "dense_resampled",
+        "native direct FFT fallback must use the dense-resampled timebase",
+    )
+    _require(
+        candidate.readout.action_curve_source == "embedding_recurrence_carrier",
+        "native proxy must use the target-free recurrence-carrier readout",
     )
     _require(candidate.loss.scales == (1.0,), "proxy must use one TCC scale")
     _require(candidate.loss.temperature == 0.1, "proxy temperature must be 0.1")
@@ -413,8 +423,10 @@ def validate_native_baseline_inputs(
             "pose_fingerprint": candidate.pose_fingerprint,
             "period_training_mode": candidate.period.training_mode,
             "fixed_period_frames": candidate.period.fixed_period_frames,
-            "period_maximum_temporary_frames": candidate.period.maximum,
-            "period_padding_followup": "replace maximum with half_timeline after merge",
+            "period_maximum_ceiling_frames": candidate.period.maximum,
+            "period_maximum_mode": candidate.period.maximum_mode,
+            "direct_fft_timebase": candidate.period.direct_fft_timebase,
+            "action_curve_source": candidate.readout.action_curve_source,
             "tcc_scales": list(candidate.loss.scales),
             "anchor_stride": candidate.loss.anchor_stride,
             "use_cross_cluster_negatives": candidate.loss.use_cross_cluster_negatives,

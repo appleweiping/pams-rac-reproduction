@@ -19,6 +19,7 @@ from pams.config import (
     SSHeadConfig,
     TrainingConfig,
 )
+from pams.consensus import MultiExpertCounter
 from pams.losses import PAMSTCCLoss
 from pams.model import TemporalPeriodHead
 from pams.training import (
@@ -142,6 +143,14 @@ def _with_embedding_frequency_readout(config: PAMSConfig) -> PAMSConfig:
     payload["readout"]["action_curve_source"] = (
         "embedding_frequency_projection"
     )
+    return PAMSConfig.model_validate(payload)
+
+
+def _with_native_recurrence_readout(config: PAMSConfig) -> PAMSConfig:
+    payload = config.model_dump()
+    payload["period"]["maximum_mode"] = "half_timeline"
+    payload["period"]["direct_fft_timebase"] = "dense_resampled"
+    payload["readout"]["action_curve_source"] = "embedding_recurrence_carrier"
     return PAMSConfig.model_validate(payload)
 
 
@@ -1216,6 +1225,50 @@ def test_predict_sequence_embedding_curve_bypasses_head_but_keeps_consensus(
     assert result.count == consensus.count
     assert result.count in result.expert_counts
     assert np.count_nonzero(result.period_stream[~mask]) == 0
+
+
+def test_predict_sequence_routes_native_recurrence_period_and_analytic_reference(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import recurrence_carrier as recurrence_module
+
+    config = _with_native_recurrence_readout(
+        _tiny_config(encoder_epochs=1, head_epochs=1)
+    )
+    model = build_pams_model(config)
+    sequence = _sequence("native-recurrence")
+    real_estimator = recurrence_module.estimate_recurrence_carrier_curves
+    estimator_calls: list[dict[str, Any]] = []
+
+    def capture_estimator(*args: Any, **kwargs: Any) -> Any:
+        estimator_calls.append(dict(kwargs))
+        return real_estimator(*args, **kwargs)
+
+    monkeypatch.setattr(
+        recurrence_module,
+        "estimate_recurrence_carrier_curves",
+        capture_estimator,
+    )
+    counter = MultiExpertCounter()
+    real_count = counter.count
+    count_calls: list[dict[str, Any]] = []
+
+    def capture_count(*args: Any, **kwargs: Any) -> Any:
+        count_calls.append(dict(kwargs))
+        return real_count(*args, **kwargs)
+
+    monkeypatch.setattr(counter, "count", capture_count)
+    predict_sequence(model, sequence, config, device="cpu", counter=counter)
+
+    assert len(estimator_calls) == 1
+    assert estimator_calls[0]["maximum_mode"] == "half_timeline"
+    assert torch.equal(
+        estimator_calls[0]["timeline_lengths"],
+        torch.tensor([sequence.num_frames]),
+    )
+    assert len(count_calls) == 1
+    assert isinstance(count_calls[0]["reference_count_override"], int)
+    assert count_calls[0]["reference_frames"] is None
 
 
 def test_temporal_sshead_routes_the_same_valid_mask_through_training_and_prediction(

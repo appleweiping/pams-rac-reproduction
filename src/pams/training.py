@@ -2766,6 +2766,7 @@ def predict_sequence(
                 maximum_period=config.period.maximum,
                 valid_mask=batch.valid_mask,
                 timeline_lengths=batch.lengths,
+                maximum_mode=config.period.maximum_mode,
             )
             stream_batch = recurrence_readout.curves
             periods = recurrence_readout.periods
@@ -2869,9 +2870,12 @@ def predict_sequence(
         reference_frames=(
             sequence.num_frames
             if (
-                config.period.direct_fft_timebase == "dense_resampled"
-                or config.readout.action_curve_source
-                == "embedding_frequency_projection"
+                reference_count_override is None
+                and (
+                    config.period.direct_fft_timebase == "dense_resampled"
+                    or config.readout.action_curve_source
+                    == "embedding_frequency_projection"
+                )
             )
             else None
         ),

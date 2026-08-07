@@ -34,7 +34,7 @@ from pams.embedding_curve import (
     _dominant_harmonic_direction,
     _validated_inputs,
 )
-from pams.period import estimate_period_from_embedding_velocity_vectors
+from pams.period import MaximumPeriodMode, estimate_period_from_embedding_velocity_vectors
 
 if TYPE_CHECKING:
     from pams.config import PAMSConfig
@@ -627,6 +627,7 @@ def estimate_recurrence_carrier_curves(
     maximum_period: int,
     valid_mask: Tensor | None = None,
     timeline_lengths: Tensor | None = None,
+    maximum_mode: MaximumPeriodMode = "fixed",
 ) -> RecurrenceCarrierBatch:
     """Estimate the frozen ACF period and its recurrence-gated carrier."""
 
@@ -635,6 +636,8 @@ def estimate_recurrence_carrier_curves(
         minimum=minimum_period,
         maximum=maximum_period,
         valid_mask=valid_mask,
+        timeline_lengths=timeline_lengths,
+        maximum_mode=maximum_mode,
     )
     return build_recurrence_carrier_curves(
         embeddings.detach(),

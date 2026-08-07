@@ -10,6 +10,7 @@ from pams.consensus import MultiExpertCounter
 from pams.recurrence_carrier import (
     _cross_cycle_harmonic_feature_weights,
     build_recurrence_carrier_curves,
+    estimate_recurrence_carrier_curves,
     validate_recurrence_carrier_compatibility,
 )
 
@@ -291,3 +292,63 @@ def test_reference_override_is_explicit_and_does_not_change_experts() -> None:
             reference_frames=96,
             reference_count_override=2,
         )
+
+
+def test_estimated_recurrence_carrier_is_padding_invariant_with_native_lengths() -> None:
+    short_length = 96
+    long_length = 160
+    short = _localized_embeddings(
+        frames=short_length,
+        period=12.0,
+        active_start=12,
+        active_stop=84,
+    )
+    long = _localized_embeddings(
+        frames=long_length,
+        period=20.0,
+        active_start=20,
+        active_stop=140,
+    )
+    padded = torch.zeros((2, long_length, short.shape[1]), dtype=short.dtype)
+    padded[0, :short_length] = short
+    padded[0, short_length:] = 100_000.0
+    padded[1] = long
+    mask = torch.zeros((2, long_length), dtype=torch.bool)
+    mask[0, :short_length] = True
+    mask[1] = True
+
+    single = estimate_recurrence_carrier_curves(
+        short,
+        minimum_period=4,
+        maximum_period=4096,
+        valid_mask=mask[0, :short_length],
+        timeline_lengths=torch.tensor([short_length]),
+        maximum_mode="half_timeline",
+    )
+    batched = estimate_recurrence_carrier_curves(
+        padded,
+        minimum_period=4,
+        maximum_period=4096,
+        valid_mask=mask,
+        timeline_lengths=torch.tensor([short_length, long_length]),
+        maximum_mode="half_timeline",
+    )
+
+    assert torch.equal(batched.periods[:1], single.periods)
+    assert torch.equal(batched.period_confidences[:1], single.period_confidences)
+    assert torch.equal(batched.curves[0, :short_length], single.curves[0])
+    assert torch.equal(batched.active_masks[0, :short_length], single.active_masks[0])
+    assert torch.count_nonzero(batched.curves[0, short_length:]) == 0
+    assert not bool(batched.active_masks[0, short_length:].any())
+    for field in (
+        "curve_standard_deviations",
+        "raw_curve_standard_deviations",
+        "harmonic_energy_fractions",
+        "active_support_fractions",
+        "recurrence_gate_energies",
+        "phase_offsets",
+        "active_reference_counts",
+        "full_timeline_reference_counts",
+        "available",
+    ):
+        assert torch.equal(getattr(batched, field)[:1], getattr(single, field)), field

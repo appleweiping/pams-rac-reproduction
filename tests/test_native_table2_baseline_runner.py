@@ -30,7 +30,10 @@ def test_proxy_config_is_the_preregistered_inferred_native_baseline() -> None:
     assert candidate.model.position_encoding_mode == "sinusoidal"
     assert candidate.period.training_mode == "fixed_period_inferred"
     assert candidate.period.fixed_period_frames == 16
-    assert (candidate.period.minimum, candidate.period.maximum) == (4, 512)
+    assert (candidate.period.minimum, candidate.period.maximum) == (4, 4096)
+    assert candidate.period.maximum_mode == "half_timeline"
+    assert candidate.period.direct_fft_timebase == "dense_resampled"
+    assert candidate.readout.action_curve_source == "embedding_recurrence_carrier"
     assert candidate.loss.scales == (1.0,)
     assert candidate.loss.temperature == pytest.approx(0.1)
     assert candidate.loss.anchor_stride == 4
@@ -49,8 +52,8 @@ def test_proxy_config_discloses_every_inference_and_followup() -> None:
         "independently inferred executable proxy",
         "not the authors' baseline",
         "not author-disclosed",
-        "period.maximum=512 is a conservative temporary ceiling",
-        "replace it with the preregistered half-timeline bound",
+        "period.maximum=4096 is only a non-binding safety ceiling",
+        "maximum_mode=half_timeline applies the per-sample native-duration bound",
         "never eligible to claim their Table-2 number",
     ):
         assert disclosure in normalized

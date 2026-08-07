@@ -11,10 +11,10 @@
 # The pose block is exactly the passed v4a official-segment/native-timeline
 # input definition.  data.frames remains the historical schema field; v4a
 # caches retain their variable native lengths and training batches pad only at
-# collation time.  period.maximum=512 is a conservative temporary ceiling.
-# After the independently reviewed period-padding branch is merged, replace it
-# with the preregistered half-timeline bound rather than tuning this value on
-# dev84 or test105.
+# collation time. period.maximum=4096 is only a non-binding safety ceiling;
+# maximum_mode=half_timeline applies the per-sample native-duration bound.
+# dense_resampled freezes direct FFT fallback to that same native clock. None
+# of these values may be tuned on dev84 or test105.
 schema_version: 1
 protocol: ucfrep_526
 seed: 2026
@@ -67,12 +67,14 @@ model:
   period_head_hidden_dim: 128
 period:
   minimum: 4
-  maximum: 512
+  maximum: 4096
+  maximum_mode: half_timeline
   pose_energy_epochs: 10
   training_mode: fixed_period_inferred
   fixed_period_frames: 16
   # Unused by fixed_period_inferred, retained as an explicit schema value.
   post_warmup_source: embedding_velocity_coordinate
+  direct_fft_timebase: dense_resampled
 loss:
   # Table 2 describes the conventional-TCC baseline as non-multi-scale.
   scales: [1.0]
@@ -126,3 +128,7 @@ consensus:
   height_factor: 0.6
   prominence_factor: 0.25
   long_window_weight: 0.6
+readout:
+  # Target-free inference readout; this remains an independently inferred
+  # reproduction choice, not an author-disclosed Period Head implementation.
+  action_curve_source: embedding_recurrence_carrier
