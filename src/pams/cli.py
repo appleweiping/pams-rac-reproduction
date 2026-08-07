@@ -1503,6 +1503,19 @@ def pose_extract(
             help="Independent pose-input receipt; defaults beside the sidecar.",
         ),
     ] = None,
+    heavy_model_asset: Annotated[
+        Path | None,
+        typer.Option(
+            "--heavy-model-asset",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help=(
+                "Preseeded MediaPipe heavy model. Required by v4a and verified "
+                "against the identity-bearing SHA-256 in the config."
+            ),
+        ),
+    ] = None,
     limit: Annotated[int | None, typer.Option("--limit", min=1)] = None,
     overwrite: Annotated[bool, typer.Option("--overwrite")] = False,
     skip_existing: Annotated[
@@ -1529,7 +1542,9 @@ def pose_extract(
     try:
         from pams.pose import (
             OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
+            RECOVERY_PREPROCESSING_REVISION,
             PoseExtractorConfig,
+            PoseRecoveryExtractorConfig,
             extract_many_with_failures,
         )
 
@@ -1598,7 +1613,11 @@ def pose_extract(
             raise ValueError(f"no records selected by split {split!r}")
         official_segment_inputs = getattr(records[0], "annotation_sha256", None) is not None
         official_segment_config = (
-            config.pose.preprocessing_revision == OFFICIAL_SEGMENT_PREPROCESSING_REVISION
+            config.pose.preprocessing_revision
+            in {
+                OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
+                RECOVERY_PREPROCESSING_REVISION,
+            }
         )
         if official_segment_inputs != official_segment_config:
             raise ValueError(
@@ -1635,6 +1654,37 @@ def pose_extract(
                 )
             )
         videos = tuple(video_rows)
+        if config.pose.recovery is None:
+            if heavy_model_asset is not None:
+                raise ValueError(
+                    "--heavy-model-asset is accepted only by the v4a pose recovery config"
+                )
+            recovery_settings = None
+        else:
+            if heavy_model_asset is None:
+                raise ValueError("v4a pose recovery requires --heavy-model-asset")
+            recovery = config.pose.recovery
+            recovery_settings = PoseRecoveryExtractorConfig(
+                heavy_model_id=recovery.heavy_model_id,
+                heavy_model_asset_path=heavy_model_asset,
+                heavy_model_asset_sha256=recovery.heavy_model_asset_sha256,
+                model_complexity=recovery.model_complexity,
+                static_image_mode=recovery.static_image_mode,
+                smooth_landmarks=recovery.smooth_landmarks,
+                min_detection_confidence=recovery.min_detection_confidence,
+                min_tracking_confidence=recovery.min_tracking_confidence,
+                full_frame_retry=recovery.full_frame_retry,
+                roi_retry=recovery.roi_retry,
+                roi_margin_fraction=recovery.roi_margin_fraction,
+                roi_min_side_fraction=recovery.roi_min_side_fraction,
+                association_cost=recovery.association_cost,
+                association_center_weight=recovery.association_center_weight,
+                association_log_scale_weight=recovery.association_log_scale_weight,
+                dominant_track_strategy=recovery.dominant_track_strategy,
+                maximum_gap_frames=recovery.maximum_gap_frames,
+                maximum_gap_seconds=recovery.maximum_gap_seconds,
+                pose_coordinate_interpolation=recovery.pose_coordinate_interpolation,
+            )
         summaries, failures = extract_many_with_failures(
             videos,
             cache_dir=cache_dir,
@@ -1649,6 +1699,7 @@ def pose_extract(
                 min_tracking_confidence=config.pose.min_tracking_confidence,
                 crop_to_detected_span=config.pose.crop_to_detected_span,
                 incomplete_clip_policy=config.pose.incomplete_clip_policy,
+                recovery=recovery_settings,
             ),
             overwrite=overwrite,
             skip_existing=skip_existing,
@@ -1702,6 +1753,23 @@ def pose_extract(
                 "identity_sha256": selected_identity_sha256,
                 "pose_fingerprint": config.pose_fingerprint,
                 "incomplete_clip_policy": config.pose.incomplete_clip_policy,
+                **(
+                    {}
+                    if config.pose.recovery is None
+                    else {
+                        "pose_recovery": {
+                            "schema_version": 1,
+                            "preprocessing_revision": config.pose.preprocessing_revision,
+                            "heavy_model_id": config.pose.recovery.heavy_model_id,
+                            "heavy_model_asset_sha256": (
+                                config.pose.recovery.heavy_model_asset_sha256
+                            ),
+                            "pose_coordinate_interpolation": (
+                                config.pose.recovery.pose_coordinate_interpolation
+                            ),
+                        }
+                    }
+                ),
                 "successful_cache_snapshot": successful_cache_snapshot,
                 "selected": len(records),
                 "completed": len(summaries),

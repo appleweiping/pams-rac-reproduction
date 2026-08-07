@@ -41,6 +41,55 @@ class DataConfig(StrictModel):
         return value
 
 
+class PoseRecoveryConfig(StrictModel):
+    """Identity-bearing settings for the opt-in v4a recovery pass.
+
+    The heavy model file is supplied separately at runtime because filesystem
+    locations are host-specific.  Its content digest, model identity, retry
+    policy, and every association/ROI choice are nevertheless frozen here and
+    therefore included in :attr:`PAMSConfig.pose_fingerprint`.
+    """
+
+    heavy_model_id: str = "mediapipe-pose-heavy-0.10.14"
+    model_complexity: Literal[2] = 2
+    heavy_model_asset_sha256: str = Field(
+        pattern=r"^[0-9a-f]{64}$",
+    )
+    static_image_mode: Literal[True] = True
+    smooth_landmarks: Literal[False] = False
+    min_detection_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
+    min_tracking_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
+    full_frame_retry: Literal[True] = True
+    roi_retry: Literal[True] = True
+    roi_margin_fraction: float = Field(default=0.20, ge=0.0, le=1.0)
+    roi_min_side_fraction: float = Field(default=0.08, gt=0.0, le=1.0)
+    association_cost: Literal[
+        "normalized-center-l2-plus-log-scale-v1"
+    ] = "normalized-center-l2-plus-log-scale-v1"
+    association_center_weight: float = Field(default=1.0, ge=0.0)
+    association_log_scale_weight: float = Field(default=0.25, ge=0.0)
+    dominant_track_strategy: Literal[
+        "global-viterbi-visible-extent-v1"
+    ] = "global-viterbi-visible-extent-v1"
+    maximum_gap_frames: int = Field(default=8, ge=1)
+    maximum_gap_seconds: float = Field(default=0.25, gt=0.0)
+    pose_coordinate_interpolation: Literal[False] = False
+
+    @model_validator(mode="after")
+    def validate_non_degenerate_association(self) -> PoseRecoveryConfig:
+        if self.association_center_weight == 0.0 and self.association_log_scale_weight == 0.0:
+            raise ValueError("pose recovery association requires a positive cost weight")
+        return self
+
+    @field_validator("heavy_model_id")
+    @classmethod
+    def validate_heavy_model_id(cls, value: str) -> str:
+        model_id = value.strip()
+        if not model_id:
+            raise ValueError("pose.recovery.heavy_model_id must be non-empty")
+        return model_id
+
+
 class PoseConfig(StrictModel):
     """Frozen MediaPipe extractor settings included in pose-cache identity."""
 
@@ -48,6 +97,7 @@ class PoseConfig(StrictModel):
         "detected-span-minmax-zero-span-invalid-v2",
         "longest-contiguous-track-minmax-zero-span-invalid-v3",
         "official-segment-full-timeline-v1",
+        "official-segment-heavy-missing-retry-full-timeline-v4a",
     ] = "detected-span-minmax-zero-span-invalid-v2"
     model_id: str = "mediapipe-pose-0.10.14"
     model_complexity: int = Field(default=1, ge=0, le=2)
@@ -56,6 +106,7 @@ class PoseConfig(StrictModel):
     min_tracking_confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     crop_to_detected_span: bool = True
     incomplete_clip_policy: Literal["error", "pad_invalid_tail"] = "error"
+    recovery: PoseRecoveryConfig | None = None
 
     @model_validator(mode="after")
     def validate_track_policy(self) -> PoseConfig:
@@ -69,7 +120,11 @@ class PoseConfig(StrictModel):
                 "crop_to_detected_span=true"
             )
         if (
-            self.preprocessing_revision == "official-segment-full-timeline-v1"
+            self.preprocessing_revision
+            in {
+                "official-segment-full-timeline-v1",
+                "official-segment-heavy-missing-retry-full-timeline-v4a",
+            }
             and self.crop_to_detected_span
         ):
             raise ValueError(
@@ -77,12 +132,27 @@ class PoseConfig(StrictModel):
                 "crop_to_detected_span=false"
             )
         if (
-            self.preprocessing_revision != "official-segment-full-timeline-v1"
+            self.preprocessing_revision
+            not in {
+                "official-segment-full-timeline-v1",
+                "official-segment-heavy-missing-retry-full-timeline-v4a",
+            }
             and self.incomplete_clip_policy != "error"
         ):
             raise ValueError(
                 "pad_invalid_tail is only valid for official-segment-full-timeline"
             )
+        recovery_revision = (
+            self.preprocessing_revision
+            == "official-segment-heavy-missing-retry-full-timeline-v4a"
+        )
+        if recovery_revision:
+            if self.model_complexity != 1:
+                raise ValueError("v4a pass0 must use model_complexity=1")
+            if self.recovery is None:
+                raise ValueError("v4a pose recovery requires pose.recovery settings")
+        elif self.recovery is not None:
+            raise ValueError("pose.recovery is accepted only by the v4a preprocessing revision")
         return self
 
     @field_validator("model_id")
@@ -309,6 +379,9 @@ class PAMSConfig(StrictModel):
             # Preserve historical fingerprints. The opt-in padding policy is
             # extraction-affecting and remains in every new method identity.
             pose.pop("incomplete_clip_policy")
+        if pose["recovery"] is None:
+            # Preserve every pre-v4a whole-experiment fingerprint.
+            pose.pop("recovery")
         model = payload["model"]
         if model["input_projection_scale"] == "none":
             # ``none`` is the historical behavior.  Omitting only this default
@@ -404,6 +477,10 @@ class PAMSConfig(StrictModel):
         pose = self.pose.model_dump(mode="json")
         if pose["incomplete_clip_policy"] == "error":
             pose.pop("incomplete_clip_policy")
+        if pose["recovery"] is None:
+            # Keep every historical v2/v3/official-segment fingerprint byte-for-byte
+            # stable. Recovery is opt-in and identity-changing.
+            pose.pop("recovery")
         return {
             "data": self.data.model_dump(mode="json"),
             "pose": pose,
