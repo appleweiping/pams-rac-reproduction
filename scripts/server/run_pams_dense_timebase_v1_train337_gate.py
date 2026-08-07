@@ -19,6 +19,7 @@ import re
 import stat
 import struct
 from collections.abc import Mapping, Sequence
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -51,7 +52,6 @@ from pams.training import (
     validate_terminal_checkpoint,
 )
 from pams.types import PoseSequence
-
 
 _ARTIFACT_TYPE = "pams_dense_timebase_v1_train337_gate"
 _RECEIPT_TYPE = "pams_dense_timebase_v1_train337_gate_receipt"
@@ -1798,10 +1798,8 @@ def _write_new_regular_file(path: Path, payload: bytes) -> None:
             handle.flush()
             os.fsync(handle.fileno())
     except BaseException:
-        try:
+        with suppress(OSError):
             path.unlink()
-        except OSError:
-            pass
         raise
 
 

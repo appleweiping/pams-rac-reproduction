@@ -14,6 +14,7 @@ import json
 import math
 import os
 from collections.abc import Mapping, Sequence
+from contextlib import suppress
 from pathlib import Path
 from typing import Any, Literal
 
@@ -26,7 +27,6 @@ from pams.consensus import MultiExpertCounter
 from pams.period import estimate_period_batch_direct_fft
 from pams.reproducibility import clean_git_revision, sha256_file, sha256_json
 from pams.safety import run_counter_sign_phase_gate
-
 
 _ARTIFACT_TYPE = "pams_dense_timebase_v1_synthetic_gate"
 _RECEIPT_TYPE = "pams_dense_timebase_v1_synthetic_gate_receipt"
@@ -731,10 +731,8 @@ def _write_new_regular_file(path: Path, payload: bytes) -> None:
             handle.flush()
             os.fsync(handle.fileno())
     except BaseException:
-        try:
+        with suppress(OSError):
             path.unlink()
-        except OSError:
-            pass
         raise
 
 

@@ -11,7 +11,6 @@ import torch
 
 from scripts.server import run_pams_dense_timebase_v1_gate as runner
 
-
 POLICY = (
     Path(__file__).resolve().parents[1]
     / "configs/readouts/pams_dense_resampled_timebase_v1.yaml"
