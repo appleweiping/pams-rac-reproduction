@@ -15,7 +15,6 @@ from typing import Any
 
 import numpy as np
 import torch
-
 from pose_recovery_v4d_full337_contract import (
     CONTAINER_IMAGE_ID,
     MODEL_ASSET_SHA256,
