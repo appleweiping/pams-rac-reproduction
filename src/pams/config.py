@@ -229,6 +229,10 @@ class SSHeadConfig(StrictModel):
         "nonzero_gate",
         "normalized_weight",
     ] = "nonzero_gate"
+    shape_normalization: Literal[
+        "raw",
+        "masked_rms",
+    ] = "raw"
     cycle_weight: float = Field(default=1.0, ge=0)
     spectral_weight: float = Field(default=1.0, ge=0)
     variance_weight: float = Field(default=0.1, ge=0)
@@ -351,6 +355,11 @@ class PAMSConfig(StrictModel):
             # Preserve historical config/checkpoint identities.  Continuous
             # normalized confidence weighting is an opt-in inferred repair.
             sshead.pop("period_confidence_mode")
+        if sshead["shape_normalization"] == "raw":
+            # Preserve every historical config/checkpoint fingerprint.  The
+            # opt-in masked-RMS route changes the inferred SSHead objective
+            # and therefore remains in the method identity.
+            sshead.pop("shape_normalization")
         consensus = payload["consensus"]
         if consensus["expert_mode"] == "multi":
             # Preserve every historical checkpoint/config fingerprint.  The

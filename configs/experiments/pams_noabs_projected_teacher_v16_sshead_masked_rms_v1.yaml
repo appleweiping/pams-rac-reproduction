@@ -1,0 +1,86 @@
+# PRE-TRAIN FROZEN MASKED-RMS SSHEAD REPAIR (seed 2026).
+#
+# This independently inferred train337-only candidate reuses the exact
+# terminal PAMS-v16 encoder. Relative to
+# pams_noabs_projected_teacher_v16.yaml, its only semantic change is
+# sshead.shape_normalization: masked_rms. The cycle, spectral, and smoothness
+# shape terms consume a valid-frame centered, RMS-normalized stream; the
+# variance term remains on the raw stream with its historical weight 0.1.
+# The PAMS paper does not disclose this loss or compatibility route.
+schema_version: 1
+protocol: ucfrep_526
+seed: 2026
+data:
+  frames: 256
+  keypoints: 33
+  coordinates: 3
+  normalization: per_frame_minmax
+  missing_value: 0.0
+pose:
+  preprocessing_revision: longest-contiguous-track-minmax-zero-span-invalid-v3
+  model_id: mediapipe-pose-0.10.14
+  model_complexity: 1
+  smooth_landmarks: true
+  min_detection_confidence: 0.5
+  min_tracking_confidence: 0.5
+  crop_to_detected_span: true
+model:
+  input_dim: 99
+  model_dim: 512
+  input_projection_scale: none
+  position_encoding_mode: none
+  embedding_dim: 512
+  layers: 4
+  heads: 16
+  feedforward_dim: 2048
+  dropout: 0.1
+  norm_first: false
+  period_head_hidden_dim: 128
+period:
+  minimum: 4
+  maximum: 128
+  pose_energy_epochs: 10
+  training_mode: adaptive
+  fixed_period_frames: 16
+  post_warmup_source: projected_pose_velocity_vector_acf
+loss:
+  scales: [0.5, 1.0, 1.5]
+  temperature: 0.1
+  kmeans_clusters: 8
+  kmeans_refresh_epochs: 5
+  exclude_other_scale_positives_from_denominator: false
+training:
+  epochs: 150
+  effective_batch_size: 32
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  scheduler_factor: 0.5
+  scheduler_patience: 8
+  minimum_learning_rate: 0.000001
+  position_permutation_consistency_weight: 0.0
+  skeleton_augmentation:
+    enabled: true
+    rotation_degrees: [15.0, 15.0, 15.0]
+    scale_range: [0.85, 1.15]
+    jitter_std: 0.01
+sshead:
+  epochs: 30
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  architecture: pointwise_mlp
+  input_source: encoder_embedding
+  period_confidence_mode: nonzero_gate
+  shape_normalization: masked_rms
+  cycle_weight: 1.0
+  spectral_weight: 1.0
+  variance_weight: 0.1
+  smoothness_weight: 0.01
+consensus:
+  expert_mode: multi
+  sigma_multipliers: [0.05, 0.12, 0.15]
+  distance_multipliers: [0.5, 0.8, 1.2]
+  short_window_multiplier: 0.5
+  long_window_multiplier: 2.0
+  height_factor: 0.6
+  prominence_factor: 0.25
+  long_window_weight: 0.6

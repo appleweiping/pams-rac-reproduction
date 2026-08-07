@@ -1757,6 +1757,137 @@ def validate_terminal_checkpoint(
     return actual_provenance
 
 
+def validate_sshead_shape_normalization_compatibility(
+    upstream_config: PAMSConfig,
+    candidate_config: PAMSConfig,
+) -> None:
+    """Require the audited SSHead candidate to change exactly one field.
+
+    This is intentionally not a general checkpoint-compatibility policy.  It
+    exists only for reusing a terminal encoder whose config predates the
+    opt-in SSHead shape-normalization field.
+    """
+
+    if upstream_config.sshead.shape_normalization != "raw":
+        raise ValueError("upstream encoder config must use legacy raw SSHead shapes")
+    if candidate_config.sshead.shape_normalization != "masked_rms":
+        raise ValueError("candidate config must opt into masked_rms SSHead shapes")
+    upstream = upstream_config.model_dump(mode="json")
+    candidate = candidate_config.model_dump(mode="json")
+    upstream_shape = upstream["sshead"].pop("shape_normalization")
+    candidate_shape = candidate["sshead"].pop("shape_normalization")
+    if upstream_shape != "raw" or candidate_shape != "masked_rms":
+        raise AssertionError("validated shape-normalization values changed unexpectedly")
+    if upstream != candidate:
+        raise ValueError(
+            "upstream and candidate configs may differ only in "
+            "sshead.shape_normalization"
+        )
+
+
+def _read_bound_encoder_provenance(
+    path: Path,
+    upstream_config: PAMSConfig,
+) -> CheckpointProvenance:
+    """Read one encoder's bound provenance without relaxing normal loaders."""
+
+    payload = torch.load(path, map_location=torch.device("cpu"), weights_only=False)
+    if not isinstance(payload, dict):
+        raise ValueError("checkpoint root must be a mapping")
+    if payload.get("schema_version") != _CHECKPOINT_SCHEMA_VERSION:
+        raise ValueError("unsupported checkpoint schema")
+    if payload.get("stage") != "encoder":
+        raise ValueError("SSHead compatibility input must be an encoder checkpoint")
+    if payload.get("config_fingerprint") != upstream_config.fingerprint:
+        raise ValueError("upstream encoder checkpoint config fingerprint does not match")
+    raw = payload.get("provenance")
+    if not isinstance(raw, Mapping):
+        raise ValueError("upstream encoder checkpoint requires bound provenance")
+    provenance = CheckpointProvenance.from_mapping(raw)
+    _validate_provenance_context(
+        provenance,
+        stage="encoder",
+        config=upstream_config,
+    )
+    return provenance
+
+
+def load_encoder_for_sshead_shape_candidate(
+    checkpoint_path: str | Path,
+    upstream_config: PAMSConfig,
+    candidate_config: PAMSConfig,
+    *,
+    progress_path: str | Path,
+    expected_dataset_fingerprint: str,
+    expected_training_video_ids: Sequence[str],
+    expected_pose_cache_set_sha256: str,
+    device: str | torch.device | None = None,
+) -> tuple[PAMSModel, CheckpointProvenance]:
+    """Validate and copy only encoder tensors into the masked-RMS candidate."""
+
+    validate_sshead_shape_normalization_compatibility(
+        upstream_config,
+        candidate_config,
+    )
+    source = Path(checkpoint_path)
+    actual_provenance = _read_bound_encoder_provenance(source, upstream_config)
+    expected_ids = tuple(sorted(str(identifier) for identifier in expected_training_video_ids))
+    expected_fields: tuple[tuple[str, object, object], ...] = (
+        (
+            "dataset_fingerprint",
+            actual_provenance.dataset_fingerprint,
+            _canonical_sha256(expected_dataset_fingerprint, "dataset_fingerprint"),
+        ),
+        ("training_video_ids", actual_provenance.training_video_ids, expected_ids),
+        (
+            "pose_cache_set_sha256",
+            actual_provenance.pose_cache_set_sha256,
+            _canonical_sha256(
+                expected_pose_cache_set_sha256,
+                "pose_cache_set_sha256",
+            ),
+        ),
+    )
+    for field, actual, expected in expected_fields:
+        if actual != expected:
+            raise ValueError(f"upstream encoder provenance mismatch for {field}")
+    if actual_provenance.pose_fingerprint != upstream_config.pose_fingerprint:
+        raise ValueError("upstream encoder provenance pose fingerprint does not match")
+
+    validate_terminal_checkpoint(
+        source,
+        upstream_config,
+        expected_stage="encoder",
+        expected_provenance=actual_provenance,
+        progress_path=progress_path,
+    )
+    resolved_device = _resolve_device(device)
+    upstream_model = load_model_checkpoint(
+        source,
+        upstream_config,
+        device=resolved_device,
+        expected_stage="encoder",
+        expected_provenance=actual_provenance,
+    )
+
+    # Recreate the untouched head from the candidate seed.  Only encoder
+    # tensors cross the config boundary.
+    seed_everything(candidate_config.seed)
+    candidate_model = build_pams_model(candidate_config).to(resolved_device)
+    upstream_encoder_state = {
+        name: tensor.detach().clone()
+        for name, tensor in upstream_model.encoder.state_dict().items()
+    }
+    candidate_model.encoder.load_state_dict(upstream_encoder_state, strict=True)
+    candidate_encoder_state = candidate_model.encoder.state_dict()
+    if set(candidate_encoder_state) != set(upstream_encoder_state):
+        raise RuntimeError("candidate encoder state keys changed during exact copy")
+    for name, upstream_tensor in upstream_encoder_state.items():
+        if not torch.equal(candidate_encoder_state[name], upstream_tensor):
+            raise RuntimeError(f"candidate encoder tensor mismatch after copy: {name}")
+    return candidate_model, actual_provenance
+
+
 def validate_sshead_encoder_binding(
     sshead_checkpoint: str | Path,
     encoder_checkpoint: str | Path,
@@ -2294,6 +2425,7 @@ def train_sshead(
             confidence_weighted_period_losses=(
                 config.sshead.period_confidence_mode == "normalized_weight"
             ),
+            shape_normalization=config.sshead.shape_normalization,
         )
     history: list[SSHeadEpochStats] = []
     completed_epochs = 0

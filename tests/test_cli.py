@@ -1902,6 +1902,153 @@ def test_training_cli_always_supplies_bound_provenance_and_refuses_overwrite(
     )
 
 
+def test_masked_rms_sshead_cli_binds_both_configs_and_encoder_copy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+    from pams.config import load_config
+
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text("{}", encoding="utf-8")
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    encoder_checkpoint = tmp_path / "encoder.pt"
+    encoder_checkpoint.write_bytes(b"bound-v16-encoder")
+    encoder_progress = tmp_path / "encoder.jsonl"
+    encoder_progress.write_text("{}\n", encoding="utf-8")
+    output_dir = tmp_path / "head-output"
+    upstream_config_path = (
+        REPOSITORY
+        / "configs"
+        / "experiments"
+        / "pams_noabs_projected_teacher_v16.yaml"
+    )
+    candidate_config_path = (
+        REPOSITORY
+        / "configs"
+        / "experiments"
+        / "pams_noabs_projected_teacher_v16_sshead_masked_rms_v1.yaml"
+    )
+    upstream_config = load_config(upstream_config_path)
+    candidate_config = load_config(candidate_config_path)
+    observed: dict[str, object] = {}
+
+    monkeypatch.setattr(
+        cli_module,
+        "_training_inputs",
+        lambda *_args, **_kwargs: (
+            _FakeManifest(),
+            (object(),),
+            _FakePoseSnapshot(),
+        ),
+    )
+    monkeypatch.setattr(
+        "pams.reproducibility.clean_git_revision",
+        lambda _cwd: "a" * 40,
+    )
+    _set_fake_container_identity(monkeypatch)
+
+    def fake_start(**kwargs: object) -> Path:
+        observed["start"] = kwargs
+        return tmp_path / "started.json"
+
+    def fake_complete(
+        _started: Path,
+        *,
+        artifacts: dict[str, Path],
+        expected_artifact_sha256: dict[str, str],
+        metrics: dict[str, object],
+    ) -> tuple[Path, str]:
+        observed["artifacts"] = artifacts
+        observed["expected"] = expected_artifact_sha256
+        observed["metrics"] = metrics
+        return tmp_path / "completed.json", "f" * 64
+
+    monkeypatch.setattr(cli_module, "_create_cli_run_manifest", fake_start)
+    monkeypatch.setattr(cli_module, "_complete_cli_run_manifest", fake_complete)
+    upstream_provenance = CheckpointProvenance(
+        protocol=upstream_config.protocol,
+        dataset_fingerprint="e" * 64,
+        training_video_ids=("train-a", "train-b"),
+        pose_fingerprint=upstream_config.pose_fingerprint,
+        pose_cache_set_sha256="c" * 64,
+        source_git_sha="b" * 40,
+    )
+
+    def fake_compatible_load(
+        _checkpoint: Path,
+        observed_upstream: object,
+        observed_candidate: object,
+        **kwargs: object,
+    ) -> tuple[object, CheckpointProvenance]:
+        observed["upstream_config"] = observed_upstream
+        observed["candidate_config"] = observed_candidate
+        observed["compatibility_kwargs"] = kwargs
+        return object(), upstream_provenance
+
+    monkeypatch.setattr(
+        training_module,
+        "load_encoder_for_sshead_shape_candidate",
+        fake_compatible_load,
+    )
+
+    def fake_train_sshead(*_args: object, **kwargs: object) -> SimpleNamespace:
+        checkpoint_path = kwargs["checkpoint_path"]
+        progress_path = kwargs["progress_path"]
+        checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint_path.write_bytes(b"masked-rms-head")
+        progress_path.parent.mkdir(parents=True, exist_ok=True)
+        progress_path.write_text("{}\n", encoding="utf-8")
+        return SimpleNamespace(
+            completed_epochs=1,
+            checkpoint_path=checkpoint_path,
+            history=(),
+        )
+
+    monkeypatch.setattr(training_module, "train_sshead", fake_train_sshead)
+    result = runner.invoke(
+        app,
+        [
+            "train",
+            "sshead",
+            str(encoder_checkpoint),
+            str(manifest_path),
+            str(cache_dir),
+            str(output_dir),
+            "--encoder-progress",
+            str(encoder_progress),
+            "--config",
+            str(candidate_config_path),
+            "--upstream-encoder-config",
+            str(upstream_config_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = _json_output(result.stdout)
+    assert observed["upstream_config"] == upstream_config
+    assert observed["candidate_config"] == candidate_config
+    assert payload["candidate_config_fingerprint"] == candidate_config.fingerprint
+    assert payload["upstream_encoder_config_fingerprint"] == upstream_config.fingerprint
+    assert payload["encoder_tensor_binding_verified"] is True
+    artifacts = observed["artifacts"]
+    assert isinstance(artifacts, dict)
+    assert artifacts["input_config"] == candidate_config_path
+    assert artifacts["input_upstream_encoder_config"] == upstream_config_path
+    metrics = observed["metrics"]
+    assert isinstance(metrics, dict)
+    assert metrics["candidate_config_fingerprint"] == candidate_config.fingerprint
+    assert metrics["upstream_encoder_config_fingerprint"] == upstream_config.fingerprint
+    assert metrics["encoder_tensor_binding_verified"] is True
+    start = observed["start"]
+    assert isinstance(start, dict)
+    notes = start["notes"]
+    assert isinstance(notes, list)
+    assert any(candidate_config.fingerprint in note for note in notes)
+    assert any(upstream_config.fingerprint in note for note in notes)
+
+
 def test_encoder_cli_resume_copies_immutable_inputs_into_a_new_run(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

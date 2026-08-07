@@ -502,6 +502,56 @@ def test_sshead_ignores_invalid_cycle_pairs() -> None:
     assert stream.grad is not None
 
 
+def test_sshead_raw_shape_mode_is_bitwise_legacy() -> None:
+    stream = torch.randn(2, 32)
+    mask = torch.ones(2, 32, dtype=torch.bool)
+    mask[0, 3:7] = False
+    periods = torch.tensor([4.0, 8.0])
+    implicit = SSHeadLoss().compute(stream, periods, mask)
+    explicit = SSHeadLoss(shape_normalization="raw").compute(
+        stream,
+        periods,
+        mask,
+    )
+
+    for field in ("total", "cycle", "spectral", "variance", "smoothness"):
+        assert torch.equal(getattr(implicit, field), getattr(explicit, field))
+
+
+def test_sshead_masked_rms_normalizes_shape_only_and_has_finite_gradients() -> None:
+    time = torch.arange(48, dtype=torch.float32)
+    base = torch.sin(2.0 * math.pi * time / 8.0)
+    streams = torch.stack((base, 7.0 * base)).requires_grad_()
+    mask = torch.ones(2, 48, dtype=torch.bool)
+    mask[:, 5:9] = False
+    periods = torch.tensor([8.0, 8.0])
+    objective = SSHeadLoss(shape_normalization="masked_rms")
+    joint = objective.compute(streams, periods, mask)
+    first = objective.compute(streams[0], periods[0], mask[0])
+    second = objective.compute(streams[1], periods[1], mask[1])
+
+    assert torch.allclose(first.cycle, second.cycle)
+    assert torch.allclose(first.spectral, second.spectral)
+    assert torch.allclose(first.smoothness, second.smoothness)
+    assert first.variance > second.variance
+
+    invalid_payload = streams.detach().clone()
+    invalid_payload[:, 5:9] = 1.0e6
+    replaced = objective.compute(invalid_payload, periods, mask)
+    for field in ("total", "cycle", "spectral", "variance", "smoothness"):
+        assert torch.allclose(getattr(joint, field), getattr(replaced, field))
+
+    joint.total.backward()
+    assert streams.grad is not None
+    assert torch.isfinite(streams.grad).all()
+
+    constant = torch.zeros(48, requires_grad=True)
+    constant_loss = objective(constant, torch.tensor(8.0))
+    constant_loss.backward()
+    assert constant.grad is not None
+    assert torch.isfinite(constant.grad).all()
+
+
 def test_sshead_zero_period_evidence_skips_only_cycle_and_spectral() -> None:
     stream = (torch.arange(32, dtype=torch.float32) % 2).requires_grad_()
     details = SSHeadLoss().compute(

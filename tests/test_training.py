@@ -24,10 +24,12 @@ from pams.training import (
     CheckpointProvenance,
     build_pams_model,
     collate_pose_sequences,
+    load_encoder_for_sshead_shape_candidate,
     load_model_checkpoint,
     predict_sequence,
     train_encoder,
     train_sshead,
+    validate_sshead_shape_normalization_compatibility,
     validate_sshead_encoder_binding,
     validate_terminal_checkpoint,
 )
@@ -126,6 +128,75 @@ def _with_no_absolute_position_encoding(config: PAMSConfig) -> PAMSConfig:
     payload["model"]["position_encoding_mode"] = "none"
     payload["training"]["position_permutation_consistency_weight"] = 0.0
     return PAMSConfig.model_validate(payload)
+
+
+def _with_masked_rms_sshead(config: PAMSConfig) -> PAMSConfig:
+    payload = config.model_dump()
+    payload["sshead"]["shape_normalization"] = "masked_rms"
+    return PAMSConfig.model_validate(payload)
+
+
+def test_sshead_shape_compatibility_rejects_every_other_config_change() -> None:
+    upstream = _tiny_config()
+    candidate = _with_masked_rms_sshead(upstream)
+    validate_sshead_shape_normalization_compatibility(upstream, candidate)
+
+    changed = candidate.model_dump()
+    changed["sshead"]["variance_weight"] = 1.0
+    with pytest.raises(ValueError, match="may differ only"):
+        validate_sshead_shape_normalization_compatibility(
+            upstream,
+            PAMSConfig.model_validate(changed),
+        )
+
+    changed = candidate.model_dump()
+    changed["period"]["minimum"] = 5
+    with pytest.raises(ValueError, match="may differ only"):
+        validate_sshead_shape_normalization_compatibility(
+            upstream,
+            PAMSConfig.model_validate(changed),
+        )
+
+
+def test_masked_rms_candidate_copies_exact_encoder_tensors_only(tmp_path: Path) -> None:
+    upstream = _tiny_config(encoder_epochs=1)
+    candidate = _with_masked_rms_sshead(upstream)
+    items = (_sequence("a"), _sequence("b", phase=0.4))
+    checkpoint = tmp_path / "encoder.pt"
+    progress = tmp_path / "encoder.jsonl"
+    provenance = _provenance(upstream)
+    trained = train_encoder(
+        items,
+        upstream,
+        device="cpu",
+        microbatch_size=2,
+        checkpoint_path=checkpoint,
+        progress_path=progress,
+        provenance=provenance,
+    )
+
+    loaded, observed_provenance = load_encoder_for_sshead_shape_candidate(
+        checkpoint,
+        upstream,
+        candidate,
+        progress_path=progress,
+        expected_dataset_fingerprint=provenance.dataset_fingerprint,
+        expected_training_video_ids=("a", "b"),
+        expected_pose_cache_set_sha256=provenance.pose_cache_set_sha256,
+        device="cpu",
+    )
+
+    assert observed_provenance == provenance
+    for name, expected in trained.model.encoder.state_dict().items():
+        assert torch.equal(loaded.encoder.state_dict()[name], expected), name
+    # The candidate head is recreated from the seed rather than copied across
+    # the config boundary. Mutating the upstream in-memory head cannot affect it.
+    with torch.no_grad():
+        next(trained.model.period_head.parameters()).add_(10.0)
+    assert not torch.equal(
+        next(loaded.period_head.parameters()),
+        next(trained.model.period_head.parameters()),
+    )
 
 
 def _sequence(identifier: str, *, phase: float = 0.0, frames: int = 16) -> PoseSequence:

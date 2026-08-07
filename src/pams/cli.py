@@ -2087,6 +2087,19 @@ def train_sshead_command(
             help="Exact terminal progress log for the frozen upstream encoder.",
         ),
     ],
+    upstream_encoder_config: Annotated[
+        Path | None,
+        typer.Option(
+            "--upstream-encoder-config",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help=(
+                "Exact original config for the frozen encoder; accepted only "
+                "by the masked-RMS SSHead compatibility path."
+            ),
+        ),
+    ] = None,
     config_path: Annotated[Path, typer.Option("--config", exists=True, dir_okay=False)] = Path(
         "configs/pams.yaml"
     ),
@@ -2151,7 +2164,12 @@ def train_sshead_command(
     """Train the inferred self-supervised head with a frozen encoder."""
 
     try:
-        from pams.training import train_sshead, validate_terminal_checkpoint
+        from pams.training import (
+            load_encoder_for_sshead_shape_candidate,
+            train_sshead,
+            validate_sshead_shape_normalization_compatibility,
+            validate_terminal_checkpoint,
+        )
 
         _require_formal_label_free_inputs(
             label_free_inputs=label_free_inputs,
@@ -2160,6 +2178,27 @@ def train_sshead_command(
         config_file_sha256 = _sha256_file(config_path)
         dataset_manifest_sha256 = _sha256_file(manifest_path)
         config = load_config(config_path)
+        if config.sshead.shape_normalization == "masked_rms":
+            if upstream_encoder_config is None:
+                raise ValueError(
+                    "masked_rms SSHead training requires --upstream-encoder-config"
+                )
+            upstream_encoder_config_file_sha256 = _sha256_file(
+                upstream_encoder_config
+            )
+            encoder_config = load_config(upstream_encoder_config)
+            validate_sshead_shape_normalization_compatibility(
+                encoder_config,
+                config,
+            )
+        else:
+            if upstream_encoder_config is not None:
+                raise ValueError(
+                    "--upstream-encoder-config is reserved for masked_rms "
+                    "SSHead training"
+                )
+            upstream_encoder_config_file_sha256 = config_file_sha256
+            encoder_config = config
         if resume and (resume_checkpoint is None or resume_progress is None):
             raise ValueError("--resume requires both --resume-checkpoint and --resume-progress")
         if not resume and (resume_checkpoint is not None or resume_progress is not None):
@@ -2198,6 +2237,14 @@ def train_sshead_command(
             )
         if _sha256_file(config_path) != config_file_sha256:
             raise RuntimeError("configuration changed while it was being loaded")
+        if (
+            upstream_encoder_config is not None
+            and _sha256_file(upstream_encoder_config)
+            != upstream_encoder_config_file_sha256
+        ):
+            raise RuntimeError(
+                "upstream encoder configuration changed while it was being loaded"
+            )
         if _sha256_file(manifest_path) != dataset_manifest_sha256:
             raise RuntimeError("dataset manifest changed while it was being loaded")
         if label_free_bundle is not None:
@@ -2212,15 +2259,17 @@ def train_sshead_command(
         container_image_id, container_environment_sha256 = _container_checkpoint_identity(
             source_git_sha
         )
-        encoder_provenance = _make_checkpoint_provenance(
-            manifest,
-            config,
-            include_dev=include_dev,
-            pose_cache_set_sha256=pose_snapshot.fingerprint,
-            source_git_sha=source_git_sha,
-            container_image_id=container_image_id,
-            container_environment_sha256=container_environment_sha256,
-        )
+        encoder_provenance = None
+        if config.sshead.shape_normalization == "raw":
+            encoder_provenance = _make_checkpoint_provenance(
+                manifest,
+                encoder_config,
+                include_dev=include_dev,
+                pose_cache_set_sha256=pose_snapshot.fingerprint,
+                source_git_sha=source_git_sha,
+                container_image_id=container_image_id,
+                container_environment_sha256=container_environment_sha256,
+            )
         encoder_checkpoint_sha256 = _sha256_file(encoder_checkpoint)
         encoder_progress_sha256 = _sha256_file(encoder_progress)
         provenance = _make_checkpoint_provenance(
@@ -2233,13 +2282,14 @@ def train_sshead_command(
             container_environment_sha256=container_environment_sha256,
             upstream_encoder_checkpoint_sha256=encoder_checkpoint_sha256,
         )
-        validate_terminal_checkpoint(
-            encoder_checkpoint,
-            config,
-            expected_stage="encoder",
-            expected_provenance=encoder_provenance,
-            progress_path=encoder_progress,
-        )
+        if config.sshead.shape_normalization == "raw":
+            validate_terminal_checkpoint(
+                encoder_checkpoint,
+                encoder_config,
+                expected_stage="encoder",
+                expected_provenance=encoder_provenance,
+                progress_path=encoder_progress,
+            )
         if _sha256_file(encoder_checkpoint) != encoder_checkpoint_sha256:
             raise RuntimeError("encoder checkpoint changed during terminal validation")
         if _sha256_file(encoder_progress) != encoder_progress_sha256:
@@ -2272,6 +2322,16 @@ def train_sshead_command(
                     else "legacy labeled-manifest compatibility path"
                 ),
                 f"pose cache set: {pose_snapshot.fingerprint}",
+                f"candidate config file sha256: {config_file_sha256}",
+                f"candidate config fingerprint: {config.fingerprint}",
+                (
+                    "upstream encoder config file sha256: "
+                    f"{upstream_encoder_config_file_sha256}"
+                ),
+                (
+                    "upstream encoder config fingerprint: "
+                    f"{encoder_config.fingerprint}"
+                ),
                 (
                     "fresh run"
                     if not resume
@@ -2279,13 +2339,35 @@ def train_sshead_command(
                 ),
             ],
         )
-        model = _load_checkpoint_model(
-            encoder_checkpoint,
-            config,
-            expected_stage="encoder",
-            expected_provenance=encoder_provenance,
-            device=device,
-        )
+        upstream_bound_provenance = encoder_provenance
+        encoder_tensor_binding_verified = False
+        if config.sshead.shape_normalization == "masked_rms":
+            model, upstream_bound_provenance = (
+                load_encoder_for_sshead_shape_candidate(
+                    encoder_checkpoint,
+                    encoder_config,
+                    config,
+                    progress_path=encoder_progress,
+                    expected_dataset_fingerprint=(
+                        manifest.training_fingerprint(include_dev=include_dev)
+                    ),
+                    expected_training_video_ids=_training_video_ids(
+                        manifest,
+                        include_dev=include_dev,
+                    ),
+                    expected_pose_cache_set_sha256=pose_snapshot.fingerprint,
+                    device=_device_or_none(device),
+                )
+            )
+            encoder_tensor_binding_verified = True
+        else:
+            model = _load_checkpoint_model(
+                encoder_checkpoint,
+                encoder_config,
+                expected_stage="encoder",
+                expected_provenance=encoder_provenance,
+                device=device,
+            )
         if _sha256_file(encoder_checkpoint) != encoder_checkpoint_sha256:
             raise RuntimeError("encoder checkpoint changed while it was being loaded")
         if resume:
@@ -2343,6 +2425,13 @@ def train_sshead_command(
             "output_sshead_checkpoint": checkpoint_sha256,
             "progress_log": progress_sha256,
         }
+        if upstream_encoder_config is not None:
+            completion_artifacts["input_upstream_encoder_config"] = (
+                upstream_encoder_config
+            )
+            completion_expected_sha256["input_upstream_encoder_config"] = (
+                upstream_encoder_config_file_sha256
+            )
         if label_free_bundle is not None:
             completion_artifacts.update(label_free_bundle.artifacts)
             completion_expected_sha256.update(label_free_bundle.artifact_sha256)
@@ -2361,6 +2450,18 @@ def train_sshead_command(
             metrics={
                 "completed_epochs": result.completed_epochs,
                 "final_epoch": final_epoch,
+                "candidate_config_file_sha256": config_file_sha256,
+                "candidate_config_fingerprint": config.fingerprint,
+                "upstream_encoder_config_file_sha256": (
+                    upstream_encoder_config_file_sha256
+                ),
+                "upstream_encoder_config_fingerprint": encoder_config.fingerprint,
+                "encoder_tensor_binding_verified": encoder_tensor_binding_verified,
+                "upstream_encoder_source_git_sha": (
+                    None
+                    if upstream_bound_provenance is None
+                    else upstream_bound_provenance.source_git_sha
+                ),
             },
         )
     except ImportError as exc:
@@ -2379,6 +2480,13 @@ def train_sshead_command(
             "checkpoint_sha256": checkpoint_sha256,
             "upstream_encoder_checkpoint_sha256": encoder_checkpoint_sha256,
             "upstream_encoder_progress_sha256": encoder_progress_sha256,
+            "candidate_config_file_sha256": config_file_sha256,
+            "candidate_config_fingerprint": config.fingerprint,
+            "upstream_encoder_config_file_sha256": (
+                upstream_encoder_config_file_sha256
+            ),
+            "upstream_encoder_config_fingerprint": encoder_config.fingerprint,
+            "encoder_tensor_binding_verified": encoder_tensor_binding_verified,
             "progress_path": str(progress_path.resolve()),
             "progress_sha256": progress_sha256,
             "pose_cache_set_sha256": pose_snapshot.fingerprint,

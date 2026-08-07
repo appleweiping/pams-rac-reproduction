@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Literal
 
 import torch
 from torch import Tensor, nn
@@ -660,6 +661,7 @@ class SSHeadLoss(nn.Module):
         smoothness_weight: float = 0.01,
         *,
         confidence_weighted_period_losses: bool = False,
+        shape_normalization: Literal["raw", "masked_rms"] = "raw",
     ) -> None:
         super().__init__()
         weights = (
@@ -677,6 +679,9 @@ class SSHeadLoss(nn.Module):
         self.confidence_weighted_period_losses = bool(
             confidence_weighted_period_losses
         )
+        if shape_normalization not in {"raw", "masked_rms"}:
+            raise ValueError("unknown SSHead shape normalization")
+        self.shape_normalization = shape_normalization
 
     def compute(
         self,
@@ -740,18 +745,29 @@ class SSHeadLoss(nn.Module):
             confidences,
             strict=True,
         ):
+            shape_values = values
+            if self.shape_normalization == "masked_rms":
+                # The cycle, spectrum, and smoothness terms describe shape.
+                # Standardizing only valid frames prevents those terms from
+                # rewarding a uniform amplitude shrink.  The variance term
+                # below deliberately remains on the raw stream and is still
+                # the sole amplitude-control term.
+                shape_values = masked_zscore(
+                    values.unsqueeze(0),
+                    sample_valid.unsqueeze(0),
+                )[0]
             if bool(sample_confidence != 0):
                 period = max(1, int(round(float(sample_period.detach()))))
                 if period < time:
                     pair_valid = sample_valid[:-period] & sample_valid[period:]
                     if pair_valid.any():
-                        difference = values[:-period] - values[period:]
+                        difference = shape_values[:-period] - shape_values[period:]
                         cycle_losses.append(difference[pair_valid].square().mean())
                         cycle_confidences.append(sample_confidence)
 
                 count = sample_valid.sum().clamp_min(1)
-                mean = (values * sample_valid).sum() / count
-                centered = (values - mean) * sample_valid
+                mean = (shape_values * sample_valid).sum() / count
+                centered = (shape_values - mean) * sample_valid
                 spectral_values = (
                     centered.float()
                     if centered.dtype in (torch.float16, torch.bfloat16)
@@ -781,7 +797,11 @@ class SSHeadLoss(nn.Module):
             if time >= 3:
                 triplet_valid = sample_valid[:-2] & sample_valid[1:-1] & sample_valid[2:]
                 if triplet_valid.any():
-                    second_difference = values[2:] - 2.0 * values[1:-1] + values[:-2]
+                    second_difference = (
+                        shape_values[2:]
+                        - 2.0 * shape_values[1:-1]
+                        + shape_values[:-2]
+                    )
                     smoothness_losses.append(second_difference[triplet_valid].square().mean())
 
         def mean_or_zero(items: list[Tensor]) -> Tensor:

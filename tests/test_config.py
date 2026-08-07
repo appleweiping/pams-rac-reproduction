@@ -24,6 +24,7 @@ def test_default_config_matches_disclosed_dimensions() -> None:
     assert config.sshead.architecture == "pointwise_mlp"
     assert config.sshead.input_source == "encoder_embedding"
     assert config.sshead.period_confidence_mode == "nonzero_gate"
+    assert config.sshead.shape_normalization == "raw"
     assert config.consensus.expert_mode == "multi"
 
 
@@ -144,6 +145,43 @@ def test_v15_projected_teacher_changes_only_post_warmup_source() -> None:
         "embedding_velocity_vector_acf"
     )
     assert restored == v14.model_dump()
+
+
+def test_masked_rms_sshead_candidate_changes_only_one_config_field() -> None:
+    root = Path(__file__).parents[1]
+    upstream = load_config(
+        root / "configs" / "experiments" / "pams_noabs_projected_teacher_v16.yaml"
+    )
+    candidate = load_config(
+        root
+        / "configs"
+        / "experiments"
+        / "pams_noabs_projected_teacher_v16_sshead_masked_rms_v1.yaml"
+    )
+
+    assert upstream.sshead.shape_normalization == "raw"
+    assert (
+        upstream.fingerprint
+        == "d00cfee1875ae597bbeec8a3fd8ae9f7bd01a7ad490d1d7048a3f7af22185c8e"
+    )
+    assert candidate.sshead.shape_normalization == "masked_rms"
+    assert candidate.fingerprint != upstream.fingerprint
+    assert candidate.nonseed_fingerprint != upstream.nonseed_fingerprint
+    assert candidate.pose_fingerprint == upstream.pose_fingerprint
+    restored = candidate.model_dump()
+    restored["sshead"]["shape_normalization"] = "raw"
+    assert restored == upstream.model_dump()
+
+
+def test_explicit_raw_sshead_shape_preserves_historical_fingerprint() -> None:
+    implicit = PAMSConfig()
+    payload = implicit.model_dump()
+    payload["sshead"].pop("shape_normalization")
+    reconstructed = PAMSConfig.model_validate(payload)
+    explicit = PAMSConfig.model_validate(implicit.model_dump())
+
+    assert explicit.fingerprint == reconstructed.fingerprint
+    assert explicit.nonseed_fingerprint == reconstructed.nonseed_fingerprint
 
 
 def test_explicit_default_period_source_preserves_historical_fingerprint() -> None:
