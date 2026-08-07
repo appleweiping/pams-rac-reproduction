@@ -492,6 +492,13 @@ def test_runner_has_epoch11_gate_then_immutable_resume_boundary() -> None:
         "--candidate-launch-receipt "
         "/pams/launch/authorization.json.receipt.json"
     ) in source
+    assert "--candidate-registry-root /pams/candidate-registry" in source
+    assert "--run-reservation /pams/run/attempt.reservation.json" in source
+    assert "dst=/pams/candidate-registry" in source
+    assert "dst=/pams/run/attempt.reservation.json,readonly" in source
+    assert "PAMS_PRIOR_" not in source
+    assert "dst=/pams/prior/" not in source
+    assert source.index("exclusive candidate registry reservation was not created") < epoch11
     assert "\n    --include-dev" not in source
     assert "dst=/pams/dev-pose" not in source
     assert "dst=/pams/test-pose" not in source
@@ -501,7 +508,7 @@ def test_runner_has_epoch11_gate_then_immutable_resume_boundary() -> None:
 def test_runner_mounts_only_train_pose_and_identity_only_protocol_sidecars() -> None:
     source = RUNNER.read_text(encoding="utf-8")
     protocol_block = source.split("protocol_args=(", maxsplit=1)[1].split(
-        ")\nlaunch_prior_mount_args=(", maxsplit=1
+        ")\nCURRENT_STAGE='input-preflight-create'", maxsplit=1
     )[0]
 
     assert protocol_block.count("dst=/pams/protocol/") == 6
@@ -535,8 +542,12 @@ def test_runner_enforces_clean_source_image_gate_and_immutable_receipts() -> Non
         "pams_native_epoch11_train_gate_v1.yaml",
         "prepare_pams_native_candidate_launch_authorization.py",
         "pams_native_terminal_readout_gate_v1.yaml",
-        "PAMS_PRIOR_A_REJECTION_ARTIFACT",
-        "PAMS_PRIOR_B_REJECTION_ARTIFACT",
+        "CANDIDATE_REGISTRY_ROOT",
+        "CANDIDATE_REGISTRY_RESERVATION",
+        "exclusive_first_pass_reservation",
+        "container_audits_sha256_commitment",
+        "RUN_LAUNCH_AUTHORIZATION_BYTES",
+        "RUN_LAUNCH_AUTHORIZATION_RECEIPT_BYTES",
         "PAMS_CANDIDATE_ID",
         "PYTHONOPTIMIZE=",
         "input-preflight.json",
@@ -549,6 +560,7 @@ def test_runner_enforces_clean_source_image_gate_and_immutable_receipts() -> Non
     ):
         assert required in source
     assert "PAMS_V4A" not in source
+    assert "PAMS_PRIOR_" not in source
     assert "/pams/v4a" not in source
     assert source.index("run_created_container \"$PREFLIGHT_NAME\"") < source.index(
         "CURRENT_STAGE='launch-authorization-create'"

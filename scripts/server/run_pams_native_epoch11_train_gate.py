@@ -391,6 +391,12 @@ def _validate_encoder_completion_receipt(
         "progress_log": identities["encoder_progress"],
         "input_config": identities["experiment_config"],
         "input_pose_cache_snapshot": identities["pose_snapshot"],
+        "input_candidate_launch_authorization": identities[
+            "candidate_launch_authorization"
+        ],
+        "input_candidate_launch_authorization_receipt": identities[
+            "candidate_launch_authorization_receipt"
+        ],
     }
     for role, (digest, byte_count) in expected_live_roles.items():
         artifact = artifacts[role]
@@ -408,6 +414,18 @@ def _validate_encoder_completion_receipt(
         "bytes": actual_bytes,
         "completed_epochs": receipt.metrics["completed_epochs"],
         "artifact_roles": sorted(artifacts),
+        "candidate_launch_authorization_sha256": artifacts[
+            "input_candidate_launch_authorization"
+        ].sha256,
+        "candidate_launch_authorization_bytes": artifacts[
+            "input_candidate_launch_authorization"
+        ].bytes,
+        "candidate_launch_authorization_receipt_sha256": artifacts[
+            "input_candidate_launch_authorization_receipt"
+        ].sha256,
+        "candidate_launch_authorization_receipt_bytes": artifacts[
+            "input_candidate_launch_authorization_receipt"
+        ].bytes,
     }
 
 
@@ -982,6 +1000,8 @@ def run_gate(
     expected_encoder_completion_receipt_sha256: str,
     config_path: str | Path,
     gate_specification_path: str | Path,
+    candidate_launch_authorization_path: str | Path,
+    candidate_launch_receipt_path: str | Path,
     pose_cache_dir: str | Path,
     pose_snapshot_path: str | Path,
     *,
@@ -996,6 +1016,12 @@ def run_gate(
         "encoder_completion_receipt": Path(encoder_completion_receipt_path),
         "experiment_config": Path(config_path),
         "gate_specification": Path(gate_specification_path),
+        "candidate_launch_authorization": Path(
+            candidate_launch_authorization_path
+        ),
+        "candidate_launch_authorization_receipt": Path(
+            candidate_launch_receipt_path
+        ),
         "pose_cache_directory": Path(pose_cache_dir),
         "pose_snapshot": Path(pose_snapshot_path),
     }
@@ -1143,6 +1169,7 @@ def run_gate(
                 "epoch11_encoder_checkpoint",
                 "epoch11_encoder_progress",
                 "caller_pinned_epoch11_encoder_completion_receipt",
+                "frozen_candidate_launch_authorization_pair",
                 "checkpoint_bound_train337_pose_cache",
                 "train337_pose_snapshot",
             ],
@@ -1244,6 +1271,18 @@ def write_gate_artifact(output: Path, payload: Mapping[str, Any]) -> tuple[Path,
         "encoder_completion_receipt_sha256": payload["inputs"][
             "encoder_completion_receipt_sha256"
         ],
+        "candidate_launch_authorization_sha256": payload["inputs"][
+            "candidate_launch_authorization_sha256"
+        ],
+        "candidate_launch_authorization_bytes": payload["inputs"][
+            "candidate_launch_authorization_bytes"
+        ],
+        "candidate_launch_authorization_receipt_sha256": payload["inputs"][
+            "candidate_launch_authorization_receipt_sha256"
+        ],
+        "candidate_launch_authorization_receipt_bytes": payload["inputs"][
+            "candidate_launch_authorization_receipt_bytes"
+        ],
         "pose_cache_set_sha256": payload["inputs"]["pose_cache_set_sha256"],
         "gate_specification_sha256": payload["inputs"]["gate_specification_sha256"],
         "source_git_sha": payload["inputs"]["source_git_sha"],
@@ -1263,6 +1302,10 @@ def _parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--gate-specification", type=Path, required=True)
+    parser.add_argument(
+        "--candidate-launch-authorization", type=Path, required=True
+    )
+    parser.add_argument("--candidate-launch-receipt", type=Path, required=True)
     parser.add_argument("--pose-cache-dir", type=Path, required=True)
     parser.add_argument("--pose-snapshot", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -1281,6 +1324,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         arguments.expected_encoder_completion_receipt_sha256,
         arguments.config,
         arguments.gate_specification,
+        arguments.candidate_launch_authorization,
+        arguments.candidate_launch_receipt,
         arguments.pose_cache_dir,
         arguments.pose_snapshot,
         device=arguments.device,

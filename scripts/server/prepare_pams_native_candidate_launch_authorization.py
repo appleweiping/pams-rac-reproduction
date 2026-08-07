@@ -17,12 +17,9 @@ def _parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--gate-specification", type=Path, required=True)
     parser.add_argument("--pose-snapshot", type=Path, required=True)
     parser.add_argument("--candidate-id", choices=gate._CANDIDATE_ORDER, required=True)
-    parser.add_argument(
-        "--prior-rejection-artifact", type=Path, action="append", default=[]
-    )
-    parser.add_argument(
-        "--prior-rejection-receipt", type=Path, action="append", default=[]
-    )
+    parser.add_argument("--candidate-registry-root", type=Path, required=True)
+    parser.add_argument("--run-reservation", type=Path, required=True)
+    parser.add_argument("--run-locator", required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args(argv)
 
@@ -35,8 +32,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         gate_specification_path=arguments.gate_specification,
         pose_snapshot_path=arguments.pose_snapshot,
         candidate_id=arguments.candidate_id,
-        prior_rejection_artifact_paths=arguments.prior_rejection_artifact,
-        prior_rejection_receipt_paths=arguments.prior_rejection_receipt,
+        candidate_registry_root=arguments.candidate_registry_root,
+        run_reservation_path=arguments.run_reservation,
+        run_locator=arguments.run_locator,
         authorization_runner_path=Path(__file__),
     )
     receipt, digest = gate.write_candidate_launch_authorization(

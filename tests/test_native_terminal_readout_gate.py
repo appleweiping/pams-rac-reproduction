@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import inspect
+import json
 import math
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
@@ -286,9 +288,19 @@ def _minimal_terminal_payload(
         "pose_snapshot_sha256": digest,
         "pose_cache_set_sha256": pose_cache_set_sha256,
         "epoch11_gate_artifact_sha256": digest,
+        "epoch11_gate_artifact_bytes": 101,
         "epoch11_gate_receipt_sha256": digest,
+        "epoch11_gate_receipt_bytes": 102,
         "candidate_launch_authorization_sha256": digest,
+        "candidate_launch_authorization_bytes": 103,
         "candidate_launch_authorization_receipt_sha256": digest,
+        "candidate_launch_authorization_receipt_bytes": 104,
+        "candidate_registry_id": digest,
+        "candidate_registry_reservation_sha256": digest,
+        "candidate_registry_reservation_bytes": 105,
+        "train_run_receipt_sha256": digest,
+        "train_run_receipt_bytes": 106,
+        "container_audits_sha256_commitment": digest,
         "source_git_sha": source_git_sha,
         "training_video_total": 337,
         "read_only_post_run_identity_verified": True,
@@ -485,9 +497,9 @@ def test_interface_has_no_privileged_scientific_surface() -> None:
         "epoch11_gate_receipt_path",
         "pose_cache_dir",
         "pose_snapshot_path",
+        "candidate_registry_root",
+        "train_run_receipt_path",
         "candidate_id",
-        "prior_rejection_artifact_paths",
-        "prior_rejection_receipt_paths",
         "device",
         "batch_size",
     }
@@ -503,6 +515,45 @@ def test_interface_has_no_privileged_scientific_surface() -> None:
         "--train",
     ):
         assert f'add_argument("{option}"' not in source
+
+
+def test_forged_predecessor_json_has_no_authorization_surface() -> None:
+    source = RUNNER.read_text(encoding="utf-8")
+    launch_source = (
+        ROOT
+        / "scripts"
+        / "server"
+        / "prepare_pams_native_candidate_launch_authorization.py"
+    ).read_text(encoding="utf-8")
+    outer_source = (
+        ROOT
+        / "scripts"
+        / "server"
+        / "run_pams_native_table2_baseline_train337_v1.sh"
+    ).read_text(encoding="utf-8")
+    assert 'add_argument("--prior-rejection-artifact"' not in source
+    assert 'add_argument("--prior-rejection-receipt"' not in source
+    assert "--prior-rejection-artifact" not in launch_source
+    assert "--prior-rejection-receipt" not in launch_source
+    assert "PAMS_PRIOR_" not in outer_source
+
+    with tempfile.TemporaryDirectory(prefix="pams-gate-") as directory:
+        root = Path(directory)
+        registry = root / "registry"
+        registry.mkdir()
+        (root / "forged-predecessor.json").write_text(
+            '{"status":"scientific_rejection"}\n', encoding="utf-8"
+        )
+        with pytest.raises(FileNotFoundError):
+            runner._load_predecessor_chain_from_registry(
+                candidate_id="B",
+                profile=runner.CandidateProfile(16, 2, ("A",)),
+                registry_root=registry,
+                specification=runner.load_gate_specification(SPECIFICATION),
+                gate_specification_sha256="a" * 64,
+                pose_cache_set_sha256="b" * 64,
+                source_git_sha="c" * 40,
+            )
 
 
 @pytest.mark.parametrize(
@@ -916,48 +967,287 @@ def test_every_frozen_threshold_is_authorizing() -> None:
         assert decision["overall_pass"] is False, name
 
 
-def test_candidate_order_requires_scientific_rejection_receipts() -> None:
-    specification_sha256 = "a" * 64
-    pose_sha256 = "b" * 64
+def test_candidate_registry_reservation_is_exclusive_across_attempt_ids() -> None:
+    gate_sha = "a" * 64
+    pose_sha = "b" * 64
     source_sha = "c" * 40
     with tempfile.TemporaryDirectory(prefix="pams-gate-") as directory:
         root = Path(directory)
-        output = root / "candidate-a.json"
+        registry = root / "registry"
+        registry.mkdir()
+        attempt = root / "attempt.reservation.json"
+        registry_id = runner.candidate_registry_id(
+            source_git_sha=source_sha,
+            gate_specification_sha256=gate_sha,
+            pose_cache_set_sha256=pose_sha,
+            candidate_id="A",
+        )
+        attempt.write_text(
+            json.dumps(
+                {
+                    "attempt_id": "first-attempt",
+                    "source_revision": source_sha,
+                    "candidate_id": "A",
+                    "candidate_registry": {
+                        "registry_id": registry_id,
+                        "run_locator": "runs/native/first-attempt",
+                        "exclusive_first_pass_required": True,
+                    },
+                    "candidate_launch_policy": {
+                        "terminal_gate_specification_sha256": gate_sha,
+                        "required_prior_scientific_rejection_candidate_ids": [],
+                        "authorization_must_exist_before_encoder_container_creation": True,
+                        "same_authorization_pair_required_for_epoch11_and_final": True,
+                    },
+                    "upstream_pose_recovery": {
+                        "pose_cache_set_sha256": pose_sha,
+                    },
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        def reserve() -> tuple[Path, dict[str, object], tuple[str, int]]:
+            return runner.reserve_candidate_registry_slot(
+                registry,
+                source_git_sha=source_sha,
+                gate_specification_sha256=gate_sha,
+                pose_cache_set_sha256=pose_sha,
+                candidate_id="A",
+                run_reservation_path=attempt,
+                run_locator="runs/native/first-attempt",
+                source_export_receipt_sha256="d" * 64,
+                experiment_config_sha256="e" * 64,
+                pose_snapshot_sha256="f" * 64,
+                prior_outcome_registry_ids=(),
+            )
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(reserve) for _ in range(2)]
+        successes = []
+        failures = []
+        for future in futures:
+            try:
+                successes.append(future.result())
+            except FileExistsError as error:
+                failures.append(error)
+        assert len(successes) == 1
+        assert len(failures) == 1
+        assert successes[0][1]["registry_id"] == registry_id
+
+        second_attempt = root / "second-attempt.reservation.json"
+        second_payload = json.loads(attempt.read_text(encoding="utf-8"))
+        second_payload["attempt_id"] = "second-attempt"
+        second_payload["candidate_registry"]["run_locator"] = (
+            "runs/native/second-attempt"
+        )
+        second_attempt.write_text(
+            json.dumps(second_payload, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        with pytest.raises(FileExistsError):
+            runner.reserve_candidate_registry_slot(
+                registry,
+                source_git_sha=source_sha,
+                gate_specification_sha256=gate_sha,
+                pose_cache_set_sha256=pose_sha,
+                candidate_id="A",
+                run_reservation_path=second_attempt,
+                run_locator="runs/native/second-attempt",
+                source_export_receipt_sha256="d" * 64,
+                experiment_config_sha256="e" * 64,
+                pose_snapshot_sha256="f" * 64,
+                prior_outcome_registry_ids=(),
+            )
+
+
+def test_registry_predecessor_binds_train_terminal_and_launch_lineage() -> None:
+    source_sha = "c" * 40
+    gate_sha = "a" * 64
+    pose_sha = "b" * 64
+    digest = "d" * 64
+    with tempfile.TemporaryDirectory(prefix="pams-gate-") as directory:
+        root = Path(directory)
+        registry = root / "registry"
+        registry.mkdir()
+        key = runner._candidate_registry_key(
+            source_git_sha=source_sha,
+            gate_specification_sha256=gate_sha,
+            pose_cache_set_sha256=pose_sha,
+            candidate_id="A",
+        )
+        registry_id = runner.sha256_json(key)
+        paths = runner._candidate_registry_paths(registry, registry_id)
+        reservation = {
+            "schema_version": 1,
+            "artifact_type": runner._CANDIDATE_REGISTRY_RESERVATION_TYPE,
+            "status": "reserved",
+            "registry_id": registry_id,
+            "key": key,
+            "run_binding": {
+                "attempt_id": "fixture",
+                "run_locator": "runs/native/fixture",
+                "attempt_reservation_sha256": "1" * 64,
+                "attempt_reservation_bytes": 1,
+                "source_export_receipt_sha256": digest,
+                "experiment_config_sha256": digest,
+                "pose_snapshot_sha256": digest,
+            },
+            "prior_outcome_registry_ids": [],
+        }
+        runner._write_new(paths["reservation"], runner._encoded_json(reservation))
+        reservation_identity = runner._stable_file_sha256(paths["reservation"])
+        audit_roles = (
+            "create_id",
+            "configuration_inspect",
+            "configuration_verification",
+            "post_run_inspect",
+            "exit_code",
+        )
+        audits: dict[str, object] = {
+            stage: {
+                role: {
+                    "locator": f"audit/{stage}.{role}.json",
+                    "sha256": "9" * 64,
+                    "bytes": 1,
+                }
+                for role in audit_roles
+            }
+            for stage in (
+                "preflight",
+                "launch_authorization",
+                "encoder_epoch11",
+                "epoch11_gate",
+                "encoder_final",
+            )
+        }
+        audit_commitment = runner.sha256_json(audits)
+        lineage = {
+            "container_audits_sha256_commitment": audit_commitment,
+            "candidate_launch_authorization_sha256": digest,
+            "candidate_launch_authorization_bytes": 103,
+            "candidate_launch_authorization_receipt_sha256": digest,
+            "candidate_launch_authorization_receipt_bytes": 104,
+            "epoch11_completion_receipt_sha256": "3" * 64,
+            "epoch11_completion_receipt_bytes": 201,
+            "epoch11_gate_artifact_sha256": digest,
+            "epoch11_gate_artifact_bytes": 101,
+            "epoch11_gate_receipt_sha256": digest,
+            "epoch11_gate_receipt_bytes": 102,
+            "final_started_receipt_sha256": "4" * 64,
+            "final_started_receipt_bytes": 301,
+            "final_completion_receipt_sha256": "5" * 64,
+            "final_completion_receipt_bytes": 302,
+            "final_checkpoint_sha256": "6" * 64,
+            "final_checkpoint_bytes": 303,
+            "final_progress_sha256": "7" * 64,
+            "final_progress_bytes": 304,
+            "final_pose_snapshot_sha256": "8" * 64,
+            "final_pose_snapshot_bytes": 305,
+        }
+        train_receipt = {
+            "status": "completed",
+            "candidate_id": "A",
+            "source_revision": source_sha,
+            "source_export_receipt_sha256": digest,
+            "config_file_sha256": digest,
+            "pose_cache_set_sha256": pose_sha,
+            "candidate_registry": {
+                "registry_id": registry_id,
+                "reservation_sha256": reservation_identity[0],
+                "reservation_bytes": reservation_identity[1],
+                "exclusive_first_pass_reservation": True,
+            },
+            "candidate_launch_authorization": {
+                "authorization_sha256": digest,
+                "authorization_bytes": 103,
+                "authorization_receipt_sha256": digest,
+                "authorization_receipt_bytes": 104,
+            },
+            "epoch11_gate": {
+                "encoder_completion_receipt_sha256": "3" * 64,
+                "encoder_completion_receipt_bytes": 201,
+                "gate_artifact_sha256": digest,
+                "gate_artifact_bytes": 101,
+                "gate_receipt_sha256": digest,
+                "gate_receipt_bytes": 102,
+            },
+            "final_encoder": {
+                "started_receipt_sha256": "4" * 64,
+                "started_receipt_bytes": 301,
+                "completion_receipt_sha256": "5" * 64,
+                "completion_receipt_bytes": 302,
+                "checkpoint_sha256": "6" * 64,
+                "checkpoint_bytes": 303,
+                "progress_sha256": "7" * 64,
+                "progress_bytes": 304,
+                "pose_snapshot_sha256": "8" * 64,
+                "pose_snapshot_bytes": 305,
+            },
+            "container_audits": audits,
+            "container_audits_sha256_commitment": audit_commitment,
+        }
+        train_path = root / "run.receipt.json"
+        runner._write_new(train_path, runner._encoded_json(train_receipt))
+        train_identity = runner._stable_file_sha256(train_path)
         payload = _minimal_terminal_payload(
             candidate_id="A",
-            gate_specification_sha256=specification_sha256,
-            pose_cache_set_sha256=pose_sha256,
+            gate_specification_sha256=gate_sha,
+            pose_cache_set_sha256=pose_sha,
             source_git_sha=source_sha,
             prior=[],
             passed=False,
         )
-        receipt, artifact_sha256 = runner.write_gate_artifact(output, payload)
-        chain = runner._validate_predecessor_chain(
+        payload["inputs"].update(
+            {
+                "candidate_registry_id": registry_id,
+                "candidate_registry_reservation_sha256": reservation_identity[0],
+                "candidate_registry_reservation_bytes": reservation_identity[1],
+                "train_run_receipt_sha256": train_identity[0],
+                "train_run_receipt_bytes": train_identity[1],
+                "container_audits_sha256_commitment": audit_commitment,
+                "train_lineage": lineage,
+            }
+        )
+        terminal_path = root / "terminal.json"
+        terminal_receipt, _ = runner.write_gate_artifact(terminal_path, payload)
+        runner.write_candidate_registry_outcome(
+            registry,
+            train_run_receipt_path=train_path,
+            terminal_artifact_path=terminal_path,
+            terminal_receipt_path=terminal_receipt,
+            payload=payload,
+        )
+        chain = runner._load_predecessor_chain_from_registry(
             candidate_id="B",
             profile=runner.CandidateProfile(16, 2, ("A",)),
-            artifact_paths=(output,),
-            receipt_paths=(receipt,),
+            registry_root=registry,
             specification=runner.load_gate_specification(SPECIFICATION),
-            gate_specification_sha256=specification_sha256,
-            pose_cache_set_sha256=pose_sha256,
+            gate_specification_sha256=gate_sha,
+            pose_cache_set_sha256=pose_sha,
             source_git_sha=source_sha,
         )
-        assert chain == (
-            {
-                "candidate_id": "A",
-                "artifact_sha256": artifact_sha256,
-                "receipt_sha256": hashlib.sha256(receipt.read_bytes()).hexdigest(),
-            },
+        assert chain[0]["registry_id"] == registry_id
+        assert chain[0]["train_run_receipt_sha256"] == train_identity[0]
+        assert chain[0]["container_audits_sha256_commitment"] == audit_commitment
+        archived_train_path = paths["train_run_receipt"]
+        archived_train = runner._strict_json(
+            archived_train_path, document="archived train tamper fixture"
         )
-        with pytest.raises(ValueError, match="requires exactly 1"):
-            runner._validate_predecessor_chain(
+        archived_train["container_audits"]["preflight"]["exit_code"][
+            "sha256"
+        ] = "0" * 64
+        archived_train_path.chmod(0o600)
+        archived_train_path.write_bytes(runner._encoded_json(archived_train))
+        with pytest.raises(ValueError, match="outcome binding mismatch"):
+            runner._load_predecessor_chain_from_registry(
                 candidate_id="B",
                 profile=runner.CandidateProfile(16, 2, ("A",)),
-                artifact_paths=(),
-                receipt_paths=(),
+                registry_root=registry,
                 specification=runner.load_gate_specification(SPECIFICATION),
-                gate_specification_sha256=specification_sha256,
-                pose_cache_set_sha256=pose_sha256,
+                gate_specification_sha256=gate_sha,
+                pose_cache_set_sha256=pose_sha,
                 source_git_sha=source_sha,
             )
 
@@ -968,6 +1258,11 @@ def test_launch_authorization_pair_binds_candidate_and_training_inputs() -> None
     profile = specification.candidate_profiles["A"]
     digest = "a" * 64
     source_sha = "b" * 40
+    registry_reservation = {
+        "registry_id": "3" * 64,
+        "run_binding": {"run_locator": "runs/native/fixture"},
+    }
+    registry_reservation_identity = ("4" * 64, 16)
     identities = {
         "experiment_config": (digest, 10),
         "gate_specification": ("c" * 64, 11),
@@ -1013,6 +1308,14 @@ def test_launch_authorization_pair_binds_candidate_and_training_inputs() -> None
         "training_video_total": 337,
         "source_git_sha": source_sha,
         "source_receipt_covered_paths": covered,
+        "candidate_registry_id": registry_reservation["registry_id"],
+        "candidate_registry_reservation_sha256": (
+            registry_reservation_identity[0]
+        ),
+        "candidate_registry_reservation_bytes": (
+            registry_reservation_identity[1]
+        ),
+        "candidate_registry_run_locator": "runs/native/fixture",
     }
     payload = {
         "schema_version": 1,
@@ -1031,6 +1334,7 @@ def test_launch_authorization_pair_binds_candidate_and_training_inputs() -> None
             "dev84_identity_media_pose_or_scoring_authorized": False,
             "test105_evaluation_authorized": False,
             "aggregate_only_prior_receipts": True,
+            "candidate_outcome_registry_reserved_exclusively": True,
         },
     }
     with tempfile.TemporaryDirectory(prefix="pams-gate-") as directory:
@@ -1048,6 +1352,8 @@ def test_launch_authorization_pair_binds_candidate_and_training_inputs() -> None
             pose_cache_set_sha256="2" * 64,
             source_git_sha=source_sha,
             source_covered_paths=covered,
+            registry_reservation=registry_reservation,
+            registry_reservation_identity=registry_reservation_identity,
         )
         broken = runner._strict_json(receipt, document="launch receipt fixture")
         broken["candidate_id"] = "B"
@@ -1066,6 +1372,8 @@ def test_launch_authorization_pair_binds_candidate_and_training_inputs() -> None
                 pose_cache_set_sha256="2" * 64,
                 source_git_sha=source_sha,
                 source_covered_paths=covered,
+                registry_reservation=registry_reservation,
+                registry_reservation_identity=registry_reservation_identity,
             )
 
 
@@ -1103,6 +1411,8 @@ def test_epoch11_artifact_and_receipt_are_hash_and_lineage_bound() -> None:
     pose_sha = "b" * 64
     config_sha = "a" * 64
     snapshot_sha = "e" * 64
+    launch_identity = ("9" * 64, 17)
+    launch_receipt_identity = ("0" * 64, 18)
     with tempfile.TemporaryDirectory(prefix="pams-gate-") as directory:
         root = Path(directory)
         artifact_path = root / "epoch11.json"
@@ -1140,6 +1450,14 @@ def test_epoch11_artifact_and_receipt_are_hash_and_lineage_bound() -> None:
                 "gate_specification_sha256": "3" * 64,
                 "gate_specification_bytes": 15,
                 "pose_snapshot_bytes": 16,
+                "candidate_launch_authorization_sha256": launch_identity[0],
+                "candidate_launch_authorization_bytes": launch_identity[1],
+                "candidate_launch_authorization_receipt_sha256": (
+                    launch_receipt_identity[0]
+                ),
+                "candidate_launch_authorization_receipt_bytes": (
+                    launch_receipt_identity[1]
+                ),
                 "training_video_ids_sha256": "5" * 64,
                 "source_receipt_covered_paths": {},
                 "container_image_id": "sha256:" + "6" * 64,
@@ -1166,6 +1484,14 @@ def test_epoch11_artifact_and_receipt_are_hash_and_lineage_bound() -> None:
                             "output_encoder_checkpoint",
                             "progress_log",
                         }
+                    ),
+                    "candidate_launch_authorization_sha256": launch_identity[0],
+                    "candidate_launch_authorization_bytes": launch_identity[1],
+                    "candidate_launch_authorization_receipt_sha256": (
+                        launch_receipt_identity[0]
+                    ),
+                    "candidate_launch_authorization_receipt_bytes": (
+                        launch_receipt_identity[1]
                     ),
                 },
             },
@@ -1259,6 +1585,14 @@ def test_epoch11_artifact_and_receipt_are_hash_and_lineage_bound() -> None:
             "encoder_checkpoint_sha256": "1" * 64,
             "encoder_progress_sha256": "2" * 64,
             "encoder_completion_receipt_sha256": "4" * 64,
+            "candidate_launch_authorization_sha256": launch_identity[0],
+            "candidate_launch_authorization_bytes": launch_identity[1],
+            "candidate_launch_authorization_receipt_sha256": (
+                launch_receipt_identity[0]
+            ),
+            "candidate_launch_authorization_receipt_bytes": (
+                launch_receipt_identity[1]
+            ),
             "pose_cache_set_sha256": pose_sha,
             "gate_specification_sha256": "3" * 64,
             "source_git_sha": source_sha,
@@ -1273,10 +1607,12 @@ def test_epoch11_artifact_and_receipt_are_hash_and_lineage_bound() -> None:
             pose_snapshot_sha256=snapshot_sha,
             pose_cache_set_sha256=pose_sha,
             source_git_sha=source_sha,
+            candidate_launch_authorization_identity=launch_identity,
+            candidate_launch_receipt_identity=launch_receipt_identity,
         )
         assert validated_receipt["artifact_sha256"] == hashlib.sha256(encoded).hexdigest()
         broken = deepcopy(receipt)
-        broken["encoder_completion_receipt_sha256"] = "0" * 64
+        broken["candidate_launch_authorization_bytes"] += 1
         receipt_path.unlink()
         runner._write_new(receipt_path, runner._encoded_json(broken))
         with pytest.raises(ValueError, match="does not bind"):
@@ -1289,6 +1625,8 @@ def test_epoch11_artifact_and_receipt_are_hash_and_lineage_bound() -> None:
                 pose_snapshot_sha256=snapshot_sha,
                 pose_cache_set_sha256=pose_sha,
                 source_git_sha=source_sha,
+                candidate_launch_authorization_identity=launch_identity,
+                candidate_launch_receipt_identity=launch_receipt_identity,
             )
 
 
@@ -1424,6 +1762,37 @@ def test_completion_receipt_requires_epoch11_resume_lineage_and_started_bytes() 
                     source_git_sha=provenance.source_git_sha,
                 ),
             )
+
+        tampered_launch = completion.model_copy(
+            update={
+                "artifacts": tuple(
+                    item.model_copy(update={"bytes": item.bytes + 1})
+                    if item.role == "input_candidate_launch_authorization"
+                    else item
+                    for item in artifacts
+                )
+            }
+        )
+        completion_path.unlink()
+        runner._write_new(
+            completion_path,
+            runner._encoded_json(tampered_launch.model_dump(mode="json")),
+        )
+        with pytest.raises(ValueError):
+            runner._validate_encoder_completion_receipt(
+                completion_path,
+                expected_source_git_sha=source_sha,
+                specification=runner.load_gate_specification(SPECIFICATION),
+                config=config,
+                identities=identities,
+                epoch11_artifact=epoch11_artifact,
+                epoch11_receipt=epoch11_receipt,
+            )
+        completion_path.unlink()
+        runner._write_new(
+            completion_path,
+            runner._encoded_json(completion.model_dump(mode="json")),
+        )
 
         missing_resume = completion.model_copy(
             update={

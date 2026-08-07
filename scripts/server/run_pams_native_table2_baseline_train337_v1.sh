@@ -47,10 +47,6 @@ readonly POSE_RECOVERY_VERSION="${PAMS_POSE_RECOVERY_VERSION:?PAMS_POSE_RECOVERY
 readonly POSE_RECOVERY_CONFIG_INPUT="${PAMS_POSE_RECOVERY_CONFIG_PATH:?PAMS_POSE_RECOVERY_CONFIG_PATH is required}"
 readonly POSE_RECOVERY_AUTHORIZATION_SHA256="${PAMS_POSE_RECOVERY_AUTHORIZATION_SHA256:?PAMS_POSE_RECOVERY_AUTHORIZATION_SHA256 is required}"
 readonly CANDIDATE_ID="${PAMS_CANDIDATE_ID:?PAMS_CANDIDATE_ID is required}"
-readonly PRIOR_A_REJECTION_ARTIFACT_INPUT="${PAMS_PRIOR_A_REJECTION_ARTIFACT:-}"
-readonly PRIOR_A_REJECTION_RECEIPT_INPUT="${PAMS_PRIOR_A_REJECTION_RECEIPT:-}"
-readonly PRIOR_B_REJECTION_ARTIFACT_INPUT="${PAMS_PRIOR_B_REJECTION_ARTIFACT:-}"
-readonly PRIOR_B_REJECTION_RECEIPT_INPUT="${PAMS_PRIOR_B_REJECTION_RECEIPT:-}"
 readonly ATTEMPT_ID="${PAMS_ATTEMPT_ID:?PAMS_ATTEMPT_ID is required}"
 readonly GPU_DEVICE="${PAMS_GPU_DEVICE:-0}"
 
@@ -63,33 +59,18 @@ case "$CANDIDATE_ID" in
     CANDIDATE_WINDOW=16
     CANDIDATE_STRIDE=4
     CANDIDATE_PRIOR_IDS_JSON='[]'
-    [[ -z "$PRIOR_A_REJECTION_ARTIFACT_INPUT" \
-      && -z "$PRIOR_A_REJECTION_RECEIPT_INPUT" \
-      && -z "$PRIOR_B_REJECTION_ARTIFACT_INPUT" \
-      && -z "$PRIOR_B_REJECTION_RECEIPT_INPUT" ]] \
-      || fail 'candidate A forbids predecessor rejection inputs'
     ;;
   B)
     CONFIG_RELATIVE="$CONFIG_B_RELATIVE"
     CANDIDATE_WINDOW=16
     CANDIDATE_STRIDE=2
     CANDIDATE_PRIOR_IDS_JSON='["A"]'
-    [[ -n "$PRIOR_A_REJECTION_ARTIFACT_INPUT" \
-      && -n "$PRIOR_A_REJECTION_RECEIPT_INPUT" \
-      && -z "$PRIOR_B_REJECTION_ARTIFACT_INPUT" \
-      && -z "$PRIOR_B_REJECTION_RECEIPT_INPUT" ]] \
-      || fail 'candidate B requires exactly the candidate-A rejection pair'
     ;;
   C)
     CONFIG_RELATIVE="$CONFIG_C_RELATIVE"
     CANDIDATE_WINDOW=24
     CANDIDATE_STRIDE=4
     CANDIDATE_PRIOR_IDS_JSON='["A","B"]'
-    [[ -n "$PRIOR_A_REJECTION_ARTIFACT_INPUT" \
-      && -n "$PRIOR_A_REJECTION_RECEIPT_INPUT" \
-      && -n "$PRIOR_B_REJECTION_ARTIFACT_INPUT" \
-      && -n "$PRIOR_B_REJECTION_RECEIPT_INPUT" ]] \
-      || fail 'candidate C requires the ordered A and B rejection pairs'
     ;;
   *)
     fail 'PAMS_CANDIDATE_ID must be exactly A, B, or C'
@@ -152,34 +133,28 @@ readonly ROOT="$(realpath -e -- "$ROOT_INPUT")"
 readonly SOURCE_CHECKOUT="$(realpath -e -- "$SOURCE_CHECKOUT_INPUT")"
 readonly POSE_RECOVERY_RUN_ROOT="$(realpath -e -- "$POSE_RECOVERY_RUN_ROOT_INPUT")"
 readonly POSE_RECOVERY_CONFIG="$(realpath -e -- "$POSE_RECOVERY_CONFIG_INPUT")"
-for prior_input in \
-  "$PRIOR_A_REJECTION_ARTIFACT_INPUT" \
-  "$PRIOR_A_REJECTION_RECEIPT_INPUT" \
-  "$PRIOR_B_REJECTION_ARTIFACT_INPUT" \
-  "$PRIOR_B_REJECTION_RECEIPT_INPUT"; do
-  if [[ -n "$prior_input" ]]; then
-    [[ "$prior_input" == /* && "$prior_input" != *','* ]] \
-      || fail "prior rejection path must be absolute and comma-free: ${prior_input}"
-    [[ -f "$prior_input" && ! -L "$prior_input" ]] \
-      || fail "prior rejection input must be a regular non-symlink file: ${prior_input}"
-  fi
-done
-readonly PRIOR_A_REJECTION_ARTIFACT="$({
-  [[ -z "$PRIOR_A_REJECTION_ARTIFACT_INPUT" ]] \
-    || realpath -e -- "$PRIOR_A_REJECTION_ARTIFACT_INPUT"
-})"
-readonly PRIOR_A_REJECTION_RECEIPT="$({
-  [[ -z "$PRIOR_A_REJECTION_RECEIPT_INPUT" ]] \
-    || realpath -e -- "$PRIOR_A_REJECTION_RECEIPT_INPUT"
-})"
-readonly PRIOR_B_REJECTION_ARTIFACT="$({
-  [[ -z "$PRIOR_B_REJECTION_ARTIFACT_INPUT" ]] \
-    || realpath -e -- "$PRIOR_B_REJECTION_ARTIFACT_INPUT"
-})"
-readonly PRIOR_B_REJECTION_RECEIPT="$({
-  [[ -z "$PRIOR_B_REJECTION_RECEIPT_INPUT" ]] \
-    || realpath -e -- "$PRIOR_B_REJECTION_RECEIPT_INPUT"
-})"
+readonly CANDIDATE_REGISTRY_PARENT="${ROOT}/orchestrator"
+readonly CANDIDATE_REGISTRY_ROOT_INPUT="${CANDIDATE_REGISTRY_PARENT}/pams-native-candidate-outcomes-v1"
+if [[ -e "$CANDIDATE_REGISTRY_PARENT" ]]; then
+  [[ -d "$CANDIDATE_REGISTRY_PARENT" && ! -L "$CANDIDATE_REGISTRY_PARENT" ]] \
+    || fail 'candidate outcome registry parent must be a real directory'
+else
+  mkdir -- "$CANDIDATE_REGISTRY_PARENT"
+fi
+if [[ -e "$CANDIDATE_REGISTRY_ROOT_INPUT" ]]; then
+  [[ -d "$CANDIDATE_REGISTRY_ROOT_INPUT" && ! -L "$CANDIDATE_REGISTRY_ROOT_INPUT" ]] \
+    || fail 'candidate outcome registry must be a real directory'
+else
+  mkdir -- "$CANDIDATE_REGISTRY_ROOT_INPUT"
+fi
+readonly CANDIDATE_REGISTRY_ROOT="$(realpath -e -- "$CANDIDATE_REGISTRY_ROOT_INPUT")"
+[[ "$CANDIDATE_REGISTRY_ROOT" == "${ROOT}/orchestrator/pams-native-candidate-outcomes-v1" ]] \
+  || fail 'candidate outcome registry escaped the canonical server root'
+[[ "$(stat -c '%u' -- "$CANDIDATE_REGISTRY_ROOT")" == "$(id -u)" ]] \
+  || fail 'candidate outcome registry must be owned by the orchestrator user'
+chmod 0700 -- "$CANDIDATE_REGISTRY_ROOT"
+[[ "$(stat -c '%a' -- "$CANDIDATE_REGISTRY_ROOT")" == '700' ]] \
+  || fail 'candidate outcome registry permissions must be 0700'
 readonly OFFICIAL_ROOT="${ROOT}/runs/official-segment-v1/15cc1ec3c1d2-20260805T063653Z"
 readonly RUN_PARENT="${ROOT}/runs/pams-native-table2-baseline-v1"
 readonly RUN_ROOT="${RUN_PARENT}/${ATTEMPT_ID}"
@@ -206,6 +181,8 @@ readonly FINAL_ENCODER_PROGRESS="${FINAL_ENCODER_RUN}/logs/encoder.jsonl"
 readonly FINAL_ENCODER_POSE_SNAPSHOT="${FINAL_ENCODER_RUN}/inputs/training-pose-cache-snapshot.json"
 readonly AUDIT_ROOT="${RUN_ROOT}/audit"
 readonly LOG_ROOT="${RUN_ROOT}/logs"
+readonly ATTEMPT_RESERVATION="${RUN_ROOT}/attempt.reservation.json"
+readonly CANDIDATE_REGISTRY_RUN_LOCATOR="runs/pams-native-table2-baseline-v1/${ATTEMPT_ID}"
 readonly LOCK_ROOT="${ROOT}/.pams-gpu-locks"
 readonly LOCK_PATH="${LOCK_ROOT}/gpu${GPU_DEVICE}.lock"
 
@@ -353,6 +330,8 @@ verify_container() {
   VERIFY_LAUNCH_POSE_SNAPSHOT="$LAUNCH_POSE_SNAPSHOT" \
   VERIFY_LAUNCH_AUTHORIZATION="$LAUNCH_AUTHORIZATION_ARTIFACT" \
   VERIFY_LAUNCH_RECEIPT="$LAUNCH_AUTHORIZATION_RECEIPT" \
+  VERIFY_LAUNCH_AUTHORIZATION_BYTES="${LAUNCH_AUTHORIZATION_BYTES:-}" \
+  VERIFY_LAUNCH_RECEIPT_BYTES="${LAUNCH_AUTHORIZATION_RECEIPT_BYTES:-}" \
   VERIFY_EPOCH11_GATE_STAGE="$EPOCH11_GATE_STAGE" \
   VERIFY_FINAL_ENCODER_STAGE="$FINAL_ENCODER_STAGE" \
   VERIFY_EPOCH11_CHECKPOINT="$EPOCH11_ENCODER_CHECKPOINT" \
@@ -366,10 +345,9 @@ verify_container() {
   VERIFY_SOURCE_RECEIPT_SHA256="$SOURCE_RECEIPT_SHA256" \
   VERIFY_GPU_DEVICE="$GPU_DEVICE" \
   VERIFY_CANDIDATE_ID="$CANDIDATE_ID" \
-  VERIFY_PRIOR_A_ARTIFACT="$PRIOR_A_REJECTION_ARTIFACT" \
-  VERIFY_PRIOR_A_RECEIPT="$PRIOR_A_REJECTION_RECEIPT" \
-  VERIFY_PRIOR_B_ARTIFACT="$PRIOR_B_REJECTION_ARTIFACT" \
-  VERIFY_PRIOR_B_RECEIPT="$PRIOR_B_REJECTION_RECEIPT" \
+  VERIFY_CANDIDATE_REGISTRY_ROOT="$CANDIDATE_REGISTRY_ROOT" \
+  VERIFY_CANDIDATE_REGISTRY_RUN_LOCATOR="$CANDIDATE_REGISTRY_RUN_LOCATOR" \
+  VERIFY_ATTEMPT_RESERVATION="$ATTEMPT_RESERVATION" \
   python3 - <<'PY'
 import json
 import os
@@ -444,25 +422,6 @@ launch_inputs = {
     ),
 }
 candidate_id = os.environ["VERIFY_CANDIDATE_ID"]
-prior_mounts = {}
-if candidate_id in {"B", "C"}:
-    prior_mounts.update({
-        "/pams/prior/A/rejection.json": (
-            os.environ["VERIFY_PRIOR_A_ARTIFACT"], False
-        ),
-        "/pams/prior/A/rejection.json.receipt.json": (
-            os.environ["VERIFY_PRIOR_A_RECEIPT"], False
-        ),
-    })
-if candidate_id == "C":
-    prior_mounts.update({
-        "/pams/prior/B/rejection.json": (
-            os.environ["VERIFY_PRIOR_B_ARTIFACT"], False
-        ),
-        "/pams/prior/B/rejection.json.receipt.json": (
-            os.environ["VERIFY_PRIOR_B_RECEIPT"], False
-        ),
-    })
 if stage == "preflight":
     expected = {
         **source,
@@ -488,9 +447,14 @@ if stage == "preflight":
 elif stage == "launch-authorization":
     expected = {
         **source,
-        **prior_mounts,
         "/pams/input/launch-training-pose-cache-snapshot.json": (
             os.environ["VERIFY_LAUNCH_POSE_SNAPSHOT"], False
+        ),
+        "/pams/run/attempt.reservation.json": (
+            os.environ["VERIFY_ATTEMPT_RESERVATION"], False
+        ),
+        "/pams/candidate-registry": (
+            os.environ["VERIFY_CANDIDATE_REGISTRY_ROOT"], True
         ),
         "/pams/output": (
             os.environ["VERIFY_LAUNCH_AUTHORIZATION_STAGE"], True
@@ -507,6 +471,7 @@ elif stage == "encoder-epoch11":
 elif stage == "epoch11-gate":
     expected = {
         **source,
+        **launch_inputs,
         "/pams/pose-cache": (pose_recovery_root + "/pose-cache", False),
         "/pams/epoch11/encoder.pt": (
             os.environ["VERIFY_EPOCH11_CHECKPOINT"], False
@@ -572,26 +537,17 @@ if stage == "launch-authorization":
             "/pams/input/launch-training-pose-cache-snapshot.json"
         ],
         "--candidate-id": [candidate_id],
+        "--candidate-registry-root": ["/pams/candidate-registry"],
+        "--run-reservation": ["/pams/run/attempt.reservation.json"],
+        "--run-locator": [
+            os.environ["VERIFY_CANDIDATE_REGISTRY_RUN_LOCATOR"]
+        ],
         "--output": ["/pams/output/authorization.json"],
     }
     for option, expected_values in expected_options.items():
         require(option_values(option) == expected_values, f"launch option mismatch: {option}")
-    expected_prior_artifacts = []
-    expected_prior_receipts = []
-    if candidate_id in {"B", "C"}:
-        expected_prior_artifacts.append("/pams/prior/A/rejection.json")
-        expected_prior_receipts.append("/pams/prior/A/rejection.json.receipt.json")
-    if candidate_id == "C":
-        expected_prior_artifacts.append("/pams/prior/B/rejection.json")
-        expected_prior_receipts.append("/pams/prior/B/rejection.json.receipt.json")
-    require(
-        option_values("--prior-rejection-artifact") == expected_prior_artifacts,
-        "launch predecessor artifact order mismatch",
-    )
-    require(
-        option_values("--prior-rejection-receipt") == expected_prior_receipts,
-        "launch predecessor receipt order mismatch",
-    )
+    require(not option_values("--prior-rejection-artifact"), "caller predecessor artifacts forbidden")
+    require(not option_values("--prior-rejection-receipt"), "caller predecessor receipts forbidden")
 elif stage == "encoder-epoch11":
     require("python\0-m\0pams\0train\0encoder" in command, "epoch11 command mismatch")
     require(command.count("train\0encoder") == 1, "epoch11 encoder invocation count")
@@ -637,6 +593,16 @@ elif stage == "epoch11-gate":
         "--encoder-completion-receipt\0/pams/epoch11/completion.receipt.json"
         in command,
         "gate completion receipt binding missing",
+    )
+    require(
+        option_values("--candidate-launch-authorization")
+        == ["/pams/launch/authorization.json"],
+        "gate launch authorization binding mismatch",
+    )
+    require(
+        option_values("--candidate-launch-receipt")
+        == ["/pams/launch/authorization.json.receipt.json"],
+        "gate launch receipt binding mismatch",
     )
 else:
     require("validate_pams_native_baseline_inputs.py" in command, "preflight command mismatch")
@@ -742,6 +708,8 @@ validate_completion_receipt() {
   VERIFY_RESUME_PROGRESS="$resume_progress" \
   VERIFY_LAUNCH_AUTHORIZATION="$LAUNCH_AUTHORIZATION_ARTIFACT" \
   VERIFY_LAUNCH_RECEIPT="$LAUNCH_AUTHORIZATION_RECEIPT" \
+  VERIFY_LAUNCH_AUTHORIZATION_BYTES="$LAUNCH_AUTHORIZATION_BYTES" \
+  VERIFY_LAUNCH_RECEIPT_BYTES="$LAUNCH_AUTHORIZATION_RECEIPT_BYTES" \
   python3 - <<'PY'
 import hashlib
 import json
@@ -917,6 +885,16 @@ expected_hashes = {
 }
 for role, expected in expected_hashes.items():
     require(roles[role]["sha256"] == expected, f"input binding mismatch: {role}")
+expected_launch_bytes = {
+    "input_candidate_launch_authorization": int(
+        os.environ["VERIFY_LAUNCH_AUTHORIZATION_BYTES"]
+    ),
+    "input_candidate_launch_authorization_receipt": int(
+        os.environ["VERIFY_LAUNCH_RECEIPT_BYTES"]
+    ),
+}
+for role, expected in expected_launch_bytes.items():
+    require(roles[role]["bytes"] == expected, f"input byte binding mismatch: {role}")
 if expected_epochs == 150:
     require(
         roles["input_resume_checkpoint"]["sha256"] == digest(Path(resume_checkpoint)),
@@ -961,6 +939,10 @@ validate_epoch11_gate_artifacts() {
   VERIFY_CHECKPOINT_SHA256="$checkpoint_sha256" \
   VERIFY_PROGRESS_SHA256="$progress_sha256" \
   VERIFY_COMPLETION_RECEIPT_SHA256="$completion_receipt_sha256" \
+  VERIFY_LAUNCH_AUTHORIZATION_SHA256="$LAUNCH_AUTHORIZATION_SHA256" \
+  VERIFY_LAUNCH_AUTHORIZATION_BYTES="$LAUNCH_AUTHORIZATION_BYTES" \
+  VERIFY_LAUNCH_RECEIPT_SHA256="$LAUNCH_AUTHORIZATION_RECEIPT_SHA256" \
+  VERIFY_LAUNCH_RECEIPT_BYTES="$LAUNCH_AUTHORIZATION_RECEIPT_BYTES" \
   VERIFY_SNAPSHOT_SHA256="$snapshot_sha256" \
   VERIFY_POSE_CACHE_SET_SHA256="$pose_cache_set_sha256" \
   VERIFY_GATE_SPECIFICATION_SHA256="$gate_specification_sha256" \
@@ -1018,6 +1000,18 @@ expected_input_hashes = {
     "encoder_completion_receipt_sha256": os.environ[
         "VERIFY_COMPLETION_RECEIPT_SHA256"
     ],
+    "candidate_launch_authorization_sha256": os.environ[
+        "VERIFY_LAUNCH_AUTHORIZATION_SHA256"
+    ],
+    "candidate_launch_authorization_bytes": int(
+        os.environ["VERIFY_LAUNCH_AUTHORIZATION_BYTES"]
+    ),
+    "candidate_launch_authorization_receipt_sha256": os.environ[
+        "VERIFY_LAUNCH_RECEIPT_SHA256"
+    ],
+    "candidate_launch_authorization_receipt_bytes": int(
+        os.environ["VERIFY_LAUNCH_RECEIPT_BYTES"]
+    ),
     "pose_snapshot_sha256": os.environ["VERIFY_SNAPSHOT_SHA256"],
     "pose_cache_set_sha256": os.environ["VERIFY_POSE_CACHE_SET_SHA256"],
     "gate_specification_sha256": os.environ["VERIFY_GATE_SPECIFICATION_SHA256"],
@@ -1063,6 +1057,18 @@ require(
             "output_encoder_checkpoint",
             "progress_log",
         ],
+        "candidate_launch_authorization_sha256": os.environ[
+            "VERIFY_LAUNCH_AUTHORIZATION_SHA256"
+        ],
+        "candidate_launch_authorization_bytes": int(
+            os.environ["VERIFY_LAUNCH_AUTHORIZATION_BYTES"]
+        ),
+        "candidate_launch_authorization_receipt_sha256": os.environ[
+            "VERIFY_LAUNCH_RECEIPT_SHA256"
+        ],
+        "candidate_launch_authorization_receipt_bytes": int(
+            os.environ["VERIFY_LAUNCH_RECEIPT_BYTES"]
+        ),
     },
     "gate completion receipt summary mismatch",
 )
@@ -1109,6 +1115,18 @@ require(
         "encoder_completion_receipt_sha256": os.environ[
             "VERIFY_COMPLETION_RECEIPT_SHA256"
         ],
+        "candidate_launch_authorization_sha256": os.environ[
+            "VERIFY_LAUNCH_AUTHORIZATION_SHA256"
+        ],
+        "candidate_launch_authorization_bytes": int(
+            os.environ["VERIFY_LAUNCH_AUTHORIZATION_BYTES"]
+        ),
+        "candidate_launch_authorization_receipt_sha256": os.environ[
+            "VERIFY_LAUNCH_RECEIPT_SHA256"
+        ],
+        "candidate_launch_authorization_receipt_bytes": int(
+            os.environ["VERIFY_LAUNCH_RECEIPT_BYTES"]
+        ),
         "pose_cache_set_sha256": os.environ["VERIFY_POSE_CACHE_SET_SHA256"],
         "gate_specification_sha256": os.environ["VERIFY_GATE_SPECIFICATION_SHA256"],
         "source_git_sha": os.environ["VERIFY_SOURCE_REVISION"],
@@ -1493,7 +1511,14 @@ require_sha256 "$CONFIG_HOST" "$CONFIG_SHA256" 'staged native proxy config'
 chmod -R a-w -- "$SOURCE_VIEW"
 chmod 0444 "$SOURCE_RECEIPT" "$CONFIG_HOST"
 
-RESERVATION_PATH="${RUN_ROOT}/attempt.reservation.json" \
+readonly CANDIDATE_REGISTRY_ID="$(
+  printf '%s' \
+    "{\"candidate_id\":\"${CANDIDATE_ID}\",\"gate_specification_sha256\":\"${TERMINAL_GATE_SPEC_SHA256}\",\"pose_cache_set_sha256\":\"${AUTHORIZED_POSE_CACHE_SET_SHA256}\",\"source_git_sha\":\"${SOURCE_REVISION}\"}" \
+    | sha256sum | awk '{print $1}'
+)"
+readonly CANDIDATE_REGISTRY_RESERVATION="${CANDIDATE_REGISTRY_ROOT}/${CANDIDATE_REGISTRY_ID}.reservation.json"
+
+RESERVATION_PATH="$ATTEMPT_RESERVATION" \
 RESERVATION_ATTEMPT="$ATTEMPT_ID" \
 RESERVATION_SOURCE="$SOURCE_REVISION" \
 RESERVATION_SOURCE_RECEIPT="$SOURCE_RECEIPT_SHA256" \
@@ -1519,6 +1544,8 @@ RESERVATION_POSE_GATE="$POSE_RECOVERY_PAIRED_GATE_SHA256" \
 RESERVATION_POSE_RECEIPT="$POSE_RECOVERY_RUN_RECEIPT_SHA256" \
 RESERVATION_POSE_LEDGER="$POSE_RECOVERY_LEDGER_SHA256" \
 RESERVATION_POSE_CACHE_SET="$AUTHORIZED_POSE_CACHE_SET_SHA256" \
+RESERVATION_REGISTRY_ID="$CANDIDATE_REGISTRY_ID" \
+RESERVATION_REGISTRY_RUN_LOCATOR="$CANDIDATE_REGISTRY_RUN_LOCATOR" \
 python3 - <<'PY'
 import json
 import os
@@ -1540,6 +1567,11 @@ payload = {
     "config_file_sha256": os.environ["RESERVATION_CONFIG_SHA"],
     "config_fingerprint": os.environ["RESERVATION_CONFIG_FP"],
     "candidate_id": os.environ["RESERVATION_CANDIDATE_ID"],
+    "candidate_registry": {
+        "registry_id": os.environ["RESERVATION_REGISTRY_ID"],
+        "run_locator": os.environ["RESERVATION_REGISTRY_RUN_LOCATOR"],
+        "exclusive_first_pass_required": True,
+    },
     "fixed_period_frames": int(os.environ["RESERVATION_CANDIDATE_WINDOW"]),
     "anchor_stride": int(os.environ["RESERVATION_CANDIDATE_STRIDE"]),
     "candidate_launch_policy": {
@@ -1595,7 +1627,7 @@ with Path(os.environ["RESERVATION_PATH"]).open(
     json.dump(payload, handle, indent=2, sort_keys=True, allow_nan=False)
     handle.write("\n")
 PY
-chmod 0444 "${RUN_ROOT}/attempt.reservation.json"
+chmod 0444 "$ATTEMPT_RESERVATION"
 
 {
   printf 'classification %s\n' "$CLASSIFICATION"
@@ -1691,29 +1723,6 @@ protocol_args=(
   --mount "type=bind,src=${TEST_ID_INPUT},dst=/pams/protocol/test-identity.inputs.json,readonly"
   --mount "type=bind,src=${TEST_ID_COMMIT},dst=/pams/protocol/test-identity.inputs.commitment.json,readonly"
 )
-launch_prior_mount_args=()
-launch_prior_cli_args=()
-if [[ "$CANDIDATE_ID" == 'B' || "$CANDIDATE_ID" == 'C' ]]; then
-  launch_prior_mount_args+=(
-    --mount "type=bind,src=${PRIOR_A_REJECTION_ARTIFACT},dst=/pams/prior/A/rejection.json,readonly"
-    --mount "type=bind,src=${PRIOR_A_REJECTION_RECEIPT},dst=/pams/prior/A/rejection.json.receipt.json,readonly"
-  )
-  launch_prior_cli_args+=(
-    --prior-rejection-artifact /pams/prior/A/rejection.json
-    --prior-rejection-receipt /pams/prior/A/rejection.json.receipt.json
-  )
-fi
-if [[ "$CANDIDATE_ID" == 'C' ]]; then
-  launch_prior_mount_args+=(
-    --mount "type=bind,src=${PRIOR_B_REJECTION_ARTIFACT},dst=/pams/prior/B/rejection.json,readonly"
-    --mount "type=bind,src=${PRIOR_B_REJECTION_RECEIPT},dst=/pams/prior/B/rejection.json.receipt.json,readonly"
-  )
-  launch_prior_cli_args+=(
-    --prior-rejection-artifact /pams/prior/B/rejection.json
-    --prior-rejection-receipt /pams/prior/B/rejection.json.receipt.json
-  )
-fi
-
 CURRENT_STAGE='input-preflight-create'
 docker create \
   --name "$PREFLIGHT_NAME" \
@@ -1922,8 +1931,9 @@ docker create \
   "${common_args[@]}" \
   --env CUDA_VISIBLE_DEVICES= \
   "${source_args[@]}" \
-  "${launch_prior_mount_args[@]}" \
   --mount "type=bind,src=${LAUNCH_POSE_SNAPSHOT},dst=/pams/input/launch-training-pose-cache-snapshot.json,readonly" \
+  --mount "type=bind,src=${ATTEMPT_RESERVATION},dst=/pams/run/attempt.reservation.json,readonly" \
+  --mount "type=bind,src=${CANDIDATE_REGISTRY_ROOT},dst=/pams/candidate-registry" \
   --mount "type=bind,src=${LAUNCH_AUTHORIZATION_STAGE},dst=/pams/output" \
   "$IMAGE_ID" \
   python "$LAUNCH_AUTHORIZATION_RELATIVE" \
@@ -1932,7 +1942,9 @@ docker create \
     --gate-specification "/workspace/${TERMINAL_GATE_SPEC_RELATIVE}" \
     --pose-snapshot /pams/input/launch-training-pose-cache-snapshot.json \
     --candidate-id "$CANDIDATE_ID" \
-    "${launch_prior_cli_args[@]}" \
+    --candidate-registry-root /pams/candidate-registry \
+    --run-reservation /pams/run/attempt.reservation.json \
+    --run-locator "$CANDIDATE_REGISTRY_RUN_LOCATOR" \
     --output /pams/output/authorization.json \
   > "${AUDIT_ROOT}/${LAUNCH_AUTHORIZATION_NAME}.create-id.txt"
 verify_container "$LAUNCH_AUTHORIZATION_NAME" 'launch-authorization'
@@ -1944,6 +1956,16 @@ run_created_container "$LAUNCH_AUTHORIZATION_NAME" 'launch-authorization'
 readonly LAUNCH_AUTHORIZATION_SHA256="$(sha256_file "$LAUNCH_AUTHORIZATION_ARTIFACT")"
 readonly LAUNCH_AUTHORIZATION_BYTES="$(stat -c '%s' -- "$LAUNCH_AUTHORIZATION_ARTIFACT")"
 readonly LAUNCH_AUTHORIZATION_RECEIPT_SHA256="$(sha256_file "$LAUNCH_AUTHORIZATION_RECEIPT")"
+readonly LAUNCH_AUTHORIZATION_RECEIPT_BYTES="$(stat -c '%s' -- "$LAUNCH_AUTHORIZATION_RECEIPT")"
+[[ -f "$CANDIDATE_REGISTRY_RESERVATION" \
+  && ! -L "$CANDIDATE_REGISTRY_RESERVATION" ]] \
+  || fail 'exclusive candidate registry reservation was not created'
+readonly CANDIDATE_REGISTRY_RESERVATION_SHA256="$(
+  sha256_file "$CANDIDATE_REGISTRY_RESERVATION"
+)"
+readonly CANDIDATE_REGISTRY_RESERVATION_BYTES="$(
+  stat -c '%s' -- "$CANDIDATE_REGISTRY_RESERVATION"
+)"
 jq -e \
   --arg candidate_id "$CANDIDATE_ID" \
   --arg config_sha "$CONFIG_SHA256" \
@@ -1953,6 +1975,10 @@ jq -e \
   --arg cache_set_sha "$POSE_CACHE_SET_SHA256" \
   --arg source_receipt_sha "$SOURCE_RECEIPT_SHA256" \
   --arg source_revision "$SOURCE_REVISION" \
+  --arg registry_id "$CANDIDATE_REGISTRY_ID" \
+  --arg registry_reservation_sha "$CANDIDATE_REGISTRY_RESERVATION_SHA256" \
+  --argjson registry_reservation_bytes "$CANDIDATE_REGISTRY_RESERVATION_BYTES" \
+  --arg registry_run_locator "$CANDIDATE_REGISTRY_RUN_LOCATOR" \
   --argjson prior_ids "$CANDIDATE_PRIOR_IDS_JSON" \
   '
     .schema_version == 1
@@ -1967,6 +1993,10 @@ jq -e \
     and .inputs.pose_cache_set_sha256 == $cache_set_sha
     and .inputs.source_export_receipt_sha256 == $source_receipt_sha
     and .inputs.source_git_sha == $source_revision
+    and .inputs.candidate_registry_id == $registry_id
+    and .inputs.candidate_registry_reservation_sha256 == $registry_reservation_sha
+    and .inputs.candidate_registry_reservation_bytes == $registry_reservation_bytes
+    and .inputs.candidate_registry_run_locator == $registry_run_locator
     and .inputs.training_video_total == 337
     and .authorization.gate_frozen_before_candidate_a == true
     and .authorization.candidate_training_authorized == true
@@ -1975,6 +2005,7 @@ jq -e \
     and .authorization.dev84_identity_media_pose_or_scoring_authorized == false
     and .authorization.test105_evaluation_authorized == false
     and .authorization.aggregate_only_prior_receipts == true
+    and .authorization.candidate_outcome_registry_reserved_exclusively == true
   ' "$LAUNCH_AUTHORIZATION_ARTIFACT" >/dev/null \
   || fail 'candidate launch authorization violates the frozen policy'
 jq -e \
@@ -1987,6 +2018,9 @@ jq -e \
   --arg cache_set_sha "$POSE_CACHE_SET_SHA256" \
   --arg source_receipt_sha "$SOURCE_RECEIPT_SHA256" \
   --arg source_revision "$SOURCE_REVISION" \
+  --arg registry_id "$CANDIDATE_REGISTRY_ID" \
+  --arg registry_reservation_sha "$CANDIDATE_REGISTRY_RESERVATION_SHA256" \
+  --argjson registry_reservation_bytes "$CANDIDATE_REGISTRY_RESERVATION_BYTES" \
   '
     .schema_version == 1
     and .artifact_type == "pams_native_candidate_train337_launch_authorization_receipt_v1"
@@ -2001,6 +2035,9 @@ jq -e \
     and .pose_cache_set_sha256 == $cache_set_sha
     and .source_export_receipt_sha256 == $source_receipt_sha
     and .source_git_sha == $source_revision
+    and .candidate_registry_id == $registry_id
+    and .candidate_registry_reservation_sha256 == $registry_reservation_sha
+    and .candidate_registry_reservation_bytes == $registry_reservation_bytes
     and .candidate_training_authorized == true
     and .dev84_pose_or_scoring_authorized == false
     and .test105_evaluation_authorized == false
@@ -2010,7 +2047,9 @@ sha256sum -- \
   "$LAUNCH_POSE_SNAPSHOT" \
   "$LAUNCH_AUTHORIZATION_ARTIFACT" \
   "$LAUNCH_AUTHORIZATION_RECEIPT" \
+  "$CANDIDATE_REGISTRY_RESERVATION" \
   > "${AUDIT_ROOT}/launch-authorization-sha256.txt"
+chmod 0440 -- "$CANDIDATE_REGISTRY_RESERVATION"
 chmod -R a-w -- "$LAUNCH_AUTHORIZATION_STAGE"
 
 mkdir -p -- "$LOCK_ROOT"
@@ -2092,6 +2131,10 @@ readonly EPOCH11_SNAPSHOT_SHA256="$(sha256_file "$EPOCH11_POSE_SNAPSHOT")"
 readonly EPOCH11_COMPLETION_RECEIPT_SHA256="$(
   sha256_file "$EPOCH11_ENCODER_RECEIPT"
 )"
+readonly EPOCH11_CHECKPOINT_BYTES="$(stat -c '%s' -- "$EPOCH11_ENCODER_CHECKPOINT")"
+readonly EPOCH11_PROGRESS_BYTES="$(stat -c '%s' -- "$EPOCH11_ENCODER_PROGRESS")"
+readonly EPOCH11_SNAPSHOT_BYTES="$(stat -c '%s' -- "$EPOCH11_POSE_SNAPSHOT")"
+readonly EPOCH11_COMPLETION_RECEIPT_BYTES="$(stat -c '%s' -- "$EPOCH11_ENCODER_RECEIPT")"
 sha256sum -- \
   "$EPOCH11_ENCODER_CHECKPOINT" \
   "$EPOCH11_ENCODER_PROGRESS" \
@@ -2114,6 +2157,8 @@ docker create \
   --mount "type=bind,src=${EPOCH11_ENCODER_PROGRESS},dst=/pams/epoch11/encoder.jsonl,readonly" \
   --mount "type=bind,src=${EPOCH11_ENCODER_RECEIPT},dst=/pams/epoch11/completion.receipt.json,readonly" \
   --mount "type=bind,src=${EPOCH11_POSE_SNAPSHOT},dst=/pams/epoch11/training-pose-cache-snapshot.json,readonly" \
+  --mount "type=bind,src=${LAUNCH_AUTHORIZATION_ARTIFACT},dst=/pams/launch/authorization.json,readonly" \
+  --mount "type=bind,src=${LAUNCH_AUTHORIZATION_RECEIPT},dst=/pams/launch/authorization.json.receipt.json,readonly" \
   --mount "type=bind,src=${EPOCH11_GATE_STAGE},dst=/pams/output" \
   "$IMAGE_ID" \
   python "$EPOCH11_GATE_RELATIVE" \
@@ -2123,6 +2168,8 @@ docker create \
     --expected-encoder-completion-receipt-sha256 "$EPOCH11_COMPLETION_RECEIPT_SHA256" \
     --config "/workspace/${CONFIG_RELATIVE}" \
     --gate-specification "/workspace/${EPOCH11_GATE_SPEC_RELATIVE}" \
+    --candidate-launch-authorization /pams/launch/authorization.json \
+    --candidate-launch-receipt /pams/launch/authorization.json.receipt.json \
     --pose-cache-dir /pams/pose-cache \
     --pose-snapshot /pams/epoch11/training-pose-cache-snapshot.json \
     --output /pams/output/gate.json \
@@ -2143,6 +2190,8 @@ validate_epoch11_gate_artifacts \
   "$EPOCH11_GATE_SPEC_SHA256"
 readonly EPOCH11_GATE_ARTIFACT_SHA256="$(sha256_file "$EPOCH11_GATE_ARTIFACT")"
 readonly EPOCH11_GATE_RECEIPT_SHA256="$(sha256_file "$EPOCH11_GATE_RECEIPT")"
+readonly EPOCH11_GATE_ARTIFACT_BYTES="$(stat -c '%s' -- "$EPOCH11_GATE_ARTIFACT")"
+readonly EPOCH11_GATE_RECEIPT_BYTES="$(stat -c '%s' -- "$EPOCH11_GATE_RECEIPT")"
 sha256sum -- "$EPOCH11_GATE_ARTIFACT" "$EPOCH11_GATE_RECEIPT" \
   > "${AUDIT_ROOT}/epoch11-gate-sha256.txt"
 chmod -R a-w -- "$EPOCH11_GATE_STAGE"
@@ -2278,6 +2327,18 @@ readonly FINAL_POSE_SNAPSHOT_SHA256="$(sha256_file "$FINAL_ENCODER_POSE_SNAPSHOT
 readonly FINAL_COMPLETION_RECEIPT_SHA256="$(
   sha256_file "$FINAL_ENCODER_RECEIPT"
 )"
+readonly FINAL_RUN_ID="$(jq -er '.run_id' "$FINAL_ENCODER_RECEIPT")"
+[[ "$FINAL_RUN_ID" =~ ^[a-zA-Z0-9._-]+$ && "$FINAL_RUN_ID" != *'..'* ]] \
+  || fail 'final encoder completion receipt has an unsafe run ID'
+readonly FINAL_STARTED_RECEIPT="${FINAL_ENCODER_RECEIPT%/*}/${FINAL_RUN_ID}.started.json"
+[[ -f "$FINAL_STARTED_RECEIPT" && ! -L "$FINAL_STARTED_RECEIPT" ]] \
+  || fail 'final encoder started receipt is missing or unsafe'
+readonly FINAL_STARTED_RECEIPT_SHA256="$(sha256_file "$FINAL_STARTED_RECEIPT")"
+readonly FINAL_STARTED_RECEIPT_BYTES="$(stat -c '%s' -- "$FINAL_STARTED_RECEIPT")"
+readonly FINAL_CHECKPOINT_BYTES="$(stat -c '%s' -- "$FINAL_ENCODER_CHECKPOINT")"
+readonly FINAL_PROGRESS_BYTES="$(stat -c '%s' -- "$FINAL_ENCODER_PROGRESS")"
+readonly FINAL_POSE_SNAPSHOT_BYTES="$(stat -c '%s' -- "$FINAL_ENCODER_POSE_SNAPSHOT")"
+readonly FINAL_COMPLETION_RECEIPT_BYTES="$(stat -c '%s' -- "$FINAL_ENCODER_RECEIPT")"
 require_sha256 \
   "$LAUNCH_AUTHORIZATION_ARTIFACT" \
   "$LAUNCH_AUTHORIZATION_SHA256" \
@@ -2296,6 +2357,7 @@ sha256sum -- \
   "$FINAL_ENCODER_CHECKPOINT" \
   "$FINAL_ENCODER_PROGRESS" \
   "$FINAL_ENCODER_POSE_SNAPSHOT" \
+  "$FINAL_STARTED_RECEIPT" \
   "$FINAL_ENCODER_RECEIPT" \
   > "${AUDIT_ROOT}/encoder-final-sha256.txt"
 chmod -R a-w -- "$FINAL_ENCODER_STAGE"
@@ -2327,23 +2389,90 @@ RUN_PREFLIGHT_SHA256="$INPUT_PREFLIGHT_SHA256" \
 RUN_TERMINAL_GATE_SPECIFICATION_SHA256="$TERMINAL_GATE_SPEC_SHA256" \
 RUN_LAUNCH_POSE_SNAPSHOT_SHA256="$LAUNCH_POSE_SNAPSHOT_SHA256" \
 RUN_LAUNCH_AUTHORIZATION_SHA256="$LAUNCH_AUTHORIZATION_SHA256" \
+RUN_LAUNCH_AUTHORIZATION_BYTES="$LAUNCH_AUTHORIZATION_BYTES" \
 RUN_LAUNCH_AUTHORIZATION_RECEIPT_SHA256="$LAUNCH_AUTHORIZATION_RECEIPT_SHA256" \
+RUN_LAUNCH_AUTHORIZATION_RECEIPT_BYTES="$LAUNCH_AUTHORIZATION_RECEIPT_BYTES" \
+RUN_REGISTRY_ID="$CANDIDATE_REGISTRY_ID" \
+RUN_REGISTRY_RESERVATION_SHA256="$CANDIDATE_REGISTRY_RESERVATION_SHA256" \
+RUN_REGISTRY_RESERVATION_BYTES="$CANDIDATE_REGISTRY_RESERVATION_BYTES" \
+RUN_REGISTRY_LOCATOR="$CANDIDATE_REGISTRY_RUN_LOCATOR" \
 RUN_GATE_SPECIFICATION_SHA256="$EPOCH11_GATE_SPEC_SHA256" \
 RUN_EPOCH11_CHECKPOINT_SHA256="$EPOCH11_CHECKPOINT_SHA256" \
+RUN_EPOCH11_CHECKPOINT_BYTES="$EPOCH11_CHECKPOINT_BYTES" \
 RUN_EPOCH11_PROGRESS_SHA256="$EPOCH11_PROGRESS_SHA256" \
+RUN_EPOCH11_PROGRESS_BYTES="$EPOCH11_PROGRESS_BYTES" \
 RUN_EPOCH11_SNAPSHOT_SHA256="$EPOCH11_SNAPSHOT_SHA256" \
+RUN_EPOCH11_SNAPSHOT_BYTES="$EPOCH11_SNAPSHOT_BYTES" \
 RUN_EPOCH11_COMPLETION_RECEIPT_SHA256="$EPOCH11_COMPLETION_RECEIPT_SHA256" \
+RUN_EPOCH11_COMPLETION_RECEIPT_BYTES="$EPOCH11_COMPLETION_RECEIPT_BYTES" \
 RUN_GATE_ARTIFACT_SHA256="$EPOCH11_GATE_ARTIFACT_SHA256" \
+RUN_GATE_ARTIFACT_BYTES="$EPOCH11_GATE_ARTIFACT_BYTES" \
 RUN_GATE_RECEIPT_SHA256="$EPOCH11_GATE_RECEIPT_SHA256" \
+RUN_GATE_RECEIPT_BYTES="$EPOCH11_GATE_RECEIPT_BYTES" \
 RUN_FINAL_CHECKPOINT_SHA256="$FINAL_CHECKPOINT_SHA256" \
+RUN_FINAL_CHECKPOINT_BYTES="$FINAL_CHECKPOINT_BYTES" \
 RUN_FINAL_PROGRESS_SHA256="$FINAL_PROGRESS_SHA256" \
+RUN_FINAL_PROGRESS_BYTES="$FINAL_PROGRESS_BYTES" \
 RUN_FINAL_POSE_SNAPSHOT_SHA256="$FINAL_POSE_SNAPSHOT_SHA256" \
+RUN_FINAL_POSE_SNAPSHOT_BYTES="$FINAL_POSE_SNAPSHOT_BYTES" \
+RUN_FINAL_STARTED_RECEIPT_SHA256="$FINAL_STARTED_RECEIPT_SHA256" \
+RUN_FINAL_STARTED_RECEIPT_BYTES="$FINAL_STARTED_RECEIPT_BYTES" \
 RUN_FINAL_COMPLETION_RECEIPT_SHA256="$FINAL_COMPLETION_RECEIPT_SHA256" \
+RUN_FINAL_COMPLETION_RECEIPT_BYTES="$FINAL_COMPLETION_RECEIPT_BYTES" \
+RUN_ROOT_PATH="$RUN_ROOT" \
+RUN_PREFLIGHT_CONTAINER="$PREFLIGHT_NAME" \
+RUN_LAUNCH_CONTAINER="$LAUNCH_AUTHORIZATION_NAME" \
+RUN_EPOCH11_CONTAINER="$EPOCH11_ENCODER_NAME" \
+RUN_GATE_CONTAINER="$EPOCH11_GATE_NAME" \
+RUN_FINAL_CONTAINER="$FINAL_ENCODER_NAME" \
 python3 - <<'PY'
+import hashlib
 import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+
+run_root = Path(os.environ["RUN_ROOT_PATH"]).resolve(strict=True)
+audit_root = run_root / "audit"
+
+def identity(path: Path) -> dict[str, object]:
+    content = path.read_bytes()
+    return {
+        "locator": path.relative_to(run_root).as_posix(),
+        "sha256": hashlib.sha256(content).hexdigest(),
+        "bytes": len(content),
+    }
+
+def container_audit(container_name: str) -> dict[str, object]:
+    return {
+        "create_id": identity(audit_root / f"{container_name}.create-id.txt"),
+        "configuration_inspect": identity(
+            audit_root / f"{container_name}.inspect.json"
+        ),
+        "configuration_verification": identity(
+            audit_root / f"{container_name}.inspect.verification.json"
+        ),
+        "post_run_inspect": identity(
+            audit_root / f"{container_name}.post-run.inspect.json"
+        ),
+        "exit_code": identity(audit_root / f"{container_name}.exit-code.txt"),
+    }
+
+container_audits = {
+    "preflight": container_audit(os.environ["RUN_PREFLIGHT_CONTAINER"]),
+    "launch_authorization": container_audit(os.environ["RUN_LAUNCH_CONTAINER"]),
+    "encoder_epoch11": container_audit(os.environ["RUN_EPOCH11_CONTAINER"]),
+    "epoch11_gate": container_audit(os.environ["RUN_GATE_CONTAINER"]),
+    "encoder_final": container_audit(os.environ["RUN_FINAL_CONTAINER"]),
+}
+container_audits_sha256_commitment = hashlib.sha256(
+    json.dumps(
+        container_audits,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+).hexdigest()
 
 payload = {
     "schema_version": 1,
@@ -2378,6 +2507,13 @@ payload = {
         "ledger_sha256": os.environ["RUN_POSE_LEDGER_SHA256"],
     },
     "input_preflight_sha256": os.environ["RUN_PREFLIGHT_SHA256"],
+    "candidate_registry": {
+        "registry_id": os.environ["RUN_REGISTRY_ID"],
+        "reservation_sha256": os.environ["RUN_REGISTRY_RESERVATION_SHA256"],
+        "reservation_bytes": int(os.environ["RUN_REGISTRY_RESERVATION_BYTES"]),
+        "run_locator": os.environ["RUN_REGISTRY_LOCATOR"],
+        "exclusive_first_pass_reservation": True,
+    },
     "candidate_launch_authorization": {
         "terminal_gate_specification_sha256": os.environ[
             "RUN_TERMINAL_GATE_SPECIFICATION_SHA256"
@@ -2388,9 +2524,15 @@ payload = {
         "authorization_sha256": os.environ[
             "RUN_LAUNCH_AUTHORIZATION_SHA256"
         ],
+        "authorization_bytes": int(os.environ[
+            "RUN_LAUNCH_AUTHORIZATION_BYTES"
+        ]),
         "authorization_receipt_sha256": os.environ[
             "RUN_LAUNCH_AUTHORIZATION_RECEIPT_SHA256"
         ],
+        "authorization_receipt_bytes": int(os.environ[
+            "RUN_LAUNCH_AUTHORIZATION_RECEIPT_BYTES"
+        ]),
         "generated_before_encoder_container_creation": True,
         "consumed_by_epoch11_and_final_encoder_commands": True,
     },
@@ -2402,24 +2544,58 @@ payload = {
         "encoder_checkpoint_sha256": os.environ[
             "RUN_EPOCH11_CHECKPOINT_SHA256"
         ],
+        "encoder_checkpoint_bytes": int(os.environ[
+            "RUN_EPOCH11_CHECKPOINT_BYTES"
+        ]),
         "encoder_progress_sha256": os.environ["RUN_EPOCH11_PROGRESS_SHA256"],
+        "encoder_progress_bytes": int(os.environ["RUN_EPOCH11_PROGRESS_BYTES"]),
         "pose_snapshot_sha256": os.environ["RUN_EPOCH11_SNAPSHOT_SHA256"],
+        "pose_snapshot_bytes": int(os.environ["RUN_EPOCH11_SNAPSHOT_BYTES"]),
         "encoder_completion_receipt_sha256": os.environ[
             "RUN_EPOCH11_COMPLETION_RECEIPT_SHA256"
         ],
+        "encoder_completion_receipt_bytes": int(os.environ[
+            "RUN_EPOCH11_COMPLETION_RECEIPT_BYTES"
+        ]),
         "gate_artifact_sha256": os.environ["RUN_GATE_ARTIFACT_SHA256"],
+        "gate_artifact_bytes": int(os.environ["RUN_GATE_ARTIFACT_BYTES"]),
         "gate_receipt_sha256": os.environ["RUN_GATE_RECEIPT_SHA256"],
+        "gate_receipt_bytes": int(os.environ["RUN_GATE_RECEIPT_BYTES"]),
+        "candidate_launch_authorization_sha256": os.environ[
+            "RUN_LAUNCH_AUTHORIZATION_SHA256"
+        ],
+        "candidate_launch_authorization_bytes": int(os.environ[
+            "RUN_LAUNCH_AUTHORIZATION_BYTES"
+        ]),
+        "candidate_launch_authorization_receipt_sha256": os.environ[
+            "RUN_LAUNCH_AUTHORIZATION_RECEIPT_SHA256"
+        ],
+        "candidate_launch_authorization_receipt_bytes": int(os.environ[
+            "RUN_LAUNCH_AUTHORIZATION_RECEIPT_BYTES"
+        ]),
         "encoder_continuation_authorized": True,
         "gate_exit_code": 0,
         "read_only": True,
     },
     "final_encoder": {
         "checkpoint_sha256": os.environ["RUN_FINAL_CHECKPOINT_SHA256"],
+        "checkpoint_bytes": int(os.environ["RUN_FINAL_CHECKPOINT_BYTES"]),
         "progress_sha256": os.environ["RUN_FINAL_PROGRESS_SHA256"],
+        "progress_bytes": int(os.environ["RUN_FINAL_PROGRESS_BYTES"]),
         "pose_snapshot_sha256": os.environ["RUN_FINAL_POSE_SNAPSHOT_SHA256"],
+        "pose_snapshot_bytes": int(os.environ["RUN_FINAL_POSE_SNAPSHOT_BYTES"]),
+        "started_receipt_sha256": os.environ[
+            "RUN_FINAL_STARTED_RECEIPT_SHA256"
+        ],
+        "started_receipt_bytes": int(os.environ[
+            "RUN_FINAL_STARTED_RECEIPT_BYTES"
+        ]),
         "completion_receipt_sha256": os.environ[
             "RUN_FINAL_COMPLETION_RECEIPT_SHA256"
         ],
+        "completion_receipt_bytes": int(os.environ[
+            "RUN_FINAL_COMPLETION_RECEIPT_BYTES"
+        ]),
         "completed_epochs": 150,
         "immutable_resume_checkpoint_sha256": os.environ[
             "RUN_EPOCH11_CHECKPOINT_SHA256"
@@ -2429,7 +2605,23 @@ payload = {
         ],
         "progress_has_exact_epoch11_prefix": True,
         "resume_stage_created_after_gate_authorization": True,
+        "candidate_launch_authorization_sha256": os.environ[
+            "RUN_LAUNCH_AUTHORIZATION_SHA256"
+        ],
+        "candidate_launch_authorization_bytes": int(os.environ[
+            "RUN_LAUNCH_AUTHORIZATION_BYTES"
+        ]),
+        "candidate_launch_authorization_receipt_sha256": os.environ[
+            "RUN_LAUNCH_AUTHORIZATION_RECEIPT_SHA256"
+        ],
+        "candidate_launch_authorization_receipt_bytes": int(os.environ[
+            "RUN_LAUNCH_AUTHORIZATION_RECEIPT_BYTES"
+        ]),
     },
+    "container_audits": container_audits,
+    "container_audits_sha256_commitment": (
+        container_audits_sha256_commitment
+    ),
     "physical_batch_size": 32,
     "encoder_training_scope": "train337_only",
     "period_head_training_authorized": False,
@@ -2452,6 +2644,52 @@ with Path(os.environ["RUN_RECEIPT_PATH"]).open(
     json.dump(payload, handle, indent=2, sort_keys=True, allow_nan=False)
     handle.write("\n")
 PY
+require_sha256 \
+  "$LAUNCH_AUTHORIZATION_ARTIFACT" \
+  "$LAUNCH_AUTHORIZATION_SHA256" \
+  'candidate launch authorization at run receipt completion'
+require_sha256 \
+  "$LAUNCH_AUTHORIZATION_RECEIPT" \
+  "$LAUNCH_AUTHORIZATION_RECEIPT_SHA256" \
+  'candidate launch authorization receipt at run receipt completion'
+require_sha256 \
+  "$CANDIDATE_REGISTRY_RESERVATION" \
+  "$CANDIDATE_REGISTRY_RESERVATION_SHA256" \
+  'candidate registry reservation at run receipt completion'
+jq -e \
+  --arg registry_id "$CANDIDATE_REGISTRY_ID" \
+  --arg registry_sha "$CANDIDATE_REGISTRY_RESERVATION_SHA256" \
+  --argjson registry_bytes "$CANDIDATE_REGISTRY_RESERVATION_BYTES" \
+  --arg launch_sha "$LAUNCH_AUTHORIZATION_SHA256" \
+  --argjson launch_bytes "$LAUNCH_AUTHORIZATION_BYTES" \
+  --arg launch_receipt_sha "$LAUNCH_AUTHORIZATION_RECEIPT_SHA256" \
+  --argjson launch_receipt_bytes "$LAUNCH_AUTHORIZATION_RECEIPT_BYTES" \
+  '
+    .status == "completed"
+    and .candidate_registry.registry_id == $registry_id
+    and .candidate_registry.reservation_sha256 == $registry_sha
+    and .candidate_registry.reservation_bytes == $registry_bytes
+    and .candidate_registry.exclusive_first_pass_reservation == true
+    and .candidate_launch_authorization.authorization_sha256 == $launch_sha
+    and .candidate_launch_authorization.authorization_bytes == $launch_bytes
+    and .candidate_launch_authorization.authorization_receipt_sha256 == $launch_receipt_sha
+    and .candidate_launch_authorization.authorization_receipt_bytes == $launch_receipt_bytes
+    and .epoch11_gate.candidate_launch_authorization_sha256 == $launch_sha
+    and .epoch11_gate.candidate_launch_authorization_bytes == $launch_bytes
+    and .epoch11_gate.candidate_launch_authorization_receipt_sha256 == $launch_receipt_sha
+    and .epoch11_gate.candidate_launch_authorization_receipt_bytes == $launch_receipt_bytes
+    and .final_encoder.candidate_launch_authorization_sha256 == $launch_sha
+    and .final_encoder.candidate_launch_authorization_bytes == $launch_bytes
+    and .final_encoder.candidate_launch_authorization_receipt_sha256 == $launch_receipt_sha
+    and .final_encoder.candidate_launch_authorization_receipt_bytes == $launch_receipt_bytes
+    and (.container_audits | keys | sort) == [
+      "encoder_epoch11", "encoder_final", "epoch11_gate",
+      "launch_authorization", "preflight"
+    ]
+    and (.container_audits_sha256_commitment | type) == "string"
+    and (.container_audits_sha256_commitment | length) == 64
+  ' "${AUDIT_ROOT}/run.receipt.json" >/dev/null \
+  || fail 'run receipt does not retain registry and launch authorization lineage'
 chmod 0444 "${AUDIT_ROOT}/run.receipt.json"
 write_status 'completed' 'encoder-final' '0'
 find "$RUN_ROOT" -type f -not -path "${AUDIT_ROOT}/artifact-sha256.txt" \

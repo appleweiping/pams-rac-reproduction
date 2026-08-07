@@ -309,6 +309,8 @@ def _write_completion_receipt(
         "encoder_progress": ("2" * 64, 102),
         "experiment_config": ("3" * 64, 103),
         "pose_snapshot": ("4" * 64, 104),
+        "candidate_launch_authorization": ("a" * 64, 111),
+        "candidate_launch_authorization_receipt": ("b" * 64, 112),
     }
     started = RunManifest(
         run_id="20260807T000000Z-fixture",
@@ -349,8 +351,12 @@ def _write_completion_receipt(
         "input_dev_pose_input_commitment": ("8" * 64, 108),
         "input_test_identity_pose_inputs": ("9" * 64, 109),
         "input_test_identity_pose_input_commitment": ("0" * 64, 110),
-        "input_candidate_launch_authorization": ("a" * 64, 111),
-        "input_candidate_launch_authorization_receipt": ("b" * 64, 112),
+        "input_candidate_launch_authorization": identities[
+            "candidate_launch_authorization"
+        ],
+        "input_candidate_launch_authorization_receipt": identities[
+            "candidate_launch_authorization_receipt"
+        ],
         "output_encoder_checkpoint": identities["encoder_checkpoint"],
         "progress_log": identities["encoder_progress"],
     }
@@ -402,6 +408,8 @@ def test_completion_receipt_is_caller_pinned_and_exact(tmp_path: Path) -> None:
     )
     assert summary["sha256"] == digest
     assert summary["completed_epochs"] == 11
+    assert summary["candidate_launch_authorization_sha256"] == "a" * 64
+    assert summary["candidate_launch_authorization_receipt_bytes"] == 112
 
 
 def test_completion_receipt_rejects_extra_artifact_role(tmp_path: Path) -> None:
@@ -557,6 +565,8 @@ def test_interface_has_no_privileged_scientific_arguments() -> None:
         "expected_encoder_completion_receipt_sha256",
         "config_path",
         "gate_specification_path",
+        "candidate_launch_authorization_path",
+        "candidate_launch_receipt_path",
         "pose_cache_dir",
         "pose_snapshot_path",
         "device",

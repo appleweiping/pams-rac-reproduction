@@ -21,7 +21,7 @@ import os
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 import numpy as np
@@ -49,6 +49,7 @@ from pams.recurrence_carrier import (
 )
 from pams.reproducibility import (
     clean_git_revision,
+    fsync_directory,
     hardware_fingerprint,
     sha256_json,
 )
@@ -78,6 +79,13 @@ _CANDIDATE_LAUNCH_ARTIFACT_TYPE = (
 )
 _CANDIDATE_LAUNCH_RECEIPT_TYPE = (
     "pams_native_candidate_train337_launch_authorization_receipt_v1"
+)
+_CANDIDATE_REGISTRY_RESERVATION_TYPE = (
+    "pams_native_candidate_outcome_registry_reservation_v1"
+)
+_CANDIDATE_REGISTRY_OUTCOME_TYPE = "pams_native_candidate_outcome_registry_record_v1"
+_CANDIDATE_REGISTRY_OUTCOME_RECEIPT_TYPE = (
+    "pams_native_candidate_outcome_registry_record_receipt_v1"
 )
 _CANDIDATE_ORDER = ("A", "B", "C")
 _FORBIDDEN_FIELD_NAMES = _epoch11._FORBIDDEN_FIELD_NAMES
@@ -212,12 +220,22 @@ _RECEIPT_KEYS = {
     "pose_snapshot_sha256",
     "pose_cache_set_sha256",
     "epoch11_gate_artifact_sha256",
+    "epoch11_gate_artifact_bytes",
     "epoch11_gate_receipt_sha256",
+    "epoch11_gate_receipt_bytes",
     "source_git_sha",
     "code_files_sha256_commitment",
     "prior_scientific_rejections_sha256",
     "candidate_launch_authorization_sha256",
+    "candidate_launch_authorization_bytes",
     "candidate_launch_authorization_receipt_sha256",
+    "candidate_launch_authorization_receipt_bytes",
+    "candidate_registry_id",
+    "candidate_registry_reservation_sha256",
+    "candidate_registry_reservation_bytes",
+    "train_run_receipt_sha256",
+    "train_run_receipt_bytes",
+    "container_audits_sha256_commitment",
     "aggregate_only",
     "dev84_pose_or_scoring_authorized",
     "test105_evaluation_authorized",
@@ -475,6 +493,10 @@ _LAUNCH_INPUT_KEYS = {
     "training_video_total",
     "source_git_sha",
     "source_receipt_covered_paths",
+    "candidate_registry_id",
+    "candidate_registry_reservation_sha256",
+    "candidate_registry_reservation_bytes",
+    "candidate_registry_run_locator",
 }
 _LAUNCH_AUTHORIZATION_KEYS = {
     "gate_frozen_before_candidate_a",
@@ -484,6 +506,7 @@ _LAUNCH_AUTHORIZATION_KEYS = {
     "dev84_identity_media_pose_or_scoring_authorized",
     "test105_evaluation_authorized",
     "aggregate_only_prior_receipts",
+    "candidate_outcome_registry_reserved_exclusively",
 }
 _LAUNCH_RECEIPT_KEYS = {
     "schema_version",
@@ -499,10 +522,97 @@ _LAUNCH_RECEIPT_KEYS = {
     "pose_cache_set_sha256",
     "source_export_receipt_sha256",
     "source_git_sha",
+    "candidate_registry_id",
+    "candidate_registry_reservation_sha256",
+    "candidate_registry_reservation_bytes",
     "prior_scientific_rejections_sha256",
     "candidate_training_authorized",
     "dev84_pose_or_scoring_authorized",
     "test105_evaluation_authorized",
+}
+_REGISTRY_KEY_KEYS = {
+    "source_git_sha",
+    "gate_specification_sha256",
+    "pose_cache_set_sha256",
+    "candidate_id",
+}
+_REGISTRY_RESERVATION_KEYS = {
+    "schema_version",
+    "artifact_type",
+    "status",
+    "registry_id",
+    "key",
+    "run_binding",
+    "prior_outcome_registry_ids",
+}
+_REGISTRY_RUN_BINDING_KEYS = {
+    "attempt_id",
+    "run_locator",
+    "attempt_reservation_sha256",
+    "attempt_reservation_bytes",
+    "source_export_receipt_sha256",
+    "experiment_config_sha256",
+    "pose_snapshot_sha256",
+}
+_REGISTRY_OUTCOME_KEYS = {
+    "schema_version",
+    "artifact_type",
+    "status",
+    "registry_id",
+    "key",
+    "reservation_sha256",
+    "reservation_bytes",
+    "train_run_receipt_locator",
+    "train_run_receipt_sha256",
+    "train_run_receipt_bytes",
+    "terminal_artifact_locator",
+    "terminal_artifact_sha256",
+    "terminal_artifact_bytes",
+    "terminal_receipt_locator",
+    "terminal_receipt_sha256",
+    "terminal_receipt_bytes",
+    "train_lineage",
+    "prior_outcome_registry_ids",
+    "aggregate_only",
+}
+_REGISTRY_TRAIN_LINEAGE_KEYS = {
+    "container_audits_sha256_commitment",
+    "candidate_launch_authorization_sha256",
+    "candidate_launch_authorization_bytes",
+    "candidate_launch_authorization_receipt_sha256",
+    "candidate_launch_authorization_receipt_bytes",
+    "epoch11_completion_receipt_sha256",
+    "epoch11_completion_receipt_bytes",
+    "epoch11_gate_artifact_sha256",
+    "epoch11_gate_artifact_bytes",
+    "epoch11_gate_receipt_sha256",
+    "epoch11_gate_receipt_bytes",
+    "final_started_receipt_sha256",
+    "final_started_receipt_bytes",
+    "final_completion_receipt_sha256",
+    "final_completion_receipt_bytes",
+    "final_checkpoint_sha256",
+    "final_checkpoint_bytes",
+    "final_progress_sha256",
+    "final_progress_bytes",
+    "final_pose_snapshot_sha256",
+    "final_pose_snapshot_bytes",
+}
+_REGISTRY_OUTCOME_RECEIPT_KEYS = {
+    "schema_version",
+    "artifact_type",
+    "artifact_locator",
+    "artifact_sha256",
+    "artifact_bytes",
+    "artifact_status",
+    "registry_id",
+    "candidate_id",
+    "reservation_sha256",
+    "train_run_receipt_sha256",
+    "terminal_artifact_sha256",
+    "terminal_receipt_sha256",
+    "container_audits_sha256_commitment",
+    "aggregate_only",
 }
 
 
@@ -2612,6 +2722,8 @@ def _validate_epoch11_gate_pair(
     pose_snapshot_sha256: str,
     pose_cache_set_sha256: str,
     source_git_sha: str,
+    candidate_launch_authorization_identity: tuple[str, int],
+    candidate_launch_receipt_identity: tuple[str, int],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     artifact = _strict_json(artifact_path, document="epoch11 gate artifact")
     expected_artifact_keys = {
@@ -2662,12 +2774,16 @@ def _validate_epoch11_gate_pair(
             "experiment_config_sha256",
             "gate_specification_sha256",
             "pose_snapshot_sha256",
+            "candidate_launch_authorization_sha256",
+            "candidate_launch_authorization_receipt_sha256",
             "encoder_checkpoint_bytes",
             "encoder_progress_bytes",
             "encoder_completion_receipt_bytes",
             "experiment_config_bytes",
             "gate_specification_bytes",
             "pose_snapshot_bytes",
+            "candidate_launch_authorization_bytes",
+            "candidate_launch_authorization_receipt_bytes",
             "config_fingerprint",
             "pose_fingerprint",
             "pose_cache_set_sha256",
@@ -2703,6 +2819,10 @@ def _validate_epoch11_gate_pair(
             "bytes",
             "completed_epochs",
             "artifact_roles",
+            "candidate_launch_authorization_sha256",
+            "candidate_launch_authorization_bytes",
+            "candidate_launch_authorization_receipt_sha256",
+            "candidate_launch_authorization_receipt_bytes",
         },
         role="epoch11 encoder completion summary",
     )
@@ -2729,6 +2849,14 @@ def _validate_epoch11_gate_pair(
         or completion["sha256"] != inputs["encoder_completion_receipt_sha256"]
         or completion["bytes"] != inputs["encoder_completion_receipt_bytes"]
         or completion["artifact_roles"] != expected_epoch11_roles
+        or completion["candidate_launch_authorization_sha256"]
+        != inputs["candidate_launch_authorization_sha256"]
+        or completion["candidate_launch_authorization_bytes"]
+        != inputs["candidate_launch_authorization_bytes"]
+        or completion["candidate_launch_authorization_receipt_sha256"]
+        != inputs["candidate_launch_authorization_receipt_sha256"]
+        or completion["candidate_launch_authorization_receipt_bytes"]
+        != inputs["candidate_launch_authorization_receipt_bytes"]
     ):
         raise ValueError("epoch11 encoder completion summary is not canonical")
     expected_inputs = {
@@ -2739,6 +2867,18 @@ def _validate_epoch11_gate_pair(
         "pose_cache_set_sha256": pose_cache_set_sha256,
         "training_video_total": specification.expected_training_video_total,
         "source_git_sha": source_git_sha,
+        "candidate_launch_authorization_sha256": (
+            candidate_launch_authorization_identity[0]
+        ),
+        "candidate_launch_authorization_bytes": (
+            candidate_launch_authorization_identity[1]
+        ),
+        "candidate_launch_authorization_receipt_sha256": (
+            candidate_launch_receipt_identity[0]
+        ),
+        "candidate_launch_authorization_receipt_bytes": (
+            candidate_launch_receipt_identity[1]
+        ),
     }
     for key, expected in expected_inputs.items():
         if inputs.get(key) != expected:
@@ -2755,6 +2895,10 @@ def _validate_epoch11_gate_pair(
         "encoder_checkpoint_sha256",
         "encoder_progress_sha256",
         "encoder_completion_receipt_sha256",
+        "candidate_launch_authorization_sha256",
+        "candidate_launch_authorization_bytes",
+        "candidate_launch_authorization_receipt_sha256",
+        "candidate_launch_authorization_receipt_bytes",
         "pose_cache_set_sha256",
         "gate_specification_sha256",
         "source_git_sha",
@@ -2774,6 +2918,14 @@ def _validate_epoch11_gate_pair(
         or receipt["encoder_progress_sha256"] != inputs["encoder_progress_sha256"]
         or receipt["encoder_completion_receipt_sha256"]
         != inputs["encoder_completion_receipt_sha256"]
+        or receipt["candidate_launch_authorization_sha256"]
+        != inputs["candidate_launch_authorization_sha256"]
+        or receipt["candidate_launch_authorization_bytes"]
+        != inputs["candidate_launch_authorization_bytes"]
+        or receipt["candidate_launch_authorization_receipt_sha256"]
+        != inputs["candidate_launch_authorization_receipt_sha256"]
+        or receipt["candidate_launch_authorization_receipt_bytes"]
+        != inputs["candidate_launch_authorization_receipt_bytes"]
         or receipt["pose_cache_set_sha256"] != pose_cache_set_sha256
         or receipt["gate_specification_sha256"]
         != inputs["gate_specification_sha256"]
@@ -2979,6 +3131,10 @@ def _validate_prior_terminal_payload(
         "epoch11_gate_receipt_sha256",
         "candidate_launch_authorization_sha256",
         "candidate_launch_authorization_receipt_sha256",
+        "candidate_registry_id",
+        "candidate_registry_reservation_sha256",
+        "train_run_receipt_sha256",
+        "container_audits_sha256_commitment",
         "code_files_sha256",
         "code_files_sha256_commitment",
         "training_video_total",
@@ -3092,13 +3248,33 @@ def _validate_prior_rejection_pair(
         "gate_specification_sha256": "gate_specification_sha256",
         "pose_snapshot_sha256": "pose_snapshot_sha256",
         "epoch11_gate_artifact_sha256": "epoch11_gate_artifact_sha256",
+        "epoch11_gate_artifact_bytes": "epoch11_gate_artifact_bytes",
         "epoch11_gate_receipt_sha256": "epoch11_gate_receipt_sha256",
+        "epoch11_gate_receipt_bytes": "epoch11_gate_receipt_bytes",
         "code_files_sha256_commitment": "code_files_sha256_commitment",
         "candidate_launch_authorization_sha256": (
             "candidate_launch_authorization_sha256"
         ),
+        "candidate_launch_authorization_bytes": (
+            "candidate_launch_authorization_bytes"
+        ),
         "candidate_launch_authorization_receipt_sha256": (
             "candidate_launch_authorization_receipt_sha256"
+        ),
+        "candidate_launch_authorization_receipt_bytes": (
+            "candidate_launch_authorization_receipt_bytes"
+        ),
+        "candidate_registry_id": "candidate_registry_id",
+        "candidate_registry_reservation_sha256": (
+            "candidate_registry_reservation_sha256"
+        ),
+        "candidate_registry_reservation_bytes": (
+            "candidate_registry_reservation_bytes"
+        ),
+        "train_run_receipt_sha256": "train_run_receipt_sha256",
+        "train_run_receipt_bytes": "train_run_receipt_bytes",
+        "container_audits_sha256_commitment": (
+            "container_audits_sha256_commitment"
         ),
     }
     if any(
@@ -3113,39 +3289,544 @@ def _validate_prior_rejection_pair(
     }
 
 
-def _validate_predecessor_chain(
+def _candidate_registry_key(
+    *,
+    source_git_sha: str,
+    gate_specification_sha256: str,
+    pose_cache_set_sha256: str,
+    candidate_id: str,
+) -> dict[str, str]:
+    key = {
+        "source_git_sha": source_git_sha,
+        "gate_specification_sha256": gate_specification_sha256,
+        "pose_cache_set_sha256": pose_cache_set_sha256,
+        "candidate_id": candidate_id,
+    }
+    if candidate_id not in _CANDIDATE_ORDER:
+        raise ValueError("candidate registry key has an invalid candidate")
+    if len(source_git_sha) != 40 or any(
+        value not in "0123456789abcdef" for value in source_git_sha
+    ):
+        raise ValueError("candidate registry key has an invalid source revision")
+    for role in ("gate_specification_sha256", "pose_cache_set_sha256"):
+        digest = key[role]
+        if len(digest) != 64 or any(
+            value not in "0123456789abcdef" for value in digest
+        ):
+            raise ValueError(f"candidate registry key has an invalid {role}")
+    return key
+
+
+def candidate_registry_id(**key_arguments: str) -> str:
+    """Return the immutable logical candidate-attempt identity."""
+
+    return sha256_json(_candidate_registry_key(**key_arguments))
+
+
+def _candidate_registry_paths(root: Path, registry_id: str) -> dict[str, Path]:
+    if len(registry_id) != 64 or any(
+        value not in "0123456789abcdef" for value in registry_id
+    ):
+        raise ValueError("candidate registry ID must be a lowercase SHA-256")
+    return {
+        "reservation": root / f"{registry_id}.reservation.json",
+        "outcome": root / f"{registry_id}.outcome.json",
+        "outcome_receipt": root / f"{registry_id}.outcome.json.receipt.json",
+        "terminal_artifact": root / f"{registry_id}.terminal.json",
+        "terminal_receipt": root / f"{registry_id}.terminal.json.receipt.json",
+        "train_run_receipt": root / f"{registry_id}.train-run.receipt.json",
+    }
+
+
+def _safe_registry_root(path: str | Path) -> Path:
+    root = Path(path)
+    _reject_privileged_path(root, role="candidate outcome registry root")
+    resolved = root.resolve(strict=True)
+    if not resolved.is_dir() or root.is_symlink():
+        raise ValueError("candidate outcome registry root must be a real directory")
+    return resolved
+
+
+def _safe_run_locator(value: str, *, attempt_id: str) -> str:
+    locator = PurePosixPath(value)
+    if (
+        not value
+        or "\\" in value
+        or locator.is_absolute()
+        or ".." in locator.parts
+        or not locator.parts
+        or locator.parts[-1] != attempt_id
+    ):
+        raise ValueError("candidate registry run locator is unsafe or mismatched")
+    return locator.as_posix()
+
+
+def _load_candidate_registry_reservation(
+    path: Path,
+    *,
+    expected_key: Mapping[str, str],
+) -> dict[str, Any]:
+    payload = _strict_json(path, document="candidate registry reservation")
+    _require_exact_mapping(
+        payload,
+        _REGISTRY_RESERVATION_KEYS,
+        role="candidate registry reservation",
+    )
+    key = _require_exact_mapping(
+        payload["key"], _REGISTRY_KEY_KEYS, role="candidate registry key"
+    )
+    run_binding = _require_exact_mapping(
+        payload["run_binding"],
+        _REGISTRY_RUN_BINDING_KEYS,
+        role="candidate registry run binding",
+    )
+    expected_id = sha256_json(dict(expected_key))
+    if (
+        payload["schema_version"] != 1
+        or payload["artifact_type"] != _CANDIDATE_REGISTRY_RESERVATION_TYPE
+        or payload["status"] != "reserved"
+        or payload["registry_id"] != expected_id
+        or dict(key) != dict(expected_key)
+        or type(payload["prior_outcome_registry_ids"]) is not list
+    ):
+        raise ValueError("candidate registry reservation is not canonical")
+    if any(
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value)
+        for value in payload["prior_outcome_registry_ids"]
+    ):
+        raise ValueError("candidate registry reservation predecessor ID is invalid")
+    attempt_id = run_binding["attempt_id"]
+    if not isinstance(attempt_id, str) or not attempt_id:
+        raise ValueError("candidate registry reservation lacks an attempt ID")
+    _safe_run_locator(run_binding["run_locator"], attempt_id=attempt_id)
+    for name in (
+        "attempt_reservation_sha256",
+        "source_export_receipt_sha256",
+        "experiment_config_sha256",
+        "pose_snapshot_sha256",
+    ):
+        value = run_binding[name]
+        if not isinstance(value, str) or len(value) != 64:
+            raise ValueError(f"candidate registry reservation has invalid {name}")
+    if (
+        isinstance(run_binding["attempt_reservation_bytes"], bool)
+        or not isinstance(run_binding["attempt_reservation_bytes"], int)
+        or run_binding["attempt_reservation_bytes"] < 1
+    ):
+        raise ValueError("candidate registry attempt reservation byte total is invalid")
+    return payload
+
+
+def reserve_candidate_registry_slot(
+    registry_root: str | Path,
+    *,
+    source_git_sha: str,
+    gate_specification_sha256: str,
+    pose_cache_set_sha256: str,
+    candidate_id: str,
+    run_reservation_path: str | Path,
+    run_locator: str,
+    source_export_receipt_sha256: str,
+    experiment_config_sha256: str,
+    pose_snapshot_sha256: str,
+    prior_outcome_registry_ids: Sequence[str],
+) -> tuple[Path, dict[str, Any], tuple[str, int]]:
+    """Reserve one logical candidate exactly once with O_EXCL semantics."""
+
+    root = _safe_registry_root(registry_root)
+    key = _candidate_registry_key(
+        source_git_sha=source_git_sha,
+        gate_specification_sha256=gate_specification_sha256,
+        pose_cache_set_sha256=pose_cache_set_sha256,
+        candidate_id=candidate_id,
+    )
+    registry_id = sha256_json(key)
+    expected_prior_outcome_registry_ids = [
+        candidate_registry_id(
+            source_git_sha=source_git_sha,
+            gate_specification_sha256=gate_specification_sha256,
+            pose_cache_set_sha256=pose_cache_set_sha256,
+            candidate_id=prior_candidate_id,
+        )
+        for prior_candidate_id in _CANDIDATE_ORDER[
+            : _CANDIDATE_ORDER.index(candidate_id)
+        ]
+    ]
+    if list(prior_outcome_registry_ids) != expected_prior_outcome_registry_ids:
+        raise ValueError("candidate registry predecessor ID order mismatch")
+    paths = _candidate_registry_paths(root, registry_id)
+    if any(paths[name].exists() for name in paths if name != "reservation"):
+        raise FileExistsError("candidate registry already contains outcome material")
+    run_reservation = Path(run_reservation_path)
+    _reject_privileged_path(run_reservation, role="candidate run reservation")
+    attempt_payload = _strict_json(
+        run_reservation, document="candidate run attempt reservation"
+    )
+    attempt_id = attempt_payload.get("attempt_id")
+    attempt_registry = attempt_payload.get("candidate_registry")
+    attempt_pose = attempt_payload.get("upstream_pose_recovery")
+    if (
+        not isinstance(attempt_id, str)
+        or attempt_payload.get("source_revision") != source_git_sha
+        or attempt_payload.get("candidate_id") != candidate_id
+        or not isinstance(attempt_registry, Mapping)
+        or attempt_registry.get("registry_id") != registry_id
+        or attempt_registry.get("run_locator") != run_locator
+        or attempt_registry.get("exclusive_first_pass_required") is not True
+        or not isinstance(attempt_pose, Mapping)
+        or attempt_pose.get("pose_cache_set_sha256") != pose_cache_set_sha256
+    ):
+        raise ValueError("candidate run reservation differs from registry key")
+    policy = attempt_payload.get("candidate_launch_policy")
+    if (
+        not isinstance(policy, Mapping)
+        or policy.get("terminal_gate_specification_sha256")
+        != gate_specification_sha256
+        or policy.get("required_prior_scientific_rejection_candidate_ids")
+        != list(_CANDIDATE_ORDER[: _CANDIDATE_ORDER.index(candidate_id)])
+        or policy.get("authorization_must_exist_before_encoder_container_creation")
+        is not True
+        or policy.get("same_authorization_pair_required_for_epoch11_and_final")
+        is not True
+    ):
+        raise ValueError("candidate run reservation launch policy is not canonical")
+    reservation_identity = _stable_file_sha256(run_reservation)
+    normalized_locator = _safe_run_locator(run_locator, attempt_id=attempt_id)
+    payload = {
+        "schema_version": 1,
+        "artifact_type": _CANDIDATE_REGISTRY_RESERVATION_TYPE,
+        "status": "reserved",
+        "registry_id": registry_id,
+        "key": key,
+        "run_binding": {
+            "attempt_id": attempt_id,
+            "run_locator": normalized_locator,
+            "attempt_reservation_sha256": reservation_identity[0],
+            "attempt_reservation_bytes": reservation_identity[1],
+            "source_export_receipt_sha256": source_export_receipt_sha256,
+            "experiment_config_sha256": experiment_config_sha256,
+            "pose_snapshot_sha256": pose_snapshot_sha256,
+        },
+        "prior_outcome_registry_ids": list(prior_outcome_registry_ids),
+    }
+    _write_new(paths["reservation"], _encoded_json(payload))
+    fsync_directory(root)
+    identity = _stable_file_sha256(paths["reservation"])
+    _load_candidate_registry_reservation(paths["reservation"], expected_key=key)
+    return paths["reservation"], payload, identity
+
+
+def _validate_registry_train_lineage(value: Any) -> Mapping[str, Any]:
+    lineage = _require_exact_mapping(
+        value, _REGISTRY_TRAIN_LINEAGE_KEYS, role="candidate registry train lineage"
+    )
+    for name, item in lineage.items():
+        if name.endswith("_sha256") or name.endswith("_commitment"):
+            if (
+                not isinstance(item, str)
+                or len(item) != 64
+                or any(character not in "0123456789abcdef" for character in item)
+            ):
+                raise ValueError(f"candidate registry train lineage has invalid {name}")
+        elif name.endswith("_bytes") and (
+            isinstance(item, bool) or not isinstance(item, int) or item < 1
+        ):
+            raise ValueError(f"candidate registry train lineage has invalid {name}")
+    return lineage
+
+
+def _load_registry_outcome(
+    registry_root: Path,
+    *,
+    expected_key: Mapping[str, str],
+    expected_prior_registry_ids: Sequence[str],
+    prior_pairs: Sequence[Mapping[str, Any]],
+    specification: GateSpecification,
+) -> dict[str, Any]:
+    registry_id = sha256_json(dict(expected_key))
+    paths = _candidate_registry_paths(registry_root, registry_id)
+    reservation_identity = _stable_file_sha256(paths["reservation"])
+    reservation = _load_candidate_registry_reservation(
+        paths["reservation"], expected_key=expected_key
+    )
+    if reservation["prior_outcome_registry_ids"] != list(
+        expected_prior_registry_ids
+    ):
+        raise ValueError("candidate registry reservation predecessor chain mismatch")
+
+    outcome_identity = _stable_file_sha256(paths["outcome"])
+    outcome = _strict_json(paths["outcome"], document="candidate registry outcome")
+    _require_exact_mapping(outcome, _REGISTRY_OUTCOME_KEYS, role="registry outcome")
+    outcome_key = _require_exact_mapping(
+        outcome["key"], _REGISTRY_KEY_KEYS, role="registry outcome key"
+    )
+    lineage = _validate_registry_train_lineage(outcome["train_lineage"])
+    train_identity = _stable_file_sha256(paths["train_run_receipt"])
+    archived_train = _strict_json(
+        paths["train_run_receipt"], document="archived candidate train run receipt"
+    )
+    terminal_identity = _stable_file_sha256(paths["terminal_artifact"])
+    terminal_receipt_identity = _stable_file_sha256(paths["terminal_receipt"])
+    if (
+        outcome["schema_version"] != 1
+        or outcome["artifact_type"] != _CANDIDATE_REGISTRY_OUTCOME_TYPE
+        or outcome["status"] != "scientific_rejection"
+        or outcome["registry_id"] != registry_id
+        or dict(outcome_key) != dict(expected_key)
+        or outcome["reservation_sha256"] != reservation_identity[0]
+        or outcome["reservation_bytes"] != reservation_identity[1]
+        or outcome["train_run_receipt_locator"]
+        != paths["train_run_receipt"].name
+        or (outcome["train_run_receipt_sha256"], outcome["train_run_receipt_bytes"])
+        != train_identity
+        or outcome["terminal_artifact_locator"]
+        != paths["terminal_artifact"].name
+        or (outcome["terminal_artifact_sha256"], outcome["terminal_artifact_bytes"])
+        != terminal_identity
+        or outcome["terminal_receipt_locator"] != paths["terminal_receipt"].name
+        or (outcome["terminal_receipt_sha256"], outcome["terminal_receipt_bytes"])
+        != terminal_receipt_identity
+        or outcome["prior_outcome_registry_ids"]
+        != list(expected_prior_registry_ids)
+        or outcome["aggregate_only"] is not True
+    ):
+        raise ValueError("candidate registry outcome binding mismatch")
+    archived_registry = archived_train.get("candidate_registry")
+    archived_launch = archived_train.get("candidate_launch_authorization")
+    archived_epoch11 = archived_train.get("epoch11_gate")
+    archived_final = archived_train.get("final_encoder")
+    archived_audits = archived_train.get("container_audits")
+    if not isinstance(archived_audits, Mapping) or set(archived_audits) != {
+        "preflight",
+        "launch_authorization",
+        "encoder_epoch11",
+        "epoch11_gate",
+        "encoder_final",
+    }:
+        raise ValueError("archived candidate container audit stage set mismatch")
+    archived_audit_roles = {
+        "create_id",
+        "configuration_inspect",
+        "configuration_verification",
+        "post_run_inspect",
+        "exit_code",
+    }
+    for stage, stage_value in archived_audits.items():
+        stage_audits = _require_exact_mapping(
+            stage_value,
+            archived_audit_roles,
+            role=f"archived candidate container audit {stage}",
+        )
+        for role, identity_value in stage_audits.items():
+            identity = _require_exact_mapping(
+                identity_value,
+                {"locator", "sha256", "bytes"},
+                role=f"archived candidate container audit {stage}.{role}",
+            )
+            if (
+                not isinstance(identity["locator"], str)
+                or not isinstance(identity["sha256"], str)
+                or len(identity["sha256"]) != 64
+                or isinstance(identity["bytes"], bool)
+                or not isinstance(identity["bytes"], int)
+                or identity["bytes"] < 1
+            ):
+                raise ValueError("archived candidate container audit identity is invalid")
+    if (
+        archived_train.get("status") != "completed"
+        or archived_train.get("candidate_id") != expected_key["candidate_id"]
+        or archived_train.get("source_revision") != expected_key["source_git_sha"]
+        or archived_train.get("pose_cache_set_sha256")
+        != expected_key["pose_cache_set_sha256"]
+        or not isinstance(archived_registry, Mapping)
+        or archived_registry.get("registry_id") != registry_id
+        or archived_registry.get("reservation_sha256") != reservation_identity[0]
+        or archived_registry.get("reservation_bytes") != reservation_identity[1]
+        or archived_registry.get("exclusive_first_pass_reservation") is not True
+        or not isinstance(archived_launch, Mapping)
+        or archived_launch.get("authorization_sha256")
+        != lineage["candidate_launch_authorization_sha256"]
+        or archived_launch.get("authorization_bytes")
+        != lineage["candidate_launch_authorization_bytes"]
+        or archived_launch.get("authorization_receipt_sha256")
+        != lineage["candidate_launch_authorization_receipt_sha256"]
+        or archived_launch.get("authorization_receipt_bytes")
+        != lineage["candidate_launch_authorization_receipt_bytes"]
+        or not isinstance(archived_epoch11, Mapping)
+        or archived_epoch11.get("encoder_completion_receipt_sha256")
+        != lineage["epoch11_completion_receipt_sha256"]
+        or archived_epoch11.get("encoder_completion_receipt_bytes")
+        != lineage["epoch11_completion_receipt_bytes"]
+        or archived_epoch11.get("gate_artifact_sha256")
+        != lineage["epoch11_gate_artifact_sha256"]
+        or archived_epoch11.get("gate_artifact_bytes")
+        != lineage["epoch11_gate_artifact_bytes"]
+        or archived_epoch11.get("gate_receipt_sha256")
+        != lineage["epoch11_gate_receipt_sha256"]
+        or archived_epoch11.get("gate_receipt_bytes")
+        != lineage["epoch11_gate_receipt_bytes"]
+        or not isinstance(archived_final, Mapping)
+        or archived_final.get("started_receipt_sha256")
+        != lineage["final_started_receipt_sha256"]
+        or archived_final.get("started_receipt_bytes")
+        != lineage["final_started_receipt_bytes"]
+        or archived_final.get("completion_receipt_sha256")
+        != lineage["final_completion_receipt_sha256"]
+        or archived_final.get("completion_receipt_bytes")
+        != lineage["final_completion_receipt_bytes"]
+        or archived_final.get("checkpoint_sha256")
+        != lineage["final_checkpoint_sha256"]
+        or archived_final.get("checkpoint_bytes")
+        != lineage["final_checkpoint_bytes"]
+        or archived_final.get("progress_sha256")
+        != lineage["final_progress_sha256"]
+        or archived_final.get("progress_bytes")
+        != lineage["final_progress_bytes"]
+        or archived_final.get("pose_snapshot_sha256")
+        != lineage["final_pose_snapshot_sha256"]
+        or archived_final.get("pose_snapshot_bytes")
+        != lineage["final_pose_snapshot_bytes"]
+        or sha256_json(archived_audits)
+        != lineage["container_audits_sha256_commitment"]
+        or archived_train.get("container_audits_sha256_commitment")
+        != lineage["container_audits_sha256_commitment"]
+    ):
+        raise ValueError("archived candidate train run lineage mismatch")
+
+    outcome_receipt_identity = _stable_file_sha256(paths["outcome_receipt"])
+    outcome_receipt = _strict_json(
+        paths["outcome_receipt"], document="candidate registry outcome receipt"
+    )
+    expected_outcome_receipt = {
+        "schema_version": 1,
+        "artifact_type": _CANDIDATE_REGISTRY_OUTCOME_RECEIPT_TYPE,
+        "artifact_locator": paths["outcome"].name,
+        "artifact_sha256": outcome_identity[0],
+        "artifact_bytes": outcome_identity[1],
+        "artifact_status": "scientific_rejection",
+        "registry_id": registry_id,
+        "candidate_id": expected_key["candidate_id"],
+        "reservation_sha256": reservation_identity[0],
+        "train_run_receipt_sha256": train_identity[0],
+        "terminal_artifact_sha256": terminal_identity[0],
+        "terminal_receipt_sha256": terminal_receipt_identity[0],
+        "container_audits_sha256_commitment": lineage[
+            "container_audits_sha256_commitment"
+        ],
+        "aggregate_only": True,
+    }
+    if (
+        set(outcome_receipt) != _REGISTRY_OUTCOME_RECEIPT_KEYS
+        or outcome_receipt != expected_outcome_receipt
+        or outcome_receipt_identity[1] < 1
+    ):
+        raise ValueError("candidate registry outcome receipt binding mismatch")
+
+    terminal_pair = _validate_prior_rejection_pair(
+        paths["terminal_artifact"],
+        paths["terminal_receipt"],
+        expected_candidate_id=expected_key["candidate_id"],
+        prior_pairs=prior_pairs,
+        specification=specification,
+        gate_specification_sha256=expected_key["gate_specification_sha256"],
+        pose_cache_set_sha256=expected_key["pose_cache_set_sha256"],
+        source_git_sha=expected_key["source_git_sha"],
+    )
+    terminal_artifact = _strict_json(
+        paths["terminal_artifact"], document="candidate registry terminal artifact"
+    )
+    terminal_inputs = terminal_artifact["inputs"]
+    if (
+        terminal_inputs["source_export_receipt_sha256"]
+        != reservation["run_binding"]["source_export_receipt_sha256"]
+        or terminal_inputs["experiment_config_sha256"]
+        != reservation["run_binding"]["experiment_config_sha256"]
+        or terminal_inputs["pose_snapshot_sha256"]
+        != reservation["run_binding"]["pose_snapshot_sha256"]
+        or archived_train.get("source_export_receipt_sha256")
+        != reservation["run_binding"]["source_export_receipt_sha256"]
+        or archived_train.get("config_file_sha256")
+        != reservation["run_binding"]["experiment_config_sha256"]
+    ):
+        raise ValueError("registry reservation differs from train/terminal lineage")
+    terminal_receipt = _strict_json(
+        paths["terminal_receipt"], document="candidate registry terminal receipt"
+    )
+    if (
+        terminal_receipt["candidate_registry_id"] != registry_id
+        or terminal_receipt["candidate_registry_reservation_sha256"]
+        != reservation_identity[0]
+        or terminal_receipt["candidate_registry_reservation_bytes"]
+        != reservation_identity[1]
+        or terminal_receipt["train_run_receipt_sha256"] != train_identity[0]
+        or terminal_receipt["train_run_receipt_bytes"] != train_identity[1]
+        or terminal_receipt["container_audits_sha256_commitment"]
+        != lineage["container_audits_sha256_commitment"]
+        or terminal_receipt["candidate_launch_authorization_sha256"]
+        != lineage["candidate_launch_authorization_sha256"]
+        or terminal_receipt["candidate_launch_authorization_bytes"]
+        != lineage["candidate_launch_authorization_bytes"]
+        or terminal_receipt["candidate_launch_authorization_receipt_sha256"]
+        != lineage["candidate_launch_authorization_receipt_sha256"]
+        or terminal_receipt["candidate_launch_authorization_receipt_bytes"]
+        != lineage["candidate_launch_authorization_receipt_bytes"]
+        or terminal_receipt["epoch11_gate_artifact_sha256"]
+        != lineage["epoch11_gate_artifact_sha256"]
+        or terminal_receipt["epoch11_gate_artifact_bytes"]
+        != lineage["epoch11_gate_artifact_bytes"]
+        or terminal_receipt["epoch11_gate_receipt_sha256"]
+        != lineage["epoch11_gate_receipt_sha256"]
+        or terminal_receipt["epoch11_gate_receipt_bytes"]
+        != lineage["epoch11_gate_receipt_bytes"]
+    ):
+        raise ValueError("registry terminal receipt differs from run lineage")
+    return {
+        **terminal_pair,
+        "registry_id": registry_id,
+        "registry_outcome_sha256": outcome_identity[0],
+        "registry_outcome_receipt_sha256": outcome_receipt_identity[0],
+        "train_run_receipt_sha256": train_identity[0],
+        "container_audits_sha256_commitment": lineage[
+            "container_audits_sha256_commitment"
+        ],
+    }
+
+
+def _load_predecessor_chain_from_registry(
     *,
     candidate_id: str,
     profile: CandidateProfile,
-    artifact_paths: Sequence[Path],
-    receipt_paths: Sequence[Path],
+    registry_root: str | Path,
     specification: GateSpecification,
     gate_specification_sha256: str,
     pose_cache_set_sha256: str,
     source_git_sha: str,
 ) -> tuple[dict[str, Any], ...]:
+    root = _safe_registry_root(registry_root)
     required = profile.required_prior_scientific_rejections
-    if len(artifact_paths) != len(receipt_paths) or len(artifact_paths) != len(required):
-        raise ValueError(
-            f"candidate {candidate_id} requires exactly {len(required)} prior "
-            "scientific-rejection artifact/receipt pairs"
-        )
+    if tuple(required) != _CANDIDATE_ORDER[: _CANDIDATE_ORDER.index(candidate_id)]:
+        raise ValueError("candidate predecessor policy differs from canonical order")
     chain: list[dict[str, Any]] = []
-    for expected, artifact_path, receipt_path in zip(
-        required, artifact_paths, receipt_paths, strict=True
-    ):
+    prior_ids: list[str] = []
+    for expected_candidate_id in required:
+        key = _candidate_registry_key(
+            source_git_sha=source_git_sha,
+            gate_specification_sha256=gate_specification_sha256,
+            pose_cache_set_sha256=pose_cache_set_sha256,
+            candidate_id=expected_candidate_id,
+        )
         chain.append(
-            _validate_prior_rejection_pair(
-                artifact_path,
-                receipt_path,
-                expected_candidate_id=expected,
+            _load_registry_outcome(
+                root,
+                expected_key=key,
+                expected_prior_registry_ids=prior_ids,
                 prior_pairs=chain,
                 specification=specification,
-                gate_specification_sha256=gate_specification_sha256,
-                pose_cache_set_sha256=pose_cache_set_sha256,
-                source_git_sha=source_git_sha,
             )
         )
+        prior_ids.append(sha256_json(key))
     return tuple(chain)
 
 
@@ -3173,16 +3854,15 @@ def prepare_candidate_launch_authorization(
     gate_specification_path: str | Path,
     pose_snapshot_path: str | Path,
     candidate_id: str,
-    prior_rejection_artifact_paths: Sequence[str | Path] = (),
-    prior_rejection_receipt_paths: Sequence[str | Path] = (),
+    candidate_registry_root: str | Path,
+    run_reservation_path: str | Path,
+    run_locator: str,
     authorization_runner_path: str | Path,
 ) -> dict[str, Any]:
     """Build a train337-only authorization before candidate training begins."""
 
     if candidate_id not in _CANDIDATE_ORDER:
         raise ValueError("candidate_id must be one of A, B, C")
-    prior_artifacts = tuple(Path(value) for value in prior_rejection_artifact_paths)
-    prior_receipts = tuple(Path(value) for value in prior_rejection_receipt_paths)
     paths = {
         "source_export_receipt": Path(source_receipt_path),
         "experiment_config": Path(config_path),
@@ -3190,11 +3870,8 @@ def prepare_candidate_launch_authorization(
         "pose_snapshot": Path(pose_snapshot_path),
         "launch_authorization_runner": Path(authorization_runner_path),
         "terminal_gate_runner": Path(__file__),
+        "run_reservation": Path(run_reservation_path),
     }
-    for index, value in enumerate(prior_artifacts):
-        paths[f"prior_rejection_artifact_{index}"] = value
-    for index, value in enumerate(prior_receipts):
-        paths[f"prior_rejection_receipt_{index}"] = value
     for role, path in paths.items():
         _reject_privileged_path(path, role=role)
     source_root = Path.cwd().resolve(strict=True)
@@ -3213,15 +3890,7 @@ def prepare_candidate_launch_authorization(
         paths["source_export_receipt"],
         sha256=identities["source_export_receipt"][0],
     )
-    for index in range(len(prior_artifacts)):
-        _strict_json(
-            paths[f"prior_rejection_artifact_{index}"],
-            document="prior scientific rejection artifact",
-        )
-        _strict_json(
-            paths[f"prior_rejection_receipt_{index}"],
-            document="prior scientific rejection receipt",
-        )
+    _strict_json(paths["run_reservation"], document="candidate run reservation")
     specification = load_gate_specification(paths["gate_specification"])
     config = _load_candidate_config(paths["experiment_config"])
     profile = _validate_candidate_config(
@@ -3238,15 +3907,30 @@ def prepare_candidate_launch_authorization(
     ):
         raise ValueError("launch authorization snapshot differs from train337 config")
     source_git_sha = clean_git_revision(source_root)
-    prior_chain = _validate_predecessor_chain(
+    prior_chain = _load_predecessor_chain_from_registry(
         candidate_id=candidate_id,
         profile=profile,
-        artifact_paths=prior_artifacts,
-        receipt_paths=prior_receipts,
+        registry_root=candidate_registry_root,
         specification=specification,
         gate_specification_sha256=identities["gate_specification"][0],
         pose_cache_set_sha256=snapshot.fingerprint,
         source_git_sha=source_git_sha,
+    )
+    prior_registry_ids = [value["registry_id"] for value in prior_chain]
+    _reservation_path, reservation, reservation_identity = (
+        reserve_candidate_registry_slot(
+            candidate_registry_root,
+            source_git_sha=source_git_sha,
+            gate_specification_sha256=identities["gate_specification"][0],
+            pose_cache_set_sha256=snapshot.fingerprint,
+            candidate_id=candidate_id,
+            run_reservation_path=paths["run_reservation"],
+            run_locator=run_locator,
+            source_export_receipt_sha256=identities["source_export_receipt"][0],
+            experiment_config_sha256=identities["experiment_config"][0],
+            pose_snapshot_sha256=identities["pose_snapshot"][0],
+            prior_outcome_registry_ids=prior_registry_ids,
+        )
     )
     _require_unchanged(paths, identities)
     if clean_git_revision(source_root) != source_git_sha:
@@ -3282,6 +3966,12 @@ def prepare_candidate_launch_authorization(
             "training_video_total": len(snapshot.entries),
             "source_git_sha": source_git_sha,
             "source_receipt_covered_paths": source_covered,
+            "candidate_registry_id": reservation["registry_id"],
+            "candidate_registry_reservation_sha256": reservation_identity[0],
+            "candidate_registry_reservation_bytes": reservation_identity[1],
+            "candidate_registry_run_locator": reservation["run_binding"][
+                "run_locator"
+            ],
         },
         "authorization": {
             "gate_frozen_before_candidate_a": True,
@@ -3291,6 +3981,7 @@ def prepare_candidate_launch_authorization(
             "dev84_identity_media_pose_or_scoring_authorized": False,
             "test105_evaluation_authorized": False,
             "aggregate_only_prior_receipts": True,
+            "candidate_outcome_registry_reserved_exclusively": True,
         },
     }
     if set(payload) != _LAUNCH_ARTIFACT_KEYS:
@@ -3328,6 +4019,13 @@ def write_candidate_launch_authorization(
         "pose_cache_set_sha256": inputs["pose_cache_set_sha256"],
         "source_export_receipt_sha256": inputs["source_export_receipt_sha256"],
         "source_git_sha": inputs["source_git_sha"],
+        "candidate_registry_id": inputs["candidate_registry_id"],
+        "candidate_registry_reservation_sha256": inputs[
+            "candidate_registry_reservation_sha256"
+        ],
+        "candidate_registry_reservation_bytes": inputs[
+            "candidate_registry_reservation_bytes"
+        ],
         "prior_scientific_rejections_sha256": sha256_json(prior),
         "candidate_training_authorized": True,
         "dev84_pose_or_scoring_authorized": False,
@@ -3352,6 +4050,8 @@ def _validate_candidate_launch_authorization(
     pose_cache_set_sha256: str,
     source_git_sha: str,
     source_covered_paths: Mapping[str, str],
+    registry_reservation: Mapping[str, Any],
+    registry_reservation_identity: tuple[str, int],
 ) -> None:
     artifact = _strict_json(
         artifact_path, document="candidate launch authorization artifact"
@@ -3397,6 +4097,16 @@ def _validate_candidate_launch_authorization(
                 "gate_specification",
             )
         },
+        "candidate_registry_id": registry_reservation["registry_id"],
+        "candidate_registry_reservation_sha256": (
+            registry_reservation_identity[0]
+        ),
+        "candidate_registry_reservation_bytes": (
+            registry_reservation_identity[1]
+        ),
+        "candidate_registry_run_locator": registry_reservation["run_binding"][
+            "run_locator"
+        ],
     }
     if inputs != expected_inputs:
         raise ValueError("candidate launch authorization input binding mismatch")
@@ -3413,6 +4123,7 @@ def _validate_candidate_launch_authorization(
         "dev84_identity_media_pose_or_scoring_authorized": False,
         "test105_evaluation_authorized": False,
         "aggregate_only_prior_receipts": True,
+        "candidate_outcome_registry_reserved_exclusively": True,
     }
     if (
         artifact["schema_version"] != 1
@@ -3442,6 +4153,13 @@ def _validate_candidate_launch_authorization(
         "pose_cache_set_sha256": inputs["pose_cache_set_sha256"],
         "source_export_receipt_sha256": inputs["source_export_receipt_sha256"],
         "source_git_sha": source_git_sha,
+        "candidate_registry_id": inputs["candidate_registry_id"],
+        "candidate_registry_reservation_sha256": inputs[
+            "candidate_registry_reservation_sha256"
+        ],
+        "candidate_registry_reservation_bytes": inputs[
+            "candidate_registry_reservation_bytes"
+        ],
         "prior_scientific_rejections_sha256": sha256_json(list(prior_chain)),
         "candidate_training_authorized": True,
         "dev84_pose_or_scoring_authorized": False,
@@ -3483,6 +4201,393 @@ def _require_unchanged(
         raise RuntimeError("terminal gate file input changed during evaluation")
 
 
+def _run_relative_path(run_root: Path, locator: str, *, role: str) -> Path:
+    relative = PurePosixPath(locator)
+    if (
+        not locator
+        or "\\" in locator
+        or relative.is_absolute()
+        or ".." in relative.parts
+    ):
+        raise ValueError(f"{role} locator is unsafe")
+    candidate = run_root.joinpath(*relative.parts).resolve(strict=True)
+    try:
+        candidate.relative_to(run_root.resolve(strict=True))
+    except ValueError as error:
+        raise ValueError(f"{role} escapes the candidate run root") from error
+    return candidate
+
+
+def _validate_train_run_receipt(
+    path: Path,
+    *,
+    candidate_id: str,
+    source_git_sha: str,
+    config_sha256: str,
+    config: PAMSConfig,
+    pose_cache_set_sha256: str,
+    registry_reservation: Mapping[str, Any],
+    registry_reservation_identity: tuple[str, int],
+    identities: Mapping[str, tuple[str, int]],
+    epoch11_artifact: Mapping[str, Any],
+    completion: CompletedRunReceipt,
+) -> dict[str, Any]:
+    if path.name != "run.receipt.json" or path.parent.name != "audit":
+        raise ValueError("candidate train run receipt must use audit/run.receipt.json")
+    run_root = path.parent.parent.resolve(strict=True)
+    payload = _strict_json(path, document="candidate train run receipt")
+    expected_top_level = {
+        "schema_version",
+        "artifact_type",
+        "status",
+        "completed_utc",
+        "attempt_id",
+        "classification",
+        "paper_table2_value_claim_eligible",
+        "protocol",
+        "seed",
+        "candidate_id",
+        "fixed_period_frames",
+        "anchor_stride",
+        "source_revision",
+        "source_export_receipt_sha256",
+        "container_image_id",
+        "container_environment_sha256",
+        "config_file_sha256",
+        "config_fingerprint",
+        "pose_fingerprint",
+        "pose_cache_set_sha256",
+        "upstream_pose_recovery",
+        "input_preflight_sha256",
+        "candidate_registry",
+        "candidate_launch_authorization",
+        "epoch11_gate",
+        "final_encoder",
+        "container_audits",
+        "container_audits_sha256_commitment",
+        "physical_batch_size",
+        "encoder_training_scope",
+        "period_head_training_authorized",
+        "sshead_training_authorized",
+        "dev_authorized",
+        "dev_pose_mounted",
+        "dev_targets_mounted",
+        "dev_prediction_authorized",
+        "dev_scoring_authorized",
+        "test_authorized",
+        "test_pose_mounted",
+        "test_targets_mounted",
+        "test_prediction_authorized",
+        "test_scoring_authorized",
+        "identity_only_dev_test_sidecars_required_by_cli_provenance",
+    }
+    _require_exact_mapping(payload, expected_top_level, role="candidate train run receipt")
+    if (
+        payload["schema_version"] != 1
+        or payload["artifact_type"]
+        != "pams_native_table2_baseline_proxy_train337_run_receipt"
+        or payload["status"] != "completed"
+        or payload["candidate_id"] != candidate_id
+        or payload["attempt_id"]
+        != registry_reservation["run_binding"]["attempt_id"]
+        or payload["source_revision"] != source_git_sha
+        or payload["source_export_receipt_sha256"]
+        != registry_reservation["run_binding"]["source_export_receipt_sha256"]
+        or payload["config_file_sha256"] != config_sha256
+        or payload["config_fingerprint"] != config.fingerprint
+        or payload["pose_fingerprint"] != config.pose_fingerprint
+        or payload["pose_cache_set_sha256"] != pose_cache_set_sha256
+        or payload["classification"]
+        != "independently_inferred_proxy_not_author_table2_baseline"
+        or payload["protocol"] != "ucfrep_526"
+        or payload["seed"] != 2026
+        or payload["physical_batch_size"] != 32
+        or payload["encoder_training_scope"] != "train337_only"
+        or payload["paper_table2_value_claim_eligible"] is not False
+        or payload["identity_only_dev_test_sidecars_required_by_cli_provenance"]
+        is not True
+    ):
+        raise ValueError("candidate train run receipt provenance mismatch")
+    completion_container = completion.started.hardware.get("container")
+    if (
+        not isinstance(completion_container, Mapping)
+        or payload["container_image_id"] != completion_container.get("image_id")
+        or payload["container_environment_sha256"]
+        != completion_container.get("environment_sha256")
+    ):
+        raise ValueError("candidate train run receipt container identity mismatch")
+    for forbidden_true in (
+        "period_head_training_authorized",
+        "sshead_training_authorized",
+        "dev_authorized",
+        "dev_pose_mounted",
+        "dev_targets_mounted",
+        "dev_prediction_authorized",
+        "dev_scoring_authorized",
+        "test_authorized",
+        "test_pose_mounted",
+        "test_targets_mounted",
+        "test_prediction_authorized",
+        "test_scoring_authorized",
+    ):
+        if payload[forbidden_true] is not False:
+            raise ValueError("candidate train run receipt widens scientific scope")
+
+    registry = _require_exact_mapping(
+        payload["candidate_registry"],
+        {
+            "registry_id",
+            "reservation_sha256",
+            "reservation_bytes",
+            "run_locator",
+            "exclusive_first_pass_reservation",
+        },
+        role="candidate train registry binding",
+    )
+    if registry != {
+        "registry_id": registry_reservation["registry_id"],
+        "reservation_sha256": registry_reservation_identity[0],
+        "reservation_bytes": registry_reservation_identity[1],
+        "run_locator": registry_reservation["run_binding"]["run_locator"],
+        "exclusive_first_pass_reservation": True,
+    }:
+        raise ValueError("candidate train run registry binding mismatch")
+
+    launch = _require_exact_mapping(
+        payload["candidate_launch_authorization"],
+        {
+            "terminal_gate_specification_sha256",
+            "pose_snapshot_sha256",
+            "authorization_sha256",
+            "authorization_bytes",
+            "authorization_receipt_sha256",
+            "authorization_receipt_bytes",
+            "generated_before_encoder_container_creation",
+            "consumed_by_epoch11_and_final_encoder_commands",
+        },
+        role="candidate train launch authorization",
+    )
+    if (
+        (launch["authorization_sha256"], launch["authorization_bytes"])
+        != identities["candidate_launch_authorization"]
+        or (
+            launch["authorization_receipt_sha256"],
+            launch["authorization_receipt_bytes"],
+        )
+        != identities["candidate_launch_authorization_receipt"]
+        or launch["generated_before_encoder_container_creation"] is not True
+        or launch["consumed_by_epoch11_and_final_encoder_commands"] is not True
+        or launch["pose_snapshot_sha256"]
+        != registry_reservation["run_binding"]["pose_snapshot_sha256"]
+        or launch["terminal_gate_specification_sha256"]
+        != registry_reservation["key"]["gate_specification_sha256"]
+    ):
+        raise ValueError("candidate train launch authorization lineage mismatch")
+
+    epoch11_inputs = epoch11_artifact["inputs"]
+    epoch11 = _require_exact_mapping(
+        payload["epoch11_gate"],
+        {
+            "gate_epoch",
+            "gate_specification_sha256",
+            "encoder_checkpoint_sha256",
+            "encoder_checkpoint_bytes",
+            "encoder_progress_sha256",
+            "encoder_progress_bytes",
+            "pose_snapshot_sha256",
+            "pose_snapshot_bytes",
+            "encoder_completion_receipt_sha256",
+            "encoder_completion_receipt_bytes",
+            "gate_artifact_sha256",
+            "gate_artifact_bytes",
+            "gate_receipt_sha256",
+            "gate_receipt_bytes",
+            "candidate_launch_authorization_sha256",
+            "candidate_launch_authorization_bytes",
+            "candidate_launch_authorization_receipt_sha256",
+            "candidate_launch_authorization_receipt_bytes",
+            "encoder_continuation_authorized",
+            "gate_exit_code",
+            "read_only",
+        },
+        role="candidate train epoch11 lineage",
+    )
+    expected_epoch11 = {
+        "gate_epoch": 11,
+        "gate_specification_sha256": epoch11_inputs["gate_specification_sha256"],
+        "encoder_checkpoint_sha256": epoch11_inputs["encoder_checkpoint_sha256"],
+        "encoder_checkpoint_bytes": epoch11_inputs["encoder_checkpoint_bytes"],
+        "encoder_progress_sha256": epoch11_inputs["encoder_progress_sha256"],
+        "encoder_progress_bytes": epoch11_inputs["encoder_progress_bytes"],
+        "pose_snapshot_sha256": epoch11_inputs["pose_snapshot_sha256"],
+        "pose_snapshot_bytes": epoch11_inputs["pose_snapshot_bytes"],
+        "encoder_completion_receipt_sha256": epoch11_inputs[
+            "encoder_completion_receipt_sha256"
+        ],
+        "encoder_completion_receipt_bytes": epoch11_inputs[
+            "encoder_completion_receipt_bytes"
+        ],
+        "gate_artifact_sha256": identities["epoch11_gate_artifact"][0],
+        "gate_artifact_bytes": identities["epoch11_gate_artifact"][1],
+        "gate_receipt_sha256": identities["epoch11_gate_receipt"][0],
+        "gate_receipt_bytes": identities["epoch11_gate_receipt"][1],
+        "candidate_launch_authorization_sha256": identities[
+            "candidate_launch_authorization"
+        ][0],
+        "candidate_launch_authorization_bytes": identities[
+            "candidate_launch_authorization"
+        ][1],
+        "candidate_launch_authorization_receipt_sha256": identities[
+            "candidate_launch_authorization_receipt"
+        ][0],
+        "candidate_launch_authorization_receipt_bytes": identities[
+            "candidate_launch_authorization_receipt"
+        ][1],
+        "encoder_continuation_authorized": True,
+        "gate_exit_code": 0,
+        "read_only": True,
+    }
+    if dict(epoch11) != expected_epoch11:
+        raise ValueError("candidate train epoch11 lineage mismatch")
+
+    final_encoder = _require_exact_mapping(
+        payload["final_encoder"],
+        {
+            "checkpoint_sha256",
+            "checkpoint_bytes",
+            "progress_sha256",
+            "progress_bytes",
+            "pose_snapshot_sha256",
+            "pose_snapshot_bytes",
+            "started_receipt_sha256",
+            "started_receipt_bytes",
+            "completion_receipt_sha256",
+            "completion_receipt_bytes",
+            "completed_epochs",
+            "immutable_resume_checkpoint_sha256",
+            "immutable_resume_progress_sha256",
+            "progress_has_exact_epoch11_prefix",
+            "resume_stage_created_after_gate_authorization",
+            "candidate_launch_authorization_sha256",
+            "candidate_launch_authorization_bytes",
+            "candidate_launch_authorization_receipt_sha256",
+            "candidate_launch_authorization_receipt_bytes",
+        },
+        role="candidate train final encoder lineage",
+    )
+    final_expected = {
+        "checkpoint_sha256": identities["encoder_checkpoint"][0],
+        "checkpoint_bytes": identities["encoder_checkpoint"][1],
+        "progress_sha256": identities["encoder_progress"][0],
+        "progress_bytes": identities["encoder_progress"][1],
+        "pose_snapshot_sha256": identities["pose_snapshot"][0],
+        "pose_snapshot_bytes": identities["pose_snapshot"][1],
+        "started_receipt_sha256": identities["encoder_started_receipt"][0],
+        "started_receipt_bytes": identities["encoder_started_receipt"][1],
+        "completion_receipt_sha256": identities["encoder_completion_receipt"][0],
+        "completion_receipt_bytes": identities["encoder_completion_receipt"][1],
+        "completed_epochs": 150,
+        "immutable_resume_checkpoint_sha256": epoch11_inputs[
+            "encoder_checkpoint_sha256"
+        ],
+        "immutable_resume_progress_sha256": epoch11_inputs[
+            "encoder_progress_sha256"
+        ],
+        "progress_has_exact_epoch11_prefix": True,
+        "resume_stage_created_after_gate_authorization": True,
+        "candidate_launch_authorization_sha256": identities[
+            "candidate_launch_authorization"
+        ][0],
+        "candidate_launch_authorization_bytes": identities[
+            "candidate_launch_authorization"
+        ][1],
+        "candidate_launch_authorization_receipt_sha256": identities[
+            "candidate_launch_authorization_receipt"
+        ][0],
+        "candidate_launch_authorization_receipt_bytes": identities[
+            "candidate_launch_authorization_receipt"
+        ][1],
+    }
+    if dict(final_encoder) != final_expected:
+        raise ValueError("candidate train final encoder lineage mismatch")
+
+    audits = _require_exact_mapping(
+        payload["container_audits"],
+        {"preflight", "launch_authorization", "encoder_epoch11", "epoch11_gate", "encoder_final"},
+        role="candidate container audits",
+    )
+    audit_roles = {
+        "create_id",
+        "configuration_inspect",
+        "configuration_verification",
+        "post_run_inspect",
+        "exit_code",
+    }
+    for stage, stage_value in audits.items():
+        stage_mapping = _require_exact_mapping(
+            stage_value, audit_roles, role=f"candidate container audit {stage}"
+        )
+        for role, identity_value in stage_mapping.items():
+            identity_mapping = _require_exact_mapping(
+                identity_value,
+                {"locator", "sha256", "bytes"},
+                role=f"candidate container audit {stage}.{role}",
+            )
+            audit_path = _run_relative_path(
+                run_root,
+                identity_mapping["locator"],
+                role=f"candidate container audit {stage}.{role}",
+            )
+            if _stable_file_sha256(audit_path) != (
+                identity_mapping["sha256"],
+                identity_mapping["bytes"],
+            ):
+                raise ValueError(f"candidate container audit {stage}.{role} changed")
+    audit_commitment = sha256_json(audits)
+    if payload["container_audits_sha256_commitment"] != audit_commitment:
+        raise ValueError("candidate container audit commitment mismatch")
+
+    return {
+        "container_audits_sha256_commitment": audit_commitment,
+        "candidate_launch_authorization_sha256": identities[
+            "candidate_launch_authorization"
+        ][0],
+        "candidate_launch_authorization_bytes": identities[
+            "candidate_launch_authorization"
+        ][1],
+        "candidate_launch_authorization_receipt_sha256": identities[
+            "candidate_launch_authorization_receipt"
+        ][0],
+        "candidate_launch_authorization_receipt_bytes": identities[
+            "candidate_launch_authorization_receipt"
+        ][1],
+        "epoch11_completion_receipt_sha256": epoch11_inputs[
+            "encoder_completion_receipt_sha256"
+        ],
+        "epoch11_completion_receipt_bytes": epoch11_inputs[
+            "encoder_completion_receipt_bytes"
+        ],
+        "epoch11_gate_artifact_sha256": identities["epoch11_gate_artifact"][0],
+        "epoch11_gate_artifact_bytes": identities["epoch11_gate_artifact"][1],
+        "epoch11_gate_receipt_sha256": identities["epoch11_gate_receipt"][0],
+        "epoch11_gate_receipt_bytes": identities["epoch11_gate_receipt"][1],
+        "final_started_receipt_sha256": identities["encoder_started_receipt"][0],
+        "final_started_receipt_bytes": identities["encoder_started_receipt"][1],
+        "final_completion_receipt_sha256": identities[
+            "encoder_completion_receipt"
+        ][0],
+        "final_completion_receipt_bytes": identities[
+            "encoder_completion_receipt"
+        ][1],
+        "final_checkpoint_sha256": identities["encoder_checkpoint"][0],
+        "final_checkpoint_bytes": identities["encoder_checkpoint"][1],
+        "final_progress_sha256": identities["encoder_progress"][0],
+        "final_progress_bytes": identities["encoder_progress"][1],
+        "final_pose_snapshot_sha256": identities["pose_snapshot"][0],
+        "final_pose_snapshot_bytes": identities["pose_snapshot"][1],
+    }
+
+
 def _preflight_progress_jsonl(path: Path) -> None:
     """Reject privileged, duplicate, malformed, or non-finite rows before torch.load."""
 
@@ -3515,10 +4620,10 @@ def run_gate(
     epoch11_gate_receipt_path: str | Path,
     pose_cache_dir: str | Path,
     pose_snapshot_path: str | Path,
+    candidate_registry_root: str | Path,
+    train_run_receipt_path: str | Path,
     *,
     candidate_id: str,
-    prior_rejection_artifact_paths: Sequence[str | Path] = (),
-    prior_rejection_receipt_paths: Sequence[str | Path] = (),
     device: str | torch.device | None = None,
     batch_size: int = 16,
 ) -> dict[str, Any]:
@@ -3526,12 +4631,7 @@ def run_gate(
         raise ValueError("batch_size must be an integer in [1, 32]")
     if candidate_id not in _CANDIDATE_ORDER:
         raise ValueError("candidate_id must be one of A, B, C")
-    prior_artifacts = tuple(Path(value) for value in prior_rejection_artifact_paths)
-    prior_receipts = tuple(Path(value) for value in prior_rejection_receipt_paths)
-    if len(prior_artifacts) != len(prior_receipts):
-        raise ValueError(
-            "prior scientific-rejection artifact and receipt totals must match"
-        )
+    registry_root = _safe_registry_root(candidate_registry_root)
     paths: dict[str, Path] = {
         "encoder_checkpoint": Path(encoder_checkpoint_path),
         "encoder_progress": Path(encoder_progress_path),
@@ -3548,6 +4648,7 @@ def run_gate(
         "epoch11_gate_artifact": Path(epoch11_gate_artifact_path),
         "epoch11_gate_receipt": Path(epoch11_gate_receipt_path),
         "pose_snapshot": Path(pose_snapshot_path),
+        "train_run_receipt": Path(train_run_receipt_path),
         "gate_runner": Path(__file__),
         "launch_authorization_runner": Path(__file__).with_name(
             "prepare_pams_native_candidate_launch_authorization.py"
@@ -3561,10 +4662,6 @@ def run_gate(
     }
     source_root = Path.cwd().resolve(strict=True)
     paths["consensus_module"] = source_root / "src" / paths["consensus_module"]
-    for index, value in enumerate(prior_artifacts):
-        paths[f"prior_rejection_artifact_{index}"] = value
-    for index, value in enumerate(prior_receipts):
-        paths[f"prior_rejection_receipt_{index}"] = value
     for role, path in {**paths, "pose_cache_directory": Path(pose_cache_dir)}.items():
         _reject_privileged_path(path, role=role)
 
@@ -3614,15 +4711,7 @@ def run_gate(
         document="candidate launch authorization receipt",
     )
     _strict_json(paths["pose_snapshot"], document="pose snapshot")
-    for index in range(len(prior_artifacts)):
-        _strict_json(
-            paths[f"prior_rejection_artifact_{index}"],
-            document="prior scientific rejection artifact",
-        )
-        _strict_json(
-            paths[f"prior_rejection_receipt_{index}"],
-            document="prior scientific rejection receipt",
-        )
+    _strict_json(paths["train_run_receipt"], document="candidate train run receipt")
     _preflight_progress_jsonl(paths["encoder_progress"])
 
     _validate_source_receipt_binding(
@@ -3651,17 +4740,48 @@ def run_gate(
         pose_snapshot_sha256=identities["pose_snapshot"][0],
         pose_cache_set_sha256=declared_snapshot.fingerprint,
         source_git_sha=source_git_sha,
+        candidate_launch_authorization_identity=identities[
+            "candidate_launch_authorization"
+        ],
+        candidate_launch_receipt_identity=identities[
+            "candidate_launch_authorization_receipt"
+        ],
     )
-    prior_chain = _validate_predecessor_chain(
+    prior_chain = _load_predecessor_chain_from_registry(
         candidate_id=candidate_id,
         profile=profile,
-        artifact_paths=prior_artifacts,
-        receipt_paths=prior_receipts,
+        registry_root=registry_root,
         specification=specification,
         gate_specification_sha256=identities["gate_specification"][0],
         pose_cache_set_sha256=declared_snapshot.fingerprint,
         source_git_sha=source_git_sha,
     )
+    registry_key = _candidate_registry_key(
+        source_git_sha=source_git_sha,
+        gate_specification_sha256=identities["gate_specification"][0],
+        pose_cache_set_sha256=declared_snapshot.fingerprint,
+        candidate_id=candidate_id,
+    )
+    registry_paths = _candidate_registry_paths(
+        registry_root, sha256_json(registry_key)
+    )
+    _reject_privileged_path(
+        registry_paths["reservation"], role="candidate registry reservation"
+    )
+    registry_reservation_identity = _stable_file_sha256(
+        registry_paths["reservation"]
+    )
+    paths["candidate_registry_reservation"] = registry_paths["reservation"]
+    identities["candidate_registry_reservation"] = (
+        registry_reservation_identity
+    )
+    registry_reservation = _load_candidate_registry_reservation(
+        registry_paths["reservation"], expected_key=registry_key
+    )
+    if registry_reservation["prior_outcome_registry_ids"] != [
+        value["registry_id"] for value in prior_chain
+    ]:
+        raise ValueError("candidate registry reservation predecessor chain mismatch")
     _validate_candidate_launch_authorization(
         paths["candidate_launch_authorization"],
         paths["candidate_launch_authorization_receipt"],
@@ -3674,6 +4794,8 @@ def run_gate(
         pose_cache_set_sha256=declared_snapshot.fingerprint,
         source_git_sha=source_git_sha,
         source_covered_paths=source_covered,
+        registry_reservation=registry_reservation,
+        registry_reservation_identity=registry_reservation_identity,
     )
     completion, started_path, started_identity, completion_artifacts = (
         _validate_encoder_completion_receipt(
@@ -3695,6 +4817,19 @@ def run_gate(
         or started_identity != identities["encoder_started_receipt"]
     ):
         raise RuntimeError("encoder started receipt identity changed after preflight")
+    train_lineage = _validate_train_run_receipt(
+        paths["train_run_receipt"],
+        candidate_id=candidate_id,
+        source_git_sha=source_git_sha,
+        config_sha256=identities["experiment_config"][0],
+        config=config,
+        pose_cache_set_sha256=declared_snapshot.fingerprint,
+        registry_reservation=registry_reservation,
+        registry_reservation_identity=registry_reservation_identity,
+        identities=identities,
+        epoch11_artifact=epoch11_artifact,
+        completion=completion,
+    )
     stage, provenance = _peek_checkpoint(paths["encoder_checkpoint"], config)
     if stage != "encoder":
         raise ValueError("terminal gate requires an encoder checkpoint")
@@ -3865,9 +5000,11 @@ def run_gate(
                 "exact_source_export_receipt",
                 "exact_candidate_config_and_frozen_gate_specification",
                 "prelaunch_candidate_authorization_artifact_and_receipt",
+                "exclusive_candidate_outcome_registry_reservation",
+                "full_candidate_train_run_receipt_and_container_audits",
                 "passing_epoch11_gate_artifact_and_receipt",
                 "checkpoint_bound_train337_pose_cache_and_snapshot",
-                "required_prior_scientific_rejection_receipts",
+                "canonical_registry_prior_scientific_rejection_outcomes",
             ],
             "manifest_interface_supported": False,
             "media_interface_supported": False,
@@ -3913,6 +5050,20 @@ def run_gate(
             "code_files_sha256": code_hashes,
             "code_files_sha256_commitment": sha256_json(code_hashes),
             "read_only_post_run_identity_verified": True,
+            "candidate_registry_id": registry_reservation["registry_id"],
+            "candidate_registry_reservation_sha256": (
+                registry_reservation_identity[0]
+            ),
+            "candidate_registry_reservation_bytes": (
+                registry_reservation_identity[1]
+            ),
+            "candidate_registry_run_locator": registry_reservation["run_binding"][
+                "run_locator"
+            ],
+            "container_audits_sha256_commitment": train_lineage[
+                "container_audits_sha256_commitment"
+            ],
+            "train_lineage": train_lineage,
         },
         "algorithm": {
             "period_estimator": "full_vector_embedding_velocity_acf",
@@ -4038,8 +5189,14 @@ def write_gate_artifact(
         "epoch11_gate_artifact_sha256": payload["inputs"][
             "epoch11_gate_artifact_sha256"
         ],
+        "epoch11_gate_artifact_bytes": payload["inputs"][
+            "epoch11_gate_artifact_bytes"
+        ],
         "epoch11_gate_receipt_sha256": payload["inputs"][
             "epoch11_gate_receipt_sha256"
+        ],
+        "epoch11_gate_receipt_bytes": payload["inputs"][
+            "epoch11_gate_receipt_bytes"
         ],
         "source_git_sha": payload["inputs"]["source_git_sha"],
         "code_files_sha256_commitment": payload["inputs"][
@@ -4049,8 +5206,26 @@ def write_gate_artifact(
         "candidate_launch_authorization_sha256": payload["inputs"][
             "candidate_launch_authorization_sha256"
         ],
+        "candidate_launch_authorization_bytes": payload["inputs"][
+            "candidate_launch_authorization_bytes"
+        ],
         "candidate_launch_authorization_receipt_sha256": payload["inputs"][
             "candidate_launch_authorization_receipt_sha256"
+        ],
+        "candidate_launch_authorization_receipt_bytes": payload["inputs"][
+            "candidate_launch_authorization_receipt_bytes"
+        ],
+        "candidate_registry_id": payload["inputs"]["candidate_registry_id"],
+        "candidate_registry_reservation_sha256": payload["inputs"][
+            "candidate_registry_reservation_sha256"
+        ],
+        "candidate_registry_reservation_bytes": payload["inputs"][
+            "candidate_registry_reservation_bytes"
+        ],
+        "train_run_receipt_sha256": payload["inputs"]["train_run_receipt_sha256"],
+        "train_run_receipt_bytes": payload["inputs"]["train_run_receipt_bytes"],
+        "container_audits_sha256_commitment": payload["inputs"][
+            "container_audits_sha256_commitment"
         ],
         "aggregate_only": True,
         "dev84_pose_or_scoring_authorized": False,
@@ -4060,6 +5235,137 @@ def write_gate_artifact(
         raise RuntimeError("terminal gate receipt schema drifted")
     _write_new(receipt_path, _encoded_json(receipt))
     return receipt_path, artifact_sha256
+
+
+def write_candidate_registry_outcome(
+    registry_root: str | Path,
+    *,
+    train_run_receipt_path: str | Path,
+    terminal_artifact_path: Path,
+    terminal_receipt_path: Path,
+    payload: Mapping[str, Any],
+) -> tuple[Path, Path]:
+    """Commit one immutable terminal outcome to the canonical registry."""
+
+    root = _safe_registry_root(registry_root)
+    expected_status = (
+        "terminal_readout_eligible"
+        if payload["gate"]["overall_pass"] is True
+        else "scientific_rejection"
+    )
+    if payload["status"] != expected_status:
+        raise ValueError("candidate registry outcome status differs from terminal gate")
+    registry_id = payload["inputs"]["candidate_registry_id"]
+    paths = _candidate_registry_paths(root, registry_id)
+    if any(paths[name].exists() for name in paths if name != "reservation"):
+        raise FileExistsError("candidate registry outcome material already exists")
+    key = _candidate_registry_key(
+        source_git_sha=payload["inputs"]["source_git_sha"],
+        gate_specification_sha256=payload["inputs"][
+            "gate_specification_sha256"
+        ],
+        pose_cache_set_sha256=payload["inputs"]["pose_cache_set_sha256"],
+        candidate_id=payload["candidate"]["id"],
+    )
+    if sha256_json(key) != registry_id:
+        raise ValueError("terminal payload candidate registry ID mismatch")
+    reservation_identity = _stable_file_sha256(paths["reservation"])
+    reservation = _load_candidate_registry_reservation(
+        paths["reservation"], expected_key=key
+    )
+    if (
+        reservation_identity[0]
+        != payload["inputs"]["candidate_registry_reservation_sha256"]
+        or reservation_identity[1]
+        != payload["inputs"]["candidate_registry_reservation_bytes"]
+    ):
+        raise ValueError("terminal payload reservation identity mismatch")
+    train_lineage = _validate_registry_train_lineage(
+        payload["inputs"]["train_lineage"]
+    )
+    train_path = Path(train_run_receipt_path)
+    train_identity = _stable_file_sha256(train_path)
+    if train_identity != (
+        payload["inputs"]["train_run_receipt_sha256"],
+        payload["inputs"]["train_run_receipt_bytes"],
+    ):
+        raise ValueError("terminal payload train run receipt identity mismatch")
+    terminal_identity = _stable_file_sha256(terminal_artifact_path)
+    if terminal_identity[0] != hashlib.sha256(_encoded_json(payload)).hexdigest():
+        raise ValueError("terminal artifact bytes differ from the evaluated payload")
+    original_receipt = _strict_json(
+        terminal_receipt_path, document="terminal gate receipt before registry commit"
+    )
+    if (
+        set(original_receipt) != _RECEIPT_KEYS
+        or original_receipt["artifact_locator"] != terminal_artifact_path.name
+        or original_receipt["artifact_sha256"] != terminal_identity[0]
+        or original_receipt["artifact_bytes"] != terminal_identity[1]
+        or original_receipt["artifact_status"] != payload["status"]
+        or original_receipt["candidate_id"] != payload["candidate"]["id"]
+        or original_receipt["candidate_registry_id"] != registry_id
+    ):
+        raise ValueError("terminal gate receipt is not bound before registry commit")
+
+    _write_new(paths["train_run_receipt"], train_path.read_bytes())
+    _write_new(paths["terminal_artifact"], terminal_artifact_path.read_bytes())
+    registry_terminal_receipt = dict(original_receipt)
+    registry_terminal_receipt["artifact_locator"] = paths["terminal_artifact"].name
+    _write_new(paths["terminal_receipt"], _encoded_json(registry_terminal_receipt))
+    copied_train_identity = _stable_file_sha256(paths["train_run_receipt"])
+    copied_terminal_identity = _stable_file_sha256(paths["terminal_artifact"])
+    copied_terminal_receipt_identity = _stable_file_sha256(
+        paths["terminal_receipt"]
+    )
+    outcome = {
+        "schema_version": 1,
+        "artifact_type": _CANDIDATE_REGISTRY_OUTCOME_TYPE,
+        "status": payload["status"],
+        "registry_id": registry_id,
+        "key": key,
+        "reservation_sha256": reservation_identity[0],
+        "reservation_bytes": reservation_identity[1],
+        "train_run_receipt_locator": paths["train_run_receipt"].name,
+        "train_run_receipt_sha256": copied_train_identity[0],
+        "train_run_receipt_bytes": copied_train_identity[1],
+        "terminal_artifact_locator": paths["terminal_artifact"].name,
+        "terminal_artifact_sha256": copied_terminal_identity[0],
+        "terminal_artifact_bytes": copied_terminal_identity[1],
+        "terminal_receipt_locator": paths["terminal_receipt"].name,
+        "terminal_receipt_sha256": copied_terminal_receipt_identity[0],
+        "terminal_receipt_bytes": copied_terminal_receipt_identity[1],
+        "train_lineage": dict(train_lineage),
+        "prior_outcome_registry_ids": reservation[
+            "prior_outcome_registry_ids"
+        ],
+        "aggregate_only": True,
+    }
+    _write_new(paths["outcome"], _encoded_json(outcome))
+    outcome_identity = _stable_file_sha256(paths["outcome"])
+    outcome_receipt = {
+        "schema_version": 1,
+        "artifact_type": _CANDIDATE_REGISTRY_OUTCOME_RECEIPT_TYPE,
+        "artifact_locator": paths["outcome"].name,
+        "artifact_sha256": outcome_identity[0],
+        "artifact_bytes": outcome_identity[1],
+        "artifact_status": payload["status"],
+        "registry_id": registry_id,
+        "candidate_id": payload["candidate"]["id"],
+        "reservation_sha256": reservation_identity[0],
+        "train_run_receipt_sha256": copied_train_identity[0],
+        "terminal_artifact_sha256": copied_terminal_identity[0],
+        "terminal_receipt_sha256": copied_terminal_receipt_identity[0],
+        "container_audits_sha256_commitment": train_lineage[
+            "container_audits_sha256_commitment"
+        ],
+        "aggregate_only": True,
+    }
+    _write_new(paths["outcome_receipt"], _encoded_json(outcome_receipt))
+    fsync_directory(root)
+    for name in paths:
+        os.chmod(paths[name], 0o440)
+    fsync_directory(root)
+    return paths["outcome"], paths["outcome_receipt"]
 
 
 def _parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -4078,13 +5384,9 @@ def _parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--epoch11-gate-receipt", type=Path, required=True)
     parser.add_argument("--pose-cache-dir", type=Path, required=True)
     parser.add_argument("--pose-snapshot", type=Path, required=True)
+    parser.add_argument("--candidate-registry-root", type=Path, required=True)
+    parser.add_argument("--candidate-run-receipt", type=Path, required=True)
     parser.add_argument("--candidate-id", choices=_CANDIDATE_ORDER, required=True)
-    parser.add_argument(
-        "--prior-rejection-artifact", type=Path, action="append", default=[]
-    )
-    parser.add_argument(
-        "--prior-rejection-receipt", type=Path, action="append", default=[]
-    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--batch-size", type=int, default=16)
@@ -4109,13 +5411,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         arguments.epoch11_gate_receipt,
         arguments.pose_cache_dir,
         arguments.pose_snapshot,
+        arguments.candidate_registry_root,
+        arguments.candidate_run_receipt,
         candidate_id=arguments.candidate_id,
-        prior_rejection_artifact_paths=arguments.prior_rejection_artifact,
-        prior_rejection_receipt_paths=arguments.prior_rejection_receipt,
         device=arguments.device,
         batch_size=arguments.batch_size,
     )
     receipt_path, artifact_sha256 = write_gate_artifact(arguments.output, payload)
+    registry_outcome, registry_outcome_receipt = write_candidate_registry_outcome(
+        arguments.candidate_registry_root,
+        train_run_receipt_path=arguments.candidate_run_receipt,
+        terminal_artifact_path=arguments.output,
+        terminal_receipt_path=receipt_path,
+        payload=payload,
+    )
     print(
         json.dumps(
             {
@@ -4130,6 +5439,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "next_candidate_training_authorized": payload["gate"][
                     "next_candidate_training_authorized"
                 ],
+                "candidate_registry_outcome": str(registry_outcome),
+                "candidate_registry_outcome_receipt": str(
+                    registry_outcome_receipt
+                ),
                 "dev84_pose_or_scoring_authorized": False,
                 "test105_evaluation_authorized": False,
             },
