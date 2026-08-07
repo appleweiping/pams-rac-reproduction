@@ -1110,10 +1110,12 @@ def test_predict_sequence_routes_direct_fft_timebase_and_dense_reference_frames(
         *,
         timebase: str,
         timeline_lengths: torch.Tensor | None,
+        maximum_mode: str,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         del minimum, maximum
         assert valid_mask is not None
         assert int(valid_mask.sum()) == int(mask.sum())
+        assert maximum_mode == "fixed"
         observed_fft_calls.append(
             (
                 timebase,
