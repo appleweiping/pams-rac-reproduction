@@ -1,0 +1,58 @@
+schema_version: 1
+artifact_type: pams_pose_recovery_v4d_train337_full_gate
+protocol: ucfrep_526
+split: train
+expected_records: 337
+preregistration:
+  frozen_before_full337_outputs: true
+  output_independent_thresholds: true
+  same39_authorizes_extraction_only: true
+  full337_pass_required_for_baseline_training: true
+bindings:
+  v4d_parent_source_revision: 081c3c1383953c7f2e30f69b2e7bcabeaa2503f9
+  train337_sidecar_sha256: f95df0050df21f05bbc9b42d0154470714dde279e04cb8b00d0212bf49057d16
+  train337_commitment_sha256: 85d41d2f59872e0900e9058481efbdf6bce91407d4c26bcde0a6547776454e53
+  train337_identity_sha256: 88367535e296213377c366ed69abbd1e808c38049d79bb948091688e4c5b7b3f
+  v4a_ledger_sha256: 4cbba0d0f678cfdbd2c99752bbb55a8ceeb3aaa0b0b994bb6195b55cd0bc6018
+  v4a_paired_gate_sha256: faf086277f4d0a0687a266b64edc6ae45a2ca0ab4b39cc8fc4da644350c571e5
+  v4a_pose_fingerprint: 817013890533cd19e6c791969c35c3699d56d0e6656768ce64199bc30ceebe9c
+  v4a_pose_cache_set_sha256: 22629d0ddc5d892bb53bcef78c887da4ff9e054f5a17bd5e7ea4fbc43a03c662
+  v4d_config_file_sha256: 9933126d16735d42108203f512168e0eb438434f954fbcc969c5db622f5b6073
+  v4d_config_fingerprint: 587ad8a427e6d387a23b142e57cfac4a8bd49ffed93176b477000aeb2c2a5125
+  v4d_pose_fingerprint: 4cc1f905cfb3484dccc1efc480e3fa59e4a106ffbe20528a85201a3fbd85b5d8
+  keypointrcnn_model_asset_sha256: fc266e953d2b302cdcbb9ae66f71f6b0d4649928bf02dc573961e361e4918926
+  container_image_id: sha256:0a4d42c2d9911f147a17860e4e15095746b21c4e618e4fc1b20b62dd443c5898
+  same39_failure_receipt_sha256: 91c702663e6be37bec59cbf558ada047435c0e8f4c4c8efd951f88d505039a00
+  same39_audit_sha256: d25a9fb6da457677cc2c33e79725cedfc36ed9b5555e762878569d3f43e754f5
+  same39_ledger_sha256: 2c89a66c3203e73db0a6597a7e6cb0e0912c81866795499d444ea3d66c2db7fc
+  same39_selection_sha256: c3a7d1113c4be28e0a9c06e1d59eeea31383a266e3400d7559fd0fab605123d3
+  same39_candidate_cache_set_sha256: ef4a2e341128598fbc94a6c883ef797f780a2cd0ae8100b937d3e679c9f2f7d1
+  v2_extraction_authorization_receipt_sha256_must_be_caller_pinned: true
+coverage_thresholds:
+  v4_zero_video_maximum: 8
+  recovered_reference_zero_video_minimum: 8
+  reference_usable_to_v4_zero_video_maximum: 0
+  source_coverage_mean_minimum: 0.80
+  source_coverage_p10_minimum: 0.25
+  source_coverage_p25_minimum: 0.60
+  source_coverage_median_minimum: 0.97
+  observed_at_most_8_video_maximum: 4
+  longest_run_fraction_p10_minimum: 0.15
+  longest_run_fraction_median_minimum: 0.80
+track_quality_thresholds:
+  mask_transition_rate_p90_maximum: 0.20
+  base_fill_boundary_shape_jump_p95_maximum: 0.45
+  contiguous_cycle_supported_video_fraction_minimum: 0.70
+periodicity_thresholds:
+  period_confidence_p25_minimum: 0.03
+  period_confidence_median_minimum: 0.06
+  periodic_track_video_fraction_minimum: 0.70
+  periodic_track_confidence_minimum: 0.03
+anchor_risk_thresholds:
+  unanchored_filled_video_fraction_maximum: 0.05
+  unanchored_filled_low_periodicity_video_maximum: 4
+integrity_thresholds:
+  invariant_failure_maximum: 0
+  v4a_bitwise_mismatch_maximum: 0
+  same39_bytewise_mismatch_maximum: 0
+  nonfinite_metric_maximum: 0
