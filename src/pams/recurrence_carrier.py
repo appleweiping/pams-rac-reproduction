@@ -292,6 +292,7 @@ def _recurrence_score(
     centered: Tensor,
     valid: Tensor,
     period: float,
+    harmonic_feature_support: Tensor,
 ) -> Tensor:
     valid_total = int(valid.sum())
     feature_rms = (
@@ -302,7 +303,17 @@ def _recurrence_score(
         centered / feature_rms.clamp_min(1e-6).unsqueeze(0),
         torch.zeros_like(centered),
     )
-    states = F.normalize(whitened, p=2, dim=1, eps=1e-12)
+    if harmonic_feature_support.shape != centered.shape[1:]:
+        raise ValueError("harmonic feature support must match embedding dimension")
+    support = harmonic_feature_support / harmonic_feature_support.max().clamp_min(
+        1e-12
+    )
+    states = F.normalize(
+        whitened * support.unsqueeze(0),
+        p=2,
+        dim=1,
+        eps=1e-12,
+    )
     nonzero = states.square().sum(dim=1) > 1e-8
     state_valid = valid & nonzero
     positive, positive_available = _fractional_similarity(states, state_valid, period)
@@ -436,7 +447,13 @@ def build_recurrence_carrier_curves(
         phase = torch.atan2(-phase_sine, phase_cosine)
         carrier = torch.cos(omega * dense_time + phase)
 
-        score = _recurrence_score(centered, sample_valid, period)
+        harmonic_feature_support = coefficients.square().sum(dim=0).sqrt()
+        score = _recurrence_score(
+            centered,
+            sample_valid,
+            period,
+            harmonic_feature_support,
+        )
         active = _active_mask_from_score(score, sample_valid, period)
         active = _align_active_spans_to_carrier_troughs(active, carrier, period)
         if not bool(active.any()):
