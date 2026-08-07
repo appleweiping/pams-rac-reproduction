@@ -473,6 +473,7 @@ def validate_full337_gate(
             "coverage_thresholds",
             "expected_records",
             "integrity_thresholds",
+            "measurement_protocol",
             "periodicity_thresholds",
             "preregistration",
             "protocol",
@@ -499,6 +500,20 @@ def validate_full337_gate(
             "full337_pass_required_for_baseline_training": True,
         },
         "full337 preregistration mismatch",
+    )
+    require(
+        dict(mapping(gate.get("measurement_protocol"), "full337 measurement protocol"))
+        == {
+            "periodicity_coordinates": "xy_only",
+            "periodicity_signal": "precomputed_pose_velocity_vectors",
+            "eligible_velocity_pair_policy": (
+                "adjacent_both_valid_and_same_extractor_origin_only"
+            ),
+            "excluded_velocity_pairs": ["invalid_gap", "base_to_fill", "fill_to_base"],
+            "minimum_anchor_frames": 2,
+            "minimum_anchor_fraction_of_final_valid_frames": 0.02,
+        },
+        "full337 measurement protocol changed",
     )
     require(
         dict(mapping(gate.get("bindings"), "full337 bindings"))
@@ -557,14 +572,16 @@ def validate_full337_gate(
             "period_confidence_median_minimum": 0.06,
             "periodic_track_video_fraction_minimum": 0.70,
             "periodic_track_confidence_minimum": 0.03,
+            "eligible_velocity_fraction_p10_minimum": 0.50,
+            "period_velocity_pair_count_p10_minimum": 8,
         },
         "periodicity thresholds changed",
     )
     require(
         dict(mapping(gate.get("anchor_risk_thresholds"), "anchor-risk thresholds"))
         == {
-            "unanchored_filled_video_fraction_maximum": 0.05,
-            "unanchored_filled_low_periodicity_video_maximum": 4,
+            "weakly_anchored_filled_video_fraction_maximum": 0.05,
+            "weakly_anchored_filled_low_periodicity_video_maximum": 4,
         },
         "anchor-risk thresholds changed",
     )
@@ -811,7 +828,6 @@ def validate_same39_failed_pilot(
         and audit.get("passed") is False
         and audit.get("zero11_passed") is True
         and audit.get("same39_cost_gate_passed") is True
-        and audit.get("projected_full337_gate_passed") is False
         and audit.get("full337_pose_extraction_authorized") is False
         and audit.get("baseline_training_authorized") is False,
         "same39 audit is not the frozen failed-pilot evidence required by v2",

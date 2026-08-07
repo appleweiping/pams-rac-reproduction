@@ -8,6 +8,16 @@ preregistration:
   output_independent_thresholds: true
   same39_authorizes_extraction_only: true
   full337_pass_required_for_baseline_training: true
+measurement_protocol:
+  periodicity_coordinates: xy_only
+  periodicity_signal: precomputed_pose_velocity_vectors
+  eligible_velocity_pair_policy: adjacent_both_valid_and_same_extractor_origin_only
+  excluded_velocity_pairs:
+    - invalid_gap
+    - base_to_fill
+    - fill_to_base
+  minimum_anchor_frames: 2
+  minimum_anchor_fraction_of_final_valid_frames: 0.02
 bindings:
   v4d_parent_source_revision: 081c3c1383953c7f2e30f69b2e7bcabeaa2503f9
   train337_sidecar_sha256: f95df0050df21f05bbc9b42d0154470714dde279e04cb8b00d0212bf49057d16
@@ -48,9 +58,11 @@ periodicity_thresholds:
   period_confidence_median_minimum: 0.06
   periodic_track_video_fraction_minimum: 0.70
   periodic_track_confidence_minimum: 0.03
+  eligible_velocity_fraction_p10_minimum: 0.50
+  period_velocity_pair_count_p10_minimum: 8
 anchor_risk_thresholds:
-  unanchored_filled_video_fraction_maximum: 0.05
-  unanchored_filled_low_periodicity_video_maximum: 4
+  weakly_anchored_filled_video_fraction_maximum: 0.05
+  weakly_anchored_filled_low_periodicity_video_maximum: 4
 integrity_thresholds:
   invariant_failure_maximum: 0
   v4a_bitwise_mismatch_maximum: 0

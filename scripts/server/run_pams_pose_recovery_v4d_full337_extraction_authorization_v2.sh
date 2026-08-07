@@ -24,7 +24,7 @@ readonly SOURCE_REVISION="$(git -C "$REPOSITORY_ROOT" rev-parse HEAD^{commit})"
 
 readonly IMAGE='pams-rac:5e18274a5353'
 readonly IMAGE_ID='sha256:0a4d42c2d9911f147a17860e4e15095746b21c4e618e4fc1b20b62dd443c5898'
-readonly GATE_SHA256='c2b322605e404daa51ccb0a1dba2df3c56d5711ab958ee4c4ec44b9265539146'
+readonly GATE_SHA256='304af8669703a73bf3d953e19848633986b682d478ee3a5f8be78114c26f11b8'
 readonly SIDECAR_SHA256='f95df0050df21f05bbc9b42d0154470714dde279e04cb8b00d0212bf49057d16'
 readonly COMMITMENT_SHA256='85d41d2f59872e0900e9058481efbdf6bce91407d4c26bcde0a6547776454e53'
 readonly V4A_LEDGER_SHA256='4cbba0d0f678cfdbd2c99752bbb55a8ceeb3aaa0b0b994bb6195b55cd0bc6018'
@@ -66,15 +66,8 @@ require_sha256 "$SAME39_LEDGER" "$SAME39_LEDGER_SHA256" same39-ledger
 require_sha256 "$SAME39_SELECTION" "$SAME39_SELECTION_SHA256" same39-selection
 [[ -d "$V4A_CACHE" && -d "$SAME39_CACHE" ]] || fail 'missing pose-cache input'
 [[ -z "$(find "$SAME39_ROOT" -xdev -perm /022 -print -quit)" ]] || fail 'same39 root is not read-only sealed'
-[[ ! -e "$RUN_ROOT" ]] || fail "run root already exists: ${RUN_ROOT}"
-mkdir -p -- "$RUN_PARENT"
-mkdir -- "$RUN_ROOT" "$SOURCE_EXPORT" "$OUTPUT_DIR" "$AUDIT_DIR" "$LOG_DIR"
-git -C "$REPOSITORY_ROOT" archive "$SOURCE_REVISION" | tar -x -C "$SOURCE_EXPORT"
-chmod -R a-w -- "$SOURCE_EXPORT"
-require_sha256 "$SOURCE_EXPORT/configs/gates/pams_pose_recovery_v4d_full337.yaml" "$GATE_SHA256" full337-gate
-
 readonly NAME="pams-v4d-full337-auth-v2-${SOURCE_REVISION:0:12}-${PAMS_V4D_AUTH_ATTEMPT_ID,,}"
-FAILURE_PHASE='container-create'
+FAILURE_PHASE='run-root-initialize'
 cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
 finalize() {
   local status="$?"
@@ -90,15 +83,28 @@ for relative in ('audit/container.inspect.pre.json','audit/container.inspect.pos
  if path.is_file(): artifacts[relative]=hashlib.sha256(path.read_bytes()).hexdigest()
 payload={'schema_version':1,'artifact_type':'pams_pose_recovery_v4d_full337_extraction_authorization_v2_failure',
  'source_revision':sys.argv[2],'container_image_id':sys.argv[3],'failed_phase':sys.argv[4],
- 'exit_status':int(sys.argv[5]),'baseline_training_authorized':False,'artifacts':artifacts}
-with (root/'audit/failure.receipt.json').open('x',encoding='utf-8',newline='\n') as f:
+ 'exit_status':int(sys.argv[5]),'baseline_training_authorized':False,'artifacts':artifacts,
+ 'observed_container_image_ids':sorted({
+   json.loads((root/relative).read_text())[0]['Image']
+   for relative in ('audit/container.inspect.pre.json','audit/container.inspect.post.json')
+   if (root/relative).is_file()})}
+target=root/'audit/failure.receipt.json'; target.parent.mkdir(parents=True,exist_ok=True)
+with target.open('x',encoding='utf-8',newline='\n') as f:
  json.dump(payload,f,indent=2,sort_keys=True,allow_nan=False); f.write('\n')
 PY
   fi
   [[ ! -d "$RUN_ROOT" ]] || chmod -R a-w -- "$RUN_ROOT"
   exit "$status"
 }
+[[ ! -e "$RUN_ROOT" ]] || fail "run root already exists: ${RUN_ROOT}"
+mkdir -p -- "$RUN_PARENT"
+mkdir -- "$RUN_ROOT"
 trap finalize EXIT
+mkdir -- "$SOURCE_EXPORT" "$OUTPUT_DIR" "$AUDIT_DIR" "$LOG_DIR"
+git -C "$REPOSITORY_ROOT" archive "$SOURCE_REVISION" | tar -x -C "$SOURCE_EXPORT"
+chmod -R a-w -- "$SOURCE_EXPORT"
+require_sha256 "$SOURCE_EXPORT/configs/gates/pams_pose_recovery_v4d_full337.yaml" "$GATE_SHA256" full337-gate
+FAILURE_PHASE='container-create'
 
 docker create --name "$NAME" --network none --read-only --cap-drop ALL \
   --security-opt no-new-privileges:true --user 1000:1000 \
@@ -117,7 +123,7 @@ docker create --name "$NAME" --network none --read-only --cap-drop ALL \
   --mount "type=bind,src=${SAME39_LEDGER},dst=/pams/same39/ledger.json,readonly" \
   --mount "type=bind,src=${SAME39_SELECTION},dst=/pams/same39/selection.json,readonly" \
   --mount "type=bind,src=${SAME39_CACHE},dst=/pams/same39/cache,readonly" \
-  --mount "type=bind,src=${OUTPUT_DIR},dst=/pams/output" --workdir /workspace "$IMAGE" \
+  --mount "type=bind,src=${OUTPUT_DIR},dst=/pams/output" --workdir /workspace "$IMAGE_ID" \
   python scripts/server/authorize_pose_recovery_v4d_full337_extraction_v2.py \
   --source-revision "$SOURCE_REVISION" --container-image-id "$IMAGE_ID" \
   --gate-sha256 "$GATE_SHA256" --same39-failure-receipt-sha256 "$SAME39_FAILURE_SHA256" \
@@ -129,12 +135,13 @@ docker create --name "$NAME" --network none --read-only --cap-drop ALL \
   --same39-selection /pams/same39/selection.json --same39-cache-dir /pams/same39/cache \
   --output /pams/output/extraction.authorization.json >"${AUDIT_DIR}/container.create-id.txt"
 docker inspect "$NAME" >"${AUDIT_DIR}/container.inspect.pre.json"
-python3 - "$AUDIT_DIR/container.inspect.pre.json" <<'PY'
+python3 - "$AUDIT_DIR/container.inspect.pre.json" "$IMAGE_ID" <<'PY'
 import json,sys
 x=json.load(open(sys.argv[1]))[0]; h=x['HostConfig']; c=x['Config']
 def req(v,m):
  if not v: raise SystemExit(m)
 req(h['ReadonlyRootfs'] and h['NetworkMode']=='none' and 'ALL' in h['CapDrop'],'sandbox mismatch')
+req(x['Image']==sys.argv[2],'actual container image-ID mismatch')
 req(c['User']=='1000:1000' and not h.get('DeviceRequests'),'authorizer must not have GPU')
 mounts={m['Destination']:m['RW'] for m in x['Mounts']}
 req(mounts.get('/pams/output') is True,'output is not writable')
@@ -149,6 +156,11 @@ docker start -a "$NAME" 2>&1 | tee "$LOG_DIR/authorization.log"
 STATUS="${PIPESTATUS[0]}"
 set -e
 docker inspect "$NAME" >"${AUDIT_DIR}/container.inspect.post.json"
+python3 - "$AUDIT_DIR/container.inspect.post.json" "$IMAGE_ID" <<'PY'
+import json,sys
+x=json.load(open(sys.argv[1]))[0]
+if x['Image']!=sys.argv[2]: raise SystemExit('post-run image-ID mismatch')
+PY
 docker rm "$NAME" >/dev/null
 [[ "$STATUS" -eq 0 ]] || fail "authorization container failed with status ${STATUS}"
 [[ -f "$AUTHORIZATION" ]] || fail 'authorization receipt missing'
@@ -159,6 +171,26 @@ assert x['authorization_scope']=='full337_pose_extraction_only'
 assert x['full337_pose_extraction_authorized'] is True
 assert x['baseline_training_authorized'] is False
 assert x['training_runner_must_reject'] is True
+PY
+python3 - "$RUN_ROOT" "$SOURCE_REVISION" "$IMAGE_ID" <<'PY'
+import hashlib,json,sys
+from pathlib import Path
+root=Path(sys.argv[1]); expected=sys.argv[3]
+def digest(path): return hashlib.sha256(path.read_bytes()).hexdigest()
+pre=root/'audit/container.inspect.pre.json'; post=root/'audit/container.inspect.post.json'
+pre_payload=json.loads(pre.read_text())[0]; post_payload=json.loads(post.read_text())[0]
+assert pre_payload['Image']==post_payload['Image']==expected
+authorization=root/'authorization/extraction.authorization.json'
+payload={'schema_version':1,'artifact_type':'pams_pose_recovery_v4d_full337_extraction_authorization_v2_run_receipt',
+ 'source_revision':sys.argv[2],'container_image_id':expected,
+ 'observed_container_image_id_pre':pre_payload['Image'],
+ 'observed_container_image_id_post':post_payload['Image'],
+ 'container_inspect_pre_sha256':digest(pre),'container_inspect_post_sha256':digest(post),
+ 'extraction_authorization_sha256':digest(authorization),
+ 'authorization_scope':'full337_pose_extraction_only','baseline_training_authorized':False,
+ 'training_runner_must_reject':True}
+with (root/'audit/run.receipt.json').open('x',encoding='utf-8',newline='\n') as f:
+ json.dump(payload,f,indent=2,sort_keys=True,allow_nan=False); f.write('\n')
 PY
 chmod -R a-w -- "$RUN_ROOT"
 trap - EXIT

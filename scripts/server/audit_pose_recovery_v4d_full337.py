@@ -47,7 +47,7 @@ from pams.data import (
     pose_input_identity_sha256,
     validate_pose_input_binding,
 )
-from pams.period import estimate_period_from_embedding_velocity_vectors
+from pams.period import estimate_period_from_vectors
 
 FULL_LEDGER_KEYS = frozenset(
     {
@@ -204,6 +204,29 @@ def _longest_run(mask: np.ndarray) -> int:
     return best
 
 
+def _longest_same_origin_run(valid_mask: np.ndarray, base_mask: np.ndarray) -> int:
+    valid = np.asarray(valid_mask, dtype=np.bool_)
+    base = np.asarray(base_mask, dtype=np.bool_)
+    require(valid.shape == base.shape, "valid and origin masks must have equal shape")
+    best = current = 0
+    previous_origin = False
+    for index, value in enumerate(valid):
+        if not bool(value):
+            current = 0
+            continue
+        origin = bool(base[index])
+        current = current + 1 if current > 0 and origin == previous_origin else 1
+        previous_origin = origin
+        best = max(best, current)
+    return best
+
+
+def _anchor_supported(anchor_frames: int, final_valid_frames: int) -> bool:
+    if final_valid_frames <= 0:
+        return False
+    return anchor_frames >= 2 and anchor_frames / final_valid_frames >= 0.02
+
+
 def _mask_transition_rate(mask: np.ndarray) -> float:
     values = np.asarray(mask, dtype=np.bool_)
     if values.size < 2:
@@ -229,16 +252,43 @@ def _base_fill_boundary_jumps(
     return tuple(jumps)
 
 
-def _period_evidence(xyz: np.ndarray, valid_mask: np.ndarray) -> tuple[float, float]:
-    features = torch.from_numpy(np.asarray(xyz, dtype=np.float32).reshape(xyz.shape[0], -1))
-    mask = torch.from_numpy(np.asarray(valid_mask, dtype=np.bool_))
-    periods, confidences = estimate_period_from_embedding_velocity_vectors(
-        features,
+def _period_evidence(
+    xyz: np.ndarray,
+    valid_mask: np.ndarray,
+    base_mask: np.ndarray,
+) -> tuple[float, float, int, float]:
+    coordinates = np.asarray(xyz, dtype=np.float32)
+    require(
+        coordinates.ndim == 3 and coordinates.shape[2] >= 2,
+        "period evidence requires [time, keypoint, coordinate] pose data",
+    )
+    final_valid = np.asarray(valid_mask, dtype=np.bool_)
+    base_valid = np.asarray(base_mask, dtype=np.bool_)
+    require(
+        final_valid.shape == base_valid.shape == (coordinates.shape[0],),
+        "period evidence masks must match pose time dimension",
+    )
+    if coordinates.shape[0] < 2:
+        return 4.0, 0.0, 0, 0.0
+    positions = coordinates[:, :, :2].reshape(coordinates.shape[0], -1)
+    velocities = positions[1:] - positions[:-1]
+    adjacent_valid = final_valid[1:] & final_valid[:-1]
+    eligible = adjacent_valid & (base_valid[1:] == base_valid[:-1])
+    eligible_count = int(np.count_nonzero(eligible))
+    adjacent_valid_count = int(np.count_nonzero(adjacent_valid))
+    eligible_fraction = eligible_count / max(1, adjacent_valid_count)
+    periods, confidences = estimate_period_from_vectors(
+        torch.from_numpy(velocities),
         minimum=4,
         maximum=128,
-        valid_mask=mask,
+        valid_mask=torch.from_numpy(eligible),
     )
-    return float(periods[0]), float(confidences[0])
+    return (
+        float(periods[0]),
+        float(confidences[0]),
+        eligible_count,
+        float(eligible_fraction),
+    )
 
 
 def audit_full337(
@@ -404,6 +454,8 @@ def audit_full337(
     transition_rates: list[float] = []
     boundary_jumps: list[float] = []
     period_confidences: list[float] = []
+    eligible_velocity_fractions: list[float] = []
+    period_velocity_pair_counts: list[int] = []
     periodic_track_flags: list[bool] = []
     contiguous_cycle_flags: list[bool] = []
     diagnostic_rows: list[dict[str, Any]] = []
@@ -413,8 +465,13 @@ def audit_full337(
     nonfinite_metrics = 0
     recovered_reference_zero = 0
     reference_usable_to_zero = 0
-    unanchored_filled = 0
-    unanchored_filled_low_periodicity = 0
+    zero_anchor_filled = 0
+    weakly_anchored_filled = 0
+    weakly_anchored_filled_low_periodicity = 0
+    periodicity_thresholds = mapping(gate.get("periodicity_thresholds"), "period thresholds")
+    periodic_confidence_minimum = float(
+        periodicity_thresholds["periodic_track_confidence_minimum"]
+    )
     for record in manifest.records:
         row = rows_by_id[record.video_id]
         final = candidate_by_id[record.video_id]
@@ -428,6 +485,7 @@ def audit_full337(
         final_valid = int(np.count_nonzero(final.valid_mask))
         base_valid = int(np.count_nonzero(base.valid_mask))
         longest = _longest_run(final.valid_mask)
+        longest_same_origin = _longest_same_origin_run(final.valid_mask, base.valid_mask)
         row_ok = (
             row.get("pose_fingerprint") == V4D_POSE_FINGERPRINT
             and row.get("video_sha256") == record.video_sha256
@@ -487,13 +545,16 @@ def audit_full337(
         longest_fraction = longest / source_frames
         transition_rate = _mask_transition_rate(final.valid_mask)
         raw_jumps = _base_fill_boundary_jumps(final.xyz, final.valid_mask, base.valid_mask)
-        raw_period, raw_confidence = _period_evidence(final.xyz, final.valid_mask)
+        raw_period, raw_confidence, velocity_pair_count, eligible_velocity_fraction = (
+            _period_evidence(final.xyz, final.valid_mask, base.valid_mask)
+        )
         for value in (
             coverage,
             longest_fraction,
             transition_rate,
             raw_period,
             raw_confidence,
+            eligible_velocity_fraction,
             *raw_jumps,
         ):
             if not math.isfinite(float(value)):
@@ -509,18 +570,34 @@ def audit_full337(
             else 0.0
         )
         jumps = tuple(value if math.isfinite(value) and value >= 0.0 else 1.0 for value in raw_jumps)
-        periodic = confidence >= 0.03 and final_valid >= 2.0 * period
-        contiguous = confidence >= 0.03 and longest >= period
+        eligible_fraction = (
+            eligible_velocity_fraction
+            if math.isfinite(eligible_velocity_fraction)
+            and 0.0 <= eligible_velocity_fraction <= 1.0
+            else 0.0
+        )
+        periodic = (
+            confidence >= periodic_confidence_minimum
+            and velocity_pair_count >= 2.0 * period
+        )
+        contiguous = (
+            confidence >= periodic_confidence_minimum
+            and max(0, longest_same_origin - 1) >= period
+        )
         anchor_frames = integer(
             recovery.get("keypointrcnn_v4a_anchor_frames"),
             "anchor frames",
         )
         filled = integer(recovery.get("keypointrcnn_fill_candidates"), "fill candidates")
-        unanchored = anchor_frames == 0 and filled > 0
-        if unanchored:
-            unanchored_filled += 1
+        anchor_supported = _anchor_supported(anchor_frames, final_valid)
+        weakly_anchored = filled > 0 and not anchor_supported
+        zero_anchor = filled > 0 and anchor_frames == 0
+        if zero_anchor:
+            zero_anchor_filled += 1
+        if weakly_anchored:
+            weakly_anchored_filled += 1
             if not periodic:
-                unanchored_filled_low_periodicity += 1
+                weakly_anchored_filled_low_periodicity += 1
         video_hash = hashlib.sha256(record.video_id.encode("utf-8")).hexdigest()
         paired = paired_by_hash[video_hash]
         reference_valid = integer(
@@ -534,6 +611,8 @@ def audit_full337(
         transition_rates.append(transition_rate)
         boundary_jumps.extend(jumps)
         period_confidences.append(confidence)
+        eligible_velocity_fractions.append(eligible_fraction)
+        period_velocity_pair_counts.append(velocity_pair_count)
         periodic_track_flags.append(periodic)
         contiguous_cycle_flags.append(contiguous)
         diagnostic_rows.append(
@@ -544,14 +623,22 @@ def audit_full337(
                 "final_valid_frames": final_valid,
                 "source_coverage": coverage,
                 "longest_run_fraction": longest_fraction,
+                "longest_same_origin_valid_run": longest_same_origin,
                 "mask_transition_rate": transition_rate,
                 "base_fill_boundary_jump_maximum": max(jumps, default=0.0),
                 "period_frames": period,
                 "period_confidence": confidence,
+                "period_velocity_pair_count": velocity_pair_count,
+                "eligible_velocity_fraction": eligible_fraction,
                 "periodic_track": periodic,
                 "contiguous_cycle_supported": contiguous,
                 "v4a_anchor_frames": anchor_frames,
-                "unanchored_filled": unanchored,
+                "anchor_fraction_of_final_valid_frames": (
+                    anchor_frames / final_valid if final_valid > 0 else 0.0
+                ),
+                "anchor_supported": anchor_supported,
+                "weakly_anchored_filled": weakly_anchored,
+                "zero_anchor_filled": zero_anchor,
                 "cache_origin": expected_origin,
             }
         )
@@ -582,13 +669,23 @@ def audit_full337(
     periodicity_metrics: dict[str, Any] = {
         "period_confidence_p25": _percentile(period_confidences, 0.25),
         "period_confidence_median": _percentile(period_confidences, 0.50),
+        "eligible_velocity_fraction_p10": _percentile(eligible_velocity_fractions, 0.10),
+        "period_velocity_pair_count_p10": _percentile(period_velocity_pair_counts, 0.10),
         "periodic_track_video_fraction": float(np.mean(periodic_track_flags)),
-        "periodic_track_confidence_minimum": 0.03,
+        "periodic_track_confidence_minimum": periodic_confidence_minimum,
+        "periodicity_coordinates": "xy_only",
+        "velocity_pair_policy": "adjacent_both_valid_and_same_extractor_origin_only",
     }
     anchor_metrics: dict[str, Any] = {
-        "unanchored_filled_video_total": unanchored_filled,
-        "unanchored_filled_video_fraction": unanchored_filled / 337,
-        "unanchored_filled_low_periodicity_video_total": unanchored_filled_low_periodicity,
+        "minimum_anchor_frames": 2,
+        "minimum_anchor_fraction_of_final_valid_frames": 0.02,
+        "zero_anchor_filled_video_total": zero_anchor_filled,
+        "zero_anchor_filled_video_fraction": zero_anchor_filled / 337,
+        "weakly_anchored_filled_video_total": weakly_anchored_filled,
+        "weakly_anchored_filled_video_fraction": weakly_anchored_filled / 337,
+        "weakly_anchored_filled_low_periodicity_video_total": (
+            weakly_anchored_filled_low_periodicity
+        ),
     }
     integrity_metrics: dict[str, Any] = {
         "invariant_failure_total": invariant_failures,
@@ -677,7 +774,6 @@ def audit_full337(
             ),
         ),
     }
-    periodicity_thresholds = mapping(gate.get("periodicity_thresholds"), "period thresholds")
     periodicity_criteria = {
         "period_confidence_p25": _criterion(
             periodicity_metrics["period_confidence_p25"],
@@ -694,18 +790,38 @@ def audit_full337(
             relation="at_least",
             threshold=float(periodicity_thresholds["periodic_track_video_fraction_minimum"]),
         ),
+        "eligible_velocity_fraction_p10": _criterion(
+            periodicity_metrics["eligible_velocity_fraction_p10"],
+            relation="at_least",
+            threshold=float(
+                periodicity_thresholds["eligible_velocity_fraction_p10_minimum"]
+            ),
+        ),
+        "period_velocity_pair_count_p10": _criterion(
+            periodicity_metrics["period_velocity_pair_count_p10"],
+            relation="at_least",
+            threshold=int(
+                periodicity_thresholds["period_velocity_pair_count_p10_minimum"]
+            ),
+        ),
     }
     anchor_thresholds = mapping(gate.get("anchor_risk_thresholds"), "anchor thresholds")
     anchor_criteria = {
-        "unanchored_filled_video_fraction": _criterion(
-            anchor_metrics["unanchored_filled_video_fraction"],
+        "weakly_anchored_filled_video_fraction": _criterion(
+            anchor_metrics["weakly_anchored_filled_video_fraction"],
             relation="at_most",
-            threshold=float(anchor_thresholds["unanchored_filled_video_fraction_maximum"]),
+            threshold=float(
+                anchor_thresholds["weakly_anchored_filled_video_fraction_maximum"]
+            ),
         ),
-        "unanchored_filled_low_periodicity_video_total": _criterion(
-            unanchored_filled_low_periodicity,
+        "weakly_anchored_filled_low_periodicity_video_total": _criterion(
+            weakly_anchored_filled_low_periodicity,
             relation="at_most",
-            threshold=int(anchor_thresholds["unanchored_filled_low_periodicity_video_maximum"]),
+            threshold=int(
+                anchor_thresholds[
+                    "weakly_anchored_filled_low_periodicity_video_maximum"
+                ]
+            ),
         ),
     }
     integrity_thresholds = mapping(gate.get("integrity_thresholds"), "integrity thresholds")
@@ -756,6 +872,9 @@ def audit_full337(
         "protocol": "ucfrep_526",
         "split": "train",
         "label_free": True,
+        "measurement_protocol": dict(
+            mapping(gate.get("measurement_protocol"), "full337 measurement protocol")
+        ),
         "passed": bool(passed),
         "baseline_training_authorized": bool(passed),
         "training_authorization_scope": "baseline-training-with-exact-full337-v4d-pose-cache",

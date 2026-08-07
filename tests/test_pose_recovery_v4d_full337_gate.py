@@ -12,10 +12,13 @@ SERVER = ROOT / "scripts" / "server"
 sys.path.insert(0, str(SERVER))
 
 from audit_pose_recovery_v4d_full337 import (  # noqa: E402
+    _anchor_supported,
     _base_fill_boundary_jumps,
     _decision_receipt,
     _longest_run,
+    _longest_same_origin_run,
     _mask_transition_rate,
+    _period_evidence,
 )
 from pose_recovery_v4d_full337_contract import (  # noqa: E402
     SAME39_AUDIT_SHA256,
@@ -26,7 +29,7 @@ from pose_recovery_v4d_full337_contract import (  # noqa: E402
     validate_full337_gate,
 )
 
-GATE_SHA256 = "c2b322605e404daa51ccb0a1dba2df3c56d5711ab958ee4c4ec44b9265539146"
+GATE_SHA256 = "304af8669703a73bf3d953e19848633986b682d478ee3a5f8be78114c26f11b8"
 
 
 def test_full337_gate_is_precommitted_and_retains_original_coverage_thresholds() -> None:
@@ -39,6 +42,16 @@ def test_full337_gate_is_precommitted_and_retains_original_coverage_thresholds()
         "output_independent_thresholds": True,
         "same39_authorizes_extraction_only": True,
         "full337_pass_required_for_baseline_training": True,
+    }
+    assert gate["measurement_protocol"] == {
+        "periodicity_coordinates": "xy_only",
+        "periodicity_signal": "precomputed_pose_velocity_vectors",
+        "eligible_velocity_pair_policy": (
+            "adjacent_both_valid_and_same_extractor_origin_only"
+        ),
+        "excluded_velocity_pairs": ["invalid_gap", "base_to_fill", "fill_to_base"],
+        "minimum_anchor_frames": 2,
+        "minimum_anchor_fraction_of_final_valid_frames": 0.02,
     }
     assert gate["coverage_thresholds"] == {
         "v4_zero_video_maximum": 8,
@@ -72,8 +85,12 @@ def test_v2_authorization_is_extraction_only_and_ignores_projection_for_decision
     assert '"baseline_training_authorized": False' in signer
     assert '"training_runner_must_reject": True' in signer
     assert '"projection_consulted_for_decision": False' in signer
-    assert 'audit.get("passed") is False' in contract
-    assert 'audit.get("full337_pose_extraction_authorized") is False' in contract
+    failed_pilot_validator = contract.split(
+        "def validate_same39_failed_pilot", maxsplit=1
+    )[1].split("def validate_same39_authorization_v2", maxsplit=1)[0]
+    assert 'audit.get("passed") is False' in failed_pilot_validator
+    assert 'audit.get("full337_pose_extraction_authorized") is False' in failed_pilot_validator
+    assert 'audit.get("projected_full337_gate_passed")' not in failed_pilot_validator
     assert "projected_criteria" not in signer
     assert "longest_run_fraction_p10" not in signer
 
@@ -106,6 +123,30 @@ def test_shells_keep_authorizer_cpu_only_and_full_extraction_on_canonical_gpu1()
     assert "gpu1.lock" in full_shell
     assert "--network none" in authorization_shell
     assert "--network none" in full_shell
+    assert '--workdir /workspace "$IMAGE_ID"' in authorization_shell
+    assert full_shell.count('--workdir /workspace "$IMAGE_ID"') == 2
+    assert "actual container image-ID mismatch" in authorization_shell
+    assert "post-run image-ID mismatch" in authorization_shell
+    assert "extract actual image-ID mismatch" in full_shell
+    assert "extract post-run image-ID mismatch" in full_shell
+    assert "gate actual image-ID mismatch" in full_shell
+    assert "gate post-run image-ID mismatch" in full_shell
+    assert (
+        authorization_shell.index('mkdir -- "$RUN_ROOT"')
+        < authorization_shell.index("trap finalize EXIT")
+        < authorization_shell.index('mkdir -- "$SOURCE_EXPORT"')
+    )
+    assert (
+        full_shell.index('mkdir -- "$RUN_ROOT"')
+        < full_shell.index("trap finalize EXIT")
+        < full_shell.index('mkdir -- "$SOURCE_EXPORT"')
+    )
+    assert '! -e "$AUDIT_DIR/run.receipt.json"' in full_shell
+    assert '&& ! -e "$TRAIN_DENIAL"' not in full_shell
+    assert (
+        "pams_pose_recovery_v4d_full337_extraction_authorization_v2_run_receipt"
+        in authorization_shell
+    )
     assert "--mount \"type=bind,src=${VIDEOS}" in full_shell
     gate_create = full_shell.split("docker create --name \"$GATE_NAME\"", maxsplit=1)[1]
     assert "src=${VIDEOS}" not in gate_create
@@ -125,6 +166,35 @@ def test_track_helpers_are_deterministic_and_boundary_specific() -> None:
     jumps = _base_fill_boundary_jumps(final_xyz, final_mask, base_mask)
     assert len(jumps) == 1
     assert np.isclose(jumps[0], np.sqrt((0.3**2) / 2.0))
+    assert _longest_same_origin_run(final_mask, base_mask) == 2
+
+
+def test_period_evidence_is_xy_only_and_excludes_extractor_boundaries() -> None:
+    frames = 40
+    pattern = np.asarray([0.0, 1.0, 0.0, -1.0], dtype=np.float32)
+    xyz = np.zeros((frames, 33, 3), dtype=np.float32)
+    xyz[:, :, 0] = np.resize(pattern, frames)[:, None]
+    final_mask = np.ones(frames, dtype=np.bool_)
+    base_mask = np.arange(frames) < 20
+    baseline = _period_evidence(xyz, final_mask, base_mask)
+
+    changed = xyz.copy()
+    changed[20:, :, :2] += 256.0
+    changed[:, :, 2] = np.arange(frames, dtype=np.float32)[:, None] * 1000.0
+    observed = _period_evidence(changed, final_mask, base_mask)
+
+    assert np.allclose(observed[:2], baseline[:2])
+    assert observed[2] == baseline[2] == 38
+    assert observed[3] == baseline[3] == 38 / 39
+
+
+def test_anchor_support_requires_two_frames_and_two_percent() -> None:
+    assert not _anchor_supported(0, 100)
+    assert not _anchor_supported(1, 20)
+    assert not _anchor_supported(2, 101)
+    assert _anchor_supported(2, 100)
+    assert _anchor_supported(3, 101)
+    assert not _anchor_supported(5, 0)
 
 
 def _audit_fixture(*, passed: bool) -> dict[str, Any]:

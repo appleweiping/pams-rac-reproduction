@@ -27,7 +27,7 @@ readonly SOURCE_REVISION="$(git -C "$REPOSITORY_ROOT" rev-parse HEAD^{commit})"
 
 readonly IMAGE='pams-rac:5e18274a5353'
 readonly IMAGE_ID='sha256:0a4d42c2d9911f147a17860e4e15095746b21c4e618e4fc1b20b62dd443c5898'
-readonly GATE_SHA256='c2b322605e404daa51ccb0a1dba2df3c56d5711ab958ee4c4ec44b9265539146'
+readonly GATE_SHA256='304af8669703a73bf3d953e19848633986b682d478ee3a5f8be78114c26f11b8'
 readonly CONFIG_SHA256='9933126d16735d42108203f512168e0eb438434f954fbcc969c5db622f5b6073'
 readonly CONFIG_FINGERPRINT='587ad8a427e6d387a23b142e57cfac4a8bd49ffed93176b477000aeb2c2a5125'
 readonly POSE_FINGERPRINT='4cc1f905cfb3484dccc1efc480e3fa59e4a106ffbe20528a85201a3fbd85b5d8'
@@ -60,6 +60,7 @@ readonly SAME39_LEDGER="${SAME39_ROOT}/ledgers/same39.json"
 readonly SAME39_SELECTION="${SAME39_ROOT}/audit/selection.json"
 readonly SAME39_CACHE="${SAME39_ROOT}/pose-cache"
 readonly EXTRACTION_AUTH="${EXTRACTION_AUTH_ROOT}/authorization/extraction.authorization.json"
+readonly EXTRACTION_AUTH_RUN_RECEIPT="${EXTRACTION_AUTH_ROOT}/audit/run.receipt.json"
 readonly MODEL_ASSET="/media/lenovo/data2/pams-rac/assets/torchvision/${MODEL_FILENAME}"
 readonly RUN_PARENT='/media/lenovo/data2/pams-rac/runs/pose-recovery-v4d-full337'
 readonly RUN_ROOT="${RUN_PARENT}/${SOURCE_REVISION:0:12}-${PAMS_V4D_FULL337_ATTEMPT_ID}"
@@ -85,29 +86,77 @@ require_sha256 "$SAME39_AUDIT" "$SAME39_AUDIT_SHA256" same39-audit
 require_sha256 "$SAME39_LEDGER" "$SAME39_LEDGER_SHA256" same39-ledger
 require_sha256 "$SAME39_SELECTION" "$SAME39_SELECTION_SHA256" same39-selection
 require_sha256 "$EXTRACTION_AUTH" "$PAMS_V4D_EXPECTED_EXTRACTION_AUTH_SHA256" extraction-authorization
+[[ -f "$EXTRACTION_AUTH_RUN_RECEIPT" ]] || fail 'extraction-authorization wrapper receipt missing'
 require_sha256 "$MODEL_ASSET" "$MODEL_SHA256" model-asset
 [[ -z "$(find "$SAME39_ROOT" -xdev -perm /022 -print -quit)" ]] || fail 'same39 root is not sealed'
 [[ -z "$(find "$EXTRACTION_AUTH_ROOT" -xdev -perm /022 -print -quit)" ]] || fail 'authorization root is not sealed'
-python3 - "$EXTRACTION_AUTH" "$SOURCE_REVISION" <<'PY'
-import json,sys
-x=json.load(open(sys.argv[1]))
-assert x['source_revision']==sys.argv[2]
+python3 - "$EXTRACTION_AUTH" "$EXTRACTION_AUTH_RUN_RECEIPT" "$PAMS_V4D_EXPECTED_EXTRACTION_AUTH_SHA256" "$SOURCE_REVISION" "$IMAGE_ID" <<'PY'
+import hashlib,json,sys
+x=json.load(open(sys.argv[1])); r=json.load(open(sys.argv[2]))
+assert hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest()==sys.argv[3]
+assert x['source_revision']==sys.argv[4]
 assert x['authorization_scope']=='full337_pose_extraction_only'
 assert x['full337_pose_extraction_authorized'] is True
 assert x['baseline_training_authorized'] is False
 assert x['training_runner_must_reject'] is True
+assert r['artifact_type']=='pams_pose_recovery_v4d_full337_extraction_authorization_v2_run_receipt'
+assert r['source_revision']==sys.argv[4]
+assert r['container_image_id']==r['observed_container_image_id_pre']==r['observed_container_image_id_post']==sys.argv[5]
+assert r['extraction_authorization_sha256']==sys.argv[3]
+assert r['baseline_training_authorized'] is False and r['training_runner_must_reject'] is True
 PY
+readonly EXTRACT_NAME="pams-v4d-full337-${SOURCE_REVISION:0:12}-${PAMS_V4D_FULL337_ATTEMPT_ID,,}"
+readonly GATE_NAME="${EXTRACT_NAME}-gate"
+GPU_UUID='unavailable'
+GPU_USED_MIB='-1'
+GPU_UTIL_PERCENT='-1'
+FAILURE_PHASE='run-root-initialize'
+cleanup() { docker rm -f "$EXTRACT_NAME" "$GATE_NAME" >/dev/null 2>&1 || true; }
+finalize() {
+  local status="$?"
+  trap - EXIT
+  cleanup
+  if [[ "$status" -ne 0 && -d "$RUN_ROOT" && ! -e "$AUDIT_DIR/failure.receipt.json" && ! -e "$AUDIT_DIR/run.receipt.json" ]]; then
+    python3 - "$RUN_ROOT" "$SOURCE_REVISION" "$IMAGE_ID" "$FAILURE_PHASE" "$status" \
+      "$GPU_UUID" "$GPU_USED_MIB" "$GPU_UTIL_PERCENT" <<'PY'
+import hashlib,json,sys
+from pathlib import Path
+root=Path(sys.argv[1]); artifacts={}
+for relative in ('audit/extract.inspect.pre.json','audit/extract.inspect.post.json','audit/gate.inspect.pre.json','audit/gate.inspect.post.json','ledgers/train337.json','gate-output/full337-gate.json','gate-output/training.denial.json'):
+ path=root/relative
+ if path.is_file(): artifacts[relative]=hashlib.sha256(path.read_bytes()).hexdigest()
+oom=False
+inspect=root/'audit/extract.inspect.post.json'
+if inspect.is_file(): oom=bool(json.loads(inspect.read_text())[0]['State'].get('OOMKilled'))
+payload={'schema_version':1,'artifact_type':'pams_pose_recovery_v4d_full337_failure_receipt',
+ 'source_revision':sys.argv[2],'container_image_id':sys.argv[3],'failed_phase':sys.argv[4],
+ 'exit_status':int(sys.argv[5]),'oom_killed':oom,'baseline_training_authorized':False,
+ 'physical_gpu_index':1,'gpu_uuid':sys.argv[6],'gpu_memory_used_mib_preflight':int(sys.argv[7]),
+ 'gpu_utilization_percent_preflight':int(sys.argv[8]),'artifacts':artifacts,
+ 'observed_container_image_ids':sorted({
+   json.loads((root/relative).read_text())[0]['Image']
+   for relative in ('audit/extract.inspect.pre.json','audit/extract.inspect.post.json','audit/gate.inspect.pre.json','audit/gate.inspect.post.json')
+   if (root/relative).is_file()})}
+target=root/'audit/failure.receipt.json'; target.parent.mkdir(parents=True,exist_ok=True)
+with target.open('x',encoding='utf-8',newline='\n') as f:
+ json.dump(payload,f,indent=2,sort_keys=True,allow_nan=False); f.write('\n')
+PY
+  fi
+  [[ ! -d "$RUN_ROOT" ]] || chmod -R a-w -- "$RUN_ROOT"
+  exit "$status"
+}
 [[ ! -e "$RUN_ROOT" ]] || fail "run root already exists: ${RUN_ROOT}"
 mkdir -p -- "$RUN_PARENT"
-mkdir -- "$RUN_ROOT" "$SOURCE_EXPORT" "$CACHE_DIR" "$LEDGER_DIR" "$AUDIT_DIR" "$GATE_OUTPUT_DIR" "$LOG_DIR"
+mkdir -- "$RUN_ROOT"
+trap finalize EXIT
+mkdir -- "$SOURCE_EXPORT" "$CACHE_DIR" "$LEDGER_DIR" "$AUDIT_DIR" "$GATE_OUTPUT_DIR" "$LOG_DIR"
 git -C "$REPOSITORY_ROOT" archive "$SOURCE_REVISION" | tar -x -C "$SOURCE_EXPORT"
 chmod -R a-w -- "$SOURCE_EXPORT"
 require_sha256 "$SOURCE_EXPORT/configs/gates/pams_pose_recovery_v4d_full337.yaml" "$GATE_SHA256" full337-gate
 require_sha256 "$SOURCE_EXPORT/configs/experiments/pams_pose_recovery_v4d.yaml" "$CONFIG_SHA256" v4d-config
 
-readonly EXTRACT_NAME="pams-v4d-full337-${SOURCE_REVISION:0:12}-${PAMS_V4D_FULL337_ATTEMPT_ID,,}"
-readonly GATE_NAME="${EXTRACT_NAME}-gate"
 readonly GPU_LOCK='/media/lenovo/data2/pams-rac/.pams-gpu-locks/gpu1.lock'
+FAILURE_PHASE='gpu-lock-preflight'
 mkdir -p -- "$(dirname -- "$GPU_LOCK")"
 exec 9>"$GPU_LOCK"
 flock -n 9 || fail 'physical GPU1 lock is already held'
@@ -120,36 +169,6 @@ GPU_UTIL_PERCENT="${GPU_UTIL_PERCENT//[[:space:]]/}"
 [[ "$GPU_UTIL_PERCENT" == 0 ]] || fail 'GPU1 utilization preflight failed'
 
 FAILURE_PHASE='container-create'
-cleanup() { docker rm -f "$EXTRACT_NAME" "$GATE_NAME" >/dev/null 2>&1 || true; }
-finalize() {
-  local status="$?"
-  trap - EXIT
-  cleanup
-  if [[ "$status" -ne 0 && -d "$RUN_ROOT" && ! -e "$AUDIT_DIR/failure.receipt.json" && ! -e "$TRAIN_DENIAL" ]]; then
-    python3 - "$RUN_ROOT" "$SOURCE_REVISION" "$IMAGE_ID" "$FAILURE_PHASE" "$status" \
-      "$GPU_UUID" "$GPU_USED_MIB" "$GPU_UTIL_PERCENT" <<'PY'
-import hashlib,json,sys
-from pathlib import Path
-root=Path(sys.argv[1]); artifacts={}
-for relative in ('audit/extract.inspect.pre.json','audit/extract.inspect.post.json','audit/gate.inspect.pre.json','audit/gate.inspect.post.json','ledgers/train337.json','gate-output/full337-gate.json'):
- path=root/relative
- if path.is_file(): artifacts[relative]=hashlib.sha256(path.read_bytes()).hexdigest()
-oom=False
-inspect=root/'audit/extract.inspect.post.json'
-if inspect.is_file(): oom=bool(json.loads(inspect.read_text())[0]['State'].get('OOMKilled'))
-payload={'schema_version':1,'artifact_type':'pams_pose_recovery_v4d_full337_failure_receipt',
- 'source_revision':sys.argv[2],'container_image_id':sys.argv[3],'failed_phase':sys.argv[4],
- 'exit_status':int(sys.argv[5]),'oom_killed':oom,'baseline_training_authorized':False,
- 'physical_gpu_index':1,'gpu_uuid':sys.argv[6],'gpu_memory_used_mib_preflight':int(sys.argv[7]),
- 'gpu_utilization_percent_preflight':int(sys.argv[8]),'artifacts':artifacts}
-with (root/'audit/failure.receipt.json').open('x',encoding='utf-8',newline='\n') as f:
- json.dump(payload,f,indent=2,sort_keys=True,allow_nan=False); f.write('\n')
-PY
-  fi
-  [[ ! -d "$RUN_ROOT" ]] || chmod -R a-w -- "$RUN_ROOT"
-  exit "$status"
-}
-trap finalize EXIT
 
 docker create --name "$EXTRACT_NAME" --network none --read-only --cap-drop ALL \
   --security-opt no-new-privileges:true --pids-limit 4096 --memory 48g --cpus 12 \
@@ -176,7 +195,7 @@ docker create --name "$EXTRACT_NAME" --network none --read-only --cap-drop ALL \
   --mount "type=bind,src=${EXTRACTION_AUTH},dst=/pams/extraction.authorization.json,readonly" \
   --mount "type=bind,src=${MODEL_ASSET},dst=/pams/torch-home/hub/checkpoints/${MODEL_FILENAME},readonly" \
   --mount "type=bind,src=${CACHE_DIR},dst=/pams/output-cache" \
-  --mount "type=bind,src=${LEDGER_DIR},dst=/pams/ledgers" --workdir /workspace "$IMAGE" \
+  --mount "type=bind,src=${LEDGER_DIR},dst=/pams/ledgers" --workdir /workspace "$IMAGE_ID" \
   python scripts/server/run_pose_recovery_v4d_full337.py \
   --source-revision "$SOURCE_REVISION" --container-image-id "$IMAGE_ID" \
   --gate-sha256 "$GATE_SHA256" --extraction-authorization-sha256 "$PAMS_V4D_EXPECTED_EXTRACTION_AUTH_SHA256" \
@@ -193,12 +212,13 @@ docker create --name "$EXTRACT_NAME" --network none --read-only --cap-drop ALL \
   --same39-cache-dir /pams/same39/cache --output-cache-dir /pams/output-cache \
   --output-ledger /pams/ledgers/train337.json >"${AUDIT_DIR}/extract.create-id.txt"
 docker inspect "$EXTRACT_NAME" >"${AUDIT_DIR}/extract.inspect.pre.json"
-python3 - "$AUDIT_DIR/extract.inspect.pre.json" <<'PY'
+python3 - "$AUDIT_DIR/extract.inspect.pre.json" "$IMAGE_ID" <<'PY'
 import json,sys
 x=json.load(open(sys.argv[1]))[0]; h=x['HostConfig']; mounts={m['Destination']:m['RW'] for m in x['Mounts']}
 def req(v,m):
  if not v: raise SystemExit(m)
 req(h['ReadonlyRootfs'] and h['NetworkMode']=='none' and 'ALL' in h['CapDrop'],'sandbox mismatch')
+req(x['Image']==sys.argv[2],'extract actual image-ID mismatch')
 req(h['DeviceRequests'][0]['DeviceIDs']==['1'],'GPU1 mapping mismatch')
 for p in ('/workspace','/pams/videos','/pams/inputs.json','/pams/commitment.json','/pams/v4a-cache','/pams/same39/cache','/pams/extraction.authorization.json'):
  req(mounts.get(p) is False,f'non-read-only input: {p}')
@@ -211,6 +231,11 @@ docker start -a "$EXTRACT_NAME" 2>&1 | tee "$LOG_DIR/extract.log"
 EXTRACT_STATUS="${PIPESTATUS[0]}"
 set -e
 docker inspect "$EXTRACT_NAME" >"${AUDIT_DIR}/extract.inspect.post.json"
+python3 - "$AUDIT_DIR/extract.inspect.post.json" "$IMAGE_ID" <<'PY'
+import json,sys
+x=json.load(open(sys.argv[1]))[0]
+if x['Image']!=sys.argv[2]: raise SystemExit('extract post-run image-ID mismatch')
+PY
 docker rm "$EXTRACT_NAME" >/dev/null
 [[ "$EXTRACT_STATUS" -eq 0 ]] || fail "extract container failed with status ${EXTRACT_STATUS}"
 
@@ -234,7 +259,7 @@ docker create --name "$GATE_NAME" --network none --read-only --cap-drop ALL \
   --mount "type=bind,src=${EXTRACTION_AUTH},dst=/pams/extraction.authorization.json,readonly" \
   --mount "type=bind,src=${CACHE_DIR},dst=/pams/candidate-cache,readonly" \
   --mount "type=bind,src=${LEDGER},dst=/pams/candidate-ledger.json,readonly" \
-  --mount "type=bind,src=${GATE_OUTPUT_DIR},dst=/pams/output" --workdir /workspace "$IMAGE" \
+  --mount "type=bind,src=${GATE_OUTPUT_DIR},dst=/pams/output" --workdir /workspace "$IMAGE_ID" \
   python scripts/server/audit_pose_recovery_v4d_full337.py \
   --source-revision "$SOURCE_REVISION" --container-image-id "$IMAGE_ID" \
   --gate-sha256 "$GATE_SHA256" --extraction-authorization-sha256 "$PAMS_V4D_EXPECTED_EXTRACTION_AUTH_SHA256" \
@@ -251,12 +276,13 @@ docker create --name "$GATE_NAME" --network none --read-only --cap-drop ALL \
   --authorization-output /pams/output/training.authorization.json \
   --denial-output /pams/output/training.denial.json >"${AUDIT_DIR}/gate.create-id.txt"
 docker inspect "$GATE_NAME" >"${AUDIT_DIR}/gate.inspect.pre.json"
-python3 - "$AUDIT_DIR/gate.inspect.pre.json" <<'PY'
+python3 - "$AUDIT_DIR/gate.inspect.pre.json" "$IMAGE_ID" <<'PY'
 import json,sys
 x=json.load(open(sys.argv[1]))[0]; h=x['HostConfig']; mounts={m['Destination']:m['RW'] for m in x['Mounts']}
 def req(v,m):
  if not v: raise SystemExit(m)
 req(h['ReadonlyRootfs'] and h['NetworkMode']=='none' and 'ALL' in h['CapDrop'],'gate sandbox mismatch')
+req(x['Image']==sys.argv[2],'gate actual image-ID mismatch')
 req(not h.get('DeviceRequests'),'label-free gate must not have GPU')
 req(mounts.get('/pams/output') is True,'gate output not writable')
 for destination,writable in mounts.items():
@@ -270,6 +296,11 @@ docker start -a "$GATE_NAME" 2>&1 | tee "$LOG_DIR/gate.log"
 GATE_STATUS="${PIPESTATUS[0]}"
 set -e
 docker inspect "$GATE_NAME" >"${AUDIT_DIR}/gate.inspect.post.json"
+python3 - "$AUDIT_DIR/gate.inspect.post.json" "$IMAGE_ID" <<'PY'
+import json,sys
+x=json.load(open(sys.argv[1]))[0]
+if x['Image']!=sys.argv[2]: raise SystemExit('gate post-run image-ID mismatch')
+PY
 docker rm "$GATE_NAME" >/dev/null
 [[ "$GATE_STATUS" -eq 0 || "$GATE_STATUS" -eq 1 ]] || fail "gate container failed with status ${GATE_STATUS}"
 [[ -f "$GATE_AUDIT" ]] || fail 'full337 gate audit missing'
@@ -279,7 +310,8 @@ else
   [[ -f "$TRAIN_DENIAL" && ! -e "$TRAIN_AUTH" ]] || fail 'FAIL denial artifact mismatch'
 fi
 python3 - "$RUN_ROOT" "$SOURCE_REVISION" "$IMAGE_ID" "$GATE_STATUS" \
-  "$GPU_UUID" "$GPU_USED_MIB" "$GPU_UTIL_PERCENT" <<'PY'
+  "$GPU_UUID" "$GPU_USED_MIB" "$GPU_UTIL_PERCENT" "$EXTRACTION_AUTH_RUN_RECEIPT" \
+  "$EXTRACTION_AUTH" <<'PY'
 import hashlib,json,sys
 from pathlib import Path
 root=Path(sys.argv[1]); status=int(sys.argv[4]); passed=status==0
@@ -287,6 +319,9 @@ def digest(p): return hashlib.sha256(p.read_bytes()).hexdigest()
 decision=root/'gate-output'/('training.authorization.json' if passed else 'training.denial.json')
 x=json.loads(decision.read_text())
 assert x['baseline_training_authorized'] is passed
+inspect_paths=[root/'audit/extract.inspect.pre.json',root/'audit/extract.inspect.post.json',root/'audit/gate.inspect.pre.json',root/'audit/gate.inspect.post.json']
+observed=[json.loads(path.read_text())[0]['Image'] for path in inspect_paths]
+assert all(value==sys.argv[3] for value in observed)
 payload={'schema_version':1,'artifact_type':'pams_pose_recovery_v4d_full337_run_receipt',
  'source_revision':sys.argv[2],'container_image_id':sys.argv[3],'gate_passed':passed,
  'baseline_training_authorized':passed,'training_decision_artifact':decision.name,
@@ -294,6 +329,10 @@ payload={'schema_version':1,'artifact_type':'pams_pose_recovery_v4d_full337_run_
  'gpu_utilization_percent_preflight':int(sys.argv[7]),'ledger_sha256':digest(root/'ledgers/train337.json'),
  'gate_audit_sha256':digest(root/'gate-output/full337-gate.json'),
  'training_decision_sha256':digest(decision),'extraction_only_authorization_was_not_training_authority':True}
+payload['observed_container_image_ids']=observed
+payload['container_inspect_sha256']={path.name:digest(path) for path in inspect_paths}
+payload['extraction_authorization_wrapper_receipt_sha256']=digest(Path(sys.argv[8]))
+payload['extraction_authorization_sha256']=digest(Path(sys.argv[9]))
 with (root/'audit/run.receipt.json').open('x',encoding='utf-8',newline='\n') as f:
  json.dump(payload,f,indent=2,sort_keys=True,allow_nan=False); f.write('\n')
 PY
