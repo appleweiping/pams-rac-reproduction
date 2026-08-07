@@ -100,6 +100,7 @@ class PoseConfig(StrictModel):
         "official-segment-full-timeline-v1",
         "official-segment-heavy-missing-retry-full-timeline-v4a",
         "official-segment-heavy-video-fill-missing-full-timeline-v4b",
+        "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c",
     ] = "detected-span-minmax-zero-span-invalid-v2"
     model_id: str = "mediapipe-pose-0.10.14"
     model_complexity: int = Field(default=1, ge=0, le=2)
@@ -127,6 +128,7 @@ class PoseConfig(StrictModel):
                 "official-segment-full-timeline-v1",
                 "official-segment-heavy-missing-retry-full-timeline-v4a",
                 "official-segment-heavy-video-fill-missing-full-timeline-v4b",
+                "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c",
             }
             and self.crop_to_detected_span
         ):
@@ -140,6 +142,7 @@ class PoseConfig(StrictModel):
                 "official-segment-full-timeline-v1",
                 "official-segment-heavy-missing-retry-full-timeline-v4a",
                 "official-segment-heavy-video-fill-missing-full-timeline-v4b",
+                "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c",
             }
             and self.incomplete_clip_policy != "error"
         ):
@@ -154,7 +157,11 @@ class PoseConfig(StrictModel):
             self.preprocessing_revision
             == "official-segment-heavy-video-fill-missing-full-timeline-v4b"
         )
-        recovery_revision = v4a_revision or v4b_revision
+        v4c_revision = (
+            self.preprocessing_revision
+            == "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c"
+        )
+        recovery_revision = v4a_revision or v4b_revision or v4c_revision
         if recovery_revision:
             if self.model_complexity != 1:
                 raise ValueError("v4 pass0 must use model_complexity=1")
@@ -169,14 +176,14 @@ class PoseConfig(StrictModel):
                 raise ValueError(
                     "v4a recovery requires static unsmoothed full-frame and ROI retries"
                 )
-            if v4b_revision and not (
+            if (v4b_revision or v4c_revision) and not (
                 not self.recovery.static_image_mode
                 and self.recovery.smooth_landmarks
                 and self.recovery.full_frame_retry
                 and not self.recovery.roi_retry
             ):
                 raise ValueError(
-                    "v4b recovery requires a smoothed full-timeline VIDEO pass without ROI"
+                    "v4b/v4c recovery requires a smoothed full-timeline VIDEO pass without ROI"
                 )
         elif self.recovery is not None:
             raise ValueError(

@@ -1543,6 +1543,7 @@ def pose_extract(
         from pams.pose import (
             OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
             RECOVERY_PREPROCESSING_REVISION,
+            TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION,
             VIDEO_RECOVERY_PREPROCESSING_REVISION,
             PoseExtractorConfig,
             PoseRecoveryExtractorConfig,
@@ -1618,6 +1619,7 @@ def pose_extract(
             in {
                 OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
                 RECOVERY_PREPROCESSING_REVISION,
+                TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION,
                 VIDEO_RECOVERY_PREPROCESSING_REVISION,
             }
         )
@@ -1688,10 +1690,15 @@ def pose_extract(
                 maximum_gap_seconds=recovery.maximum_gap_seconds,
                 pose_coordinate_interpolation=recovery.pose_coordinate_interpolation,
                 recovery_mode=(
-                    "full-timeline-video-fill-missing-v4b"
+                    "missing-frame-static-plus-short-roi-v4a"
                     if config.pose.preprocessing_revision
-                    == VIDEO_RECOVERY_PREPROCESSING_REVISION
-                    else "missing-frame-static-plus-short-roi-v4a"
+                    == RECOVERY_PREPROCESSING_REVISION
+                    else (
+                        "full-timeline-video-fill-missing-v4b"
+                        if config.pose.preprocessing_revision
+                        == VIDEO_RECOVERY_PREPROCESSING_REVISION
+                        else "tasks-video-multipose4-fill-missing-v4c"
+                    )
                 ),
             )
         summaries, failures = extract_many_with_failures(
@@ -1782,11 +1789,17 @@ def pose_extract(
                             **(
                                 {
                                     "recovery_mode": (
-                                        "full-timeline-video-fill-missing-v4b"
+                                        "tasks-video-multipose4-fill-missing-v4c"
+                                        if config.pose.preprocessing_revision
+                                        == TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION
+                                        else "full-timeline-video-fill-missing-v4b"
                                     )
                                 }
                                 if config.pose.preprocessing_revision
-                                == VIDEO_RECOVERY_PREPROCESSING_REVISION
+                                in {
+                                    VIDEO_RECOVERY_PREPROCESSING_REVISION,
+                                    TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION,
+                                }
                                 else {}
                             ),
                         }

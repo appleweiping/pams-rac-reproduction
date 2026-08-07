@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract the frozen train337 v4a long-tail union with v4b, without labels."""
+"""Extract the frozen train337 v4a long-tail union with v4b/v4c, without labels."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ from pams.data import (
     validate_pose_input_binding,
 )
 from pams.pose import (
+    TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION,
     VIDEO_RECOVERY_PREPROCESSING_REVISION,
     PoseExtractorConfig,
     PoseRecoveryExtractorConfig,
@@ -83,10 +84,17 @@ def run_pilot(
     """Run the deterministic coverage/longest-P10 union pilot."""
 
     config = load_config(config_path.resolve(strict=True))
-    _require(
-        config.pose.preprocessing_revision == VIDEO_RECOVERY_PREPROCESSING_REVISION,
-        "pilot config is not v4b",
-    )
+    if config.pose.preprocessing_revision == VIDEO_RECOVERY_PREPROCESSING_REVISION:
+        recovery_version = "v4b"
+        recovery_mode = "full-timeline-video-fill-missing-v4b"
+    elif (
+        config.pose.preprocessing_revision
+        == TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION
+    ):
+        recovery_version = "v4c"
+        recovery_mode = "tasks-video-multipose4-fill-missing-v4c"
+    else:
+        raise PilotError("pilot config is not a supported v4b/v4c recovery")
     recovery = config.pose.recovery
     _require(recovery is not None, "pilot config has no recovery settings")
     manifest = load_pose_input_manifest(train_input_path, validate_exact=True)
@@ -238,7 +246,7 @@ def run_pilot(
         maximum_gap_frames=recovery.maximum_gap_frames,
         maximum_gap_seconds=recovery.maximum_gap_seconds,
         pose_coordinate_interpolation=recovery.pose_coordinate_interpolation,
-        recovery_mode="full-timeline-video-fill-missing-v4b",
+        recovery_mode=recovery_mode,
     )
     summaries, failures = extract_many_with_failures(
         tuple(videos),
@@ -272,7 +280,9 @@ def run_pilot(
         cache_snapshot = snapshot.to_dict()
     ledger = {
         "schema_version": 2,
-        "artifact_type": "pams_pose_recovery_v4b_train337_long_tail_pilot_ledger",
+        "artifact_type": (
+            f"pams_pose_recovery_{recovery_version}_train337_long_tail_pilot_ledger"
+        ),
         "input_kind": "label_free_train337_hashed_long_tail_subset",
         "protocol": manifest.protocol,
         "split": "train",
@@ -287,7 +297,7 @@ def run_pilot(
         "pose_recovery": {
             "schema_version": 1,
             "preprocessing_revision": config.pose.preprocessing_revision,
-            "recovery_mode": "full-timeline-video-fill-missing-v4b",
+            "recovery_mode": recovery_mode,
             "heavy_model_id": recovery.heavy_model_id,
             "heavy_model_asset_sha256": recovery.heavy_model_asset_sha256,
             "temporal_resampling": recovery.temporal_resampling,
@@ -299,6 +309,7 @@ def run_pilot(
         "extracted": len(summaries),
         "skipped": 0,
         "failed": len(failures),
+        "recovery_version": recovery_version,
         "caches": [summary.to_dict() for summary in summaries],
         "failures": [failure.to_dict() for failure in failures],
     }
@@ -342,7 +353,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             selection_path=args.selection,
         )
     except (OSError, TypeError, ValueError, PilotError) as exc:
-        print(f"v4b pilot extraction failed: {exc}", file=sys.stderr)
+        print(f"v4 recovery pilot extraction failed: {exc}", file=sys.stderr)
         return 2
     print(json.dumps(result, sort_keys=True, allow_nan=False))
     return 0 if result["failed"] == 0 else 1

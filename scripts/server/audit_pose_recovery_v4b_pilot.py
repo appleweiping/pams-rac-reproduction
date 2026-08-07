@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Project the frozen train337 gate from a label-free v4b long-tail pilot."""
+"""Project the frozen train337 gate from a label-free v4b/v4c long-tail pilot."""
 
 from __future__ import annotations
 
@@ -158,10 +158,17 @@ def audit_pilot(
 
     gate = yaml.safe_load(gate_path.resolve(strict=True).read_text(encoding="utf-8"))
     _require(isinstance(gate, Mapping), "pilot gate must be a mapping")
-    _require(
-        gate.get("artifact_type") == "pams_pose_recovery_v4b_train337_long_tail_pilot_gate",
-        "unexpected pilot gate artifact type",
-    )
+    artifact_type = gate.get("artifact_type")
+    if artifact_type == "pams_pose_recovery_v4b_train337_long_tail_pilot_gate":
+        recovery_version = "v4b"
+        expected_recovery_mode = "full-timeline-video-fill-missing-v4b"
+        pose_binding_key = "v4b_pose_fingerprint"
+    elif artifact_type == "pams_pose_recovery_v4c_train337_long_tail_pilot_gate":
+        recovery_version = "v4c"
+        expected_recovery_mode = "tasks-video-multipose4-fill-missing-v4c"
+        pose_binding_key = "v4c_pose_fingerprint"
+    else:
+        raise PilotAuditError("unexpected pilot gate artifact type")
     _require(gate.get("split") == "train", "pilot gate split must be train")
     _require(gate.get("expected_pilot_records") == 39, "pilot gate must freeze 39 records")
     bindings = _mapping(gate.get("bindings"), "pilot gate bindings")
@@ -183,8 +190,8 @@ def audit_pilot(
     )
     _require(
         v4b_ledger.get("pose_fingerprint")
-        == _digest(bindings.get("v4b_pose_fingerprint"), "v4b pose fingerprint"),
-        "v4b pose fingerprint mismatch",
+        == _digest(bindings.get(pose_binding_key), "candidate pose fingerprint"),
+        "candidate pose fingerprint mismatch",
     )
     _require(
         v4b_ledger.get("selection_sha256")
@@ -195,6 +202,11 @@ def audit_pilot(
     _require(v4b_ledger.get("completed") == 39, "v4b pilot did not complete 39 records")
     _require(v4b_ledger.get("failed") == 0, "v4b pilot contains failures")
     _require(v4b_ledger.get("failures") == [], "v4b pilot failure list is not empty")
+    recovery_binding = _mapping(v4b_ledger.get("pose_recovery"), "candidate recovery binding")
+    _require(
+        recovery_binding.get("recovery_mode") == expected_recovery_mode,
+        "candidate recovery mode mismatch",
+    )
 
     selection_rows = selection.get("rows")
     _require(isinstance(selection_rows, list) and len(selection_rows) == 39, "selection rows mismatch")
@@ -281,7 +293,7 @@ def audit_pilot(
             and final_valid == pass0_valid + recovered == pass0_valid + heavy_fill
             and final_valid <= source_frames
             and longest <= final_valid
-            and recovery.get("recovery_mode") == "full-timeline-video-fill-missing-v4b"
+            and recovery.get("recovery_mode") == expected_recovery_mode
             and recovery.get("pass0_observations_preserved") is True
             and shared_error <= 1e-6
             and recovery.get("pose_coordinate_interpolation") is False
@@ -426,13 +438,18 @@ def audit_pilot(
     }
     return {
         "schema_version": 1,
-        "artifact_type": "pams_pose_recovery_v4b_train337_projected_pilot_audit",
+        "artifact_type": (
+            f"pams_pose_recovery_{recovery_version}_train337_projected_pilot_audit"
+        ),
         "protocol": "ucfrep_526",
         "split": "train",
         "label_free": True,
         "passed": all(bool(criterion["passed"]) for criterion in criteria.values()),
         "projection": {
-            "kind": "strict_pass0_only_lower_bound_plus_observed_39_record_v4b_pilot",
+            "kind": (
+                "strict_pass0_only_lower_bound_plus_observed_39_record_"
+                f"{recovery_version}_pilot"
+            ),
             "nonpilot_behavior": "pass0_only_count_with_tight_arrangement_free_longest_run_bound",
             "justification": (
                 "v4b does not retain v4a static/ROI recovery; therefore nonpilot rows use "
@@ -446,8 +463,11 @@ def audit_pilot(
             "v4a_paired_gate_sha256": _sha256_file(
                 v4a_paired_gate_path.resolve(strict=True)
             ),
-            "v4b_ledger_sha256": _sha256_file(v4b_ledger_path.resolve(strict=True)),
-            "v4b_pose_fingerprint": v4b_ledger.get("pose_fingerprint"),
+            "candidate_version": recovery_version,
+            "candidate_ledger_sha256": _sha256_file(
+                v4b_ledger_path.resolve(strict=True)
+            ),
+            "candidate_pose_fingerprint": v4b_ledger.get("pose_fingerprint"),
         },
         "pilot_invariants": {
             "record_total": 39,
@@ -489,7 +509,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         _write_exclusive(args.output, result)
     except (OSError, TypeError, ValueError, PilotAuditError) as exc:
-        print(f"v4b pilot audit failed: {exc}", file=sys.stderr)
+        print(f"v4 recovery pilot audit failed: {exc}", file=sys.stderr)
         return 2
     print(json.dumps(result["projected_metrics"], sort_keys=True, allow_nan=False))
     return 0 if result["passed"] else 1

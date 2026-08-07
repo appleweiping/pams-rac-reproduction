@@ -8,6 +8,7 @@ therefore do not require MediaPipe or OpenCV.
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
@@ -42,6 +43,9 @@ RECOVERY_PREPROCESSING_REVISION = (
 VIDEO_RECOVERY_PREPROCESSING_REVISION = (
     "official-segment-heavy-video-fill-missing-full-timeline-v4b"
 )
+TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION = (
+    "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c"
+)
 SUPPORTED_PREPROCESSING_REVISIONS = frozenset(
     {
         DETECTED_SPAN_PREPROCESSING_REVISION,
@@ -49,6 +53,7 @@ SUPPORTED_PREPROCESSING_REVISIONS = frozenset(
         OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
         RECOVERY_PREPROCESSING_REVISION,
         VIDEO_RECOVERY_PREPROCESSING_REVISION,
+        TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION,
     }
 )
 
@@ -109,6 +114,11 @@ class PoseRecoveryExtractorConfig:
                 raise ValueError("v4b heavy retry must be a smoothed VIDEO pass")
             if not self.full_frame_retry or self.roi_retry:
                 raise ValueError("v4b requires full-timeline observation without ROI retry")
+        elif self.recovery_mode == "tasks-video-multipose4-fill-missing-v4c":
+            if self.static_image_mode or not self.smooth_landmarks:
+                raise ValueError("v4c Tasks retry must be a VIDEO pass")
+            if not self.full_frame_retry or self.roi_retry:
+                raise ValueError("v4c requires full-timeline observation without ROI retry")
         else:
             raise ValueError("unsupported pose recovery mode")
         for name, value in (
@@ -172,6 +182,7 @@ class PoseExtractorConfig:
                 OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
                 RECOVERY_PREPROCESSING_REVISION,
                 VIDEO_RECOVERY_PREPROCESSING_REVISION,
+                TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION,
             }
             and self.crop_to_detected_span
         ):
@@ -185,6 +196,7 @@ class PoseExtractorConfig:
                 OFFICIAL_SEGMENT_PREPROCESSING_REVISION,
                 RECOVERY_PREPROCESSING_REVISION,
                 VIDEO_RECOVERY_PREPROCESSING_REVISION,
+                TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION,
             }
             and self.incomplete_clip_policy != "error"
         ):
@@ -194,6 +206,7 @@ class PoseExtractorConfig:
         recovery_revision = self.preprocessing_revision in {
             RECOVERY_PREPROCESSING_REVISION,
             VIDEO_RECOVERY_PREPROCESSING_REVISION,
+            TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION,
         }
         if recovery_revision:
             if self.model_complexity != 1:
@@ -203,7 +216,12 @@ class PoseExtractorConfig:
             expected_mode = (
                 "missing-frame-static-plus-short-roi-v4a"
                 if self.preprocessing_revision == RECOVERY_PREPROCESSING_REVISION
-                else "full-timeline-video-fill-missing-v4b"
+                else (
+                    "full-timeline-video-fill-missing-v4b"
+                    if self.preprocessing_revision
+                    == VIDEO_RECOVERY_PREPROCESSING_REVISION
+                    else "tasks-video-multipose4-fill-missing-v4c"
+                )
             )
             if self.recovery.recovery_mode != expected_mode:
                 raise ValueError("pose recovery mode does not match preprocessing revision")
@@ -259,6 +277,10 @@ class PoseRecoveryAudit:
     heavy_video_pass0_overlap_valid_frames: int | None = None
     heavy_video_fill_candidates: int | None = None
     heavy_video_valid_mask_sha256: str | None = None
+    heavy_video_candidate_total: int | None = None
+    heavy_video_max_candidates_per_frame: int | None = None
+    heavy_video_num_poses: int | None = None
+    heavy_video_timestamp_sha256: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -297,6 +319,12 @@ class PoseRecoveryAudit:
             ),
             "heavy_video_fill_candidates": self.heavy_video_fill_candidates,
             "heavy_video_valid_mask_sha256": self.heavy_video_valid_mask_sha256,
+            "heavy_video_candidate_total": self.heavy_video_candidate_total,
+            "heavy_video_max_candidates_per_frame": (
+                self.heavy_video_max_candidates_per_frame
+            ),
+            "heavy_video_num_poses": self.heavy_video_num_poses,
+            "heavy_video_timestamp_sha256": self.heavy_video_timestamp_sha256,
         }
         payload.update({key: value for key, value in optional.items() if value is not None})
         return payload
@@ -908,6 +936,81 @@ def _verify_heavy_asset(
     return expected
 
 
+def _verify_tasks_heavy_asset(recovery: PoseRecoveryExtractorConfig) -> Path:
+    """Fail closed on the explicit official Tasks PoseLandmarker bundle."""
+
+    supplied = recovery.heavy_model_asset_path.resolve(strict=True)
+    if supplied.suffix.casefold() != ".task":
+        raise PoseDependencyError("v4c Tasks recovery requires a .task model bundle")
+    received = sha256_file(supplied)
+    if received != recovery.heavy_model_asset_sha256:
+        raise PoseDependencyError(
+            "Tasks heavy pose asset SHA-256 mismatch: "
+            f"expected {recovery.heavy_model_asset_sha256}, received {received}"
+        )
+    return supplied
+
+
+def _tasks_candidates_from_result(result: Any) -> NDArray[np.float32] | None:
+    """Convert every Tasks pose candidate to the shared [P,33,4] form."""
+
+    poses = getattr(result, "pose_landmarks", None)
+    if poses is None:
+        return None
+    candidates: list[NDArray[np.float32]] = []
+    for pose in tuple(poses):
+        landmarks = tuple(pose)
+        if len(landmarks) != 33:
+            continue
+        candidate = np.asarray(
+            [
+                (
+                    float(landmark.x),
+                    float(landmark.y),
+                    float(landmark.z),
+                    float(
+                        1.0
+                        if getattr(landmark, "visibility", None) is None
+                        else landmark.visibility
+                    ),
+                )
+                for landmark in landmarks
+            ],
+            dtype=np.float32,
+        )
+        if len(_candidate_array(candidate)):
+            candidates.append(candidate)
+    if not candidates:
+        return None
+    return np.stack(candidates, axis=0)
+
+
+def _canonicalize_tasks_candidate_order(
+    candidates: ArrayLike | None,
+) -> NDArray[np.float32] | None:
+    """Make Tasks detector output-order permutations observationally neutral."""
+
+    array = _candidate_array(candidates)
+    if not len(array):
+        return None
+    order = sorted(
+        range(len(array)),
+        key=lambda index: hashlib.sha256(
+            np.ascontiguousarray(array[index], dtype=np.float32).tobytes()
+        ).digest(),
+    )
+    return np.asarray(array[order], dtype=np.float32)
+
+
+def _strict_video_timestamp_ms(frame_offset: int, fps: float, previous: int) -> int:
+    """Return a deterministic VIDEO timestamp that is strictly increasing."""
+
+    if frame_offset < 0 or not np.isfinite(fps) or fps <= 0:
+        raise ValueError("invalid frame offset or FPS for VIDEO timestamp")
+    nominal = int(round(frame_offset * 1000.0 / fps))
+    return max(nominal, previous + 1)
+
+
 def _crop_normalized_roi(
     frame: NDArray[np.uint8],
     roi: tuple[float, float, float, float],
@@ -947,6 +1050,15 @@ def extract_pose_sequence_recovery(
     of ``1e-6`` before any cache can be returned.
     """
 
+    if config.preprocessing_revision == TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION:
+        return extract_pose_sequence_tasks_recovery(
+            video_path,
+            video_id=video_id,
+            config=config,
+            clip_start_frame=clip_start_frame,
+            clip_end_frame=clip_end_frame,
+            progress=progress,
+        )
     if config.preprocessing_revision == VIDEO_RECOVERY_PREPROCESSING_REVISION:
         return extract_pose_sequence_video_recovery(
             video_path,
@@ -1402,6 +1514,267 @@ def extract_pose_sequence_video_recovery(
     return processed, decoded_frames, pass0_valid, selected_source_frames, audit
 
 
+def extract_pose_sequence_tasks_recovery(
+    video_path: str | Path,
+    *,
+    video_id: str | None = None,
+    config: PoseExtractorConfig,
+    clip_start_frame: int | None = None,
+    clip_end_frame: int | None = None,
+    progress: Callable[[int], None] | None = None,
+) -> tuple[PoseSequence, int, int, int, PoseRecoveryAudit]:
+    """Run v4c pass0 plus Tasks Heavy VIDEO multipose global association."""
+
+    if config.preprocessing_revision != TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION:
+        raise ValueError("Tasks recovery requires the v4c preprocessing revision")
+    recovery = config.recovery
+    if recovery is None:
+        raise ValueError("v4c recovery settings are required")
+    source = Path(video_path)
+    if not source.is_file():
+        raise FileNotFoundError(f"video does not exist: {source}")
+    identifier = str(video_id or source.stem).strip()
+    if not identifier:
+        raise ValueError("video_id must be non-empty")
+    if (clip_start_frame is None) != (clip_end_frame is None):
+        raise ValueError("clip_start_frame and clip_end_frame must be supplied together")
+    if clip_start_frame is None or clip_end_frame is None:
+        raise ValueError("v4c recovery requires an official-segment input clip")
+    if isinstance(clip_start_frame, bool | np.bool_) or isinstance(
+        clip_end_frame, bool | np.bool_
+    ):
+        raise TypeError("clip frame indices must be integers, not bool")
+    clip_start_frame = int(clip_start_frame)
+    clip_end_frame = int(clip_end_frame)
+    if clip_start_frame < 0 or clip_end_frame <= clip_start_frame:
+        raise ValueError("clip must be a non-empty 0-based half-open interval")
+    expected_frames = clip_end_frame - clip_start_frame
+
+    cv2, mp = _load_pose_dependencies()
+    heavy_asset = _verify_tasks_heavy_asset(recovery)
+
+    def open_positioned_capture() -> tuple[Any, float]:
+        capture = cv2.VideoCapture(str(source))
+        if not capture.isOpened():
+            capture.release()
+            raise PoseExtractionError(f"OpenCV could not open video: {source}")
+        capture_fps = float(capture.get(cv2.CAP_PROP_FPS))
+        if not np.isfinite(capture_fps) or capture_fps <= 0:
+            capture.release()
+            raise PoseExtractionError(f"video reports an invalid FPS: {source}")
+        if clip_start_frame:
+            seek_ok = bool(capture.set(cv2.CAP_PROP_POS_FRAMES, clip_start_frame))
+            if not seek_ok:
+                capture.release()
+                raise PoseExtractionError(
+                    f"OpenCV could not seek to clip start frame {clip_start_frame} "
+                    f"for {source}"
+                )
+            positioned = float(capture.get(cv2.CAP_PROP_POS_FRAMES))
+            if np.isfinite(positioned) and abs(positioned - clip_start_frame) > 0.5:
+                capture.release()
+                raise PoseExtractionError(
+                    f"OpenCV seek coverage mismatch for {source}: requested frame "
+                    f"{clip_start_frame}, positioned at {positioned}"
+                )
+        return capture, capture_fps
+
+    pass0_candidates: list[NDArray[np.float32] | None] = []
+    decoded_frames = 0
+    capture, fps = open_positioned_capture()
+    try:
+        with mp.solutions.pose.Pose(
+            static_image_mode=False,
+            model_complexity=config.model_complexity,
+            smooth_landmarks=config.smooth_landmarks,
+            enable_segmentation=False,
+            min_detection_confidence=config.min_detection_confidence,
+            min_tracking_confidence=config.min_tracking_confidence,
+        ) as detector:
+            while decoded_frames < expected_frames:
+                ok, frame = capture.read()
+                if not ok:
+                    missing_tail = expected_frames - decoded_frames
+                    if config.incomplete_clip_policy == "error":
+                        raise PoseExtractionError(
+                            f"incomplete official clip decode for {identifier!r}: "
+                            f"range=[{clip_start_frame},{clip_end_frame}), "
+                            f"expected={expected_frames}, decoded={decoded_frames}, "
+                            f"missing_tail={missing_tail}"
+                        )
+                    pass0_candidates.extend([None] * missing_tail)
+                    break
+                pass0_candidates.append(_process_pose_frame(detector, cv2, frame))
+                decoded_frames += 1
+                if progress is not None:
+                    progress(decoded_frames)
+    finally:
+        capture.release()
+    if len(pass0_candidates) != expected_frames:
+        raise RuntimeError("v4c pass0 timeline does not equal the official segment length")
+    pass0_track = select_global_dominant_track(
+        pass0_candidates,
+        center_weight=recovery.association_center_weight,
+        log_scale_weight=recovery.association_log_scale_weight,
+    )
+
+    tasks_candidates: list[NDArray[np.float32] | None] = []
+    timestamps: list[int] = []
+    heavy_capture, heavy_fps = open_positioned_capture()
+    if not math.isclose(heavy_fps, fps, rel_tol=0.0, abs_tol=1e-6):
+        heavy_capture.release()
+        raise PoseExtractionError("v4c decode passes reported different FPS values")
+    try:
+        base_options = mp.tasks.BaseOptions(model_asset_path=str(heavy_asset))
+        options = mp.tasks.vision.PoseLandmarkerOptions(
+            base_options=base_options,
+            running_mode=mp.tasks.vision.RunningMode.VIDEO,
+            num_poses=4,
+            min_pose_detection_confidence=recovery.min_detection_confidence,
+            min_pose_presence_confidence=recovery.min_detection_confidence,
+            min_tracking_confidence=recovery.min_tracking_confidence,
+            output_segmentation_masks=False,
+        )
+        with mp.tasks.vision.PoseLandmarker.create_from_options(options) as landmarker:
+            previous_timestamp = -1
+            for frame_offset in range(decoded_frames):
+                ok, frame = heavy_capture.read()
+                if not ok:
+                    raise PoseExtractionError(
+                        "v4c Tasks VIDEO decode diverged from pass0 at decoded frame "
+                        f"{frame_offset}"
+                    )
+                timestamp = _strict_video_timestamp_ms(
+                    frame_offset,
+                    fps,
+                    previous_timestamp,
+                )
+                previous_timestamp = timestamp
+                timestamps.append(timestamp)
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+                result = landmarker.detect_for_video(image, timestamp)
+                tasks_candidates.append(
+                    _canonicalize_tasks_candidate_order(
+                        _tasks_candidates_from_result(result)
+                    )
+                )
+    finally:
+        heavy_capture.release()
+    tasks_candidates.extend([None] * (expected_frames - decoded_frames))
+    if len(tasks_candidates) != expected_frames:
+        raise RuntimeError("v4c Tasks timeline does not equal the official segment length")
+    if len(timestamps) != decoded_frames or any(
+        right <= left for left, right in zip(timestamps, timestamps[1:])
+    ):
+        raise RuntimeError("v4c Tasks VIDEO timestamps are not strictly increasing")
+    if sha256_file(heavy_asset) != recovery.heavy_model_asset_sha256:
+        raise RuntimeError("Tasks heavy pose asset changed during extraction")
+
+    anchored_candidates: list[ArrayLike | None] = []
+    for pass0_candidate, task_candidates in zip(
+        pass0_track,
+        tasks_candidates,
+        strict=True,
+    ):
+        # The pass0 singleton is the only node allowed on a pass0-valid frame.
+        # Tasks multipose nodes are exposed only at pass0 misses, so the one
+        # global Viterbi path is anchored to the immutable original subject.
+        anchored_candidates.append(
+            pass0_candidate if pass0_candidate is not None else task_candidates
+        )
+    final_track = select_global_dominant_track(
+        anchored_candidates,
+        center_weight=recovery.association_center_weight,
+        log_scale_weight=recovery.association_log_scale_weight,
+    )
+    shared_errors = [
+        float(np.max(np.abs(final_track[index][:, :3] - candidate[:, :3])))
+        for index, candidate in enumerate(pass0_track)
+        if candidate is not None and final_track[index] is not None
+    ]
+    pass0_valid = sum(candidate is not None for candidate in pass0_track)
+    task_candidate_counts = [
+        len(_candidate_array(candidate)) for candidate in tasks_candidates[:decoded_frames]
+    ]
+    task_valid = sum(count > 0 for count in task_candidate_counts)
+    task_overlap = sum(
+        pass0_candidate is not None and count > 0
+        for pass0_candidate, count in zip(
+            pass0_track[:decoded_frames],
+            task_candidate_counts,
+            strict=True,
+        )
+    )
+    fill_candidates = sum(
+        pass0_candidate is None and final_candidate is not None
+        for pass0_candidate, final_candidate in zip(
+            pass0_track[:decoded_frames],
+            final_track[:decoded_frames],
+            strict=True,
+        )
+    )
+    final_valid = sum(candidate is not None for candidate in final_track)
+    shared_max_error = max(shared_errors, default=0.0)
+    preserved = len(shared_errors) == pass0_valid and shared_max_error <= 1e-6
+    if not preserved or final_valid < pass0_valid:
+        raise RuntimeError("v4c recovery altered or removed a pass0 observation")
+    if final_valid != pass0_valid + fill_candidates:
+        raise RuntimeError("v4c recovery count conservation failed")
+
+    raw = assemble_pose_sequence(final_track, video_id=identifier, fps=fps)
+    valid_indices = np.flatnonzero(raw.valid_mask)
+    observed_span = (
+        int(valid_indices[-1] - valid_indices[0] + 1) if valid_indices.size else 0
+    )
+    selected_source_frames = raw.num_frames
+    processed = preprocess_native_pose_sequence(raw)
+    if processed.num_frames != expected_frames or processed.fps != raw.fps:
+        raise RuntimeError("v4c preprocessing changed the native official-segment timeline")
+    task_presence_track = tuple(
+        None if not len(_candidate_array(candidate)) else _candidate_array(candidate)[0]
+        for candidate in tasks_candidates
+    )
+    timestamp_sha256 = hashlib.sha256(
+        json.dumps(timestamps, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    audit = PoseRecoveryAudit(
+        source_frames=raw.num_frames,
+        expected_segment_frames=expected_frames,
+        decoded_segment_frames=decoded_frames,
+        padded_tail_frames=expected_frames - decoded_frames,
+        pass0_valid_frames=pass0_valid,
+        heavy_full_frame_attempted=decoded_frames,
+        heavy_full_frame_detected=task_valid,
+        roi_retry_eligible=0,
+        roi_retry_attempted=0,
+        roi_retry_detected=0,
+        recovered_valid_frames=final_valid - pass0_valid,
+        final_valid_frames=final_valid,
+        observed_span_frames=observed_span,
+        final_longest_valid_run=_longest_true_run(raw.valid_mask),
+        pass0_shared_coordinate_max_abs_error=shared_max_error,
+        pass0_observations_preserved=preserved,
+        pose_coordinate_interpolation=recovery.pose_coordinate_interpolation,
+        temporal_resampling=recovery.temporal_resampling,
+        heavy_model_id=recovery.heavy_model_id,
+        heavy_model_asset_sha256=recovery.heavy_model_asset_sha256,
+        pass0_valid_mask_sha256=_valid_mask_sha256(pass0_track),
+        final_valid_mask_sha256=_valid_mask_sha256(final_track),
+        recovery_mode=recovery.recovery_mode,
+        heavy_video_frames_observed=decoded_frames,
+        heavy_video_valid_frames=task_valid,
+        heavy_video_pass0_overlap_valid_frames=task_overlap,
+        heavy_video_fill_candidates=fill_candidates,
+        heavy_video_valid_mask_sha256=_valid_mask_sha256(task_presence_track),
+        heavy_video_candidate_total=sum(task_candidate_counts),
+        heavy_video_max_candidates_per_frame=max(task_candidate_counts, default=0),
+        heavy_video_num_poses=4,
+        heavy_video_timestamp_sha256=timestamp_sha256,
+    )
+    return processed, decoded_frames, pass0_valid, selected_source_frames, audit
+
+
 def extract_pose_sequence(
     video_path: str | Path,
     *,
@@ -1562,6 +1935,7 @@ def extract_pose_to_cache(
     if settings.preprocessing_revision in {
         RECOVERY_PREPROCESSING_REVISION,
         VIDEO_RECOVERY_PREPROCESSING_REVISION,
+        TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION,
     } and skip_existing:
         raise ValueError(
             "v4 recovery forbids --skip-existing because its paired source audit "
@@ -1625,6 +1999,7 @@ def extract_pose_to_cache(
     if settings.preprocessing_revision in {
         RECOVERY_PREPROCESSING_REVISION,
         VIDEO_RECOVERY_PREPROCESSING_REVISION,
+        TASKS_MULTIPOSE_RECOVERY_PREPROCESSING_REVISION,
     }:
         (
             sequence,
