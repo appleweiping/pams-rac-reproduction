@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-
 from pose_recovery_v4d_full337_contract import (
     CONTAINER_IMAGE_ID,
     MODEL_ASSET_SHA256,
@@ -36,6 +35,7 @@ from pose_recovery_v4d_full337_contract import (
     write_bytes_exclusive,
     write_json_exclusive,
 )
+
 from pams.config import load_config
 from pams.data import (
     load_pose_cache,
