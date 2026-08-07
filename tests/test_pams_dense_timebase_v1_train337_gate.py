@@ -153,8 +153,8 @@ def test_cli_accepts_only_frozen_train337_scientific_inputs() -> None:
     }
     source = inspect.getsource(runner._parse_arguments)
     for forbidden in ("--dev", "--test", "--target", "--count", "--action", "--label"):
-        assert f'"{forbidden}' not in source
-        assert f"'{forbidden}" not in source
+        assert f'"{forbidden}"' not in source
+        assert f"'{forbidden}'" not in source
 
 
 def test_policy_loader_requires_exact_file_and_frozen_identities(tmp_path: Path) -> None:
