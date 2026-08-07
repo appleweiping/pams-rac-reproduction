@@ -44,6 +44,7 @@ def test_proxy_config_is_the_preregistered_inferred_native_baseline() -> None:
 
 def test_proxy_config_discloses_every_inference_and_followup() -> None:
     source = CONFIG.read_text(encoding="utf-8")
+    normalized = " ".join(source.replace("#", " ").split())
 
     for disclosure in (
         "independently inferred executable proxy",
@@ -53,7 +54,7 @@ def test_proxy_config_discloses_every_inference_and_followup() -> None:
         "replace it with the preregistered half-timeline bound",
         "never eligible to claim their Table-2 number",
     ):
-        assert disclosure in source
+        assert disclosure in normalized
     assert "performance" not in source.lower()
     assert "nmae" not in source.lower()
     assert "obo" not in source.lower()
