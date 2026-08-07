@@ -2988,6 +2988,8 @@ def _validate_prior_terminal_payload(
     if not required_input_keys <= set(inputs):
         raise ValueError("prior terminal inputs are missing required commitments")
     for key in required_input_keys:
+        if key == "code_files_sha256":
+            continue
         if key.endswith("_sha256") and (
             not isinstance(inputs[key], str) or len(inputs[key]) != 64
         ):
