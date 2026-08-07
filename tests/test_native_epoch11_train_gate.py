@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import hashlib
 import inspect
 import json
 import math
 from dataclasses import asdict
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -12,6 +14,7 @@ import yaml
 from torch.nn import functional as F
 
 from pams.config import PAMSConfig
+from pams.run_manifest import ArtifactReceipt, CompletedRunReceipt, RunManifest
 from pams.training import EncoderEpochStats, _progress_row
 from scripts.server import run_pams_native_epoch11_train_gate as runner
 
@@ -88,6 +91,7 @@ def test_gate_specification_is_preregistered_and_complete() -> None:
     assert specification.expected_seed == 2026
     assert specification.expected_training_video_total == 337
     assert specification.expected_completed_epochs == 11
+    assert specification.expected_completion_receipt_schema_version == 3
     assert specification.minimum_lag_pair_total == 8
     assert specification.near_collapse_rms == pytest.approx(1e-3)
     assert set(specification.thresholds) == runner._THRESHOLD_KEYS
@@ -290,6 +294,124 @@ def _history() -> tuple[EncoderEpochStats, ...]:
     )
 
 
+def _write_completion_receipt(
+    path: Path,
+    *,
+    config: PAMSConfig,
+    extra_role: str | None = None,
+) -> tuple[str, dict[str, tuple[str, int]], SimpleNamespace]:
+    source = "a" * 40
+    image = "sha256:" + "b" * 64
+    environment = "c" * 64
+    dataset = "d" * 64
+    identities = {
+        "encoder_checkpoint": ("1" * 64, 101),
+        "encoder_progress": ("2" * 64, 102),
+        "experiment_config": ("3" * 64, 103),
+        "pose_snapshot": ("4" * 64, 104),
+    }
+    started = RunManifest(
+        run_id="20260807T000000Z-fixture",
+        created_at_utc="2026-08-07T00:00:00+00:00",
+        command=["python", "-m", "pams", "train", "encoder", "--epochs", "11"],
+        git_sha=source,
+        config_sha256=config.fingerprint,
+        dataset_sha256=dataset,
+        seed=2026,
+        protocol="ucfrep_526",
+        hardware={
+            "container": {
+                "image_id": image,
+                "environment_sha256": environment,
+                "source_revision": source,
+            }
+        },
+    )
+    role_hashes = {
+        "input_config": identities["experiment_config"],
+        "input_dataset_manifest": ("5" * 64, 105),
+        "input_pose_cache_snapshot": identities["pose_snapshot"],
+        "input_train_pose_inputs": ("5" * 64, 105),
+        "input_train_pose_input_commitment": ("6" * 64, 106),
+        "input_dev_pose_inputs": ("7" * 64, 107),
+        "input_dev_pose_input_commitment": ("8" * 64, 108),
+        "input_test_identity_pose_inputs": ("9" * 64, 109),
+        "input_test_identity_pose_input_commitment": ("0" * 64, 110),
+        "output_encoder_checkpoint": identities["encoder_checkpoint"],
+        "progress_log": identities["encoder_progress"],
+    }
+    if extra_role is not None:
+        role_hashes[extra_role] = ("e" * 64, 111)
+    artifacts = tuple(
+        ArtifactReceipt(
+            role=role,
+            locator=f"inputs/{index:02d}.artifact",
+            sha256=digest,
+            bytes=byte_count,
+        )
+        for index, (role, (digest, byte_count)) in enumerate(sorted(role_hashes.items()))
+    )
+    receipt = CompletedRunReceipt(
+        run_id=started.run_id,
+        finished_at="2026-08-07T00:01:00+00:00",
+        start_manifest_sha256="f" * 64,
+        started=started,
+        artifacts=artifacts,
+        metrics={"completed_epochs": 11, "final_epoch": {"epoch": 11}},
+    )
+    encoded = (
+        json.dumps(receipt.model_dump(mode="json"), sort_keys=True, indent=2) + "\n"
+    ).encode()
+    path.write_bytes(encoded)
+    provenance = SimpleNamespace(
+        source_git_sha=source,
+        dataset_fingerprint=dataset,
+    )
+    return hashlib.sha256(encoded).hexdigest(), identities, provenance
+
+
+def test_completion_receipt_is_caller_pinned_and_exact(tmp_path: Path) -> None:
+    config = _fixed_config()
+    specification = runner.load_gate_specification(SPECIFICATION)
+    path = tmp_path / "completion.receipt.json"
+    digest, identities, provenance = _write_completion_receipt(path, config=config)
+    summary = runner._validate_encoder_completion_receipt(
+        path,
+        expected_sha256=digest,
+        identities=identities,
+        config=config,
+        specification=specification,
+        provenance=provenance,
+        runtime_image="sha256:" + "b" * 64,
+        runtime_environment="c" * 64,
+        runtime_source="a" * 40,
+    )
+    assert summary["sha256"] == digest
+    assert summary["completed_epochs"] == 11
+
+
+def test_completion_receipt_rejects_extra_artifact_role(tmp_path: Path) -> None:
+    config = _fixed_config()
+    path = tmp_path / "completion.receipt.json"
+    digest, identities, provenance = _write_completion_receipt(
+        path,
+        config=config,
+        extra_role="unexpected_artifact",
+    )
+    with pytest.raises(ValueError, match="artifact roles"):
+        runner._validate_encoder_completion_receipt(
+            path,
+            expected_sha256=digest,
+            identities=identities,
+            config=config,
+            specification=runner.load_gate_specification(SPECIFICATION),
+            provenance=provenance,
+            runtime_image="sha256:" + "b" * 64,
+            runtime_environment="c" * 64,
+            runtime_source="a" * 40,
+        )
+
+
 def _write_partial_checkpoint(
     path: Path,
     *,
@@ -417,6 +539,8 @@ def test_interface_has_no_privileged_scientific_arguments() -> None:
     assert set(inspect.signature(runner.run_gate).parameters) == {
         "encoder_checkpoint_path",
         "encoder_progress_path",
+        "encoder_completion_receipt_path",
+        "expected_encoder_completion_receipt_sha256",
         "config_path",
         "gate_specification_path",
         "pose_cache_dir",

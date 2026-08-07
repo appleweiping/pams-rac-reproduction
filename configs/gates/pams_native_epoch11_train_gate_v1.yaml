@@ -11,6 +11,7 @@ expected_protocol: ucfrep_526
 expected_seed: 2026
 expected_training_video_total: 337
 expected_completed_epochs: 11
+expected_completion_receipt_schema_version: 3
 minimum_lag_pair_total: 8
 near_collapse_rms: 0.001
 thresholds:

@@ -1,4 +1,4 @@
-# CANDIDATE A - NATIVE TABLE-2 PROXY: WINDOW 16 / ANCHOR STRIDE 4.
+# CANDIDATE C - NATIVE TABLE-2 PROXY: WINDOW 24 / ANCHOR STRIDE 4.
 #
 # This is an independently inferred executable proxy for the conventional-TCC
 # baseline named in PAMS Table 2.  The paper discloses the broad architecture,
@@ -75,7 +75,7 @@ period:
   maximum_mode: half_timeline
   pose_energy_epochs: 10
   training_mode: fixed_period_inferred
-  fixed_period_frames: 16
+  fixed_period_frames: 24
   # Unused by fixed_period_inferred, retained as an explicit schema value.
   post_warmup_source: embedding_velocity_coordinate
   direct_fft_timebase: dense_resampled
@@ -83,7 +83,7 @@ loss:
   # Table 2 describes the conventional-TCC baseline as non-multi-scale.
   scales: [1.0]
   temperature: 0.1
-  # Candidate A uses one preregistered point from the paper's disclosed sweep.
+  # Candidate C uses one preregistered point from the paper's disclosed sweep.
   anchor_stride: 4
   kmeans_clusters: 8
   kmeans_refresh_epochs: 5
