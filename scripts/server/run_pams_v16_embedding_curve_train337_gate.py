@@ -416,11 +416,14 @@ def _deterministically_shuffle_valid_embeddings(
         raise ValueError("shuffle video IDs must match the embedding batch")
     shuffled = embeddings.detach().clone()
     for index, video_id in enumerate(video_ids):
-        valid_indices = torch.flatnonzero(valid_mask[index].detach().cpu())
+        valid_indices = torch.nonzero(
+            valid_mask[index].detach().cpu(),
+            as_tuple=False,
+        ).flatten()
         if valid_indices.numel() < 2:
             continue
         digest = hashlib.sha256(
-            f"pams-embedding-time-shuffle-v1\0{video_id}".encode("utf-8")
+            f"pams-embedding-time-shuffle-v1\0{video_id}".encode()
         ).digest()
         generator = torch.Generator(device="cpu")
         generator.manual_seed(int.from_bytes(digest[:8], "big") % (2**63 - 1))
