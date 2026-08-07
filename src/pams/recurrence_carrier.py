@@ -12,11 +12,12 @@ off-phase lags at half and one-and-a-half periods.  Fractional dense-frame
 lags are interpolated without compacting or bridging invalid frames.  Feature
 weights use phase agreement across alternating target-period cycles, so the
 same chance Fourier coefficient is not both selected and accepted as its own
-recurrence evidence.  Every non-constant feature retains a uniform base
-weight; cross-cycle agreement supplies only a bounded uplift.  A
-constant/static trajectory therefore has zero contrast, while a genuinely
-periodic trajectory has positive contrast.  The returned active mask is the
-only mask used by both the three peak experts and the analytic reference.
+recurrence evidence.  Target-incoherent features receive zero weight; a
+full-vector fallback is used only when neither temporal fold identifies any
+phase-stable feature.  A constant/static trajectory therefore has zero
+contrast, while a genuinely periodic trajectory has positive contrast.  The
+returned active mask is the only mask used by both the three peak experts and
+the analytic reference.
 """
 
 from __future__ import annotations
@@ -341,16 +342,17 @@ def _cross_cycle_harmonic_feature_weights(
     valid: Tensor,
     period: float,
 ) -> Tensor:
-    """Give only a bounded uplift to phase-stable target-frequency features.
+    """Retain features whose target phase agrees across temporal folds.
 
     Global target-frequency coefficients are data-dependent.  Reusing their
-    unbounded magnitudes as recurrence weights lets a shuffled trajectory's
+    global magnitudes as recurrence weights lets a shuffled trajectory's
     largest chance coefficient select the very coordinate on which it is
     subsequently judged.  Here coefficients are estimated independently on
     alternating target-period cycles.  Only positive phase agreement between
-    the two folds earns an uplift, and the all-feature unit baseline remains.
-    Consequently, recurrence is still evaluated in the full diagonal-whitened
-    representation rather than in a chance-selected low-dimensional slice.
+    the two folds earns support.  A square root prevents one supported feature
+    from monopolizing the similarity, while exact zero support keeps persistent
+    off-frequency motion from defining false active context.  The full-vector
+    fallback applies only when cross-fold evidence is entirely absent.
     """
 
     if centered.ndim != 2 or valid.shape != centered.shape[:1]:
@@ -379,11 +381,11 @@ def _cross_cycle_harmonic_feature_weights(
     maximum = coherent_energy.max()
     if not bool(torch.isfinite(maximum)) or float(maximum) <= 1e-12:
         return uniform
-    # Similarity normalizes states after weighting.  1 + support gives a
-    # parameter-free [1, 2] uplift and cannot collapse the effective
-    # feature dimension to a single chance Fourier coordinate.
+    # Similarity weights enter quadratically.  The square root therefore makes
+    # each feature's contribution proportional to its cross-fold coherent
+    # energy rather than to that energy squared.
     normalized = (coherent_energy / maximum).clamp(0.0, 1.0)
-    return 1.0 + normalized
+    return torch.sqrt(normalized)
 
 
 def _recurrence_score(
@@ -405,9 +407,12 @@ def _recurrence_score(
         raise ValueError("harmonic feature weights must match embedding dimension")
     if (
         not bool(torch.isfinite(harmonic_feature_weights).all())
-        or bool((harmonic_feature_weights <= 0.0).any())
+        or bool((harmonic_feature_weights < 0.0).any())
+        or float(harmonic_feature_weights.max()) <= 0.0
     ):
-        raise ValueError("harmonic feature weights must be finite and positive")
+        raise ValueError(
+            "harmonic feature weights must be finite, non-negative, and nonzero"
+        )
     states = F.normalize(
         whitened * harmonic_feature_weights.unsqueeze(0),
         p=2,

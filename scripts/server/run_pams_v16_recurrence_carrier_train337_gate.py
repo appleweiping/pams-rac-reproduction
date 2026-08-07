@@ -1036,8 +1036,9 @@ def run_train337_gate(
         "algorithm": {
             "period_estimator": "embedding_velocity_full_vector_acf",
             "feature_conditioning": (
-                "full diagonal-whitened embedding recurrence with only a bounded "
-                "uplift for target-harmonic phase agreement across alternating cycles"
+                "diagonal-whitened embedding recurrence restricted to features "
+                "whose target-harmonic phase agrees across alternating cycles; "
+                "full-vector fallback only when no stable feature exists"
             ),
             "rejected_predecessor_artifact_sha256": (
                 _REJECTED_PREDECESSOR_ARTIFACT_SHA256
