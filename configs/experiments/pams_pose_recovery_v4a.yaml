@@ -19,6 +19,9 @@ schema_version: 1
 protocol: ucfrep_526
 seed: 2026
 data:
+  # Historical PAMS configs use 256 here. v4a pose extraction explicitly
+  # preserves each compiled clip's native timeline and does not consume this
+  # value as an extraction target length.
   frames: 256
   keypoints: 33
   coordinates: 3
@@ -37,6 +40,7 @@ pose:
     heavy_model_id: mediapipe-pose-heavy-0.10.14
     model_complexity: 2
     heavy_model_asset_sha256: 59e42d71bcd44cbdbabc419f0ff76686595fd265419566bd4009ef703ea8e1fe
+    temporal_resampling: none_native_timeline
     static_image_mode: true
     smooth_landmarks: false
     min_detection_confidence: 0.5

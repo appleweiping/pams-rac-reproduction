@@ -1668,6 +1668,7 @@ def pose_extract(
                 heavy_model_id=recovery.heavy_model_id,
                 heavy_model_asset_path=heavy_model_asset,
                 heavy_model_asset_sha256=recovery.heavy_model_asset_sha256,
+                temporal_resampling=recovery.temporal_resampling,
                 model_complexity=recovery.model_complexity,
                 static_image_mode=recovery.static_image_mode,
                 smooth_landmarks=recovery.smooth_landmarks,
@@ -1763,6 +1764,9 @@ def pose_extract(
                             "heavy_model_id": config.pose.recovery.heavy_model_id,
                             "heavy_model_asset_sha256": (
                                 config.pose.recovery.heavy_model_asset_sha256
+                            ),
+                            "temporal_resampling": (
+                                config.pose.recovery.temporal_resampling
                             ),
                             "pose_coordinate_interpolation": (
                                 config.pose.recovery.pose_coordinate_interpolation
