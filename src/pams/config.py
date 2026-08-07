@@ -187,7 +187,7 @@ class PoseConfig(StrictModel):
                 )
         elif self.recovery is not None:
             raise ValueError(
-                "pose.recovery is accepted only by the v4a/v4b preprocessing revisions"
+                "pose.recovery is accepted only by the v4a/v4b/v4c preprocessing revisions"
             )
         return self
 

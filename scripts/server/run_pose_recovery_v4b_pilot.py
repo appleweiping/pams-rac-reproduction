@@ -80,6 +80,7 @@ def run_pilot(
     cache_dir: Path,
     ledger_path: Path,
     selection_path: Path,
+    pilot_limit: int | None = None,
 ) -> dict[str, Any]:
     """Run the deterministic coverage/longest-P10 union pilot."""
 
@@ -155,11 +156,19 @@ def run_pilot(
     }
     at_most_8 = {item[0] for item in ranked if item[3] <= 8}
     selected_ids = coverage_bottom | longest_bottom | at_most_8
-    selected_records = tuple(
+    frozen_union_records = tuple(
         record for record in manifest.records if record.video_id in selected_ids
     )
-    _require(len(selected_records) == len(selected_ids), "pilot selection lost records")
-    _require(len(selected_records) == 39, "frozen v4a long-tail union must contain 39 records")
+    _require(len(frozen_union_records) == len(selected_ids), "pilot selection lost records")
+    _require(
+        len(frozen_union_records) == 39,
+        "frozen v4a long-tail union must contain 39 records",
+    )
+    if pilot_limit is not None:
+        _require(1 <= pilot_limit <= 39, "pilot_limit must be in [1, 39]")
+        selected_records = frozen_union_records[:pilot_limit]
+    else:
+        selected_records = frozen_union_records
     selected_identity_sha256 = pose_input_identity_sha256(selected_records)
     rank_by_id = {item[0]: item for item in ranked}
     selection_rows = [
@@ -176,7 +185,14 @@ def run_pilot(
     ]
     selection_payload = {
         "schema_version": 1,
-        "artifact_type": "pams_pose_recovery_v4b_train337_long_tail_pilot_selection",
+        "artifact_type": (
+            "pams_pose_recovery_train337_long_tail_api_smoke_selection"
+            if pilot_limit is not None
+            else (
+                f"pams_pose_recovery_{recovery_version}_train337_"
+                "long_tail_pilot_selection"
+            )
+        ),
         "protocol": manifest.protocol,
         "split": "train",
         "label_free": True,
@@ -185,6 +201,7 @@ def run_pilot(
             "final_valid_frames<=8), ranked from frozen v4a recovery audit"
         ),
         "record_total": len(selected_records),
+        "frozen_union_record_total": len(frozen_union_records),
         "selected_identity_sha256": selected_identity_sha256,
         "bindings": {
             "train337_sidecar_sha256": sidecar_sha256,
@@ -202,6 +219,7 @@ def run_pilot(
             "longest_run_bottom_decile": len(longest_bottom),
             "final_valid_at_most_8": len(at_most_8),
             "union": len(selected_records),
+            "frozen_union": len(frozen_union_records),
         },
         "rows": selection_rows,
     }
@@ -338,6 +356,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--ledger", type=Path, required=True)
     parser.add_argument("--selection", type=Path, required=True)
+    parser.add_argument("--pilot-limit", type=int, default=None)
     args = parser.parse_args(argv)
     try:
         result = run_pilot(
@@ -351,6 +370,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             cache_dir=args.cache_dir,
             ledger_path=args.ledger,
             selection_path=args.selection,
+            pilot_limit=args.pilot_limit,
         )
     except (OSError, TypeError, ValueError, PilotError) as exc:
         print(f"v4 recovery pilot extraction failed: {exc}", file=sys.stderr)

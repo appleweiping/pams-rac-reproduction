@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
+import pytest
 
 from pams.config import load_config
 from pams.pose import (
@@ -58,6 +59,7 @@ def _run_tasks_fixture(
     clip_end: int,
     source_end: int,
     fps: float = 25.0,
+    mutate_asset_during_detect: bool = False,
 ) -> tuple[Any, Any, list[int], list[int], Any]:
     from pams import pose
 
@@ -123,6 +125,8 @@ def _run_tasks_fixture(
         def detect_for_video(self, image: Any, timestamp: int) -> Any:
             source_index = int(image.data[0, 0, 0])
             task_timestamps.append(timestamp)
+            if mutate_asset_during_detect and len(task_timestamps) == 1:
+                asset.write_bytes(b"mutated-during-inference")
             return _tasks_result(tasks[source_index])
 
     class FakePoseLandmarker:
@@ -298,3 +302,25 @@ def test_v4c_timestamps_are_strict_and_eof_tail_is_never_observed(
     assert audit.heavy_video_num_poses == 4
     assert sequence.valid_mask.tolist() == [True, True, True, False, False]
     assert np.count_nonzero(sequence.xyz[3:]) == 0
+
+
+def test_v4c_fails_closed_if_tasks_asset_changes_during_inference(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    person = _candidate(0.4)
+    pass0 = {0: None, 1: None}
+    tasks = {0: [person], 1: [person]}
+
+    with pytest.raises(RuntimeError, match="asset changed during extraction"):
+        _run_tasks_fixture(
+            tmp_path,
+            monkeypatch,
+            identifier="mutated-asset",
+            pass0=pass0,
+            tasks=tasks,
+            clip_start=0,
+            clip_end=2,
+            source_end=2,
+            mutate_asset_during_detect=True,
+        )

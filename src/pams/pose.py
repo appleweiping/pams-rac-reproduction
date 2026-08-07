@@ -68,7 +68,7 @@ class PoseExtractionError(RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class PoseRecoveryExtractorConfig:
-    """Runtime realization of identity-bearing v4a/v4b recovery settings."""
+    """Runtime realization of identity-bearing v4a/v4b/v4c recovery settings."""
 
     heavy_model_id: str
     heavy_model_asset_path: Path
@@ -226,7 +226,7 @@ class PoseExtractorConfig:
             if self.recovery.recovery_mode != expected_mode:
                 raise ValueError("pose recovery mode does not match preprocessing revision")
         elif self.recovery is not None:
-            raise ValueError("recovery settings are accepted only by v4a/v4b")
+            raise ValueError("recovery settings are accepted only by v4a/v4b/v4c")
         if not self.model_id.strip():
             raise ValueError("model_id must be non-empty")
         if self.model_complexity not in {0, 1, 2}:
