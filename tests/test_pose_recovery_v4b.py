@@ -303,3 +303,54 @@ def test_v4b_never_sends_padded_tail_to_either_detector(
     assert audit.padded_tail_frames == 2
     assert sequence.valid_mask.tolist() == [True, True, True, False, False]
     assert np.count_nonzero(sequence.xyz[3:]) == 0
+
+
+def test_v4b_pilot_projection_uses_pass0_only_nonpilot_lower_bound() -> None:
+    from scripts.server.audit_pose_recovery_v4b_pilot import (
+        _minimum_longest_run,
+        _project_observed_v4b_row,
+        _project_pass0_only_row,
+    )
+
+    assert _minimum_longest_run(0, 10) == 0
+    assert _minimum_longest_run(5, 10) == 1
+    assert _minimum_longest_run(8, 10) == 3
+    assert _minimum_longest_run(10, 10) == 10
+    original = {
+        "video_id_sha256": "a" * 64,
+        "reference_cached_valid_frames": 4,
+        "final_valid_frames": 9,
+        "source_coverage": 0.9,
+        "longest_run_fraction": 0.9,
+    }
+    nonpilot = _project_pass0_only_row(
+        original,
+        {"source_frames": 10, "pass0_valid_frames": 5},
+    )
+    assert nonpilot["final_valid_frames"] == 5
+    assert nonpilot["recovered_valid_frames"] == 0
+    assert nonpilot["source_coverage"] == 0.5
+    assert nonpilot["longest_run_fraction"] == 0.1
+    pilot = _project_observed_v4b_row(
+        nonpilot,
+        {
+            "source_frames": 10,
+            "pass0_valid_frames": 5,
+            "recovered_valid_frames": 3,
+            "final_valid_frames": 8,
+            "final_longest_valid_run": 6,
+            "observed_span_frames": 9,
+            "pass0_observations_preserved": True,
+        },
+    )
+    assert pilot["final_valid_frames"] == 8
+    assert pilot["recovered_valid_frames"] == 3
+    assert pilot["source_coverage"] == 0.8
+    assert pilot["longest_run_fraction"] == 0.6
+    assert pilot["reference_cached_valid_frames"] == 4
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "scripts/server/audit_pose_recovery_v4b_pilot.py"
+    ).read_text(encoding="utf-8")
+    assert '"nonpilot_behavior": "pass0_only_count_with_tight_arrangement_free' in source
+    assert '"nonpilot_behavior": "retain_v4a' not in source
