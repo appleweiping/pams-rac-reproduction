@@ -87,7 +87,7 @@ readonly IDENTITIES="$(docker run --rm --network none --read-only --cap-drop ALL
 
 readonly EXTRACT_NAME="pams-v4d-${PAMS_V4D_COHORT}-${SOURCE_REVISION:0:12}-${PAMS_V4D_ATTEMPT_ID,,}"
 readonly AUDIT_NAME="${EXTRACT_NAME}-audit"
-readonly GPU_LOCK='/media/lenovo/data2/pams-rac/locks/gpu1.lock'
+readonly GPU_LOCK='/media/lenovo/data2/pams-rac/.pams-gpu-locks/gpu1.lock'
 mkdir -p -- "$(dirname -- "$GPU_LOCK")"
 exec 9>"$GPU_LOCK"
 flock -n 9 || fail 'physical GPU1 lock is already held'
