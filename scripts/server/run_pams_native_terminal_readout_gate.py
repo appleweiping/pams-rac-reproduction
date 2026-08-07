@@ -52,7 +52,11 @@ from pams.reproducibility import (
     hardware_fingerprint,
     sha256_json,
 )
-from pams.run_manifest import CompletedRunReceipt
+from pams.run_manifest import (
+    CompletedRunReceipt,
+    resolve_artifact_path,
+    validate_artifact_receipt,
+)
 from pams.training import (
     collate_pose_sequences,
     load_model_checkpoint,
@@ -68,6 +72,12 @@ _EXPECTED_RECEIPT_TYPE = "pams_native_terminal_readout_train337_gate_receipt_v1"
 _EXPECTED_EPOCH11_ARTIFACT_TYPE = "pams_native_epoch11_train_mechanism_gate_v1"
 _EXPECTED_EPOCH11_RECEIPT_TYPE = (
     "pams_native_epoch11_train_mechanism_gate_receipt_v1"
+)
+_CANDIDATE_LAUNCH_ARTIFACT_TYPE = (
+    "pams_native_candidate_train337_launch_authorization_v1"
+)
+_CANDIDATE_LAUNCH_RECEIPT_TYPE = (
+    "pams_native_candidate_train337_launch_authorization_receipt_v1"
 )
 _CANDIDATE_ORDER = ("A", "B", "C")
 _FORBIDDEN_FIELD_NAMES = _epoch11._FORBIDDEN_FIELD_NAMES
@@ -206,6 +216,8 @@ _RECEIPT_KEYS = {
     "source_git_sha",
     "code_files_sha256_commitment",
     "prior_scientific_rejections_sha256",
+    "candidate_launch_authorization_sha256",
+    "candidate_launch_authorization_receipt_sha256",
     "aggregate_only",
     "dev84_pose_or_scoring_authorized",
     "test105_evaluation_authorized",
@@ -309,6 +321,120 @@ _AGGREGATE_KEYS = {
     "static_pose",
     "per_video_rows_persisted",
 }
+_REPRESENTATION_AGGREGATE_KEYS = {
+    "record_total",
+    "temporal_rms",
+    "near_collapsed_share",
+    "lag_eligible_total",
+    "lag_eligible_share",
+    "null_complete_total",
+    "null_complete_share_of_real_eligible",
+    "all_real_eligible_null_margins_complete",
+    "real_cycle_margin",
+    "pose_shuffle_cycle_margin",
+    "embedding_shuffle_cycle_margin",
+    "zero_pose_cycle_margin",
+    "static_pose_cycle_margin",
+    "real_minus_strongest_null",
+    "real_beats_all_nulls_share",
+}
+_PERIOD_AGGREGATE_KEYS = {
+    "record_total",
+    "per_sample_upper_bound_used",
+    "boundary_share",
+    "minimum_boundary_share",
+    "upper_boundary_share",
+    "mode_period_frames",
+    "mode_frequency",
+    "mode_share",
+    "unique_period_total",
+    "positive_confidence_share",
+    "period_frames",
+    "period_confidence_non_authorizing",
+    "period_histogram_aggregate_only",
+}
+_READOUT_AGGREGATE_KEYS = {
+    "record_total",
+    "carrier_eligible_available_total",
+    "carrier_eligible_available_share",
+    "raw_carrier_available_share_non_authorizing",
+    "expert_majority_share",
+    "expert_fft_nearest_fallback_share",
+    "selected_vs_active_reference_absolute_gap",
+    "normalized_curve_rms_non_authorizing",
+    "raw_curve_rms_non_authorizing",
+    "harmonic_energy_fraction_non_authorizing",
+    "active_support_fraction_non_authorizing",
+    "recurrence_gate_energy_non_authorizing",
+}
+_PEAK_TOTAL_AGGREGATE_KEYS = {
+    "record_total",
+    "eligible_readout_total",
+    "eligible_readout_share",
+    "zero_share",
+    "mode_peak_total",
+    "mode_frequency",
+    "mode_share",
+    "unique_peak_total",
+    "absolute_distribution_non_authorizing",
+    "histogram_aggregate_only",
+}
+_TIME_SCALE_AGGREGATE_KEYS = {
+    "factors",
+    "period",
+    "peak_total",
+    "per_video_rows_persisted",
+}
+_SHUFFLE_AGGREGATE_KEYS = {
+    "real_eligibility_sets_denominator",
+    "real_eligible_total",
+    "real_harmonic_energy_fraction",
+    "shuffled_harmonic_energy_fraction",
+    "shuffled_to_real_harmonic_median_ratio",
+    "real_recurrence_gate_energy",
+    "shuffled_recurrence_gate_energy",
+    "shuffled_to_real_gate_energy_median_ratio",
+}
+_POSE_CONTROL_AGGREGATE_KEYS = {
+    "record_total",
+    "positive_period_confidence_share",
+    "carrier_available_share",
+    "confidence_and_structure_eligible_share_non_authorizing",
+    "positive_support_share",
+}
+_LABEL_FIREWALL_KEYS = {
+    "accepted_scientific_inputs",
+    "manifest_interface_supported",
+    "media_interface_supported",
+    "development_identity_media_pose_or_target_interface_supported",
+    "sealed_evaluation_identity_media_pose_or_target_interface_supported",
+    "action_class_interface_supported",
+    "repetition_annotation_interface_supported",
+    "external_label_fields_accessed",
+    "training_interface_supported",
+}
+_ALGORITHM_KEYS = {
+    "period_estimator",
+    "per_sample_period_upper_bound",
+    "period_confidence_part_of_carrier_eligibility",
+    "carrier_eligibility",
+    "pose_time_shuffle",
+    "embedding_time_shuffle",
+    "zero_pose",
+    "static_pose",
+    "cycle_margin",
+    "time_scale_factors",
+    "peak_readout",
+    "full_timeline_reference_authorizing",
+    "fixed_training_period_used_at_inference",
+}
+_SCIENTIFIC_CAVEATS = [
+    "The native recurrence-carrier readout is independently inferred, not author-disclosed.",
+    "This train337 gate tests label-free mechanism consistency, not accuracy.",
+    "Passing authorizes only one separately frozen dev84 protocol build.",
+    "No development or sealed-evaluation identity, pose, prediction, or score is authorized here.",
+    "Absolute confidence, training-period proximity, curve RMS, and cross-candidate ranking are non-authorizing.",
+]
 _READ_ONLY_VERIFICATION_KEYS = {
     "all_file_inputs_unchanged",
     "train337_pose_cache_set_unchanged",
@@ -318,6 +444,65 @@ _READ_ONLY_VERIFICATION_KEYS = {
     "training_steps_executed",
     "pose_cache_write_operations",
     "per_video_prediction_write_operations",
+}
+_LAUNCH_ARTIFACT_KEYS = {
+    "schema_version",
+    "artifact_type",
+    "status",
+    "classification",
+    "protocol",
+    "seed",
+    "candidate",
+    "inputs",
+    "authorization",
+}
+_LAUNCH_INPUT_KEYS = {
+    "experiment_config_sha256",
+    "experiment_config_bytes",
+    "gate_specification_sha256",
+    "gate_specification_bytes",
+    "pose_snapshot_sha256",
+    "pose_snapshot_bytes",
+    "pose_cache_set_sha256",
+    "source_export_receipt_sha256",
+    "source_export_receipt_bytes",
+    "launch_authorization_runner_sha256",
+    "launch_authorization_runner_bytes",
+    "terminal_gate_runner_sha256",
+    "terminal_gate_runner_bytes",
+    "config_fingerprint",
+    "pose_fingerprint",
+    "training_video_total",
+    "source_git_sha",
+    "source_receipt_covered_paths",
+}
+_LAUNCH_AUTHORIZATION_KEYS = {
+    "gate_frozen_before_candidate_a",
+    "candidate_training_authorized",
+    "encoder_training_scope",
+    "terminal_checkpoint_or_prediction_authorized",
+    "dev84_identity_media_pose_or_scoring_authorized",
+    "test105_evaluation_authorized",
+    "aggregate_only_prior_receipts",
+}
+_LAUNCH_RECEIPT_KEYS = {
+    "schema_version",
+    "artifact_type",
+    "artifact_locator",
+    "artifact_sha256",
+    "artifact_bytes",
+    "artifact_status",
+    "candidate_id",
+    "experiment_config_sha256",
+    "gate_specification_sha256",
+    "pose_snapshot_sha256",
+    "pose_cache_set_sha256",
+    "source_export_receipt_sha256",
+    "source_git_sha",
+    "prior_scientific_rejections_sha256",
+    "candidate_training_authorized",
+    "dev84_pose_or_scoring_authorized",
+    "test105_evaluation_authorized",
 }
 
 
@@ -399,6 +584,7 @@ class ReadoutSample:
 class RepresentationSample:
     temporal_rms: float
     lag_eligible: bool
+    null_margins_complete: bool
     real_cycle_margin: float | None
     pose_shuffle_cycle_margin: float | None
     embedding_shuffle_cycle_margin: float | None
@@ -421,6 +607,7 @@ class ShuffleControlSample:
 class PoseControlSample:
     positive_period_confidence: bool
     carrier_eligible: bool
+    raw_carrier_available: bool
     positive_support: bool
 
 
@@ -763,6 +950,73 @@ def _period_upper_bound(
     raise ValueError("unsupported maximum period mode")
 
 
+def _period_upper_bound_metadata(config: PAMSConfig) -> dict[str, Any]:
+    if config.period.maximum_mode != "half_timeline":
+        raise ValueError("terminal readout requires half_timeline period bounds")
+    minimum = config.period.minimum
+    maximum = config.period.maximum
+    return {
+        "mode": "half_timeline",
+        "formula": (
+            f"min({maximum}, max({minimum}, floor(timeline_length/2)))"
+        ),
+        "short_valid_fallback": (
+            f"if valid_pose_total < {2 * minimum}: "
+            f"period={minimum}, confidence=0"
+        ),
+    }
+
+
+def _validate_recurrence_carrier_batch(
+    readout: RecurrenceCarrierBatch,
+    *,
+    valid_mask: Tensor,
+    timeline_lengths: Tensor,
+    role: str,
+) -> None:
+    """Validate every persisted carrier invariant for one complete batch."""
+
+    if readout.curves.shape != valid_mask.shape:
+        raise ValueError(f"{role} carrier and valid-mask shapes differ")
+    batch, padded_time = valid_mask.shape
+    if timeline_lengths.shape != (batch,):
+        raise ValueError(f"{role} timeline lengths have an invalid shape")
+    frame_indices = torch.arange(padded_time, device=valid_mask.device)
+    outside_timeline = frame_indices.unsqueeze(0) >= timeline_lengths.unsqueeze(1)
+    valid = valid_mask.to(dtype=torch.bool)
+    if bool((valid & outside_timeline).any()):
+        raise RuntimeError(f"{role} valid mask escapes the native timeline")
+    active = readout.active_masks
+    if bool((active & ~valid).any()):
+        raise RuntimeError(f"{role} active mask escapes the valid pose mask")
+    tensors = {
+        "curve": readout.curves,
+        "recurrence score": readout.recurrence_scores,
+        "recurrence gate": readout.recurrence_gates,
+        "period": readout.periods,
+        "period confidence": readout.period_confidences,
+        "curve standard deviation": readout.curve_standard_deviations,
+        "raw curve standard deviation": readout.raw_curve_standard_deviations,
+        "harmonic energy fraction": readout.harmonic_energy_fractions,
+        "active support fraction": readout.active_support_fractions,
+        "recurrence gate energy": readout.recurrence_gate_energies,
+        "phase offset": readout.phase_offsets,
+    }
+    for name, value in tensors.items():
+        if not bool(torch.isfinite(value).all()):
+            raise RuntimeError(f"{role} contains a non-finite {name}")
+    if bool((readout.curves.masked_select(~active).abs() > 0.0).any()):
+        raise RuntimeError(f"{role} curve is nonzero outside its active mask")
+    if bool((readout.recurrence_scores.masked_select(~valid).abs() > 0.0).any()):
+        raise RuntimeError(f"{role} score is nonzero outside valid frames")
+    if bool((readout.recurrence_gates.masked_select(~active).abs() > 0.0).any()):
+        raise RuntimeError(f"{role} gate is nonzero outside its active mask")
+    if bool((readout.active_reference_counts < 0).any()) or bool(
+        (readout.full_timeline_reference_counts < 0).any()
+    ):
+        raise RuntimeError(f"{role} contains a negative analytic peak total")
+
+
 def _fractional_lag_similarity(
     embeddings: Tensor,
     valid_mask: Tensor,
@@ -848,6 +1102,12 @@ def _readout_samples_from_batch(
         raise ValueError("readout batch requires [batch,time,dimension] embeddings")
     if timeline_lengths.shape != embeddings.shape[:1] or len(video_ids) != embeddings.shape[0]:
         raise ValueError("readout batch identity or length shape mismatch")
+    _validate_recurrence_carrier_batch(
+        readout,
+        valid_mask=valid_mask,
+        timeline_lengths=timeline_lengths,
+        role="readout",
+    )
     counter = _validated_counter(config) if counter is None else counter
     samples: list[ReadoutSample] = []
     for index, video_id in enumerate(video_ids):
@@ -994,7 +1254,10 @@ def representation_samples_from_embeddings(
     static_pose_embeddings: Tensor,
     valid_mask: Tensor,
     timeline_lengths: Tensor,
-    periods: Tensor,
+    real_periods: Tensor,
+    pose_shuffle_periods: Tensor,
+    zero_pose_periods: Tensor,
+    static_pose_periods: Tensor,
     minimum_pairs: int,
 ) -> tuple[RepresentationSample, ...]:
     expected = real_embeddings.shape
@@ -1010,55 +1273,70 @@ def representation_samples_from_embeddings(
         raise ValueError("representation views must share [batch,time,dimension]")
     if valid_mask.shape != expected[:2] or timeline_lengths.shape != expected[:1]:
         raise ValueError("representation masks or lengths are incompatible")
-    if periods.shape != expected[:1]:
-        raise ValueError("representation periods must match the batch")
+    period_views = (
+        real_periods,
+        pose_shuffle_periods,
+        real_periods,
+        zero_pose_periods,
+        static_pose_periods,
+    )
+    if any(value.shape != expected[:1] for value in period_views):
+        raise ValueError("representation period views must match the batch")
     samples: list[RepresentationSample] = []
     for index in range(expected[0]):
         length = int(timeline_lengths[index])
-        period = float(periods[index])
-        if not math.isfinite(period) or period <= 0.0:
-            raise ValueError("representation period must be finite and positive")
-        margins = tuple(
-            _fractional_cycle_margin(
-                values[index],
-                valid_mask[index],
-                timeline_length=length,
-                period=period,
-                minimum_pairs=minimum_pairs,
-            )
-            for values in (
-                real_embeddings,
-                pose_shuffle_embeddings,
-                embedding_shuffle_embeddings,
-                zero_pose_embeddings,
-                static_pose_embeddings,
-            )
+        embedding_views = (
+            real_embeddings,
+            pose_shuffle_embeddings,
+            embedding_shuffle_embeddings,
+            zero_pose_embeddings,
+            static_pose_embeddings,
         )
+        margins: list[float | None] = []
+        for values, periods in zip(embedding_views, period_views, strict=True):
+            period = float(periods[index])
+            if not math.isfinite(period) or period <= 0.0:
+                raise ValueError("representation period must be finite and positive")
+            margins.append(
+                _fractional_cycle_margin(
+                    values[index],
+                    valid_mask[index],
+                    timeline_length=length,
+                    period=period,
+                    minimum_pairs=minimum_pairs,
+                )
+            )
         real, pose_shuffle, embedding_shuffle, zero_pose, static_pose = margins
-        eligible = all(value is not None for value in margins)
+        eligible = real is not None
+        null_complete = all(value is not None for value in margins[1:])
         separation: float | None = None
         beats: bool | None = None
-        if eligible:
-            if any(value is None for value in margins):
-                raise RuntimeError("representation null eligibility changed unexpectedly")
-            if (
-                real is None
-                or pose_shuffle is None
-                or embedding_shuffle is None
-                or zero_pose is None
-                or static_pose is None
-            ):
-                raise RuntimeError("representation null margin is unexpectedly absent")
+        if eligible and null_complete:
+            if real is None:
+                raise RuntimeError("real representation margin changed unexpectedly")
+            null_margins = (
+                pose_shuffle,
+                embedding_shuffle,
+                zero_pose,
+                static_pose,
+            )
+            if any(value is None for value in null_margins):
+                raise RuntimeError("null completeness changed unexpectedly")
             separation = real - max(
-                pose_shuffle, embedding_shuffle, zero_pose, static_pose
+                float(value) for value in null_margins if value is not None
             )
             beats = separation > 0.0
+        elif eligible:
+            # A real-eligible row with any unavailable null remains in the
+            # denominator and fails the strongest-null comparison closed.
+            beats = False
         samples.append(
             RepresentationSample(
                 temporal_rms=_epoch11._temporal_rms(
                     real_embeddings[index], valid_mask[index], length
                 ),
                 lag_eligible=eligible,
+                null_margins_complete=null_complete,
                 real_cycle_margin=real,
                 pose_shuffle_cycle_margin=pose_shuffle,
                 embedding_shuffle_cycle_margin=embedding_shuffle,
@@ -1123,6 +1401,12 @@ def _pose_control_samples(
     timeline_lengths: Tensor,
     minimum_pairs: int,
 ) -> tuple[PoseControlSample, ...]:
+    _validate_recurrence_carrier_batch(
+        readout,
+        valid_mask=valid_mask,
+        timeline_lengths=timeline_lengths,
+        role="pose control",
+    )
     rows: list[PoseControlSample] = []
     for index in range(readout.periods.shape[0]):
         length = int(timeline_lengths[index])
@@ -1146,6 +1430,7 @@ def _pose_control_samples(
                 carrier_eligible=(
                     confidence > 0.0 and structural and bool(readout.available[index])
                 ),
+                raw_carrier_available=bool(readout.available[index]),
                 positive_support=support > 0.0,
             )
         )
@@ -1209,6 +1494,36 @@ def _encode_baseline_and_controls(
             shuffled_embeddings = _deterministically_shuffle_valid_embeddings(
                 real_embeddings, batch.valid_mask, batch.video_ids
             )
+            pose_shuffle_readout = estimate_recurrence_carrier_curves(
+                pose_shuffle_embeddings,
+                minimum_period=config.period.minimum,
+                maximum_period=config.period.maximum,
+                valid_mask=batch.valid_mask,
+                timeline_lengths=batch.lengths,
+                maximum_mode=config.period.maximum_mode,
+            )
+            zero_readout = estimate_recurrence_carrier_curves(
+                zero_pose_embeddings,
+                minimum_period=config.period.minimum,
+                maximum_period=config.period.maximum,
+                valid_mask=batch.valid_mask,
+                timeline_lengths=batch.lengths,
+                maximum_mode=config.period.maximum_mode,
+            )
+            static_readout = estimate_recurrence_carrier_curves(
+                static_pose_embeddings,
+                minimum_period=config.period.minimum,
+                maximum_period=config.period.maximum,
+                valid_mask=batch.valid_mask,
+                timeline_lengths=batch.lengths,
+                maximum_mode=config.period.maximum_mode,
+            )
+            _validate_recurrence_carrier_batch(
+                pose_shuffle_readout,
+                valid_mask=batch.valid_mask,
+                timeline_lengths=batch.lengths,
+                role="pose shuffle",
+            )
             representation_rows.extend(
                 representation_samples_from_embeddings(
                     real_embeddings=real_embeddings,
@@ -1218,7 +1533,10 @@ def _encode_baseline_and_controls(
                     static_pose_embeddings=static_pose_embeddings,
                     valid_mask=batch.valid_mask,
                     timeline_lengths=batch.lengths,
-                    periods=real_readout.periods,
+                    real_periods=real_readout.periods,
+                    pose_shuffle_periods=pose_shuffle_readout.periods,
+                    zero_pose_periods=zero_readout.periods,
+                    static_pose_periods=static_readout.periods,
                     minimum_pairs=minimum_pairs,
                 )
             )
@@ -1228,6 +1546,12 @@ def _encode_baseline_and_controls(
                 batch.valid_mask,
                 timeline_lengths=batch.lengths,
                 period_confidences=real_readout.period_confidences,
+            )
+            _validate_recurrence_carrier_batch(
+                shuffled_readout,
+                valid_mask=batch.valid_mask,
+                timeline_lengths=batch.lengths,
+                role="embedding shuffle",
             )
             for index, source in enumerate(baseline):
                 shuffle_rows.append(
@@ -1245,23 +1569,6 @@ def _encode_baseline_and_controls(
                         ),
                     )
                 )
-
-            zero_readout = estimate_recurrence_carrier_curves(
-                zero_pose_embeddings,
-                minimum_period=config.period.minimum,
-                maximum_period=config.period.maximum,
-                valid_mask=batch.valid_mask,
-                timeline_lengths=batch.lengths,
-                maximum_mode=config.period.maximum_mode,
-            )
-            static_readout = estimate_recurrence_carrier_curves(
-                static_pose_embeddings,
-                minimum_period=config.period.minimum,
-                maximum_period=config.period.maximum,
-                valid_mask=batch.valid_mask,
-                timeline_lengths=batch.lengths,
-                maximum_mode=config.period.maximum_mode,
-            )
             zero_rows.extend(
                 _pose_control_samples(
                     embeddings=zero_pose_embeddings,
@@ -1446,6 +1753,7 @@ def _representation_distribution(
     if not samples:
         raise ValueError("representation distribution requires samples")
     eligible = [sample for sample in samples if sample.lag_eligible]
+    null_complete = [sample for sample in eligible if sample.null_margins_complete]
     return {
         "record_total": len(samples),
         "temporal_rms": _summary([sample.temporal_rms for sample in samples]),
@@ -1454,6 +1762,13 @@ def _representation_distribution(
         ),
         "lag_eligible_total": len(eligible),
         "lag_eligible_share": len(eligible) / len(samples),
+        "null_complete_total": len(null_complete),
+        "null_complete_share_of_real_eligible": (
+            len(null_complete) / len(eligible) if eligible else 0.0
+        ),
+        "all_real_eligible_null_margins_complete": (
+            bool(eligible) and len(null_complete) == len(eligible)
+        ),
         "real_cycle_margin": _summary(
             [
                 sample.real_cycle_margin
@@ -1499,11 +1814,7 @@ def _representation_distribution(
         "real_beats_all_nulls_share": (
             float(
                 np.mean(
-                    [
-                        bool(sample.real_beats_all_nulls)
-                        for sample in eligible
-                        if sample.real_beats_all_nulls is not None
-                    ]
+                    [bool(sample.real_beats_all_nulls) for sample in eligible]
                 )
             )
             if eligible
@@ -1607,19 +1918,31 @@ def _readout_distribution(samples: Sequence[ReadoutSample]) -> dict[str, Any]:
 def _peak_total_distribution(samples: Sequence[ReadoutSample]) -> dict[str, Any]:
     if not samples:
         raise ValueError("peak-total distribution requires samples")
+    eligible = [sample for sample in samples if sample.carrier_eligible]
     values = np.asarray(
-        [sample.selected_peak_total for sample in samples], dtype=np.int64
+        [sample.selected_peak_total for sample in eligible], dtype=np.int64
     )
     frequencies = Counter(int(value) for value in values)
-    mode_value, mode_total = min(
-        frequencies.items(), key=lambda item: (-item[1], item[0])
-    )
+    if frequencies:
+        mode_value, mode_total = min(
+            frequencies.items(), key=lambda item: (-item[1], item[0])
+        )
+        zero_share = float(np.mean(values == 0))
+        mode_share = mode_total / len(eligible)
+    else:
+        mode_value, mode_total = None, 0
+        # The independent carrier-coverage criterion also fails, but keeping
+        # both peak-shape criteria fail-closed avoids a vacuous pass.
+        zero_share = 1.0
+        mode_share = 1.0
     return {
         "record_total": len(samples),
-        "zero_share": float(np.mean(values == 0)),
+        "eligible_readout_total": len(eligible),
+        "eligible_readout_share": len(eligible) / len(samples),
+        "zero_share": zero_share,
         "mode_peak_total": mode_value,
         "mode_frequency": mode_total,
-        "mode_share": mode_total / len(samples),
+        "mode_share": mode_share,
         "unique_peak_total": len(frequencies),
         "absolute_distribution_non_authorizing": _summary(values),
         "histogram_aggregate_only": {
@@ -1667,6 +1990,9 @@ def _pose_control_distribution(samples: Sequence[PoseControlSample]) -> dict[str
             np.mean([sample.positive_period_confidence for sample in samples])
         ),
         "carrier_available_share": float(
+            np.mean([sample.raw_carrier_available for sample in samples])
+        ),
+        "confidence_and_structure_eligible_share_non_authorizing": float(
             np.mean([sample.carrier_eligible for sample in samples])
         ),
         "positive_support_share": float(
@@ -1720,7 +2046,11 @@ def gate_decision(
             threshold=thresholds["real_cycle_margin_median_minimum"],
         ),
         "real_minus_strongest_null_median": _criterion(
-            _median(representation["real_minus_strongest_null"]),
+            (
+                _median(representation["real_minus_strongest_null"])
+                if representation["all_real_eligible_null_margins_complete"]
+                else None
+            ),
             operator=">=",
             threshold=thresholds["real_minus_strongest_null_median_minimum"],
         ),
@@ -1890,7 +2220,12 @@ def _validate_encoder_completion_receipt(
     identities: Mapping[str, tuple[str, int]],
     epoch11_artifact: Mapping[str, Any],
     epoch11_receipt: Mapping[str, Any],
-) -> tuple[CompletedRunReceipt, Path, tuple[str, int]]:
+) -> tuple[
+    CompletedRunReceipt,
+    Path,
+    tuple[str, int],
+    dict[str, tuple[Path, tuple[str, int]]],
+]:
     receipt = CompletedRunReceipt.model_validate(
         _strict_json(path, document="encoder completion receipt")
     )
@@ -1906,6 +2241,9 @@ def _validate_encoder_completion_receipt(
         raise ValueError("encoder completion receipt seed mismatch")
     if receipt.metrics.get("completed_epochs") != specification.expected_completed_epochs:
         raise ValueError("encoder completion receipt terminal epoch mismatch")
+    roles = [artifact.role for artifact in receipt.artifacts]
+    if len(roles) != len(set(roles)):
+        raise ValueError("encoder completion receipt contains duplicate artifact roles")
     artifacts = {artifact.role: artifact for artifact in receipt.artifacts}
     required = {
         "input_config",
@@ -1914,6 +2252,8 @@ def _validate_encoder_completion_receipt(
         "input_resume_progress",
         "output_encoder_checkpoint",
         "progress_log",
+        "input_candidate_launch_authorization",
+        "input_candidate_launch_authorization_receipt",
     }
     if not required <= set(artifacts):
         raise ValueError(
@@ -1934,11 +2274,31 @@ def _validate_encoder_completion_receipt(
         ),
         "output_encoder_checkpoint": identities["encoder_checkpoint"],
         "progress_log": identities["encoder_progress"],
+        "input_candidate_launch_authorization": identities[
+            "candidate_launch_authorization"
+        ],
+        "input_candidate_launch_authorization_receipt": identities[
+            "candidate_launch_authorization_receipt"
+        ],
     }
+    resolved_required: dict[str, tuple[Path, tuple[str, int]]] = {}
     for role, expected_identity in expected_artifacts.items():
+        resolved = resolve_artifact_path(path, artifacts[role])
+        _reject_privileged_path(resolved, role=f"encoder completion {role}")
+        validate_artifact_receipt(resolved, artifacts[role])
         actual_identity = (artifacts[role].sha256, artifacts[role].bytes)
         if actual_identity != expected_identity:
             raise ValueError(f"encoder completion receipt {role} identity mismatch")
+        resolved_required[role] = (resolved.resolve(strict=True), actual_identity)
+    command = receipt.started.command
+    for option in (
+        "--candidate-launch-authorization",
+        "--candidate-launch-receipt",
+    ):
+        if command.count(option) != 1:
+            raise ValueError(
+                f"encoder started command must consume {option} exactly once"
+            )
     started_path = path.with_name(f"{receipt.run_id}.started.json")
     started_identity = _stable_file_sha256(started_path)
     started_payload = _strict_json(started_path, document="encoder started receipt")
@@ -1946,7 +2306,7 @@ def _validate_encoder_completion_receipt(
         raise ValueError("encoder started receipt bytes differ from embedded receipt")
     if started_identity[0] != receipt.start_manifest_sha256:
         raise ValueError("encoder started receipt SHA-256 mismatch")
-    return receipt, started_path, started_identity
+    return receipt, started_path, started_identity, resolved_required
 
 
 def _validate_completion_provenance(
@@ -2375,12 +2735,241 @@ def _validate_epoch11_gate_pair(
     return artifact, receipt
 
 
+def _validate_terminal_aggregates(
+    value: Any,
+    *,
+    specification: GateSpecification,
+) -> Mapping[str, Any]:
+    aggregates = _require_exact_mapping(
+        value, _AGGREGATE_KEYS, role="prior terminal aggregates"
+    )
+    if aggregates["per_video_rows_persisted"] is not False:
+        raise ValueError("prior terminal artifact persisted per-video rows")
+    nested_schemas = {
+        "representation": _REPRESENTATION_AGGREGATE_KEYS,
+        "period": _PERIOD_AGGREGATE_KEYS,
+        "readout": _READOUT_AGGREGATE_KEYS,
+        "peak_total": _PEAK_TOTAL_AGGREGATE_KEYS,
+        "time_scale": _TIME_SCALE_AGGREGATE_KEYS,
+        "embedding_shuffle_fixed_real_period": _SHUFFLE_AGGREGATE_KEYS,
+        "zero_pose": _POSE_CONTROL_AGGREGATE_KEYS,
+        "static_pose": _POSE_CONTROL_AGGREGATE_KEYS,
+    }
+    for name, keys in nested_schemas.items():
+        _require_exact_mapping(
+            aggregates[name], keys, role=f"prior terminal aggregate {name}"
+        )
+    if aggregates["representation"]["record_total"] != (
+        specification.expected_training_video_total
+    ):
+        raise ValueError("prior representation aggregate does not cover train337")
+    for name in ("period", "readout", "peak_total", "zero_pose", "static_pose"):
+        if aggregates[name]["record_total"] != specification.expected_training_video_total:
+            raise ValueError(f"prior {name} aggregate does not cover train337")
+    time_scale = aggregates["time_scale"]
+    if (
+        time_scale["factors"] != list(specification.time_scale_factors)
+        or time_scale["per_video_rows_persisted"] is not False
+    ):
+        raise ValueError("prior time-scale aggregate differs from preregistration")
+    forbidden = {"samples", "rows", "video_id", "video_ids", "predictions"}
+    present = {key.strip().lower() for key in _walk_mapping_keys(aggregates)}
+    if present & forbidden:
+        raise ValueError("prior terminal aggregate exposes per-video material")
+    return aggregates
+
+
+def _validate_prior_terminal_payload(
+    artifact: Mapping[str, Any],
+    *,
+    expected_candidate_id: str,
+    prior_pairs: Sequence[Mapping[str, Any]],
+    specification: GateSpecification,
+) -> None:
+    if (
+        artifact["classification"] != specification.classification
+        or artifact["protocol"] != specification.expected_protocol
+        or type(artifact["seed"]) is not int
+        or artifact["seed"] != specification.expected_seed
+        or artifact["scientific_caveats"] != _SCIENTIFIC_CAVEATS
+    ):
+        raise ValueError("prior terminal protocol metadata mismatch")
+    profile = specification.candidate_profiles[expected_candidate_id]
+    candidate = _require_exact_mapping(
+        artifact["candidate"], _CANDIDATE_KEYS, role="prior candidate"
+    )
+    expected_candidate = {
+        "id": expected_candidate_id,
+        "fixed_training_period_frames_provenance_only": (
+            profile.fixed_training_period_frames
+        ),
+        "anchor_stride": profile.anchor_stride,
+        "first_pass_only": True,
+        "prior_scientific_rejections": list(prior_pairs),
+        "cross_candidate_metric_ranking_forbidden": True,
+    }
+    if candidate != expected_candidate:
+        raise ValueError("prior candidate profile or chain differs from preregistration")
+    if (
+        candidate["first_pass_only"] is not True
+        or candidate["cross_candidate_metric_ranking_forbidden"] is not True
+        or type(candidate["fixed_training_period_frames_provenance_only"]) is not int
+        or type(candidate["anchor_stride"]) is not int
+    ):
+        raise TypeError("prior candidate profile contains scalar type drift")
+
+    thresholds = _require_exact_mapping(
+        artifact["thresholds"], _THRESHOLD_KEYS, role="prior thresholds"
+    )
+    if any(
+        isinstance(value, bool)
+        or not isinstance(value, int | float)
+        or not math.isfinite(float(value))
+        for value in thresholds.values()
+    ) or any(
+        float(thresholds[key]) != expected
+        for key, expected in specification.thresholds.items()
+    ):
+        raise ValueError("prior terminal thresholds differ from the frozen gate")
+    aggregates = _validate_terminal_aggregates(
+        artifact["aggregates"], specification=specification
+    )
+    expected_gate = gate_decision(
+        candidate_id=expected_candidate_id,
+        aggregates=aggregates,
+        thresholds=thresholds,
+    )
+    gate = _require_exact_mapping(
+        artifact["gate"], _GATE_DECISION_KEYS, role="prior gate decision"
+    )
+    if gate != expected_gate or gate["overall_pass"] is not False:
+        raise ValueError("prior gate decision is not a canonical scientific rejection")
+    if (
+        gate["thresholds_frozen_before_candidate_a"] is not True
+        or gate["all_hard_criteria_pass"] is not False
+        or gate["eligible_for_single_frozen_dev84_protocol_build"] is not False
+        or gate["dev84_identity_media_pose_or_scoring_authorized"] is not False
+        or gate["test105_evaluation_authorized"] is not False
+    ):
+        raise ValueError("prior gate authorization booleans are not canonical")
+    criteria = _require_exact_mapping(
+        gate["criteria"], set(_CRITERION_TO_THRESHOLD), role="prior criteria"
+    )
+    for name, row_value in criteria.items():
+        row = _require_exact_mapping(
+            row_value,
+            {"value", "operator", "threshold", "pass"},
+            role=f"prior criterion {name}",
+        )
+        if type(row["pass"]) is not bool:
+            raise TypeError(f"prior criterion {name}.pass must be boolean")
+        if isinstance(row["threshold"], bool) or not isinstance(
+            row["threshold"], int | float
+        ):
+            raise TypeError(f"prior criterion {name}.threshold must be numeric")
+
+    hard = _require_exact_mapping(
+        artifact["hard_invariants"],
+        _HARD_INVARIANT_KEYS,
+        role="prior hard invariants",
+    )
+    expected_hard = {key: True for key in _HARD_INVARIANT_KEYS}
+    expected_hard["per_video_predictions_persisted"] = False
+    if any(hard[key] is not expected for key, expected in expected_hard.items()):
+        raise ValueError("prior terminal hard invariants are incomplete")
+    read_only = _require_exact_mapping(
+        artifact["read_only_verification"],
+        _READ_ONLY_VERIFICATION_KEYS,
+        role="prior read-only verification",
+    )
+    if (
+        read_only["all_file_inputs_unchanged"] is not True
+        or read_only["train337_pose_cache_set_unchanged"] is not True
+        or read_only["model_state_sha256_before"]
+        != read_only["model_state_sha256_after"]
+        or read_only["model_or_optimizer_state_updated"] is not False
+        or type(read_only["training_steps_executed"]) is not int
+        or read_only["training_steps_executed"] != 0
+        or type(read_only["pose_cache_write_operations"]) is not int
+        or read_only["pose_cache_write_operations"] != 0
+        or type(read_only["per_video_prediction_write_operations"]) is not int
+        or read_only["per_video_prediction_write_operations"] != 0
+    ):
+        raise ValueError("prior terminal artifact is not read-only")
+    label_firewall = _require_exact_mapping(
+        artifact["label_firewall"],
+        _LABEL_FIREWALL_KEYS,
+        role="prior label firewall",
+    )
+    false_firewall = _LABEL_FIREWALL_KEYS - {
+        "accepted_scientific_inputs",
+        "external_label_fields_accessed",
+    }
+    if (
+        any(label_firewall[key] is not False for key in false_firewall)
+        or label_firewall["external_label_fields_accessed"] != []
+        or not isinstance(label_firewall["accepted_scientific_inputs"], list)
+    ):
+        raise ValueError("prior terminal label firewall is not fail-closed")
+    _require_exact_mapping(
+        artifact["algorithm"], _ALGORITHM_KEYS, role="prior algorithm"
+    )
+    inputs = artifact["inputs"]
+    if not isinstance(inputs, Mapping):
+        raise ValueError("prior inputs must be a mapping")
+    required_input_keys = {
+        "encoder_checkpoint_sha256",
+        "encoder_progress_sha256",
+        "encoder_completion_receipt_sha256",
+        "encoder_started_receipt_sha256",
+        "source_export_receipt_sha256",
+        "experiment_config_sha256",
+        "gate_specification_sha256",
+        "pose_snapshot_sha256",
+        "pose_cache_set_sha256",
+        "epoch11_gate_artifact_sha256",
+        "epoch11_gate_receipt_sha256",
+        "candidate_launch_authorization_sha256",
+        "candidate_launch_authorization_receipt_sha256",
+        "code_files_sha256",
+        "code_files_sha256_commitment",
+        "training_video_total",
+        "source_git_sha",
+        "read_only_post_run_identity_verified",
+    }
+    if not required_input_keys <= set(inputs):
+        raise ValueError("prior terminal inputs are missing required commitments")
+    for key in required_input_keys:
+        if key.endswith("_sha256") and (
+            not isinstance(inputs[key], str) or len(inputs[key]) != 64
+        ):
+            raise ValueError(f"prior terminal input {key} is not a SHA-256")
+    if (
+        type(inputs["training_video_total"]) is not int
+        or inputs["training_video_total"]
+        != specification.expected_training_video_total
+        or inputs["source_git_sha"] != artifact["runtime"].get("source_git_sha")
+        or inputs["read_only_post_run_identity_verified"] is not True
+    ):
+        raise ValueError("prior terminal input provenance mismatch")
+    code_hashes = inputs["code_files_sha256"]
+    if not isinstance(code_hashes, Mapping) or (
+        inputs["code_files_sha256_commitment"] != sha256_json(code_hashes)
+    ):
+        raise ValueError("prior terminal code-file commitment mismatch")
+    if artifact["hardware_sha256"] != sha256_json(artifact["hardware"]):
+        raise ValueError("prior terminal hardware commitment mismatch")
+    if artifact["runtime_sha256"] != sha256_json(artifact["runtime"]):
+        raise ValueError("prior terminal runtime commitment mismatch")
+
+
 def _validate_prior_rejection_pair(
     artifact_path: Path,
     receipt_path: Path,
     *,
     expected_candidate_id: str,
     prior_pairs: Sequence[Mapping[str, Any]],
+    specification: GateSpecification,
     gate_specification_sha256: str,
     pose_cache_set_sha256: str,
     source_git_sha: str,
@@ -2390,6 +2979,12 @@ def _validate_prior_rejection_pair(
     artifact = _strict_json(artifact_path, document="prior scientific rejection artifact")
     if set(artifact) != _OUTPUT_KEYS:
         raise ValueError("prior scientific rejection artifact schema mismatch")
+    _validate_prior_terminal_payload(
+        artifact,
+        expected_candidate_id=expected_candidate_id,
+        prior_pairs=prior_pairs,
+        specification=specification,
+    )
     if (
         artifact["schema_version"] != _ARTIFACT_SCHEMA_VERSION
         or artifact["artifact_type"] != _EXPECTED_ARTIFACT_TYPE
@@ -2407,9 +3002,7 @@ def _validate_prior_rejection_pair(
         or artifact["inputs"].get("source_git_sha") != source_git_sha
     ):
         raise ValueError("prior artifact is not the required scientific rejection")
-    declared_prior = artifact["candidate"].get("prior_scientific_rejections")
-    if declared_prior != list(prior_pairs):
-        raise ValueError("prior scientific rejection chain is not prefix-complete")
+    declared_prior = artifact["candidate"]["prior_scientific_rejections"]
     receipt = _strict_json(receipt_path, document="prior scientific rejection receipt")
     if set(receipt) != _RECEIPT_KEYS:
         raise ValueError("prior scientific rejection receipt schema mismatch")
@@ -2451,6 +3044,12 @@ def _validate_prior_rejection_pair(
         "epoch11_gate_artifact_sha256": "epoch11_gate_artifact_sha256",
         "epoch11_gate_receipt_sha256": "epoch11_gate_receipt_sha256",
         "code_files_sha256_commitment": "code_files_sha256_commitment",
+        "candidate_launch_authorization_sha256": (
+            "candidate_launch_authorization_sha256"
+        ),
+        "candidate_launch_authorization_receipt_sha256": (
+            "candidate_launch_authorization_receipt_sha256"
+        ),
     }
     if any(
         receipt[receipt_key] != artifact["inputs"].get(input_key)
@@ -2470,6 +3069,7 @@ def _validate_predecessor_chain(
     profile: CandidateProfile,
     artifact_paths: Sequence[Path],
     receipt_paths: Sequence[Path],
+    specification: GateSpecification,
     gate_specification_sha256: str,
     pose_cache_set_sha256: str,
     source_git_sha: str,
@@ -2490,12 +3090,315 @@ def _validate_predecessor_chain(
                 receipt_path,
                 expected_candidate_id=expected,
                 prior_pairs=chain,
+                specification=specification,
                 gate_specification_sha256=gate_specification_sha256,
                 pose_cache_set_sha256=pose_cache_set_sha256,
                 source_git_sha=source_git_sha,
             )
         )
     return tuple(chain)
+
+
+def _candidate_mapping(
+    candidate_id: str,
+    profile: CandidateProfile,
+    prior_chain: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "id": candidate_id,
+        "fixed_training_period_frames_provenance_only": (
+            profile.fixed_training_period_frames
+        ),
+        "anchor_stride": profile.anchor_stride,
+        "first_pass_only": True,
+        "prior_scientific_rejections": [dict(value) for value in prior_chain],
+        "cross_candidate_metric_ranking_forbidden": True,
+    }
+
+
+def prepare_candidate_launch_authorization(
+    *,
+    source_receipt_path: str | Path,
+    config_path: str | Path,
+    gate_specification_path: str | Path,
+    pose_snapshot_path: str | Path,
+    candidate_id: str,
+    prior_rejection_artifact_paths: Sequence[str | Path] = (),
+    prior_rejection_receipt_paths: Sequence[str | Path] = (),
+    authorization_runner_path: str | Path,
+) -> dict[str, Any]:
+    """Build a train337-only authorization before candidate training begins."""
+
+    if candidate_id not in _CANDIDATE_ORDER:
+        raise ValueError("candidate_id must be one of A, B, C")
+    prior_artifacts = tuple(Path(value) for value in prior_rejection_artifact_paths)
+    prior_receipts = tuple(Path(value) for value in prior_rejection_receipt_paths)
+    paths = {
+        "source_export_receipt": Path(source_receipt_path),
+        "experiment_config": Path(config_path),
+        "gate_specification": Path(gate_specification_path),
+        "pose_snapshot": Path(pose_snapshot_path),
+        "launch_authorization_runner": Path(authorization_runner_path),
+        "terminal_gate_runner": Path(__file__),
+    }
+    for index, value in enumerate(prior_artifacts):
+        paths[f"prior_rejection_artifact_{index}"] = value
+    for index, value in enumerate(prior_receipts):
+        paths[f"prior_rejection_receipt_{index}"] = value
+    for role, path in paths.items():
+        _reject_privileged_path(path, role=role)
+    source_root = Path.cwd().resolve(strict=True)
+    source_covered = _epoch11._require_source_tree_membership(
+        source_root,
+        {
+            "launch_authorization_runner": paths["launch_authorization_runner"],
+            "terminal_gate_runner": paths["terminal_gate_runner"],
+            "experiment_config": paths["experiment_config"],
+            "gate_specification": paths["gate_specification"],
+        },
+    )
+    identities = {name: _stable_file_sha256(path) for name, path in paths.items()}
+    _strict_json(paths["source_export_receipt"], document="source export receipt")
+    _validate_source_receipt_binding(
+        paths["source_export_receipt"],
+        sha256=identities["source_export_receipt"][0],
+    )
+    for index in range(len(prior_artifacts)):
+        _strict_json(
+            paths[f"prior_rejection_artifact_{index}"],
+            document="prior scientific rejection artifact",
+        )
+        _strict_json(
+            paths[f"prior_rejection_receipt_{index}"],
+            document="prior scientific rejection receipt",
+        )
+    specification = load_gate_specification(paths["gate_specification"])
+    config = _load_candidate_config(paths["experiment_config"])
+    profile = _validate_candidate_config(
+        config, specification, candidate_id=candidate_id
+    )
+    snapshot = _epoch11._load_snapshot(paths["pose_snapshot"])
+    if _strict_json(
+        paths["pose_snapshot"], document="pose snapshot"
+    ) != snapshot.to_dict():
+        raise ValueError("pose snapshot is not in canonical order or schema form")
+    if (
+        len(snapshot.entries) != specification.expected_training_video_total
+        or snapshot.pose_fingerprint != config.pose_fingerprint
+    ):
+        raise ValueError("launch authorization snapshot differs from train337 config")
+    source_git_sha = clean_git_revision(source_root)
+    prior_chain = _validate_predecessor_chain(
+        candidate_id=candidate_id,
+        profile=profile,
+        artifact_paths=prior_artifacts,
+        receipt_paths=prior_receipts,
+        specification=specification,
+        gate_specification_sha256=identities["gate_specification"][0],
+        pose_cache_set_sha256=snapshot.fingerprint,
+        source_git_sha=source_git_sha,
+    )
+    _require_unchanged(paths, identities)
+    if clean_git_revision(source_root) != source_git_sha:
+        raise RuntimeError("source changed while preparing launch authorization")
+    payload = {
+        "schema_version": 1,
+        "artifact_type": _CANDIDATE_LAUNCH_ARTIFACT_TYPE,
+        "status": "candidate_training_authorized",
+        "classification": specification.classification,
+        "protocol": specification.expected_protocol,
+        "seed": specification.expected_seed,
+        "candidate": _candidate_mapping(candidate_id, profile, prior_chain),
+        "inputs": {
+            "experiment_config_sha256": identities["experiment_config"][0],
+            "experiment_config_bytes": identities["experiment_config"][1],
+            "gate_specification_sha256": identities["gate_specification"][0],
+            "gate_specification_bytes": identities["gate_specification"][1],
+            "pose_snapshot_sha256": identities["pose_snapshot"][0],
+            "pose_snapshot_bytes": identities["pose_snapshot"][1],
+            "pose_cache_set_sha256": snapshot.fingerprint,
+            "source_export_receipt_sha256": identities["source_export_receipt"][0],
+            "source_export_receipt_bytes": identities["source_export_receipt"][1],
+            "launch_authorization_runner_sha256": identities[
+                "launch_authorization_runner"
+            ][0],
+            "launch_authorization_runner_bytes": identities[
+                "launch_authorization_runner"
+            ][1],
+            "terminal_gate_runner_sha256": identities["terminal_gate_runner"][0],
+            "terminal_gate_runner_bytes": identities["terminal_gate_runner"][1],
+            "config_fingerprint": config.fingerprint,
+            "pose_fingerprint": config.pose_fingerprint,
+            "training_video_total": len(snapshot.entries),
+            "source_git_sha": source_git_sha,
+            "source_receipt_covered_paths": source_covered,
+        },
+        "authorization": {
+            "gate_frozen_before_candidate_a": True,
+            "candidate_training_authorized": True,
+            "encoder_training_scope": "train337_only",
+            "terminal_checkpoint_or_prediction_authorized": False,
+            "dev84_identity_media_pose_or_scoring_authorized": False,
+            "test105_evaluation_authorized": False,
+            "aggregate_only_prior_receipts": True,
+        },
+    }
+    if set(payload) != _LAUNCH_ARTIFACT_KEYS:
+        raise RuntimeError("candidate launch authorization schema drifted")
+    _reject_forbidden_mapping_keys(payload, document="candidate launch authorization")
+    return payload
+
+
+def write_candidate_launch_authorization(
+    output: Path,
+    payload: Mapping[str, Any],
+) -> tuple[Path, str]:
+    _reject_privileged_path(output, role="candidate launch authorization output")
+    receipt_path = _receipt_path(output)
+    if output.exists() or receipt_path.exists():
+        raise FileExistsError("launch authorization artifact and receipt must both be new")
+    if set(payload) != _LAUNCH_ARTIFACT_KEYS:
+        raise ValueError("candidate launch authorization payload schema mismatch")
+    encoded = _encoded_json(payload)
+    artifact_sha256 = hashlib.sha256(encoded).hexdigest()
+    _write_new(output, encoded)
+    inputs = payload["inputs"]
+    prior = payload["candidate"]["prior_scientific_rejections"]
+    receipt = {
+        "schema_version": 1,
+        "artifact_type": _CANDIDATE_LAUNCH_RECEIPT_TYPE,
+        "artifact_locator": output.name,
+        "artifact_sha256": artifact_sha256,
+        "artifact_bytes": len(encoded),
+        "artifact_status": payload["status"],
+        "candidate_id": payload["candidate"]["id"],
+        "experiment_config_sha256": inputs["experiment_config_sha256"],
+        "gate_specification_sha256": inputs["gate_specification_sha256"],
+        "pose_snapshot_sha256": inputs["pose_snapshot_sha256"],
+        "pose_cache_set_sha256": inputs["pose_cache_set_sha256"],
+        "source_export_receipt_sha256": inputs["source_export_receipt_sha256"],
+        "source_git_sha": inputs["source_git_sha"],
+        "prior_scientific_rejections_sha256": sha256_json(prior),
+        "candidate_training_authorized": True,
+        "dev84_pose_or_scoring_authorized": False,
+        "test105_evaluation_authorized": False,
+    }
+    if set(receipt) != _LAUNCH_RECEIPT_KEYS:
+        raise RuntimeError("candidate launch authorization receipt schema drifted")
+    _write_new(receipt_path, _encoded_json(receipt))
+    return receipt_path, artifact_sha256
+
+
+def _validate_candidate_launch_authorization(
+    artifact_path: Path,
+    receipt_path: Path,
+    *,
+    candidate_id: str,
+    profile: CandidateProfile,
+    prior_chain: Sequence[Mapping[str, Any]],
+    specification: GateSpecification,
+    config: PAMSConfig,
+    identities: Mapping[str, tuple[str, int]],
+    pose_cache_set_sha256: str,
+    source_git_sha: str,
+    source_covered_paths: Mapping[str, str],
+) -> None:
+    artifact = _strict_json(
+        artifact_path, document="candidate launch authorization artifact"
+    )
+    if set(artifact) != _LAUNCH_ARTIFACT_KEYS:
+        raise ValueError("candidate launch authorization artifact schema mismatch")
+    candidate = _require_exact_mapping(
+        artifact["candidate"], _CANDIDATE_KEYS, role="launch candidate"
+    )
+    if candidate != _candidate_mapping(candidate_id, profile, prior_chain):
+        raise ValueError("candidate launch authorization profile or chain mismatch")
+    inputs = _require_exact_mapping(
+        artifact["inputs"], _LAUNCH_INPUT_KEYS, role="launch inputs"
+    )
+    expected_inputs = {
+        "experiment_config_sha256": identities["experiment_config"][0],
+        "experiment_config_bytes": identities["experiment_config"][1],
+        "gate_specification_sha256": identities["gate_specification"][0],
+        "gate_specification_bytes": identities["gate_specification"][1],
+        "pose_snapshot_sha256": identities["pose_snapshot"][0],
+        "pose_snapshot_bytes": identities["pose_snapshot"][1],
+        "pose_cache_set_sha256": pose_cache_set_sha256,
+        "source_export_receipt_sha256": identities["source_export_receipt"][0],
+        "source_export_receipt_bytes": identities["source_export_receipt"][1],
+        "launch_authorization_runner_sha256": identities[
+            "launch_authorization_runner"
+        ][0],
+        "launch_authorization_runner_bytes": identities[
+            "launch_authorization_runner"
+        ][1],
+        "terminal_gate_runner_sha256": identities["gate_runner"][0],
+        "terminal_gate_runner_bytes": identities["gate_runner"][1],
+        "config_fingerprint": config.fingerprint,
+        "pose_fingerprint": config.pose_fingerprint,
+        "training_video_total": specification.expected_training_video_total,
+        "source_git_sha": source_git_sha,
+        "source_receipt_covered_paths": {
+            key: source_covered_paths[key]
+            for key in (
+                "launch_authorization_runner",
+                "terminal_gate_runner",
+                "experiment_config",
+                "gate_specification",
+            )
+        },
+    }
+    if inputs != expected_inputs:
+        raise ValueError("candidate launch authorization input binding mismatch")
+    authorization = _require_exact_mapping(
+        artifact["authorization"],
+        _LAUNCH_AUTHORIZATION_KEYS,
+        role="launch authorization",
+    )
+    expected_authorization = {
+        "gate_frozen_before_candidate_a": True,
+        "candidate_training_authorized": True,
+        "encoder_training_scope": "train337_only",
+        "terminal_checkpoint_or_prediction_authorized": False,
+        "dev84_identity_media_pose_or_scoring_authorized": False,
+        "test105_evaluation_authorized": False,
+        "aggregate_only_prior_receipts": True,
+    }
+    if (
+        artifact["schema_version"] != 1
+        or artifact["artifact_type"] != _CANDIDATE_LAUNCH_ARTIFACT_TYPE
+        or artifact["status"] != "candidate_training_authorized"
+        or artifact["classification"] != specification.classification
+        or artifact["protocol"] != specification.expected_protocol
+        or artifact["seed"] != specification.expected_seed
+        or authorization != expected_authorization
+    ):
+        raise ValueError("candidate launch authorization is not canonical")
+    receipt = _strict_json(
+        receipt_path, document="candidate launch authorization receipt"
+    )
+    artifact_identity = _stable_file_sha256(artifact_path)
+    expected_receipt = {
+        "schema_version": 1,
+        "artifact_type": _CANDIDATE_LAUNCH_RECEIPT_TYPE,
+        "artifact_locator": artifact_path.name,
+        "artifact_sha256": artifact_identity[0],
+        "artifact_bytes": artifact_identity[1],
+        "artifact_status": artifact["status"],
+        "candidate_id": candidate_id,
+        "experiment_config_sha256": inputs["experiment_config_sha256"],
+        "gate_specification_sha256": inputs["gate_specification_sha256"],
+        "pose_snapshot_sha256": inputs["pose_snapshot_sha256"],
+        "pose_cache_set_sha256": inputs["pose_cache_set_sha256"],
+        "source_export_receipt_sha256": inputs["source_export_receipt_sha256"],
+        "source_git_sha": source_git_sha,
+        "prior_scientific_rejections_sha256": sha256_json(list(prior_chain)),
+        "candidate_training_authorized": True,
+        "dev84_pose_or_scoring_authorized": False,
+        "test105_evaluation_authorized": False,
+    }
+    if set(receipt) != _LAUNCH_RECEIPT_KEYS or receipt != expected_receipt:
+        raise ValueError("candidate launch authorization receipt binding mismatch")
 
 
 def _terminal_schedule_metadata(
@@ -2556,6 +3459,8 @@ def run_gate(
     source_receipt_path: str | Path,
     config_path: str | Path,
     gate_specification_path: str | Path,
+    candidate_launch_authorization_path: str | Path,
+    candidate_launch_receipt_path: str | Path,
     epoch11_gate_artifact_path: str | Path,
     epoch11_gate_receipt_path: str | Path,
     pose_cache_dir: str | Path,
@@ -2584,10 +3489,19 @@ def run_gate(
         "source_export_receipt": Path(source_receipt_path),
         "experiment_config": Path(config_path),
         "gate_specification": Path(gate_specification_path),
+        "candidate_launch_authorization": Path(
+            candidate_launch_authorization_path
+        ),
+        "candidate_launch_authorization_receipt": Path(
+            candidate_launch_receipt_path
+        ),
         "epoch11_gate_artifact": Path(epoch11_gate_artifact_path),
         "epoch11_gate_receipt": Path(epoch11_gate_receipt_path),
         "pose_snapshot": Path(pose_snapshot_path),
         "gate_runner": Path(__file__),
+        "launch_authorization_runner": Path(__file__).with_name(
+            "prepare_pams_native_candidate_launch_authorization.py"
+        ),
         "period_module": Path(
             estimate_period_from_embedding_velocity_vectors.__code__.co_filename
         ),
@@ -2610,6 +3524,8 @@ def run_gate(
             "gate_runner": paths["gate_runner"],
             "experiment_config": paths["experiment_config"],
             "gate_specification": paths["gate_specification"],
+            "launch_authorization_runner": paths["launch_authorization_runner"],
+            "terminal_gate_runner": paths["gate_runner"],
             "period_module": paths["period_module"],
             "recurrence_carrier_module": paths["recurrence_carrier_module"],
             "consensus_module": paths["consensus_module"],
@@ -2639,6 +3555,14 @@ def run_gate(
     _strict_json(started_preflight_path, document="encoder started receipt")
     _strict_json(paths["epoch11_gate_artifact"], document="epoch11 gate artifact")
     _strict_json(paths["epoch11_gate_receipt"], document="epoch11 gate receipt")
+    _strict_json(
+        paths["candidate_launch_authorization"],
+        document="candidate launch authorization artifact",
+    )
+    _strict_json(
+        paths["candidate_launch_authorization_receipt"],
+        document="candidate launch authorization receipt",
+    )
     _strict_json(paths["pose_snapshot"], document="pose snapshot")
     for index in range(len(prior_artifacts)):
         _strict_json(
@@ -2678,21 +3602,49 @@ def run_gate(
         pose_cache_set_sha256=declared_snapshot.fingerprint,
         source_git_sha=source_git_sha,
     )
-    completion, started_path, started_identity = _validate_encoder_completion_receipt(
-        paths["encoder_completion_receipt"],
-        expected_source_git_sha=source_git_sha,
+    prior_chain = _validate_predecessor_chain(
+        candidate_id=candidate_id,
+        profile=profile,
+        artifact_paths=prior_artifacts,
+        receipt_paths=prior_receipts,
+        specification=specification,
+        gate_specification_sha256=identities["gate_specification"][0],
+        pose_cache_set_sha256=declared_snapshot.fingerprint,
+        source_git_sha=source_git_sha,
+    )
+    _validate_candidate_launch_authorization(
+        paths["candidate_launch_authorization"],
+        paths["candidate_launch_authorization_receipt"],
+        candidate_id=candidate_id,
+        profile=profile,
+        prior_chain=prior_chain,
         specification=specification,
         config=config,
         identities=identities,
-        epoch11_artifact=epoch11_artifact,
-        epoch11_receipt=epoch11_receipt,
+        pose_cache_set_sha256=declared_snapshot.fingerprint,
+        source_git_sha=source_git_sha,
+        source_covered_paths=source_covered,
     )
+    completion, started_path, started_identity, completion_artifacts = (
+        _validate_encoder_completion_receipt(
+            paths["encoder_completion_receipt"],
+            expected_source_git_sha=source_git_sha,
+            specification=specification,
+            config=config,
+            identities=identities,
+            epoch11_artifact=epoch11_artifact,
+            epoch11_receipt=epoch11_receipt,
+        )
+    )
+    for role, (resolved_path, identity) in completion_artifacts.items():
+        key = f"completion_artifact_{role}"
+        paths[key] = resolved_path
+        identities[key] = identity
     if (
         started_path != paths["encoder_started_receipt"]
         or started_identity != identities["encoder_started_receipt"]
     ):
         raise RuntimeError("encoder started receipt identity changed after preflight")
-
     stage, provenance = _peek_checkpoint(paths["encoder_checkpoint"], config)
     if stage != "encoder":
         raise ValueError("terminal gate requires an encoder checkpoint")
@@ -2749,16 +3701,6 @@ def run_gate(
         raise ValueError("declared train337 pose snapshot differs from cache bytes")
     if full_snapshot.fingerprint != provenance.pose_cache_set_sha256:
         raise ValueError("train337 pose cache differs from checkpoint provenance")
-
-    prior_chain = _validate_predecessor_chain(
-        candidate_id=candidate_id,
-        profile=profile,
-        artifact_paths=prior_artifacts,
-        receipt_paths=prior_receipts,
-        gate_specification_sha256=identities["gate_specification"][0],
-        pose_cache_set_sha256=full_snapshot.fingerprint,
-        source_git_sha=source_git_sha,
-    )
 
     resolved_device = _device(device)
     model = load_model_checkpoint(
@@ -2840,6 +3782,7 @@ def run_gate(
     }
     code_roles = {
         "gate_runner",
+        "launch_authorization_runner",
         "period_module",
         "recurrence_carrier_module",
         "consensus_module",
@@ -2864,22 +3807,14 @@ def run_gate(
         "classification": specification.classification,
         "protocol": config.protocol,
         "seed": config.seed,
-        "candidate": {
-            "id": candidate_id,
-            "fixed_training_period_frames_provenance_only": (
-                profile.fixed_training_period_frames
-            ),
-            "anchor_stride": profile.anchor_stride,
-            "first_pass_only": True,
-            "prior_scientific_rejections": list(prior_chain),
-            "cross_candidate_metric_ranking_forbidden": True,
-        },
+        "candidate": _candidate_mapping(candidate_id, profile, prior_chain),
         "label_firewall": {
             "accepted_scientific_inputs": [
                 "exact_terminal_encoder_checkpoint_and_progress",
                 "schema_v3_encoder_completion_and_started_receipts",
                 "exact_source_export_receipt",
                 "exact_candidate_config_and_frozen_gate_specification",
+                "prelaunch_candidate_authorization_artifact_and_receipt",
                 "passing_epoch11_gate_artifact_and_receipt",
                 "checkpoint_bound_train337_pose_cache_and_snapshot",
                 "required_prior_scientific_rejection_receipts",
@@ -2931,7 +3866,7 @@ def run_gate(
         },
         "algorithm": {
             "period_estimator": "full_vector_embedding_velocity_acf",
-            "per_sample_period_upper_bound": "min(4096, floor(timeline_length/2))",
+            "per_sample_period_upper_bound": _period_upper_bound_metadata(config),
             "period_confidence_part_of_carrier_eligibility": True,
             "carrier_eligibility": (
                 "positive period confidence AND structural lag eligibility AND "
@@ -2955,13 +3890,7 @@ def run_gate(
         "aggregates": aggregates,
         "hard_invariants": hard_invariants,
         "gate": decision,
-        "scientific_caveats": [
-            "The native recurrence-carrier readout is independently inferred, not author-disclosed.",
-            "This train337 gate tests label-free mechanism consistency, not accuracy.",
-            "Passing authorizes only one separately frozen dev84 protocol build.",
-            "No development or sealed-evaluation identity, pose, prediction, or score is authorized here.",
-            "Absolute confidence, training-period proximity, curve RMS, and cross-candidate ranking are non-authorizing.",
-        ],
+        "scientific_caveats": list(_SCIENTIFIC_CAVEATS),
         "hardware": hardware,
         "hardware_sha256": sha256_json(hardware),
         "runtime": runtime,
@@ -3067,6 +3996,12 @@ def write_gate_artifact(
             "code_files_sha256_commitment"
         ],
         "prior_scientific_rejections_sha256": sha256_json(prior_chain),
+        "candidate_launch_authorization_sha256": payload["inputs"][
+            "candidate_launch_authorization_sha256"
+        ],
+        "candidate_launch_authorization_receipt_sha256": payload["inputs"][
+            "candidate_launch_authorization_receipt_sha256"
+        ],
         "aggregate_only": True,
         "dev84_pose_or_scoring_authorized": False,
         "test105_evaluation_authorized": False,
@@ -3085,6 +4020,10 @@ def _parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--source-receipt", type=Path, required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--gate-specification", type=Path, required=True)
+    parser.add_argument(
+        "--candidate-launch-authorization", type=Path, required=True
+    )
+    parser.add_argument("--candidate-launch-receipt", type=Path, required=True)
     parser.add_argument("--epoch11-gate-artifact", type=Path, required=True)
     parser.add_argument("--epoch11-gate-receipt", type=Path, required=True)
     parser.add_argument("--pose-cache-dir", type=Path, required=True)
@@ -3114,6 +4053,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         arguments.source_receipt,
         arguments.config,
         arguments.gate_specification,
+        arguments.candidate_launch_authorization,
+        arguments.candidate_launch_receipt,
         arguments.epoch11_gate_artifact,
         arguments.epoch11_gate_receipt,
         arguments.pose_cache_dir,
