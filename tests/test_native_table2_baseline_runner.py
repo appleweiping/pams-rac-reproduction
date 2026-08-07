@@ -8,8 +8,8 @@ from pams.config import load_config
 from scripts.server.validate_pams_native_baseline_inputs import (
     NativeBaselineInputError,
     _parse_arguments,
+    _validate_pose_recovery_authorization,
     _validate_proxy_config,
-    _validate_v4a_gate_payload,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,13 +20,22 @@ VALIDATOR = ROOT / "scripts/server/validate_pams_native_baseline_inputs.py"
 
 
 def test_proxy_config_is_the_preregistered_inferred_native_baseline() -> None:
-    candidate = load_config(CONFIG)
+    placeholder = load_config(CONFIG)
     v4a = load_config(V4A_CONFIG)
+    authorized_pose = placeholder.pose.model_copy(
+        update={
+            "preprocessing_revision": (
+                "official-segment-heavy-missing-retry-full-timeline-v4b"
+            )
+        }
+    )
+    candidate = placeholder.model_copy(update={"pose": authorized_pose})
+    pose_recovery = v4a.model_copy(update={"pose": authorized_pose})
 
-    _validate_proxy_config(candidate, v4a)
+    _validate_proxy_config(candidate, pose_recovery)
 
-    assert candidate.data == v4a.data
-    assert candidate.pose == v4a.pose
+    assert candidate.data == pose_recovery.data
+    assert candidate.pose == pose_recovery.pose
     assert candidate.model.position_encoding_mode == "sinusoidal"
     assert candidate.period.training_mode == "fixed_period_inferred"
     assert candidate.period.fixed_period_frames == 16
@@ -44,6 +53,14 @@ def test_proxy_config_is_the_preregistered_inferred_native_baseline() -> None:
     assert candidate.training.skeleton_augmentation.enabled is True
 
 
+def test_proxy_config_rejects_the_failed_v4a_placeholder() -> None:
+    candidate = load_config(CONFIG)
+    v4a = load_config(V4A_CONFIG)
+
+    with pytest.raises(NativeBaselineInputError, match="formally rejected"):
+        _validate_proxy_config(candidate, v4a)
+
+
 def test_proxy_config_discloses_every_inference_and_followup() -> None:
     source = CONFIG.read_text(encoding="utf-8")
     normalized = " ".join(source.replace("#", " ").split())
@@ -55,6 +72,7 @@ def test_proxy_config_discloses_every_inference_and_followup() -> None:
         "period.maximum=4096 is only a non-binding safety ceiling",
         "maximum_mode=half_timeline applies the per-sample native-duration bound",
         "never eligible to claim their Table-2 number",
+        "v4a failed its paired gate",
     ):
         assert disclosure in normalized
     assert "performance" not in source.lower()
@@ -62,10 +80,46 @@ def test_proxy_config_discloses_every_inference_and_followup() -> None:
     assert "obo" not in source.lower()
 
 
-def _passing_gate_payloads() -> tuple[dict[str, object], dict[str, object]]:
+def _passing_pose_authorization_payloads() -> tuple[
+    dict[str, object],
+    dict[str, object],
+    dict[str, object],
+]:
+    authorization = {
+        "schema_version": 1,
+        "artifact_type": "pams_native_pose_recovery_train337_authorization",
+        "version": "v4b",
+        "authorized": True,
+        "authorized_consumer": "pams_native_table2_baseline_proxy_train337_encoder",
+        "classification": "trusted_native_pose_recovery_train337",
+        "protocol": "ucfrep_526",
+        "split": "train",
+        "record_total": 337,
+        "bindings": {
+            "source_revision": "f" * 40,
+            "container_image_id": "sha256:" + "1" * 64,
+            "config_file_sha256": "d" * 64,
+            "config_fingerprint": "9" * 64,
+            "pose_fingerprint": "a" * 64,
+            "paired_gate_sha256": "e" * 64,
+            "run_receipt_sha256": "8" * 64,
+            "ledger_sha256": "c" * 64,
+            "pose_cache_set_sha256": "b" * 64,
+        },
+        "scope": {
+            "pose_timeline": "native",
+            "pose_cache": "train337_only",
+            "source_videos_mounted": False,
+            "dev84_mounted": False,
+            "test105_mounted": False,
+            "targets_mounted": False,
+            "network_mode": "none",
+            "source_export_read_only": True,
+        },
+    }
     gate = {
         "schema_version": 1,
-        "artifact_type": "pams_pose_recovery_v4a_train337_paired_audit",
+        "artifact_type": "implementation_specific_paired_audit",
         "protocol": "ucfrep_526",
         "split": "train",
         "passed": True,
@@ -78,74 +132,115 @@ def _passing_gate_payloads() -> tuple[dict[str, object], dict[str, object]]:
             "test105_mounted": False,
             "targets_mounted": False,
         },
-        "bindings": {
-            "v4_pose_fingerprint": "a" * 64,
-            "v4_pose_cache_set_sha256": "b" * 64,
-            "v4_ledger_sha256": "c" * 64,
-        },
     }
     receipt = {
         "schema_version": 1,
-        "artifact_type": "pams_pose_recovery_v4a_train337_run_receipt",
+        "artifact_type": "implementation_specific_pose_run_receipt",
+        "source_revision": "f" * 40,
+        "container_image_id": "sha256:" + "1" * 64,
         "config_file_sha256": "d" * 64,
+        "config_fingerprint": "9" * 64,
         "pose_fingerprint": "a" * 64,
         "temporal_resampling": "none_native_timeline",
         "scope": "count-free-train337-pose-input-recovery-only",
         "paired_gate_exit_status": 0,
         "paired_gate_sha256": "e" * 64,
     }
-    return gate, receipt
+    return authorization, gate, receipt
 
 
-def _validate_synthetic_gate(
+def _validate_synthetic_authorization(
+    authorization: dict[str, object],
     gate: dict[str, object],
     receipt: dict[str, object],
+    *,
+    expected_version: str = "v4b",
 ) -> None:
-    _validate_v4a_gate_payload(
+    _validate_pose_recovery_authorization(
+        authorization,
         gate,
         receipt,
+        expected_version=expected_version,
         gate_sha256="e" * 64,
-        v4a_config_sha256="d" * 64,
-        v4a_pose_fingerprint="a" * 64,
-        v4a_ledger_sha256="c" * 64,
+        run_receipt_sha256="8" * 64,
+        config_sha256="d" * 64,
+        config_fingerprint="9" * 64,
+        pose_fingerprint="a" * 64,
+        ledger_sha256="c" * 64,
         pose_cache_set_sha256="b" * 64,
     )
 
 
-def test_v4a_gate_contract_accepts_only_a_passed_train337_native_artifact() -> None:
-    gate, receipt = _passing_gate_payloads()
-    _validate_synthetic_gate(gate, receipt)
+def test_pose_authorization_accepts_a_hash_bound_train337_native_artifact() -> None:
+    authorization, gate, receipt = _passing_pose_authorization_payloads()
+    _validate_synthetic_authorization(authorization, gate, receipt)
 
 
 @pytest.mark.parametrize(
     ("mutator", "message"),
     [
-        (lambda gate, receipt: gate.update(passed=False), "did not pass"),
         (
-            lambda gate, receipt: gate["mount_audit"].update(dev84_mounted=True),
+            lambda authorization, gate, receipt: gate.update(passed=False),
+            "did not pass",
+        ),
+        (
+            lambda authorization, gate, receipt: gate["mount_audit"].update(
+                dev84_mounted=True
+            ),
             "dev84_mounted",
         ),
         (
-            lambda gate, receipt: gate["bindings"].update(
-                v4_pose_cache_set_sha256="f" * 64
+            lambda authorization, gate, receipt: authorization["bindings"].update(
+                pose_cache_set_sha256="f" * 64
             ),
-            "pose-cache set mismatch",
+            "binding mismatch: pose_cache_set_sha256",
         ),
         (
-            lambda gate, receipt: receipt.update(paired_gate_sha256="f" * 64),
+            lambda authorization, gate, receipt: receipt.update(
+                paired_gate_sha256="f" * 64
+            ),
             "does not bind",
+        ),
+        (
+            lambda authorization, gate, receipt: authorization["scope"].update(
+                source_export_read_only=False
+            ),
+            "source_export_read_only",
+        ),
+        (
+            lambda authorization, gate, receipt: authorization.update(
+                authorization_sha256="0" * 64
+            ),
+            "self-reported SHA",
         ),
     ],
 )
-def test_v4a_gate_contract_rejects_untrusted_upstream(
+def test_pose_authorization_rejects_untrusted_upstream(
     mutator: object,
     message: str,
 ) -> None:
-    gate, receipt = _passing_gate_payloads()
-    mutator(gate, receipt)  # type: ignore[operator]
+    authorization, gate, receipt = _passing_pose_authorization_payloads()
+    mutator(authorization, gate, receipt)  # type: ignore[operator]
 
     with pytest.raises(NativeBaselineInputError, match=message):
-        _validate_synthetic_gate(gate, receipt)
+        _validate_synthetic_authorization(authorization, gate, receipt)
+
+
+@pytest.mark.parametrize(
+    "version",
+    ("v4a", "official-segment-heavy-missing-retry-full-timeline-v4a"),
+)
+def test_pose_authorization_formally_rejects_v4a(version: str) -> None:
+    authorization, gate, receipt = _passing_pose_authorization_payloads()
+    authorization["version"] = version
+
+    with pytest.raises(NativeBaselineInputError, match="formally rejected"):
+        _validate_synthetic_authorization(
+            authorization,
+            gate,
+            receipt,
+            expected_version=version,
+        )
 
 
 def test_validator_cli_exposes_no_target_or_dev_test_pose_surface() -> None:
@@ -154,8 +249,10 @@ def test_validator_cli_exposes_no_target_or_dev_test_pose_surface() -> None:
         [
             "--candidate-config",
             "candidate.yaml",
-            "--v4a-config",
-            "v4a.yaml",
+            "--pose-recovery-version",
+            "v4b",
+            "--pose-recovery-config",
+            "pose-recovery.yaml",
             "--train-sidecar",
             "train.json",
             "--train-commitment",
@@ -168,15 +265,19 @@ def test_validator_cli_exposes_no_target_or_dev_test_pose_surface() -> None:
             "test.json",
             "--test-identity-commitment",
             "test.commit.json",
-            "--v4a-paired-gate",
+            "--pose-recovery-authorization",
+            "authorization.json",
+            "--expected-pose-recovery-authorization-sha256",
+            "c" * 64,
+            "--pose-recovery-paired-gate",
             "gate.json",
-            "--expected-v4a-paired-gate-sha256",
+            "--expected-pose-recovery-paired-gate-sha256",
             "a" * 64,
-            "--v4a-run-receipt",
+            "--pose-recovery-run-receipt",
             "receipt.json",
-            "--expected-v4a-run-receipt-sha256",
+            "--expected-pose-recovery-run-receipt-sha256",
             "b" * 64,
-            "--v4a-ledger",
+            "--pose-recovery-ledger",
             "ledger.json",
             "--train-pose-cache",
             "train-pose",
@@ -229,7 +330,7 @@ def test_runner_mounts_only_train_pose_and_identity_only_protocol_sidecars() -> 
     assert ".targets" not in protocol_block
     assert "pose-cache" not in protocol_block
     assert source.count("dst=/pams/pose-cache,readonly") == 2
-    assert "src=${V4A_CACHE},dst=/pams/pose-cache,readonly" in source
+    assert "src=${POSE_RECOVERY_CACHE},dst=/pams/pose-cache,readonly" in source
     assert "dst=/pams/dev-pose" not in source
     assert "dst=/pams/test-pose" not in source
 
@@ -238,9 +339,13 @@ def test_runner_enforces_clean_source_image_gate_and_immutable_receipts() -> Non
     source = RUNNER.read_text(encoding="utf-8")
 
     for required in (
-        "PAMS_V4A_PAIRED_GATE_SHA256",
-        "PAMS_V4A_RUN_RECEIPT_SHA256",
-        "PAMS_V4A_SOURCE_REVISION",
+        "PAMS_POSE_RECOVERY_VERSION",
+        "PAMS_POSE_RECOVERY_RUN_ROOT",
+        "PAMS_POSE_RECOVERY_CONFIG_PATH",
+        "PAMS_POSE_RECOVERY_AUTHORIZATION_SHA256",
+        "pams_native_pose_recovery_train337_authorization",
+        "source_export_read_only",
+        "pose_recovery_authorization_sha256",
         "status --porcelain=v1 --untracked-files=all",
         "org.opencontainers.image.revision",
         "org.opencontainers.image.pams.environment-sha256",
@@ -254,6 +359,8 @@ def test_runner_enforces_clean_source_image_gate_and_immutable_receipts() -> Non
         "chmod -R a-w -- \"$RUN_ROOT\"",
     ):
         assert required in source
+    assert "PAMS_V4A" not in source
+    assert "/pams/v4a" not in source
     assert source.index("run_created_container \"$PREFLIGHT_NAME\"") < source.index(
         "exec 9>\"$LOCK_PATH\""
     )
@@ -275,5 +382,8 @@ def test_validator_declares_identity_only_firewall_in_both_code_and_artifact() -
         '"test_prediction_authorized": False',
         "official {split} identity sidecar SHA mismatch",
         "pose cache directory must contain 337 files",
+        "pams_native_pose_recovery_train337_authorization",
+        "source_export_read_only",
+        "formally rejected",
     ):
         assert required in source

@@ -36,19 +36,15 @@ readonly IMAGE_ID="${PAMS_IMAGE_ID:?PAMS_IMAGE_ID is required}"
 readonly ENVIRONMENT_SHA256="${PAMS_ENVIRONMENT_SHA256:?PAMS_ENVIRONMENT_SHA256 is required}"
 readonly CONFIG_SHA256="${PAMS_CONFIG_SHA256:?PAMS_CONFIG_SHA256 is required}"
 readonly CONFIG_FINGERPRINT="${PAMS_CONFIG_FINGERPRINT:?PAMS_CONFIG_FINGERPRINT is required}"
-readonly V4A_RUN_ROOT_INPUT="${PAMS_V4A_RUN_ROOT:?PAMS_V4A_RUN_ROOT is required}"
-readonly V4A_SOURCE_REVISION="${PAMS_V4A_SOURCE_REVISION:?PAMS_V4A_SOURCE_REVISION is required}"
-readonly V4A_PAIRED_GATE_SHA256="${PAMS_V4A_PAIRED_GATE_SHA256:?PAMS_V4A_PAIRED_GATE_SHA256 is required}"
-readonly V4A_RUN_RECEIPT_SHA256="${PAMS_V4A_RUN_RECEIPT_SHA256:?PAMS_V4A_RUN_RECEIPT_SHA256 is required}"
+readonly POSE_RECOVERY_RUN_ROOT_INPUT="${PAMS_POSE_RECOVERY_RUN_ROOT:?PAMS_POSE_RECOVERY_RUN_ROOT is required}"
+readonly POSE_RECOVERY_VERSION="${PAMS_POSE_RECOVERY_VERSION:?PAMS_POSE_RECOVERY_VERSION is required}"
+readonly POSE_RECOVERY_CONFIG_INPUT="${PAMS_POSE_RECOVERY_CONFIG_PATH:?PAMS_POSE_RECOVERY_CONFIG_PATH is required}"
+readonly POSE_RECOVERY_AUTHORIZATION_SHA256="${PAMS_POSE_RECOVERY_AUTHORIZATION_SHA256:?PAMS_POSE_RECOVERY_AUTHORIZATION_SHA256 is required}"
 readonly ATTEMPT_ID="${PAMS_ATTEMPT_ID:?PAMS_ATTEMPT_ID is required}"
 readonly GPU_DEVICE="${PAMS_GPU_DEVICE:-0}"
 
 readonly CONFIG_RELATIVE='configs/experiments/pams_native_table2_baseline_proxy_v1.yaml'
-readonly V4A_CONFIG_RELATIVE='configs/experiments/pams_pose_recovery_v4a.yaml'
 readonly VALIDATOR_RELATIVE='scripts/server/validate_pams_native_baseline_inputs.py'
-readonly V4A_CONFIG_SHA256='c6fe33584f768e774d975059b7a899a4471aacc4cdda9f4821cc13c57bbaabc5'
-readonly POSE_FINGERPRINT='817013890533cd19e6c791969c35c3699d56d0e6656768ce64199bc30ceebe9c'
-readonly V4A_IMAGE_ID='sha256:0a4d42c2d9911f147a17860e4e15095746b21c4e618e4fc1b20b62dd443c5898'
 readonly TRAIN_INPUT_SHA256='f95df0050df21f05bbc9b42d0154470714dde279e04cb8b00d0212bf49057d16'
 readonly TRAIN_COMMIT_SHA256='85d41d2f59872e0900e9058481efbdf6bce91407d4c26bcde0a6547776454e53'
 readonly DEV_INPUT_SHA256='74b6628679c3d4c9b48f82ef8cf7e3a678e0a8298a5cb245512af9912e4337ba'
@@ -61,13 +57,12 @@ for digest_name in \
   ENVIRONMENT_SHA256 \
   CONFIG_SHA256 \
   CONFIG_FINGERPRINT \
-  V4A_PAIRED_GATE_SHA256 \
-  V4A_RUN_RECEIPT_SHA256; do
+  POSE_RECOVERY_AUTHORIZATION_SHA256; do
   digest="${!digest_name}"
   [[ "$digest" =~ ^[0-9a-f]{64}$ ]] \
     || fail "${digest_name} must be a lowercase SHA-256"
 done
-for revision_name in SOURCE_REVISION V4A_SOURCE_REVISION; do
+for revision_name in SOURCE_REVISION; do
   revision="${!revision_name}"
   [[ "$revision" =~ ^[0-9a-f]{40}$ ]] \
     || fail "${revision_name} must be a full lowercase Git SHA"
@@ -79,14 +74,26 @@ done
 [[ "$ATTEMPT_ID" != *'..'* ]] || fail "PAMS_ATTEMPT_ID must not contain '..'"
 [[ "$GPU_DEVICE" =~ ^[0-9]+$ ]] \
   || fail 'PAMS_GPU_DEVICE must be a non-negative integer'
-for mount_path in "$ROOT_INPUT" "$SOURCE_CHECKOUT_INPUT" "$V4A_RUN_ROOT_INPUT"; do
+[[ "$POSE_RECOVERY_VERSION" =~ ^[a-z0-9][a-z0-9._-]{0,63}$ ]] \
+  || fail 'PAMS_POSE_RECOVERY_VERSION must be a lowercase safe slug'
+case "$POSE_RECOVERY_VERSION" in
+  v4a|official-segment-heavy-missing-retry-full-timeline-v4a)
+    fail "pose-recovery version is formally rejected: ${POSE_RECOVERY_VERSION}"
+    ;;
+esac
+for mount_path in \
+  "$ROOT_INPUT" \
+  "$SOURCE_CHECKOUT_INPUT" \
+  "$POSE_RECOVERY_RUN_ROOT_INPUT" \
+  "$POSE_RECOVERY_CONFIG_INPUT"; do
   [[ "$mount_path" == /* ]] || fail "host path must be absolute: ${mount_path}"
   [[ "$mount_path" != *','* ]] || fail "Docker bind path contains a comma"
 done
 
 readonly ROOT="$(realpath -e -- "$ROOT_INPUT")"
 readonly SOURCE_CHECKOUT="$(realpath -e -- "$SOURCE_CHECKOUT_INPUT")"
-readonly V4A_RUN_ROOT="$(realpath -e -- "$V4A_RUN_ROOT_INPUT")"
+readonly POSE_RECOVERY_RUN_ROOT="$(realpath -e -- "$POSE_RECOVERY_RUN_ROOT_INPUT")"
+readonly POSE_RECOVERY_CONFIG="$(realpath -e -- "$POSE_RECOVERY_CONFIG_INPUT")"
 readonly OFFICIAL_ROOT="${ROOT}/runs/official-segment-v1/15cc1ec3c1d2-20260805T063653Z"
 readonly RUN_PARENT="${ROOT}/runs/pams-native-table2-baseline-v1"
 readonly RUN_ROOT="${RUN_PARENT}/${ATTEMPT_ID}"
@@ -106,10 +113,11 @@ readonly DEV_INPUT="${OFFICIAL_ROOT}/protocol/dev.inputs.json"
 readonly DEV_COMMIT="${OFFICIAL_ROOT}/protocol/dev.inputs.commitment.json"
 readonly TEST_ID_INPUT="${OFFICIAL_ROOT}/protocol/test-identity.inputs.json"
 readonly TEST_ID_COMMIT="${OFFICIAL_ROOT}/protocol/test-identity.inputs.commitment.json"
-readonly V4A_CACHE="${V4A_RUN_ROOT}/pose-cache"
-readonly V4A_LEDGER="${V4A_RUN_ROOT}/ledgers/train337.json"
-readonly V4A_PAIRED_GATE="${V4A_RUN_ROOT}/audit/paired-gate.json"
-readonly V4A_RUN_RECEIPT="${V4A_RUN_ROOT}/audit/run.receipt.json"
+readonly POSE_RECOVERY_CACHE="${POSE_RECOVERY_RUN_ROOT}/pose-cache"
+readonly POSE_RECOVERY_LEDGER="${POSE_RECOVERY_RUN_ROOT}/ledgers/train337.json"
+readonly POSE_RECOVERY_AUTHORIZATION="${POSE_RECOVERY_RUN_ROOT}/audit/native-baseline-authorization.json"
+readonly POSE_RECOVERY_PAIRED_GATE="${POSE_RECOVERY_RUN_ROOT}/audit/paired-gate.json"
+readonly POSE_RECOVERY_RUN_RECEIPT="${POSE_RECOVERY_RUN_ROOT}/audit/run.receipt.json"
 
 readonly PREFLIGHT_NAME="pams-native-proxy-preflight-${ATTEMPT_ID}"
 readonly ENCODER_NAME="pams-native-proxy-encoder-${ATTEMPT_ID}"
@@ -203,7 +211,8 @@ verify_container() {
   VERIFY_SOURCE_RECEIPT="$SOURCE_RECEIPT" \
   VERIFY_CONFIG_HOST="$CONFIG_HOST" \
   VERIFY_OFFICIAL_ROOT="$OFFICIAL_ROOT" \
-  VERIFY_V4A_ROOT="$V4A_RUN_ROOT" \
+  VERIFY_POSE_RECOVERY_ROOT="$POSE_RECOVERY_RUN_ROOT" \
+  VERIFY_POSE_RECOVERY_CONFIG="$POSE_RECOVERY_CONFIG" \
   VERIFY_ENCODER_STAGE="$ENCODER_STAGE" \
   VERIFY_AUDIT_ROOT="$AUDIT_ROOT" \
   VERIFY_IMAGE_ID="$IMAGE_ID" \
@@ -265,28 +274,34 @@ protocol = {
         protocol_root + "/test-identity.inputs.commitment.json", False
     ),
 }
-v4a_root = os.environ["VERIFY_V4A_ROOT"]
+pose_recovery_root = os.environ["VERIFY_POSE_RECOVERY_ROOT"]
 if stage == "preflight":
     expected = {
         **source,
         **protocol,
-        "/pams/v4a/paired-gate.json": (
-            v4a_root + "/audit/paired-gate.json", False
+        "/pams/pose-recovery/config.yaml": (
+            os.environ["VERIFY_POSE_RECOVERY_CONFIG"], False
         ),
-        "/pams/v4a/run.receipt.json": (
-            v4a_root + "/audit/run.receipt.json", False
+        "/pams/pose-recovery/native-baseline-authorization.json": (
+            pose_recovery_root + "/audit/native-baseline-authorization.json", False
         ),
-        "/pams/v4a/train337.ledger.json": (
-            v4a_root + "/ledgers/train337.json", False
+        "/pams/pose-recovery/paired-gate.json": (
+            pose_recovery_root + "/audit/paired-gate.json", False
         ),
-        "/pams/pose-cache": (v4a_root + "/pose-cache", False),
+        "/pams/pose-recovery/run.receipt.json": (
+            pose_recovery_root + "/audit/run.receipt.json", False
+        ),
+        "/pams/pose-recovery/train337.ledger.json": (
+            pose_recovery_root + "/ledgers/train337.json", False
+        ),
+        "/pams/pose-cache": (pose_recovery_root + "/pose-cache", False),
         "/pams/output": (os.environ["VERIFY_AUDIT_ROOT"], True),
     }
 elif stage == "encoder":
     expected = {
         **source,
         **protocol,
-        "/pams/pose-cache": (v4a_root + "/pose-cache", False),
+        "/pams/pose-cache": (pose_recovery_root + "/pose-cache", False),
         "/pams/output": (os.environ["VERIFY_ENCODER_STAGE"], True),
     }
 else:
@@ -464,17 +479,31 @@ assert len(snapshot["entries"]) == 337
 PY
 }
 
-[[ "$V4A_RUN_ROOT" == "${ROOT}/runs/pose-recovery-v4a/"* ]] \
-  || fail 'PAMS_V4A_RUN_ROOT must be under the frozen pose-recovery-v4a run parent'
-[[ ! -L "$V4A_RUN_ROOT_INPUT" ]] || fail 'v4a run root must not be a symlink'
+[[ "$POSE_RECOVERY_RUN_ROOT" == "${ROOT}/runs/pose-recovery-"*/* ]] \
+  || fail 'PAMS_POSE_RECOVERY_RUN_ROOT must be one exact pose-recovery run under PAMS_ROOT'
+[[ ! -L "$POSE_RECOVERY_RUN_ROOT_INPUT" ]] \
+  || fail 'pose-recovery run root must not be a symlink'
+[[ "$POSE_RECOVERY_CONFIG" == "${POSE_RECOVERY_RUN_ROOT}/source/configs/experiments/"*.yaml ]] \
+  || fail 'pose-recovery config must be an exported experiment YAML inside its run root'
+[[ ! -L "$POSE_RECOVERY_CONFIG_INPUT" ]] \
+  || fail 'pose-recovery config must not be a symlink'
 [[ -d "$OFFICIAL_ROOT" ]] || fail 'official-segment-v1 root is missing'
-[[ -d "$V4A_CACHE" ]] || fail 'v4a train337 pose cache is missing'
-[[ -z "$(find "$V4A_CACHE" -mindepth 1 -type l -print -quit)" ]] \
-  || fail 'v4a train337 pose cache contains a symlink'
-[[ "$(find "$V4A_CACHE" -mindepth 1 -maxdepth 1 -type f -name '*.npz' | wc -l)" -eq 337 ]] \
-  || fail 'v4a train337 pose cache must contain exactly 337 NPZ files'
-[[ "$(find "$V4A_CACHE" -mindepth 1 -maxdepth 1 -type f | wc -l)" -eq 337 ]] \
-  || fail 'v4a train337 pose cache contains unexpected files'
+[[ -d "$POSE_RECOVERY_CACHE" ]] || fail 'authorized train337 pose cache is missing'
+for upstream_path in \
+  "$POSE_RECOVERY_CACHE" \
+  "$POSE_RECOVERY_LEDGER" \
+  "$POSE_RECOVERY_AUTHORIZATION" \
+  "$POSE_RECOVERY_PAIRED_GATE" \
+  "$POSE_RECOVERY_RUN_RECEIPT"; do
+  [[ ! -L "$upstream_path" ]] \
+    || fail "pose-recovery artifact must not be a symlink: ${upstream_path}"
+done
+[[ -z "$(find "$POSE_RECOVERY_CACHE" -mindepth 1 -type l -print -quit)" ]] \
+  || fail 'authorized train337 pose cache contains a symlink'
+[[ "$(find "$POSE_RECOVERY_CACHE" -mindepth 1 -maxdepth 1 -type f -name '*.npz' | wc -l)" -eq 337 ]] \
+  || fail 'authorized train337 pose cache must contain exactly 337 NPZ files'
+[[ "$(find "$POSE_RECOVERY_CACHE" -mindepth 1 -maxdepth 1 -type f | wc -l)" -eq 337 ]] \
+  || fail 'authorized train337 pose cache contains unexpected files'
 
 require_sha256 "$TRAIN_INPUT" "$TRAIN_INPUT_SHA256" 'official train337 identity sidecar'
 require_sha256 "$TRAIN_COMMIT" "$TRAIN_COMMIT_SHA256" 'official train337 identity commitment'
@@ -482,33 +511,119 @@ require_sha256 "$DEV_INPUT" "$DEV_INPUT_SHA256" 'official dev84 identity sidecar
 require_sha256 "$DEV_COMMIT" "$DEV_COMMIT_SHA256" 'official dev84 identity commitment'
 require_sha256 "$TEST_ID_INPUT" "$TEST_ID_INPUT_SHA256" 'official test105 identity sidecar'
 require_sha256 "$TEST_ID_COMMIT" "$TEST_ID_COMMIT_SHA256" 'official test105 identity commitment'
-require_sha256 "$V4A_PAIRED_GATE" "$V4A_PAIRED_GATE_SHA256" 'v4a paired gate'
-require_sha256 "$V4A_RUN_RECEIPT" "$V4A_RUN_RECEIPT_SHA256" 'v4a run receipt'
-[[ -f "$V4A_LEDGER" ]] || fail 'v4a train337 ledger is missing'
+require_sha256 \
+  "$POSE_RECOVERY_AUTHORIZATION" \
+  "$POSE_RECOVERY_AUTHORIZATION_SHA256" \
+  'pose-recovery baseline authorization'
+readonly POSE_RECOVERY_SOURCE_REVISION="$(
+  jq -er '.bindings.source_revision' "$POSE_RECOVERY_AUTHORIZATION"
+)"
+readonly POSE_RECOVERY_IMAGE_ID="$(
+  jq -er '.bindings.container_image_id' "$POSE_RECOVERY_AUTHORIZATION"
+)"
+readonly POSE_RECOVERY_CONFIG_SHA256="$(
+  jq -er '.bindings.config_file_sha256' "$POSE_RECOVERY_AUTHORIZATION"
+)"
+readonly POSE_RECOVERY_CONFIG_FINGERPRINT="$(
+  jq -er '.bindings.config_fingerprint' "$POSE_RECOVERY_AUTHORIZATION"
+)"
+readonly POSE_FINGERPRINT="$(
+  jq -er '.bindings.pose_fingerprint' "$POSE_RECOVERY_AUTHORIZATION"
+)"
+readonly POSE_RECOVERY_PAIRED_GATE_SHA256="$(
+  jq -er '.bindings.paired_gate_sha256' "$POSE_RECOVERY_AUTHORIZATION"
+)"
+readonly POSE_RECOVERY_RUN_RECEIPT_SHA256="$(
+  jq -er '.bindings.run_receipt_sha256' "$POSE_RECOVERY_AUTHORIZATION"
+)"
+readonly POSE_RECOVERY_LEDGER_SHA256="$(
+  jq -er '.bindings.ledger_sha256' "$POSE_RECOVERY_AUTHORIZATION"
+)"
+readonly AUTHORIZED_POSE_CACHE_SET_SHA256="$(
+  jq -er '.bindings.pose_cache_set_sha256' "$POSE_RECOVERY_AUTHORIZATION"
+)"
+for digest_name in \
+  POSE_RECOVERY_CONFIG_SHA256 \
+  POSE_RECOVERY_CONFIG_FINGERPRINT \
+  POSE_FINGERPRINT \
+  POSE_RECOVERY_PAIRED_GATE_SHA256 \
+  POSE_RECOVERY_RUN_RECEIPT_SHA256 \
+  POSE_RECOVERY_LEDGER_SHA256 \
+  AUTHORIZED_POSE_CACHE_SET_SHA256; do
+  digest="${!digest_name}"
+  [[ "$digest" =~ ^[0-9a-f]{64}$ ]] \
+    || fail "authorization binding ${digest_name} must be a lowercase SHA-256"
+done
+[[ "$POSE_RECOVERY_SOURCE_REVISION" =~ ^[0-9a-f]{40}$ ]] \
+  || fail 'authorized pose-recovery source revision is invalid'
+[[ "$POSE_RECOVERY_IMAGE_ID" =~ ^sha256:[0-9a-f]{64}$ ]] \
+  || fail 'authorized pose-recovery image ID is invalid'
+[[ "$(docker image inspect "$POSE_RECOVERY_IMAGE_ID" --format '{{.Id}}')" == "$POSE_RECOVERY_IMAGE_ID" ]] \
+  || fail 'authorized pose-recovery container image is unavailable'
+[[ "$(docker image inspect "$POSE_RECOVERY_IMAGE_ID" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" == "$POSE_RECOVERY_SOURCE_REVISION" ]] \
+  || fail 'authorized pose-recovery image/source label mismatch'
+
+require_sha256 \
+  "$POSE_RECOVERY_CONFIG" \
+  "$POSE_RECOVERY_CONFIG_SHA256" \
+  'authorized pose-recovery config'
+require_sha256 \
+  "$POSE_RECOVERY_PAIRED_GATE" \
+  "$POSE_RECOVERY_PAIRED_GATE_SHA256" \
+  'authorized pose-recovery paired gate'
+require_sha256 \
+  "$POSE_RECOVERY_RUN_RECEIPT" \
+  "$POSE_RECOVERY_RUN_RECEIPT_SHA256" \
+  'authorized pose-recovery run receipt'
+require_sha256 \
+  "$POSE_RECOVERY_LEDGER" \
+  "$POSE_RECOVERY_LEDGER_SHA256" \
+  'authorized pose-recovery train337 ledger'
 
 jq -e \
-  --arg revision "$V4A_SOURCE_REVISION" \
-  --arg image "$V4A_IMAGE_ID" \
-  --arg config_sha "$V4A_CONFIG_SHA256" \
+  --arg version "$POSE_RECOVERY_VERSION" \
+  --arg revision "$POSE_RECOVERY_SOURCE_REVISION" \
+  --arg image "$POSE_RECOVERY_IMAGE_ID" \
+  --arg config_sha "$POSE_RECOVERY_CONFIG_SHA256" \
+  --arg config_fp "$POSE_RECOVERY_CONFIG_FINGERPRINT" \
   --arg pose "$POSE_FINGERPRINT" \
-  --arg gate_sha "$V4A_PAIRED_GATE_SHA256" \
+  --arg gate_sha "$POSE_RECOVERY_PAIRED_GATE_SHA256" \
+  --arg receipt_sha "$POSE_RECOVERY_RUN_RECEIPT_SHA256" \
+  --arg ledger_sha "$POSE_RECOVERY_LEDGER_SHA256" \
+  --arg cache_set_sha "$AUTHORIZED_POSE_CACHE_SET_SHA256" \
   '
     .schema_version == 1
-    and .artifact_type == "pams_pose_recovery_v4a_train337_run_receipt"
-    and .source_revision == $revision
-    and .container_image_id == $image
-    and .config_file_sha256 == $config_sha
-    and .pose_fingerprint == $pose
-    and .temporal_resampling == "none_native_timeline"
-    and .scope == "count-free-train337-pose-input-recovery-only"
-    and .paired_gate_exit_status == 0
-    and .paired_gate_sha256 == $gate_sha
-  ' "$V4A_RUN_RECEIPT" >/dev/null \
-  || fail 'v4a run receipt does not satisfy the frozen provenance contract'
+    and .artifact_type == "pams_native_pose_recovery_train337_authorization"
+    and .version == $version
+    and .authorized == true
+    and .authorized_consumer == "pams_native_table2_baseline_proxy_train337_encoder"
+    and .classification == "trusted_native_pose_recovery_train337"
+    and .protocol == "ucfrep_526"
+    and .split == "train"
+    and .record_total == 337
+    and (.authorization_sha256 | not)
+    and .bindings.source_revision == $revision
+    and .bindings.container_image_id == $image
+    and .bindings.config_file_sha256 == $config_sha
+    and .bindings.config_fingerprint == $config_fp
+    and .bindings.pose_fingerprint == $pose
+    and .bindings.paired_gate_sha256 == $gate_sha
+    and .bindings.run_receipt_sha256 == $receipt_sha
+    and .bindings.ledger_sha256 == $ledger_sha
+    and .bindings.pose_cache_set_sha256 == $cache_set_sha
+    and .scope.pose_timeline == "native"
+    and .scope.pose_cache == "train337_only"
+    and .scope.source_videos_mounted == false
+    and .scope.dev84_mounted == false
+    and .scope.test105_mounted == false
+    and .scope.targets_mounted == false
+    and .scope.network_mode == "none"
+    and .scope.source_export_read_only == true
+  ' "$POSE_RECOVERY_AUTHORIZATION" >/dev/null \
+  || fail 'pose-recovery authorization is absent, rejected, or malformed'
 jq -e \
   '
     .schema_version == 1
-    and .artifact_type == "pams_pose_recovery_v4a_train337_paired_audit"
     and .protocol == "ucfrep_526"
     and .split == "train"
     and .passed == true
@@ -519,8 +634,39 @@ jq -e \
     and .mount_audit.dev84_mounted == false
     and .mount_audit.test105_mounted == false
     and .mount_audit.targets_mounted == false
-  ' "$V4A_PAIRED_GATE" >/dev/null \
-  || fail 'v4a paired gate is absent, failed, or violates the data firewall'
+  ' "$POSE_RECOVERY_PAIRED_GATE" >/dev/null \
+  || fail 'pose-recovery paired gate is absent, failed, or violates the data firewall'
+jq -e \
+  --arg revision "$POSE_RECOVERY_SOURCE_REVISION" \
+  --arg image "$POSE_RECOVERY_IMAGE_ID" \
+  --arg config_sha "$POSE_RECOVERY_CONFIG_SHA256" \
+  --arg config_fp "$POSE_RECOVERY_CONFIG_FINGERPRINT" \
+  --arg pose "$POSE_FINGERPRINT" \
+  --arg gate_sha "$POSE_RECOVERY_PAIRED_GATE_SHA256" \
+  '
+    .schema_version == 1
+    and .source_revision == $revision
+    and .container_image_id == $image
+    and .config_file_sha256 == $config_sha
+    and .config_fingerprint == $config_fp
+    and .pose_fingerprint == $pose
+    and .temporal_resampling == "none_native_timeline"
+    and .scope == "count-free-train337-pose-input-recovery-only"
+    and .paired_gate_exit_status == 0
+    and .paired_gate_sha256 == $gate_sha
+  ' "$POSE_RECOVERY_RUN_RECEIPT" >/dev/null \
+  || fail 'pose-recovery run receipt violates the authorization binding'
+jq -e \
+  --arg pose "$POSE_FINGERPRINT" \
+  '
+    .protocol == "ucfrep_526"
+    and .split == "train"
+    and .selected == 337
+    and .completed == 337
+    and .failed == 0
+    and .pose_fingerprint == $pose
+  ' "$POSE_RECOVERY_LEDGER" >/dev/null \
+  || fail 'pose-recovery ledger is not a complete train337 artifact'
 
 [[ "$(git -C "$SOURCE_CHECKOUT" rev-parse HEAD^{commit})" == "$SOURCE_REVISION" ]] \
   || fail 'source checkout revision mismatch'
@@ -528,7 +674,6 @@ jq -e \
   || fail 'source checkout must be clean, including untracked files'
 readonly CONFIG_SOURCE="${SOURCE_CHECKOUT}/${CONFIG_RELATIVE}"
 require_sha256 "$CONFIG_SOURCE" "$CONFIG_SHA256" 'native proxy config'
-require_sha256 "${SOURCE_CHECKOUT}/${V4A_CONFIG_RELATIVE}" "$V4A_CONFIG_SHA256" 'v4a config'
 [[ -f "${SOURCE_CHECKOUT}/${VALIDATOR_RELATIVE}" ]] || fail 'native proxy validator is missing'
 source "${SOURCE_CHECKOUT}/scripts/server/environment_fingerprint.sh"
 [[ "$(pams_environment_fingerprint "${SOURCE_CHECKOUT}/docker/server")" == "$ENVIRONMENT_SHA256" ]] \
@@ -551,7 +696,7 @@ mkdir -- "$SOURCE_VIEW" "$INPUT_ROOT" "${RUN_ROOT}/stages" \
 write_status 'preparing' 'source-export' 'null'
 
 git -C "$SOURCE_CHECKOUT" archive --format=tar "$SOURCE_REVISION" \
-  src pyproject.toml "$CONFIG_RELATIVE" "$V4A_CONFIG_RELATIVE" \
+  src pyproject.toml "$CONFIG_RELATIVE" \
   "$VALIDATOR_RELATIVE" \
   | tar -xf - -C "$SOURCE_VIEW"
 [[ ! -e "${SOURCE_VIEW}/.git" && ! -e "${SOURCE_VIEW}/data" \
@@ -562,7 +707,6 @@ git -C "$SOURCE_CHECKOUT" archive --format=tar "$SOURCE_REVISION" \
 [[ -z "$(find "$SOURCE_VIEW" -type l -print -quit)" ]] \
   || fail 'source export contains a symlink'
 require_sha256 "${SOURCE_VIEW}/${CONFIG_RELATIVE}" "$CONFIG_SHA256" 'exported native proxy config'
-require_sha256 "${SOURCE_VIEW}/${V4A_CONFIG_RELATIVE}" "$V4A_CONFIG_SHA256" 'exported v4a config'
 
 SOURCE_EXPORT_ROOT="$SOURCE_VIEW" \
 SOURCE_EXPORT_REVISION="$SOURCE_REVISION" \
@@ -617,10 +761,17 @@ RESERVATION_ENVIRONMENT="$ENVIRONMENT_SHA256" \
 RESERVATION_CONFIG_SHA="$CONFIG_SHA256" \
 RESERVATION_CONFIG_FP="$CONFIG_FINGERPRINT" \
 RESERVATION_POSE_FP="$POSE_FINGERPRINT" \
-RESERVATION_V4A_ROOT="$V4A_RUN_ROOT" \
-RESERVATION_V4A_IMAGE="$V4A_IMAGE_ID" \
-RESERVATION_V4A_GATE="$V4A_PAIRED_GATE_SHA256" \
-RESERVATION_V4A_RECEIPT="$V4A_RUN_RECEIPT_SHA256" \
+RESERVATION_POSE_VERSION="$POSE_RECOVERY_VERSION" \
+RESERVATION_POSE_ROOT="$POSE_RECOVERY_RUN_ROOT" \
+RESERVATION_POSE_SOURCE="$POSE_RECOVERY_SOURCE_REVISION" \
+RESERVATION_POSE_IMAGE="$POSE_RECOVERY_IMAGE_ID" \
+RESERVATION_POSE_CONFIG_SHA="$POSE_RECOVERY_CONFIG_SHA256" \
+RESERVATION_POSE_CONFIG_FP="$POSE_RECOVERY_CONFIG_FINGERPRINT" \
+RESERVATION_POSE_AUTH="$POSE_RECOVERY_AUTHORIZATION_SHA256" \
+RESERVATION_POSE_GATE="$POSE_RECOVERY_PAIRED_GATE_SHA256" \
+RESERVATION_POSE_RECEIPT="$POSE_RECOVERY_RUN_RECEIPT_SHA256" \
+RESERVATION_POSE_LEDGER="$POSE_RECOVERY_LEDGER_SHA256" \
+RESERVATION_POSE_CACHE_SET="$AUTHORIZED_POSE_CACHE_SET_SHA256" \
 python3 - <<'PY'
 import json
 import os
@@ -642,10 +793,19 @@ payload = {
     "config_file_sha256": os.environ["RESERVATION_CONFIG_SHA"],
     "config_fingerprint": os.environ["RESERVATION_CONFIG_FP"],
     "pose_fingerprint": os.environ["RESERVATION_POSE_FP"],
-    "upstream_v4a_run_root": os.environ["RESERVATION_V4A_ROOT"],
-    "upstream_v4a_container_image_id": os.environ["RESERVATION_V4A_IMAGE"],
-    "upstream_v4a_paired_gate_sha256": os.environ["RESERVATION_V4A_GATE"],
-    "upstream_v4a_run_receipt_sha256": os.environ["RESERVATION_V4A_RECEIPT"],
+    "upstream_pose_recovery": {
+        "version": os.environ["RESERVATION_POSE_VERSION"],
+        "run_root": os.environ["RESERVATION_POSE_ROOT"],
+        "source_revision": os.environ["RESERVATION_POSE_SOURCE"],
+        "container_image_id": os.environ["RESERVATION_POSE_IMAGE"],
+        "config_file_sha256": os.environ["RESERVATION_POSE_CONFIG_SHA"],
+        "config_fingerprint": os.environ["RESERVATION_POSE_CONFIG_FP"],
+        "authorization_sha256": os.environ["RESERVATION_POSE_AUTH"],
+        "paired_gate_sha256": os.environ["RESERVATION_POSE_GATE"],
+        "run_receipt_sha256": os.environ["RESERVATION_POSE_RECEIPT"],
+        "ledger_sha256": os.environ["RESERVATION_POSE_LEDGER"],
+        "pose_cache_set_sha256": os.environ["RESERVATION_POSE_CACHE_SET"],
+    },
     "encoder_epochs": 150,
     "physical_batch_size": 32,
     "encoder_training_scope": "train337_only",
@@ -680,9 +840,16 @@ chmod 0444 "${RUN_ROOT}/attempt.reservation.json"
   printf 'config_file_sha256 %s\n' "$CONFIG_SHA256"
   printf 'config_fingerprint %s\n' "$CONFIG_FINGERPRINT"
   printf 'pose_fingerprint %s\n' "$POSE_FINGERPRINT"
-  printf 'v4a_container_image_id %s\n' "$V4A_IMAGE_ID"
-  printf 'v4a_paired_gate_sha256 %s\n' "$V4A_PAIRED_GATE_SHA256"
-  printf 'v4a_run_receipt_sha256 %s\n' "$V4A_RUN_RECEIPT_SHA256"
+  printf 'pose_recovery_version %s\n' "$POSE_RECOVERY_VERSION"
+  printf 'pose_recovery_source_revision %s\n' "$POSE_RECOVERY_SOURCE_REVISION"
+  printf 'pose_recovery_container_image_id %s\n' "$POSE_RECOVERY_IMAGE_ID"
+  printf 'pose_recovery_config_file_sha256 %s\n' "$POSE_RECOVERY_CONFIG_SHA256"
+  printf 'pose_recovery_config_fingerprint %s\n' "$POSE_RECOVERY_CONFIG_FINGERPRINT"
+  printf 'pose_recovery_authorization_sha256 %s\n' "$POSE_RECOVERY_AUTHORIZATION_SHA256"
+  printf 'pose_recovery_paired_gate_sha256 %s\n' "$POSE_RECOVERY_PAIRED_GATE_SHA256"
+  printf 'pose_recovery_run_receipt_sha256 %s\n' "$POSE_RECOVERY_RUN_RECEIPT_SHA256"
+  printf 'pose_recovery_ledger_sha256 %s\n' "$POSE_RECOVERY_LEDGER_SHA256"
+  printf 'authorized_pose_cache_set_sha256 %s\n' "$AUTHORIZED_POSE_CACHE_SET_SHA256"
   printf 'train_identity_sidecar_sha256 %s\n' "$TRAIN_INPUT_SHA256"
   printf 'train_identity_commitment_sha256 %s\n' "$TRAIN_COMMIT_SHA256"
   printf 'dev_identity_sidecar_sha256 %s\n' "$DEV_INPUT_SHA256"
@@ -753,26 +920,31 @@ docker create \
   --env CUDA_VISIBLE_DEVICES= \
   "${source_args[@]}" \
   "${protocol_args[@]}" \
-  --mount "type=bind,src=${V4A_PAIRED_GATE},dst=/pams/v4a/paired-gate.json,readonly" \
-  --mount "type=bind,src=${V4A_RUN_RECEIPT},dst=/pams/v4a/run.receipt.json,readonly" \
-  --mount "type=bind,src=${V4A_LEDGER},dst=/pams/v4a/train337.ledger.json,readonly" \
-  --mount "type=bind,src=${V4A_CACHE},dst=/pams/pose-cache,readonly" \
+  --mount "type=bind,src=${POSE_RECOVERY_CONFIG},dst=/pams/pose-recovery/config.yaml,readonly" \
+  --mount "type=bind,src=${POSE_RECOVERY_AUTHORIZATION},dst=/pams/pose-recovery/native-baseline-authorization.json,readonly" \
+  --mount "type=bind,src=${POSE_RECOVERY_PAIRED_GATE},dst=/pams/pose-recovery/paired-gate.json,readonly" \
+  --mount "type=bind,src=${POSE_RECOVERY_RUN_RECEIPT},dst=/pams/pose-recovery/run.receipt.json,readonly" \
+  --mount "type=bind,src=${POSE_RECOVERY_LEDGER},dst=/pams/pose-recovery/train337.ledger.json,readonly" \
+  --mount "type=bind,src=${POSE_RECOVERY_CACHE},dst=/pams/pose-cache,readonly" \
   --mount "type=bind,src=${AUDIT_ROOT},dst=/pams/output" \
   "$IMAGE_ID" \
   python scripts/server/validate_pams_native_baseline_inputs.py \
     --candidate-config /pams/input/config.yaml \
-    --v4a-config "/workspace/${V4A_CONFIG_RELATIVE}" \
+    --pose-recovery-version "$POSE_RECOVERY_VERSION" \
+    --pose-recovery-config /pams/pose-recovery/config.yaml \
     --train-sidecar /pams/protocol/train.inputs.json \
     --train-commitment /pams/protocol/train.inputs.commitment.json \
     --dev-identity-sidecar /pams/protocol/dev.inputs.json \
     --dev-identity-commitment /pams/protocol/dev.inputs.commitment.json \
     --test-identity-sidecar /pams/protocol/test-identity.inputs.json \
     --test-identity-commitment /pams/protocol/test-identity.inputs.commitment.json \
-    --v4a-paired-gate /pams/v4a/paired-gate.json \
-    --expected-v4a-paired-gate-sha256 "$V4A_PAIRED_GATE_SHA256" \
-    --v4a-run-receipt /pams/v4a/run.receipt.json \
-    --expected-v4a-run-receipt-sha256 "$V4A_RUN_RECEIPT_SHA256" \
-    --v4a-ledger /pams/v4a/train337.ledger.json \
+    --pose-recovery-authorization /pams/pose-recovery/native-baseline-authorization.json \
+    --expected-pose-recovery-authorization-sha256 "$POSE_RECOVERY_AUTHORIZATION_SHA256" \
+    --pose-recovery-paired-gate /pams/pose-recovery/paired-gate.json \
+    --expected-pose-recovery-paired-gate-sha256 "$POSE_RECOVERY_PAIRED_GATE_SHA256" \
+    --pose-recovery-run-receipt /pams/pose-recovery/run.receipt.json \
+    --expected-pose-recovery-run-receipt-sha256 "$POSE_RECOVERY_RUN_RECEIPT_SHA256" \
+    --pose-recovery-ledger /pams/pose-recovery/train337.ledger.json \
     --train-pose-cache /pams/pose-cache \
     --output /pams/output/input-preflight.json \
   > "${AUDIT_ROOT}/${PREFLIGHT_NAME}.create-id.txt"
@@ -785,8 +957,12 @@ jq -e \
   --arg config_sha "$CONFIG_SHA256" \
   --arg config_fp "$CONFIG_FINGERPRINT" \
   --arg pose_fp "$POSE_FINGERPRINT" \
-  --arg gate_sha "$V4A_PAIRED_GATE_SHA256" \
-  --arg receipt_sha "$V4A_RUN_RECEIPT_SHA256" \
+  --arg version "$POSE_RECOVERY_VERSION" \
+  --arg authorization_sha "$POSE_RECOVERY_AUTHORIZATION_SHA256" \
+  --arg gate_sha "$POSE_RECOVERY_PAIRED_GATE_SHA256" \
+  --arg receipt_sha "$POSE_RECOVERY_RUN_RECEIPT_SHA256" \
+  --arg ledger_sha "$POSE_RECOVERY_LEDGER_SHA256" \
+  --arg cache_set_sha "$AUTHORIZED_POSE_CACHE_SET_SHA256" \
   '
     .schema_version == 1
     and .passed == true
@@ -797,9 +973,13 @@ jq -e \
     and .candidate.pose_fingerprint == $pose_fp
     and .candidate.encoder_epochs == 150
     and .candidate.physical_batch_size == 32
-    and .v4a.paired_gate_sha256 == $gate_sha
-    and .v4a.run_receipt_sha256 == $receipt_sha
-    and .v4a.pose_cache_entry_total == 337
+    and .pose_recovery.version == $version
+    and .pose_recovery.authorization_sha256 == $authorization_sha
+    and .pose_recovery.paired_gate_sha256 == $gate_sha
+    and .pose_recovery.run_receipt_sha256 == $receipt_sha
+    and .pose_recovery.ledger_sha256 == $ledger_sha
+    and .pose_recovery.pose_cache_set_sha256 == $cache_set_sha
+    and .pose_recovery.pose_cache_entry_total == 337
     and .mount_policy.train337_pose_cache == true
     and .mount_policy.dev84_pose_cache == false
     and .mount_policy.test105_pose_cache == false
@@ -814,7 +994,9 @@ jq -e \
   ' "${AUDIT_ROOT}/input-preflight.json" >/dev/null \
   || fail 'input preflight artifact violates the training authorization'
 readonly INPUT_PREFLIGHT_SHA256="$(sha256_file "${AUDIT_ROOT}/input-preflight.json")"
-readonly POSE_CACHE_SET_SHA256="$(jq -er '.v4a.pose_cache_set_sha256' "${AUDIT_ROOT}/input-preflight.json")"
+readonly POSE_CACHE_SET_SHA256="$(jq -er '.pose_recovery.pose_cache_set_sha256' "${AUDIT_ROOT}/input-preflight.json")"
+[[ "$POSE_CACHE_SET_SHA256" == "$AUTHORIZED_POSE_CACHE_SET_SHA256" ]] \
+  || fail 'validated pose-cache set differs from the authorization binding'
 chmod 0444 "${AUDIT_ROOT}/input-preflight.json"
 
 mkdir -p -- "$LOCK_ROOT"
@@ -839,7 +1021,7 @@ docker create \
   --env CUBLAS_WORKSPACE_CONFIG=:4096:8 \
   "${source_args[@]}" \
   "${protocol_args[@]}" \
-  --mount "type=bind,src=${V4A_CACHE},dst=/pams/pose-cache,readonly" \
+  --mount "type=bind,src=${POSE_RECOVERY_CACHE},dst=/pams/pose-cache,readonly" \
   --mount "type=bind,src=${ENCODER_STAGE},dst=/pams/output" \
   "$IMAGE_ID" \
   python -m pams train encoder \
@@ -886,9 +1068,15 @@ RUN_CONFIG_SHA256="$CONFIG_SHA256" \
 RUN_CONFIG_FINGERPRINT="$CONFIG_FINGERPRINT" \
 RUN_POSE_FINGERPRINT="$POSE_FINGERPRINT" \
 RUN_POSE_CACHE_SET_SHA256="$POSE_CACHE_SET_SHA256" \
-RUN_V4A_IMAGE_ID="$V4A_IMAGE_ID" \
-RUN_V4A_GATE_SHA256="$V4A_PAIRED_GATE_SHA256" \
-RUN_V4A_RECEIPT_SHA256="$V4A_RUN_RECEIPT_SHA256" \
+RUN_POSE_VERSION="$POSE_RECOVERY_VERSION" \
+RUN_POSE_SOURCE_REVISION="$POSE_RECOVERY_SOURCE_REVISION" \
+RUN_POSE_IMAGE_ID="$POSE_RECOVERY_IMAGE_ID" \
+RUN_POSE_CONFIG_SHA256="$POSE_RECOVERY_CONFIG_SHA256" \
+RUN_POSE_CONFIG_FINGERPRINT="$POSE_RECOVERY_CONFIG_FINGERPRINT" \
+RUN_POSE_AUTHORIZATION_SHA256="$POSE_RECOVERY_AUTHORIZATION_SHA256" \
+RUN_POSE_GATE_SHA256="$POSE_RECOVERY_PAIRED_GATE_SHA256" \
+RUN_POSE_RECEIPT_SHA256="$POSE_RECOVERY_RUN_RECEIPT_SHA256" \
+RUN_POSE_LEDGER_SHA256="$POSE_RECOVERY_LEDGER_SHA256" \
 RUN_PREFLIGHT_SHA256="$INPUT_PREFLIGHT_SHA256" \
 RUN_ENCODER_CHECKPOINT="$ENCODER_CHECKPOINT" \
 RUN_ENCODER_PROGRESS="$ENCODER_PROGRESS" \
@@ -921,9 +1109,17 @@ payload = {
     "config_fingerprint": os.environ["RUN_CONFIG_FINGERPRINT"],
     "pose_fingerprint": os.environ["RUN_POSE_FINGERPRINT"],
     "pose_cache_set_sha256": os.environ["RUN_POSE_CACHE_SET_SHA256"],
-    "upstream_v4a_container_image_id": os.environ["RUN_V4A_IMAGE_ID"],
-    "upstream_v4a_paired_gate_sha256": os.environ["RUN_V4A_GATE_SHA256"],
-    "upstream_v4a_run_receipt_sha256": os.environ["RUN_V4A_RECEIPT_SHA256"],
+    "upstream_pose_recovery": {
+        "version": os.environ["RUN_POSE_VERSION"],
+        "source_revision": os.environ["RUN_POSE_SOURCE_REVISION"],
+        "container_image_id": os.environ["RUN_POSE_IMAGE_ID"],
+        "config_file_sha256": os.environ["RUN_POSE_CONFIG_SHA256"],
+        "config_fingerprint": os.environ["RUN_POSE_CONFIG_FINGERPRINT"],
+        "authorization_sha256": os.environ["RUN_POSE_AUTHORIZATION_SHA256"],
+        "paired_gate_sha256": os.environ["RUN_POSE_GATE_SHA256"],
+        "run_receipt_sha256": os.environ["RUN_POSE_RECEIPT_SHA256"],
+        "ledger_sha256": os.environ["RUN_POSE_LEDGER_SHA256"],
+    },
     "input_preflight_sha256": os.environ["RUN_PREFLIGHT_SHA256"],
     "encoder_checkpoint_sha256": digest("RUN_ENCODER_CHECKPOINT"),
     "encoder_progress_sha256": digest("RUN_ENCODER_PROGRESS"),

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Validate the train337-only inputs for the native Table-2 proxy runner.
 
-This preflight has no training, prediction, target, or label interface.  Dev84
+This preflight has no training, prediction, target, or label interface. Dev84
 and test105 appear only as exact count-free identity sidecars required by the
-formal CLI provenance contract.  The only pose cache accepted here is the
-passed v4a train337 cache.
+formal CLI provenance contract. The only pose cache accepted here is an
+externally preregistered native train337 recovery artifact with an exact,
+passing baseline-authorization receipt. The rejected v4a recovery can never
+satisfy this contract.
 """
 
 from __future__ import annotations
@@ -12,6 +14,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -28,12 +31,17 @@ from pams.data import (
 _ARTIFACT_TYPE = "pams_native_table2_baseline_proxy_train337_preflight"
 _CLASSIFICATION = "independently_inferred_proxy_not_author_table2_baseline"
 _EXPECTED_PROTOCOL = "ucfrep_526"
-_EXPECTED_V4A_CONFIG_SHA256 = (
-    "c6fe33584f768e774d975059b7a899a4471aacc4cdda9f4821cc13c57bbaabc5"
+_POSE_AUTHORIZATION_TYPE = "pams_native_pose_recovery_train337_authorization"
+_POSE_AUTHORIZED_CONSUMER = "pams_native_table2_baseline_proxy_train337_encoder"
+_REJECTED_POSE_RECOVERY_VERSIONS = frozenset(
+    {
+        "v4a",
+        "official-segment-heavy-missing-retry-full-timeline-v4a",
+    }
 )
-_EXPECTED_V4A_POSE_FINGERPRINT = (
-    "817013890533cd19e6c791969c35c3699d56d0e6656768ce64199bc30ceebe9c"
-)
+_VERSION_PATTERN = re.compile(r"[a-z0-9][a-z0-9._-]{0,63}")
+_GIT_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
+_IMAGE_ID_PATTERN = re.compile(r"sha256:[0-9a-f]{64}")
 _EXPECTED_RECORDS = {"train": 337, "dev": 84, "test": 105}
 _EXPECTED_SIDECAR_SHA256 = {
     "train": "f95df0050df21f05bbc9b42d0154470714dde279e04cb8b00d0212bf49057d16",
@@ -106,22 +114,35 @@ def _mapping(value: Any, role: str) -> Mapping[str, Any]:
     return value
 
 
-def _validate_proxy_config(candidate: PAMSConfig, v4a: PAMSConfig) -> None:
+def _validate_proxy_config(
+    candidate: PAMSConfig,
+    pose_recovery: PAMSConfig,
+) -> None:
     """Require the preregistered inferred proxy semantics."""
 
     _require(candidate.protocol == _EXPECTED_PROTOCOL, "candidate protocol mismatch")
     _require(candidate.seed == 2026, "candidate seed must be 2026")
-    _require(candidate.data == v4a.data, "candidate data block differs from v4a")
-    _require(candidate.pose == v4a.pose, "candidate pose block differs from v4a")
+    _require(
+        candidate.data == pose_recovery.data,
+        "candidate data block differs from the authorized pose recovery",
+    )
+    _require(
+        candidate.pose == pose_recovery.pose,
+        "candidate pose block differs from the authorized pose recovery",
+    )
+    _require(
+        bool(candidate.pose.preprocessing_revision.strip()),
+        "candidate pose preprocessing revision is empty",
+    )
     _require(
         candidate.pose.preprocessing_revision
-        == "official-segment-heavy-missing-retry-full-timeline-v4a",
-        "candidate must use v4a official-segment recovery",
+        not in _REJECTED_POSE_RECOVERY_VERSIONS,
+        "candidate pose preprocessing revision is formally rejected",
     )
     _require(
         candidate.pose.recovery is not None
         and candidate.pose.recovery.temporal_resampling == "none_native_timeline",
-        "candidate must retain the native v4a timeline",
+        "candidate must retain the authorized native timeline",
     )
     _require(
         candidate.model.position_encoding_mode == "sinusoidal",
@@ -225,117 +246,190 @@ def _validate_sidecar_pair(
     }
 
 
-def _validate_v4a_gate_payload(
+def _validate_pose_recovery_authorization(
+    authorization: Mapping[str, Any],
     gate: Mapping[str, Any],
     receipt: Mapping[str, Any],
     *,
+    expected_version: str,
     gate_sha256: str,
-    v4a_config_sha256: str,
-    v4a_pose_fingerprint: str,
-    v4a_ledger_sha256: str,
+    run_receipt_sha256: str,
+    config_sha256: str,
+    config_fingerprint: str,
+    pose_fingerprint: str,
+    ledger_sha256: str,
     pose_cache_set_sha256: str,
 ) -> None:
-    _require(gate.get("schema_version") == 1, "v4a gate schema mismatch")
+    """Require an external, fail-closed native-pose authorization."""
+
     _require(
-        gate.get("artifact_type") == "pams_pose_recovery_v4a_train337_paired_audit",
-        "unexpected v4a gate artifact type",
+        _VERSION_PATTERN.fullmatch(expected_version) is not None,
+        "pose-recovery version must be a lowercase safe identifier",
     )
-    _require(gate.get("protocol") == _EXPECTED_PROTOCOL, "v4a gate protocol mismatch")
-    _require(gate.get("split") == "train", "v4a gate must be train-only")
-    _require(gate.get("passed") is True, "v4a paired gate did not pass")
-    metrics = _mapping(gate.get("metrics"), "v4a gate metrics")
-    _require(metrics.get("record_total") == 337, "v4a gate is not train337")
-    mounts = _mapping(gate.get("mount_audit"), "v4a gate mount audit")
-    _require(mounts.get("train_identity_mounted") is True, "v4a train identity absent")
-    _require(mounts.get("train_pose_caches_mounted") is True, "v4a train pose absent")
+    _require(
+        expected_version not in _REJECTED_POSE_RECOVERY_VERSIONS,
+        f"pose-recovery version is formally rejected: {expected_version}",
+    )
+    _require(authorization.get("schema_version") == 1, "pose authorization schema mismatch")
+    _require(
+        "authorization_sha256" not in authorization,
+        "pose authorization must not contain a self-reported SHA",
+    )
+    _require(
+        authorization.get("artifact_type") == _POSE_AUTHORIZATION_TYPE,
+        "unexpected pose authorization artifact type",
+    )
+    _require(authorization.get("version") == expected_version, "pose version mismatch")
+    _require(authorization.get("authorized") is True, "pose recovery is not authorized")
+    _require(
+        authorization.get("authorized_consumer") == _POSE_AUTHORIZED_CONSUMER,
+        "pose recovery is not authorized for this baseline runner",
+    )
+    _require(
+        authorization.get("classification") == "trusted_native_pose_recovery_train337",
+        "pose authorization classification mismatch",
+    )
+    _require(
+        authorization.get("protocol") == _EXPECTED_PROTOCOL
+        and authorization.get("split") == "train"
+        and authorization.get("record_total") == 337,
+        "pose authorization is not scoped to train337",
+    )
+    bindings = _mapping(authorization.get("bindings"), "pose authorization bindings")
+    expected_bindings = {
+        "config_file_sha256": config_sha256,
+        "config_fingerprint": config_fingerprint,
+        "pose_fingerprint": pose_fingerprint,
+        "paired_gate_sha256": gate_sha256,
+        "run_receipt_sha256": run_receipt_sha256,
+        "ledger_sha256": ledger_sha256,
+        "pose_cache_set_sha256": pose_cache_set_sha256,
+    }
+    for field, expected in expected_bindings.items():
+        _require(
+            bindings.get(field) == expected,
+            f"pose authorization binding mismatch: {field}",
+        )
+    source_revision = bindings.get("source_revision")
+    container_image_id = bindings.get("container_image_id")
+    _require(
+        isinstance(source_revision, str)
+        and _GIT_SHA_PATTERN.fullmatch(source_revision) is not None,
+        "pose authorization source revision is invalid",
+    )
+    _require(
+        isinstance(container_image_id, str)
+        and _IMAGE_ID_PATTERN.fullmatch(container_image_id) is not None,
+        "pose authorization container image ID is invalid",
+    )
+    scope = _mapping(authorization.get("scope"), "pose authorization scope")
+    expected_scope = {
+        "pose_timeline": "native",
+        "pose_cache": "train337_only",
+        "source_videos_mounted": False,
+        "dev84_mounted": False,
+        "test105_mounted": False,
+        "targets_mounted": False,
+        "network_mode": "none",
+        "source_export_read_only": True,
+    }
+    for field, expected in expected_scope.items():
+        _require(scope.get(field) == expected, f"pose authorization scope mismatch: {field}")
+
+    _require(gate.get("schema_version") == 1, "pose-recovery gate schema mismatch")
+    _require(gate.get("protocol") == _EXPECTED_PROTOCOL, "pose-recovery gate protocol mismatch")
+    _require(gate.get("split") == "train", "pose-recovery gate must be train-only")
+    _require(gate.get("passed") is True, "pose-recovery paired gate did not pass")
+    metrics = _mapping(gate.get("metrics"), "pose-recovery gate metrics")
+    _require(metrics.get("record_total") == 337, "pose-recovery gate is not train337")
+    mounts = _mapping(gate.get("mount_audit"), "pose-recovery gate mount audit")
+    _require(mounts.get("train_identity_mounted") is True, "train identity is absent")
+    _require(mounts.get("train_pose_caches_mounted") is True, "train pose is absent")
     for field in (
         "source_videos_mounted",
         "dev84_mounted",
         "test105_mounted",
         "targets_mounted",
     ):
-        _require(mounts.get(field) is False, f"v4a gate violates firewall: {field}")
-    bindings = _mapping(gate.get("bindings"), "v4a gate bindings")
-    _require(
-        bindings.get("v4_pose_fingerprint") == v4a_pose_fingerprint,
-        "v4a gate pose fingerprint mismatch",
-    )
-    _require(
-        bindings.get("v4_pose_cache_set_sha256") == pose_cache_set_sha256,
-        "v4a gate pose-cache set mismatch",
-    )
-    _require(
-        bindings.get("v4_ledger_sha256") == v4a_ledger_sha256,
-        "v4a gate ledger SHA mismatch",
-    )
+        _require(mounts.get(field) is False, f"pose gate violates firewall: {field}")
 
-    _require(receipt.get("schema_version") == 1, "v4a run receipt schema mismatch")
+    _require(receipt.get("schema_version") == 1, "pose-recovery run receipt schema mismatch")
     _require(
-        receipt.get("artifact_type") == "pams_pose_recovery_v4a_train337_run_receipt",
-        "unexpected v4a run receipt type",
+        receipt.get("source_revision") == source_revision,
+        "pose-recovery run receipt source revision mismatch",
     )
     _require(
-        receipt.get("config_file_sha256") == v4a_config_sha256,
-        "v4a run receipt config SHA mismatch",
+        receipt.get("container_image_id") == container_image_id,
+        "pose-recovery run receipt image mismatch",
     )
     _require(
-        receipt.get("pose_fingerprint") == v4a_pose_fingerprint,
-        "v4a run receipt pose fingerprint mismatch",
+        receipt.get("config_file_sha256") == config_sha256,
+        "pose-recovery run receipt config SHA mismatch",
+    )
+    _require(
+        receipt.get("config_fingerprint") == config_fingerprint,
+        "pose-recovery run receipt config fingerprint mismatch",
+    )
+    _require(
+        receipt.get("pose_fingerprint") == pose_fingerprint,
+        "pose-recovery run receipt pose fingerprint mismatch",
     )
     _require(
         receipt.get("temporal_resampling") == "none_native_timeline",
-        "v4a run receipt is not native timeline",
+        "pose-recovery run receipt is not native timeline",
     )
     _require(
         receipt.get("scope") == "count-free-train337-pose-input-recovery-only",
-        "v4a run receipt scope mismatch",
+        "pose-recovery run receipt scope mismatch",
     )
-    _require(receipt.get("paired_gate_exit_status") == 0, "v4a paired gate exit failed")
+    _require(receipt.get("paired_gate_exit_status") == 0, "pose-recovery paired gate failed")
     _require(
         receipt.get("paired_gate_sha256") == gate_sha256,
-        "v4a run receipt does not bind the paired gate",
+        "pose-recovery run receipt does not bind the paired gate",
     )
 
 
 def validate_native_baseline_inputs(
     *,
     candidate_config_path: Path,
-    v4a_config_path: Path,
+    pose_recovery_version: str,
+    pose_recovery_config_path: Path,
     train_sidecar_path: Path,
     train_commitment_path: Path,
     dev_sidecar_path: Path,
     dev_commitment_path: Path,
     test_identity_sidecar_path: Path,
     test_identity_commitment_path: Path,
-    v4a_gate_path: Path,
-    expected_v4a_gate_sha256: str,
-    v4a_run_receipt_path: Path,
-    expected_v4a_run_receipt_sha256: str,
-    v4a_ledger_path: Path,
+    pose_recovery_authorization_path: Path,
+    expected_pose_recovery_authorization_sha256: str,
+    pose_recovery_gate_path: Path,
+    expected_pose_recovery_gate_sha256: str,
+    pose_recovery_run_receipt_path: Path,
+    expected_pose_recovery_run_receipt_sha256: str,
+    pose_recovery_ledger_path: Path,
     train_pose_cache_dir: Path,
 ) -> dict[str, Any]:
     """Return a target-free preflight artifact for one exact input set."""
 
-    expected_gate_sha256 = _sha256(expected_v4a_gate_sha256, "expected v4a gate")
+    expected_authorization_sha256 = _sha256(
+        expected_pose_recovery_authorization_sha256,
+        "expected pose-recovery authorization",
+    )
+    expected_gate_sha256 = _sha256(
+        expected_pose_recovery_gate_sha256,
+        "expected pose-recovery gate",
+    )
     expected_run_receipt_sha256 = _sha256(
-        expected_v4a_run_receipt_sha256,
-        "expected v4a run receipt",
+        expected_pose_recovery_run_receipt_sha256,
+        "expected pose-recovery run receipt",
     )
     candidate_config_file = candidate_config_path.resolve(strict=True)
-    v4a_config_file = v4a_config_path.resolve(strict=True)
+    pose_recovery_config_file = pose_recovery_config_path.resolve(strict=True)
     candidate = load_config(candidate_config_file)
-    v4a = load_config(v4a_config_file)
-    _validate_proxy_config(candidate, v4a)
+    pose_recovery = load_config(pose_recovery_config_file)
+    _validate_proxy_config(candidate, pose_recovery)
     candidate_config_sha256 = _sha256_file(candidate_config_file)
-    v4a_config_sha256 = _sha256_file(v4a_config_file)
-    _require(
-        v4a_config_sha256 == _EXPECTED_V4A_CONFIG_SHA256,
-        "v4a config file SHA mismatch",
-    )
-    _require(
-        candidate.pose_fingerprint == _EXPECTED_V4A_POSE_FINGERPRINT,
-        "candidate pose fingerprint is not the frozen v4a identity",
-    )
+    pose_recovery_config_sha256 = _sha256_file(pose_recovery_config_file)
 
     protocol = {
         "train": _validate_sidecar_pair(
@@ -356,49 +450,64 @@ def validate_native_baseline_inputs(
     }
     train_manifest = protocol["train"]["manifest"]
     cache_dir = train_pose_cache_dir.resolve(strict=True)
-    _require(cache_dir.is_dir(), "v4a train pose cache is not a directory")
+    _require(cache_dir.is_dir(), "authorized train pose cache is not a directory")
     entries = tuple(cache_dir.iterdir())
-    _require(len(entries) == 337, "v4a pose cache directory must contain 337 files")
+    _require(len(entries) == 337, "pose cache directory must contain 337 files")
     for entry in entries:
-        _require(not entry.is_symlink(), "v4a pose cache contains a symlink")
-        _require(entry.is_file() and entry.suffix == ".npz", "unexpected v4a cache entry")
+        _require(not entry.is_symlink(), "authorized pose cache contains a symlink")
+        _require(entry.is_file() and entry.suffix == ".npz", "unexpected pose-cache entry")
     _, pose_snapshot = load_pose_cache_set(
         train_manifest.records,
         cache_dir=cache_dir,
         pose_fingerprint=candidate.pose_fingerprint,
         materialize_sequences=False,
     )
-    _require(len(pose_snapshot.entries) == 337, "v4a pose snapshot is not train337")
+    _require(len(pose_snapshot.entries) == 337, "pose snapshot is not train337")
 
-    gate, gate_sha256 = _load_json(v4a_gate_path, role="v4a paired gate")
-    _require(gate_sha256 == expected_gate_sha256, "v4a paired gate SHA mismatch")
+    authorization, authorization_sha256 = _load_json(
+        pose_recovery_authorization_path,
+        role="pose-recovery authorization",
+    )
+    _require(
+        authorization_sha256 == expected_authorization_sha256,
+        "pose-recovery authorization SHA mismatch",
+    )
+    gate, gate_sha256 = _load_json(
+        pose_recovery_gate_path,
+        role="pose-recovery paired gate",
+    )
+    _require(gate_sha256 == expected_gate_sha256, "pose-recovery gate SHA mismatch")
     run_receipt, run_receipt_sha256 = _load_json(
-        v4a_run_receipt_path,
-        role="v4a run receipt",
+        pose_recovery_run_receipt_path,
+        role="pose-recovery run receipt",
     )
     _require(
         run_receipt_sha256 == expected_run_receipt_sha256,
-        "v4a run receipt SHA mismatch",
+        "pose-recovery run receipt SHA mismatch",
     )
-    ledger_path = v4a_ledger_path.resolve(strict=True)
-    v4a_ledger_sha256 = _sha256_file(ledger_path)
-    ledger, _ = _load_json(ledger_path, role="v4a train337 ledger")
-    _require(ledger.get("protocol") == _EXPECTED_PROTOCOL, "v4a ledger protocol mismatch")
-    _require(ledger.get("split") == "train", "v4a ledger split mismatch")
-    _require(ledger.get("selected") == 337, "v4a ledger selected count mismatch")
-    _require(ledger.get("completed") == 337, "v4a ledger completed count mismatch")
-    _require(ledger.get("failed") == 0, "v4a ledger contains failures")
+    ledger_path = pose_recovery_ledger_path.resolve(strict=True)
+    pose_recovery_ledger_sha256 = _sha256_file(ledger_path)
+    ledger, _ = _load_json(ledger_path, role="pose-recovery train337 ledger")
+    _require(ledger.get("protocol") == _EXPECTED_PROTOCOL, "pose ledger protocol mismatch")
+    _require(ledger.get("split") == "train", "pose ledger split mismatch")
+    _require(ledger.get("selected") == 337, "pose ledger selected count mismatch")
+    _require(ledger.get("completed") == 337, "pose ledger completed count mismatch")
+    _require(ledger.get("failed") == 0, "pose ledger contains failures")
     _require(
         ledger.get("pose_fingerprint") == candidate.pose_fingerprint,
-        "v4a ledger pose fingerprint mismatch",
+        "pose ledger fingerprint mismatch",
     )
-    _validate_v4a_gate_payload(
+    _validate_pose_recovery_authorization(
+        authorization,
         gate,
         run_receipt,
+        expected_version=pose_recovery_version,
         gate_sha256=gate_sha256,
-        v4a_config_sha256=v4a_config_sha256,
-        v4a_pose_fingerprint=candidate.pose_fingerprint,
-        v4a_ledger_sha256=v4a_ledger_sha256,
+        run_receipt_sha256=run_receipt_sha256,
+        config_sha256=pose_recovery_config_sha256,
+        config_fingerprint=pose_recovery.fingerprint,
+        pose_fingerprint=candidate.pose_fingerprint,
+        ledger_sha256=pose_recovery_ledger_sha256,
         pose_cache_set_sha256=pose_snapshot.fingerprint,
     )
 
@@ -434,11 +543,22 @@ def validate_native_baseline_inputs(
             "encoder_epochs": candidate.training.epochs,
             "physical_batch_size": candidate.training.effective_batch_size,
         },
-        "v4a": {
-            "config_file_sha256": v4a_config_sha256,
+        "pose_recovery": {
+            "version": pose_recovery_version,
+            "authorization_sha256": authorization_sha256,
+            "source_revision": _mapping(
+                authorization.get("bindings"),
+                "pose authorization bindings",
+            )["source_revision"],
+            "container_image_id": _mapping(
+                authorization.get("bindings"),
+                "pose authorization bindings",
+            )["container_image_id"],
+            "config_file_sha256": pose_recovery_config_sha256,
+            "config_fingerprint": pose_recovery.fingerprint,
             "paired_gate_sha256": gate_sha256,
             "run_receipt_sha256": run_receipt_sha256,
-            "ledger_sha256": v4a_ledger_sha256,
+            "ledger_sha256": pose_recovery_ledger_sha256,
             "pose_cache_set_sha256": pose_snapshot.fingerprint,
             "pose_cache_entry_total": len(pose_snapshot.entries),
             "native_timeline": True,
@@ -476,18 +596,24 @@ def _write_exclusive(path: Path, payload: Mapping[str, Any]) -> None:
 def _parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--candidate-config", type=Path, required=True)
-    parser.add_argument("--v4a-config", type=Path, required=True)
+    parser.add_argument("--pose-recovery-version", required=True)
+    parser.add_argument("--pose-recovery-config", type=Path, required=True)
     parser.add_argument("--train-sidecar", type=Path, required=True)
     parser.add_argument("--train-commitment", type=Path, required=True)
     parser.add_argument("--dev-identity-sidecar", type=Path, required=True)
     parser.add_argument("--dev-identity-commitment", type=Path, required=True)
     parser.add_argument("--test-identity-sidecar", type=Path, required=True)
     parser.add_argument("--test-identity-commitment", type=Path, required=True)
-    parser.add_argument("--v4a-paired-gate", type=Path, required=True)
-    parser.add_argument("--expected-v4a-paired-gate-sha256", required=True)
-    parser.add_argument("--v4a-run-receipt", type=Path, required=True)
-    parser.add_argument("--expected-v4a-run-receipt-sha256", required=True)
-    parser.add_argument("--v4a-ledger", type=Path, required=True)
+    parser.add_argument("--pose-recovery-authorization", type=Path, required=True)
+    parser.add_argument(
+        "--expected-pose-recovery-authorization-sha256",
+        required=True,
+    )
+    parser.add_argument("--pose-recovery-paired-gate", type=Path, required=True)
+    parser.add_argument("--expected-pose-recovery-paired-gate-sha256", required=True)
+    parser.add_argument("--pose-recovery-run-receipt", type=Path, required=True)
+    parser.add_argument("--expected-pose-recovery-run-receipt-sha256", required=True)
+    parser.add_argument("--pose-recovery-ledger", type=Path, required=True)
     parser.add_argument("--train-pose-cache", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args(argv)
@@ -498,20 +624,29 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         payload = validate_native_baseline_inputs(
             candidate_config_path=arguments.candidate_config,
-            v4a_config_path=arguments.v4a_config,
+            pose_recovery_version=arguments.pose_recovery_version,
+            pose_recovery_config_path=arguments.pose_recovery_config,
             train_sidecar_path=arguments.train_sidecar,
             train_commitment_path=arguments.train_commitment,
             dev_sidecar_path=arguments.dev_identity_sidecar,
             dev_commitment_path=arguments.dev_identity_commitment,
             test_identity_sidecar_path=arguments.test_identity_sidecar,
             test_identity_commitment_path=arguments.test_identity_commitment,
-            v4a_gate_path=arguments.v4a_paired_gate,
-            expected_v4a_gate_sha256=arguments.expected_v4a_paired_gate_sha256,
-            v4a_run_receipt_path=arguments.v4a_run_receipt,
-            expected_v4a_run_receipt_sha256=(
-                arguments.expected_v4a_run_receipt_sha256
+            pose_recovery_authorization_path=(
+                arguments.pose_recovery_authorization
             ),
-            v4a_ledger_path=arguments.v4a_ledger,
+            expected_pose_recovery_authorization_sha256=(
+                arguments.expected_pose_recovery_authorization_sha256
+            ),
+            pose_recovery_gate_path=arguments.pose_recovery_paired_gate,
+            expected_pose_recovery_gate_sha256=(
+                arguments.expected_pose_recovery_paired_gate_sha256
+            ),
+            pose_recovery_run_receipt_path=arguments.pose_recovery_run_receipt,
+            expected_pose_recovery_run_receipt_sha256=(
+                arguments.expected_pose_recovery_run_receipt_sha256
+            ),
+            pose_recovery_ledger_path=arguments.pose_recovery_ledger,
             train_pose_cache_dir=arguments.train_pose_cache,
         )
         _write_exclusive(arguments.output, payload)
