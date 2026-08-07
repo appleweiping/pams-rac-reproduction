@@ -290,7 +290,9 @@ def test_v4c_timestamps_are_strict_and_eof_tail_is_never_observed(
 
     assert pass0_seen == [3, 4, 5]
     assert timestamps == [0, 42, 83]
-    assert all(right > left for left, right in zip(timestamps, timestamps[1:]))
+    assert all(
+        right > left for left, right in zip(timestamps, timestamps[1:], strict=False)
+    )
     assert audit.heavy_video_frames_observed == 3
     assert audit.padded_tail_frames == 2
     assert audit.heavy_video_num_poses == 4

@@ -1665,7 +1665,7 @@ def extract_pose_sequence_tasks_recovery(
     if len(tasks_candidates) != expected_frames:
         raise RuntimeError("v4c Tasks timeline does not equal the official segment length")
     if len(timestamps) != decoded_frames or any(
-        right <= left for left, right in zip(timestamps, timestamps[1:])
+        right <= left for left, right in zip(timestamps, timestamps[1:], strict=False)
     ):
         raise RuntimeError("v4c Tasks VIDEO timestamps are not strictly increasing")
     if sha256_file(heavy_asset) != recovery.heavy_model_asset_sha256:
