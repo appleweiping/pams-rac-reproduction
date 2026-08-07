@@ -1,0 +1,103 @@
+# PRE-A FROZEN, LABEL-FREE NATIVE TERMINAL READOUT GATE.
+#
+# Frozen before candidate A starts.  This specification may inspect only the
+# checkpoint-bound train337 pose cache at a completed epoch-150 encoder.  It
+# accepts no dataset manifest, development/test material, action class, target,
+# or repetition annotation.  Its output is aggregate-only: per-video periods,
+# curves, expert outputs, and peak totals are never persisted.
+#
+# A/B/C are a preregistered first-pass sequence, never a best-of-three sweep.
+# B requires a scientific-rejection artifact and receipt from A; C requires
+# corresponding artifacts and receipts from A and B.  A contract or
+# infrastructure failure emits no scientific artifact and authorizes no
+# fallback.  Changing this file requires a new protocol and a restart from A.
+#
+# The fixed training periods below are provenance choices for conventional TCC.
+# They are not inference periods.  Terminal inference always uses full-vector
+# embedding-velocity ACF with a per-sample half-timeline upper bound, followed
+# by the recurrence carrier and the unchanged three peak experts.
+schema_version: 1
+artifact_type: pams_native_terminal_readout_train337_gate_v1
+receipt_type: pams_native_terminal_readout_train337_gate_receipt_v1
+classification: inferred label-free train337 terminal readout gate
+frozen_before_candidate: A
+expected_protocol: ucfrep_526
+expected_seed: 2026
+expected_training_video_total: 337
+expected_completed_epochs: 150
+minimum_lag_pair_total: 8
+near_collapse_rms: 0.001
+time_scale_factors: [0.75, 1.25]
+candidate_profiles:
+  A:
+    fixed_training_period_frames: 16
+    anchor_stride: 4
+    required_prior_scientific_rejections: []
+  B:
+    fixed_training_period_frames: 16
+    anchor_stride: 2
+    required_prior_scientific_rejections: [A]
+  C:
+    fixed_training_period_frames: 24
+    anchor_stride: 4
+    required_prior_scientific_rejections: [A, B]
+candidate_invariants:
+  model_input_dim: 99
+  model_dim: 512
+  embedding_dim: 512
+  transformer_layers: 4
+  attention_heads: 16
+  feedforward_dim: 2048
+  position_encoding_mode: sinusoidal
+  norm_first: false
+  period_minimum: 4
+  period_maximum_safety_ceiling: 4096
+  period_maximum_mode: half_timeline
+  period_training_mode: fixed_period_inferred
+  direct_fft_timebase: dense_resampled
+  loss_scales: [1.0]
+  use_cross_cluster_negatives: false
+  exclude_other_scale_positives_from_denominator: false
+  encoder_epochs: 150
+  effective_batch_size: 32
+  skeleton_augmentation_enabled: true
+  expert_mode: multi
+  action_curve_source: embedding_recurrence_carrier
+thresholds:
+  near_collapsed_share_maximum: 0.10
+  lag_eligible_share_minimum: 0.50
+  real_cycle_margin_median_minimum: 0.01
+  real_minus_strongest_null_median_minimum: 0.01
+  real_beats_all_nulls_share_minimum: 0.60
+  period_boundary_share_maximum_exclusive: 0.25
+  period_mode_share_maximum_exclusive: 0.25
+  period_time_scale_eligible_share_minimum: 0.50
+  period_time_scale_median_relative_error_maximum: 0.15
+  carrier_eligible_available_share_minimum: 0.60
+  embedding_shuffle_harmonic_median_ratio_maximum: 0.75
+  embedding_shuffle_gate_energy_median_ratio_maximum: 0.75
+  zero_pose_positive_period_confidence_share_maximum: 0.05
+  zero_pose_carrier_available_share_maximum: 0.05
+  zero_pose_positive_support_share_maximum: 0.05
+  static_pose_positive_period_confidence_share_maximum: 0.05
+  static_pose_carrier_available_share_maximum: 0.05
+  static_pose_positive_support_share_maximum: 0.05
+  expert_majority_share_minimum: 0.60
+  peak_total_zero_share_maximum_exclusive: 0.25
+  peak_total_mode_share_maximum_exclusive: 0.25
+  selected_vs_active_reference_gap_median_maximum: 1.0
+  time_scale_peak_total_eligible_share_minimum: 0.50
+  time_scale_peak_total_exact_share_minimum: 0.70
+  time_scale_peak_total_within_one_share_minimum: 0.90
+non_authorizing_metrics:
+  - absolute_period_confidence
+  - training_period_lock
+  - absolute_harmonic_energy_fraction
+  - raw_or_normalized_curve_standard_deviation
+  - exact_active_support_magnitude
+  - split_half_period_agreement
+  - positional_index_permutation_sensitivity
+  - full_timeline_reference_gap
+  - absolute_peak_total_distribution
+  - terminal_loss_drop
+  - cross_candidate_metric_ranking
