@@ -18,6 +18,7 @@ def test_default_config_matches_disclosed_dimensions() -> None:
     assert config.period.training_mode == "adaptive"
     assert config.period.fixed_period_frames == 16
     assert config.period.post_warmup_source == "embedding_velocity_coordinate"
+    assert config.period.direct_fft_timebase == "compact_valid"
     assert config.loss.exclude_other_scale_positives_from_denominator is False
     assert config.model.position_encoding_mode == "sinusoidal"
     assert config.sshead.architecture == "pointwise_mlp"
@@ -499,6 +500,50 @@ def test_config_rejects_unknown_post_warmup_period_source() -> None:
     with pytest.raises(ValidationError, match="post_warmup_source"):
         PAMSConfig.model_validate(
             {"period": {"post_warmup_source": "transformer_coordinate"}}
+        )
+
+
+def test_dense_resampled_direct_fft_is_opt_in_inference_identity() -> None:
+    explicit_default = PAMSConfig()
+    implicit_payload = explicit_default.model_dump()
+    implicit_payload["period"].pop("direct_fft_timebase")
+    reconstructed_implicit = PAMSConfig.model_validate(implicit_payload)
+    dense_payload = explicit_default.model_dump()
+    dense_payload["period"]["direct_fft_timebase"] = "dense_resampled"
+    dense = PAMSConfig.model_validate(dense_payload)
+
+    assert explicit_default.fingerprint == reconstructed_implicit.fingerprint
+    assert explicit_default.nonseed_fingerprint == (
+        reconstructed_implicit.nonseed_fingerprint
+    )
+    assert dense.period.direct_fft_timebase == "dense_resampled"
+    assert dense.fingerprint != explicit_default.fingerprint
+    assert dense.nonseed_fingerprint != explicit_default.nonseed_fingerprint
+    assert dense.pose_fingerprint == explicit_default.pose_fingerprint
+
+
+def test_dense_timebase_field_preserves_frozen_reference_checkpoint_identity() -> None:
+    root = Path(__file__).parents[1]
+    config = load_config(
+        root
+        / "configs"
+        / "experiments"
+        / "pams_official_segment_reference_relative_v1_pad_invalid_tail.yaml"
+    )
+
+    assert config.period.direct_fft_timebase == "compact_valid"
+    assert config.fingerprint == (
+        "32d086e1c2f76ee1c2beb76c984e0a6e6c60a05e1330c510fc9d0dde6b32054e"
+    )
+    assert config.pose_fingerprint == (
+        "f89cfc3e520cd3f45282ec06f42d5702f5e7c30c28ee6a3655ebfb5e58766047"
+    )
+
+
+def test_config_rejects_unknown_direct_fft_timebase() -> None:
+    with pytest.raises(ValidationError, match="direct_fft_timebase"):
+        PAMSConfig.model_validate(
+            {"period": {"direct_fft_timebase": "original_video_fps"}}
         )
 
 

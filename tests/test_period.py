@@ -78,6 +78,201 @@ def test_direct_fft_constant_stream_has_no_period_evidence() -> None:
     assert confidence.tolist() == [0.0]
 
 
+def test_direct_fft_dense_resampled_preserves_all_valid_legacy_result() -> None:
+    time = torch.arange(256, dtype=torch.float64)
+    signal = torch.sin(2.0 * math.pi * time / 20.0) + 0.003 * time
+
+    legacy_period, legacy_confidence = estimate_period_batch_direct_fft(
+        signal,
+        minimum=4,
+        maximum=128,
+    )
+    dense_period, dense_confidence = estimate_period_batch_direct_fft(
+        signal,
+        minimum=4,
+        maximum=128,
+        timebase="dense_resampled",
+        timeline_lengths=torch.tensor([signal.numel()]),
+    )
+
+    assert torch.equal(dense_period, legacy_period)
+    assert torch.equal(dense_confidence, legacy_confidence)
+
+
+def test_direct_fft_dense_resampled_keeps_original_clock_across_mask_gaps() -> None:
+    signal = _sine(period=16, length=256)
+    mask = torch.arange(signal.numel()) % 2 == 0
+
+    compact_period, _ = estimate_period_batch_direct_fft(
+        signal,
+        minimum=4,
+        maximum=128,
+        valid_mask=mask,
+    )
+    dense_period, dense_confidence = estimate_period_batch_direct_fft(
+        signal,
+        minimum=4,
+        maximum=128,
+        valid_mask=mask,
+        timebase="dense_resampled",
+        timeline_lengths=torch.tensor([signal.numel()]),
+    )
+
+    assert compact_period.item() == pytest.approx(8.0)
+    assert dense_period.item() == pytest.approx(16.0)
+    assert dense_confidence.item() > 0.5
+
+
+def test_direct_fft_dense_resampled_ignores_invalid_values_and_batch_padding() -> None:
+    signal = torch.zeros(96)
+    signal[:64] = _sine(period=16, length=64)
+    mask = torch.zeros(96, dtype=torch.bool)
+    mask[:64] = True
+    mask[1:64:4] = False
+    corrupted = signal.clone()
+    corrupted[~mask] = torch.nan
+
+    clean_period, clean_confidence = estimate_period_batch_direct_fft(
+        signal,
+        minimum=4,
+        maximum=32,
+        valid_mask=mask,
+        timebase="dense_resampled",
+        timeline_lengths=torch.tensor([64]),
+    )
+    corrupted_period, corrupted_confidence = estimate_period_batch_direct_fft(
+        corrupted,
+        minimum=4,
+        maximum=32,
+        valid_mask=mask,
+        timebase="dense_resampled",
+        timeline_lengths=torch.tensor([64]),
+    )
+
+    assert clean_period.tolist() == [16.0]
+    assert torch.equal(corrupted_period, clean_period)
+    assert torch.equal(corrupted_confidence, clean_confidence)
+
+
+def test_direct_fft_dense_resampled_honors_per_sample_batch_lengths() -> None:
+    first = torch.zeros(96)
+    first[:64] = _sine(period=16, length=64)
+    second = _sine(period=24, length=96)
+    signals = torch.stack((first, second))
+    masks = torch.ones((2, 96), dtype=torch.bool)
+    masks[0, 64:] = False
+    lengths = torch.tensor([64, 96])
+
+    batch_periods, batch_confidences = estimate_period_batch_direct_fft(
+        signals,
+        minimum=4,
+        maximum=48,
+        valid_mask=masks,
+        timebase="dense_resampled",
+        timeline_lengths=lengths,
+    )
+    individual = [
+        estimate_period_batch_direct_fft(
+            signals[index, :length],
+            minimum=4,
+            maximum=48,
+            valid_mask=masks[index, :length],
+            timebase="dense_resampled",
+            timeline_lengths=torch.tensor([length]),
+        )
+        for index, length in enumerate((64, 96))
+    ]
+
+    assert torch.equal(
+        batch_periods,
+        torch.cat([result[0] for result in individual]),
+    )
+    assert torch.equal(
+        batch_confidences,
+        torch.cat([result[1] for result in individual]),
+    )
+
+
+def test_direct_fft_dense_resampled_uses_valid_count_for_evidence() -> None:
+    signal = _sine(period=16, length=128)
+    mask = torch.zeros(128, dtype=torch.bool)
+    mask[::20] = True
+
+    period, confidence = estimate_period_batch_direct_fft(
+        signal,
+        minimum=4,
+        maximum=64,
+        valid_mask=mask,
+        timebase="dense_resampled",
+        timeline_lengths=torch.tensor([128]),
+    )
+
+    assert int(mask.sum()) < 8
+    assert period.tolist() == [4.0]
+    assert confidence.tolist() == [0.0]
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "exception", "message"),
+    [
+        ({"timebase": "unknown"}, ValueError, "timebase"),
+        (
+            {"timeline_lengths": torch.tensor([64])},
+            ValueError,
+            "only valid",
+        ),
+        (
+            {"timebase": "dense_resampled"},
+            ValueError,
+            "timeline_lengths is required",
+        ),
+        (
+            {
+                "timebase": "dense_resampled",
+                "timeline_lengths": torch.tensor(64),
+            },
+            ValueError,
+            "must have shape",
+        ),
+        (
+            {
+                "timebase": "dense_resampled",
+                "timeline_lengths": torch.tensor([64.0]),
+            },
+            TypeError,
+            "integer dtype",
+        ),
+        (
+            {
+                "timebase": "dense_resampled",
+                "timeline_lengths": torch.tensor([65]),
+            },
+            ValueError,
+            "within the signal time dimension",
+        ),
+    ],
+)
+def test_direct_fft_timebase_arguments_are_strictly_validated(
+    kwargs: dict[str, object],
+    exception: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(exception, match=message):
+        estimate_period_batch_direct_fft(torch.ones(64), **kwargs)
+
+
+def test_direct_fft_dense_resampled_rejects_valid_samples_outside_timeline() -> None:
+    mask = torch.ones(64, dtype=torch.bool)
+
+    with pytest.raises(ValueError, match="beyond timeline_lengths"):
+        estimate_period_batch_direct_fft(
+            torch.ones(64),
+            valid_mask=mask,
+            timebase="dense_resampled",
+            timeline_lengths=torch.tensor([63]),
+        )
+
+
 def test_period_estimator_respects_mask_and_bounds() -> None:
     signal = torch.cat((_sine(20, 200), torch.randn(56) * 20.0))
     mask = torch.zeros(256, dtype=torch.bool)

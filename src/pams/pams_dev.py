@@ -60,7 +60,16 @@ from pams.types import CountResult
 
 PAMSDevVariant = Literal["literal", "sshead"]
 PAMSInferenceExpertMode = Literal["multi", "medium_only"]
+PAMSDirectFFTTimebase = Literal["compact_valid", "dense_resampled"]
 PAMSSelectedExpert = Literal["fast", "medium", "slow"]
+PAMSAblationStatus = Literal[
+    "default multi-expert",
+    "inferred single-expert ablation",
+]
+PAMSTimebaseStatus = Literal[
+    "legacy compact-valid inference clock",
+    "inferred dense-resampled mask-aware clock",
+]
 
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _IMAGE_ID_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -294,8 +303,9 @@ def _method_key(variant: PAMSDevVariant) -> str:
 def _inference_config(
     training_config: PAMSConfig,
     expert_mode: PAMSInferenceExpertMode | None,
+    direct_fft_timebase: PAMSDirectFFTTimebase | None = None,
 ) -> PAMSConfig:
-    """Derive an inference-only consensus choice without changing training identity."""
+    """Derive inference-only readout choices without changing training identity."""
 
     resolved_mode = (
         training_config.consensus.expert_mode
@@ -307,7 +317,21 @@ def _inference_config(
     consensus = training_config.consensus.model_copy(
         update={"expert_mode": resolved_mode}
     )
-    return training_config.model_copy(update={"consensus": consensus})
+    resolved_timebase = (
+        training_config.period.direct_fft_timebase
+        if direct_fft_timebase is None
+        else direct_fft_timebase
+    )
+    if resolved_timebase not in {"compact_valid", "dense_resampled"}:
+        raise ValueError(
+            "direct_fft_timebase must be 'compact_valid' or 'dense_resampled'"
+        )
+    period = training_config.period.model_copy(
+        update={"direct_fft_timebase": resolved_timebase}
+    )
+    return training_config.model_copy(
+        update={"consensus": consensus, "period": period}
+    )
 
 
 def _ablation_status(
@@ -318,6 +342,14 @@ def _ablation_status(
         if expert_mode == "multi"
         else "inferred single-expert ablation"
     )
+
+
+def _timebase_status(
+    direct_fft_timebase: PAMSDirectFFTTimebase,
+) -> PAMSTimebaseStatus:
+    if direct_fft_timebase == "compact_valid":
+        return "legacy compact-valid inference clock"
+    return "inferred dense-resampled mask-aware clock"
 
 
 class PAMSDevPredictionRow(StrictModel):
@@ -354,7 +386,7 @@ class PAMSDevPredictionRow(StrictModel):
 class PAMSDevPredictionArtifact(StrictModel):
     """Strict target-free artifact emitted by checkpoint prediction."""
 
-    schema_version: Literal[2] = 2
+    schema_version: Literal[2, 3] = 3
     artifact_type: Literal["pams_checkpoint_dev_predictions"]
     classification: Literal["PAMS dev representation diagnostic"]
     table2_eligible: Literal[False] = False
@@ -367,10 +399,9 @@ class PAMSDevPredictionArtifact(StrictModel):
     training_config_fingerprint: str
     config_fingerprint: str
     consensus_expert_mode: PAMSInferenceExpertMode
-    ablation_status: Literal[
-        "default multi-expert",
-        "inferred single-expert ablation",
-    ]
+    ablation_status: PAMSAblationStatus
+    direct_fft_timebase: PAMSDirectFFTTimebase = "compact_valid"
+    timebase_status: PAMSTimebaseStatus = "legacy compact-valid inference clock"
     pose_fingerprint: str
     protocol_identity_sha256: str
     training_identity_sha256: str
@@ -454,6 +485,9 @@ class PAMSDevPredictionArtifact(StrictModel):
         )
         if self.ablation_status != expected_status:
             raise ValueError("ablation_status does not match consensus_expert_mode")
+        expected_timebase_status = _timebase_status(self.direct_fft_timebase)
+        if self.timebase_status != expected_timebase_status:
+            raise ValueError("timebase_status does not match direct_fft_timebase")
         if any(
             row.selection_mode != self.consensus_expert_mode
             for row in self.records
@@ -473,7 +507,7 @@ class PAMSDevPredictionArtifact(StrictModel):
             raise ValueError("literal predictions cannot name an upstream encoder")
         if self.variant == "sshead" and any(value is None for value in optional_hashes):
             raise ValueError("SSHead predictions require all upstream encoder hashes")
-        expected_code_files = {
+        legacy_code_files = {
             "config",
             "consensus",
             "data",
@@ -481,8 +515,18 @@ class PAMSDevPredictionArtifact(StrictModel):
             "pams_dev",
             "training",
         }
-        if set(self.prediction_code_files_sha256) != expected_code_files:
-            raise ValueError("prediction_code_files_sha256 has an incomplete source set")
+        expected_code_files = legacy_code_files | {"period"}
+        observed_code_files = set(self.prediction_code_files_sha256)
+        if self.schema_version == 2:
+            if (
+                self.direct_fft_timebase != "compact_valid"
+                or self.timebase_status != "legacy compact-valid inference clock"
+            ):
+                raise ValueError("schema v2 only supports the legacy compact timebase")
+            if observed_code_files != legacy_code_files:
+                raise ValueError("schema v2 source set must match the legacy contract")
+        elif observed_code_files != expected_code_files:
+            raise ValueError("schema v3 predictions must bind period.py")
         for name, digest in self.prediction_code_files_sha256.items():
             _canonical_sha256(digest, f"prediction_code_files_sha256[{name}]")
         if sha256_json(self.prediction_code_files_sha256) != self.prediction_code_sha256:
@@ -498,7 +542,7 @@ class PAMSDevPredictionArtifact(StrictModel):
 class PAMSDevPredictionReceipt(StrictModel):
     """Independent commitment to already-written PAMS prediction bytes."""
 
-    schema_version: Literal[2] = 2
+    schema_version: Literal[2, 3] = 3
     artifact_type: Literal["pams_checkpoint_dev_prediction_receipt"]
     protocol: Literal["ucfrep_526"]
     split: Literal["dev"]
@@ -510,10 +554,9 @@ class PAMSDevPredictionReceipt(StrictModel):
     training_config_fingerprint: str
     config_fingerprint: str
     consensus_expert_mode: PAMSInferenceExpertMode
-    ablation_status: Literal[
-        "default multi-expert",
-        "inferred single-expert ablation",
-    ]
+    ablation_status: PAMSAblationStatus
+    direct_fft_timebase: PAMSDirectFFTTimebase = "compact_valid"
+    timebase_status: PAMSTimebaseStatus = "legacy compact-valid inference clock"
     protocol_identity_sha256: str
     training_identity_sha256: str
     dev_identity_sha256: str
@@ -575,6 +618,11 @@ class PAMSDevPredictionReceipt(StrictModel):
         )
         if self.ablation_status != expected_status:
             raise ValueError("receipt ablation_status does not match expert mode")
+        expected_timebase_status = _timebase_status(self.direct_fft_timebase)
+        if self.timebase_status != expected_timebase_status:
+            raise ValueError("receipt timebase_status does not match direct FFT timebase")
+        if self.schema_version == 2 and self.direct_fft_timebase != "compact_valid":
+            raise ValueError("schema v2 receipt only supports the legacy compact timebase")
         optional_hashes = (
             self.upstream_encoder_checkpoint_sha256,
             self.upstream_encoder_progress_sha256,
@@ -598,6 +646,7 @@ def _code_file_hashes() -> dict[str, str]:
         "data": sha256_file(directory / "data.py"),
         "evaluation": sha256_file(directory / "evaluation.py"),
         "pams_dev": sha256_file(Path(__file__)),
+        "period": sha256_file(directory / "period.py"),
         "training": sha256_file(directory / "training.py"),
     }
 
@@ -1056,6 +1105,7 @@ def run_pams_dev_prediction(
     config_path: str | Path,
     variant: PAMSDevVariant,
     expert_mode: PAMSInferenceExpertMode | None = None,
+    direct_fft_timebase: PAMSDirectFFTTimebase | None = None,
     upstream_encoder_checkpoint_path: str | Path | None = None,
     upstream_encoder_progress_path: str | Path | None = None,
     upstream_encoder_completion_receipt_path: str | Path | None = None,
@@ -1115,7 +1165,11 @@ def run_pams_dev_prediction(
     code_sha256 = sha256_json(code_files_sha256)
     config_file_sha256 = sha256_file(config_file)
     training_config = load_config(config_file)
-    inference_config = _inference_config(training_config, expert_mode)
+    inference_config = _inference_config(
+        training_config,
+        expert_mode,
+        direct_fft_timebase,
+    )
     if training_config.protocol != "ucfrep_526":
         raise ValueError("PAMS dev prediction requires protocol ucfrep_526")
     inputs, input_hashes = _load_protocol_inputs(
@@ -1285,6 +1339,10 @@ def run_pams_dev_prediction(
         config_fingerprint=inference_config.fingerprint,
         consensus_expert_mode=inference_config.consensus.expert_mode,
         ablation_status=_ablation_status(inference_config.consensus.expert_mode),
+        direct_fft_timebase=inference_config.period.direct_fft_timebase,
+        timebase_status=_timebase_status(
+            inference_config.period.direct_fft_timebase
+        ),
         pose_fingerprint=training_config.pose_fingerprint,
         protocol_identity_sha256=inputs.fingerprint,
         training_identity_sha256=inputs.training_fingerprint(include_dev=False),
@@ -1346,6 +1404,10 @@ def run_pams_dev_prediction(
         config_fingerprint=inference_config.fingerprint,
         consensus_expert_mode=inference_config.consensus.expert_mode,
         ablation_status=_ablation_status(inference_config.consensus.expert_mode),
+        direct_fft_timebase=inference_config.period.direct_fft_timebase,
+        timebase_status=_timebase_status(
+            inference_config.period.direct_fft_timebase
+        ),
         protocol_identity_sha256=inputs.fingerprint,
         training_identity_sha256=inputs.training_fingerprint(include_dev=False),
         dev_identity_sha256=artifact.dev_identity_sha256,
@@ -1391,6 +1453,10 @@ def run_pams_dev_prediction(
         "method_key": _method_key(typed_variant),
         "consensus_expert_mode": inference_config.consensus.expert_mode,
         "ablation_status": _ablation_status(inference_config.consensus.expert_mode),
+        "direct_fft_timebase": inference_config.period.direct_fft_timebase,
+        "timebase_status": _timebase_status(
+            inference_config.period.direct_fft_timebase
+        ),
         "training_config_fingerprint": training_config.fingerprint,
         "config_fingerprint": inference_config.fingerprint,
         "record_total": 84,
@@ -1449,6 +1515,7 @@ def _validate_receipt_binding(
     if prediction_path.stat().st_size != receipt.prediction_bytes:
         raise ValueError("prediction byte count does not match its receipt")
     field_pairs = {
+        "schema_version": (artifact.schema_version, receipt.schema_version),
         "protocol": (artifact.protocol, receipt.protocol),
         "split": (artifact.split, receipt.split),
         "variant": (artifact.variant, receipt.variant),
@@ -1468,6 +1535,14 @@ def _validate_receipt_binding(
         "ablation_status": (
             artifact.ablation_status,
             receipt.ablation_status,
+        ),
+        "direct_fft_timebase": (
+            artifact.direct_fft_timebase,
+            receipt.direct_fft_timebase,
+        ),
+        "timebase_status": (
+            artifact.timebase_status,
+            receipt.timebase_status,
         ),
         "protocol_identity_sha256": (
             artifact.protocol_identity_sha256,
@@ -1653,6 +1728,8 @@ def score_pams_dev_predictions(
         "method_key": artifact.method_key,
         "consensus_expert_mode": artifact.consensus_expert_mode,
         "ablation_status": artifact.ablation_status,
+        "direct_fft_timebase": artifact.direct_fft_timebase,
+        "timebase_status": artifact.timebase_status,
         "bootstrap_pairing": "paired_prediction_target_rows",
         "prediction_sha256": prediction_sha256,
         "prediction_receipt_sha256": receipt_sha256,
@@ -1724,6 +1801,8 @@ def score_pams_dev_predictions(
         "config_fingerprint": artifact.config_fingerprint,
         "consensus_expert_mode": artifact.consensus_expert_mode,
         "ablation_status": artifact.ablation_status,
+        "direct_fft_timebase": artifact.direct_fft_timebase,
+        "timebase_status": artifact.timebase_status,
         "dev_identity_sha256": artifact.dev_identity_sha256,
         "checkpoint_sha256": artifact.checkpoint_sha256,
         "checkpoint_progress_sha256": artifact.checkpoint_progress_sha256,
@@ -1762,6 +1841,10 @@ def score_pams_dev_predictions(
         "split": "dev",
         "variant": artifact.variant,
         "method_key": artifact.method_key,
+        "consensus_expert_mode": artifact.consensus_expert_mode,
+        "ablation_status": artifact.ablation_status,
+        "direct_fft_timebase": artifact.direct_fft_timebase,
+        "timebase_status": artifact.timebase_status,
         "evaluation_path": str(evaluation_path.resolve()),
         "evaluation_sha256": evaluation_sha256,
         "evaluation_receipt_path": str(evaluation_receipt_path.resolve()),

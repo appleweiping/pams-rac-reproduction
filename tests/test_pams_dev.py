@@ -384,6 +384,7 @@ def _run_prediction(
     monkeypatch: pytest.MonkeyPatch,
     *,
     expert_mode: str | None = None,
+    direct_fft_timebase: str | None = None,
 ) -> tuple[dict[str, object], Path, Path]:
     train_inputs, train_commitment, train = _write_bound_inputs(tmp_path, "train")
     dev_inputs, dev_commitment, dev = _write_bound_inputs(tmp_path, "dev")
@@ -435,6 +436,7 @@ def _run_prediction(
         config_path=CONFIG,
         variant="sshead",
         expert_mode=expert_mode,  # type: ignore[arg-type]
+        direct_fft_timebase=direct_fft_timebase,  # type: ignore[arg-type]
         upstream_encoder_checkpoint_path=upstream_checkpoint,
         upstream_encoder_progress_path=upstream_progress,
         upstream_encoder_completion_receipt_path=upstream_completion_receipt,
@@ -493,8 +495,85 @@ def test_cli_prediction_help_exposes_no_target_option() -> None:
     assert "--checkpoint-completion-receipt" in predict_output
     assert "--upstream-encoder-completion-receipt" in predict_output
     assert "--expert-mode" in predict_output
+    assert "--direct-fft-timebase" in predict_output
     assert "--dev-targets" not in predict_output
     assert "--targets" not in predict_output
+
+
+def test_cli_normalizes_and_forwards_dense_timebase_override(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    files = {
+        name: tmp_path / name
+        for name in (
+            "checkpoint.pt",
+            "train.inputs.json",
+            "checkpoint.jsonl",
+            "checkpoint.completed.json",
+            "train.commitment.json",
+            "dev.inputs.json",
+            "dev.commitment.json",
+            "test.inputs.json",
+            "test.commitment.json",
+        )
+    }
+    for path in files.values():
+        path.write_text("fixture\n", encoding="utf-8")
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    captured: list[dict[str, object]] = []
+
+    def fake_prediction(**kwargs: object) -> dict[str, object]:
+        captured.append(dict(kwargs))
+        return {"status": "captured"}
+
+    monkeypatch.setattr(dev_module, "run_pams_dev_prediction", fake_prediction)
+    base_arguments = [
+        "evaluate",
+        "dev-predict",
+        str(files["checkpoint.pt"]),
+        str(files["train.inputs.json"]),
+        str(cache),
+        str(tmp_path / "output"),
+        "--checkpoint-progress",
+        str(files["checkpoint.jsonl"]),
+        "--checkpoint-completion-receipt",
+        str(files["checkpoint.completed.json"]),
+        "--input-commitment",
+        str(files["train.commitment.json"]),
+        "--dev-inputs",
+        str(files["dev.inputs.json"]),
+        "--dev-input-commitment",
+        str(files["dev.commitment.json"]),
+        "--test-identity-inputs",
+        str(files["test.inputs.json"]),
+        "--test-identity-commitment",
+        str(files["test.commitment.json"]),
+        "--variant",
+        "literal",
+        "--config",
+        str(CONFIG),
+    ]
+    accepted = RUNNER.invoke(
+        app,
+        [
+            *base_arguments,
+            "--direct-fft-timebase",
+            "DeNsE_ReSaMpLeD",
+        ],
+    )
+
+    assert accepted.exit_code == 0, accepted.output
+    assert captured[0]["direct_fft_timebase"] == "dense_resampled"
+
+    rejected = RUNNER.invoke(
+        app,
+        [*base_arguments, "--direct-fft-timebase", "rank_clock"],
+    )
+    assert rejected.exit_code != 0
+    assert "compact_valid" in rejected.output
+    assert len(captured) == 1
 
 
 def test_completed_training_receipt_binds_terminal_encoder(
@@ -549,7 +628,7 @@ def test_prediction_freezes_target_free_sshead_artifact(
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
 
     assert payload["variant"] == "sshead"
-    assert payload["schema_version"] == receipt["schema_version"] == 2
+    assert payload["schema_version"] == receipt["schema_version"] == 3
     assert payload["method_key"] == "pams-sshead-inferred"
     assert payload["table2_eligible"] is False
     assert payload["record_total"] == len(payload["records"]) == 84
@@ -577,6 +656,28 @@ def test_prediction_freezes_target_free_sshead_artifact(
     legacy_payload = {**payload, "schema_version": 1}
     with pytest.raises(ValidationError, match="schema_version"):
         dev_module.PAMSDevPredictionArtifact.model_validate(legacy_payload)
+
+    v2_payload = dict(payload)
+    v2_payload["schema_version"] = 2
+    v2_payload.pop("direct_fft_timebase")
+    v2_payload.pop("timebase_status")
+    v2_code_files = dict(v2_payload["prediction_code_files_sha256"])
+    v2_code_files.pop("period")
+    v2_payload["prediction_code_files_sha256"] = v2_code_files
+    v2_payload["prediction_code_sha256"] = dev_module.sha256_json(v2_code_files)
+    restored_v2 = dev_module.PAMSDevPredictionArtifact.model_validate(v2_payload)
+    assert restored_v2.schema_version == 2
+    assert restored_v2.direct_fft_timebase == "compact_valid"
+
+    v2_receipt = dict(receipt)
+    v2_receipt["schema_version"] = 2
+    v2_receipt.pop("direct_fft_timebase")
+    v2_receipt.pop("timebase_status")
+    v2_receipt["prediction_code_sha256"] = dev_module.sha256_json(v2_code_files)
+    restored_v2_receipt = dev_module.PAMSDevPredictionReceipt.model_validate(
+        v2_receipt
+    )
+    assert restored_v2_receipt.schema_version == 2
 
 
 def test_prediction_records_inferred_medium_only_identity(
@@ -610,6 +711,42 @@ def test_prediction_records_inferred_medium_only_identity(
     assert receipt["consensus_expert_mode"] == "medium_only"
     assert receipt["config_fingerprint"] == payload["config_fingerprint"]
     assert result["consensus_expert_mode"] == "medium_only"
+
+
+def test_prediction_records_dense_resampled_timebase_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    result, predictions_path, receipt_path = _run_prediction(
+        tmp_path,
+        monkeypatch,
+        expert_mode="multi",
+        direct_fft_timebase="dense_resampled",
+    )
+    payload = json.loads(predictions_path.read_text(encoding="utf-8"))
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    training_config = dev_module.load_config(CONFIG)
+    inference_config = dev_module._inference_config(
+        training_config,
+        "multi",
+        "dense_resampled",
+    )
+
+    assert payload["consensus_expert_mode"] == "multi"
+    assert payload["ablation_status"] == "default multi-expert"
+    assert payload["direct_fft_timebase"] == "dense_resampled"
+    assert payload["timebase_status"] == (
+        "inferred dense-resampled mask-aware clock"
+    )
+    assert payload["training_config_fingerprint"] == training_config.fingerprint
+    assert payload["config_fingerprint"] == inference_config.fingerprint
+    assert payload["config_fingerprint"] != payload["training_config_fingerprint"]
+    assert payload["pose_fingerprint"] == training_config.pose_fingerprint
+    assert set(payload["prediction_code_files_sha256"]) >= {"period", "training"}
+    assert receipt["direct_fft_timebase"] == "dense_resampled"
+    assert receipt["timebase_status"] == payload["timebase_status"]
+    assert result["direct_fft_timebase"] == "dense_resampled"
+    assert result["timebase_status"] == payload["timebase_status"]
 
 
 def test_json_bundle_rolls_back_first_file_on_late_collision(

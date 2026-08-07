@@ -3049,6 +3049,16 @@ def evaluate_dev_predict_command(
             ),
         ),
     ] = None,
+    direct_fft_timebase: Annotated[
+        str | None,
+        typer.Option(
+            "--direct-fft-timebase",
+            help=(
+                "Inference-only period clock: compact_valid (historical) or "
+                "dense_resampled (mask-aware full clip)."
+            ),
+        ),
+    ] = None,
     device: Annotated[str, typer.Option("--device")] = "auto",
     upstream_encoder_checkpoint: Annotated[
         Path | None,
@@ -3090,6 +3100,20 @@ def evaluate_dev_predict_command(
         normalized_expert_mode = None if expert_mode is None else expert_mode.strip().lower()
         if normalized_expert_mode not in {None, "multi", "medium_only"}:
             raise ValueError("--expert-mode must be 'multi' or 'medium_only'")
+        normalized_timebase = (
+            None
+            if direct_fft_timebase is None
+            else direct_fft_timebase.strip().lower()
+        )
+        if normalized_timebase not in {
+            None,
+            "compact_valid",
+            "dense_resampled",
+        }:
+            raise ValueError(
+                "--direct-fft-timebase must be 'compact_valid' or "
+                "'dense_resampled'"
+            )
         payload = run_pams_dev_prediction(
             checkpoint_path=checkpoint_path,
             checkpoint_progress_path=checkpoint_progress_path,
@@ -3107,6 +3131,10 @@ def evaluate_dev_predict_command(
             expert_mode=cast(
                 Literal["multi", "medium_only"] | None,
                 normalized_expert_mode,
+            ),
+            direct_fft_timebase=cast(
+                Literal["compact_valid", "dense_resampled"] | None,
+                normalized_timebase,
             ),
             upstream_encoder_checkpoint_path=upstream_encoder_checkpoint,
             upstream_encoder_progress_path=upstream_encoder_progress,

@@ -194,20 +194,49 @@ guards do not inspect benchmark counts.
 
 ## Multi-expert inference
 
-The raw stream `P` supplies a fresh FFT period `T_hat` and reference count
-`floor(valid_frames/T_hat)`. Three experts use:
-
-The inference FFT is applied directly to valid samples of `P`, as ordered in
-Algorithm 1.  The independent executable closure removes an affine trend,
-applies one non-periodic Hann window, suppresses DC, and searches only the
-configured period band.  It does not FFT an autocorrelation of `P`; that legacy
-decoder is retained only in historical artifact identities.
+The raw stream `P` supplies a fresh FFT period `T_hat`. In the historical
+default `period.direct_fft_timebase: compact_valid` closure, the fallback
+reference count is `floor(valid_frames/T_hat)`. Three experts use:
 
 | Expert | Gaussian sigma | minimum peak distance |
 |---|---:|---:|
 | Fast | `0.05 T_hat` | `0.5 T_hat` |
 | Medium | `0.12 T_hat` | `0.8 T_hat` |
 | Slow | `0.15 T_hat` | `1.2 T_hat` |
+
+The default inference FFT is applied directly to the compacted valid samples
+of `P`, as ordered in Algorithm 1. The independent executable closure removes
+an affine trend, applies one non-periodic Hann window, suppresses DC, and
+searches only the configured period band. It does not FFT an autocorrelation
+of `P`; that legacy decoder is retained only in historical artifact identities.
+
+`period.direct_fft_timebase: dense_resampled` is an opt-in, independently
+inferred final-readout missing-data closure. It preserves the complete
+resampled clip clock
+`0..L-1`: the affine mean and slope are fitted only at valid samples at their
+dense indices, invalid samples contribute zero after detrending, and the Hann
+window plus direct FFT operate over all `L` timeline positions. The evidence
+gate still depends on the number of valid samples, while the frequency grid
+and decoded period use `L`, and the fallback reference becomes
+`floor(L/T_hat)`. This option is inference-only: it does not change period
+estimation for encoder or Period Head training. In the reference-relative
+path it also does not change the inference-time bootstrap period that builds
+the head input; that upstream estimator retains its existing dense lag grid
+and valid-count upper bound. Sparse masks can therefore truncate the bootstrap
+period before this final readout runs, which remains a known, coverage-gated
+limitation rather than a silently expanded fix. It also leaves the three
+run-wise peak experts and the disclosed majority rule unchanged, and a fully
+invalid clip still returns zero. This behavior is not presented as an author
+setting because the paper does not specify how missing pose frames map onto
+the inference FFT clock.
+
+The dense fallback and peak experts intentionally have different observation
+support: `floor(L/T_hat)` extrapolates a label-free cycle reference across
+pose-missing intervals, while experts only accept peaks inside contiguous
+valid runs. Majority agreement still wins before that fallback is consulted.
+This support asymmetry is part of the frozen inferred closure and must pass
+the synthetic-gap and train-only robustness gates; it is not evidence that
+unobserved peaks were reconstructed.
 
 Each computes short and long rolling statistics over `0.5 T_hat` and
 `2 T_hat`. Its pointwise height threshold is:

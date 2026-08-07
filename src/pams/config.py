@@ -128,6 +128,10 @@ class PeriodConfig(StrictModel):
         "embedding_velocity_vector_acf",
         "projected_pose_velocity_vector_acf",
     ] = "embedding_velocity_coordinate"
+    direct_fft_timebase: Literal[
+        "compact_valid",
+        "dense_resampled",
+    ] = "compact_valid"
 
     @model_validator(mode="after")
     def validate_period_bounds(self) -> PeriodConfig:
@@ -302,6 +306,11 @@ class PAMSConfig(StrictModel):
             # Only the opt-in inferred vector-ACF route changes method
             # identity; the explicit default names the existing implementation.
             period.pop("post_warmup_source")
+        if period["direct_fft_timebase"] == "compact_valid":
+            # Preserve every historical config/checkpoint fingerprint.  The
+            # opt-in dense-resampled inference clock is an independently
+            # inferred mask/timebase repair and remains in the method identity.
+            period.pop("direct_fft_timebase")
         if period["training_mode"] == "adaptive":
             # The configurable fixed-period route was added after the formal
             # adaptive runs.  Omitting both default fields keeps every

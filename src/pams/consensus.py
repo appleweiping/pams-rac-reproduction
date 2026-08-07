@@ -208,16 +208,31 @@ class MultiExpertCounter:
         valid_mask: Tensor | NDArray[np.bool_] | list[bool] | None = None,
         *,
         period_confidence: float = 1.0,
+        reference_frames: int | None = None,
     ) -> ConsensusResult:
-        """Count peaks without consulting an action label or ground-truth count."""
+        """Count peaks without consulting an action label or ground-truth count.
+
+        ``reference_frames`` only changes the label-free FFT fallback reference;
+        it never changes any expert's smoothing, peak detection, or count.
+        """
 
         if period_frames <= 0 or not np.isfinite(period_frames):
             raise ValueError("period_frames must be finite and positive")
         if not np.isfinite(period_confidence) or not 0.0 <= period_confidence <= 1.0:
             raise ValueError("period_confidence must be finite and in [0, 1]")
+        if reference_frames is not None:
+            if (
+                isinstance(reference_frames, bool | np.bool_)
+                or not isinstance(reference_frames, int | np.integer)
+                or reference_frames < 1
+            ):
+                raise ValueError("reference_frames must be a positive integer or None")
+            reference_frames = int(reference_frames)
         original = _to_numpy_1d(period_stream)
         if original.size == 0:
             raise ValueError("period_stream must contain at least one frame")
+        if reference_frames is not None and reference_frames > original.size:
+            raise ValueError("reference_frames cannot exceed the period stream length")
         if valid_mask is None:
             valid = np.ones(len(original), dtype=bool)
         elif isinstance(valid_mask, Tensor):
@@ -226,6 +241,14 @@ class MultiExpertCounter:
             valid = np.asarray(valid_mask, dtype=bool)
         if valid.shape != original.shape:
             raise ValueError("valid_mask must match period_stream")
+        if (
+            reference_frames is not None
+            and reference_frames < original.size
+            and bool(valid[reference_frames:].any())
+        ):
+            raise ValueError(
+                "valid_mask cannot mark samples beyond reference_frames as valid"
+            )
 
         valid_indices = np.flatnonzero(valid)
         if not len(valid_indices):
@@ -309,7 +332,8 @@ class MultiExpertCounter:
             expert_results[1].count,
             expert_results[2].count,
         )
-        reference_count = int(np.floor(valid.sum() / period_frames))
+        reference_length = valid.sum() if reference_frames is None else reference_frames
+        reference_count = int(np.floor(reference_length / period_frames))
         if self.expert_mode == "medium_only":
             count = counts[1]
             selected_index = 1

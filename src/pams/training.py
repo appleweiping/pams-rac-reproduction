@@ -2645,6 +2645,12 @@ def predict_sequence(
             minimum=config.period.minimum,
             maximum=config.period.maximum,
             valid_mask=batch.valid_mask,
+            timebase=config.period.direct_fft_timebase,
+            timeline_lengths=(
+                batch.lengths
+                if config.period.direct_fft_timebase == "dense_resampled"
+                else None
+            ),
         )
     stream = stream_batch[0, : sequence.num_frames]
     mask = batch.valid_mask[0, : sequence.num_frames]
@@ -2665,6 +2671,11 @@ def predict_sequence(
         period_frames=float(periods[0]),
         valid_mask=mask,
         period_confidence=float(period_confidences[0]),
+        reference_frames=(
+            sequence.num_frames
+            if config.period.direct_fft_timebase == "dense_resampled"
+            else None
+        ),
     ).to_count_result()
     model.train(previous_training)
     return result

@@ -119,3 +119,51 @@ def test_valid_runs_are_filtered_independently_of_gap_content_and_length() -> No
     assert short_zero.expert_counts == long_corrupt.expert_counts
     assert all(np.isinf(expert.threshold[~short_mask]).all() for expert in short_corrupt.experts)
     assert all(np.isinf(expert.threshold[~long_mask]).all() for expert in long_corrupt.experts)
+
+
+def test_explicit_reference_frames_use_dense_timeline_without_changing_experts() -> None:
+    counter = MultiExpertCounter()
+    stream = _peak_stream(80, [10, 30, 50, 70])
+    mask = np.ones(80, dtype=bool)
+    mask[30:50] = False
+
+    compact = counter.count(stream, period_frames=20, valid_mask=mask)
+    dense = counter.count(
+        stream,
+        period_frames=20,
+        valid_mask=mask,
+        reference_frames=len(stream),
+    )
+
+    assert compact.reference_count == 3
+    assert dense.reference_count == 4
+    assert dense.expert_counts == compact.expert_counts
+    assert tuple(expert.peaks for expert in dense.experts) == tuple(
+        expert.peaks for expert in compact.experts
+    )
+
+    fully_invalid = counter.count(
+        stream,
+        period_frames=20,
+        valid_mask=np.zeros_like(mask),
+        reference_frames=len(stream),
+    )
+    assert fully_invalid.count == 0
+    assert fully_invalid.reference_count == 0
+
+    with pytest.raises(ValueError, match="cannot exceed"):
+        counter.count(
+            stream,
+            period_frames=20,
+            valid_mask=mask,
+            reference_frames=len(stream) + 1,
+        )
+    with pytest.raises(ValueError, match="positive integer"):
+        counter.count(stream, period_frames=20, valid_mask=mask, reference_frames=0)
+    with pytest.raises(ValueError, match="beyond reference_frames"):
+        counter.count(
+            stream,
+            period_frames=20,
+            valid_mask=mask,
+            reference_frames=40,
+        )

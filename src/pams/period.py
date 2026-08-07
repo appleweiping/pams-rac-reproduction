@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import Literal
 
 import torch
 from scipy.signal import find_peaks
@@ -406,6 +407,9 @@ def estimate_period_batch_direct_fft(
     minimum: int = 4,
     maximum: int = 128,
     valid_mask: Tensor | None = None,
+    *,
+    timebase: Literal["compact_valid", "dense_resampled"] = "compact_valid",
+    timeline_lengths: Tensor | None = None,
 ) -> tuple[Tensor, Tensor]:
     """Estimate a dominant period directly from the observed action curve.
 
@@ -414,14 +418,26 @@ def estimate_period_batch_direct_fft(
     windowed that lag signal, which is a different decoder and can bias a weak
     stream toward the longest allowed period.  This implementation follows the
     disclosed inference order while making the usual, explicit signal-processing
-    choices: valid samples only, affine detrending, one Hann window, and a
-    bounded non-DC frequency band.
+    choices: affine detrending, one Hann window, and a bounded non-DC
+    frequency band.
+
+    ``compact_valid`` is the historical behavior: invalid samples are removed
+    before detrending and the FFT, so the returned period is measured in valid
+    samples.  ``dense_resampled`` keeps the resampled frame clock.  It fits the
+    affine trend using only valid observations at their original dense indices,
+    contributes exact zeros at invalid locations, and performs the FFT over
+    each sample's explicit ``timeline_lengths`` extent.  Its returned period is
+    therefore measured in dense resampled frames.
     """
 
     if minimum < 2:
         raise ValueError("minimum period must be at least 2")
     if maximum <= minimum:
         raise ValueError("maximum must be greater than minimum")
+    if timebase not in {"compact_valid", "dense_resampled"}:
+        raise ValueError(
+            "timebase must be 'compact_valid' or 'dense_resampled'"
+        )
     batched, unbatched = _as_batch_signal(signal)
     if batched.dtype not in (torch.float32, torch.float64):
         batched = batched.float()
@@ -433,43 +449,113 @@ def estimate_period_batch_direct_fft(
             else valid_mask
         ),
     )
+    if timebase == "compact_valid":
+        if timeline_lengths is not None:
+            raise ValueError(
+                "timeline_lengths is only valid with timebase='dense_resampled'"
+            )
+        lengths: Tensor | None = None
+    else:
+        if timeline_lengths is None:
+            raise ValueError(
+                "timeline_lengths is required with timebase='dense_resampled'"
+            )
+        if not isinstance(timeline_lengths, Tensor):
+            raise TypeError("timeline_lengths must be a torch.Tensor")
+        if timeline_lengths.shape != (batched.shape[0],):
+            raise ValueError(
+                "timeline_lengths must have shape "
+                f"({batched.shape[0]},), got {tuple(timeline_lengths.shape)}"
+            )
+        if timeline_lengths.dtype not in {
+            torch.uint8,
+            torch.int8,
+            torch.int16,
+            torch.int32,
+            torch.int64,
+        }:
+            raise TypeError("timeline_lengths must have an integer dtype")
+        lengths = timeline_lengths.to(device=batched.device, dtype=torch.long)
+        if bool(torch.any(lengths < 1)) or bool(
+            torch.any(lengths > batched.shape[1])
+        ):
+            raise ValueError(
+                "timeline_lengths values must lie within the signal time dimension"
+            )
+        frame_indices = torch.arange(batched.shape[1], device=batched.device)
+        outside_timeline = frame_indices.unsqueeze(0) >= lengths.unsqueeze(1)
+        if bool(torch.any(mask & outside_timeline)):
+            raise ValueError(
+                "valid_mask cannot mark samples beyond timeline_lengths as valid"
+            )
 
     periods: list[float] = []
     confidences: list[Tensor] = []
-    for sample_signal, sample_mask in zip(batched, mask, strict=True):
-        selected = sample_signal[sample_mask]
-        valid_length = int(selected.numel())
-        upper_period = min(maximum, max(minimum, valid_length - 1))
+    for sample_index, (sample_signal, sample_mask) in enumerate(
+        zip(batched, mask, strict=True)
+    ):
+        if timebase == "compact_valid":
+            selected = sample_signal[sample_mask]
+            valid_length = int(selected.numel())
+            fft_length = valid_length
+            trend_time = torch.arange(
+                valid_length,
+                dtype=selected.dtype,
+                device=selected.device,
+            )
+        else:
+            assert lengths is not None
+            fft_length = int(lengths[sample_index])
+            timeline_mask = sample_mask[:fft_length]
+            timeline_signal = sample_signal[:fft_length]
+            valid_length = int(timeline_mask.sum())
+            selected = timeline_signal[timeline_mask]
+            trend_time = torch.arange(
+                fft_length,
+                dtype=selected.dtype,
+                device=selected.device,
+            )[timeline_mask]
+
+        upper_period = min(maximum, max(minimum, fft_length - 1))
         if valid_length < minimum * 2:
             periods.append(float(minimum))
             confidences.append(sample_signal.new_tensor(0.0))
             continue
+        if timebase == "dense_resampled" and not bool(
+            torch.isfinite(selected).all()
+        ):
+            raise ValueError("valid dense-resampled signal samples must be finite")
 
-        time = torch.arange(
-            valid_length,
-            dtype=selected.dtype,
-            device=selected.device,
-        )
-        centered_time = time - time.mean()
+        centered_time = trend_time - trend_time.mean()
         centered = selected - selected.mean()
         slope = (centered_time * centered).sum() / centered_time.square().sum().clamp_min(
             1e-12
         )
-        detrended = centered - slope * centered_time
-        if float(detrended.square().mean()) <= 1e-12:
+        detrended_valid = centered - slope * centered_time
+        if float(detrended_valid.square().mean()) <= 1e-12:
             periods.append(float(upper_period))
             confidences.append(sample_signal.new_tensor(0.0))
             continue
 
+        if timebase == "compact_valid":
+            detrended = detrended_valid
+        else:
+            detrended = torch.zeros(
+                fft_length,
+                dtype=detrended_valid.dtype,
+                device=detrended_valid.device,
+            )
+            detrended[timeline_mask] = detrended_valid
+
         window = torch.hann_window(
-            valid_length,
+            fft_length,
             periodic=False,
             dtype=detrended.dtype,
             device=detrended.device,
         )
         power = torch.fft.rfft(detrended * window).abs().square()
         frequencies = torch.fft.rfftfreq(
-            valid_length,
+            fft_length,
             d=1.0,
             device=detrended.device,
         )
@@ -485,7 +571,7 @@ def estimate_period_batch_direct_fft(
             continue
 
         index = int(torch.argmax(band))
-        frequency = index / valid_length
+        frequency = index / fft_length
         estimate = min(
             max(1.0 / frequency, float(minimum)),
             float(upper_period),

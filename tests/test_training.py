@@ -971,6 +971,90 @@ def test_reference_relative_head_routes_training_and_prediction_consistently(
     assert result.period_stream.shape == (16,)
 
 
+def test_predict_sequence_routes_direct_fft_timebase_and_dense_reference_frames(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams import training as training_module
+
+    compact_config = _tiny_config(encoder_epochs=1, head_epochs=1)
+    dense_payload = compact_config.model_dump()
+    dense_payload["period"]["direct_fft_timebase"] = "dense_resampled"
+    dense_config = PAMSConfig.model_validate(dense_payload)
+    model = build_pams_model(compact_config)
+    mask = np.ones(16, dtype=np.bool_)
+    mask[[2, 9, 15]] = False
+    sequence = replace(_sequence("timebase-routing"), valid_mask=mask)
+
+    observed_fft_calls: list[tuple[str, torch.Tensor | None]] = []
+
+    def capture_direct_fft(
+        signal: torch.Tensor,
+        minimum: int = 4,
+        maximum: int = 128,
+        valid_mask: torch.Tensor | None = None,
+        *,
+        timebase: str,
+        timeline_lengths: torch.Tensor | None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        del minimum, maximum
+        assert valid_mask is not None
+        assert int(valid_mask.sum()) == int(mask.sum())
+        observed_fft_calls.append(
+            (
+                timebase,
+                (
+                    timeline_lengths.detach().cpu().clone()
+                    if timeline_lengths is not None
+                    else None
+                ),
+            )
+        )
+        return signal.new_tensor([4.0]), signal.new_tensor([0.75])
+
+    monkeypatch.setattr(
+        training_module,
+        "estimate_period_batch_direct_fft",
+        capture_direct_fft,
+    )
+    counter = training_module.MultiExpertCounter()
+    real_count = counter.count
+    observed_reference_frames: list[int | None] = []
+
+    def capture_count(*args: Any, **kwargs: Any) -> Any:
+        observed_reference_frames.append(kwargs.get("reference_frames"))
+        return real_count(*args, **kwargs)
+
+    monkeypatch.setattr(counter, "count", capture_count)
+
+    predict_sequence(
+        model,
+        sequence,
+        compact_config,
+        device="cpu",
+        counter=counter,
+    )
+    predict_sequence(
+        model,
+        sequence,
+        dense_config,
+        device="cpu",
+        counter=counter,
+    )
+
+    assert [timebase for timebase, _ in observed_fft_calls] == [
+        "compact_valid",
+        "dense_resampled",
+    ]
+    assert observed_fft_calls[0][1] is None
+    dense_lengths = observed_fft_calls[1][1]
+    assert isinstance(dense_lengths, torch.Tensor)
+    assert torch.equal(
+        dense_lengths,
+        torch.tensor([sequence.num_frames]),
+    )
+    assert observed_reference_frames == [None, sequence.num_frames]
+
+
 def test_temporal_sshead_routes_the_same_valid_mask_through_training_and_prediction(
     tmp_path: Path,
 ) -> None:
