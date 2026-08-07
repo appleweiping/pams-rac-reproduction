@@ -379,11 +379,11 @@ def _cross_cycle_harmonic_feature_weights(
     maximum = coherent_energy.max()
     if not bool(torch.isfinite(maximum)) or float(maximum) <= 1e-12:
         return uniform
-    # Similarity normalizes states after weighting.  sqrt(1 + support) gives
-    # a parameter-free [1, sqrt(2)] uplift and cannot collapse the effective
+    # Similarity normalizes states after weighting.  1 + support gives a
+    # parameter-free [1, 2] uplift and cannot collapse the effective
     # feature dimension to a single chance Fourier coordinate.
     normalized = (coherent_energy / maximum).clamp(0.0, 1.0)
-    return torch.sqrt(1.0 + normalized)
+    return 1.0 + normalized
 
 
 def _recurrence_score(

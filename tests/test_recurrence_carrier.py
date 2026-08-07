@@ -180,7 +180,7 @@ def test_cross_cycle_support_only_uplifts_phase_stable_features() -> None:
     )
 
     assert weights.shape == (3,)
-    assert weights[0].item() == pytest.approx(math.sqrt(2.0), rel=1e-4)
+    assert weights[0].item() == pytest.approx(2.0, rel=1e-4)
     assert weights[1].item() == pytest.approx(1.0, abs=1e-4)
     assert 1.0 <= weights[2].item() < weights[0].item()
 
