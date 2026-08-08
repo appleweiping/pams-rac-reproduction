@@ -22,6 +22,8 @@ fixed:
   taper: hann_periodic_false
   fft_length: 4_times_window
   hop: window_div_4
+  terminal_window: none_zero_grid_only
+  minimum_accepted_interval_union_fraction: 0.80
   upper_frequency_cycles_per_frame: 0.25
   absolute_minimum_frequency_cycles_per_frame: 0.0078125
   signed_vector_acf_minimum: 0.10
@@ -58,10 +60,10 @@ synthetic:
   null_false_eligible_cp_confidence: 0.95
   null_false_eligible_cp_ucb_maximum: 0.05
   reset_video_total_errors_maximum: 0
-  # Family-level metrics are retained for diagnosis, but the frozen protocol
-  # defines no post-hoc per-family threshold. Every listed positive family is
-  # included in the pooled eligibility/NMAE/OBO gates above.
-  positive_family_gate_policy: pooled_all_generation_truth_positives_only_no_family_thresholds
+  positive_family_gate_policy: all_frozen_generation_truth_families_hard_gated
+  positive_family_eligible_minimum: 0.95
+  positive_family_nmae_maximum: 0.10
+  positive_family_obo_minimum: 0.95
   ranking:
     - null_cp_ucb
     - variable_tempo_nmae
@@ -75,6 +77,8 @@ train337:
   expected_video_count: 337
   hash_subset_seed: 2026
   hash_subset_size: 64
+  transform_applicability_policy: source_geometry_only_all_required_intersection
+  minimum_transform_applicable_video_count: 64
   one_segment_sufficient_share_minimum: 0.90
   one_segment_eligible_minimum: 0.90
   low_band_boundary_share_maximum_exclusive: 0.10
@@ -102,9 +106,11 @@ train337:
     warp_075: endpoint_preserving_time_warp_0.75_then_full_segment_reencode
     warp_125: endpoint_preserving_time_warp_1.25_then_full_segment_reencode
     duplicate_time: duplicate_source_time_then_full_segment_reencode
-    legal_split: authorized_single_segment_two_part_float_additivity_only
+    legal_split: shared_pivot_slice_same_full_context_embedding_no_reencode
     raw_rotation: coco17_xy_rotation_plus_minus_15_degrees
     raw_scale: coco17_xy_scale_0.85_and_1.15
+    # P0-LATER: the authoritative dropout-map producer is intentionally unwired;
+    # source-only applicability therefore remains false and launch stays blocked.
     raw_joint_dropout: deterministic_supported_joint_dropout
     learned_augmentations: two_frozen_cycleback_augmentation_views_reencode
     static_null: constant_coordinates_same_authority_and_masks

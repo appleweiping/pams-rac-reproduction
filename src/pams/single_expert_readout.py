@@ -43,7 +43,8 @@ RidgeAggregation = Literal[
     "confidence_weighted_median_rate",
 ]
 PeakShare = float
-ViewName = Literal["L", "R", "E0", "Epi"]
+ViewName = Literal["L", "R", "E0", "Epi", "Lpi2", "E0pi2"]
+EncodingView = Literal["L", "E0", "Epi", "Lpi2", "E0pi2"]
 EstimateStatus = Literal["eligible", "abstain", "undefined_multi_segment"]
 
 _WINDOWS: tuple[WindowSize, WindowSize] = (64, 96)
@@ -59,6 +60,7 @@ _RIDGE_AGGREGATIONS: tuple[RidgeAggregation, RidgeAggregation] = (
 _PEAK_SHARES: tuple[PeakShare, PeakShare] = (0.1, 0.2)
 _ACTION_JOINTS: tuple[int, ...] = (7, 8, 9, 10, 13, 14, 15, 16)
 _EPSILON = np.finfo(np.float64).eps
+_MIN_ACCEPTED_INTERVAL_UNION_FRACTION = 0.8
 
 
 class CandidateAxes(StrictModel):
@@ -102,6 +104,8 @@ class FixedSpectralProtocol(StrictModel):
     taper: Literal["hann_periodic_false"]
     fft_length: Literal["4_times_window"]
     hop: Literal["window_div_4"]
+    terminal_window: Literal["none_zero_grid_only"]
+    minimum_accepted_interval_union_fraction: float
     upper_frequency_cycles_per_frame: float
     absolute_minimum_frequency_cycles_per_frame: float
     signed_vector_acf_minimum: float
@@ -140,11 +144,12 @@ class FixedSpectralProtocol(StrictModel):
         if self.prohibited_operations != expected:
             raise ValueError(f"prohibited_operations must equal {expected!r}")
         numerics = (
+            self.minimum_accepted_interval_union_fraction,
             self.upper_frequency_cycles_per_frame,
             self.absolute_minimum_frequency_cycles_per_frame,
             self.signed_vector_acf_minimum,
         )
-        if numerics != (0.25, 1.0 / 128.0, 0.1):
+        if numerics != (0.8, 0.25, 1.0 / 128.0, 0.1):
             raise ValueError("fixed spectral numeric constants were changed")
         return self
 
@@ -166,8 +171,11 @@ class SyntheticGateProtocol(StrictModel):
     null_false_eligible_cp_ucb_maximum: float
     reset_video_total_errors_maximum: Literal[0]
     positive_family_gate_policy: Literal[
-        "pooled_all_generation_truth_positives_only_no_family_thresholds"
+        "all_frozen_generation_truth_families_hard_gated"
     ]
+    positive_family_eligible_minimum: float
+    positive_family_nmae_maximum: float
+    positive_family_obo_minimum: float
     ranking: tuple[
         Literal[
             "null_cp_ucb",
@@ -203,8 +211,22 @@ class SyntheticGateProtocol(StrictModel):
             self.invariance_rounded_agreement_minimum,
             self.null_false_eligible_cp_confidence,
             self.null_false_eligible_cp_ucb_maximum,
+            self.positive_family_eligible_minimum,
+            self.positive_family_nmae_maximum,
+            self.positive_family_obo_minimum,
         )
-        if thresholds != (0.95, 0.08, 0.95, 0.1, 0.95, 0.95, 0.05):
+        if thresholds != (
+            0.95,
+            0.08,
+            0.95,
+            0.1,
+            0.95,
+            0.95,
+            0.05,
+            0.95,
+            0.1,
+            0.95,
+        ):
             raise ValueError("synthetic gate thresholds were changed")
         return self
 
@@ -217,7 +239,7 @@ class Train337TransformRecipe(StrictModel):
     warp_075: Literal["endpoint_preserving_time_warp_0.75_then_full_segment_reencode"]
     warp_125: Literal["endpoint_preserving_time_warp_1.25_then_full_segment_reencode"]
     duplicate_time: Literal["duplicate_source_time_then_full_segment_reencode"]
-    legal_split: Literal["authorized_single_segment_two_part_float_additivity_only"]
+    legal_split: Literal["shared_pivot_slice_same_full_context_embedding_no_reencode"]
     raw_rotation: Literal["coco17_xy_rotation_plus_minus_15_degrees"]
     raw_scale: Literal["coco17_xy_scale_0.85_and_1.15"]
     raw_joint_dropout: Literal["deterministic_supported_joint_dropout"]
@@ -244,6 +266,10 @@ class Train337GateProtocol(StrictModel):
     expected_video_count: Literal[337]
     hash_subset_seed: Literal[2026]
     hash_subset_size: Literal[64]
+    transform_applicability_policy: Literal[
+        "source_geometry_only_all_required_intersection"
+    ]
+    minimum_transform_applicable_video_count: Literal[64]
     one_segment_sufficient_share_minimum: float
     one_segment_eligible_minimum: float
     low_band_boundary_share_maximum_exclusive: float
@@ -560,7 +586,9 @@ class TemporalDerangementReceipt:
             video_id=video_id,
         )
         if digest != actual:
-            raise ValueError(f"permutation map SHA-256 mismatch: expected={digest}, actual={actual}")
+            raise ValueError(
+                f"permutation map SHA-256 mismatch: expected={digest}, actual={actual}"
+            )
         object.__setattr__(self, "video_id", video_id)
         object.__setattr__(self, "permutation_map_sha256", digest)
 
@@ -967,6 +995,49 @@ def _round_half_up_once(value: float) -> int:
     return int(math.floor(value + 0.5))
 
 
+def _accepted_interval_coverage(
+    segment: AuthorizedSegment,
+    accepted: Sequence[WindowEstimate],
+) -> tuple[float, int, int, int]:
+    """Measure accepted support on the ``L-1`` source-frame intervals.
+
+    A half-open W-frame source window ``[start, stop)`` observes the continuous
+    interval ``[start, stop-1]`` and therefore contributes ``W-1`` intervals.
+    The fixed zero-grid deliberately has no appended terminal window.
+    """
+
+    duration = segment.length - 1
+    if duration <= 0:
+        return 0.0, 0, 0, 0
+    ranges = sorted(
+        (
+            max(segment.start, int(item.key[1])),
+            min(segment.stop - 1, int(item.key[2]) - 1),
+        )
+        for item in accepted
+    )
+    ranges = [(start, stop) for start, stop in ranges if stop > start]
+    if not ranges:
+        return 0.0, 0, duration, 0
+    merged: list[list[int]] = []
+    internal_gaps: list[int] = []
+    for start, stop in ranges:
+        if not merged:
+            merged.append([start, stop])
+            continue
+        previous = merged[-1]
+        if start <= previous[1]:
+            previous[1] = max(previous[1], stop)
+        else:
+            internal_gaps.append(start - previous[1])
+            merged.append([start, stop])
+    union = sum(stop - start for start, stop in merged)
+    initial = merged[0][0] - segment.start
+    terminal = segment.stop - 1 - merged[-1][1]
+    maximum_internal = max(internal_gaps, default=0)
+    return float(union / duration), initial, terminal, maximum_internal
+
+
 @dataclass(frozen=True, slots=True)
 class SegmentEstimate:
     """Per-segment float estimate; never implicitly summed across resets."""
@@ -979,6 +1050,10 @@ class SegmentEstimate:
     status: Literal["eligible", "abstain"]
     abstention_reason: str | None
     float_count: float | None
+    accepted_interval_union_fraction: float
+    initial_uncovered_intervals: int
+    terminal_uncovered_intervals: int
+    max_internal_uncovered_gap_intervals: int
     windows: tuple[WindowEstimate, ...]
 
     def __post_init__(self) -> None:
@@ -987,16 +1062,58 @@ class SegmentEstimate:
             self.available_window_count,
             self.accepted_window_count,
         )
-        if any(isinstance(value, bool) or value < 0 for value in counts):
+        if any(
+            isinstance(value, bool) or int(value) != value or value < 0
+            for value in counts
+        ):
             raise ValueError("segment window counts must be non-negative integers")
-        if not self.accepted_window_count <= self.available_window_count <= self.candidate_window_count:
+        if not (
+            self.accepted_window_count
+            <= self.available_window_count
+            <= self.candidate_window_count
+        ):
             raise ValueError("segment window counts are inconsistent")
         if len(self.windows) != self.available_window_count:
             raise ValueError("segment windows do not match available_window_count")
         if sum(item.accepted for item in self.windows) != self.accepted_window_count:
             raise ValueError("segment windows do not match accepted_window_count")
+        if (
+            not np.isfinite(self.accepted_interval_union_fraction)
+            or not 0.0 <= self.accepted_interval_union_fraction <= 1.0
+        ):
+            raise ValueError("accepted interval union fraction must be in [0, 1]")
+        uncovered = (
+            self.initial_uncovered_intervals,
+            self.terminal_uncovered_intervals,
+            self.max_internal_uncovered_gap_intervals,
+        )
+        if any(
+            isinstance(value, bool) or int(value) != value or value < 0
+            for value in uncovered
+        ):
+            raise ValueError("uncovered interval diagnostics must be non-negative integers")
         if any(item.key[0] != self.segment.segment_id for item in self.windows):
             raise ValueError("segment estimate contains a foreign window")
+        keys = tuple(item.key for item in self.windows)
+        if len(set(keys)) != len(keys) or keys != tuple(
+            sorted(keys, key=lambda item: (item[1], item[2]))
+        ):
+            raise ValueError("segment estimate windows must be unique and source ordered")
+        if any(
+            item.key[1] < self.segment.start or item.key[2] > self.segment.stop
+            for item in self.windows
+        ):
+            raise ValueError("segment estimate window exceeds its source segment")
+        accepted = tuple(item for item in self.windows if item.accepted)
+        expected_coverage = _accepted_interval_coverage(self.segment, accepted)
+        actual_coverage = (
+            self.accepted_interval_union_fraction,
+            self.initial_uncovered_intervals,
+            self.terminal_uncovered_intervals,
+            self.max_internal_uncovered_gap_intervals,
+        )
+        if actual_coverage != expected_coverage:
+            raise ValueError("accepted interval coverage diagnostics do not replay")
         if self.status == "eligible":
             if self.accepted_window_count < 1 or self.float_count is None:
                 raise ValueError("eligible segment requires an accepted window and float count")
@@ -1006,11 +1123,20 @@ class SegmentEstimate:
                 raise ValueError("eligible segment cannot carry an abstention reason")
             if self.single_window_estimate != (self.accepted_window_count == 1):
                 raise ValueError("single_window_estimate flag is inconsistent")
+            if (
+                self.accepted_interval_union_fraction
+                < _MIN_ACCEPTED_INTERVAL_UNION_FRACTION
+            ):
+                raise ValueError("eligible segment has insufficient accepted interval coverage")
         else:
-            if self.float_count is not None or self.accepted_window_count != 0:
+            if self.float_count is not None:
                 raise ValueError("abstaining segment cannot expose a count")
             if not self.abstention_reason or self.single_window_estimate:
                 raise ValueError("abstaining segment requires a reason and no single-window flag")
+            if self.accepted_window_count and (
+                self.abstention_reason != "insufficient_accepted_interval_union"
+            ):
+                raise ValueError("accepted windows may abstain only for insufficient coverage")
 
 
 @dataclass(frozen=True, slots=True)
@@ -1033,7 +1159,14 @@ class ViewEstimate:
         return tuple(window.key for segment in self.segments for window in segment.windows)
 
     def __post_init__(self) -> None:
-        if not self.video_id or self.view not in ("L", "R", "E0", "Epi"):
+        if not self.video_id or self.view not in (
+            "L",
+            "R",
+            "E0",
+            "Epi",
+            "Lpi2",
+            "E0pi2",
+        ):
             raise ValueError("view estimate identity is invalid")
         if not self.candidate_id:
             raise ValueError("view estimate candidate_id must be non-empty")
@@ -1107,6 +1240,34 @@ def _estimate_from_plan(
                     status="abstain",
                     abstention_reason=reason,
                     float_count=None,
+                    accepted_interval_union_fraction=0.0,
+                    initial_uncovered_intervals=0,
+                    terminal_uncovered_intervals=max(segment_plan.segment.length - 1, 0),
+                    max_internal_uncovered_gap_intervals=0,
+                    windows=tuple(outcomes),
+                )
+            )
+            all_windows.extend(outcomes)
+            continue
+        coverage, initial_gap, terminal_gap, internal_gap = _accepted_interval_coverage(
+            segment_plan.segment,
+            accepted,
+        )
+        if coverage < _MIN_ACCEPTED_INTERVAL_UNION_FRACTION:
+            segment_estimates.append(
+                SegmentEstimate(
+                    segment=segment_plan.segment,
+                    candidate_window_count=segment_plan.candidate_window_count,
+                    available_window_count=len(segment_plan.windows),
+                    accepted_window_count=len(accepted),
+                    single_window_estimate=False,
+                    status="abstain",
+                    abstention_reason="insufficient_accepted_interval_union",
+                    float_count=None,
+                    accepted_interval_union_fraction=coverage,
+                    initial_uncovered_intervals=initial_gap,
+                    terminal_uncovered_intervals=terminal_gap,
+                    max_internal_uncovered_gap_intervals=internal_gap,
                     windows=tuple(outcomes),
                 )
             )
@@ -1129,6 +1290,10 @@ def _estimate_from_plan(
                 status="eligible",
                 abstention_reason=None,
                 float_count=float_count,
+                accepted_interval_union_fraction=coverage,
+                initial_uncovered_intervals=initial_gap,
+                terminal_uncovered_intervals=terminal_gap,
+                max_internal_uncovered_gap_intervals=internal_gap,
                 windows=tuple(outcomes),
             )
         )
@@ -1229,7 +1394,7 @@ class SegmentEncodingContext:
 class FullSegmentEncodingReceipt:
     """Lineage contract for one learned/control representation view."""
 
-    view: Literal["L", "E0", "Epi"]
+    view: EncodingView
     video_id: str
     context_policy: Literal["full_authorized_segment_absolute_native_pe_v1"]
     execution_mode: Literal["eval_deterministic_no_grad_no_optimizer_update"]
@@ -1247,7 +1412,7 @@ class FullSegmentEncodingReceipt:
         identifier = str(self.video_id).strip()
         if not identifier or identifier != self.video_id:
             raise ValueError("encoding receipt video_id must be canonical and non-empty")
-        if self.view not in ("L", "E0", "Epi"):
+        if self.view not in ("L", "E0", "Epi", "Lpi2", "E0pi2"):
             raise ValueError("encoding receipt view is invalid")
         if self.context_policy != "full_authorized_segment_absolute_native_pe_v1":
             raise ValueError("window-local/overlap-add encoding receipts are forbidden")
@@ -1269,11 +1434,17 @@ class FullSegmentEncodingReceipt:
         ):
             if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
                 raise ValueError(f"{name} must be a lowercase SHA-256")
-        if self.view == "Epi":
+        if self.view in ("Epi", "Lpi2", "E0pi2"):
             if self.derangement_map_sha256 is None:
-                raise ValueError("Epi encoding receipt requires derangement_map_sha256")
+                raise ValueError("deranged encoding receipt requires derangement_map_sha256")
         elif self.derangement_map_sha256 is not None:
-            raise ValueError("only Epi may carry derangement_map_sha256")
+            raise ValueError("only deranged views may carry derangement_map_sha256")
+        if self.view in ("L", "Epi", "Lpi2") and self.checkpoint_role != "trained_cycleback":
+            raise ValueError("learned encoding views require the trained cycleback checkpoint")
+        if self.view in ("E0", "E0pi2") and (
+            self.checkpoint_role != "frozen_untrained_initialization"
+        ):
+            raise ValueError("untrained encoding views require the frozen initialization")
         if self.checkpoint_role == "frozen_untrained_initialization":
             if self.encoder_state_sha256 != self.initialization_state_sha256:
                 raise ValueError("untrained encoder state must equal initialization state")
@@ -1343,7 +1514,7 @@ def _feature_segment_digest(
 
 def _encoding_context_fingerprint(
     *,
-    view: Literal["L", "E0", "Epi"],
+    view: EncodingView,
     video_id: str,
     encoder_state_sha256: str,
     encoder_config_sha256: str,
@@ -1382,7 +1553,7 @@ def _encoding_context_fingerprint(
 
 
 def _encoding_receipt_digest(
-    view: Literal["L", "E0", "Epi"],
+    view: EncodingView,
     video_id: str,
     encoder_state_sha256: str,
     encoder_config_sha256: str,
@@ -1423,7 +1594,7 @@ def _encoding_receipt_digest(
 
 def build_full_segment_encoding_receipt(
     *,
-    view: Literal["L", "E0", "Epi"],
+    view: EncodingView,
     video_id: str,
     encoder_state_sha256: str,
     encoder_config_sha256: str,
@@ -1670,6 +1841,7 @@ class MechanismEstimate:
     raw_control: ViewEstimate
     untrained_control: ViewEstimate
     temporal_derangement_control: ViewEstimate
+    epi_derangement_receipt: TemporalDerangementReceipt
     epi_permutation_map_sha256: str
     learned_encoding_receipt_sha256: str
     untrained_encoding_receipt_sha256: str
@@ -1688,6 +1860,13 @@ class MechanismEstimate:
             raise ValueError("mechanism estimate candidates differ")
         if len({item.video_id for item in views}) != 1:
             raise ValueError("mechanism estimate views differ in video_id")
+        if self.epi_derangement_receipt.video_id != self.primary.video_id:
+            raise ValueError("mechanism estimate Epi receipt video_id mismatch")
+        if (
+            self.epi_derangement_receipt.permutation_map_sha256
+            != self.epi_permutation_map_sha256
+        ):
+            raise ValueError("mechanism estimate Epi receipt/map mismatch")
         if len({item.window_keys for item in views}) != 1:
             raise ValueError("mechanism estimate views differ in window authority")
         for name, value in (
@@ -1750,10 +1929,335 @@ def estimate_mechanism_views(
         raw_control=raw,
         untrained_control=untrained,
         temporal_derangement_control=epi,
+        epi_derangement_receipt=video.epi_receipt,
         epi_permutation_map_sha256=video.epi_receipt.permutation_map_sha256,
         learned_encoding_receipt_sha256=video.learned_encoding_receipt.receipt_sha256,
         untrained_encoding_receipt_sha256=video.untrained_encoding_receipt.receipt_sha256,
         epi_encoding_receipt_sha256=video.epi_encoding_receipt.receipt_sha256,
+    )
+
+
+def estimate_legal_split_views(
+    source: MechanismVideo,
+    candidate: SpectralCandidate,
+) -> tuple[int, ViewEstimate, ViewEstimate]:
+    """Slice one already encoded full segment at the frozen shared pivot.
+
+    This function accepts the validated ``MechanismVideo`` rather than an
+    encoder callback, so neither half can be re-encoded with reset positional
+    indices.  Both estimates read slices of ``source.learned`` from the one
+    full-segment encoding receipt already bound to the baseline.
+    """
+
+    if len(source.segments) != 1:
+        raise ValueError("legal split requires exactly one full-context source segment")
+    segment = source.segments[0]
+    pivot = segment.start + (segment.length - 1) // 2
+    left_segment = AuthorizedSegment(segment.segment_id, segment.start, pivot + 1)
+    right_segment = AuthorizedSegment(segment.segment_id, pivot, segment.stop)
+    estimates: list[ViewEstimate] = []
+    for side in (left_segment, right_segment):
+        view = RepresentationVideo(
+            video_id=source.video_id,
+            features=source.learned,
+            raw_xy=source.raw_xy,
+            joint_mask=source.joint_mask,
+            valid_mask=source.valid_mask,
+            segments=(side,),
+        )
+        plan = build_window_plan(view, candidate)
+        if (
+            len(plan) != 1
+            or plan[0].candidate_window_count == 0
+            or not plan[0].windows
+        ):
+            raise ValueError(
+                "legal split is not source-geometry applicable for the selected window"
+            )
+        estimates.append(
+            _estimate_from_plan(
+                view,
+                candidate,
+                plan,
+                view="L",
+                raw_control=False,
+            )
+        )
+    return pivot, estimates[0], estimates[1]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SecondDerangementControls:
+    """Map-2 trained/untrained pre-encoder controls from one source authority."""
+
+    video_id: str
+    trained: NDArray[np.float32]
+    untrained: NDArray[np.float32]
+    raw_xy: NDArray[np.float32]
+    joint_mask: NDArray[np.bool_]
+    valid_mask: NDArray[np.bool_]
+    segments: tuple[AuthorizedSegment, ...]
+    derangement_receipt: TemporalDerangementReceipt
+    trained_encoding_receipt: FullSegmentEncodingReceipt
+    untrained_encoding_receipt: FullSegmentEncodingReceipt
+
+    def __post_init__(self) -> None:
+        trained = np.asarray(self.trained, dtype=np.float32)
+        untrained = np.asarray(self.untrained, dtype=np.float32)
+        if trained.ndim != 2 or untrained.shape != trained.shape:
+            raise ValueError("map-2 trained/untrained features must share [frames, dimensions]")
+        reference = RepresentationVideo(
+            video_id=self.video_id,
+            features=np.zeros((trained.shape[0], 1), dtype=np.float32),
+            raw_xy=self.raw_xy,
+            joint_mask=self.joint_mask,
+            valid_mask=self.valid_mask,
+            segments=self.segments,
+        )
+        receipt = self.derangement_receipt
+        if receipt.video_id != reference.video_id:
+            raise ValueError("map-2 derangement receipt video_id mismatch")
+        if tuple(item.segment_id for item in receipt.permutations) != tuple(
+            segment.segment_id for segment in reference.segments
+        ):
+            raise ValueError("map-2 receipt must cover exact source segments in order")
+        replay_xy = np.array(reference.raw_xy, copy=True, order="C")
+        replay_mask = np.array(reference.joint_mask, copy=True, order="C")
+        replay_valid = np.array(reference.valid_mask, copy=True, order="C")
+        deranged_digests: dict[str, str] = {}
+        for segment, permutation in zip(
+            reference.segments,
+            receipt.permutations,
+            strict=True,
+        ):
+            expected = set(range(segment.start, segment.stop))
+            actual = tuple(permutation.source_indices)
+            if len(actual) != segment.length or set(actual) != expected:
+                raise ValueError("map-2 permutation must be bijective and segment-local")
+            if any(source == segment.start + offset for offset, source in enumerate(actual)):
+                raise ValueError("map-2 permutation must have no fixed points")
+            source_digest = _segment_pose_digest(
+                reference.video_id,
+                reference.raw_xy,
+                reference.joint_mask,
+                reference.valid_mask,
+                segment,
+            )
+            if permutation.source_pose_sha256 != source_digest:
+                raise ValueError("map-2 source pose bytes differ from source authority")
+            source = np.asarray(actual, dtype=np.int64)
+            replay_xy[segment.start : segment.stop] = reference.raw_xy[source]
+            replay_mask[segment.start : segment.stop] = reference.joint_mask[source]
+            replay_valid[segment.start : segment.stop] = reference.valid_mask[source]
+            deranged_digest = _segment_pose_digest(
+                reference.video_id,
+                replay_xy,
+                replay_mask,
+                replay_valid,
+                segment,
+            )
+            if permutation.deranged_pose_sha256 != deranged_digest:
+                raise ValueError("map-2 pose digest does not replay from authority bytes")
+            deranged_digests[segment.segment_id] = deranged_digest
+        for feature_array, encoding_receipt, expected_view, expected_role in (
+            (trained, self.trained_encoding_receipt, "Lpi2", "trained_cycleback"),
+            (
+                untrained,
+                self.untrained_encoding_receipt,
+                "E0pi2",
+                "frozen_untrained_initialization",
+            ),
+        ):
+            if not np.isfinite(feature_array[reference.valid_mask]).all():
+                raise ValueError("map-2 features must be finite on valid frames")
+            if bool(np.any(feature_array[~reference.valid_mask] != 0.0)):
+                raise ValueError("map-2 features on invalid frames must be exact zero")
+            if encoding_receipt.view != expected_view:
+                raise ValueError(f"map-2 encoding receipt view must be {expected_view}")
+            if encoding_receipt.video_id != reference.video_id:
+                raise ValueError("map-2 encoding receipt video_id mismatch")
+            if encoding_receipt.checkpoint_role != expected_role:
+                raise ValueError("map-2 encoding receipt checkpoint role mismatch")
+            if encoding_receipt.derangement_map_sha256 != receipt.permutation_map_sha256:
+                raise ValueError("map-2 encoding receipt/map mismatch")
+            if tuple(item.segment_id for item in encoding_receipt.contexts) != tuple(
+                segment.segment_id for segment in reference.segments
+            ):
+                raise ValueError("map-2 encoding receipt segment coverage mismatch")
+            for segment, context in zip(
+                reference.segments,
+                encoding_receipt.contexts,
+                strict=True,
+            ):
+                if (context.start, context.stop) != (segment.start, segment.stop):
+                    raise ValueError("map-2 encoding receipt bounds differ from authority")
+                if context.input_pose_sha256 != deranged_digests[segment.segment_id]:
+                    raise ValueError("map-2 encoding input digest mismatch")
+                if context.output_features_sha256 != _feature_segment_digest(
+                    feature_array,
+                    segment,
+                ):
+                    raise ValueError("map-2 encoding output digest mismatch")
+        shared = {
+            (
+                item.encoder_config_sha256,
+                item.encoder_implementation_sha256,
+                item.initialization_state_sha256,
+            )
+            for item in (
+                self.trained_encoding_receipt,
+                self.untrained_encoding_receipt,
+            )
+        }
+        if len(shared) != 1:
+            raise ValueError("map-2 trained/untrained encoders do not share identity")
+        object.__setattr__(self, "video_id", reference.video_id)
+        object.__setattr__(self, "trained", _immutable_array(trained, np.float32))
+        object.__setattr__(self, "untrained", _immutable_array(untrained, np.float32))
+        object.__setattr__(self, "raw_xy", reference.raw_xy)
+        object.__setattr__(self, "joint_mask", reference.joint_mask)
+        object.__setattr__(self, "valid_mask", reference.valid_mask)
+        object.__setattr__(self, "segments", reference.segments)
+
+
+@dataclass(frozen=True, slots=True)
+class SecondDerangementEstimate:
+    """Exact map-2 estimates retained for L/E0/Epi mechanism comparisons."""
+
+    candidate_id: str
+    trained_control: ViewEstimate
+    untrained_control: ViewEstimate
+    derangement_receipt: TemporalDerangementReceipt
+    trained_encoding_receipt_sha256: str
+    untrained_encoding_receipt_sha256: str
+
+    def __post_init__(self) -> None:
+        if (self.trained_control.view, self.untrained_control.view) != ("Lpi2", "E0pi2"):
+            raise ValueError("second derangement views must be Lpi2/E0pi2")
+        if self.trained_control.candidate_id != self.candidate_id or (
+            self.untrained_control.candidate_id != self.candidate_id
+        ):
+            raise ValueError("second derangement candidate mismatch")
+        if self.trained_control.video_id != self.untrained_control.video_id:
+            raise ValueError("second derangement video_id mismatch")
+        if self.derangement_receipt.video_id != self.trained_control.video_id:
+            raise ValueError("second derangement receipt video_id mismatch")
+        if self.trained_control.window_keys != self.untrained_control.window_keys:
+            raise ValueError("second derangement controls differ in window authority")
+        _require_sha256(
+            self.trained_encoding_receipt_sha256,
+            "trained_encoding_receipt_sha256",
+        )
+        _require_sha256(
+            self.untrained_encoding_receipt_sha256,
+            "untrained_encoding_receipt_sha256",
+        )
+
+
+def estimate_second_derangement_controls(
+    source: MechanismVideo,
+    controls: SecondDerangementControls,
+    candidate: SpectralCandidate,
+) -> SecondDerangementEstimate:
+    """Evaluate map 2 on source geometry and prove independence from Epi map 1."""
+
+    if source.video_id != controls.video_id or source.segments != controls.segments:
+        raise ValueError("second derangement source authority identity mismatch")
+    if not (
+        np.array_equal(source.raw_xy, controls.raw_xy)
+        and np.array_equal(source.joint_mask, controls.joint_mask)
+        and np.array_equal(source.valid_mask, controls.valid_mask)
+    ):
+        raise ValueError("second derangement does not use the same source authority bytes")
+    if controls.trained.shape != source.learned.shape or (
+        controls.untrained.shape != source.untrained.shape
+    ):
+        raise ValueError("map-2 controls must preserve the exact encoder output shape")
+    map1 = source.epi_receipt
+    map2 = controls.derangement_receipt
+    if map1.seed == map2.seed:
+        raise ValueError("map-1 and map-2 derangement seeds must differ")
+    if tuple(item.segment_id for item in map1.permutations) != tuple(
+        item.segment_id for item in map2.permutations
+    ):
+        raise ValueError("map-1 and map-2 segment identities differ")
+    if any(
+        first.source_indices == second.source_indices
+        for first, second in zip(map1.permutations, map2.permutations, strict=True)
+    ):
+        raise ValueError("map-1 and map-2 source-index permutations must differ per segment")
+    learned_receipt = source.learned_encoding_receipt
+    untrained_receipt = source.untrained_encoding_receipt
+    trained_map2_receipt = controls.trained_encoding_receipt
+    untrained_map2_receipt = controls.untrained_encoding_receipt
+    if (
+        learned_receipt.encoder_state_sha256
+        != trained_map2_receipt.encoder_state_sha256
+        or learned_receipt.encoder_config_sha256
+        != trained_map2_receipt.encoder_config_sha256
+        or learned_receipt.encoder_implementation_sha256
+        != trained_map2_receipt.encoder_implementation_sha256
+        or learned_receipt.initialization_state_sha256
+        != trained_map2_receipt.initialization_state_sha256
+    ):
+        raise ValueError("trained map-2 control does not use exact L encoder identity")
+    if (
+        untrained_receipt.encoder_state_sha256
+        != untrained_map2_receipt.encoder_state_sha256
+        or untrained_receipt.encoder_config_sha256
+        != untrained_map2_receipt.encoder_config_sha256
+        or untrained_receipt.encoder_implementation_sha256
+        != untrained_map2_receipt.encoder_implementation_sha256
+        or untrained_receipt.initialization_state_sha256
+        != untrained_map2_receipt.initialization_state_sha256
+    ):
+        raise ValueError("untrained map-2 control does not use exact E0 encoder identity")
+    authority = RepresentationVideo(
+        source.video_id,
+        source.learned,
+        source.raw_xy,
+        source.joint_mask,
+        source.valid_mask,
+        source.segments,
+    )
+    plan = build_window_plan(authority, candidate)
+    trained_video = RepresentationVideo(
+        source.video_id,
+        controls.trained,
+        source.raw_xy,
+        source.joint_mask,
+        source.valid_mask,
+        source.segments,
+    )
+    untrained_video = RepresentationVideo(
+        source.video_id,
+        controls.untrained,
+        source.raw_xy,
+        source.joint_mask,
+        source.valid_mask,
+        source.segments,
+    )
+    trained = _estimate_from_plan(
+        trained_video,
+        candidate,
+        plan,
+        view="Lpi2",
+        raw_control=False,
+    )
+    untrained = _estimate_from_plan(
+        untrained_video,
+        candidate,
+        plan,
+        view="E0pi2",
+        raw_control=False,
+    )
+    return SecondDerangementEstimate(
+        candidate_id=candidate.canonical_id,
+        trained_control=trained,
+        untrained_control=untrained,
+        derangement_receipt=map2,
+        trained_encoding_receipt_sha256=trained_map2_receipt.receipt_sha256,
+        untrained_encoding_receipt_sha256=untrained_map2_receipt.receipt_sha256,
     )
 
 
@@ -1791,6 +2295,15 @@ _NULL_FAMILIES: tuple[str, ...] = (
     "time_shuffled_periodic",
     "independent_incoherent_frequency_phase",
     "constant_coordinates_oscillating_masks",
+)
+
+_POSITIVE_FAMILY_COUNTS: tuple[tuple[str, int], ...] = (
+    ("active_support", 8),
+    ("constant_tempo_count", 26),
+    ("corruption", 24),
+    ("duration_count", 12),
+    ("harmonic_stress", 24),
+    ("variable_tempo", 24),
 )
 
 
@@ -1836,11 +2349,11 @@ def synthetic_case_plan() -> tuple[SyntheticCaseSpec, ...]:
                     )
                 )
         for count in (8, 16):
-            for support in ("idle_60_percent", "idle_80_percent"):
+            for support in ("active_support_60", "active_support_80"):
                 specs.append(
                     SyntheticCaseSpec(
-                        case_id=f"idle.{support}.c{count}.d{dimension}",
-                        family="idle_support",
+                        case_id=f"support.{support}.c{count}.d{dimension}",
+                        family="active_support",
                         kind="count",
                         frames=256,
                         dimension=dimension,
@@ -1956,8 +2469,8 @@ def _tempo_profile(frames: int, profile: str) -> NDArray[np.float64]:
         speed = np.interp(time, (0.0, 0.5, 1.0), (0.5, 1.5, 0.5))
     elif profile == "sinusoidal_tempo":
         speed = 1.0 + 0.4 * np.sin(2.0 * np.pi * time)
-    elif profile in ("idle_60_percent", "idle_80_percent"):
-        support = 0.6 if profile == "idle_60_percent" else 0.8
+    elif profile in ("active_support_60", "active_support_80"):
+        support = 0.6 if profile == "active_support_60" else 0.8
         edge = (1.0 - support) / 2.0
         speed = ((time >= edge) & (time <= 1.0 - edge)).astype(np.float64)
     else:
@@ -1974,8 +2487,12 @@ def _periodic_latent(
     profile: str,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     increments = _tempo_profile(frames, profile)
+    terminal_phase = np.float64(2.0 * np.pi * count)
     phase = np.zeros(frames, dtype=np.float64)
-    phase[1:] = 2.0 * np.pi * count * np.cumsum(increments)
+    phase[1:] = terminal_phase * np.cumsum(increments)
+    phase[-1] = terminal_phase
+    if not np.isfinite(phase).all() or bool(np.any(np.diff(phase) < 0.0)):
+        raise RuntimeError("synthetic phase must be finite and nondecreasing")
     amplitude = np.ones(frames, dtype=np.float64)
     if profile == "amplitude_ramp_0.5_to_1.5":
         amplitude = np.linspace(0.5, 1.5, frames, dtype=np.float64)
@@ -2200,6 +2717,23 @@ class NullFamilyScore:
     one_sided_cp_ucb: float
     hard_pass: bool
 
+    def __post_init__(self) -> None:
+        if self.family not in _NULL_FAMILIES:
+            raise ValueError("unknown synthetic null family")
+        if (
+            self.trials != 64
+            or isinstance(self.false_eligible, bool)
+            or int(self.false_eligible) != self.false_eligible
+            or not 0 <= self.false_eligible <= self.trials
+        ):
+            raise ValueError("null family score counts are not canonical")
+        if not 0.0 <= self.one_sided_cp_ucb <= 1.0:
+            raise ValueError("null family CP upper bound must be in [0, 1]")
+        if not isinstance(self.hard_pass, bool):
+            raise TypeError("null family hard-pass flag must be a bool")
+        if self.hard_pass != (self.one_sided_cp_ucb <= 0.05):
+            raise ValueError("null family hard-pass flag is inconsistent")
+
 
 @dataclass(frozen=True, slots=True)
 class PositiveFamilyScore:
@@ -2211,6 +2745,25 @@ class PositiveFamilyScore:
     eligible_rate: float
     nmae: float
     obo: float
+
+    def __post_init__(self) -> None:
+        expected = dict(_POSITIVE_FAMILY_COUNTS)
+        if self.family not in expected or self.trials != expected[self.family]:
+            raise ValueError("positive family score membership/count is not canonical")
+        if (
+            isinstance(self.eligible, bool)
+            or int(self.eligible) != self.eligible
+            or not 0 <= self.eligible <= self.trials
+        ):
+            raise ValueError("positive family eligible count is invalid")
+        if not 0.0 <= self.eligible_rate <= 1.0:
+            raise ValueError("positive family eligible rate must be in [0, 1]")
+        if self.eligible_rate != self.eligible / self.trials:
+            raise ValueError("positive family eligible rate does not replay from counts")
+        if not np.isfinite(self.nmae) or self.nmae < 0.0:
+            raise ValueError("positive family NMAE must be finite and non-negative")
+        if not 0.0 <= self.obo <= 1.0:
+            raise ValueError("positive family OBO must be in [0, 1]")
 
 
 @dataclass(frozen=True, slots=True)
@@ -2237,6 +2790,82 @@ class SyntheticCandidateScore:
     hard_pass: bool
     failed_gates: tuple[str, ...]
 
+    def __post_init__(self) -> None:
+        if self.seed not in (2026, 3407):
+            raise ValueError("synthetic score seed is not canonical")
+        integer_counts = (
+            self.positive_total,
+            self.positive_eligible,
+            self.null_total,
+            self.null_false_eligible,
+            self.reset_total,
+            self.reset_video_total_errors,
+        )
+        if any(
+            isinstance(value, bool) or int(value) != value or value < 0
+            for value in integer_counts
+        ):
+            raise ValueError("synthetic aggregate counts must be non-negative integers")
+        if not isinstance(self.positive_family_scores, tuple):
+            raise TypeError("positive family scores must be an exact tuple")
+        if not isinstance(self.invariance_agreement, tuple) or any(
+            not isinstance(item, tuple) or len(item) != 2
+            for item in self.invariance_agreement
+        ):
+            raise TypeError("invariance scores must be exact name/value tuples")
+        if not isinstance(self.null_family_scores, tuple):
+            raise TypeError("null family scores must be an exact tuple")
+        if not isinstance(self.failed_gates, tuple):
+            raise TypeError("failed synthetic gates must be an exact tuple")
+        if not isinstance(self.hard_pass, bool):
+            raise TypeError("synthetic hard-pass flag must be a bool")
+        expected_positive = tuple(name for name, _ in _POSITIVE_FAMILY_COUNTS)
+        if tuple(item.family for item in self.positive_family_scores) != expected_positive:
+            raise ValueError("positive family scores must have exact canonical order")
+        if tuple(name for name, _ in self.invariance_agreement) != _INVARIANCE_NAMES:
+            raise ValueError("invariance scores must have exact canonical order")
+        if tuple(item.family for item in self.null_family_scores) != _NULL_FAMILIES:
+            raise ValueError("null family scores must have exact canonical order")
+        if self.positive_total != sum(item.trials for item in self.positive_family_scores):
+            raise ValueError("positive family scores do not cover positive_total")
+        if self.positive_eligible != sum(item.eligible for item in self.positive_family_scores):
+            raise ValueError("positive family scores do not cover positive_eligible")
+        if self.null_total != sum(item.trials for item in self.null_family_scores):
+            raise ValueError("null family scores do not cover null_total")
+        if self.null_false_eligible != sum(
+            item.false_eligible for item in self.null_family_scores
+        ):
+            raise ValueError("null family scores do not cover null_false_eligible")
+        if self.positive_total != 118 or self.null_total != 512 or self.reset_total != 64:
+            raise ValueError("synthetic score family totals are not canonical")
+        if self.positive_eligible_rate != self.positive_eligible / self.positive_total:
+            raise ValueError("positive eligible rate does not replay from counts")
+        if self.abstention_rate != 1.0 - self.positive_eligible_rate:
+            raise ValueError("synthetic abstention rate does not replay")
+        if self.null_cp_ucb != max(
+            item.one_sided_cp_ucb for item in self.null_family_scores
+        ):
+            raise ValueError("pooled null diagnostic must equal worst family CP bound")
+        bounded = (
+            self.positive_eligible_rate,
+            self.overall_obo,
+            self.null_cp_ucb,
+            self.abstention_rate,
+        ) + tuple(value for _, value in self.invariance_agreement)
+        if any(not np.isfinite(value) or not 0.0 <= value <= 1.0 for value in bounded):
+            raise ValueError("synthetic score rates must be finite and in [0, 1]")
+        errors = (self.overall_nmae, self.variable_tempo_nmae)
+        if any(not np.isfinite(value) or value < 0.0 for value in errors):
+            raise ValueError("synthetic aggregate errors must be finite and non-negative")
+        if self.reset_video_total_errors < 0 or (
+            self.reset_video_total_errors > self.reset_total
+        ):
+            raise ValueError("synthetic reset error count is invalid")
+        if len(set(self.failed_gates)) != len(self.failed_gates):
+            raise ValueError("failed synthetic gate names must be unique")
+        if self.hard_pass != (not self.failed_gates):
+            raise ValueError("synthetic hard-pass flag is inconsistent")
+
     @property
     def rank(self) -> tuple[float, float, float, float, float, str]:
         return (
@@ -2255,9 +2884,7 @@ class SyntheticCandidateScore:
             "positive_total": self.positive_total,
             "positive_eligible": self.positive_eligible,
             "positive_eligible_rate": self.positive_eligible_rate,
-            "positive_gate_policy": (
-                "pooled_all_generation_truth_positives_only_no_family_thresholds"
-            ),
+            "positive_gate_policy": "all_frozen_generation_truth_families_hard_gated",
             "overall_nmae": self.overall_nmae,
             "overall_obo": self.overall_obo,
             "variable_tempo_nmae": self.variable_tempo_nmae,
@@ -2292,10 +2919,28 @@ class SyntheticCandidateScore:
         }
 
 
+def _positive_family_gate_failures(
+    scores: Sequence[PositiveFamilyScore],
+    protocol: SyntheticGateProtocol,
+) -> tuple[str, ...]:
+    failures: list[str] = []
+    for score in scores:
+        if score.eligible_rate < protocol.positive_family_eligible_minimum:
+            failures.append(f"positive_family_eligible_rate:{score.family}")
+        if score.nmae > protocol.positive_family_nmae_maximum:
+            failures.append(f"positive_family_nmae:{score.family}")
+        if score.obo < protocol.positive_family_obo_minimum:
+            failures.append(f"positive_family_obo:{score.family}")
+    return tuple(failures)
+
+
 def _validated_synthetic_plan(
     config: SegmentLocalSpectralConfig,
 ) -> tuple[SyntheticCaseSpec, ...]:
     specs = synthetic_case_plan()
+    positive_specs = tuple(
+        item for item in specs if item.kind in ("count", "variable_tempo", "corruption")
+    )
     null_specs = tuple(item for item in specs if item.kind == "null")
     reset_specs = tuple(item for item in specs if item.kind == "reset")
     observed_families = {item.family for item in null_specs}
@@ -2313,6 +2958,14 @@ def _validated_synthetic_plan(
         raise RuntimeError("synthetic reset family must contain exactly 64 cases")
     if {item.replicate for item in reset_specs} != set(range(config.synthetic.reset_trials)):
         raise RuntimeError("synthetic reset replicate identities changed")
+    positive_counts = tuple(
+        (family, sum(item.family == family for item in positive_specs))
+        for family, _ in _POSITIVE_FAMILY_COUNTS
+    )
+    if positive_counts != _POSITIVE_FAMILY_COUNTS:
+        raise RuntimeError("synthetic positive family membership/count changed")
+    if any(item.target_count is None for item in positive_specs):
+        raise RuntimeError("synthetic positive family lost generation truth")
     return specs
 
 
@@ -2440,6 +3093,7 @@ def score_synthetic_candidate(
         failed.append("overall_nmae")
     if overall_obo < config.synthetic.overall_obo_minimum:
         failed.append("overall_obo")
+    failed.extend(_positive_family_gate_failures(positive_family_scores, config.synthetic))
     if variable_nmae > config.synthetic.variable_tempo_nmae_maximum:
         failed.append("variable_tempo_nmae")
     if any(
@@ -2499,6 +3153,46 @@ class SyntheticSelectionReport:
     selected_rank: tuple[float, float, float, float, float, str]
     scores: tuple[SyntheticCandidateScore, ...]
 
+    def __post_init__(self) -> None:
+        if self.selector_seed != 2026:
+            raise ValueError("synthetic selector seed is not canonical")
+        if not isinstance(self.mixing_sha256, tuple) or any(
+            not isinstance(item, tuple) or len(item) != 2
+            for item in self.mixing_sha256
+        ):
+            raise TypeError("selector mixing digests must be exact dimension/digest tuples")
+        if not isinstance(self.selected_rank, tuple) or len(self.selected_rank) != 6:
+            raise TypeError("synthetic selected rank must be an exact six-value tuple")
+        if not isinstance(self.scores, tuple):
+            raise TypeError("synthetic selection scores must be an exact tuple")
+        if tuple(dimension for dimension, _ in self.mixing_sha256) != (34, 512):
+            raise ValueError("selector mixing digests must have exact dimension order")
+        if len(self.scores) != 32:
+            raise ValueError("synthetic selection report requires exact 32 scores")
+        score_ids = tuple(item.candidate.canonical_id for item in self.scores)
+        if len(set(score_ids)) != 32 or any(
+            item.seed != self.selector_seed for item in self.scores
+        ):
+            raise ValueError("synthetic selection scores are not canonical")
+        matches = tuple(
+            item
+            for item in self.scores
+            if item.candidate.canonical_id == self.selected_candidate_id
+        )
+        if (
+            len(matches) != 1
+            or not matches[0].hard_pass
+            or matches[0].rank != self.selected_rank
+        ):
+            raise ValueError("synthetic selected candidate/rank is inconsistent")
+        digests = (("config_fingerprint", self.config_fingerprint),) + tuple(
+            (f"mixing_sha256[{dimension}]", digest)
+            for dimension, digest in self.mixing_sha256
+        )
+        for name, value in digests:
+            if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+                raise ValueError(f"{name} must be a lowercase SHA-256")
+
     @property
     def canonical_sha256(self) -> str:
         encoded = json.dumps(
@@ -2531,7 +3225,9 @@ def _selection_report_from_scores(
     expected_ids = tuple(candidate.canonical_id for candidate in config.candidates)
     actual_ids = tuple(score.candidate.canonical_id for score in frozen_scores)
     if actual_ids != expected_ids or len(set(actual_ids)) != 32:
-        raise SyntheticSelectionFailure("selection must score the complete ordered 32-candidate grid")
+        raise SyntheticSelectionFailure(
+            "selection must score the complete ordered 32-candidate grid"
+        )
     if any(score.seed != config.synthetic.selector_seed for score in frozen_scores):
         raise SyntheticSelectionFailure("selection scores must use only the frozen selector seed")
     passing = tuple(score for score in frozen_scores if score.hard_pass)
@@ -2579,7 +3275,7 @@ def replay_and_validate_synthetic_selection(
     """Recompute all 32 scores and reject any altered selection artifact."""
 
     expected = _recompute_synthetic_selection(config)
-    if report.to_dict() != expected.to_dict():
+    if report != expected:
         raise SyntheticSelectionFailure(
             "synthetic selection artifact differs from the complete deterministic replay"
         )
@@ -2603,6 +3299,35 @@ class SyntheticHeldoutReport:
     mixing_sha256: tuple[tuple[int, str], ...]
     score: SyntheticCandidateScore
     authorized_for_train337: bool
+
+    def __post_init__(self) -> None:
+        if self.heldout_seed != 3407:
+            raise ValueError("synthetic held-out seed is not canonical")
+        if not isinstance(self.mixing_sha256, tuple) or any(
+            not isinstance(item, tuple) or len(item) != 2
+            for item in self.mixing_sha256
+        ):
+            raise TypeError("held-out mixing digests must be exact dimension/digest tuples")
+        if tuple(dimension for dimension, _ in self.mixing_sha256) != (34, 512):
+            raise ValueError("held-out mixing digests must have exact dimension order")
+        if self.score.seed != self.heldout_seed:
+            raise ValueError("held-out score seed mismatch")
+        if self.score.candidate.canonical_id != self.selected_candidate_id:
+            raise ValueError("held-out score candidate mismatch")
+        if not isinstance(self.authorized_for_train337, bool):
+            raise TypeError("held-out authorization flag must be a bool")
+        if self.authorized_for_train337 != self.score.hard_pass:
+            raise ValueError("held-out authorization flag is inconsistent")
+        digests = (
+            ("config_fingerprint", self.config_fingerprint),
+            ("selection_report_sha256", self.selection_report_sha256),
+        ) + tuple(
+            (f"mixing_sha256[{dimension}]", digest)
+            for dimension, digest in self.mixing_sha256
+        )
+        for name, value in digests:
+            if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+                raise ValueError(f"{name} must be a lowercase SHA-256")
 
     @property
     def canonical_sha256(self) -> str:
@@ -2687,7 +3412,7 @@ def replay_and_validate_synthetic_heldout(
         score=score,
         authorized_for_train337=score.hard_pass,
     )
-    if heldout.to_dict() != expected.to_dict():
+    if heldout != expected:
         raise SyntheticSelectionFailure(
             "held-out artifact differs from the selected-candidate-only deterministic replay"
         )
@@ -2721,6 +3446,35 @@ def canonical_video_ids_sha256(video_ids: Sequence[str]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def train337_source_authority_sha256(
+    v4e_representation_authority_sha256: str,
+    cycleback_checkpoint_authority_sha256: str,
+) -> str:
+    """Bind the two upstream authorities without constructing an authorization."""
+
+    _require_sha256(
+        v4e_representation_authority_sha256,
+        "v4e_representation_authority_sha256",
+    )
+    _require_sha256(
+        cycleback_checkpoint_authority_sha256,
+        "cycleback_checkpoint_authority_sha256",
+    )
+    encoded = json.dumps(
+        {
+            "v4e_representation_authority_sha256": (
+                v4e_representation_authority_sha256
+            ),
+            "cycleback_checkpoint_authority_sha256": (
+                cycleback_checkpoint_authority_sha256
+            ),
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
 @dataclass(frozen=True, slots=True)
 class Train337Authority:
     """Fail-closed placeholder contract for future authoritative adapters."""
@@ -2733,30 +3487,28 @@ class Train337Authority:
     transform_recipe_sha256: str
     selection_report_sha256: str
     heldout_report_sha256: str
+    transform_applicability_registry_sha256: str
+    ordered_records_sha256: str
     authority_receipt_sha256: str
 
     @property
     def source_authority_sha256(self) -> str:
-        encoded = json.dumps(
-            {
-                "v4e_representation_authority_sha256": (
-                    self.v4e_representation_authority_sha256
-                ),
-                "cycleback_checkpoint_authority_sha256": (
-                    self.cycleback_checkpoint_authority_sha256
-                ),
-            },
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode()
-        return hashlib.sha256(encoded).hexdigest()
+        return train337_source_authority_sha256(
+            self.v4e_representation_authority_sha256,
+            self.cycleback_checkpoint_authority_sha256,
+        )
 
     def __post_init__(self) -> None:
         if self.adapter_status != "unwired_fail_closed":
             raise ValueError("authoritative train337 adapter is not implemented")
+        if not isinstance(self.canonical_video_ids, tuple):
+            raise TypeError("canonical train337 video IDs must be an exact tuple")
         if len(self.canonical_video_ids) != 337:
             raise ValueError("train337 authority requires exactly 337 canonical video IDs")
-        if tuple(str(item).strip() for item in self.canonical_video_ids) != self.canonical_video_ids:
+        if (
+            tuple(str(item).strip() for item in self.canonical_video_ids)
+            != self.canonical_video_ids
+        ):
             raise ValueError("canonical train337 video IDs must not require normalization")
         expected_ids_digest = canonical_video_ids_sha256(self.canonical_video_ids)
         if self.canonical_video_ids_sha256 != expected_ids_digest:
@@ -2767,6 +3519,11 @@ class Train337Authority:
             ("transform_recipe_sha256", self.transform_recipe_sha256),
             ("selection_report_sha256", self.selection_report_sha256),
             ("heldout_report_sha256", self.heldout_report_sha256),
+            (
+                "transform_applicability_registry_sha256",
+                self.transform_applicability_registry_sha256,
+            ),
+            ("ordered_records_sha256", self.ordered_records_sha256),
             ("authority_receipt_sha256", self.authority_receipt_sha256),
         ):
             _require_sha256(value, name)
@@ -2778,6 +3535,10 @@ class Train337Authority:
             transform_recipe_sha256=self.transform_recipe_sha256,
             selection_report_sha256=self.selection_report_sha256,
             heldout_report_sha256=self.heldout_report_sha256,
+            transform_applicability_registry_sha256=(
+                self.transform_applicability_registry_sha256
+            ),
+            ordered_records_sha256=self.ordered_records_sha256,
         )
         if self.authority_receipt_sha256 != expected_receipt:
             raise ValueError("train337 authority receipt SHA-256 mismatch")
@@ -2792,6 +3553,8 @@ def _train337_authority_digest(
     transform_recipe_sha256: str,
     selection_report_sha256: str,
     heldout_report_sha256: str,
+    transform_applicability_registry_sha256: str,
+    ordered_records_sha256: str,
 ) -> str:
     payload = {
         "schema_version": 1,
@@ -2803,6 +3566,10 @@ def _train337_authority_digest(
         "transform_recipe_sha256": transform_recipe_sha256,
         "selection_report_sha256": selection_report_sha256,
         "heldout_report_sha256": heldout_report_sha256,
+        "transform_applicability_registry_sha256": (
+            transform_applicability_registry_sha256
+        ),
+        "ordered_records_sha256": ordered_records_sha256,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
@@ -2816,6 +3583,8 @@ def build_fail_closed_train337_authority(
     cycleback_checkpoint_authority_sha256: str,
     selection: SyntheticSelectionReport,
     heldout: SyntheticHeldoutReport,
+    transform_applicability_registry_sha256: str,
+    ordered_records_sha256: str,
 ) -> Train337Authority:
     """Build the only currently allowed, explicitly non-authorizing authority."""
 
@@ -2829,6 +3598,10 @@ def build_fail_closed_train337_authority(
         transform_recipe_sha256=config.train337.transform_recipe.fingerprint,
         selection_report_sha256=selection.canonical_sha256,
         heldout_report_sha256=heldout.canonical_sha256,
+        transform_applicability_registry_sha256=(
+            transform_applicability_registry_sha256
+        ),
+        ordered_records_sha256=ordered_records_sha256,
     )
     return Train337Authority(
         adapter_status="unwired_fail_closed",
@@ -2839,6 +3612,10 @@ def build_fail_closed_train337_authority(
         transform_recipe_sha256=config.train337.transform_recipe.fingerprint,
         selection_report_sha256=selection.canonical_sha256,
         heldout_report_sha256=heldout.canonical_sha256,
+        transform_applicability_registry_sha256=(
+            transform_applicability_registry_sha256
+        ),
+        ordered_records_sha256=ordered_records_sha256,
         authority_receipt_sha256=receipt,
     )
 
@@ -2856,6 +3633,24 @@ def _window_estimate_payload(item: WindowEstimate) -> dict[str, Any]:
         "low_band_boundary": item.low_band_boundary,
         "high_band_boundary": item.high_band_boundary,
         "informative_dimensions": item.informative_dimensions,
+    }
+
+
+def _derangement_receipt_payload(item: TemporalDerangementReceipt) -> dict[str, Any]:
+    return {
+        "method": item.method,
+        "video_id": item.video_id,
+        "seed": item.seed,
+        "permutations": [
+            {
+                "segment_id": permutation.segment_id,
+                "source_indices": list(permutation.source_indices),
+                "source_pose_sha256": permutation.source_pose_sha256,
+                "deranged_pose_sha256": permutation.deranged_pose_sha256,
+            }
+            for permutation in item.permutations
+        ],
+        "permutation_map_sha256": item.permutation_map_sha256,
     }
 
 
@@ -2882,6 +3677,14 @@ def _view_estimate_payload(item: ViewEstimate) -> dict[str, Any]:
                 "status": segment.status,
                 "abstention_reason": segment.abstention_reason,
                 "float_count": segment.float_count,
+                "accepted_interval_union_fraction": (
+                    segment.accepted_interval_union_fraction
+                ),
+                "initial_uncovered_intervals": segment.initial_uncovered_intervals,
+                "terminal_uncovered_intervals": segment.terminal_uncovered_intervals,
+                "max_internal_uncovered_gap_intervals": (
+                    segment.max_internal_uncovered_gap_intervals
+                ),
                 "windows": [_window_estimate_payload(window) for window in segment.windows],
             }
             for segment in item.segments
@@ -2898,6 +3701,9 @@ def _mechanism_estimate_payload(item: MechanismEstimate) -> dict[str, Any]:
         "temporal_derangement_control": _view_estimate_payload(
             item.temporal_derangement_control
         ),
+        "epi_derangement_receipt": _derangement_receipt_payload(
+            item.epi_derangement_receipt
+        ),
         "epi_permutation_map_sha256": item.epi_permutation_map_sha256,
         "learned_encoding_receipt_sha256": item.learned_encoding_receipt_sha256,
         "untrained_encoding_receipt_sha256": item.untrained_encoding_receipt_sha256,
@@ -2905,13 +3711,27 @@ def _mechanism_estimate_payload(item: MechanismEstimate) -> dict[str, Any]:
     }
 
 
+def _second_derangement_estimate_payload(
+    item: SecondDerangementEstimate,
+) -> dict[str, Any]:
+    return {
+        "candidate_id": item.candidate_id,
+        "trained_control": _view_estimate_payload(item.trained_control),
+        "untrained_control": _view_estimate_payload(item.untrained_control),
+        "derangement_receipt": _derangement_receipt_payload(item.derangement_receipt),
+        "trained_encoding_receipt_sha256": item.trained_encoding_receipt_sha256,
+        "untrained_encoding_receipt_sha256": item.untrained_encoding_receipt_sha256,
+    }
+
+
 _TRAIN337_ARTIFACT_NAMES: tuple[str, ...] = (
     "baseline",
+    "transform_applicability",
     "reverse_primary",
     "warp_075_primary",
     "warp_125_primary",
     "duplicate_time_primary",
-    "legal_split_part_float_counts",
+    "legal_split_views",
     "raw_rotation_minus15",
     "raw_rotation_plus15",
     "raw_scale_085",
@@ -2920,7 +3740,7 @@ _TRAIN337_ARTIFACT_NAMES: tuple[str, ...] = (
     "learned_augmentation_a",
     "learned_augmentation_b",
     "static_null_primary",
-    "second_derangement_shuffle",
+    "second_derangement_controls",
 )
 
 
@@ -2949,6 +3769,10 @@ class Train337TransformLineage:
             raise ValueError("transform lineage video_id must be canonical")
         _require_sha256(self.source_authority_sha256, "source_authority_sha256")
         _require_sha256(self.transform_recipe_sha256, "transform_recipe_sha256")
+        if not isinstance(self.artifacts, tuple) or any(
+            not isinstance(item, tuple) or len(item) != 2 for item in self.artifacts
+        ):
+            raise TypeError("transform lineage artifacts must be exact name/digest tuples")
         if tuple(name for name, _ in self.artifacts) != _TRAIN337_ARTIFACT_NAMES:
             raise ValueError("transform lineage artifact set/order changed")
         for name, digest in self.artifacts:
@@ -2961,6 +3785,298 @@ class Train337TransformLineage:
         )
         if self.receipt_sha256 != expected:
             raise ValueError("transform lineage receipt SHA-256 mismatch")
+
+
+_TRAIN337_APPLICABILITY_NAMES: tuple[str, ...] = (
+    "baseline",
+    "reverse",
+    "warp_075",
+    "warp_125",
+    "duplicate_time",
+    "legal_split",
+    "raw_rotation",
+    "raw_scale",
+    "raw_joint_dropout",
+    "learned_augmentations",
+    "static_null",
+    "second_derangement",
+)
+
+_TRAIN337_METRIC_NAMES: tuple[str, ...] = (
+    "canonical_video_count",
+    "transform_intersection_applicable_video_count",
+    "transform_intersection_applicable_share",
+    "one_segment_sufficient_video_count",
+    "one_segment_sufficient_share",
+    "canonical_one_segment_eligible_share",
+    "conditional_eligible_given_sufficient_share_report_only",
+    "accepted_window_count",
+    "transform_output_contract_failure_count",
+    "low_band_boundary_share",
+    "high_band_boundary_share",
+    "rounded_mode_share",
+    "rounded_bin_count",
+    "reverse_relative_error_median",
+    "reverse_relative_error_p90",
+    "time_warp_disagreement_median",
+    "time_warp_disagreement_p90",
+    "split_additivity_relative_error_median",
+    "split_additivity_relative_error_p90",
+    "raw_invariance_rounded_agreement",
+    "learned_augmentation_disagreement_median",
+    "learned_augmentation_disagreement_p90",
+    "static_null_positive_share",
+) + tuple(
+    metric_name
+    for transform_name in _TRAIN337_APPLICABILITY_NAMES
+    for metric_name in (
+        f"transform_applicable_count:{transform_name}",
+        f"transform_applicable_share:{transform_name}",
+    )
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Train337TransformApplicability:
+    """Source-geometry-only applicability, computed before feature inspection."""
+
+    video_id: str
+    candidate_id: str
+    source_geometry_sha256: str
+    transform_recipe_sha256: str
+    flags: tuple[tuple[str, bool], ...]
+    intersection_applicable: bool
+    receipt_sha256: str
+
+    def __post_init__(self) -> None:
+        if not self.video_id or self.video_id != self.video_id.strip():
+            raise ValueError("transform applicability video_id must be canonical")
+        if not self.candidate_id or self.candidate_id != self.candidate_id.strip():
+            raise ValueError("transform applicability candidate_id must be canonical")
+        if not isinstance(self.intersection_applicable, bool):
+            raise TypeError("transform applicability intersection must be a bool")
+        if not isinstance(self.flags, tuple) or any(
+            not isinstance(item, tuple)
+            or len(item) != 2
+            or not isinstance(item[1], bool)
+            for item in self.flags
+        ):
+            raise TypeError("transform applicability flags must be exact name/bool tuples")
+        if tuple(name for name, _ in self.flags) != _TRAIN337_APPLICABILITY_NAMES:
+            raise ValueError("transform applicability flag set/order changed")
+        if self.intersection_applicable != all(value for _, value in self.flags):
+            raise ValueError("transform applicability intersection flag is inconsistent")
+        _require_sha256(self.source_geometry_sha256, "source_geometry_sha256")
+        _require_sha256(self.transform_recipe_sha256, "transform_recipe_sha256")
+        expected = _transform_applicability_digest(
+            video_id=self.video_id,
+            candidate_id=self.candidate_id,
+            source_geometry_sha256=self.source_geometry_sha256,
+            transform_recipe_sha256=self.transform_recipe_sha256,
+            flags=self.flags,
+        )
+        if self.receipt_sha256 != expected:
+            raise ValueError("transform applicability receipt SHA-256 mismatch")
+
+
+def _source_geometry_sha256(video: RepresentationVideo) -> str:
+    payload = {
+        "schema_version": 1,
+        "video_id": video.video_id,
+        "segments": [
+            {
+                "segment_id": segment.segment_id,
+                "start": segment.start,
+                "stop": segment.stop,
+            }
+            for segment in video.segments
+        ],
+    }
+    digest = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    )
+    digest.update(np.ascontiguousarray(video.raw_xy, dtype="<f4").tobytes())
+    digest.update(np.ascontiguousarray(video.joint_mask, dtype=np.uint8).tobytes())
+    digest.update(np.ascontiguousarray(video.valid_mask, dtype=np.uint8).tobytes())
+    return digest.hexdigest()
+
+
+def _transform_applicability_digest(
+    *,
+    video_id: str,
+    candidate_id: str,
+    source_geometry_sha256: str,
+    transform_recipe_sha256: str,
+    flags: Sequence[tuple[str, bool]],
+) -> str:
+    payload = {
+        "schema_version": 1,
+        "policy": "source_geometry_only_all_required_intersection",
+        "video_id": video_id,
+        "candidate_id": candidate_id,
+        "source_geometry_sha256": source_geometry_sha256,
+        "transform_recipe_sha256": transform_recipe_sha256,
+        "flags": [{"name": name, "applicable": value} for name, value in flags],
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def _geometry_window_applicable(
+    video_id: str,
+    raw_xy: NDArray[np.float32],
+    joint_mask: NDArray[np.bool_],
+    valid_mask: NDArray[np.bool_],
+    candidate: SpectralCandidate,
+) -> bool:
+    frames = int(raw_xy.shape[0])
+    if frames < 1:
+        return False
+    try:
+        geometry = RepresentationVideo(
+            video_id=video_id,
+            features=np.zeros((frames, 1), dtype=np.float32),
+            raw_xy=raw_xy,
+            joint_mask=joint_mask,
+            valid_mask=valid_mask,
+            segments=(AuthorizedSegment("applicability", 0, frames),),
+        )
+    except ValueError:
+        return False
+    plan = build_window_plan(geometry, candidate)
+    return len(plan) == 1 and plan[0].candidate_window_count > 0 and bool(plan[0].windows)
+
+
+def _resampled_geometry_applicable(
+    video_id: str,
+    raw_xy: NDArray[np.float32],
+    joint_mask: NDArray[np.bool_],
+    valid_mask: NDArray[np.bool_],
+    candidate: SpectralCandidate,
+    *,
+    interval_scale: float,
+) -> bool:
+    source_frames = int(raw_xy.shape[0])
+    if source_frames < 2:
+        return False
+    output_intervals = _round_half_up_once((source_frames - 1) * interval_scale)
+    output_frames = output_intervals + 1
+    positions = np.linspace(0.0, source_frames - 1, output_frames, dtype=np.float64)
+    indices = np.floor(positions + 0.5).astype(np.int64)
+    return _geometry_window_applicable(
+        video_id,
+        raw_xy[indices],
+        joint_mask[indices],
+        valid_mask[indices],
+        candidate,
+    )
+
+
+def assess_train337_transform_applicability(
+    video: RepresentationVideo,
+    candidate: SpectralCandidate,
+    *,
+    transform_recipe_sha256: str,
+) -> Train337TransformApplicability:
+    """Freeze the exact64 registry using source geometry, never features/counts."""
+
+    _require_sha256(transform_recipe_sha256, "transform_recipe_sha256")
+    flags_by_name = {name: False for name in _TRAIN337_APPLICABILITY_NAMES}
+    if len(video.segments) == 1:
+        segment = video.segments[0]
+        raw = np.asarray(video.raw_xy[segment.start : segment.stop], dtype=np.float32)
+        mask = np.asarray(video.joint_mask[segment.start : segment.stop], dtype=np.bool_)
+        valid = np.asarray(video.valid_mask[segment.start : segment.stop], dtype=np.bool_)
+        baseline = _geometry_window_applicable(
+            video.video_id,
+            raw,
+            mask,
+            valid,
+            candidate,
+        )
+        reverse = _geometry_window_applicable(
+            video.video_id,
+            raw[::-1],
+            mask[::-1],
+            valid[::-1],
+            candidate,
+        )
+        warp_075 = _resampled_geometry_applicable(
+            video.video_id,
+            raw,
+            mask,
+            valid,
+            candidate,
+            interval_scale=0.75,
+        )
+        warp_125 = _resampled_geometry_applicable(
+            video.video_id,
+            raw,
+            mask,
+            valid,
+            candidate,
+            interval_scale=1.25,
+        )
+        duplicate = _resampled_geometry_applicable(
+            video.video_id,
+            raw,
+            mask,
+            valid,
+            candidate,
+            interval_scale=2.0,
+        )
+        pivot = (segment.length - 1) // 2
+        split = _geometry_window_applicable(
+            video.video_id,
+            raw[: pivot + 1],
+            mask[: pivot + 1],
+            valid[: pivot + 1],
+            candidate,
+        ) and _geometry_window_applicable(
+            video.video_id,
+            raw[pivot:],
+            mask[pivot:],
+            valid[pivot:],
+            candidate,
+        )
+        flags_by_name.update(
+            {
+                "baseline": baseline,
+                "reverse": reverse,
+                "warp_075": warp_075,
+                "warp_125": warp_125,
+                "duplicate_time": duplicate,
+                "legal_split": split,
+                "raw_rotation": baseline,
+                "raw_scale": baseline,
+                # The exact supported-joint dropout map belongs to the still-unwired
+                # authoritative transform producer.  Never infer applicability by
+                # pretending that it leaves source masks unchanged.
+                "raw_joint_dropout": False,
+                "learned_augmentations": baseline,
+                "static_null": baseline,
+                "second_derangement": baseline and segment.length >= 2,
+            }
+        )
+    flags = tuple((name, flags_by_name[name]) for name in _TRAIN337_APPLICABILITY_NAMES)
+    source_digest = _source_geometry_sha256(video)
+    receipt = _transform_applicability_digest(
+        video_id=video.video_id,
+        candidate_id=candidate.canonical_id,
+        source_geometry_sha256=source_digest,
+        transform_recipe_sha256=transform_recipe_sha256,
+        flags=flags,
+    )
+    return Train337TransformApplicability(
+        video_id=video.video_id,
+        candidate_id=candidate.canonical_id,
+        source_geometry_sha256=source_digest,
+        transform_recipe_sha256=transform_recipe_sha256,
+        flags=flags,
+        intersection_applicable=all(value for _, value in flags),
+        receipt_sha256=receipt,
+    )
 
 
 def _transform_lineage_digest(
@@ -2991,12 +4107,15 @@ class Train337VideoAudit:
     """
 
     video_id: str
+    transform_applicability: Train337TransformApplicability
     baseline: MechanismEstimate
     reverse_primary: ViewEstimate
     warp_075_primary: ViewEstimate
     warp_125_primary: ViewEstimate
     duplicate_time_primary: ViewEstimate
-    legal_split_part_float_counts: tuple[float | None, float | None]
+    legal_split_pivot: int | None
+    legal_split_left: ViewEstimate
+    legal_split_right: ViewEstimate
     raw_rotation_minus15: ViewEstimate
     raw_rotation_plus15: ViewEstimate
     raw_scale_085: ViewEstimate
@@ -3005,13 +4124,15 @@ class Train337VideoAudit:
     learned_augmentation_a: ViewEstimate
     learned_augmentation_b: ViewEstimate
     static_null_primary: ViewEstimate
-    second_derangement_shuffle: MechanismEstimate
+    second_derangement_controls: SecondDerangementEstimate
     transform_lineage: Train337TransformLineage
 
     def __post_init__(self) -> None:
         identifier = str(self.video_id).strip()
         if not identifier:
             raise ValueError("train337 audit video_id must be non-empty")
+        if self.transform_applicability.video_id != identifier:
+            raise ValueError("transform applicability video_id differs from audit row")
         estimates = (
             self.baseline.primary,
             self.baseline.raw_control,
@@ -3021,6 +4142,8 @@ class Train337VideoAudit:
             self.warp_075_primary,
             self.warp_125_primary,
             self.duplicate_time_primary,
+            self.legal_split_left,
+            self.legal_split_right,
             self.raw_rotation_minus15,
             self.raw_rotation_plus15,
             self.raw_scale_085,
@@ -3029,33 +4152,77 @@ class Train337VideoAudit:
             self.learned_augmentation_a,
             self.learned_augmentation_b,
             self.static_null_primary,
-            self.second_derangement_shuffle.primary,
-            self.second_derangement_shuffle.untrained_control,
-            self.second_derangement_shuffle.temporal_derangement_control,
+            self.second_derangement_controls.trained_control,
+            self.second_derangement_controls.untrained_control,
         )
         if any(item.video_id != identifier for item in estimates):
             raise ValueError("every train337 transformed estimate must retain source video_id")
         candidate_ids = {
             self.baseline.candidate_id,
-            self.second_derangement_shuffle.candidate_id,
+            self.second_derangement_controls.candidate_id,
         }
         candidate_ids.update(item.candidate_id for item in estimates)
         if len(candidate_ids) != 1:
             raise ValueError("every train337 audit arm must use the same selected candidate")
+        if self.transform_applicability.candidate_id not in candidate_ids:
+            raise ValueError("transform applicability candidate differs from audit row")
         if (
-            self.baseline.epi_permutation_map_sha256
-            == self.second_derangement_shuffle.epi_permutation_map_sha256
+            self.second_derangement_controls.trained_control.window_keys
+            != self.baseline.primary.window_keys
+            or self.second_derangement_controls.untrained_control.window_keys
+            != self.baseline.primary.window_keys
         ):
-            raise ValueError("Epi real and second-derangement null maps must be independent")
+            raise ValueError("map-2 controls must use exact original window authority")
+        map1 = self.baseline.epi_derangement_receipt
+        map2 = self.second_derangement_controls.derangement_receipt
+        if map1.seed == map2.seed:
+            raise ValueError("Epi map-1/map-2 seeds must differ")
+        if tuple(item.segment_id for item in map1.permutations) != tuple(
+            item.segment_id for item in map2.permutations
+        ):
+            raise ValueError("Epi map-1/map-2 segment identities differ")
+        if any(
+            first.source_indices == second.source_indices
+            for first, second in zip(map1.permutations, map2.permutations, strict=True)
+        ):
+            raise ValueError("Epi map-1/map-2 permutations must differ per segment")
+        legal_split_applicable = dict(self.transform_applicability.flags)["legal_split"]
+        if legal_split_applicable != (self.legal_split_pivot is not None):
+            raise ValueError("legal split pivot/applicability evidence is inconsistent")
+        if self.legal_split_pivot is not None:
+            primary_segments = self.baseline.primary.segments
+            if len(primary_segments) != 1:
+                raise ValueError("legal split requires one original authority segment")
+            source_segment = primary_segments[0].segment
+            expected_pivot = source_segment.start + (source_segment.length - 1) // 2
+            if self.legal_split_pivot != expected_pivot:
+                raise ValueError("legal split pivot differs from frozen shared-pivot rule")
+            if len(self.legal_split_left.segments) != 1 or len(
+                self.legal_split_right.segments
+            ) != 1:
+                raise ValueError("legal split views require one segment each")
+            left_segment = self.legal_split_left.segments[0].segment
+            right_segment = self.legal_split_right.segments[0].segment
+            if (left_segment.start, left_segment.stop) != (
+                source_segment.start,
+                expected_pivot + 1,
+            ) or (right_segment.start, right_segment.stop) != (
+                expected_pivot,
+                source_segment.stop,
+            ):
+                raise ValueError("legal split views do not share the frozen pivot sample")
         if self.transform_lineage.video_id != identifier:
             raise ValueError("transform lineage video_id differs from audit row")
         expected_artifacts = _train337_artifact_hashes_from_values(
+            transform_applicability=self.transform_applicability,
             baseline=self.baseline,
             reverse_primary=self.reverse_primary,
             warp_075_primary=self.warp_075_primary,
             warp_125_primary=self.warp_125_primary,
             duplicate_time_primary=self.duplicate_time_primary,
-            legal_split_part_float_counts=self.legal_split_part_float_counts,
+            legal_split_pivot=self.legal_split_pivot,
+            legal_split_left=self.legal_split_left,
+            legal_split_right=self.legal_split_right,
             raw_rotation_minus15=self.raw_rotation_minus15,
             raw_rotation_plus15=self.raw_rotation_plus15,
             raw_scale_085=self.raw_scale_085,
@@ -3064,24 +4231,24 @@ class Train337VideoAudit:
             learned_augmentation_a=self.learned_augmentation_a,
             learned_augmentation_b=self.learned_augmentation_b,
             static_null_primary=self.static_null_primary,
-            second_derangement_shuffle=self.second_derangement_shuffle,
+            second_derangement_controls=self.second_derangement_controls,
         )
         if self.transform_lineage.artifacts != expected_artifacts:
             raise ValueError("transform lineage artifacts do not bind the audit values")
-        for value in self.legal_split_part_float_counts:
-            if value is not None and (not np.isfinite(value) or value < 0.0):
-                raise ValueError("legal split float counts must be finite and non-negative")
         object.__setattr__(self, "video_id", identifier)
 
 
 def _train337_artifact_hashes_from_values(
     *,
+    transform_applicability: Train337TransformApplicability,
     baseline: MechanismEstimate,
     reverse_primary: ViewEstimate,
     warp_075_primary: ViewEstimate,
     warp_125_primary: ViewEstimate,
     duplicate_time_primary: ViewEstimate,
-    legal_split_part_float_counts: tuple[float | None, float | None],
+    legal_split_pivot: int | None,
+    legal_split_left: ViewEstimate,
+    legal_split_right: ViewEstimate,
     raw_rotation_minus15: ViewEstimate,
     raw_rotation_plus15: ViewEstimate,
     raw_scale_085: ViewEstimate,
@@ -3090,17 +4257,43 @@ def _train337_artifact_hashes_from_values(
     learned_augmentation_a: ViewEstimate,
     learned_augmentation_b: ViewEstimate,
     static_null_primary: ViewEstimate,
-    second_derangement_shuffle: MechanismEstimate,
+    second_derangement_controls: SecondDerangementEstimate,
 ) -> tuple[tuple[str, str], ...]:
     payloads: tuple[tuple[str, Any], ...] = (
         ("baseline", _mechanism_estimate_payload(baseline)),
+        (
+            "transform_applicability",
+            {
+                "video_id": transform_applicability.video_id,
+                "candidate_id": transform_applicability.candidate_id,
+                "source_geometry_sha256": transform_applicability.source_geometry_sha256,
+                "transform_recipe_sha256": (
+                    transform_applicability.transform_recipe_sha256
+                ),
+                "flags": [
+                    {"name": name, "applicable": value}
+                    for name, value in transform_applicability.flags
+                ],
+                "intersection_applicable": (
+                    transform_applicability.intersection_applicable
+                ),
+                "receipt_sha256": transform_applicability.receipt_sha256,
+            },
+        ),
         ("reverse_primary", _view_estimate_payload(reverse_primary)),
         ("warp_075_primary", _view_estimate_payload(warp_075_primary)),
         ("warp_125_primary", _view_estimate_payload(warp_125_primary)),
         ("duplicate_time_primary", _view_estimate_payload(duplicate_time_primary)),
         (
-            "legal_split_part_float_counts",
-            list(legal_split_part_float_counts),
+            "legal_split_views",
+            {
+                "pivot": legal_split_pivot,
+                "source_encoding_receipt_sha256": (
+                    baseline.learned_encoding_receipt_sha256
+                ),
+                "left": _view_estimate_payload(legal_split_left),
+                "right": _view_estimate_payload(legal_split_right),
+            },
         ),
         ("raw_rotation_minus15", _view_estimate_payload(raw_rotation_minus15)),
         ("raw_rotation_plus15", _view_estimate_payload(raw_rotation_plus15)),
@@ -3111,8 +4304,8 @@ def _train337_artifact_hashes_from_values(
         ("learned_augmentation_b", _view_estimate_payload(learned_augmentation_b)),
         ("static_null_primary", _view_estimate_payload(static_null_primary)),
         (
-            "second_derangement_shuffle",
-            _mechanism_estimate_payload(second_derangement_shuffle),
+            "second_derangement_controls",
+            _second_derangement_estimate_payload(second_derangement_controls),
         ),
     )
     return tuple((name, _artifact_sha256(name, payload)) for name, payload in payloads)
@@ -3145,12 +4338,15 @@ def build_train337_video_audit(
     video_id: str,
     source_authority_sha256: str,
     transform_recipe_sha256: str,
+    transform_applicability: Train337TransformApplicability,
     baseline: MechanismEstimate,
     reverse_primary: ViewEstimate,
     warp_075_primary: ViewEstimate,
     warp_125_primary: ViewEstimate,
     duplicate_time_primary: ViewEstimate,
-    legal_split_part_float_counts: tuple[float | None, float | None],
+    legal_split_pivot: int | None,
+    legal_split_left: ViewEstimate,
+    legal_split_right: ViewEstimate,
     raw_rotation_minus15: ViewEstimate,
     raw_rotation_plus15: ViewEstimate,
     raw_scale_085: ViewEstimate,
@@ -3159,17 +4355,20 @@ def build_train337_video_audit(
     learned_augmentation_a: ViewEstimate,
     learned_augmentation_b: ViewEstimate,
     static_null_primary: ViewEstimate,
-    second_derangement_shuffle: MechanismEstimate,
+    second_derangement_controls: SecondDerangementEstimate,
 ) -> Train337VideoAudit:
     """Build one audit row while hashing every frozen transform outcome."""
 
     artifacts = _train337_artifact_hashes_from_values(
+        transform_applicability=transform_applicability,
         baseline=baseline,
         reverse_primary=reverse_primary,
         warp_075_primary=warp_075_primary,
         warp_125_primary=warp_125_primary,
         duplicate_time_primary=duplicate_time_primary,
-        legal_split_part_float_counts=legal_split_part_float_counts,
+        legal_split_pivot=legal_split_pivot,
+        legal_split_left=legal_split_left,
+        legal_split_right=legal_split_right,
         raw_rotation_minus15=raw_rotation_minus15,
         raw_rotation_plus15=raw_rotation_plus15,
         raw_scale_085=raw_scale_085,
@@ -3178,7 +4377,7 @@ def build_train337_video_audit(
         learned_augmentation_a=learned_augmentation_a,
         learned_augmentation_b=learned_augmentation_b,
         static_null_primary=static_null_primary,
-        second_derangement_shuffle=second_derangement_shuffle,
+        second_derangement_controls=second_derangement_controls,
     )
     lineage = _build_transform_lineage_for_values(
         video_id=video_id,
@@ -3188,12 +4387,15 @@ def build_train337_video_audit(
     )
     return Train337VideoAudit(
         video_id=video_id,
+        transform_applicability=transform_applicability,
         baseline=baseline,
         reverse_primary=reverse_primary,
         warp_075_primary=warp_075_primary,
         warp_125_primary=warp_125_primary,
         duplicate_time_primary=duplicate_time_primary,
-        legal_split_part_float_counts=legal_split_part_float_counts,
+        legal_split_pivot=legal_split_pivot,
+        legal_split_left=legal_split_left,
+        legal_split_right=legal_split_right,
         raw_rotation_minus15=raw_rotation_minus15,
         raw_rotation_plus15=raw_rotation_plus15,
         raw_scale_085=raw_scale_085,
@@ -3202,9 +4404,75 @@ def build_train337_video_audit(
         learned_augmentation_a=learned_augmentation_a,
         learned_augmentation_b=learned_augmentation_b,
         static_null_primary=static_null_primary,
-        second_derangement_shuffle=second_derangement_shuffle,
+        second_derangement_controls=second_derangement_controls,
         transform_lineage=lineage,
     )
+
+
+def transform_applicability_registry_sha256(
+    records: Sequence[Train337VideoAudit],
+) -> str:
+    """Bind the ordered source-only applicability registry for all 337 rows."""
+
+    payload = {
+        "schema_version": 1,
+        "policy": "source_geometry_only_all_required_intersection",
+        "rows": [
+            {
+                "video_id": record.video_id,
+                "applicability_receipt_sha256": (
+                    record.transform_applicability.receipt_sha256
+                ),
+                "intersection_applicable": (
+                    record.transform_applicability.intersection_applicable
+                ),
+            }
+            for record in records
+        ],
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def ordered_train337_records_sha256(records: Sequence[Train337VideoAudit]) -> str:
+    """Bind every ordered row to its full transform-lineage receipt."""
+
+    def row_digest(record: Train337VideoAudit) -> str:
+        row_payload = {
+            "schema_version": 1,
+            "video_id": record.video_id,
+            "source_authority_sha256": (
+                record.transform_lineage.source_authority_sha256
+            ),
+            "transform_recipe_sha256": (
+                record.transform_lineage.transform_recipe_sha256
+            ),
+            "transform_lineage_receipt_sha256": (
+                record.transform_lineage.receipt_sha256
+            ),
+            "applicability_receipt_sha256": (
+                record.transform_applicability.receipt_sha256
+            ),
+        }
+        return hashlib.sha256(
+            json.dumps(row_payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+
+    payload = {
+        "schema_version": 1,
+        "rows": [
+            {
+                "video_id": record.video_id,
+                "transform_lineage_sha256": record.transform_lineage.receipt_sha256,
+                "full_row_sha256": row_digest(record),
+            }
+            for record in records
+        ],
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
 
 
 def hash_fixed_subset(
@@ -3245,8 +4513,10 @@ def _relative_error(reference: float | None, value: float | None) -> float:
 
 def _median_and_p90(values: Sequence[float]) -> tuple[float, float]:
     array = np.asarray(values, dtype=np.float64)
-    if array.ndim != 1 or array.size == 0:
-        raise ValueError("audit statistic requires a non-empty vector")
+    if array.ndim != 1:
+        raise ValueError("audit statistic requires a one-dimensional vector")
+    if array.size == 0:
+        return math.inf, math.inf
     if not np.isfinite(array).all():
         return math.inf, math.inf
     return float(np.median(array)), float(np.quantile(array, 0.9, method="linear"))
@@ -3261,6 +4531,15 @@ class ArmMechanismSummary:
     real_minus_shuffle_peak_margin_median: float
     mechanism_pass: bool
     per_video: tuple[tuple[str, float, float], ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.per_video, tuple) or any(
+            not isinstance(item, tuple) or len(item) != 3 for item in self.per_video
+        ):
+            raise TypeError("mechanism per-video evidence must be exact tuples")
+        identifiers = tuple(item[0] for item in self.per_video)
+        if len(set(identifiers)) != len(identifiers):
+            raise ValueError("mechanism per-video evidence IDs must be unique")
 
 
 def _arm_view(estimate: MechanismEstimate, arm: Literal["L", "E0", "Epi"]) -> ViewEstimate:
@@ -3279,12 +4558,19 @@ def _mechanism_summary(
     rows: list[tuple[str, float, float]] = []
     for record in records:
         real = _arm_view(record.baseline, arm)
-        shuffled = _arm_view(record.second_derangement_shuffle, arm)
+        if arm == "E0":
+            shuffled = record.second_derangement_controls.untrained_control
+        else:
+            shuffled = record.second_derangement_controls.trained_control
         ratio = shuffled.periodic_confidence / max(real.periodic_confidence, _EPSILON)
         margin = real.mean_peak_share - shuffled.mean_peak_share
         rows.append((record.video_id, float(ratio), float(margin)))
-    ratio_median = float(np.median([row[1] for row in rows]))
-    margin_median = float(np.median([row[2] for row in rows]))
+    if rows:
+        ratio_median = float(np.median([row[1] for row in rows]))
+        margin_median = float(np.median([row[2] for row in rows]))
+    else:
+        ratio_median = math.inf
+        margin_median = -math.inf
     passed = bool(
         ratio_median <= protocol.shuffle_confidence_ratio_median_maximum
         and margin_median >= protocol.real_minus_shuffle_peak_margin_median_minimum
@@ -3300,13 +4586,15 @@ def _mechanism_summary(
 
 @dataclass(frozen=True, slots=True)
 class Train337GateReport:
-    """Complete target-free authorization decision for dev84 prediction."""
+    """Target-free numerical readout that remains explicitly non-authorizing."""
 
     config_fingerprint: str
     candidate_id: str
     selection_report_sha256: str
     heldout_report_sha256: str
     authority_receipt_sha256: str
+    transform_applicability_registry_sha256: str
+    ordered_records_sha256: str
     authority_adapter_status: Literal["unwired_fail_closed"]
     video_ids_sha256: str
     hash_subset_sha256: str
@@ -3321,12 +4609,61 @@ class Train337GateReport:
     def __post_init__(self) -> None:
         if self.authority_adapter_status != "unwired_fail_closed":
             raise ValueError("unknown train337 authority adapter status")
+        if not isinstance(self.numerical_gates_passed, bool) or not isinstance(
+            self.authorized_for_dev84,
+            bool,
+        ):
+            raise TypeError("train337 decision flags must be bools")
         if self.authorized_for_dev84:
             raise ValueError("unwired train337 authority can never authorize dev84")
         if self.numerical_gates_passed != (not self.failed_gates):
             raise ValueError("train337 numerical decision is inconsistent")
         if not self.authorization_blockers:
             raise ValueError("fail-closed train337 report requires an authorization blocker")
+        tuple_fields = (
+            self.hash_subset_video_ids,
+            self.metrics,
+            self.mechanism,
+            self.failed_gates,
+            self.authorization_blockers,
+        )
+        if any(not isinstance(value, tuple) for value in tuple_fields):
+            raise TypeError("train337 report collections must be exact tuples")
+        if any(
+            not isinstance(item, tuple) or len(item) != 2 for item in self.metrics
+        ):
+            raise TypeError("train337 metrics must be exact name/value tuples")
+        if len(self.hash_subset_video_ids) not in (0, 64):
+            raise ValueError("train337 hash subset must be empty-on-failure or exact64")
+        if len(set(self.hash_subset_video_ids)) != len(self.hash_subset_video_ids):
+            raise ValueError("train337 hash subset IDs must be unique")
+        if tuple(item.arm for item in self.mechanism) != ("L", "E0", "Epi"):
+            raise ValueError("train337 mechanism summaries must have exact arm order")
+        if any(
+            tuple(row[0] for row in item.per_video) != self.hash_subset_video_ids
+            for item in self.mechanism
+        ):
+            raise ValueError("mechanism summaries must cover the exact hash subset order")
+        if tuple(name for name, _ in self.metrics) != _TRAIN337_METRIC_NAMES:
+            raise ValueError("train337 metric names must have the exact frozen order")
+        if len(set(self.failed_gates)) != len(self.failed_gates):
+            raise ValueError("train337 failed gate names must be unique")
+        if len(set(self.authorization_blockers)) != len(self.authorization_blockers):
+            raise ValueError("train337 authorization blockers must be unique")
+        for name, value in (
+            ("config_fingerprint", self.config_fingerprint),
+            ("selection_report_sha256", self.selection_report_sha256),
+            ("heldout_report_sha256", self.heldout_report_sha256),
+            ("authority_receipt_sha256", self.authority_receipt_sha256),
+            (
+                "transform_applicability_registry_sha256",
+                self.transform_applicability_registry_sha256,
+            ),
+            ("ordered_records_sha256", self.ordered_records_sha256),
+            ("video_ids_sha256", self.video_ids_sha256),
+            ("hash_subset_sha256", self.hash_subset_sha256),
+        ):
+            _require_sha256(value, name)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -3337,6 +4674,10 @@ class Train337GateReport:
             "selection_report_sha256": self.selection_report_sha256,
             "heldout_report_sha256": self.heldout_report_sha256,
             "authority_receipt_sha256": self.authority_receipt_sha256,
+            "transform_applicability_registry_sha256": (
+                self.transform_applicability_registry_sha256
+            ),
+            "ordered_records_sha256": self.ordered_records_sha256,
             "authority_adapter_status": self.authority_adapter_status,
             "video_ids_sha256": self.video_ids_sha256,
             "hash_subset_sha256": self.hash_subset_sha256,
@@ -3377,7 +4718,7 @@ def evaluate_train337_gate(
     authority: Train337Authority,
     records: Sequence[Train337VideoAudit],
 ) -> Train337GateReport:
-    """Recompute every frozen train337 gate without accepting labels."""
+    """Recompute frozen numerical gates; caller records cannot authorize launch."""
 
     protocol = config.train337
     selected_candidate = replay_and_validate_synthetic_heldout(config, selection, heldout)
@@ -3404,14 +4745,48 @@ def evaluate_train337_gate(
     for record in frozen:
         if record.transform_lineage.source_authority_sha256 != authority.source_authority_sha256:
             raise ValueError("train337 transform lineage source authority mismatch")
-        if record.transform_lineage.transform_recipe_sha256 != protocol.transform_recipe.fingerprint:
+        if (
+            record.transform_lineage.transform_recipe_sha256
+            != protocol.transform_recipe.fingerprint
+        ):
             raise ValueError("train337 row transform recipe mismatch")
+        if (
+            record.transform_applicability.transform_recipe_sha256
+            != protocol.transform_recipe.fingerprint
+        ):
+            raise ValueError("train337 applicability transform recipe mismatch")
+        if record.transform_applicability.candidate_id != selected_candidate.canonical_id:
+            raise ValueError("train337 applicability candidate mismatch")
+    applicability_registry_sha256 = transform_applicability_registry_sha256(frozen)
+    records_sha256 = ordered_train337_records_sha256(frozen)
+    if (
+        applicability_registry_sha256
+        != authority.transform_applicability_registry_sha256
+    ):
+        raise ValueError("train337 applicability registry authority mismatch")
+    if records_sha256 != authority.ordered_records_sha256:
+        raise ValueError("train337 ordered record authority mismatch")
     ids_sha256 = authority.canonical_video_ids_sha256
-    subset_ids, subset_sha256 = hash_fixed_subset(
-        identifiers,
-        seed=protocol.hash_subset_seed,
-        size=protocol.hash_subset_size,
+    applicable_records = tuple(
+        record for record in frozen if record.transform_applicability.intersection_applicable
     )
+    applicable_ids = tuple(record.video_id for record in applicable_records)
+    if len(applicable_ids) >= protocol.minimum_transform_applicable_video_count:
+        subset_ids, subset_sha256 = hash_fixed_subset(
+            applicable_ids,
+            seed=protocol.hash_subset_seed,
+            size=protocol.hash_subset_size,
+        )
+    else:
+        subset_ids = ()
+        subset_payload = {
+            "seed": protocol.hash_subset_seed,
+            "status": "insufficient_source_only_transform_applicability",
+            "applicable_video_ids": list(applicable_ids),
+        }
+        subset_sha256 = hashlib.sha256(
+            json.dumps(subset_payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
     by_id = {record.video_id: record for record in frozen}
     subset = tuple(by_id[video_id] for video_id in subset_ids)
 
@@ -3460,8 +4835,33 @@ def evaluate_train337_gate(
     raw_agreements = 0
     learned_augmentation_errors: list[float] = []
     static_null_positives = 0
+    transform_output_contract_failures = 0
     for record in subset:
         primary = record.baseline.primary.float_count
+        required_float_outputs = (
+            primary,
+            record.reverse_primary.float_count,
+            record.warp_075_primary.float_count,
+            record.warp_125_primary.float_count,
+            record.duplicate_time_primary.float_count,
+            record.legal_split_left.float_count,
+            record.legal_split_right.float_count,
+            record.learned_augmentation_a.float_count,
+            record.learned_augmentation_b.float_count,
+        )
+        raw_outputs = (
+            record.baseline.raw_control,
+            record.raw_rotation_minus15,
+            record.raw_rotation_plus15,
+            record.raw_scale_085,
+            record.raw_scale_115,
+            record.raw_joint_dropout,
+        )
+        if any(value is None for value in required_float_outputs) or any(
+            item.status != "eligible" or item.rounded_count is None
+            for item in raw_outputs
+        ):
+            transform_output_contract_failures += 1
         reverse_errors.append(_relative_error(primary, record.reverse_primary.float_count))
         warp_errors.append(
             max(
@@ -3470,7 +4870,8 @@ def evaluate_train337_gate(
                 _relative_error(primary, record.duplicate_time_primary.float_count),
             )
         )
-        split_left, split_right = record.legal_split_part_float_counts
+        split_left = record.legal_split_left.float_count
+        split_right = record.legal_split_right.float_count
         split_total = (
             split_left + split_right
             if split_left is not None and split_right is not None
@@ -3507,20 +4908,43 @@ def evaluate_train337_gate(
     warp_median, warp_p90 = _median_and_p90(warp_errors)
     split_median, split_p90 = _median_and_p90(split_errors)
     learned_aug_median, learned_aug_p90 = _median_and_p90(learned_augmentation_errors)
-    raw_agreement = raw_agreements / len(subset)
-    static_positive_share = static_null_positives / len(subset)
+    raw_agreement = raw_agreements / len(subset) if subset else 0.0
+    static_positive_share = static_null_positives / len(subset) if subset else 1.0
     mechanisms = tuple(
         _mechanism_summary(subset, arm, protocol) for arm in ("L", "E0", "Epi")
     )
     mechanism_by_arm = {item.arm: item for item in mechanisms}
 
+    applicability_metrics: list[tuple[str, float | int]] = []
+    for name in _TRAIN337_APPLICABILITY_NAMES:
+        count = sum(
+            dict(record.transform_applicability.flags)[name] for record in frozen
+        )
+        applicability_metrics.extend(
+            (
+                (f"transform_applicable_count:{name}", count),
+                (
+                    f"transform_applicable_share:{name}",
+                    count / protocol.expected_video_count,
+                ),
+            )
+        )
     metrics: tuple[tuple[str, float | int], ...] = (
         ("canonical_video_count", protocol.expected_video_count),
+        ("transform_intersection_applicable_video_count", len(applicable_records)),
+        (
+            "transform_intersection_applicable_share",
+            len(applicable_records) / protocol.expected_video_count,
+        ),
         ("one_segment_sufficient_video_count", len(sufficient)),
         ("one_segment_sufficient_share", sufficient_share),
         ("canonical_one_segment_eligible_share", canonical_eligible_share),
         ("conditional_eligible_given_sufficient_share_report_only", conditional_eligible_share),
         ("accepted_window_count", len(accepted_windows)),
+        (
+            "transform_output_contract_failure_count",
+            transform_output_contract_failures,
+        ),
         ("low_band_boundary_share", low_boundary_share),
         ("high_band_boundary_share", high_boundary_share),
         ("rounded_mode_share", rounded_mode_share),
@@ -3535,8 +4959,12 @@ def evaluate_train337_gate(
         ("learned_augmentation_disagreement_median", learned_aug_median),
         ("learned_augmentation_disagreement_p90", learned_aug_p90),
         ("static_null_positive_share", static_positive_share),
-    )
+    ) + tuple(applicability_metrics)
     failed: list[str] = []
+    if len(applicable_records) < protocol.minimum_transform_applicable_video_count:
+        failed.append("transform_intersection_applicable_video_count")
+    if transform_output_contract_failures:
+        failed.append("transform_output_contract")
     if sufficient_share < protocol.one_segment_sufficient_share_minimum:
         failed.append("one_segment_sufficient_share")
     if canonical_eligible_share < protocol.one_segment_eligible_minimum:
@@ -3581,6 +5009,8 @@ def evaluate_train337_gate(
         selection_report_sha256=selection.canonical_sha256,
         heldout_report_sha256=heldout.canonical_sha256,
         authority_receipt_sha256=authority.authority_receipt_sha256,
+        transform_applicability_registry_sha256=applicability_registry_sha256,
+        ordered_records_sha256=records_sha256,
         authority_adapter_status=authority.adapter_status,
         video_ids_sha256=ids_sha256,
         hash_subset_sha256=subset_sha256,
