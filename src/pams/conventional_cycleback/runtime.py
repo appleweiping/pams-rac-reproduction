@@ -1197,6 +1197,22 @@ def _view_seed(*, base_seed: int, step: int, view: str) -> int:
     return int.from_bytes(hashlib.sha256(encoded).digest()[:8], "big") & ((1 << 63) - 1)
 
 
+def independent_view_seeds(*, base_seed: int, step: int) -> tuple[int, int]:
+    """Return the exact deterministic augmentation seeds for one optimizer step."""
+
+    if isinstance(base_seed, bool) or not isinstance(base_seed, int) or base_seed < 0:
+        raise ValueError("base seed must be a non-negative integer")
+    if isinstance(step, bool) or not isinstance(step, int) or step < 0:
+        raise ValueError("augmentation step must be a non-negative integer")
+    seeds = (
+        _view_seed(base_seed=base_seed, step=step, view="a"),
+        _view_seed(base_seed=base_seed, step=step, view="b"),
+    )
+    if seeds[0] == seeds[1]:
+        raise RuntimeError("independent augmentation seeds collided")
+    return seeds
+
+
 def independent_augmented_views(
     batch: Unified2DBatch,
     config: ConventionalCycleBackConfig,
@@ -1207,12 +1223,7 @@ def independent_augmented_views(
 
     if step < 0:
         raise ValueError("augmentation step must be non-negative")
-    seeds = (
-        _view_seed(base_seed=config.seed, step=step, view="a"),
-        _view_seed(base_seed=config.seed, step=step, view="b"),
-    )
-    if seeds[0] == seeds[1]:
-        raise RuntimeError("independent augmentation seeds collided")
+    seeds = independent_view_seeds(base_seed=config.seed, step=step)
     generators: list[torch.Generator] = []
     for seed in seeds:
         generator = torch.Generator(device=batch.poses.device)
@@ -1627,8 +1638,8 @@ def pair_segment_contexts(
         positions_a.append(positions)
         positions_b.append(positions.clone())
         opaque = hashlib.sha256(pairs.video_ids[row].encode()).hexdigest()
-        keys_a.append(f"real:a:{source}:{opaque}:{start}:{stop}")
-        keys_b.append(f"real:b:{source}:{opaque}:{start}:{stop}")
+        keys_a.append(f"real:a:{opaque}:{start}:{stop}")
+        keys_b.append(f"real:b:{opaque}:{start}:{stop}")
     unique_context_total = len(set(keys_a)) + len(set(keys_b))
     return PairSegmentContexts(
         video_ids=pairs.video_ids,
@@ -1993,57 +2004,147 @@ def joint_support_null_segment_contexts(
     return results
 
 
-def _encode_segment_collection(
-    encoder: PAMSEncoder,
+def _unique_segment_context_indices(
     keys: tuple[str, ...],
     poses: tuple[Tensor, ...],
     positions: tuple[Tensor, ...],
-    *,
-    batch_size: int,
-) -> tuple[Tensor, ...]:
-    unique_keys: list[str] = []
-    representative_indices: list[int] = []
+    joints: tuple[Tensor, ...],
+) -> dict[str, int]:
     observed: dict[str, int] = {}
     for index, key in enumerate(keys):
         previous = observed.get(key)
         if previous is None:
             observed[key] = index
-            unique_keys.append(key)
-            representative_indices.append(index)
-        elif not torch.equal(poses[previous], poses[index]) or not torch.equal(
-            positions[previous], positions[index]
+            continue
+        if (
+            not torch.equal(poses[previous], poses[index])
+            or not torch.equal(positions[previous], positions[index])
+            or not torch.equal(joints[previous], joints[index])
         ):
-            raise ValueError("duplicate segment-context key has different pose/PE bytes")
-    unique_poses = tuple(poses[index] for index in representative_indices)
-    unique_positions = tuple(positions[index] for index in representative_indices)
+            raise ValueError(
+                "duplicate segment-context key has different pose/PE/joint bytes"
+            )
+    return observed
+
+
+def _segment_encoding_batches(
+    keys: tuple[str, ...],
+    poses: tuple[Tensor, ...],
+    positions: tuple[Tensor, ...],
+    joints: tuple[Tensor, ...],
+    *,
+    batch_size: int,
+) -> tuple[tuple[str, ...], ...]:
+    if batch_size < 1:
+        raise ValueError("encoder segment-context batch size must be positive")
+    observed = _unique_segment_context_indices(keys, poses, positions, joints)
+    ordered = sorted(
+        observed,
+        key=lambda key: (poses[observed[key]].shape[0], key),
+    )
+    batches: list[tuple[str, ...]] = []
+    start = 0
+    while start < len(ordered):
+        length = poses[observed[ordered[start]]].shape[0]
+        stop = start
+        while (
+            stop < len(ordered)
+            and poses[observed[ordered[stop]]].shape[0] == length
+        ):
+            stop += 1
+        for chunk_start in range(start, stop, batch_size):
+            batches.append(tuple(ordered[chunk_start : min(stop, chunk_start + batch_size)]))
+        start = stop
+    return tuple(batches)
+
+
+def context_encoding_plan(
+    contexts: PairSegmentContexts,
+    *,
+    batch_size: int,
+) -> dict[str, Any]:
+    """Return the deterministic exact-length full-context encoder plan."""
+
+    side_batches: dict[str, tuple[tuple[str, ...], ...]] = {}
+    lengths: dict[str, int] = {}
+    for side, keys, poses, positions, joints in (
+        (
+            "a",
+            contexts.context_keys_a,
+            contexts.poses_a,
+            contexts.position_indices_a,
+            contexts.joint_valid_a,
+        ),
+        (
+            "b",
+            contexts.context_keys_b,
+            contexts.poses_b,
+            contexts.position_indices_b,
+            contexts.joint_valid_b,
+        ),
+    ):
+        batches = _segment_encoding_batches(
+            keys,
+            poses,
+            positions,
+            joints,
+            batch_size=batch_size,
+        )
+        side_batches[side] = batches
+        observed = _unique_segment_context_indices(keys, poses, positions, joints)
+        lengths.update({key: poses[index].shape[0] for key, index in observed.items()})
+    payload = {
+        "schema_version": 1,
+        "policy": (
+            "side_a_then_side_b_exact_context_length_bucket_key_order_"
+            "fixed_batch_size"
+        ),
+        "batch_size": batch_size,
+        "side_batches": {
+            side: [list(batch) for batch in side_batches[side]]
+            for side in ("a", "b")
+        },
+        "context_lengths": {key: lengths[key] for key in sorted(lengths)},
+        "mixed_context_lengths_within_batch": False,
+        "window_only_encoder_path_used": False,
+    }
+    payload["fingerprint"] = canonical_json_sha256(payload)
+    return payload
+
+
+def _encode_segment_collection(
+    encoder: PAMSEncoder,
+    keys: tuple[str, ...],
+    poses: tuple[Tensor, ...],
+    positions: tuple[Tensor, ...],
+    joints: tuple[Tensor, ...],
+    *,
+    batches: Sequence[Sequence[str]],
+) -> tuple[Tensor, ...]:
+    observed = _unique_segment_context_indices(keys, poses, positions, joints)
     outputs: list[Tensor] = []
-    for start in range(0, len(unique_poses), batch_size):
-        pose_chunk = unique_poses[start : start + batch_size]
-        position_chunk = unique_positions[start : start + batch_size]
-        maximum = max(value.shape[0] for value in pose_chunk)
-        padded = pose_chunk[0].new_zeros((len(pose_chunk), maximum, 33, 3))
-        valid = torch.zeros(
-            (len(pose_chunk), maximum),
+    output_keys: list[str] = []
+    for batch in batches:
+        indices = [observed[key] for key in batch]
+        pose_chunk = tuple(poses[index] for index in indices)
+        position_chunk = tuple(positions[index] for index in indices)
+        lengths = {value.shape[0] for value in pose_chunk}
+        if len(lengths) != 1:
+            raise RuntimeError("encoder plan mixed different stable-range lengths")
+        length = lengths.pop()
+        stacked = torch.stack(pose_chunk)
+        valid = torch.ones(
+            (len(pose_chunk), length),
             dtype=torch.bool,
-            device=padded.device,
+            device=stacked.device,
         )
-        padded_positions = torch.zeros(
-            (len(pose_chunk), maximum),
-            dtype=torch.long,
-            device=padded.device,
-        )
-        lengths: list[int] = []
-        for row, (value, position) in enumerate(
-            zip(pose_chunk, position_chunk, strict=True)
-        ):
-            length = value.shape[0]
-            lengths.append(length)
-            padded[row, :length] = value
-            valid[row, :length] = True
-            padded_positions[row, :length] = position
-        encoded = encoder(padded, valid, position_indices=padded_positions)
-        outputs.extend(encoded[row, :length] for row, length in enumerate(lengths))
-    encoded_by_key = dict(zip(unique_keys, outputs, strict=True))
+        stacked_positions = torch.stack(position_chunk)
+        encoded = encoder(stacked, valid, position_indices=stacked_positions)
+        outputs.extend(encoded[row] for row in range(len(pose_chunk)))
+        output_keys.extend(batch)
+    encoded_by_key = dict(zip(output_keys, outputs, strict=True))
+    if set(encoded_by_key) != set(observed):
+        raise RuntimeError("encoder plan did not cover every unique stable-range context")
     return tuple(encoded_by_key[key] for key in keys)
 
 
@@ -2092,27 +2193,23 @@ def encode_window_pairs(
             pairs.poses_a.new_zeros(empty_shape),
             pairs.poses_b.new_zeros(empty_shape),
         )
-    _validate_context_key_joint_identity(
-        contexts.context_keys_a,
-        contexts.joint_valid_a,
-    )
-    _validate_context_key_joint_identity(
-        contexts.context_keys_b,
-        contexts.joint_valid_b,
-    )
+    plan = context_encoding_plan(contexts, batch_size=batch_size)
+    side_batches = plan["side_batches"]
     encoded_a = _encode_segment_collection(
         encoder,
         contexts.context_keys_a,
         contexts.poses_a,
         contexts.position_indices_a,
-        batch_size=batch_size,
+        contexts.joint_valid_a,
+        batches=side_batches["a"],
     )
     encoded_b = _encode_segment_collection(
         encoder,
         contexts.context_keys_b,
         contexts.poses_b,
         contexts.position_indices_b,
-        batch_size=batch_size,
+        contexts.joint_valid_b,
+        batches=side_batches["b"],
     )
     selected_a: list[Tensor] = []
     selected_b: list[Tensor] = []

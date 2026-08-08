@@ -252,7 +252,7 @@ def _loss_metrics(
     }
 
 
-def _evaluate_embeddings(
+def evaluate_cycleback_embeddings(
     objective: ConventionalCycleBackLoss,
     embeddings_a: Tensor,
     embeddings_b: Tensor,
@@ -270,6 +270,17 @@ def _evaluate_embeddings(
         video_ids_b=pairs.video_ids,
     )
     return _loss_metrics(output, embeddings_a, embeddings_b, pairs)
+
+
+def _evaluate_embeddings(
+    objective: ConventionalCycleBackLoss,
+    embeddings_a: Tensor,
+    embeddings_b: Tensor,
+    pairs: NativeWindowPairBatch,
+) -> dict[str, Any]:
+    """Backward-compatible private alias for existing audit/probe callers."""
+
+    return evaluate_cycleback_embeddings(objective, embeddings_a, embeddings_b, pairs)
 
 
 def _model_state_sha256(model: torch.nn.Module) -> str:
