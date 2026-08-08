@@ -195,6 +195,21 @@ app.add_typer(teacher_period_app, name="teacher-period")
 app.add_typer(position_acf_app, name="position-acf")
 app.add_typer(stress_app, name="stress")
 
+_V4E_SINGLE_SOURCE_PREPROCESSING_REVISION = (
+    "official-segment-keypointrcnn-single-source-coco17-full-timeline-v4e"
+)
+
+
+def _reject_v4e_from_generic_training(config: PAMSConfig, *, operation: str) -> None:
+    """Keep unified-2D caches out of the legacy window/full-video trainers."""
+
+    if config.pose.preprocessing_revision == _V4E_SINGLE_SOURCE_PREPROCESSING_REVISION:
+        raise ValueError(
+            f"{operation} cannot consume v4e unified-2D caches; only the separately "
+            "authorized full-stable-range encode-once cycleback trainer may use "
+            "that representation"
+        )
+
 
 def _emit(payload: Any) -> None:
     typer.echo(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False))
@@ -1969,6 +1984,7 @@ def train_encoder_command(
         config_file_sha256 = _sha256_file(config_path)
         dataset_manifest_sha256 = _sha256_file(manifest_path)
         config = load_config(config_path)
+        _reject_v4e_from_generic_training(config, operation="generic encoder training")
         if resume and (resume_checkpoint is None or resume_progress is None):
             raise ValueError("--resume requires both --resume-checkpoint and --resume-progress")
         if not resume and (resume_checkpoint is not None or resume_progress is not None):
@@ -2316,6 +2332,7 @@ def train_sshead_command(
         config_file_sha256 = _sha256_file(config_path)
         dataset_manifest_sha256 = _sha256_file(manifest_path)
         config = load_config(config_path)
+        _reject_v4e_from_generic_training(config, operation="generic SSHead training")
         if config.sshead.shape_normalization == "masked_rms":
             if upstream_encoder_config is None:
                 raise ValueError(

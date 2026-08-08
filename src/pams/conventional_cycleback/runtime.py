@@ -682,6 +682,8 @@ def stable_file_bytes(path: str | Path) -> tuple[bytes, tuple[str, int]]:
     flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
+    if hasattr(os, "O_CLOEXEC"):
+        flags |= os.O_CLOEXEC
     descriptor = os.open(source, flags)
     digest = hashlib.sha256()
     collected = bytearray()
