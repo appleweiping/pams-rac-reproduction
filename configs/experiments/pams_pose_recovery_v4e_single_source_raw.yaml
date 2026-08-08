@@ -1,0 +1,53 @@
+# RAW EXTRACTION ONLY. This config can never authorize cycleback or training.
+#
+# All valid output coordinates come from one whole-video Keypoint R-CNN path.
+# The sealed v4a cache is used only for shared-COCO17 shape evidence; its
+# processed coordinates are never copied into the v4e cache. Eligibility and
+# quarantine thresholds live in a separately sealed, pre-full-run gate receipt.
+schema_version: 1
+protocol: ucfrep_526
+seed: 2026
+data:
+  frames: 256
+  keypoints: 33
+  coordinates: 3
+  normalization: body_centered_uniform_scale
+  missing_value: 0.0
+pose:
+  preprocessing_revision: official-segment-keypointrcnn-single-source-coco17-full-timeline-v4e
+  model_id: mediapipe-pose-0.10.14
+  model_complexity: 1
+  smooth_landmarks: true
+  min_detection_confidence: 0.5
+  min_tracking_confidence: 0.5
+  crop_to_detected_span: false
+  incomplete_clip_policy: pad_invalid_tail
+  keypoint_single_source:
+    model_id: torchvision-keypointrcnn-resnet50-fpn-coco-v1-0.20.1
+    model_asset_sha256: fc266e953d2b302cdcbb9ae66f71f6b0d4649928bf02dc573961e361e4918926
+    base_pose_fingerprint: 817013890533cd19e6c791969c35c3699d56d0e6656768ce64199bc30ceebe9c
+    base_pose_cache_set_sha256: 22629d0ddc5d892bb53bcef78c887da4ff9e054f5a17bd5e7ea4fbc43a03c662
+    base_pose_ledger_sha256: 4cbba0d0f678cfdbd2c99752bbb55a8ceeb3aaa0b0b994bb6195b55cd0bc6018
+    base_paired_gate_sha256: faf086277f4d0a0687a266b64edc6ae45a2ca0ab4b39cc8fc4da644350c571e5
+    frozen_same39_selection_sha256: dada14719c5a48e9dd6ed3f68e53063330f845cef22a07eecd5ae2b5b21e89d4
+    frozen_same39_identity_sha256: afc8c7a10dfc624f1635e792e49a8c08180ca9f32fab29ff24e3972a0718f554
+    frozen_zero11_identity_sha256: bf98461648cf649ea34f5d0f4121e87619c1bf69aadadcda54f97a39960f51c7
+    single_source_full_track: true
+    v4d_candidate_cache_consumed: false
+    training_joint_space: coco17-first17-zero-pad33-v1
+    training_coordinate_space: body-centered-uniform-rms-scale-xy-z0-v1
+    anchor_coordinate_space: shared-coco17-similarity-procrustes-xy-v1
+    identity_anchor_source: mediapipe-v4a-shape-diagnostic-only-not-viterbi
+    primary_center_weight: 1.0
+    primary_log_scale_weight: 0.25
+    primary_shape_weight: 0.0
+    primary_anchor_weight: 0.0
+    secondary_center_weight: 0.75
+    secondary_log_scale_weight: 0.5
+    secondary_shape_weight: 0.0
+    secondary_anchor_weight: 0.0
+    maximum_bridge_gap_seconds: 0.25
+    maximum_bridge_gap_frame_cap: 8
+    raw_extraction_authorizes_training: false
+model:
+  input_dim: 99

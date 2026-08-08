@@ -30,7 +30,10 @@ class DataConfig(StrictModel):
     frames: int = Field(default=256, ge=16)
     keypoints: int = Field(default=33, ge=1)
     coordinates: int = Field(default=3, ge=1)
-    normalization: Literal["per_frame_minmax"] = "per_frame_minmax"
+    normalization: Literal[
+        "per_frame_minmax",
+        "body_centered_uniform_scale",
+    ] = "per_frame_minmax"
     missing_value: float = Field(default=0.0, strict=True)
 
     @field_validator("missing_value")
@@ -179,6 +182,136 @@ class KeypointRCNNRecoveryConfig(StrictModel):
         return self
 
 
+class KeypointRCNNSingleSourceConfig(StrictModel):
+    """Frozen mechanics for the v4e single-detector representation.
+
+    This deliberately reuses only the immutable Keypoint R-CNN runtime
+    identity from v4d.  It does not inherit v4d's mixed-source cache semantics:
+    every valid output frame comes from one Keypoint R-CNN path, while the
+    MediaPipe v4a sequence contributes an isolated post-selection shape
+    diagnostic only and cannot influence the selected KPRCNN path.
+    """
+
+    model_id: Literal["torchvision-keypointrcnn-resnet50-fpn-coco-v1-0.20.1"] = (
+        "torchvision-keypointrcnn-resnet50-fpn-coco-v1-0.20.1"
+    )
+    model_asset_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    model_asset_filename: Literal["keypointrcnn_resnet50_fpn_coco-fc266e95.pth"] = (
+        "keypointrcnn_resnet50_fpn_coco-fc266e95.pth"
+    )
+    model_topology: Literal["torchvision-coco-v1-frozen-batchnorm-overwrite-eps-zero-v1"] = (
+        "torchvision-coco-v1-frozen-batchnorm-overwrite-eps-zero-v1"
+    )
+    expected_state_dict_keys: Literal[313] = 313
+    expected_parameter_count: Literal[59137258] = 59137258
+    expected_torch_version: Literal["2.5.1+cu124"] = "2.5.1+cu124"
+    expected_torchvision_version: Literal["0.20.1+cu124"] = "0.20.1+cu124"
+    expected_cuda_version: Literal["12.4"] = "12.4"
+    expected_cudnn_version: Literal[90100] = 90100
+    expected_gpu_name: Literal["NVIDIA RTX A6000"] = "NVIDIA RTX A6000"
+    expected_compute_capability: Literal["8.6"] = "8.6"
+    base_pose_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+    base_pose_cache_set_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    base_pose_ledger_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    base_paired_gate_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    frozen_same39_selection_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    frozen_same39_identity_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    frozen_zero11_identity_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    base_preprocessing_revision: Literal[
+        "official-segment-heavy-missing-retry-full-timeline-v4a"
+    ] = "official-segment-heavy-missing-retry-full-timeline-v4a"
+    temporal_resampling: Literal["none_native_timeline"] = "none_native_timeline"
+    detector_observes_all_decoded_frames: Literal[True] = True
+    box_score_threshold: Literal[0.2] = 0.2
+    keypoint_logit_threshold: Literal[2.0] = 2.0
+    minimum_confident_keypoints: Literal[8] = 8
+    minimum_confident_action_keypoints: Literal[4] = 4
+    maximum_candidates_per_frame: Literal[4] = 4
+    person_label: Literal[1] = 1
+    coco_keypoints: Literal[17] = 17
+    visibility_policy: Literal["sigmoid-logit-times-box-score-torso-reliable-v1"] = (
+        "sigmoid-logit-times-box-score-torso-reliable-v1"
+    )
+    reliable_visibility_minimum: Literal[0.1] = 0.1
+    reliable_torso_policy: Literal["bilateral-shoulders-and-hips-required-v1"] = (
+        "bilateral-shoulders-and-hips-required-v1"
+    )
+    input_scale_policy: Literal["torchvision-fpn-min800-max1333-v1"] = (
+        "torchvision-fpn-min800-max1333-v1"
+    )
+    input_min_size: Literal[800] = 800
+    input_max_size: Literal[1333] = 1333
+    box_nms_threshold: Literal[0.5] = 0.5
+    box_detections_per_image: Literal[100] = 100
+    inference_batch_size: Literal[4] = 4
+    inference_device: Literal["cuda:0"] = "cuda:0"
+    deterministic_algorithms: Literal[True] = True
+    allow_tf32: Literal[False] = False
+    cublas_workspace_config: Literal[":4096:8"] = ":4096:8"
+    runtime_cache_policy: Literal["ephemeral-exec-tmpfs-user1000-v1"] = (
+        "ephemeral-exec-tmpfs-user1000-v1"
+    )
+    single_source_full_track: Literal[True] = True
+    v4d_candidate_cache_consumed: Literal[False] = False
+    training_joint_space: Literal["coco17-first17-zero-pad33-v1"] = (
+        "coco17-first17-zero-pad33-v1"
+    )
+    training_coordinate_space: Literal["body-centered-uniform-rms-scale-xy-z0-v1"] = (
+        "body-centered-uniform-rms-scale-xy-z0-v1"
+    )
+    anchor_coordinate_space: Literal["shared-coco17-similarity-procrustes-xy-v1"] = (
+        "shared-coco17-similarity-procrustes-xy-v1"
+    )
+    identity_anchor_source: Literal["mediapipe-v4a-shape-diagnostic-only-not-viterbi"] = (
+        "mediapipe-v4a-shape-diagnostic-only-not-viterbi"
+    )
+    primary_center_weight: Literal[1.0] = 1.0
+    primary_log_scale_weight: Literal[0.25] = 0.25
+    # Inter-frame shape smoothness is intentionally disabled: it would favor a
+    # static bystander over the fast-moving actor. Processed-v4a shape is a
+    # post-selection diagnostic only and has zero association weight.
+    primary_shape_weight: Literal[0.0] = 0.0
+    primary_anchor_weight: Literal[0.0] = 0.0
+    secondary_center_weight: Literal[0.75] = 0.75
+    secondary_log_scale_weight: Literal[0.5] = 0.5
+    secondary_shape_weight: Literal[0.0] = 0.0
+    secondary_anchor_weight: Literal[0.0] = 0.0
+    # This physical-time rule predates any full337 v4e observation.  The
+    # effective association bridge is min(cap, floor(seconds * fps)); a zero
+    # result is valid and means that no missing frame may be bridged.
+    maximum_bridge_gap_seconds: Literal[0.25] = 0.25
+    maximum_bridge_gap_frame_cap: Literal[8] = 8
+    global_track_strategy: Literal[
+        "top2-viterbi-dominance-center-scale-segmented-v1"
+    ] = (
+        "top2-viterbi-dominance-center-scale-segmented-v1"
+    )
+    second_path_policy: Literal["independent-frozen-weight-viterbi-v1"] = (
+        "independent-frozen-weight-viterbi-v1"
+    )
+    raw_extraction_authorizes_training: Literal[False] = False
+
+    @model_validator(mode="after")
+    def validate_dual_association_weights(self) -> KeypointRCNNSingleSourceConfig:
+        primary = (
+            self.primary_center_weight,
+            self.primary_log_scale_weight,
+            self.primary_shape_weight,
+            self.primary_anchor_weight,
+        )
+        secondary = (
+            self.secondary_center_weight,
+            self.secondary_log_scale_weight,
+            self.secondary_shape_weight,
+            self.secondary_anchor_weight,
+        )
+        if not any(primary) or not any(secondary):
+            raise ValueError("v4e requires two non-degenerate association weight sets")
+        if primary == secondary:
+            raise ValueError("v4e secondary association weights must differ from primary")
+        return self
+
+
 class PoseConfig(StrictModel):
     """Frozen MediaPipe extractor settings included in pose-cache identity."""
 
@@ -190,6 +323,7 @@ class PoseConfig(StrictModel):
         "official-segment-heavy-video-fill-missing-full-timeline-v4b",
         "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c",
         "official-segment-v4a-locked-keypointrcnn-fill-missing-full-timeline-v4d",
+        "official-segment-keypointrcnn-single-source-coco17-full-timeline-v4e",
     ] = "detected-span-minmax-zero-span-invalid-v2"
     model_id: str = "mediapipe-pose-0.10.14"
     model_complexity: int = Field(default=1, ge=0, le=2)
@@ -200,6 +334,7 @@ class PoseConfig(StrictModel):
     incomplete_clip_policy: Literal["error", "pad_invalid_tail"] = "error"
     recovery: PoseRecoveryConfig | None = None
     keypoint_recovery: KeypointRCNNRecoveryConfig | None = None
+    keypoint_single_source: KeypointRCNNSingleSourceConfig | None = None
 
     @model_validator(mode="after")
     def validate_track_policy(self) -> PoseConfig:
@@ -218,6 +353,7 @@ class PoseConfig(StrictModel):
                 "official-segment-heavy-video-fill-missing-full-timeline-v4b",
                 "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c",
                 "official-segment-v4a-locked-keypointrcnn-fill-missing-full-timeline-v4d",
+                "official-segment-keypointrcnn-single-source-coco17-full-timeline-v4e",
             }
             and self.crop_to_detected_span
         ):
@@ -232,6 +368,7 @@ class PoseConfig(StrictModel):
                 "official-segment-heavy-video-fill-missing-full-timeline-v4b",
                 "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c",
                 "official-segment-v4a-locked-keypointrcnn-fill-missing-full-timeline-v4d",
+                "official-segment-keypointrcnn-single-source-coco17-full-timeline-v4e",
             }
             and self.incomplete_clip_policy != "error"
         ):
@@ -250,6 +387,10 @@ class PoseConfig(StrictModel):
         v4d_revision = (
             self.preprocessing_revision
             == "official-segment-v4a-locked-keypointrcnn-fill-missing-full-timeline-v4d"
+        )
+        v4e_revision = (
+            self.preprocessing_revision
+            == "official-segment-keypointrcnn-single-source-coco17-full-timeline-v4e"
         )
         recovery_revision = v4a_revision or v4b_revision or v4c_revision
         if recovery_revision:
@@ -286,6 +427,13 @@ class PoseConfig(StrictModel):
                 raise ValueError("v4d requires pose.keypoint_recovery settings")
         elif self.keypoint_recovery is not None:
             raise ValueError("pose.keypoint_recovery is accepted only by v4d")
+        if v4e_revision:
+            if self.model_complexity != 1:
+                raise ValueError("v4e anchor pose must use model_complexity=1")
+            if self.keypoint_single_source is None:
+                raise ValueError("v4e requires pose.keypoint_single_source settings")
+        elif self.keypoint_single_source is not None:
+            raise ValueError("pose.keypoint_single_source is accepted only by v4e")
         return self
 
     @field_validator("model_id")
@@ -488,6 +636,10 @@ class PAMSConfig(StrictModel):
         if pose["keypoint_recovery"] is None:
             # Preserve every pre-v4d whole-experiment fingerprint.
             pose.pop("keypoint_recovery")
+        if pose["keypoint_single_source"] is None:
+            # Preserve every pre-v4e fingerprint.  The v4e block is always
+            # explicit and identity-bearing when the new representation is used.
+            pose.pop("keypoint_single_source")
         model = payload["model"]
         if model["input_projection_scale"] == "none":
             # ``none`` is the historical behavior.  Omitting only this default
@@ -574,6 +726,9 @@ class PAMSConfig(StrictModel):
         if pose["keypoint_recovery"] is None:
             # Keep every historical pre-v4d pose fingerprint stable.
             pose.pop("keypoint_recovery")
+        if pose["keypoint_single_source"] is None:
+            # Keep every historical pre-v4e pose fingerprint stable.
+            pose.pop("keypoint_single_source")
         return {
             "data": self.data.model_dump(mode="json"),
             "pose": pose,
