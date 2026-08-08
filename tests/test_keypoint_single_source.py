@@ -617,6 +617,7 @@ def test_torso_only_raw_detection_is_rejected_by_shared_production_filter() -> N
     assert settings is not None
     keypoints = np.zeros((1, 17, 3), dtype=np.float32)
     keypoints[0, :, :2] = _shape() * np.float32(1000.0)
+    keypoints[0, :, 2] = np.float32(1.0)
     logits = np.zeros((1, 17), dtype=np.float32)
     logits[0, [5, 6, 11, 12]] = 3.0
     result = canonicalize_raw_detector_frame(
