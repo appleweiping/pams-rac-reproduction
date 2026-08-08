@@ -345,6 +345,7 @@ class ConventionalCycleBackConfig(_StrictModel):
         payload["candidate_id"] = "WINDOW_CANDIDATE"
         payload["window_pair"]["length_frames"] = 0
         payload["window_pair"]["hop_frames"] = 0
+        payload["window_pair"]["minimum_valid_frames_per_window"] = 0
         encoded = json.dumps(
             payload,
             sort_keys=True,

@@ -17,6 +17,7 @@ import numpy as np
 import torch
 from torch import Tensor
 
+from pams.config import SkeletonAugmentationConfig
 from pams.conventional_cycleback.config import ConventionalCycleBackConfig
 from pams.conventional_cycleback.windows import (
     NativeWindowPairBatch,
