@@ -1,0 +1,104 @@
+# Independently inferred, label-free successor to the frozen v1 readout.
+# v1 produced 0/32 hard passes and is retained unchanged.  These predecessor
+# hashes are lineage only: neither of them authorizes training or evaluation.
+schema_version: 2
+key: segment_local_spectral_single_v2
+classification: inferred_label_free_single_expert_baseline_successor
+eligible_as_exact_author_baseline: false
+
+predecessor_denial:
+  method_key: segment_local_spectral_single_v1
+  outcome: denied_0_of_32
+  result_sha256: be2fe34f74b0ab2d9187edd3fcf955db1d977d9a5c32743b10a9250858685821
+  result_bytes: 102245
+  receipt_sha256: 562543f75d0533687ebf947439b6ef5ab4da103cc2ad6e112a99e91d5f585480
+  receipt_bytes: 1273
+  grants_training_authority: false
+
+axes:
+  cycles_per_window: [3.0, 4.0]
+  direct_to_dominant_minimum: [0.12, 0.20]
+
+fixed:
+  feature_order: level_only
+  embedding_context: full_authorized_segment_once
+  embedding_execution_mode: eval_deterministic_no_grad_no_optimizer_update
+  position_indices: absolute_native_unchanged
+  proposal_scope: full_authorized_segment
+  proposal_fft_oversampling: 8
+  proposal_top_k_peaks: 8
+  fundamental_divisors: [1, 2, 3]
+  minimum_observed_cycles: 2.0
+  maximum_frequency_cycles_per_frame: 0.25
+  harmonic_band_share_minimum: 0.25
+  signed_vector_acf_minimum: 0.20
+  signed_vector_acf_half_lag_contrast_minimum: 0.20
+  local_minimum_window_frames: 24
+  local_hop_divisor: 4
+  terminal_window: unique_terminal_after_zero_grid
+  local_frequency_ratio_to_proposal: [0.45, 2.25]
+  window_states: [periodic, static_zero_rate, ambiguous]
+  static_maximum_relative_velocity: 0.000001
+  static_maximum_relative_residual_energy: 0.000001
+  interval_fusion: confidence_weighted_median_over_overlapping_windows
+  static_interval_rate: 0.0
+  minimum_known_interval_union_fraction: 0.80
+  maximum_ambiguous_gap_period_fraction: 1.0
+  ambiguous_internal_fill: linear_between_bracketing_known_rates
+  ambiguous_boundary_fill: global_proposal_rate_unless_static_boundary
+  duration: segment_length_minus_1
+  video_rounding: half_up_once_exactly_one_segment
+  multi_segment_video_total: undefined_never_sum
+  coordinate_schema: coco17_xy
+  minimum_joints_per_frame: 8
+  minimum_stable_joints: 6
+  minimum_stable_action_joints: 3
+  prohibited_operations:
+    - result_driven_scale_switch
+    - nearest_periodic_extrapolation_across_static
+    - activity_trim
+    - expert_vote
+    - count_clip
+
+synthetic:
+  selector_seed: 62027
+  heldout_seed: 91411
+  dimensions: [34, 512]
+  null_trials_per_family: 64
+  reset_trials: 64
+  positive_eligible_minimum: 0.95
+  overall_nmae_maximum: 0.08
+  overall_obo_minimum: 0.95
+  variable_tempo_nmae_maximum: 0.10
+  invariance_rounded_agreement_minimum: 0.95
+  null_false_eligible_cp_confidence: 0.95
+  null_false_eligible_cp_ucb_maximum: 0.05
+  reset_video_total_errors_maximum: 0
+  positive_family_gate_policy: all_frozen_generation_truth_families_hard_gated
+  positive_family_eligible_minimum: 0.95
+  positive_family_nmae_maximum: 0.10
+  positive_family_obo_minimum: 0.95
+  ranking:
+    - null_cp_ucb
+    - variable_tempo_nmae
+    - overall_nmae
+    - negative_obo
+    - abstention_rate
+    - canonical_candidate_id
+  heldout_policy: selected_candidate_only_same_gates_no_fallback
+  null_replication_policy: every_replicate_seed_varies_source_arrays
+  static_null_scoring: eligible_zero_static_state_is_not_false_positive
+
+seed_derivation:
+  method: sha256_domain_separated_uint64_le
+  domain: segment_local_spectral_single_v2_map_seed
+  roles: [map1, map2]
+  fields: [global_seed, video_id, segment_id, role]
+
+authority:
+  synthetic_selector_authorized: true
+  train337_authorized: false
+  dev84_authorized: false
+  test105_authorized: false
+  representation_adapter_status: unwired_fail_closed
+  launcher_status: fixed_exit_3
