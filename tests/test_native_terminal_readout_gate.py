@@ -2149,6 +2149,8 @@ def test_epoch11_artifact_and_receipt_are_hash_and_lineage_bound() -> None:
 
 
 def test_completion_receipt_requires_epoch11_resume_lineage_and_started_bytes() -> None:
+    from pams.cli import _complete_cli_run_manifest
+
     config = _config()
     source_sha = "c" * 40
     container = {
@@ -2163,70 +2165,14 @@ def test_completion_receipt_requires_epoch11_resume_lineage_and_started_bytes() 
         source_git_sha=source_sha,
     )
     with tempfile.TemporaryDirectory(prefix="pams-gate-") as directory:
-        root = Path(directory)
-        role_to_identity_key = {
-            "input_config": "experiment_config",
-            "input_pose_cache_snapshot": "pose_snapshot",
-            "output_encoder_checkpoint": "encoder_checkpoint",
-            "input_candidate_launch_authorization": (
-                "candidate_launch_authorization"
-            ),
-            "input_candidate_launch_authorization_receipt": (
-                "candidate_launch_authorization_receipt"
-            ),
-        }
-        role_paths: dict[str, Path] = {}
-        identities: dict[str, tuple[str, int]] = {}
-        for role, identity_key in role_to_identity_key.items():
-            target = root / f"{role}.bin"
-            runner._write_new(target, f"fixture:{role}".encode())
-            role_paths[role] = target
-            identities[identity_key] = runner._stable_file_sha256(target)
-        sidecar_roles = (
-            "input_dataset_manifest",
-            "input_train_pose_inputs",
-            "input_train_pose_input_commitment",
-            "input_dev_pose_inputs",
-            "input_dev_pose_input_commitment",
-            "input_test_identity_pose_inputs",
-            "input_test_identity_pose_input_commitment",
-        )
-        for role in sidecar_roles:
-            target = root / f"{role}.bin"
-            content = (
-                b"fixture:train-identity"
-                if role in {"input_dataset_manifest", "input_train_pose_inputs"}
-                else f"fixture:{role}".encode()
-            )
-            runner._write_new(target, content)
-            role_paths[role] = target
-        for role in ("input_resume_checkpoint", "input_resume_progress"):
-            target = root / f"{role}.bin"
-            runner._write_new(target, f"fixture:{role}".encode())
-            role_paths[role] = target
-        resume_checkpoint_identity = runner._stable_file_sha256(
-            role_paths["input_resume_checkpoint"]
-        )
-        resume_progress_identity = runner._stable_file_sha256(
-            role_paths["input_resume_progress"]
-        )
-        epoch11_receipt = {
-            "encoder_checkpoint_sha256": resume_checkpoint_identity[0],
-            "encoder_progress_sha256": resume_progress_identity[0],
-        }
-        epoch11_artifact = {
-            "inputs": {
-                "encoder_checkpoint_bytes": resume_checkpoint_identity[1],
-                "encoder_progress_bytes": resume_progress_identity[1],
-            }
-        }
-        final_progress = root / "progress_log.bin"
-        runner._write_new(
-            final_progress,
-            role_paths["input_resume_progress"].read_bytes() + b"\nfixture:epoch150",
-        )
-        role_paths["progress_log"] = final_progress
-        identities["encoder_progress"] = runner._stable_file_sha256(final_progress)
+        root = Path(directory) / "run"
+        external_root = Path(directory) / "mounted-inputs"
+        manifests_root = root / "manifests"
+        artifacts_root = root / "artifacts"
+        protocol_root = external_root / "protocol"
+        manifests_root.mkdir(parents=True)
+        artifacts_root.mkdir(parents=True)
+        protocol_root.mkdir(parents=True)
         started = RunManifest(
             schema_version=2,
             receipt_type="started",
@@ -2245,33 +2191,125 @@ def test_completion_receipt_requires_epoch11_resume_lineage_and_started_bytes() 
             hardware={"container": container},
         )
         started_encoded = runner._encoded_json(started.model_dump(mode="json"))
-        artifacts = tuple(
-            ArtifactReceipt(
-                role=role,
-                locator=path.name,
-                sha256=runner._stable_file_sha256(path)[0],
-                bytes=runner._stable_file_sha256(path)[1],
+        started_path = manifests_root / f"{started.run_id}.started.json"
+        runner._write_new(started_path, started_encoded)
+        role_to_identity_key = {
+            "input_config": "experiment_config",
+            "input_pose_cache_snapshot": "pose_snapshot",
+            "output_encoder_checkpoint": "encoder_checkpoint",
+            "input_candidate_launch_authorization": (
+                "candidate_launch_authorization"
+            ),
+            "input_candidate_launch_authorization_receipt": (
+                "candidate_launch_authorization_receipt"
+            ),
+        }
+        role_targets = {
+            "input_config": external_root / "config.yaml",
+            "input_pose_cache_snapshot": root / "inputs" / "pose-cache.snapshot.json",
+            "output_encoder_checkpoint": artifacts_root / "encoder.pt",
+            "input_candidate_launch_authorization": (
+                external_root / "launch" / "authorization.json"
+            ),
+            "input_candidate_launch_authorization_receipt": (
+                external_root / "launch" / "authorization.receipt.json"
+            ),
+        }
+        role_paths: dict[str, Path] = {}
+        identities: dict[str, tuple[str, int]] = {}
+        for role, identity_key in role_to_identity_key.items():
+            target = role_targets[role]
+            target.parent.mkdir(parents=True, exist_ok=True)
+            runner._write_new(target, f"fixture:{role}".encode())
+            role_paths[role] = target
+            identities[identity_key] = runner._stable_file_sha256(target)
+        label_free_paths = {
+            "input_train_pose_inputs": protocol_root / "train.inputs.json",
+            "input_train_pose_input_commitment": (
+                protocol_root / "train.inputs.commitment.json"
+            ),
+            "input_dev_pose_inputs": protocol_root / "dev.inputs.json",
+            "input_dev_pose_input_commitment": (
+                protocol_root / "dev.inputs.commitment.json"
+            ),
+            "input_test_identity_pose_inputs": (
+                protocol_root / "test-identity.inputs.json"
+            ),
+            "input_test_identity_pose_input_commitment": (
+                protocol_root / "test-identity.inputs.commitment.json"
+            ),
+        }
+        for role, target in label_free_paths.items():
+            content = (
+                b"fixture:train-identity"
+                if role == "input_train_pose_inputs"
+                else f"fixture:{role}".encode()
             )
-            for role, path in role_paths.items()
+            runner._write_new(target, content)
+            role_paths[role] = target
+        role_paths["input_dataset_manifest"] = label_free_paths[
+            "input_train_pose_inputs"
+        ]
+        for role in ("input_resume_checkpoint", "input_resume_progress"):
+            target = external_root / "resume" / (
+                "encoder.pt" if role == "input_resume_checkpoint" else "encoder.jsonl"
+            )
+            target.parent.mkdir(parents=True, exist_ok=True)
+            runner._write_new(target, f"fixture:{role}".encode())
+            role_paths[role] = target
+        resume_checkpoint_identity = runner._stable_file_sha256(
+            role_paths["input_resume_checkpoint"]
         )
-        completion = CompletedRunReceipt(
-            schema_version=3,
-            receipt_type="completed",
-            run_id=started.run_id,
-            status="completed",
-            finished_at="2026-08-07T00:01:00+00:00",
-            start_manifest_sha256=hashlib.sha256(started_encoded).hexdigest(),
-            started=started,
-            artifacts=artifacts,
+        resume_progress_identity = runner._stable_file_sha256(
+            role_paths["input_resume_progress"]
+        )
+        epoch11_receipt = {
+            "encoder_checkpoint_sha256": resume_checkpoint_identity[0],
+            "encoder_progress_sha256": resume_progress_identity[0],
+        }
+        epoch11_artifact = {
+            "inputs": {
+                "encoder_checkpoint_bytes": resume_checkpoint_identity[1],
+                "encoder_progress_bytes": resume_progress_identity[1],
+            }
+        }
+        final_progress = artifacts_root / "encoder.jsonl"
+        runner._write_new(
+            final_progress,
+            role_paths["input_resume_progress"].read_bytes() + b"\nfixture:epoch150",
+        )
+        role_paths["progress_log"] = final_progress
+        identities["encoder_progress"] = runner._stable_file_sha256(final_progress)
+        expected_artifact_sha256 = {
+            role: runner._stable_file_sha256(path)[0]
+            for role, path in role_paths.items()
+        }
+        completion_path, _ = _complete_cli_run_manifest(
+            started_path,
+            artifacts=role_paths,
+            expected_artifact_sha256=expected_artifact_sha256,
             metrics={"completed_epochs": 150},
         )
-        started_path = root / f"{started.run_id}.started.json"
-        completion_path = root / "terminal.completed.json"
-        runner._write_new(started_path, started_encoded)
-        runner._write_new(
-            completion_path,
-            runner._encoded_json(completion.model_dump(mode="json")),
+        completion = CompletedRunReceipt.model_validate(
+            runner._strict_json(
+                completion_path,
+                document="canonical completion receipt fixture",
+            )
         )
+        artifacts = completion.artifacts
+        artifact_by_role = {artifact.role: artifact for artifact in artifacts}
+        snapshot_prefix = (
+            "../inputs/receipt-artifacts/"
+            f"{hashlib.sha256(started_encoded).hexdigest()}/"
+        )
+        for role in label_free_paths:
+            expected_locator = (
+                snapshot_prefix
+                + hashlib.sha256(role.encode("utf-8")).hexdigest()
+                + ".artifact"
+            )
+            assert artifact_by_role[role].locator == expected_locator
+            assert runner._FORBIDDEN_PATH_TOKEN.search(expected_locator) is None
         parsed, validated_started_path, _, resolved = (
             runner._validate_encoder_completion_receipt(
                 completion_path,
@@ -2299,6 +2337,50 @@ def test_completion_receipt_requires_epoch11_resume_lineage_and_started_bytes() 
                     source_git_sha=provenance.source_git_sha,
                 ),
             )
+
+        privileged_path = root / "inputs" / "dev-targets" / "dev.inputs.json"
+        privileged_path.parent.mkdir(parents=True)
+        runner._write_new(
+            privileged_path,
+            resolved["input_dev_pose_inputs"][0].read_bytes(),
+        )
+        privileged_identity = runner._stable_file_sha256(privileged_path)
+        privileged_sidecar = completion.model_copy(
+            update={
+                "artifacts": tuple(
+                    item.model_copy(
+                        update={
+                            "locator": "../inputs/dev-targets/dev.inputs.json",
+                            "sha256": privileged_identity[0],
+                            "bytes": privileged_identity[1],
+                        }
+                    )
+                    if item.role == "input_dev_pose_inputs"
+                    else item
+                    for item in artifacts
+                )
+            }
+        )
+        completion_path.unlink()
+        runner._write_new(
+            completion_path,
+            runner._encoded_json(privileged_sidecar.model_dump(mode="json")),
+        )
+        with pytest.raises(ValueError, match="forbidden privileged token"):
+            runner._validate_encoder_completion_receipt(
+                completion_path,
+                expected_source_git_sha=source_sha,
+                specification=runner.load_gate_specification(SPECIFICATION),
+                config=config,
+                identities=identities,
+                epoch11_artifact=epoch11_artifact,
+                epoch11_receipt=epoch11_receipt,
+            )
+        completion_path.unlink()
+        runner._write_new(
+            completion_path,
+            runner._encoded_json(completion.model_dump(mode="json")),
+        )
 
         tampered_launch = completion.model_copy(
             update={
