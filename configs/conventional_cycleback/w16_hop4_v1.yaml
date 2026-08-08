@@ -1,0 +1,114 @@
+# CANDIDATE W16_H4: INDEPENDENTLY INFERRED CONVENTIONAL CYCLE-BACK PROXY.
+#
+# PAMS Table 2 names a conventional-TCC baseline, but neither the paper nor
+# its supplement discloses the baseline cycle-back equation, window-pair
+# sampler, target normalization, optimizer schedule, or final count readout.
+# This executable hypothesis is not the authors' baseline, is not eligible for
+# a paper-table claim, and must be reported as an independently inferred proxy.
+schema_version: 1
+namespace: pams.conventional_cycleback_tcc.v1
+classification: independently_inferred_proxy_not_author_implementation
+paper_reference_status: baseline_named_but_cycleback_equation_and_sampling_undisclosed
+paper_table_claim_eligible: false
+protocol: ucfrep_526_train337_only
+generation_failure_policy: all_three_sinusoidal_candidates_rejected_terminates_generation_pe_off_diagnostic_only
+candidate_id: W16_H4
+seed: 2026
+window_pair:
+  length_frames: 16
+  hop_frames: 4
+  start_policy: representation_authorized_native_zero_based_hop_grid
+  pair_policy: adjacent_disjoint_same_video_windows_offset_by_window_length
+  minimum_valid_frames_per_window: 16
+  joint_support_policy: representation_authorized_exact_2w_starts_and_frozen_support_tuple_only
+  validity_policy: all_frames_valid_in_each_window
+  segment_policy: both_windows_inside_one_authorized_contiguous_segment
+  temporal_resampling: none_native_timeline
+  encoder_context_policy: full_authorized_all_valid_stable_range_per_view_then_slice_embeddings
+  attention_boundary_policy: eligible_frame_range_start_stop_never_wider_association_segment
+  training_inference_context_parity: true
+  source_index_convention: zero_based_native_frame_index
+  bounded_pair_selection: one_pair_per_video_then_label_free_hash_fill
+  reset_count_aggregation_policy: segment_counts_reported_separately_no_default_cross_reset_sum
+objective:
+  objective: symmetric_variance_aware_cycleback_regression
+  directions: a_to_b_to_a_and_b_to_a_to_b
+  temperature: 0.1
+  variance_log_weight: 0.001
+  variance_floor: 0.000001
+  embedding_normalization: l2
+  target_position_normalization: absolute_source_index_minus_window_start_divided_by_window_length_minus_one
+  candidate_scope: valid_frames_in_same_video_paired_window_only
+  cross_video_positive_terms: false
+  cross_video_negative_terms: false
+  prototype_or_cluster_bank: false
+encoder:
+  input_dim: 99
+  model_dim: 512
+  embedding_dim: 512
+  layers: 4
+  heads: 16
+  feedforward_dim: 2048
+  dropout: 0.1
+  norm_first: false
+  input_projection_scale: none
+  position_encoding_mode: sinusoidal
+  maximum_native_length: 4096
+views:
+  view_policy: two_independently_seeded_skeleton_augmentations
+  shared_random_generator: false
+  representation: coco17_body_centered_uniform_rms_scale_xy_z0_v1_padded_to_33
+  active_joint_count: 17
+  padded_joint_count: 16
+  augmentation_joint_scope: active_coco17_only
+  rotation_scope: in_plane_z_axis_only
+  z_coordinate_policy: exact_zero_before_and_after
+  padded_joint_policy: indices_17_to_32_exact_zero
+  augmentation:
+    enabled: true
+    rotation_degrees: [0.0, 0.0, 15.0]
+    scale_range: [0.85, 1.15]
+    jitter_std: 0.01
+geometry_audit:
+  artifact_type: pams_conventional_cycleback_train337_geometry_pe_null_gate_v1
+  expected_training_video_total: 337
+  diagnostic_sample_videos: 32
+  maximum_probe_pairs: 256
+  encoder_segment_context_batch_size: 8
+  thresholds_frozen_before_execution: true
+  thresholds:
+    minimum_eligible_video_fraction: 0.90
+    minimum_eligible_pair_fraction: 0.50
+    minimum_valid_anchor_fraction: 0.50
+    maximum_source_index_violation_total: 0
+    minimum_zero_to_real_position_error_ratio: 1.0
+    minimum_shuffle_to_real_position_error_ratio: 1.0
+    minimum_permuted_pe_to_real_position_error_ratio: 0.80
+    maximum_permuted_pe_to_real_position_error_ratio: 1.25
+    minimum_pe_off_to_real_position_error_ratio: 0.80
+    maximum_pe_off_to_real_position_error_ratio: 1.25
+mechanism_probe:
+  artifact_type: pams_conventional_cycleback_256_step_mechanism_probe_v1
+  gate_contract: cycleback_256_optimizer_steps_not_epoch11_gate
+  optimizer_steps: 256
+  video_batch_size: 8
+  maximum_pairs_per_step: 32
+  evaluation_sample_videos: 32
+  evaluation_maximum_pairs: 256
+  encoder_segment_context_batch_size: 8
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  thresholds_frozen_before_execution: true
+  threshold_provenance: independent_synthetic_cycleback_preregistration_required_before_launch
+  thresholds:
+    minimum_loss_relative_drop: 0.10
+    minimum_final_temporal_rms_median: 0.001
+    minimum_real_null_position_error_gap: 0.02
+    minimum_final_mask_flicker_to_real_position_error_ratio: 1.0
+    minimum_final_torso_only_to_real_position_error_ratio: 1.0
+    minimum_final_alternating_limb_dropout_to_real_position_error_ratio: 1.0
+    minimum_final_valid_anchor_fraction: 0.50
+    minimum_final_permuted_pe_to_real_position_error_ratio: 0.80
+    maximum_final_permuted_pe_to_real_position_error_ratio: 1.25
+    minimum_final_pe_off_to_real_position_error_ratio: 0.80
+    maximum_final_pe_off_to_real_position_error_ratio: 1.25
