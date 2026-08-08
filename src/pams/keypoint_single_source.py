@@ -1001,7 +1001,7 @@ def _selected_continuity_rows(
 
     observed = [index for index, candidate in enumerate(track) if candidate is not None]
     rows: dict[int, dict[str, float | int]] = {}
-    for left, right in zip(observed, observed[1:]):
+    for left, right in zip(observed, observed[1:], strict=False):
         missing = right - left - 1
         if missing > maximum_bridge_gap_frames:
             continue
@@ -1055,7 +1055,7 @@ def _continuity_steps(
 ) -> tuple[float, ...]:
     observed = [index for index, candidate in enumerate(track) if candidate is not None]
     steps: list[float] = []
-    for left, right in zip(observed, observed[1:]):
+    for left, right in zip(observed, observed[1:], strict=False):
         if right - left - 1 > maximum_bridge_gap_frames:
             continue
         previous = track[left]

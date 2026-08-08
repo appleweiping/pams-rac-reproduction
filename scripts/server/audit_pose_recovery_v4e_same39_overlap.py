@@ -36,6 +36,49 @@ def _object(path: Path, role: str) -> Mapping[str, Any]:
     return value
 
 
+def _replay_prefix_suffix(
+    *,
+    candidates: Sequence[Any],
+    evidence: Mapping[str, Any],
+    weights_key: str,
+    prefix_stop: int,
+    suffix_start: int,
+    maximum_bridge_gap_frames: int,
+) -> tuple[tuple[int | None, ...], tuple[int | None, ...]]:
+    no_anchors = tuple(None for _ in candidates)
+    weights = AssociationWeights(**dict(evidence[weights_key]))
+    prefix, _ = select_segmented_top2_viterbi_paths(
+        candidates[:prefix_stop],
+        anchor_residuals=no_anchors[:prefix_stop],
+        weights=weights,
+        maximum_bridge_gap_frames=maximum_bridge_gap_frames,
+    )
+    suffix, _ = select_segmented_top2_viterbi_paths(
+        candidates[suffix_start:],
+        anchor_residuals=no_anchors[suffix_start:],
+        weights=weights,
+        maximum_bridge_gap_frames=maximum_bridge_gap_frames,
+    )
+    return prefix.selected_indices, suffix.selected_indices
+
+
+def _overlap_agreement(
+    prefix: tuple[int | None, ...],
+    suffix: tuple[int | None, ...],
+    *,
+    prefix_stop: int,
+    suffix_start: int,
+) -> tuple[int, float]:
+    comparable = [
+        index
+        for index in range(suffix_start, prefix_stop)
+        if prefix[index] is not None and suffix[index - suffix_start] is not None
+    ]
+    require(comparable, "prefix/suffix overlap has no comparable observations")
+    matches = sum(prefix[index] == suffix[index - suffix_start] for index in comparable)
+    return len(comparable), matches / len(comparable)
+
+
 def audit_same39_overlap(
     *,
     config_path: Path,
@@ -140,40 +183,35 @@ def audit_same39_overlap(
         prefix_stop = int(math.ceil(0.60 * decoded))
         suffix_start = int(math.floor(0.40 * decoded))
         require(0 <= suffix_start < prefix_stop <= decoded, "prefix/suffix geometry invalid")
-        no_anchors = tuple(None for _ in candidates)
         gap = int(evidence["effective_maximum_bridge_gap_frames"])
-
-        def replay(weights_key: str) -> tuple[tuple[int | None, ...], tuple[int | None, ...]]:
-            weights = AssociationWeights(**dict(evidence[weights_key]))
-            prefix, _ = select_segmented_top2_viterbi_paths(
-                candidates[:prefix_stop],
-                anchor_residuals=no_anchors[:prefix_stop],
-                weights=weights,
-                maximum_bridge_gap_frames=gap,
-            )
-            suffix, _ = select_segmented_top2_viterbi_paths(
-                candidates[suffix_start:],
-                anchor_residuals=no_anchors[suffix_start:],
-                weights=weights,
-                maximum_bridge_gap_frames=gap,
-            )
-            return prefix.selected_indices, suffix.selected_indices
-
-        primary_prefix, primary_suffix = replay("primary_weights")
-        secondary_prefix, secondary_suffix = replay("secondary_weights")
-
-        def agreement(prefix: tuple[int | None, ...], suffix: tuple[int | None, ...]) -> tuple[int, float]:
-            comparable = [
-                index
-                for index in range(suffix_start, prefix_stop)
-                if prefix[index] is not None and suffix[index - suffix_start] is not None
-            ]
-            require(comparable, "prefix/suffix overlap has no comparable observations")
-            matches = sum(prefix[index] == suffix[index - suffix_start] for index in comparable)
-            return len(comparable), matches / len(comparable)
-
-        primary_frames, primary_agreement = agreement(primary_prefix, primary_suffix)
-        secondary_frames, secondary_agreement = agreement(secondary_prefix, secondary_suffix)
+        primary_prefix, primary_suffix = _replay_prefix_suffix(
+            candidates=candidates,
+            evidence=evidence,
+            weights_key="primary_weights",
+            prefix_stop=prefix_stop,
+            suffix_start=suffix_start,
+            maximum_bridge_gap_frames=gap,
+        )
+        secondary_prefix, secondary_suffix = _replay_prefix_suffix(
+            candidates=candidates,
+            evidence=evidence,
+            weights_key="secondary_weights",
+            prefix_stop=prefix_stop,
+            suffix_start=suffix_start,
+            maximum_bridge_gap_frames=gap,
+        )
+        primary_frames, primary_agreement = _overlap_agreement(
+            primary_prefix,
+            primary_suffix,
+            prefix_stop=prefix_stop,
+            suffix_start=suffix_start,
+        )
+        secondary_frames, secondary_agreement = _overlap_agreement(
+            secondary_prefix,
+            secondary_suffix,
+            prefix_stop=prefix_stop,
+            suffix_start=suffix_start,
+        )
         video_id = str(raw_row["video_id"])
         opaque_id = hashlib.sha256(video_id.encode("utf-8")).hexdigest()
         replay_row = replay_by_opaque.get(opaque_id)

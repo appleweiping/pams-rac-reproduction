@@ -28,9 +28,9 @@ from pams.data import (
     pose_cache_path,
 )
 from pams.keypoint_single_source import (
-    AssociationWeights,
     CYCLEBACK_PAIR_VARIANT_ALIASES,
     CYCLEBACK_PAIR_VARIANTS,
+    AssociationWeights,
     TrackStabilityThresholds,
     ViterbiPath,
     _local_ambiguity_gap_rows,

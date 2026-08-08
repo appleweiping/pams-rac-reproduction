@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from typing import Any
 
 FROZEN_THRESHOLD_FIELD_ORDER = (
@@ -48,7 +48,7 @@ def canonical_threshold_grid_rows(
         if not isinstance(raw, list) or not raw:
             raise ValueError(f"threshold axis missing: {field}")
         if not all(
-            isinstance(value, (int, float))
+            isinstance(value, int | float)
             and not isinstance(value, bool)
             and math.isfinite(float(value))
             for value in raw
@@ -57,11 +57,13 @@ def canonical_threshold_grid_rows(
         if len({float(value) for value in raw}) != len(raw):
             raise ValueError(f"threshold axis contains duplicates: {field}")
         if field in _DESCENDING_AXES and any(
-            float(left) <= float(right) for left, right in zip(raw, raw[1:])
+            float(left) <= float(right)
+            for left, right in zip(raw, raw[1:], strict=False)
         ):
             raise ValueError(f"maximum threshold axis is not permissive-to-strict: {field}")
         if field in _ASCENDING_AXES and any(
-            float(left) >= float(right) for left, right in zip(raw, raw[1:])
+            float(left) >= float(right)
+            for left, right in zip(raw, raw[1:], strict=False)
         ):
             raise ValueError(f"minimum threshold axis is not permissive-to-strict: {field}")
         axes[field] = list(raw)

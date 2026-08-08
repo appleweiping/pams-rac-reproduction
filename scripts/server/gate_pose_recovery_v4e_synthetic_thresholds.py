@@ -19,6 +19,7 @@ from pose_recovery_v4d_full337_contract import (
     sha256_file,
     write_json_exclusive,
 )
+
 from pams.v4e_synthetic_contract import canonical_threshold_grid_rows
 
 THRESHOLD_KEYS = {

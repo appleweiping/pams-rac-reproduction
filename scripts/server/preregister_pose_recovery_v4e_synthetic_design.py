@@ -14,6 +14,7 @@ from pose_recovery_v4d_full337_contract import (
     Full337ContractError,
     write_json_exclusive,
 )
+
 from pams.v4e_synthetic_contract import (
     FROZEN_THRESHOLD_FIELD_ORDER,
     canonical_threshold_grid_rows,
@@ -38,7 +39,7 @@ def _seeds(split: str) -> list[int]:
     return [
         int.from_bytes(
             hashlib.sha256(
-                f"pams-v4e-synthetic-v1:{split}:{index}".encode("utf-8")
+                f"pams-v4e-synthetic-v1:{split}:{index}".encode()
             ).digest()[:8],
             "big",
         )

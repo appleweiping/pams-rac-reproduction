@@ -26,8 +26,8 @@ from pose_recovery_v4d_full337_contract import (
 
 from pams.config import KeypointRCNNSingleSourceConfig, load_config
 from pams.keypoint_single_source import (
-    AssociationWeights,
     RELIABLE_ACTION_JOINTS,
+    AssociationWeights,
     TrackStabilityThresholds,
     ViterbiPath,
     _local_ambiguity_gap_rows,
@@ -541,9 +541,7 @@ def produce_synthetic_evidence(
                     ):
                         permutation_vectors[split][sample_index] = True
                     eligible = bool(decision_period_false["eligible"])
-                    if family in POSITIVE_FAMILIES:
-                        outcome = eligible and bool(fixture["truth_condition"])
-                    elif family in IDENTITY_NULL_FAMILIES:
+                    if family in POSITIVE_FAMILIES or family in IDENTITY_NULL_FAMILIES:
                         outcome = eligible and bool(fixture["truth_condition"])
                     elif family in JOINT_NULL_FAMILIES:
                         outcome = eligible
@@ -562,7 +560,7 @@ def produce_synthetic_evidence(
             "permissiveness_rank": rank,
             "thresholds": dict(grid_row["thresholds"]),
         }
-        for split, seeds in split_seeds.items():
+        for split, _seeds in split_seeds.items():
             family_vectors = decision_vectors[rank][split]
             determinism = determinism_vectors[split]
             permutation = permutation_vectors[split]
