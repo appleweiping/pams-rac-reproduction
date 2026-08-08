@@ -23,16 +23,6 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-_CONTRACT_SPEC = importlib.util.spec_from_file_location(
-    "pams_conventional_cycleback_wrapper_contract",
-    Path(__file__).with_name("pams_conventional_cycleback_wrapper_contract.py"),
-)
-if _CONTRACT_SPEC is None or _CONTRACT_SPEC.loader is None:
-    raise RuntimeError("cycleback wrapper contract module cannot be loaded")
-_CONTRACT_MODULE = importlib.util.module_from_spec(_CONTRACT_SPEC)
-_CONTRACT_SPEC.loader.exec_module(_CONTRACT_MODULE)
-validate_inspect = _CONTRACT_MODULE.validate_inspect
-
 CANONICAL_ROOT = Path("/media/lenovo/data2/pams-rac")
 SAFE_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 GIT_BINARY = "/usr/bin/git"
@@ -48,6 +38,30 @@ OUTCOME_REGISTRY_ROOT = (
 GPU_LOCK_ROOT = CANONICAL_ROOT / ".pams-cycleback-gpu-locks-v1"
 ATTEMPT_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]{0,39}$")
 CONTAINER_ID_PATTERN = re.compile(r"^(?:sha256:)?([0-9a-f]{64})$")
+# Deliberately empty trust anchors. A separate, independently reviewed
+# activation launcher commit may point at an already-fixed consumer checkout
+# and sealed integration/registry bytes. The secure scaffold cannot derive any
+# expected value from the registry it is about to validate.
+_BOOTSTRAP_SOURCE_CHECKOUT_LOCATOR = ""
+_BOOTSTRAP_SOURCE_REVISION = ""
+_BOOTSTRAP_SOURCE_TREE_SHA = ""
+_BOOTSTRAP_CONTAINER_IMAGE_ID = ""
+_BOOTSTRAP_LAUNCH_REGISTRY_LOCATOR = ""
+_BOOTSTRAP_LAUNCH_AUTHORIZATION_SHA256 = ""
+_BOOTSTRAP_LAUNCH_AUTHORIZATION_BYTES = 0
+_BOOTSTRAP_LAUNCH_RECEIPT_SHA256 = ""
+_BOOTSTRAP_LAUNCH_RECEIPT_BYTES = 0
+_BOOTSTRAP_LAUNCH_RESERVATION_SHA256 = ""
+_BOOTSTRAP_LAUNCH_RESERVATION_BYTES = 0
+_BOOTSTRAP_INTEGRATION_OUTCOME_LOCATOR = ""
+_BOOTSTRAP_INTEGRATION_RESERVATION_SHA256 = ""
+_BOOTSTRAP_INTEGRATION_RESERVATION_BYTES = 0
+_BOOTSTRAP_INTEGRATION_GATE_SHA256 = ""
+_BOOTSTRAP_INTEGRATION_GATE_BYTES = 0
+_BOOTSTRAP_INTEGRATION_AUTHORIZATION_SHA256 = ""
+_BOOTSTRAP_INTEGRATION_AUTHORIZATION_BYTES = 0
+_BOOTSTRAP_INTEGRATION_RECEIPT_SHA256 = ""
+_BOOTSTRAP_INTEGRATION_RECEIPT_BYTES = 0
 CONFIGS = {
     "W16_H4": "configs/conventional_cycleback/w16_hop4_v1.yaml",
     "W16_H2": "configs/conventional_cycleback/w16_hop2_v1.yaml",
@@ -227,6 +241,7 @@ def _run(
         "PATH": SAFE_PATH,
         "LANG": "C.UTF-8",
         "LC_ALL": "C.UTF-8",
+        "GIT_OPTIONAL_LOCKS": "0",
     }
     if stdout_path is None:
         completed = subprocess.run(
@@ -378,20 +393,215 @@ def _archive_source(repository: Path, revision: str, output: Path) -> None:
     output.chmod(0o555)
 
 
-def _load_launch_bootstrap(repository: Path) -> tuple[Any, Mapping[str, Any]]:
-    authorization_path = LAUNCH_REGISTRY_ROOT / "launch.authorization.json"
-    authorization, _ = _read_json(authorization_path, role="launch authorization bootstrap")
-    if not isinstance(authorization, Mapping):
-        raise LaunchFailure("launch authorization bootstrap is not an object")
+def _lower_hex(value: object, *, length: int) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == length
+        and value == value.lower()
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def _positive_byte_count(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def _require_bootstrap_activation() -> None:
+    """Reject before any registry, checkout, import-path, or plugin access."""
+
+    sha256_values = (
+        _BOOTSTRAP_LAUNCH_AUTHORIZATION_SHA256,
+        _BOOTSTRAP_LAUNCH_RECEIPT_SHA256,
+        _BOOTSTRAP_LAUNCH_RESERVATION_SHA256,
+        _BOOTSTRAP_INTEGRATION_RESERVATION_SHA256,
+        _BOOTSTRAP_INTEGRATION_GATE_SHA256,
+        _BOOTSTRAP_INTEGRATION_AUTHORIZATION_SHA256,
+        _BOOTSTRAP_INTEGRATION_RECEIPT_SHA256,
+    )
+    byte_counts = (
+        _BOOTSTRAP_LAUNCH_AUTHORIZATION_BYTES,
+        _BOOTSTRAP_LAUNCH_RECEIPT_BYTES,
+        _BOOTSTRAP_LAUNCH_RESERVATION_BYTES,
+        _BOOTSTRAP_INTEGRATION_RESERVATION_BYTES,
+        _BOOTSTRAP_INTEGRATION_GATE_BYTES,
+        _BOOTSTRAP_INTEGRATION_AUTHORIZATION_BYTES,
+        _BOOTSTRAP_INTEGRATION_RECEIPT_BYTES,
+    )
+    source_checkout = Path(_BOOTSTRAP_SOURCE_CHECKOUT_LOCATOR)
+    integration_root = Path(_BOOTSTRAP_INTEGRATION_OUTCOME_LOCATOR)
+    if not (
+        _lower_hex(_BOOTSTRAP_SOURCE_REVISION, length=40)
+        and _lower_hex(_BOOTSTRAP_SOURCE_TREE_SHA, length=40)
+        and isinstance(_BOOTSTRAP_CONTAINER_IMAGE_ID, str)
+        and _BOOTSTRAP_CONTAINER_IMAGE_ID.startswith("sha256:")
+        and _lower_hex(_BOOTSTRAP_CONTAINER_IMAGE_ID[7:], length=64)
+        and all(_lower_hex(value, length=64) for value in sha256_values)
+        and all(_positive_byte_count(value) for value in byte_counts)
+        and source_checkout.is_absolute()
+        and ".." not in source_checkout.parts
+        and source_checkout.parent
+        == CANONICAL_ROOT / "checkouts/pams-conventional-cycleback-consumer-v1"
+        and source_checkout.name == _BOOTSTRAP_SOURCE_REVISION
+        and Path(_BOOTSTRAP_LAUNCH_REGISTRY_LOCATOR) == LAUNCH_REGISTRY_ROOT
+        and integration_root.is_absolute()
+        and ".." not in integration_root.parts
+        and integration_root.parent
+        == CANONICAL_ROOT / "runs/pams-cycleback-unified-2d-representation-v1"
+    ):
+        raise LaunchFailure(
+            "cycleback bootstrap is disabled pending an independent activation commit"
+        )
+
+
+def _read_bootstrap_json(
+    path: Path,
+    *,
+    role: str,
+    expected_sha256: str,
+    expected_bytes: int,
+) -> Mapping[str, Any]:
+    encoded = _stable_bytes(path, role=role)
+    identity = FileIdentity(hashlib.sha256(encoded).hexdigest(), len(encoded))
+    if identity != FileIdentity(expected_sha256, expected_bytes):
+        raise LaunchFailure(f"{role} differs from the independently activated bytes")
+    payload = _json_no_duplicates(encoded, role=role)
+    if not isinstance(payload, Mapping):
+        raise LaunchFailure(f"{role} is not an object")
+    return payload
+
+
+def _load_contract_validator(repository: Path) -> Any:
+    contract_path = repository / (
+        "scripts/server/pams_conventional_cycleback_wrapper_contract.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "pams_conventional_cycleback_wrapper_contract",
+        contract_path,
+    )
+    if spec is None or spec.loader is None:
+        raise LaunchFailure("cycleback wrapper contract module cannot be loaded")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        validator = module.validate_inspect
+    except AttributeError as exc:
+        raise LaunchFailure("cycleback wrapper contract lacks validate_inspect") from exc
+    if not callable(validator):
+        raise LaunchFailure("cycleback wrapper contract lacks validate_inspect")
+    return validator
+
+
+def _load_launch_bootstrap() -> tuple[Any, Mapping[str, Any], Path, Any]:
+    _require_bootstrap_activation()
+
+    registry_root = _validate_directory(
+        Path(_BOOTSTRAP_LAUNCH_REGISTRY_LOCATOR),
+        role="activated launch registry",
+        sealed=True,
+    )
+    if registry_root != LAUNCH_REGISTRY_ROOT:
+        raise LaunchFailure("activated launch registry locator changed through a symlink")
+    authorization = _read_bootstrap_json(
+        registry_root / "launch.authorization.json",
+        role="launch authorization bootstrap",
+        expected_sha256=_BOOTSTRAP_LAUNCH_AUTHORIZATION_SHA256,
+        expected_bytes=_BOOTSTRAP_LAUNCH_AUTHORIZATION_BYTES,
+    )
+    receipt = _read_bootstrap_json(
+        registry_root / "registry.receipt.json",
+        role="launch registry receipt bootstrap",
+        expected_sha256=_BOOTSTRAP_LAUNCH_RECEIPT_SHA256,
+        expected_bytes=_BOOTSTRAP_LAUNCH_RECEIPT_BYTES,
+    )
+    reservation = _read_bootstrap_json(
+        registry_root / "registry.reservation.json",
+        role="launch registry reservation bootstrap",
+        expected_sha256=_BOOTSTRAP_LAUNCH_RESERVATION_SHA256,
+        expected_bytes=_BOOTSTRAP_LAUNCH_RESERVATION_BYTES,
+    )
     identity = authorization.get("identity")
     if not isinstance(identity, Mapping):
         raise LaunchFailure("launch authorization identity is missing")
-    revision = identity.get("source_revision")
-    tree = identity.get("source_tree_sha")
-    if _git_text(repository, "rev-parse", "HEAD^{commit}") != revision:
-        raise LaunchFailure("current checkout is not the preregistered source revision")
-    if _git_text(repository, "rev-parse", "HEAD^{tree}") != tree:
-        raise LaunchFailure("current checkout tree is not the preregistered source tree")
+    representation_bindings = identity.get("representation_bindings")
+    if not isinstance(representation_bindings, Mapping):
+        raise LaunchFailure("launch authorization representation bindings are missing")
+    if (
+        identity.get("source_revision") != _BOOTSTRAP_SOURCE_REVISION
+        or identity.get("source_tree_sha") != _BOOTSTRAP_SOURCE_TREE_SHA
+        or identity.get("container_image_id") != _BOOTSTRAP_CONTAINER_IMAGE_ID
+        or identity.get("representation_root")
+        != _BOOTSTRAP_INTEGRATION_OUTCOME_LOCATOR
+        or authorization.get("registry_id") != receipt.get("registry_id")
+        or authorization.get("registry_id") != reservation.get("registry_id")
+        or receipt.get("launch_authorization_sha256")
+        != _BOOTSTRAP_LAUNCH_AUTHORIZATION_SHA256
+        or receipt.get("reservation_archive_sha256")
+        != _BOOTSTRAP_LAUNCH_RESERVATION_SHA256
+        or reservation.get("source_revision") != _BOOTSTRAP_SOURCE_REVISION
+        or reservation.get("source_tree_sha") != _BOOTSTRAP_SOURCE_TREE_SHA
+        or reservation.get("container_image_id") != _BOOTSTRAP_CONTAINER_IMAGE_ID
+        or reservation.get("final_registry_root")
+        != _BOOTSTRAP_LAUNCH_REGISTRY_LOCATOR
+    ):
+        raise LaunchFailure("launch registry bootstrap lineage mismatch")
+
+    integration_root = _validate_directory(
+        Path(_BOOTSTRAP_INTEGRATION_OUTCOME_LOCATOR),
+        role="activated integration outcome",
+        sealed=True,
+    )
+    if integration_root != Path(_BOOTSTRAP_INTEGRATION_OUTCOME_LOCATOR):
+        raise LaunchFailure("activated integration locator changed through a symlink")
+    _read_bootstrap_json(
+        integration_root / "attempt.reservation.json",
+        role="integration outcome reservation bootstrap",
+        expected_sha256=_BOOTSTRAP_INTEGRATION_RESERVATION_SHA256,
+        expected_bytes=_BOOTSTRAP_INTEGRATION_RESERVATION_BYTES,
+    )
+    _read_bootstrap_json(
+        integration_root / "gate-output/representation-gate.json",
+        role="integration outcome gate bootstrap",
+        expected_sha256=_BOOTSTRAP_INTEGRATION_GATE_SHA256,
+        expected_bytes=_BOOTSTRAP_INTEGRATION_GATE_BYTES,
+    )
+    _read_bootstrap_json(
+        integration_root / "gate-output/cycleback-input.authorization.json",
+        role="integration outcome authorization bootstrap",
+        expected_sha256=_BOOTSTRAP_INTEGRATION_AUTHORIZATION_SHA256,
+        expected_bytes=_BOOTSTRAP_INTEGRATION_AUTHORIZATION_BYTES,
+    )
+    _read_bootstrap_json(
+        integration_root / "audit/run.receipt.json",
+        role="integration outcome receipt bootstrap",
+        expected_sha256=_BOOTSTRAP_INTEGRATION_RECEIPT_SHA256,
+        expected_bytes=_BOOTSTRAP_INTEGRATION_RECEIPT_BYTES,
+    )
+    if (
+        representation_bindings.get("representation_gate_sha256")
+        != _BOOTSTRAP_INTEGRATION_GATE_SHA256
+        or representation_bindings.get("representation_authorization_sha256")
+        != _BOOTSTRAP_INTEGRATION_AUTHORIZATION_SHA256
+        or representation_bindings.get("representation_run_receipt_sha256")
+        != _BOOTSTRAP_INTEGRATION_RECEIPT_SHA256
+    ):
+        raise LaunchFailure("integration outcome differs from launch authorization")
+
+    requested_repository = Path(_BOOTSTRAP_SOURCE_CHECKOUT_LOCATOR)
+    repository = _validate_directory(
+        requested_repository,
+        role="activated cycleback source checkout",
+        sealed=True,
+    )
+    if repository != requested_repository:
+        raise LaunchFailure("activated source checkout changed through a symlink")
+    if not (repository / ".git").is_dir() or (repository / ".git").is_symlink():
+        raise LaunchFailure("activated source checkout is not a sealed standalone Git tree")
+    if _git_text(repository, "rev-parse", "HEAD^{commit}") != (
+        _BOOTSTRAP_SOURCE_REVISION
+    ):
+        raise LaunchFailure("current checkout is not the activated source revision")
+    if _git_text(repository, "rev-parse", "HEAD^{tree}") != _BOOTSTRAP_SOURCE_TREE_SHA:
+        raise LaunchFailure("current checkout is not the activated source tree")
     if _run(
         [
             GIT_BINARY,
@@ -402,18 +612,33 @@ def _load_launch_bootstrap(repository: Path) -> tuple[Any, Mapping[str, Any]]:
             "--untracked-files=all",
         ]
     ).stdout:
-        raise LaunchFailure("current checkout is not clean")
+        raise LaunchFailure("activated source checkout is not clean")
+    if any(name == "pams" or name.startswith("pams.") for name in sys.modules):
+        raise LaunchFailure("pams modules were loaded before bootstrap validation")
     sys.path.insert(0, os.fspath(repository / "src"))
-    from pams.conventional_cycleback.authority import (
-        validate_cycleback_launch_registry,
-    )
+    from pams.conventional_cycleback import authority as authority_module
 
-    launch = validate_cycleback_launch_registry(
-        LAUNCH_REGISTRY_ROOT,
-        declared_host_root=LAUNCH_REGISTRY_ROOT,
+    expected_authority_path = (
+        repository / "src/pams/conventional_cycleback/authority.py"
+    ).resolve(strict=True)
+    if Path(authority_module.__file__).resolve(strict=True) != expected_authority_path:
+        raise LaunchFailure("cycleback authority module came from an unactivated source")
+    launch = authority_module.validate_cycleback_launch_registry(
+        registry_root,
+        declared_host_root=registry_root,
         source_root=repository,
     )
-    return launch, identity
+    if (
+        launch.source_revision != _BOOTSTRAP_SOURCE_REVISION
+        or launch.source_tree_sha != _BOOTSTRAP_SOURCE_TREE_SHA
+        or launch.container_image_id != _BOOTSTRAP_CONTAINER_IMAGE_ID
+        or launch.authorization_sha256 != _BOOTSTRAP_LAUNCH_AUTHORIZATION_SHA256
+        or launch.receipt_sha256 != _BOOTSTRAP_LAUNCH_RECEIPT_SHA256
+        or launch.representation_root != _BOOTSTRAP_INTEGRATION_OUTCOME_LOCATOR
+    ):
+        raise LaunchFailure("validated launch authority differs from bootstrap trust anchors")
+    contract_validator = _load_contract_validator(repository)
+    return launch, identity, repository, contract_validator
 
 
 def _outcome_registry_path(role: str, candidate_id: str | None) -> Path:
@@ -1505,7 +1730,7 @@ def launch_stage(
     candidate_id: str | None,
     gpu_device: str | None,
 ) -> tuple[Path, int]:
-    repository = Path(__file__).resolve().parents[2]
+    _require_bootstrap_activation()
     phase = "launch-registry"
     launch: Any | None = None
     predecessors: list[Predecessor] = []
@@ -1528,7 +1753,7 @@ def launch_stage(
         "absence_verified": False,
     }
     try:
-        launch, _ = _load_launch_bootstrap(repository)
+        launch, _, repository, inspect_validator = _load_launch_bootstrap()
         phase = "stage-inputs"
         if stage == "adapter":
             if candidate_id is not None:
@@ -1696,7 +1921,7 @@ def launch_stage(
         _write_bytes_exclusive(create_id_path, f"{container_id}\n".encode("ascii"))
         pre_encoded = _inspect_container(container_id)
         _write_bytes_exclusive(pre_path, pre_encoded)
-        validate_inspect(
+        inspect_validator(
             inspect_path=pre_path,
             create_id_path=create_id_path,
             spec_path=contract_path,
@@ -1715,7 +1940,7 @@ def launch_stage(
         exit_code = _parse_post_exit(post_encoded, container_id=container_id)
         if attached.returncode != exit_code:
             raise LaunchFailure("Docker attach exit differs from container state")
-        validate_inspect(
+        inspect_validator(
             inspect_path=post_path,
             create_id_path=create_id_path,
             spec_path=contract_path,

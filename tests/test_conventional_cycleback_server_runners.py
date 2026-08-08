@@ -457,6 +457,57 @@ def test_stage_reservation_releases_lock_on_failure(tmp_path: Path) -> None:
     os.close(descriptor)
 
 
+def test_empty_bootstrap_rejects_before_registry_checkout_or_dynamic_import(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    launcher = _load_module("cycleback_secure_launcher_bootstrap_test", LAUNCHER_PATH)
+    forged_registry = tmp_path / "forged-registry"
+    forged_registry.mkdir()
+    _write_json(
+        forged_registry / "launch.authorization.json",
+        {"identity": {"source_revision": "a" * 40, "source_tree_sha": "b" * 40}},
+    )
+    alternate_checkout = tmp_path / "clean-alternate-checkout"
+    alternate_checkout.mkdir()
+    launcher.LAUNCH_REGISTRY_ROOT = forged_registry
+    before_sys_path = tuple(sys.path)
+    calls: list[str] = []
+
+    def forbidden(*args, **kwargs):
+        del args, kwargs
+        calls.append("forbidden")
+        raise AssertionError("bootstrap touched untrusted state before activation")
+
+    monkeypatch.setattr(launcher, "_stable_bytes", forbidden)
+    monkeypatch.setattr(launcher, "_validate_directory", forbidden)
+    monkeypatch.setattr(launcher, "_git_text", forbidden)
+    monkeypatch.setattr(launcher, "_run", forbidden)
+    monkeypatch.setattr(launcher, "_write_failure_and_publish", forbidden)
+    monkeypatch.setattr(launcher.importlib.util, "spec_from_file_location", forbidden)
+
+    with pytest.raises(launcher.LaunchFailure, match="disabled pending"):
+        launcher._load_launch_bootstrap()
+    with pytest.raises(launcher.LaunchFailure, match="disabled pending"):
+        launcher.launch_stage(
+            stage="adapter",
+            attempt_id="attempt",
+            candidate_id=None,
+            gpu_device=None,
+        )
+    with pytest.raises(TypeError):
+        launcher._load_launch_bootstrap(alternate_checkout)
+
+    assert calls == []
+    assert tuple(sys.path) == before_sys_path
+    assert launcher._BOOTSTRAP_SOURCE_CHECKOUT_LOCATOR == ""
+    assert launcher._BOOTSTRAP_SOURCE_REVISION == ""
+    assert launcher._BOOTSTRAP_SOURCE_TREE_SHA == ""
+    assert launcher._BOOTSTRAP_LAUNCH_AUTHORIZATION_SHA256 == ""
+    assert launcher._BOOTSTRAP_INTEGRATION_OUTCOME_LOCATOR == ""
+    assert launcher._BOOTSTRAP_INTEGRATION_AUTHORIZATION_SHA256 == ""
+
+
 def test_thin_wrappers_are_identity_free_and_python_isolated() -> None:
     for path in (ADAPTER, GEOMETRY, MECHANISM):
         source = path.read_text(encoding="utf-8")
@@ -491,12 +542,17 @@ def test_launcher_freezes_science_and_security_boundaries() -> None:
         "_cleanup_exact_container(container_id)",
         "_write_source_manifest",
         "_artifact_manifest",
+        "_require_bootstrap_activation()",
+        "_BOOTSTRAP_SOURCE_CHECKOUT_LOCATOR = \"\"",
+        "_BOOTSTRAP_LAUNCH_AUTHORIZATION_SHA256 = \"\"",
+        "_BOOTSTRAP_INTEGRATION_AUTHORIZATION_SHA256 = \"\"",
         "_outcome_slot_lock_path",
         "not container_create_attempted",
         "validate_cycleback_pose_authority",
     ):
         assert required in source
     assert "assert " not in source
+    assert "_CONTRACT_SPEC" not in source
     assert "PAMS_TRAIN337_POSE_SNAPSHOT" not in source
     assert "_reject_v4e_from_generic_training(config" in cli_source
     assert cli_source.count("_reject_v4e_from_generic_training(config, operation=") == 2
