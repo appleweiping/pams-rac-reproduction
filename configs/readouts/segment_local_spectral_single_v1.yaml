@@ -1,0 +1,92 @@
+# Independently inferred single-expert baseline completion.  The paper does
+# not disclose this readout.  Calibration and expansion gates consume no
+# UCFRep action/count targets, and passing never authorizes test105.
+schema_version: 1
+key: segment_local_spectral_single_v1
+classification: inferred_label_free_single_expert_baseline
+eligible_as_exact_author_baseline: false
+
+axes:
+  window_frames: [64, 96]
+  power_reduction: [sum, per_feature_band_normalized_mean]
+  minimum_cycles: [1.0, 1.5]
+  ridge_aggregation: [ridge_integral, confidence_weighted_median_rate]
+  minimum_peak_share: [0.10, 0.20]
+
+fixed:
+  feature_order: level_only
+  embedding_context: full_authorized_segment_once
+  embedding_execution_mode: eval_deterministic_no_grad_no_optimizer_update
+  position_indices: absolute_native_unchanged
+  temporal_detrend: per_dimension_linear
+  taper: hann_periodic_false
+  fft_length: 4_times_window
+  hop: window_div_4
+  upper_frequency_cycles_per_frame: 0.25
+  absolute_minimum_frequency_cycles_per_frame: 0.0078125
+  signed_vector_acf_minimum: 0.10
+  confidence_weight: sqrt_peak_share_times_positive_signed_acf
+  ridge_boundary: nearest_center_extension
+  ridge_interpolation: linear_between_centers
+  ridge_integral: source_frame_interval_trapezoid
+  duration: segment_length_minus_1
+  video_rounding: half_up_once_exactly_one_segment
+  multi_segment_video_total: undefined_never_sum
+  coordinate_schema: coco17_xy
+  raw_feature_policy: window_stable_joints_only
+  minimum_joints_per_frame: 8
+  minimum_stable_joints: 6
+  minimum_stable_action_joints: 3
+  prohibited_operations:
+    - activity_trim
+    - harmonic_bonus
+    - expert_vote
+    - feature_minmax
+    - count_clip
+
+synthetic:
+  selector_seed: 2026
+  heldout_seed: 3407
+  dimensions: [34, 512]
+  null_trials_per_family: 64
+  reset_trials: 64
+  positive_eligible_minimum: 0.95
+  overall_nmae_maximum: 0.08
+  overall_obo_minimum: 0.95
+  variable_tempo_nmae_maximum: 0.10
+  invariance_rounded_agreement_minimum: 0.95
+  null_false_eligible_cp_confidence: 0.95
+  null_false_eligible_cp_ucb_maximum: 0.05
+  reset_video_total_errors_maximum: 0
+  ranking:
+    - null_cp_ucb
+    - variable_tempo_nmae
+    - overall_nmae
+    - negative_obo
+    - abstention_rate
+    - canonical_candidate_id
+  heldout_policy: selected_candidate_only_same_gates_no_fallback
+
+train337:
+  expected_video_count: 337
+  hash_subset_seed: 2026
+  hash_subset_size: 64
+  one_segment_eligible_minimum: 0.90
+  low_band_boundary_share_maximum_exclusive: 0.10
+  high_band_boundary_share_maximum_exclusive: 0.10
+  rounded_mode_share_maximum_exclusive: 0.50
+  rounded_bin_minimum: 8
+  reverse_relative_error_median_maximum: 0.05
+  reverse_relative_error_p90_maximum: 0.20
+  time_warp_disagreement_median_maximum: 0.10
+  time_warp_disagreement_p90_maximum: 0.25
+  split_additivity_median_maximum: 0.10
+  split_additivity_p90_maximum: 0.25
+  raw_invariance_rounded_agreement_minimum: 0.90
+  learned_augmentation_disagreement_median_maximum: 0.10
+  learned_augmentation_disagreement_p90_maximum: 0.25
+  static_null_positive_share_maximum: 0.05
+  shuffle_confidence_ratio_median_maximum: 0.75
+  real_minus_shuffle_peak_margin_median_minimum: 0.05
+  mechanism_rule: L_must_pass_Epi_must_fail_E0_report_only
+  label_policy: no_action_or_count_targets
