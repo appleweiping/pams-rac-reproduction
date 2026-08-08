@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import fcntl
 import hashlib
 import importlib.util
@@ -233,8 +234,7 @@ def _run(
             cwd=cwd,
             env=environment,
             check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
         )
     else:
         flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
@@ -1668,13 +1668,11 @@ def launch_stage(
         )
         stdout_container_id: str | None = None
         cidfile_container_id: str | None = None
-        try:
+        with contextlib.suppress(LaunchFailure):
             stdout_container_id = _normalized_container_id(
                 create.stdout,
                 role="Docker create stdout ID",
             )
-        except LaunchFailure:
-            pass
         if raw_cid_path.exists():
             cidfile_container_id = _normalized_container_id(
                 _stable_bytes(raw_cid_path, role="Docker create CID file"),
@@ -1787,7 +1785,7 @@ def launch_stage(
             )
         return final_root, exit_code
     except BaseException as exc:
-        if not isinstance(exc, (Exception, KeyboardInterrupt)):
+        if not isinstance(exc, Exception | KeyboardInterrupt):
             raise
         if container_id is not None:
             try:

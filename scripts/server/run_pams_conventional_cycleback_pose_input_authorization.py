@@ -1,5 +1,7 @@
 """One-shot adapter from the preregistered unified-2D PASS to cycle-back."""
 
+# ruff: noqa: I001
+
 from __future__ import annotations
 
 import sys

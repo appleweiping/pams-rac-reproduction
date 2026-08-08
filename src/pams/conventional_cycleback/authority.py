@@ -698,8 +698,7 @@ def _git_bytes(repository: Path, *arguments: str) -> bytes:
             "LANG": "C.UTF-8",
             "LC_ALL": "C.UTF-8",
         },
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
     )
     if completed.returncode != 0:
         message = completed.stderr.decode("utf-8", errors="replace").strip()

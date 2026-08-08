@@ -1,5 +1,7 @@
 """Server entry point for the cycle-back 256-step mechanism probe."""
 
+# ruff: noqa: I001
+
 from __future__ import annotations
 
 import sys

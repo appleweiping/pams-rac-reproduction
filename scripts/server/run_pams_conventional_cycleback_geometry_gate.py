@@ -1,5 +1,7 @@
 """Server entry point for the train337-only cycle-back geometry/PE/null gate."""
 
+# ruff: noqa: I001
+
 from __future__ import annotations
 
 import sys

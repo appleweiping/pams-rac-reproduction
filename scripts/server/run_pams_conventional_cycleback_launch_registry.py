@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Reserve the canonical conventional-cycleback launch registry."""
 
+# ruff: noqa: I001
+
 import sys
 from pathlib import Path
 
