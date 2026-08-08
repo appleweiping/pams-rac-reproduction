@@ -1,31 +1,45 @@
 from __future__ import annotations
 
 import inspect
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
 import pytest
 import yaml
 
+import pams.single_expert_readout as single_readout
 from pams.single_expert_readout import (
     AuthorizedSegment,
     FullSegmentEncodingReceipt,
     MechanismEstimate,
     MechanismVideo,
+    NullFamilyScore,
+    PositiveFamilyScore,
     RepresentationVideo,
     SegmentEstimate,
+    SegmentPermutation,
     SpectralCandidate,
+    SyntheticCandidateScore,
+    SyntheticSelectionFailure,
+    TemporalDerangementReceipt,
     Train337VideoAudit,
     ViewEstimate,
     WindowEstimate,
+    build_fail_closed_train337_authority,
     build_full_segment_encoding_receipt,
     build_preencoder_segment_derangement,
+    build_train337_video_audit,
     build_window_plan,
     estimate_mechanism_views,
     estimate_representation,
     evaluate_train337_gate,
     hash_fixed_subset,
     load_segment_local_spectral_config,
+    replay_and_validate_synthetic_heldout,
+    replay_and_validate_synthetic_selection,
+    replay_selected_candidate_heldout,
+    select_synthetic_candidate,
     synthetic_case_plan,
 )
 
@@ -309,6 +323,49 @@ def test_mechanism_views_require_preencoder_derangement_and_full_segment_receipt
             epi_encoding_receipt=wrong_epi_receipt,
         )
 
+    original_permutation = deranged.receipt.permutations[0]
+    forged_permutation = SegmentPermutation(
+        segment_id=original_permutation.segment_id,
+        source_indices=original_permutation.source_indices,
+        source_pose_sha256=original_permutation.source_pose_sha256,
+        deranged_pose_sha256="f" * 64,
+    )
+    forged_derangement = TemporalDerangementReceipt(
+        method="pose_pre_encoder_segment_derangement_v1",
+        video_id=video.video_id,
+        seed=2026,
+        permutations=(forged_permutation,),
+        permutation_map_sha256=single_readout._permutation_digest(
+            2026,
+            (forged_permutation,),
+            video_id=video.video_id,
+        ),
+    )
+    forged_epi_receipt = _encoding_receipt(
+        "Epi",
+        video.video_id,
+        epi,
+        video.segments,
+        {"segment-0": "f" * 64},
+        state="1" * 64,
+        derangement_hash=forged_derangement.permutation_map_sha256,
+    )
+    with pytest.raises(ValueError, match="does not replay from authority bytes"):
+        MechanismVideo(
+            video_id=video.video_id,
+            learned=learned,
+            untrained=untrained,
+            epi=epi,
+            raw_xy=video.raw_xy,
+            joint_mask=video.joint_mask,
+            valid_mask=video.valid_mask,
+            segments=video.segments,
+            epi_receipt=forged_derangement,
+            learned_encoding_receipt=mechanism.learned_encoding_receipt,
+            untrained_encoding_receipt=mechanism.untrained_encoding_receipt,
+            epi_encoding_receipt=forged_epi_receipt,
+        )
+
 
 def test_synthetic_plan_freezes_all_families_without_allocating_arrays() -> None:
     specs = synthetic_case_plan()
@@ -321,6 +378,23 @@ def test_synthetic_plan_freezes_all_families_without_allocating_arrays() -> None
     assert {item.dimension for item in positives} == {34, 512}
     assert len({item.case_id for item in specs}) == len(specs)
     assert sum(item.family == "variable_tempo" for item in specs) == 24
+    assert _config().synthetic.positive_family_gate_policy == (
+        "pooled_all_generation_truth_positives_only_no_family_thresholds"
+    )
+
+
+def test_every_positive_synthetic_profile_realizes_exact_interval_count() -> None:
+    cases = {
+        (item.frames, float(item.target_count), item.profile)
+        for item in synthetic_case_plan()
+        if item.target_count is not None
+    }
+    for frames, count, profile in cases:
+        _, phase = single_readout._periodic_latent(frames, count, profile)
+        assert phase.shape == (frames,)
+        assert phase[0] == 0.0
+        assert phase[-1] / (2.0 * np.pi) == pytest.approx(count, abs=1e-12)
+        assert np.all(np.diff(phase) >= 0.0)
 
 
 def _window(video_id: str) -> WindowEstimate:
@@ -346,12 +420,13 @@ def _view(
     *,
     confidence: float = 0.5,
     peak: float = 0.2,
+    candidate_window_count: int = 5,
 ) -> ViewEstimate:
     segment = AuthorizedSegment("segment-0", 0, 128)
     if count is None:
         segment_estimate = SegmentEstimate(
             segment,
-            5,
+            candidate_window_count,
             0,
             0,
             False,
@@ -375,7 +450,7 @@ def _view(
     window = _window(video_id)
     segment_estimate = SegmentEstimate(
         segment,
-        5,
+        candidate_window_count,
         1,
         1,
         True,
@@ -398,7 +473,14 @@ def _view(
     )
 
 
-def _mechanism(video_id: str, count: int, *, shuffled: bool) -> MechanismEstimate:
+def _mechanism(
+    video_id: str,
+    count: int,
+    *,
+    shuffled: bool,
+    insufficient: bool = False,
+    zero_available: bool = False,
+) -> MechanismEstimate:
     if shuffled:
         l_confidence, l_peak = 0.1, 0.1
         epi_confidence, epi_peak = 0.1, 0.2
@@ -407,17 +489,42 @@ def _mechanism(video_id: str, count: int, *, shuffled: bool) -> MechanismEstimat
         l_confidence, l_peak = 0.5, 0.2
         epi_confidence, epi_peak = 0.1, 0.2
         suffix = "a"
+    unavailable = insufficient or zero_available
+    represented_count = None if unavailable else count
+    candidate_windows = 0 if insufficient else 5
     return MechanismEstimate(
         candidate_id=_candidate().canonical_id,
-        primary=_view(video_id, "L", count, confidence=l_confidence, peak=l_peak),
-        raw_control=_view(video_id, "R", count),
-        untrained_control=_view(video_id, "E0", count, confidence=0.1, peak=0.2),
+        primary=_view(
+            video_id,
+            "L",
+            represented_count,
+            confidence=0.0 if unavailable else l_confidence,
+            peak=0.0 if unavailable else l_peak,
+            candidate_window_count=candidate_windows,
+        ),
+        raw_control=_view(
+            video_id,
+            "R",
+            represented_count,
+            confidence=0.0 if unavailable else 0.5,
+            peak=0.0 if unavailable else 0.2,
+            candidate_window_count=candidate_windows,
+        ),
+        untrained_control=_view(
+            video_id,
+            "E0",
+            represented_count,
+            confidence=0.0 if unavailable else 0.1,
+            peak=0.0 if unavailable else 0.2,
+            candidate_window_count=candidate_windows,
+        ),
         temporal_derangement_control=_view(
             video_id,
             "Epi",
-            count,
-            confidence=epi_confidence,
-            peak=epi_peak,
+            represented_count,
+            confidence=0.0 if unavailable else epi_confidence,
+            peak=0.0 if unavailable else epi_peak,
+            candidate_window_count=candidate_windows,
         ),
         epi_permutation_map_sha256=suffix * 64,
         learned_encoding_receipt_sha256="1" * 64,
@@ -426,20 +533,57 @@ def _mechanism(video_id: str, count: int, *, shuffled: bool) -> MechanismEstimat
     )
 
 
-def _train_record(index: int) -> Train337VideoAudit:
+def _train_record(
+    index: int,
+    *,
+    config,
+    source_authority_sha256: str,
+    insufficient: bool = False,
+    zero_available: bool = False,
+) -> Train337VideoAudit:
     video_id = f"train-{index:03d}"
     count = 4 + index % 12
-    baseline = _mechanism(video_id, count, shuffled=False)
-    same_l = _view(video_id, "L", count)
-    same_r = _view(video_id, "R", count)
-    return Train337VideoAudit(
+    baseline = _mechanism(
+        video_id,
+        count,
+        shuffled=False,
+        insufficient=insufficient,
+        zero_available=zero_available,
+    )
+    unavailable = insufficient or zero_available
+    represented_count = None if unavailable else count
+    candidate_windows = 0 if insufficient else 5
+    same_l = _view(
+        video_id,
+        "L",
+        represented_count,
+        confidence=0.0 if unavailable else 0.5,
+        peak=0.0 if unavailable else 0.2,
+        candidate_window_count=candidate_windows,
+    )
+    same_r = _view(
+        video_id,
+        "R",
+        represented_count,
+        confidence=0.0 if unavailable else 0.5,
+        peak=0.0 if unavailable else 0.2,
+        candidate_window_count=candidate_windows,
+    )
+    split_counts = (
+        (None, None)
+        if insufficient or zero_available
+        else (float(count) / 2.0, float(count) / 2.0)
+    )
+    return build_train337_video_audit(
         video_id=video_id,
+        source_authority_sha256=source_authority_sha256,
+        transform_recipe_sha256=config.train337.transform_recipe.fingerprint,
         baseline=baseline,
         reverse_primary=same_l,
         warp_075_primary=same_l,
         warp_125_primary=same_l,
         duplicate_time_primary=same_l,
-        legal_split_part_float_counts=(float(count) / 2.0, float(count) / 2.0),
+        legal_split_part_float_counts=split_counts,
         raw_rotation_minus15=same_r,
         raw_rotation_plus15=same_r,
         raw_scale_085=same_r,
@@ -448,14 +592,157 @@ def _train_record(index: int) -> Train337VideoAudit:
         learned_augmentation_a=same_l,
         learned_augmentation_b=same_l,
         static_null_primary=_view(video_id, "L", None, confidence=0.0, peak=0.0),
-        second_derangement_shuffle=_mechanism(video_id, count, shuffled=True),
+        second_derangement_shuffle=_mechanism(
+            video_id,
+            count,
+            shuffled=True,
+            insufficient=insufficient,
+            zero_available=zero_available,
+        ),
     )
 
 
-def test_train337_gate_is_hash_fixed_label_free_and_requires_epi_failure() -> None:
-    records = tuple(_train_record(index) for index in range(337))
-    report = evaluate_train337_gate(_config(), _candidate(), records)
-    assert report.authorized_for_dev84 is True
+def _fake_synthetic_score(
+    config,
+    candidate: SpectralCandidate,
+    *,
+    seed: int,
+) -> SyntheticCandidateScore:
+    winner = candidate == config.candidates[0]
+    offset = config.candidates.index(candidate) / 1000.0
+    null_scores = tuple(
+        NullFamilyScore(family, 64, 0, 0.0457, True)
+        for family in single_readout._NULL_FAMILIES
+    )
+    return SyntheticCandidateScore(
+        candidate=candidate,
+        seed=seed,
+        positive_total=118,
+        positive_eligible=118 if winner else 0,
+        positive_eligible_rate=1.0 if winner else 0.0,
+        overall_nmae=0.01 + offset,
+        overall_obo=1.0 if winner else 0.0,
+        variable_tempo_nmae=0.01 + offset,
+        positive_family_scores=(
+            PositiveFamilyScore("constant_tempo_count", 26, 26, 1.0, 0.01, 1.0),
+        ),
+        invariance_agreement=tuple((name, 1.0) for name in single_readout._INVARIANCE_NAMES),
+        null_total=512,
+        null_false_eligible=0,
+        null_cp_ucb=0.0457,
+        null_family_scores=null_scores,
+        reset_total=64,
+        reset_video_total_errors=0,
+        abstention_rate=0.0 if winner else 1.0,
+        hard_pass=winner,
+        failed_gates=() if winner else ("positive_eligible_rate",),
+    )
+
+
+def _synthetic_evidence(monkeypatch: pytest.MonkeyPatch):
+    config = _config()
+    monkeypatch.setattr(single_readout, "score_synthetic_candidate", _fake_synthetic_score)
+    selection = select_synthetic_candidate(config)
+    heldout = replay_selected_candidate_heldout(config, selection)
+    return config, selection, heldout
+
+
+def test_selection_and_heldout_are_complete_strict_replays(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config, selection, heldout = _synthetic_evidence(monkeypatch)
+    assert replay_and_validate_synthetic_selection(config, selection) == config.candidates[0]
+    assert replay_and_validate_synthetic_heldout(config, selection, heldout) == (
+        config.candidates[0]
+    )
+    assert len(selection.scores) == 32
+
+    altered_reports = (
+        replace(selection, selector_seed=42),
+        replace(selection, scores=selection.scores[:-1]),
+        replace(selection, mixing_sha256=((34, "f" * 64), (512, "e" * 64))),
+        replace(selection, selected_candidate_id=config.candidates[1].canonical_id),
+        replace(
+            selection,
+            scores=(replace(selection.scores[0], overall_nmae=0.2), *selection.scores[1:]),
+        ),
+    )
+    for altered in altered_reports:
+        with pytest.raises(SyntheticSelectionFailure, match="deterministic replay"):
+            replay_and_validate_synthetic_selection(config, altered)
+
+    with pytest.raises(SyntheticSelectionFailure, match="held-out artifact"):
+        replay_and_validate_synthetic_heldout(
+            config,
+            selection,
+            replace(heldout, selected_candidate_id=config.candidates[1].canonical_id),
+        )
+
+
+def test_heldout_failure_never_reranks_or_falls_back(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = _config()
+
+    def heldout_trap_score(config, candidate, *, seed):
+        score = _fake_synthetic_score(config, candidate, seed=seed)
+        if seed != config.synthetic.heldout_seed:
+            return score
+        if candidate == config.candidates[1]:
+            return replace(
+                score,
+                positive_eligible=score.positive_total,
+                positive_eligible_rate=1.0,
+                overall_obo=1.0,
+                abstention_rate=0.0,
+                hard_pass=True,
+                failed_gates=(),
+            )
+        return replace(score, hard_pass=False, failed_gates=("heldout_trap",))
+
+    monkeypatch.setattr(single_readout, "score_synthetic_candidate", heldout_trap_score)
+    selection = select_synthetic_candidate(config)
+    assert selection.selected_candidate_id == config.candidates[0].canonical_id
+    assert heldout_trap_score(
+        config,
+        config.candidates[1],
+        seed=config.synthetic.heldout_seed,
+    ).hard_pass
+    with pytest.raises(SyntheticSelectionFailure, match="no rerank or fallback"):
+        replay_selected_candidate_heldout(config, selection)
+
+
+def _train_authority(config, selection, heldout, video_ids):
+    return build_fail_closed_train337_authority(
+        config,
+        canonical_video_ids=video_ids,
+        v4e_representation_authority_sha256="a" * 64,
+        cycleback_checkpoint_authority_sha256="b" * 64,
+        selection=selection,
+        heldout=heldout,
+    )
+
+
+def test_train337_gate_is_hash_fixed_label_free_and_fail_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config, selection, heldout = _synthetic_evidence(monkeypatch)
+    video_ids = tuple(f"train-{index:03d}" for index in range(337))
+    authority = _train_authority(config, selection, heldout, video_ids)
+    records = tuple(
+        _train_record(
+            index,
+            config=config,
+            source_authority_sha256=authority.source_authority_sha256,
+        )
+        for index in range(337)
+    )
+    report = evaluate_train337_gate(config, selection, heldout, authority, records)
+    assert report.numerical_gates_passed is True
+    assert report.authorized_for_dev84 is False
+    assert report.authorization_blockers == (
+        "authoritative_train337_adapter_unwired_fail_closed",
+    )
     assert len(report.hash_subset_video_ids) == 64
     mechanism = {item.arm: item for item in report.mechanism}
     assert mechanism["L"].mechanism_pass is True
@@ -469,6 +756,76 @@ def test_train337_gate_is_hash_fixed_label_free_and_requires_epi_failure() -> No
     )
     assert selected == report.hash_subset_video_ids
     assert digest == report.hash_subset_sha256
+
+
+def test_train337_rejects_registry_order_and_transform_authority_fabrication(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config, selection, heldout = _synthetic_evidence(monkeypatch)
+    video_ids = tuple(f"train-{index:03d}" for index in range(337))
+    authority = _train_authority(config, selection, heldout, video_ids)
+    records = tuple(
+        _train_record(
+            index,
+            config=config,
+            source_authority_sha256=authority.source_authority_sha256,
+        )
+        for index in range(337)
+    )
+    reversed_authority = _train_authority(
+        config,
+        selection,
+        heldout,
+        tuple(reversed(video_ids)),
+    )
+    with pytest.raises(ValueError, match="exact order"):
+        evaluate_train337_gate(config, selection, heldout, reversed_authority, records)
+
+    forged_records = (
+        _train_record(
+            0,
+            config=config,
+            source_authority_sha256="9" * 64,
+        ),
+        *records[1:],
+    )
+    with pytest.raises(ValueError, match="source authority mismatch"):
+        evaluate_train337_gate(config, selection, heldout, authority, forged_records)
+
+    with pytest.raises(ValueError, match="do not bind the audit values"):
+        replace(records[0], reverse_primary=_view("train-000", "L", 99))
+    with pytest.raises(ValueError, match="video-ID digest mismatch"):
+        replace(authority, canonical_video_ids_sha256="f" * 64)
+    with pytest.raises(ValueError, match="lowercase SHA-256"):
+        replace(authority, v4e_representation_authority_sha256="A" * 64)
+
+
+def test_train337_coverage_uses_all_337_as_denominator(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config, selection, heldout = _synthetic_evidence(monkeypatch)
+    video_ids = tuple(f"train-{index:03d}" for index in range(337))
+    authority = _train_authority(config, selection, heldout, video_ids)
+    records = tuple(
+        _train_record(
+            index,
+            config=config,
+            source_authority_sha256=authority.source_authority_sha256,
+            insufficient=index < 20,
+            zero_available=20 <= index < 40,
+        )
+        for index in range(337)
+    )
+    assert records[0].baseline.primary.segments[0].candidate_window_count == 0
+    assert records[20].baseline.primary.segments[0].candidate_window_count == 5
+    assert records[20].baseline.primary.segments[0].available_window_count == 0
+    report = evaluate_train337_gate(config, selection, heldout, authority, records)
+    metrics = dict(report.metrics)
+    assert metrics["canonical_video_count"] == 337
+    assert metrics["one_segment_sufficient_video_count"] == 297
+    assert metrics["one_segment_sufficient_share"] == pytest.approx(297 / 337)
+    assert "one_segment_sufficient_share" in report.failed_gates
+    assert "canonical_one_segment_eligible_share" in report.failed_gates
 
 
 def test_server_launcher_is_fail_closed_until_authoritative_adapters_merge() -> None:

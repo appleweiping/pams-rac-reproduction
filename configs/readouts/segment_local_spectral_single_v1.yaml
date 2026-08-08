@@ -58,6 +58,10 @@ synthetic:
   null_false_eligible_cp_confidence: 0.95
   null_false_eligible_cp_ucb_maximum: 0.05
   reset_video_total_errors_maximum: 0
+  # Family-level metrics are retained for diagnosis, but the frozen protocol
+  # defines no post-hoc per-family threshold. Every listed positive family is
+  # included in the pooled eligibility/NMAE/OBO gates above.
+  positive_family_gate_policy: pooled_all_generation_truth_positives_only_no_family_thresholds
   ranking:
     - null_cp_ucb
     - variable_tempo_nmae
@@ -71,6 +75,7 @@ train337:
   expected_video_count: 337
   hash_subset_seed: 2026
   hash_subset_size: 64
+  one_segment_sufficient_share_minimum: 0.90
   one_segment_eligible_minimum: 0.90
   low_band_boundary_share_maximum_exclusive: 0.10
   high_band_boundary_share_maximum_exclusive: 0.10
@@ -90,3 +95,17 @@ train337:
   real_minus_shuffle_peak_margin_median_minimum: 0.05
   mechanism_rule: L_must_pass_Epi_must_fail_E0_report_only
   label_policy: no_action_or_count_targets
+  authority_adapter_status: unwired_fail_closed
+  transform_recipe:
+    recipe_id: segment_local_spectral_train337_transforms_v1
+    reverse: source_frames_reverse_then_full_segment_reencode
+    warp_075: endpoint_preserving_time_warp_0.75_then_full_segment_reencode
+    warp_125: endpoint_preserving_time_warp_1.25_then_full_segment_reencode
+    duplicate_time: duplicate_source_time_then_full_segment_reencode
+    legal_split: authorized_single_segment_two_part_float_additivity_only
+    raw_rotation: coco17_xy_rotation_plus_minus_15_degrees
+    raw_scale: coco17_xy_scale_0.85_and_1.15
+    raw_joint_dropout: deterministic_supported_joint_dropout
+    learned_augmentations: two_frozen_cycleback_augmentation_views_reencode
+    static_null: constant_coordinates_same_authority_and_masks
+    second_derangement: independent_preencoder_segment_derangement_distinct_seed_and_map

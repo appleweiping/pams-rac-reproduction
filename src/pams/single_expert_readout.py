@@ -165,6 +165,9 @@ class SyntheticGateProtocol(StrictModel):
     null_false_eligible_cp_confidence: float
     null_false_eligible_cp_ucb_maximum: float
     reset_video_total_errors_maximum: Literal[0]
+    positive_family_gate_policy: Literal[
+        "pooled_all_generation_truth_positives_only_no_family_thresholds"
+    ]
     ranking: tuple[
         Literal[
             "null_cp_ucb",
@@ -206,12 +209,42 @@ class SyntheticGateProtocol(StrictModel):
         return self
 
 
+class Train337TransformRecipe(StrictModel):
+    """Exact label-free transformations bound into every train337 row."""
+
+    recipe_id: Literal["segment_local_spectral_train337_transforms_v1"]
+    reverse: Literal["source_frames_reverse_then_full_segment_reencode"]
+    warp_075: Literal["endpoint_preserving_time_warp_0.75_then_full_segment_reencode"]
+    warp_125: Literal["endpoint_preserving_time_warp_1.25_then_full_segment_reencode"]
+    duplicate_time: Literal["duplicate_source_time_then_full_segment_reencode"]
+    legal_split: Literal["authorized_single_segment_two_part_float_additivity_only"]
+    raw_rotation: Literal["coco17_xy_rotation_plus_minus_15_degrees"]
+    raw_scale: Literal["coco17_xy_scale_0.85_and_1.15"]
+    raw_joint_dropout: Literal["deterministic_supported_joint_dropout"]
+    learned_augmentations: Literal["two_frozen_cycleback_augmentation_views_reencode"]
+    static_null: Literal["constant_coordinates_same_authority_and_masks"]
+    second_derangement: Literal[
+        "independent_preencoder_segment_derangement_distinct_seed_and_map"
+    ]
+
+    @property
+    def fingerprint(self) -> str:
+        encoded = json.dumps(
+            self.model_dump(mode="json"),
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode()
+        return hashlib.sha256(encoded).hexdigest()
+
+
 class Train337GateProtocol(StrictModel):
     """Frozen, label-free expansion gate for the 337 training videos."""
 
     expected_video_count: Literal[337]
     hash_subset_seed: Literal[2026]
     hash_subset_size: Literal[64]
+    one_segment_sufficient_share_minimum: float
     one_segment_eligible_minimum: float
     low_band_boundary_share_maximum_exclusive: float
     high_band_boundary_share_maximum_exclusive: float
@@ -231,10 +264,13 @@ class Train337GateProtocol(StrictModel):
     real_minus_shuffle_peak_margin_median_minimum: float
     mechanism_rule: Literal["L_must_pass_Epi_must_fail_E0_report_only"]
     label_policy: Literal["no_action_or_count_targets"]
+    authority_adapter_status: Literal["unwired_fail_closed"]
+    transform_recipe: Train337TransformRecipe
 
     @model_validator(mode="after")
     def validate_exact_thresholds(self) -> Train337GateProtocol:
         thresholds = (
+            self.one_segment_sufficient_share_minimum,
             self.one_segment_eligible_minimum,
             self.low_band_boundary_share_maximum_exclusive,
             self.high_band_boundary_share_maximum_exclusive,
@@ -253,6 +289,7 @@ class Train337GateProtocol(StrictModel):
             self.real_minus_shuffle_peak_margin_median_minimum,
         )
         expected = (
+            0.9,
             0.9,
             0.1,
             0.1,
@@ -500,7 +537,9 @@ class TemporalDerangementReceipt:
         segment_ids = tuple(item.segment_id for item in self.permutations)
         if not segment_ids or len(set(segment_ids)) != len(segment_ids):
             raise ValueError("derangement permutations require unique segment IDs")
-        digest = str(self.permutation_map_sha256).lower()
+        if not isinstance(self.permutation_map_sha256, str):
+            raise ValueError("permutation_map_sha256 must be a lowercase SHA-256")
+        digest = self.permutation_map_sha256
         if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
             raise ValueError("permutation_map_sha256 must be a lowercase SHA-256")
         for item in self.permutations:
@@ -1517,6 +1556,9 @@ class MechanismVideo:
             raise ValueError("Epi derangement receipt video_id mismatch")
         if receipt_ids != segment_ids:
             raise ValueError("Epi receipt must cover the exact authorized segments in order")
+        replay_xy = np.array(reference.raw_xy, copy=True, order="C")
+        replay_joint_mask = np.array(reference.joint_mask, copy=True, order="C")
+        replay_valid_mask = np.array(reference.valid_mask, copy=True, order="C")
         for segment, item in zip(reference.segments, self.epi_receipt.permutations, strict=True):
             expected = set(range(segment.start, segment.stop))
             actual = tuple(item.source_indices)
@@ -1524,6 +1566,19 @@ class MechanismVideo:
                 raise ValueError("Epi permutation must be bijective and segment-local")
             if any(source == segment.start + offset for offset, source in enumerate(actual)):
                 raise ValueError("Epi permutation must have no fixed points")
+            source = np.asarray(actual, dtype=np.int64)
+            replay_xy[segment.start : segment.stop] = reference.raw_xy[source]
+            replay_joint_mask[segment.start : segment.stop] = reference.joint_mask[source]
+            replay_valid_mask[segment.start : segment.stop] = reference.valid_mask[source]
+            replayed_digest = _segment_pose_digest(
+                reference.video_id,
+                replay_xy,
+                replay_joint_mask,
+                replay_valid_mask,
+                segment,
+            )
+            if replayed_digest != item.deranged_pose_sha256:
+                raise ValueError("Epi deranged pose digest does not replay from authority bytes")
         if not np.isfinite(untrained[reference.valid_mask]).all():
             raise ValueError("untrained features must be finite on valid frames")
         if not np.isfinite(epi[reference.valid_mask]).all():
@@ -1867,7 +1922,7 @@ def synthetic_case_plan() -> tuple[SyntheticCaseSpec, ...]:
 
 
 def _case_seed(seed: int, case_id: str) -> int:
-    digest = hashlib.sha256(f"{int(seed)}\0{case_id}".encode("utf-8")).digest()
+    digest = hashlib.sha256(f"{int(seed)}\0{case_id}".encode()).digest()
     return int.from_bytes(digest[:8], byteorder="little", signed=False)
 
 
@@ -1891,9 +1946,12 @@ def synthetic_mixing_sha256(seed: int, dimension: Literal[34, 512]) -> str:
 
 
 def _tempo_profile(frames: int, profile: str) -> NDArray[np.float64]:
-    time = np.linspace(0.0, 1.0, frames, dtype=np.float64)
+    if frames < 2:
+        raise ValueError("synthetic phase requires at least two source frames")
+    intervals = frames - 1
+    time = np.linspace(0.0, 1.0, intervals, dtype=np.float64)
     if profile == "ramp_up":
-        speed = np.linspace(0.5, 1.5, frames, dtype=np.float64)
+        speed = np.linspace(0.5, 1.5, intervals, dtype=np.float64)
     elif profile == "up_then_down":
         speed = np.interp(time, (0.0, 0.5, 1.0), (0.5, 1.5, 0.5))
     elif profile == "sinusoidal_tempo":
@@ -1903,7 +1961,7 @@ def _tempo_profile(frames: int, profile: str) -> NDArray[np.float64]:
         edge = (1.0 - support) / 2.0
         speed = ((time >= edge) & (time <= 1.0 - edge)).astype(np.float64)
     else:
-        speed = np.ones(frames, dtype=np.float64)
+        speed = np.ones(intervals, dtype=np.float64)
     total = float(np.sum(speed))
     if total <= _EPSILON:
         raise RuntimeError("synthetic tempo profile has zero support")
@@ -1916,8 +1974,8 @@ def _periodic_latent(
     profile: str,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     increments = _tempo_profile(frames, profile)
-    phase = 2.0 * np.pi * count * np.cumsum(increments)
-    phase -= phase[0]
+    phase = np.zeros(frames, dtype=np.float64)
+    phase[1:] = 2.0 * np.pi * count * np.cumsum(increments)
     amplitude = np.ones(frames, dtype=np.float64)
     if profile == "amplitude_ramp_0.5_to_1.5":
         amplitude = np.linspace(0.5, 1.5, frames, dtype=np.float64)
@@ -2197,6 +2255,9 @@ class SyntheticCandidateScore:
             "positive_total": self.positive_total,
             "positive_eligible": self.positive_eligible,
             "positive_eligible_rate": self.positive_eligible_rate,
+            "positive_gate_policy": (
+                "pooled_all_generation_truth_positives_only_no_family_thresholds"
+            ),
             "overall_nmae": self.overall_nmae,
             "overall_obo": self.overall_obo,
             "variable_tempo_nmae": self.variable_tempo_nmae,
@@ -2438,6 +2499,16 @@ class SyntheticSelectionReport:
     selected_rank: tuple[float, float, float, float, float, str]
     scores: tuple[SyntheticCandidateScore, ...]
 
+    @property
+    def canonical_sha256(self) -> str:
+        encoded = json.dumps(
+            self.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode()
+        return hashlib.sha256(encoded).hexdigest()
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema_version": 1,
@@ -2452,16 +2523,18 @@ class SyntheticSelectionReport:
         }
 
 
-def select_synthetic_candidate(
+def _selection_report_from_scores(
     config: SegmentLocalSpectralConfig,
+    scores: Sequence[SyntheticCandidateScore],
 ) -> SyntheticSelectionReport:
-    """Select exactly once on seed 2026 after filtering by all hard gates."""
-
-    scores = tuple(
-        score_synthetic_candidate(config, candidate, seed=config.synthetic.selector_seed)
-        for candidate in config.candidates
-    )
-    passing = tuple(score for score in scores if score.hard_pass)
+    frozen_scores = tuple(scores)
+    expected_ids = tuple(candidate.canonical_id for candidate in config.candidates)
+    actual_ids = tuple(score.candidate.canonical_id for score in frozen_scores)
+    if actual_ids != expected_ids or len(set(actual_ids)) != 32:
+        raise SyntheticSelectionFailure("selection must score the complete ordered 32-candidate grid")
+    if any(score.seed != config.synthetic.selector_seed for score in frozen_scores):
+        raise SyntheticSelectionFailure("selection scores must use only the frozen selector seed")
+    passing = tuple(score for score in frozen_scores if score.hard_pass)
     if not passing:
         raise SyntheticSelectionFailure("no candidate passed every synthetic calibration gate")
     ordered = tuple(sorted(passing, key=lambda item: item.rank))
@@ -2477,7 +2550,45 @@ def select_synthetic_candidate(
         ),
         selected_candidate_id=selected.candidate.canonical_id,
         selected_rank=selected.rank,
-        scores=scores,
+        scores=frozen_scores,
+    )
+
+
+def _recompute_synthetic_selection(
+    config: SegmentLocalSpectralConfig,
+) -> SyntheticSelectionReport:
+    scores = tuple(
+        score_synthetic_candidate(config, candidate, seed=config.synthetic.selector_seed)
+        for candidate in config.candidates
+    )
+    return _selection_report_from_scores(config, scores)
+
+
+def select_synthetic_candidate(
+    config: SegmentLocalSpectralConfig,
+) -> SyntheticSelectionReport:
+    """Select exactly once on seed 2026 after filtering by all hard gates."""
+
+    return _recompute_synthetic_selection(config)
+
+
+def replay_and_validate_synthetic_selection(
+    config: SegmentLocalSpectralConfig,
+    report: SyntheticSelectionReport,
+) -> SpectralCandidate:
+    """Recompute all 32 scores and reject any altered selection artifact."""
+
+    expected = _recompute_synthetic_selection(config)
+    if report.to_dict() != expected.to_dict():
+        raise SyntheticSelectionFailure(
+            "synthetic selection artifact differs from the complete deterministic replay"
+        )
+    if report.canonical_sha256 != expected.canonical_sha256:
+        raise SyntheticSelectionFailure("synthetic selection canonical SHA-256 mismatch")
+    return next(
+        candidate
+        for candidate in config.candidates
+        if candidate.canonical_id == report.selected_candidate_id
     )
 
 
@@ -2486,17 +2597,29 @@ class SyntheticHeldoutReport:
     """Seed-3407 replay of the calibration winner, with no reranking."""
 
     config_fingerprint: str
+    selection_report_sha256: str
     selected_candidate_id: str
     heldout_seed: int
     mixing_sha256: tuple[tuple[int, str], ...]
     score: SyntheticCandidateScore
     authorized_for_train337: bool
 
+    @property
+    def canonical_sha256(self) -> str:
+        encoded = json.dumps(
+            self.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode()
+        return hashlib.sha256(encoded).hexdigest()
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema_version": 1,
             "classification": "synthetic_selected_candidate_heldout_replay",
             "config_fingerprint": self.config_fingerprint,
+            "selection_report_sha256": self.selection_report_sha256,
             "selected_candidate_id": self.selected_candidate_id,
             "heldout_seed": self.heldout_seed,
             "mixing_sha256": {str(key): value for key, value in self.mixing_sha256},
@@ -2514,13 +2637,7 @@ def replay_selected_candidate_heldout(
 ) -> SyntheticHeldoutReport:
     """Replay only the selected tuple on seed 3407; failure has no fallback."""
 
-    if selection.config_fingerprint != config.fingerprint:
-        raise ValueError("selection/config fingerprint mismatch")
-    candidates = {item.canonical_id: item for item in config.candidates}
-    try:
-        candidate = candidates[selection.selected_candidate_id]
-    except KeyError as error:
-        raise ValueError("selection candidate is outside the frozen grid") from error
+    candidate = replay_and_validate_synthetic_selection(config, selection)
     score = score_synthetic_candidate(
         config,
         candidate,
@@ -2528,6 +2645,7 @@ def replay_selected_candidate_heldout(
     )
     report = SyntheticHeldoutReport(
         config_fingerprint=config.fingerprint,
+        selection_report_sha256=selection.canonical_sha256,
         selected_candidate_id=candidate.canonical_id,
         heldout_seed=config.synthetic.heldout_seed,
         mixing_sha256=tuple(
@@ -2542,6 +2660,325 @@ def replay_selected_candidate_heldout(
             "selected candidate failed seed-3407 held-out replay; no rerank or fallback is allowed"
         )
     return report
+
+
+def replay_and_validate_synthetic_heldout(
+    config: SegmentLocalSpectralConfig,
+    selection: SyntheticSelectionReport,
+    heldout: SyntheticHeldoutReport,
+) -> SpectralCandidate:
+    """Recompute the bound winner on seed 3407 without any second selection."""
+
+    candidate = replay_and_validate_synthetic_selection(config, selection)
+    score = score_synthetic_candidate(
+        config,
+        candidate,
+        seed=config.synthetic.heldout_seed,
+    )
+    expected = SyntheticHeldoutReport(
+        config_fingerprint=config.fingerprint,
+        selection_report_sha256=selection.canonical_sha256,
+        selected_candidate_id=candidate.canonical_id,
+        heldout_seed=config.synthetic.heldout_seed,
+        mixing_sha256=tuple(
+            (dimension, synthetic_mixing_sha256(config.synthetic.heldout_seed, dimension))
+            for dimension in config.synthetic.dimensions
+        ),
+        score=score,
+        authorized_for_train337=score.hard_pass,
+    )
+    if heldout.to_dict() != expected.to_dict():
+        raise SyntheticSelectionFailure(
+            "held-out artifact differs from the selected-candidate-only deterministic replay"
+        )
+    if heldout.canonical_sha256 != expected.canonical_sha256:
+        raise SyntheticSelectionFailure("synthetic held-out canonical SHA-256 mismatch")
+    if not heldout.authorized_for_train337 or not heldout.score.hard_pass:
+        raise SyntheticSelectionFailure("seed-3407 held-out replay did not pass all frozen gates")
+    return candidate
+
+
+def _require_sha256(value: str, name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{name} must be a lowercase SHA-256")
+    digest = value
+    if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+        raise ValueError(f"{name} must be a lowercase SHA-256")
+    return digest
+
+
+def canonical_video_ids_sha256(video_ids: Sequence[str]) -> str:
+    """Hash an exact, ordered canonical video-ID registry."""
+
+    identifiers = tuple(str(item).strip() for item in video_ids)
+    if any(not item for item in identifiers) or len(set(identifiers)) != len(identifiers):
+        raise ValueError("canonical video IDs must be non-empty and unique")
+    encoded = json.dumps(
+        {"schema_version": 1, "ordered_video_ids": list(identifiers)},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class Train337Authority:
+    """Fail-closed placeholder contract for future authoritative adapters."""
+
+    adapter_status: Literal["unwired_fail_closed"]
+    canonical_video_ids: tuple[str, ...]
+    canonical_video_ids_sha256: str
+    v4e_representation_authority_sha256: str
+    cycleback_checkpoint_authority_sha256: str
+    transform_recipe_sha256: str
+    selection_report_sha256: str
+    heldout_report_sha256: str
+    authority_receipt_sha256: str
+
+    @property
+    def source_authority_sha256(self) -> str:
+        encoded = json.dumps(
+            {
+                "v4e_representation_authority_sha256": (
+                    self.v4e_representation_authority_sha256
+                ),
+                "cycleback_checkpoint_authority_sha256": (
+                    self.cycleback_checkpoint_authority_sha256
+                ),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        return hashlib.sha256(encoded).hexdigest()
+
+    def __post_init__(self) -> None:
+        if self.adapter_status != "unwired_fail_closed":
+            raise ValueError("authoritative train337 adapter is not implemented")
+        if len(self.canonical_video_ids) != 337:
+            raise ValueError("train337 authority requires exactly 337 canonical video IDs")
+        if tuple(str(item).strip() for item in self.canonical_video_ids) != self.canonical_video_ids:
+            raise ValueError("canonical train337 video IDs must not require normalization")
+        expected_ids_digest = canonical_video_ids_sha256(self.canonical_video_ids)
+        if self.canonical_video_ids_sha256 != expected_ids_digest:
+            raise ValueError("canonical train337 video-ID digest mismatch")
+        for name, value in (
+            ("v4e_representation_authority_sha256", self.v4e_representation_authority_sha256),
+            ("cycleback_checkpoint_authority_sha256", self.cycleback_checkpoint_authority_sha256),
+            ("transform_recipe_sha256", self.transform_recipe_sha256),
+            ("selection_report_sha256", self.selection_report_sha256),
+            ("heldout_report_sha256", self.heldout_report_sha256),
+            ("authority_receipt_sha256", self.authority_receipt_sha256),
+        ):
+            _require_sha256(value, name)
+        expected_receipt = _train337_authority_digest(
+            canonical_video_ids=self.canonical_video_ids,
+            canonical_video_ids_sha256=self.canonical_video_ids_sha256,
+            v4e_representation_authority_sha256=self.v4e_representation_authority_sha256,
+            cycleback_checkpoint_authority_sha256=self.cycleback_checkpoint_authority_sha256,
+            transform_recipe_sha256=self.transform_recipe_sha256,
+            selection_report_sha256=self.selection_report_sha256,
+            heldout_report_sha256=self.heldout_report_sha256,
+        )
+        if self.authority_receipt_sha256 != expected_receipt:
+            raise ValueError("train337 authority receipt SHA-256 mismatch")
+
+
+def _train337_authority_digest(
+    *,
+    canonical_video_ids: Sequence[str],
+    canonical_video_ids_sha256: str,
+    v4e_representation_authority_sha256: str,
+    cycleback_checkpoint_authority_sha256: str,
+    transform_recipe_sha256: str,
+    selection_report_sha256: str,
+    heldout_report_sha256: str,
+) -> str:
+    payload = {
+        "schema_version": 1,
+        "adapter_status": "unwired_fail_closed",
+        "canonical_video_ids": list(canonical_video_ids),
+        "canonical_video_ids_sha256": canonical_video_ids_sha256,
+        "v4e_representation_authority_sha256": v4e_representation_authority_sha256,
+        "cycleback_checkpoint_authority_sha256": cycleback_checkpoint_authority_sha256,
+        "transform_recipe_sha256": transform_recipe_sha256,
+        "selection_report_sha256": selection_report_sha256,
+        "heldout_report_sha256": heldout_report_sha256,
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def build_fail_closed_train337_authority(
+    config: SegmentLocalSpectralConfig,
+    *,
+    canonical_video_ids: Sequence[str],
+    v4e_representation_authority_sha256: str,
+    cycleback_checkpoint_authority_sha256: str,
+    selection: SyntheticSelectionReport,
+    heldout: SyntheticHeldoutReport,
+) -> Train337Authority:
+    """Build the only currently allowed, explicitly non-authorizing authority."""
+
+    identifiers = tuple(canonical_video_ids)
+    ids_digest = canonical_video_ids_sha256(identifiers)
+    receipt = _train337_authority_digest(
+        canonical_video_ids=identifiers,
+        canonical_video_ids_sha256=ids_digest,
+        v4e_representation_authority_sha256=v4e_representation_authority_sha256,
+        cycleback_checkpoint_authority_sha256=cycleback_checkpoint_authority_sha256,
+        transform_recipe_sha256=config.train337.transform_recipe.fingerprint,
+        selection_report_sha256=selection.canonical_sha256,
+        heldout_report_sha256=heldout.canonical_sha256,
+    )
+    return Train337Authority(
+        adapter_status="unwired_fail_closed",
+        canonical_video_ids=identifiers,
+        canonical_video_ids_sha256=ids_digest,
+        v4e_representation_authority_sha256=v4e_representation_authority_sha256,
+        cycleback_checkpoint_authority_sha256=cycleback_checkpoint_authority_sha256,
+        transform_recipe_sha256=config.train337.transform_recipe.fingerprint,
+        selection_report_sha256=selection.canonical_sha256,
+        heldout_report_sha256=heldout.canonical_sha256,
+        authority_receipt_sha256=receipt,
+    )
+
+
+def _window_estimate_payload(item: WindowEstimate) -> dict[str, Any]:
+    return {
+        "key": list(item.key),
+        "center": item.center,
+        "accepted": item.accepted,
+        "abstention_reason": item.abstention_reason,
+        "frequency": item.frequency,
+        "peak_share": item.peak_share,
+        "signed_vector_acf": item.signed_vector_acf,
+        "confidence": item.confidence,
+        "low_band_boundary": item.low_band_boundary,
+        "high_band_boundary": item.high_band_boundary,
+        "informative_dimensions": item.informative_dimensions,
+    }
+
+
+def _view_estimate_payload(item: ViewEstimate) -> dict[str, Any]:
+    return {
+        "video_id": item.video_id,
+        "view": item.view,
+        "candidate_id": item.candidate_id,
+        "status": item.status,
+        "abstention_reason": item.abstention_reason,
+        "float_count": item.float_count,
+        "rounded_count": item.rounded_count,
+        "periodic_confidence": item.periodic_confidence,
+        "mean_peak_share": item.mean_peak_share,
+        "segments": [
+            {
+                "segment_id": segment.segment.segment_id,
+                "start": segment.segment.start,
+                "stop": segment.segment.stop,
+                "candidate_window_count": segment.candidate_window_count,
+                "available_window_count": segment.available_window_count,
+                "accepted_window_count": segment.accepted_window_count,
+                "single_window_estimate": segment.single_window_estimate,
+                "status": segment.status,
+                "abstention_reason": segment.abstention_reason,
+                "float_count": segment.float_count,
+                "windows": [_window_estimate_payload(window) for window in segment.windows],
+            }
+            for segment in item.segments
+        ],
+    }
+
+
+def _mechanism_estimate_payload(item: MechanismEstimate) -> dict[str, Any]:
+    return {
+        "candidate_id": item.candidate_id,
+        "primary": _view_estimate_payload(item.primary),
+        "raw_control": _view_estimate_payload(item.raw_control),
+        "untrained_control": _view_estimate_payload(item.untrained_control),
+        "temporal_derangement_control": _view_estimate_payload(
+            item.temporal_derangement_control
+        ),
+        "epi_permutation_map_sha256": item.epi_permutation_map_sha256,
+        "learned_encoding_receipt_sha256": item.learned_encoding_receipt_sha256,
+        "untrained_encoding_receipt_sha256": item.untrained_encoding_receipt_sha256,
+        "epi_encoding_receipt_sha256": item.epi_encoding_receipt_sha256,
+    }
+
+
+_TRAIN337_ARTIFACT_NAMES: tuple[str, ...] = (
+    "baseline",
+    "reverse_primary",
+    "warp_075_primary",
+    "warp_125_primary",
+    "duplicate_time_primary",
+    "legal_split_part_float_counts",
+    "raw_rotation_minus15",
+    "raw_rotation_plus15",
+    "raw_scale_085",
+    "raw_scale_115",
+    "raw_joint_dropout",
+    "learned_augmentation_a",
+    "learned_augmentation_b",
+    "static_null_primary",
+    "second_derangement_shuffle",
+)
+
+
+def _artifact_sha256(name: str, payload: Any) -> str:
+    encoded = json.dumps(
+        {"artifact_name": name, "payload": payload},
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class Train337TransformLineage:
+    """Hashes every baseline/transform outcome under one frozen recipe."""
+
+    video_id: str
+    source_authority_sha256: str
+    transform_recipe_sha256: str
+    artifacts: tuple[tuple[str, str], ...]
+    receipt_sha256: str
+
+    def __post_init__(self) -> None:
+        if not self.video_id or self.video_id != self.video_id.strip():
+            raise ValueError("transform lineage video_id must be canonical")
+        _require_sha256(self.source_authority_sha256, "source_authority_sha256")
+        _require_sha256(self.transform_recipe_sha256, "transform_recipe_sha256")
+        if tuple(name for name, _ in self.artifacts) != _TRAIN337_ARTIFACT_NAMES:
+            raise ValueError("transform lineage artifact set/order changed")
+        for name, digest in self.artifacts:
+            _require_sha256(digest, f"transform artifact {name}")
+        expected = _transform_lineage_digest(
+            video_id=self.video_id,
+            source_authority_sha256=self.source_authority_sha256,
+            transform_recipe_sha256=self.transform_recipe_sha256,
+            artifacts=self.artifacts,
+        )
+        if self.receipt_sha256 != expected:
+            raise ValueError("transform lineage receipt SHA-256 mismatch")
+
+
+def _transform_lineage_digest(
+    *,
+    video_id: str,
+    source_authority_sha256: str,
+    transform_recipe_sha256: str,
+    artifacts: Sequence[tuple[str, str]],
+) -> str:
+    payload = {
+        "schema_version": 1,
+        "video_id": video_id,
+        "source_authority_sha256": source_authority_sha256,
+        "transform_recipe_sha256": transform_recipe_sha256,
+        "artifacts": [{"name": name, "sha256": digest} for name, digest in artifacts],
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
@@ -2569,6 +3006,7 @@ class Train337VideoAudit:
     learned_augmentation_b: ViewEstimate
     static_null_primary: ViewEstimate
     second_derangement_shuffle: MechanismEstimate
+    transform_lineage: Train337TransformLineage
 
     def __post_init__(self) -> None:
         identifier = str(self.video_id).strip()
@@ -2609,10 +3047,164 @@ class Train337VideoAudit:
             == self.second_derangement_shuffle.epi_permutation_map_sha256
         ):
             raise ValueError("Epi real and second-derangement null maps must be independent")
+        if self.transform_lineage.video_id != identifier:
+            raise ValueError("transform lineage video_id differs from audit row")
+        expected_artifacts = _train337_artifact_hashes_from_values(
+            baseline=self.baseline,
+            reverse_primary=self.reverse_primary,
+            warp_075_primary=self.warp_075_primary,
+            warp_125_primary=self.warp_125_primary,
+            duplicate_time_primary=self.duplicate_time_primary,
+            legal_split_part_float_counts=self.legal_split_part_float_counts,
+            raw_rotation_minus15=self.raw_rotation_minus15,
+            raw_rotation_plus15=self.raw_rotation_plus15,
+            raw_scale_085=self.raw_scale_085,
+            raw_scale_115=self.raw_scale_115,
+            raw_joint_dropout=self.raw_joint_dropout,
+            learned_augmentation_a=self.learned_augmentation_a,
+            learned_augmentation_b=self.learned_augmentation_b,
+            static_null_primary=self.static_null_primary,
+            second_derangement_shuffle=self.second_derangement_shuffle,
+        )
+        if self.transform_lineage.artifacts != expected_artifacts:
+            raise ValueError("transform lineage artifacts do not bind the audit values")
         for value in self.legal_split_part_float_counts:
             if value is not None and (not np.isfinite(value) or value < 0.0):
                 raise ValueError("legal split float counts must be finite and non-negative")
         object.__setattr__(self, "video_id", identifier)
+
+
+def _train337_artifact_hashes_from_values(
+    *,
+    baseline: MechanismEstimate,
+    reverse_primary: ViewEstimate,
+    warp_075_primary: ViewEstimate,
+    warp_125_primary: ViewEstimate,
+    duplicate_time_primary: ViewEstimate,
+    legal_split_part_float_counts: tuple[float | None, float | None],
+    raw_rotation_minus15: ViewEstimate,
+    raw_rotation_plus15: ViewEstimate,
+    raw_scale_085: ViewEstimate,
+    raw_scale_115: ViewEstimate,
+    raw_joint_dropout: ViewEstimate,
+    learned_augmentation_a: ViewEstimate,
+    learned_augmentation_b: ViewEstimate,
+    static_null_primary: ViewEstimate,
+    second_derangement_shuffle: MechanismEstimate,
+) -> tuple[tuple[str, str], ...]:
+    payloads: tuple[tuple[str, Any], ...] = (
+        ("baseline", _mechanism_estimate_payload(baseline)),
+        ("reverse_primary", _view_estimate_payload(reverse_primary)),
+        ("warp_075_primary", _view_estimate_payload(warp_075_primary)),
+        ("warp_125_primary", _view_estimate_payload(warp_125_primary)),
+        ("duplicate_time_primary", _view_estimate_payload(duplicate_time_primary)),
+        (
+            "legal_split_part_float_counts",
+            list(legal_split_part_float_counts),
+        ),
+        ("raw_rotation_minus15", _view_estimate_payload(raw_rotation_minus15)),
+        ("raw_rotation_plus15", _view_estimate_payload(raw_rotation_plus15)),
+        ("raw_scale_085", _view_estimate_payload(raw_scale_085)),
+        ("raw_scale_115", _view_estimate_payload(raw_scale_115)),
+        ("raw_joint_dropout", _view_estimate_payload(raw_joint_dropout)),
+        ("learned_augmentation_a", _view_estimate_payload(learned_augmentation_a)),
+        ("learned_augmentation_b", _view_estimate_payload(learned_augmentation_b)),
+        ("static_null_primary", _view_estimate_payload(static_null_primary)),
+        (
+            "second_derangement_shuffle",
+            _mechanism_estimate_payload(second_derangement_shuffle),
+        ),
+    )
+    return tuple((name, _artifact_sha256(name, payload)) for name, payload in payloads)
+
+
+def _build_transform_lineage_for_values(
+    *,
+    video_id: str,
+    source_authority_sha256: str,
+    transform_recipe_sha256: str,
+    artifacts: Sequence[tuple[str, str]],
+) -> Train337TransformLineage:
+    frozen_artifacts = tuple(artifacts)
+    return Train337TransformLineage(
+        video_id=video_id,
+        source_authority_sha256=source_authority_sha256,
+        transform_recipe_sha256=transform_recipe_sha256,
+        artifacts=frozen_artifacts,
+        receipt_sha256=_transform_lineage_digest(
+            video_id=video_id,
+            source_authority_sha256=source_authority_sha256,
+            transform_recipe_sha256=transform_recipe_sha256,
+            artifacts=frozen_artifacts,
+        ),
+    )
+
+
+def build_train337_video_audit(
+    *,
+    video_id: str,
+    source_authority_sha256: str,
+    transform_recipe_sha256: str,
+    baseline: MechanismEstimate,
+    reverse_primary: ViewEstimate,
+    warp_075_primary: ViewEstimate,
+    warp_125_primary: ViewEstimate,
+    duplicate_time_primary: ViewEstimate,
+    legal_split_part_float_counts: tuple[float | None, float | None],
+    raw_rotation_minus15: ViewEstimate,
+    raw_rotation_plus15: ViewEstimate,
+    raw_scale_085: ViewEstimate,
+    raw_scale_115: ViewEstimate,
+    raw_joint_dropout: ViewEstimate,
+    learned_augmentation_a: ViewEstimate,
+    learned_augmentation_b: ViewEstimate,
+    static_null_primary: ViewEstimate,
+    second_derangement_shuffle: MechanismEstimate,
+) -> Train337VideoAudit:
+    """Build one audit row while hashing every frozen transform outcome."""
+
+    artifacts = _train337_artifact_hashes_from_values(
+        baseline=baseline,
+        reverse_primary=reverse_primary,
+        warp_075_primary=warp_075_primary,
+        warp_125_primary=warp_125_primary,
+        duplicate_time_primary=duplicate_time_primary,
+        legal_split_part_float_counts=legal_split_part_float_counts,
+        raw_rotation_minus15=raw_rotation_minus15,
+        raw_rotation_plus15=raw_rotation_plus15,
+        raw_scale_085=raw_scale_085,
+        raw_scale_115=raw_scale_115,
+        raw_joint_dropout=raw_joint_dropout,
+        learned_augmentation_a=learned_augmentation_a,
+        learned_augmentation_b=learned_augmentation_b,
+        static_null_primary=static_null_primary,
+        second_derangement_shuffle=second_derangement_shuffle,
+    )
+    lineage = _build_transform_lineage_for_values(
+        video_id=video_id,
+        source_authority_sha256=source_authority_sha256,
+        transform_recipe_sha256=transform_recipe_sha256,
+        artifacts=artifacts,
+    )
+    return Train337VideoAudit(
+        video_id=video_id,
+        baseline=baseline,
+        reverse_primary=reverse_primary,
+        warp_075_primary=warp_075_primary,
+        warp_125_primary=warp_125_primary,
+        duplicate_time_primary=duplicate_time_primary,
+        legal_split_part_float_counts=legal_split_part_float_counts,
+        raw_rotation_minus15=raw_rotation_minus15,
+        raw_rotation_plus15=raw_rotation_plus15,
+        raw_scale_085=raw_scale_085,
+        raw_scale_115=raw_scale_115,
+        raw_joint_dropout=raw_joint_dropout,
+        learned_augmentation_a=learned_augmentation_a,
+        learned_augmentation_b=learned_augmentation_b,
+        static_null_primary=static_null_primary,
+        second_derangement_shuffle=second_derangement_shuffle,
+        transform_lineage=lineage,
+    )
 
 
 def hash_fixed_subset(
@@ -2712,13 +3304,29 @@ class Train337GateReport:
 
     config_fingerprint: str
     candidate_id: str
+    selection_report_sha256: str
+    heldout_report_sha256: str
+    authority_receipt_sha256: str
+    authority_adapter_status: Literal["unwired_fail_closed"]
     video_ids_sha256: str
     hash_subset_sha256: str
     hash_subset_video_ids: tuple[str, ...]
     metrics: tuple[tuple[str, float | int], ...]
     mechanism: tuple[ArmMechanismSummary, ...]
     failed_gates: tuple[str, ...]
+    authorization_blockers: tuple[str, ...]
+    numerical_gates_passed: bool
     authorized_for_dev84: bool
+
+    def __post_init__(self) -> None:
+        if self.authority_adapter_status != "unwired_fail_closed":
+            raise ValueError("unknown train337 authority adapter status")
+        if self.authorized_for_dev84:
+            raise ValueError("unwired train337 authority can never authorize dev84")
+        if self.numerical_gates_passed != (not self.failed_gates):
+            raise ValueError("train337 numerical decision is inconsistent")
+        if not self.authorization_blockers:
+            raise ValueError("fail-closed train337 report requires an authorization blocker")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -2726,6 +3334,10 @@ class Train337GateReport:
             "classification": "train337_label_free_single_expert_gate",
             "config_fingerprint": self.config_fingerprint,
             "candidate_id": self.candidate_id,
+            "selection_report_sha256": self.selection_report_sha256,
+            "heldout_report_sha256": self.heldout_report_sha256,
+            "authority_receipt_sha256": self.authority_receipt_sha256,
+            "authority_adapter_status": self.authority_adapter_status,
             "video_ids_sha256": self.video_ids_sha256,
             "hash_subset_sha256": self.hash_subset_sha256,
             "hash_subset_video_ids": list(self.hash_subset_video_ids),
@@ -2751,6 +3363,8 @@ class Train337GateReport:
                 for item in self.mechanism
             },
             "failed_gates": list(self.failed_gates),
+            "authorization_blockers": list(self.authorization_blockers),
+            "numerical_gates_passed": self.numerical_gates_passed,
             "authorized_for_dev84": self.authorized_for_dev84,
             "action_or_count_targets_consumed": False,
         }
@@ -2758,25 +3372,41 @@ class Train337GateReport:
 
 def evaluate_train337_gate(
     config: SegmentLocalSpectralConfig,
-    selected_candidate: SpectralCandidate,
+    selection: SyntheticSelectionReport,
+    heldout: SyntheticHeldoutReport,
+    authority: Train337Authority,
     records: Sequence[Train337VideoAudit],
 ) -> Train337GateReport:
     """Recompute every frozen train337 gate without accepting labels."""
 
     protocol = config.train337
+    selected_candidate = replay_and_validate_synthetic_heldout(config, selection, heldout)
+    if authority.adapter_status != protocol.authority_adapter_status:
+        raise ValueError("train337 authority adapter status differs from frozen config")
+    if authority.transform_recipe_sha256 != protocol.transform_recipe.fingerprint:
+        raise ValueError("train337 transform recipe authority mismatch")
+    if authority.selection_report_sha256 != selection.canonical_sha256:
+        raise ValueError("train337 authority does not bind exact synthetic selection")
+    if authority.heldout_report_sha256 != heldout.canonical_sha256:
+        raise ValueError("train337 authority does not bind exact held-out PASS")
     frozen = tuple(records)
     if len(frozen) != protocol.expected_video_count:
         raise ValueError(f"train337 gate requires exactly {protocol.expected_video_count} rows")
     identifiers = tuple(record.video_id for record in frozen)
     if len(set(identifiers)) != len(identifiers):
         raise ValueError("train337 audit video_id values must be unique")
-    if selected_candidate not in config.candidates:
-        raise ValueError("selected candidate is outside frozen config")
+    if identifiers != authority.canonical_video_ids:
+        raise ValueError("train337 rows must equal the canonical 337 ID registry in exact order")
+    if canonical_video_ids_sha256(identifiers) != authority.canonical_video_ids_sha256:
+        raise ValueError("train337 row video-ID digest differs from canonical authority")
     if any(record.baseline.candidate_id != selected_candidate.canonical_id for record in frozen):
         raise ValueError("train337 rows do not match selected candidate")
-    canonical_ids = tuple(sorted(identifiers))
-    ids_payload = json.dumps(list(canonical_ids), separators=(",", ":")).encode("utf-8")
-    ids_sha256 = hashlib.sha256(ids_payload).hexdigest()
+    for record in frozen:
+        if record.transform_lineage.source_authority_sha256 != authority.source_authority_sha256:
+            raise ValueError("train337 transform lineage source authority mismatch")
+        if record.transform_lineage.transform_recipe_sha256 != protocol.transform_recipe.fingerprint:
+            raise ValueError("train337 row transform recipe mismatch")
+    ids_sha256 = authority.canonical_video_ids_sha256
     subset_ids, subset_sha256 = hash_fixed_subset(
         identifiers,
         seed=protocol.hash_subset_seed,
@@ -2790,13 +3420,14 @@ def evaluate_train337_gate(
         for record in frozen
         if len(record.baseline.primary.segments) == 1
         and record.baseline.primary.segments[0].candidate_window_count > 0
+        and record.baseline.primary.segments[0].available_window_count > 0
     )
-    if not sufficient:
-        raise ValueError("train337 contains no exactly-one-segment sufficient-length videos")
+    sufficient_share = len(sufficient) / protocol.expected_video_count
     eligible_records = tuple(
         record for record in sufficient if record.baseline.primary.status == "eligible"
     )
-    one_segment_eligible = len(eligible_records) / len(sufficient)
+    canonical_eligible_share = len(eligible_records) / protocol.expected_video_count
+    conditional_eligible_share = len(eligible_records) / len(sufficient) if sufficient else 0.0
     accepted_windows = tuple(
         window
         for record in eligible_records
@@ -2884,8 +3515,11 @@ def evaluate_train337_gate(
     mechanism_by_arm = {item.arm: item for item in mechanisms}
 
     metrics: tuple[tuple[str, float | int], ...] = (
+        ("canonical_video_count", protocol.expected_video_count),
         ("one_segment_sufficient_video_count", len(sufficient)),
-        ("one_segment_eligible_rate", one_segment_eligible),
+        ("one_segment_sufficient_share", sufficient_share),
+        ("canonical_one_segment_eligible_share", canonical_eligible_share),
+        ("conditional_eligible_given_sufficient_share_report_only", conditional_eligible_share),
         ("accepted_window_count", len(accepted_windows)),
         ("low_band_boundary_share", low_boundary_share),
         ("high_band_boundary_share", high_boundary_share),
@@ -2903,8 +3537,10 @@ def evaluate_train337_gate(
         ("static_null_positive_share", static_positive_share),
     )
     failed: list[str] = []
-    if one_segment_eligible < protocol.one_segment_eligible_minimum:
-        failed.append("one_segment_eligible_rate")
+    if sufficient_share < protocol.one_segment_sufficient_share_minimum:
+        failed.append("one_segment_sufficient_share")
+    if canonical_eligible_share < protocol.one_segment_eligible_minimum:
+        failed.append("canonical_one_segment_eligible_share")
     if not low_boundary_share < protocol.low_band_boundary_share_maximum_exclusive:
         failed.append("low_band_boundary_share")
     if not high_boundary_share < protocol.high_band_boundary_share_maximum_exclusive:
@@ -2938,14 +3574,21 @@ def evaluate_train337_gate(
     if mechanism_by_arm["Epi"].mechanism_pass:
         failed.append("Epi_control_must_fail_time_mechanism")
 
+    authorization_blockers = ("authoritative_train337_adapter_unwired_fail_closed",)
     return Train337GateReport(
         config_fingerprint=config.fingerprint,
         candidate_id=selected_candidate.canonical_id,
+        selection_report_sha256=selection.canonical_sha256,
+        heldout_report_sha256=heldout.canonical_sha256,
+        authority_receipt_sha256=authority.authority_receipt_sha256,
+        authority_adapter_status=authority.adapter_status,
         video_ids_sha256=ids_sha256,
         hash_subset_sha256=subset_sha256,
         hash_subset_video_ids=subset_ids,
         metrics=metrics,
         mechanism=mechanisms,
         failed_gates=tuple(failed),
-        authorized_for_dev84=not failed,
+        authorization_blockers=authorization_blockers,
+        numerical_gates_passed=not failed,
+        authorized_for_dev84=False,
     )
