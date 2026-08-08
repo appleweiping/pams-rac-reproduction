@@ -8,6 +8,8 @@ import pytest
 from pams.config import load_config
 from pams.keypoint_single_source import (
     AssociationWeights,
+    CYCLEBACK_PAIR_VARIANTS,
+    RawDetectorFrame,
     TrackStabilityThresholds,
     _anchor_residuals,
     assess_track_stability,
@@ -19,10 +21,15 @@ from pams.keypoint_single_source import (
     coco17_xy_to_padded_pose,
     effective_maximum_bridge_gap_frames,
     load_candidate_evidence_npz,
+    load_raw_detector_evidence_npz,
     local_ambiguity_gaps,
+    raw_detector_evidence_bundle,
+    reconstruct_canonical_frame_evidence,
+    select_segmented_stable_actor_paths,
     select_top2_viterbi_paths,
     similarity_procrustes_residual,
     write_candidate_evidence_npz,
+    write_raw_detector_evidence_npz,
 )
 from pams.types import PoseSequence
 from pams.v4e_synthetic_contract import (
@@ -76,6 +83,16 @@ def _mapped_base(xy: np.ndarray, frames: int) -> PoseSequence:
     )
 
 
+def _actor_margin_rows(frames: int, *, value: float = 1.0) -> dict[str, dict[str, float]]:
+    return {
+        name: {
+            str(start): value
+            for start in range(0, max(frames - 2 * window + 1, 0), hop)
+        }
+        for name, (window, hop) in CYCLEBACK_PAIR_VARIANTS.items()
+    }
+
+
 def test_v4e_config_is_single_source_and_raw_non_authoritative() -> None:
     root = Path(__file__).resolve().parents[1]
     config = load_config(
@@ -89,11 +106,14 @@ def test_v4e_config_is_single_source_and_raw_non_authoritative() -> None:
     assert settings.raw_extraction_authorizes_training is False
     assert settings.minimum_confident_keypoints == 8
     assert settings.minimum_confident_action_keypoints == 4
-    assert settings.primary_action_motion_weight == 12.0
-    assert settings.secondary_action_motion_weight == 9.0
-    assert settings.action_motion_maximum_center_step == 0.12
-    assert settings.action_motion_maximum_log_scale_step == 0.12
-    assert settings.action_motion_maximum_morphology_step == 0.02
+    assert settings.identity_maximum_center_step == 0.12
+    assert settings.identity_maximum_log_scale_step == 0.12
+    assert settings.identity_maximum_morphology_step == 0.02
+    assert not hasattr(settings, "primary_action_motion_weight")
+    assert not hasattr(settings, "secondary_action_motion_weight")
+    assert "motion-free-identity" in settings.global_track_strategy
+    assert "stable-track-bank" in settings.second_path_policy
+    assert "stable-track-bank" in config.pose.preprocessing_revision
     assert config.data.normalization == "body_centered_uniform_scale"
 
 
@@ -227,9 +247,9 @@ def test_nonrigid_action_motion_retains_actor_over_larger_static_bystander() -> 
         actor_xy[[9, 10], 1] += np.asarray([motion, -motion], dtype=np.float32)
         actor_xy[[15, 16], 0] += np.asarray([-motion, motion], dtype=np.float32)
         actor = _raw_candidate(actor_xy, box_score=0.94)
-        static = _raw_candidate(0.08 + 0.80 * base, box_score=0.90)
+        static = _raw_candidate(0.32 + 0.80 * base, box_score=0.90)
         candidates.append(np.stack((actor, static), axis=0))
-    path = select_top2_viterbi_paths(
+    bank = select_segmented_stable_actor_paths(
         candidates,
         anchor_residuals=[None] * len(candidates),
         weights=AssociationWeights(
@@ -237,11 +257,200 @@ def test_nonrigid_action_motion_retains_actor_over_larger_static_bystander() -> 
             log_scale=0.25,
             shape=0.5,
             anchor=0.0,
-            action_motion=12.0,
         ),
+        maximum_bridge_gap_frames=6,
     )
 
-    assert path.selected_indices == (0,) * len(candidates)
+    assert bank.selected_path.selected_indices == (0,) * len(candidates)
+    assert len(bank.hypothesis_rows) >= 2
+    assert bank.identity_unresolvable_frames == ()
+    assert all(
+        row["identity_association_motion_free"] is True
+        for row in bank.hypothesis_rows
+    )
+
+
+def test_near_identical_alternating_scores_are_identity_unresolvable() -> None:
+    base = _shape()
+    candidates = []
+    for frame in range(96):
+        phase = np.float32(0.06 * np.sin(2.0 * np.pi * frame / 16.0))
+        left = np.array(base, copy=True)
+        right = np.array(base, copy=True)
+        left[[9, 10], 1] += np.asarray([phase, -phase], dtype=np.float32)
+        right[[9, 10], 1] += np.asarray([-phase, phase], dtype=np.float32)
+        score_delta = 0.04 if frame % 2 == 0 else -0.04
+        candidates.append(
+            np.stack(
+                (
+                    _raw_candidate(left, box_score=0.90 + score_delta),
+                    _raw_candidate(right, box_score=0.90 - score_delta),
+                ),
+                axis=0,
+            )
+        )
+    weights = AssociationWeights(
+        center=1.0,
+        log_scale=0.25,
+        shape=0.5,
+        anchor=0.0,
+    )
+    bank = select_segmented_stable_actor_paths(
+        candidates,
+        anchor_residuals=[None] * len(candidates),
+        weights=weights,
+        maximum_bridge_gap_frames=6,
+    )
+
+    assert bank.identity_unresolvable_frames == tuple(range(96))
+    assert bank.local_identity_gap_by_frame == {index: 0.0 for index in range(96)}
+    assert all(
+        row["identity_association_motion_free"] is True
+        for row in bank.hypothesis_rows
+    )
+    sequence = build_single_source_sequence(
+        video_id="near-identical",
+        fps=25.0,
+        source_frames=96,
+        decoded_frames=96,
+        candidates=candidates,
+        primary_path=bank.selected_path,
+    )
+    frame_evidence = reconstruct_canonical_frame_evidence(
+        candidates=candidates,
+        primary=bank.selected_path,
+        secondary=bank.selected_path,
+        association_segments=bank.association_segments,
+        sequence=sequence,
+        ambiguity_by_frame=bank.local_identity_gap_by_frame,
+        maximum_bridge_gap_frames=6,
+        detector_diagnostics=[None] * 96,
+        keypoint_logit_threshold=2.0,
+        identity_alternative_reachable_by_frame=(
+            bank.identity_alternative_reachable_by_frame
+        ),
+        identity_unresolvable_frames=bank.identity_unresolvable_frames,
+    )
+    decision = assess_track_stability(
+        {
+            "video_id_sha256": "5" * 64,
+            "video_evidence_sha256": "6" * 64,
+            "source_frames": 96,
+            "dual_path_agreement": 1.0,
+            "selected_actor_pair_utility_margin_by_variant": {
+                name: {str(start): value for start, value in rows.items()}
+                for name, rows in (
+                    bank.selected_pair_utility_margin_by_variant.items()
+                )
+            },
+            "frame_evidence": frame_evidence,
+        },
+        thresholds=TrackStabilityThresholds(
+            minimum_frame_local_ambiguity_gap=0.0,
+            minimum_dual_path_agreement=0.85,
+            maximum_frame_center_step=0.5,
+            maximum_frame_log_scale_step=0.5,
+            maximum_frame_morphology_step=0.12,
+            maximum_frame_joint_mask_flicker_fraction=0.5,
+            minimum_source_coverage=0.8,
+            minimum_longest_trainable_segment_frames=48,
+            minimum_longest_trainable_segment_fraction=0.8,
+            maximum_candidate_window_frames=24,
+            minimum_window_joint_support_fraction=0.75,
+            minimum_window_stable_action_joints=4,
+            minimum_window_action_motion=0.005,
+        ),
+        same_source_period_supported=False,
+    )
+    assert decision["eligible"] is False
+    assert "identity_assignment_unresolvable" in {
+        reason
+        for reasons in decision["frame_quarantine_reasons"]
+        for reason in reasons
+    }
+
+
+def test_forced_handoff_creates_reset_and_cannot_authorize_cross_reset_pairs() -> None:
+    left = _raw_candidate(_shape(), box_score=0.92)
+    right = _raw_candidate(_shape() + np.asarray([0.55, 0.0], dtype=np.float32), box_score=0.92)
+    candidates = [
+        np.stack((left if frame < 48 else right,), axis=0)
+        for frame in range(96)
+    ]
+    weights = AssociationWeights(
+        center=1.0,
+        log_scale=0.25,
+        shape=0.5,
+        anchor=0.0,
+    )
+    bank = select_segmented_stable_actor_paths(
+        candidates,
+        anchor_residuals=[None] * 96,
+        weights=weights,
+        maximum_bridge_gap_frames=6,
+    )
+    sequence = build_single_source_sequence(
+        video_id="forced-handoff",
+        fps=25.0,
+        source_frames=96,
+        decoded_frames=96,
+        candidates=candidates,
+        primary_path=bank.selected_path,
+    )
+    frame_evidence = reconstruct_canonical_frame_evidence(
+        candidates=candidates,
+        primary=bank.selected_path,
+        secondary=bank.selected_path,
+        association_segments=bank.association_segments,
+        sequence=sequence,
+        ambiguity_by_frame=bank.local_identity_gap_by_frame,
+        maximum_bridge_gap_frames=6,
+        detector_diagnostics=[None] * 96,
+        keypoint_logit_threshold=2.0,
+        identity_alternative_reachable_by_frame=(
+            bank.identity_alternative_reachable_by_frame
+        ),
+        identity_unresolvable_frames=bank.identity_unresolvable_frames,
+    )
+    decision = assess_track_stability(
+        {
+            "video_id_sha256": "7" * 64,
+            "video_evidence_sha256": "8" * 64,
+            "source_frames": 96,
+            "dual_path_agreement": 1.0,
+            "selected_actor_pair_utility_margin_by_variant": {
+                name: {str(start): value for start, value in rows.items()}
+                for name, rows in (
+                    bank.selected_pair_utility_margin_by_variant.items()
+                )
+            },
+            "frame_evidence": frame_evidence,
+        },
+        thresholds=TrackStabilityThresholds(
+            minimum_frame_local_ambiguity_gap=0.0,
+            minimum_dual_path_agreement=0.85,
+            maximum_frame_center_step=0.5,
+            maximum_frame_log_scale_step=0.5,
+            maximum_frame_morphology_step=0.12,
+            maximum_frame_joint_mask_flicker_fraction=0.5,
+            minimum_source_coverage=0.8,
+            minimum_longest_trainable_segment_frames=48,
+            minimum_longest_trainable_segment_fraction=0.5,
+            maximum_candidate_window_frames=24,
+            minimum_window_joint_support_fraction=0.75,
+            minimum_window_stable_action_joints=4,
+            minimum_window_action_motion=0.0,
+        ),
+        same_source_period_supported=False,
+    )
+
+    assert [tuple(segment) for segment in bank.association_segments] == [
+        tuple(range(48)),
+        tuple(range(48, 96)),
+    ]
+    assert decision["eligible"] is False
+    assert decision["association_pseudotrack_count"] == 2
+    assert "multiple_association_pseudotracks" in decision["quarantine_reasons"]
 
 
 def test_pretop4_candidate_artifact_retains_fifth_candidate_for_crowd_audit() -> None:
@@ -253,6 +462,54 @@ def test_pretop4_candidate_artifact_retains_fifth_candidate_for_crowd_audit() ->
 
     assert bundle.frame_offsets.tolist() == [0, 5]
     assert bundle.candidates.shape == (5, 17, 6)
+
+
+def test_shared_raw_filter_retains_fifth_candidate_before_top4() -> None:
+    root = Path(__file__).resolve().parents[1]
+    settings = load_config(
+        root / "configs/experiments/pams_pose_recovery_v4e_single_source_raw.yaml"
+    ).pose.keypoint_single_source
+    assert settings is not None
+    xy = np.stack(
+        tuple((_shape() + np.float32(0.01 * index)) * np.float32(1000.0) for index in range(5)),
+        axis=0,
+    )
+    keypoints = np.zeros((5, 17, 3), dtype=np.float32)
+    keypoints[:, :, :2] = xy
+    keypoints[:, :, 2] = np.float32(1.0)
+    boxes = np.stack(
+        tuple(
+            np.asarray(
+                [
+                    np.min(row[:, 0]),
+                    np.min(row[:, 1]),
+                    np.max(row[:, 0]),
+                    np.max(row[:, 1]),
+                ],
+                dtype=np.float32,
+            )
+            for row in xy
+        ),
+        axis=0,
+    )
+    result = canonicalize_raw_detector_frame(
+        labels=np.ones(5, dtype=np.int64),
+        scores=np.asarray([0.95, 0.94, 0.93, 0.92, 0.91], dtype=np.float32),
+        boxes=boxes,
+        keypoints=keypoints,
+        keypoint_logits=np.full((5, 17), 3.0, dtype=np.float32),
+        image_width=1000,
+        image_height=1000,
+        settings=settings,
+    )
+
+    assert result.all_eligible_candidates is not None
+    assert result.top_candidates is not None
+    assert len(result.all_eligible_candidates) == 5
+    assert len(result.top_candidates) == 4
+    assert result.diagnostics["eligible_before_top4"] == 5
+    assert result.diagnostics["dropped_by_top4"] == 1
+    assert len(result.canonical_source_indices) == 5
 
 
 def test_raw_detector_filter_is_permutation_invariant_and_npz_roundtrips(
@@ -312,6 +569,45 @@ def test_raw_detector_filter_is_permutation_invariant_and_npz_roundtrips(
     assert np.array_equal(loaded.frame_offsets, bundle.frame_offsets)
     assert np.array_equal(loaded.candidates, bundle.candidates)
 
+    raw_bundle = raw_detector_evidence_bundle(
+        [
+            RawDetectorFrame(
+                labels=inputs["labels"],
+                scores=inputs["scores"],
+                boxes=inputs["boxes"],
+                keypoints=inputs["keypoints"],
+                keypoint_logits=inputs["keypoint_logits"],
+                image_width=1000,
+                image_height=1000,
+            )
+        ]
+    )
+    raw_artifact = tmp_path / "raw-detector.npz"
+    write_raw_detector_evidence_npz(raw_artifact, raw_bundle)
+    loaded_raw = load_raw_detector_evidence_npz(raw_artifact)
+    for field in (
+        "frame_offsets",
+        "labels",
+        "scores",
+        "boxes",
+        "keypoints",
+        "keypoint_logits",
+        "frame_dimensions",
+    ):
+        assert np.array_equal(getattr(loaded_raw, field), getattr(raw_bundle, field))
+    replay = canonicalize_raw_detector_frame(
+        labels=loaded_raw.labels,
+        scores=loaded_raw.scores,
+        boxes=loaded_raw.boxes,
+        keypoints=loaded_raw.keypoints,
+        keypoint_logits=loaded_raw.keypoint_logits,
+        image_width=int(loaded_raw.frame_dimensions[0, 0]),
+        image_height=int(loaded_raw.frame_dimensions[0, 1]),
+        settings=settings,
+    )
+    assert np.array_equal(replay.all_eligible_candidates, first.all_eligible_candidates)
+    assert replay.diagnostics == first.diagnostics
+
 
 def test_torso_only_raw_detection_is_rejected_by_shared_production_filter() -> None:
     root = Path(__file__).resolve().parents[1]
@@ -337,6 +633,27 @@ def test_torso_only_raw_detection_is_rejected_by_shared_production_filter() -> N
     assert result.top_candidates is None
     assert result.all_eligible_candidates is None
     assert result.diagnostics["rejected_low_total_joint_support"] == 1
+
+
+def test_raw_detector_rejects_tampered_keypoint_visibility_channel() -> None:
+    root = Path(__file__).resolve().parents[1]
+    settings = load_config(
+        root / "configs/experiments/pams_pose_recovery_v4e_single_source_raw.yaml"
+    ).pose.keypoint_single_source
+    assert settings is not None
+    keypoints = np.zeros((1, 17, 3), dtype=np.float32)
+    keypoints[0, :, :2] = _shape() * np.float32(1000.0)
+    with pytest.raises(ValueError, match="visibility channel is not exact one"):
+        canonicalize_raw_detector_frame(
+            labels=np.ones(1, dtype=np.int64),
+            scores=np.asarray([0.9], dtype=np.float32),
+            boxes=np.asarray([[0.0, 0.0, 900.0, 900.0]], dtype=np.float32),
+            keypoints=keypoints,
+            keypoint_logits=np.full((1, 17), 3.0, dtype=np.float32),
+            image_width=1000,
+            image_height=1000,
+            settings=settings,
+        )
 
 
 def test_kprcnn_stability_gate_never_claims_target_identity() -> None:
@@ -366,11 +683,13 @@ def test_kprcnn_stability_gate_never_claims_target_identity() -> None:
         "continuity_step_p95": 0.1,
         "source_coverage": 1.0,
         "source_frames": 48,
+        "selected_actor_pair_utility_margin_by_variant": _actor_margin_rows(48),
         "frame_evidence": [
             {
                 "frame_index": index,
                 "candidate_count": 1,
                 "primary_index": 0,
+                "association_segment_id": 0,
                 "candidates": [
                     {
                         "raw_keypoint_logits": [3.0] * 17,
@@ -491,6 +810,7 @@ def test_periodic_mask_flicker_and_torso_only_are_not_trainable() -> None:
                     "frame_index": index,
                     "candidate_count": 1,
                     "primary_index": 0,
+                    "association_segment_id": 0,
                     "candidates": [
                         {
                             "raw_keypoint_logits": [
@@ -520,6 +840,9 @@ def test_periodic_mask_flicker_and_torso_only_are_not_trainable() -> None:
                 "video_evidence_sha256": "4" * 64,
                 "source_frames": 96,
                 "dual_path_agreement": 1.0,
+                "selected_actor_pair_utility_margin_by_variant": (
+                    _actor_margin_rows(96)
+                ),
                 "frame_evidence": rows,
             },
             thresholds=thresholds,

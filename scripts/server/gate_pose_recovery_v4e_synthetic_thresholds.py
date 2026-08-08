@@ -21,6 +21,7 @@ from pose_recovery_v4d_full337_contract import (
 )
 
 from pams.v4e_synthetic_contract import (
+    FROZEN_THRESHOLD_FIELD_ORDER,
     SYNTHETIC_DIAGNOSTIC_FAMILIES,
     SYNTHETIC_IDENTITY_NULL_FAMILIES,
     SYNTHETIC_JOINT_NULL_FAMILIES,
@@ -28,25 +29,49 @@ from pams.v4e_synthetic_contract import (
     canonical_threshold_grid_rows,
 )
 
-THRESHOLD_KEYS = {
+THRESHOLD_KEYS = FROZEN_THRESHOLD_FIELD_ORDER
+REQUIRED_POSITIVE_FAMILIES = SYNTHETIC_POSITIVE_FAMILIES
+REQUIRED_DIAGNOSTIC_FAMILIES = SYNTHETIC_DIAGNOSTIC_FAMILIES
+REQUIRED_IDENTITY_NULL_FAMILIES = SYNTHETIC_IDENTITY_NULL_FAMILIES
+REQUIRED_JOINT_NULL_FAMILIES = SYNTHETIC_JOINT_NULL_FAMILIES
+JSON_THRESHOLD_KEY_ORDER = (
     "maximum_candidate_window_frames",
     "maximum_frame_center_step",
+    "maximum_frame_joint_mask_flicker_fraction",
     "maximum_frame_log_scale_step",
     "maximum_frame_morphology_step",
-    "maximum_frame_joint_mask_flicker_fraction",
     "minimum_dual_path_agreement",
     "minimum_frame_local_ambiguity_gap",
     "minimum_longest_trainable_segment_fraction",
     "minimum_longest_trainable_segment_frames",
     "minimum_source_coverage",
-    "minimum_window_joint_support_fraction",
     "minimum_window_action_motion",
+    "minimum_window_joint_support_fraction",
     "minimum_window_stable_action_joints",
-}
-REQUIRED_POSITIVE_FAMILIES = set(SYNTHETIC_POSITIVE_FAMILIES)
-REQUIRED_DIAGNOSTIC_FAMILIES = set(SYNTHETIC_DIAGNOSTIC_FAMILIES)
-REQUIRED_IDENTITY_NULL_FAMILIES = set(SYNTHETIC_IDENTITY_NULL_FAMILIES)
-REQUIRED_JOINT_NULL_FAMILIES = set(SYNTHETIC_JOINT_NULL_FAMILIES)
+)
+JSON_POSITIVE_FAMILY_KEY_ORDER = (
+    "clean_known_identity",
+    "fast_motion_actor_with_large_static_bystander",
+    "inplane_affine_rotation15_scale15_translation10pct",
+    "short_occlusion_random30pct_joints_for20pct_time",
+)
+JSON_IDENTITY_NULL_FAMILY_KEY_ORDER = (
+    "forced_handoff_a_terminates_b_continues",
+    "long_gap_with_identity_change",
+    "near_identical_alternating_score_complementary_phase",
+    "short_bridge_range_identity_change",
+)
+JSON_JOINT_NULL_FAMILY_KEY_ORDER = (
+    "alternating_limb_dropout_without_stable_window_support",
+    "eight_reliable_but_fewer_than_four_action_joints",
+    "low_amplitude_periodic_mask_flicker",
+    "periodic_detector_jitter_below_usable_motion",
+    "periodic_joint_mask_flicker",
+    "torso_only_without_action_joints",
+)
+JSON_DIAGNOSTIC_FAMILY_KEY_ORDER = (
+    "continuous_near_size_crossing_safe_abstention",
+)
 
 
 def _object(path: Path, role: str) -> Mapping[str, Any]:
@@ -136,7 +161,12 @@ def gate_synthetic_thresholds(
     )
     require(
         evidence.get("mechanics_chain")
-        == "synthetic-raw-kprcnn-channels-to-shared-production-filter-canonical-sort-to-dual-viterbi-to-canonical-frame-evidence-to-body-centered-cache-to-track-stability-and-usable-action-motion-v2"
+        == (
+            "synthetic-raw-kprcnn-channels-to-shared-production-filter-canonical-"
+            "sort-to-dual-motion-free-stable-track-banks-to-whole-track-actor-"
+            "utility-to-canonical-frame-evidence-to-body-centered-cache-to-track-"
+            "stability-v3"
+        )
         and evidence.get("truth_role")
         == "synthetic-actor-retention-track-stability-and-false-eligible-scoring-only"
         and evidence.get("period_invariance_checked") is True
@@ -204,8 +234,7 @@ def gate_synthetic_thresholds(
         families = evidence.get(field)
         require(
             isinstance(families, list)
-            and len(families) == len(expected)
-            and set(families) == expected,
+            and tuple(families) == expected,
             f"synthetic {field} coverage mismatch",
         )
     policy = reservation.get("selection_policy")
@@ -216,11 +245,19 @@ def gate_synthetic_thresholds(
     require(alpha == 0.05, "synthetic gate requires one-sided 95% Clopper-Pearson")
     require(minimum_positive_lower == 0.90, "positive LCB must be frozen at 0.90")
     require(maximum_negative_upper == 0.01, "null UCB must be frozen at 0.01")
+    require(
+        policy.get("confidence_scope")
+        == "one-sided-bounds-apply-only-to-the-preregistered-synthetic-distribution",
+        "synthetic confidence-interval scope mismatch",
+    )
     require(0.0 <= minimum_positive_lower <= 1.0, "positive policy invalid")
     require(0.0 <= maximum_negative_upper <= 1.0, "negative policy invalid")
     require(policy.get("tuple_selection") == "minimum-severity-sum-then-frozen-field-lexicographic-v1", "selection rule mismatch")
     field_order = policy.get("frozen_threshold_field_order")
-    require(isinstance(field_order, list) and set(field_order) == THRESHOLD_KEYS, "threshold order mismatch")
+    require(
+        isinstance(field_order, list) and tuple(field_order) == THRESHOLD_KEYS,
+        "threshold order mismatch",
+    )
 
     grid = reservation.get("threshold_grid")
     axes = reservation.get("threshold_axes")
@@ -243,7 +280,11 @@ def gate_synthetic_thresholds(
         )
         rank = int(value["permissiveness_rank"])
         thresholds = value.get("thresholds")
-        require(isinstance(thresholds, Mapping) and set(thresholds) == THRESHOLD_KEYS, "grid threshold mismatch")
+        require(
+            isinstance(thresholds, Mapping)
+            and tuple(thresholds) == JSON_THRESHOLD_KEY_ORDER,
+            "grid threshold mismatch",
+        )
         severity = value.get("severity_components")
         require(
             isinstance(severity, list)
@@ -310,22 +351,22 @@ def gate_synthetic_thresholds(
             diagnostics = counts.get("diagnostic_families")
             require(
                 isinstance(positives, Mapping)
-                and set(positives) == REQUIRED_POSITIVE_FAMILIES,
+                and tuple(positives) == JSON_POSITIVE_FAMILY_KEY_ORDER,
                 "positive families mismatch",
             )
             require(
                 isinstance(identity_nulls, Mapping)
-                and set(identity_nulls) == REQUIRED_IDENTITY_NULL_FAMILIES,
+                and tuple(identity_nulls) == JSON_IDENTITY_NULL_FAMILY_KEY_ORDER,
                 "identity-null families mismatch",
             )
             require(
                 isinstance(joint_nulls, Mapping)
-                and set(joint_nulls) == REQUIRED_JOINT_NULL_FAMILIES,
+                and tuple(joint_nulls) == JSON_JOINT_NULL_FAMILY_KEY_ORDER,
                 "joint-null families mismatch",
             )
             require(
                 isinstance(diagnostics, Mapping)
-                and set(diagnostics) == REQUIRED_DIAGNOSTIC_FAMILIES,
+                and tuple(diagnostics) == JSON_DIAGNOSTIC_FAMILY_KEY_ORDER,
                 "diagnostic families mismatch",
             )
             positive_bounds: dict[str, float] = {}
@@ -371,16 +412,16 @@ def gate_synthetic_thresholds(
             for family_counts in diagnostics.values():
                 require(isinstance(family_counts, Mapping), "diagnostic counts invalid")
                 require(
-                    set(family_counts) == {"total", "period_supported", "decision_bitset_hex"},
+                    set(family_counts) == {"total", "false_eligible", "decision_bitset_hex"},
                     "diagnostic family count schema mismatch",
                 )
                 require(int(family_counts["total"]) == 512, "each diagnostic family requires 512 samples")
                 require(
-                    int(family_counts["period_supported"])
+                    int(family_counts["false_eligible"])
                     == _decision_bitset_count(family_counts["decision_bitset_hex"]),
                     "diagnostic count/bitset mismatch",
                 )
-                diagnostic_failures += int(family_counts["period_supported"])
+                diagnostic_failures += int(family_counts["false_eligible"])
             deterministic_failures = int(counts["determinism_failures"])
             permutation_failures = int(counts["candidate_order_permutation_failures"])
             require(
@@ -404,7 +445,7 @@ def gate_synthetic_thresholds(
                 "identity_null_family_clopper_pearson_upper": null_bounds,
                 "determinism_failures": deterministic_failures,
                 "candidate_order_permutation_failures": permutation_failures,
-                "diagnostic_period_supported_failures": diagnostic_failures,
+                "diagnostic_safe_abstention_failures": diagnostic_failures,
                 "passed": split_passed,
             }
             split_passes[split] = split_passed
@@ -466,10 +507,10 @@ def gate_synthetic_thresholds(
         "selected_permissiveness_rank": selected_rank,
         "selection_policy": dict(policy),
         "audited_grid_rows": audited_rows,
-        "positive_families": sorted(REQUIRED_POSITIVE_FAMILIES),
-        "identity_null_families": sorted(REQUIRED_IDENTITY_NULL_FAMILIES),
-        "joint_null_families": sorted(REQUIRED_JOINT_NULL_FAMILIES),
-        "diagnostic_families": sorted(REQUIRED_DIAGNOSTIC_FAMILIES),
+        "positive_families": list(REQUIRED_POSITIVE_FAMILIES),
+        "identity_null_families": list(REQUIRED_IDENTITY_NULL_FAMILIES),
+        "joint_null_families": list(REQUIRED_JOINT_NULL_FAMILIES),
+        "diagnostic_families": list(REQUIRED_DIAGNOSTIC_FAMILIES),
         "bindings": {
             **dict(reservation_bindings),
             "synthetic_reservation_sha256": expected_reservation_sha256,

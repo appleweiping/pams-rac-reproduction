@@ -16,6 +16,7 @@ from typing import Any
 import numpy as np
 from pose_recovery_v4d_full337_contract import (
     Full337ContractError,
+    load_strict_json,
     require,
     sha256_file,
     write_json_exclusive,
@@ -25,41 +26,47 @@ from pams.config import load_config
 from pams.data import load_pose_input_manifest, pose_input_identity_sha256
 from pams.keypoint_single_source import (
     AssociationWeights,
+    association_weights_from_settings,
+    canonicalize_raw_detector_frame,
+    effective_maximum_bridge_gap_frames,
     load_candidate_evidence_npz,
-    select_segmented_top2_viterbi_paths,
+    load_raw_detector_evidence_npz,
+    select_segmented_stable_actor_paths,
 )
 
 
 def _object(path: Path, role: str) -> Mapping[str, Any]:
-    value = json.loads(path.read_text(encoding="utf-8"))
-    require(isinstance(value, Mapping), f"{role} must be an object")
+    value, _ = load_strict_json(path, role=role)
     return value
 
 
 def _replay_prefix_suffix(
     *,
     candidates: Sequence[Any],
-    evidence: Mapping[str, Any],
-    weights_key: str,
+    weights: AssociationWeights,
     prefix_stop: int,
     suffix_start: int,
     maximum_bridge_gap_frames: int,
 ) -> tuple[tuple[int | None, ...], tuple[int | None, ...]]:
     no_anchors = tuple(None for _ in candidates)
-    weights = AssociationWeights(**dict(evidence[weights_key]))
-    prefix, _ = select_segmented_top2_viterbi_paths(
+    prefix = select_segmented_stable_actor_paths(
         candidates[:prefix_stop],
         anchor_residuals=no_anchors[:prefix_stop],
         weights=weights,
         maximum_bridge_gap_frames=maximum_bridge_gap_frames,
+        native_frame_offset=0,
     )
-    suffix, _ = select_segmented_top2_viterbi_paths(
+    suffix = select_segmented_stable_actor_paths(
         candidates[suffix_start:],
         anchor_residuals=no_anchors[suffix_start:],
         weights=weights,
         maximum_bridge_gap_frames=maximum_bridge_gap_frames,
+        native_frame_offset=suffix_start,
     )
-    return prefix.selected_indices, suffix.selected_indices
+    return (
+        prefix.selected_path.selected_indices,
+        suffix.selected_path.selected_indices,
+    )
 
 
 def _overlap_agreement(
@@ -94,9 +101,16 @@ def audit_same39_overlap(
     config = load_config(config_path.resolve(strict=True))
     settings = config.pose.keypoint_single_source
     require(settings is not None, "v4e settings missing")
+    primary_weights, secondary_weights = association_weights_from_settings(settings)
     manifest = load_pose_input_manifest(train_input_path, validate_exact=True)
     require(len(manifest.records) == 337, "expected canonical train337")
     raw = _object(raw_ledger_path, "same39 raw ledger")
+    require(
+        raw.get("config_file_sha256") == sha256_file(config_path)
+        and raw.get("config_fingerprint") == config.fingerprint
+        and raw.get("pose_fingerprint") == config.pose_fingerprint,
+        "same39 raw ledger/config binding mismatch",
+    )
     require(
         sha256_file(independent_replay_receipt_path)
         == expected_independent_replay_receipt_sha256,
@@ -109,6 +123,13 @@ def audit_same39_overlap(
         and replay_receipt.get("overall_pass") is True
         and replay_receipt.get("entry_count") == 39,
         "independent same39 replay did not pass",
+    )
+    replay_bindings = replay_receipt.get("bindings")
+    require(
+        isinstance(replay_bindings, Mapping)
+        and replay_bindings.get("raw_ledger_sha256")
+        == expected_raw_ledger_sha256,
+        "independent replay receipt does not bind this same39 ledger",
     )
     replay_rows = replay_receipt.get("replay_rows")
     require(isinstance(replay_rows, list) and len(replay_rows) == 39, "independent replay rows missing")
@@ -134,6 +155,12 @@ def audit_same39_overlap(
     require(isinstance(raw_rows, list) and len(raw_rows) == 39, "same39 rows mismatch")
     same_ids = {str(row["video_id"]) for row in raw_rows if isinstance(row, Mapping)}
     require(len(same_ids) == 39, "same39 identities invalid")
+    artifact_root = raw_ledger_path.resolve(strict=True).parent.parent
+    require(
+        raw_ledger_path.resolve(strict=True)
+        == artifact_root / "output/raw-ledger.json",
+        "same39 raw ledger locator mismatch",
+    )
 
     v4a = _object(v4a_ledger_path, "v4a ledger")
     require(sha256_file(v4a_ledger_path) == settings.base_pose_ledger_sha256, "v4a ledger SHA mismatch")
@@ -156,46 +183,121 @@ def audit_same39_overlap(
     rows: list[dict[str, Any]] = []
     for raw_row in raw_rows:
         require(isinstance(raw_row, Mapping), "same39 row must be an object")
-        path_artifact_path = Path(str(raw_row["path_segment_evidence_path"])).resolve(strict=True)
-        candidate_path = Path(str(raw_row["candidate_evidence_path"])).resolve(strict=True)
+        video_id = str(raw_row["video_id"])
+        opaque_id = hashlib.sha256(video_id.encode("utf-8")).hexdigest()
+        evidence_root = artifact_root / "output/raw-evidence"
+        path_locator = evidence_root / f"{opaque_id}.path.json"
+        candidate_locator = evidence_root / f"{opaque_id}.candidates.npz"
+        raw_detector_locator = evidence_root / f"{opaque_id}.raw-detector.npz"
+        require(
+            not path_locator.is_symlink()
+            and not candidate_locator.is_symlink()
+            and not raw_detector_locator.is_symlink(),
+            "same39 raw evidence locator must not be a symlink",
+        )
+        path_artifact_path = path_locator.resolve(strict=True)
+        candidate_path = candidate_locator.resolve(strict=True)
+        raw_detector_path = raw_detector_locator.resolve(strict=True)
+        require(
+            raw_row.get("path_segment_evidence_path") == str(path_artifact_path)
+            and raw_row.get("candidate_evidence_path") == str(candidate_path)
+            and raw_row.get("raw_detector_evidence_path")
+            == str(raw_detector_path),
+            "same39 ledger raw evidence locator mismatch",
+        )
         require(sha256_file(path_artifact_path) == raw_row["path_segment_evidence_sha256"], "path SHA mismatch")
         require(sha256_file(candidate_path) == raw_row["candidate_evidence_sha256"], "candidate SHA mismatch")
+        require(
+            sha256_file(raw_detector_path)
+            == raw_row["raw_detector_evidence_sha256"],
+            "raw detector SHA mismatch",
+        )
         path_artifact = _object(path_artifact_path, "path artifact")
         evidence = path_artifact.get("raw_evidence")
         require(isinstance(evidence, Mapping), "raw path evidence missing")
         decoded = int(evidence["decoded_frames"])
         require(decoded > 0, "same39 overlap requires decoded frames")
+        source_frames = int(evidence["source_frames"])
         bundle = load_candidate_evidence_npz(candidate_path)
-        require(len(bundle.frame_offsets) == int(evidence["source_frames"]) + 1, "candidate timeline mismatch")
-        candidates = tuple(
-            (
-                None
-                if int(bundle.frame_offsets[index]) == int(bundle.frame_offsets[index + 1])
-                else np.ascontiguousarray(
-                    bundle.candidates[
-                        int(bundle.frame_offsets[index]) : int(bundle.frame_offsets[index + 1])
-                    ][:4],
-                    dtype=np.float32,
-                )
-            )
-            for index in range(decoded)
+        raw_bundle = load_raw_detector_evidence_npz(raw_detector_path)
+        require(
+            len(bundle.frame_offsets) == source_frames + 1
+            and len(raw_bundle.frame_offsets) == source_frames + 1,
+            "candidate/raw detector timeline mismatch",
         )
+        candidates_list: list[np.ndarray | None] = []
+        all_candidates_list: list[np.ndarray | None] = []
+        for frame_index in range(source_frames):
+            raw_start = int(raw_bundle.frame_offsets[frame_index])
+            raw_stop = int(raw_bundle.frame_offsets[frame_index + 1])
+            width = int(raw_bundle.frame_dimensions[frame_index, 0])
+            height = int(raw_bundle.frame_dimensions[frame_index, 1])
+            if frame_index >= decoded:
+                require(
+                    raw_start == raw_stop and width == 0 and height == 0,
+                    "padded tail contains raw detector evidence",
+                )
+                candidates_list.append(None)
+                all_candidates_list.append(None)
+                continue
+            require(width > 0 and height > 0, "decoded detector frame lacks dimensions")
+            canonical = canonicalize_raw_detector_frame(
+                labels=raw_bundle.labels[raw_start:raw_stop],
+                scores=raw_bundle.scores[raw_start:raw_stop],
+                boxes=raw_bundle.boxes[raw_start:raw_stop],
+                keypoints=raw_bundle.keypoints[raw_start:raw_stop],
+                keypoint_logits=raw_bundle.keypoint_logits[raw_start:raw_stop],
+                image_width=width,
+                image_height=height,
+                settings=settings,
+            )
+            candidates_list.append(canonical.top_candidates)
+            all_candidates_list.append(canonical.all_eligible_candidates)
+        expected_offsets = np.zeros(source_frames + 1, dtype=np.int64)
+        expected_rows: list[np.ndarray] = []
+        for frame_index, frame_candidates in enumerate(all_candidates_list):
+            if frame_candidates is not None:
+                expected_rows.append(frame_candidates)
+                expected_offsets[frame_index + 1] = (
+                    expected_offsets[frame_index] + len(frame_candidates)
+                )
+            else:
+                expected_offsets[frame_index + 1] = expected_offsets[frame_index]
+        expected_packed = (
+            np.ascontiguousarray(np.concatenate(expected_rows, axis=0), dtype=np.float32)
+            if expected_rows
+            else np.empty((0, 17, 6), dtype=np.float32)
+        )
+        require(
+            np.array_equal(bundle.frame_offsets, expected_offsets)
+            and np.array_equal(bundle.candidates, expected_packed),
+            "raw detector replay differs from canonical candidate artifact",
+        )
+        candidates = tuple(candidates_list[:decoded])
         prefix_stop = int(math.ceil(0.60 * decoded))
         suffix_start = int(math.floor(0.40 * decoded))
         require(0 <= suffix_start < prefix_stop <= decoded, "prefix/suffix geometry invalid")
-        gap = int(evidence["effective_maximum_bridge_gap_frames"])
+        gap = effective_maximum_bridge_gap_frames(
+            fps=float(evidence["fps"]),
+            maximum_seconds=settings.maximum_bridge_gap_seconds,
+            frame_cap=settings.maximum_bridge_gap_frame_cap,
+        )
+        require(
+            evidence.get("effective_maximum_bridge_gap_frames") == gap
+            and evidence.get("primary_weights") == primary_weights.to_dict()
+            and evidence.get("secondary_weights") == secondary_weights.to_dict(),
+            "same39 path mechanics differ from bound config",
+        )
         primary_prefix, primary_suffix = _replay_prefix_suffix(
             candidates=candidates,
-            evidence=evidence,
-            weights_key="primary_weights",
+            weights=primary_weights,
             prefix_stop=prefix_stop,
             suffix_start=suffix_start,
             maximum_bridge_gap_frames=gap,
         )
         secondary_prefix, secondary_suffix = _replay_prefix_suffix(
             candidates=candidates,
-            evidence=evidence,
-            weights_key="secondary_weights",
+            weights=secondary_weights,
             prefix_stop=prefix_stop,
             suffix_start=suffix_start,
             maximum_bridge_gap_frames=gap,
@@ -212,8 +314,6 @@ def audit_same39_overlap(
             prefix_stop=prefix_stop,
             suffix_start=suffix_start,
         )
-        video_id = str(raw_row["video_id"])
-        opaque_id = hashlib.sha256(video_id.encode("utf-8")).hexdigest()
         replay_row = replay_by_opaque.get(opaque_id)
         require(replay_row is not None, "overlap/replay membership mismatch")
         rows.append(
@@ -237,6 +337,9 @@ def audit_same39_overlap(
                     "mean_active_action_joint_count"
                 ],
                 "candidate_evidence_sha256": raw_row["candidate_evidence_sha256"],
+                "raw_detector_evidence_sha256": raw_row[
+                    "raw_detector_evidence_sha256"
+                ],
                 "path_segment_evidence_sha256": raw_row["path_segment_evidence_sha256"],
             }
         )

@@ -17,6 +17,8 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
+import stat
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -34,9 +36,9 @@ from pams.pose import sha256_file
 from pams.types import PoseSequence
 
 V4E_PREPROCESSING_REVISION = (
-    "official-segment-keypointrcnn-single-source-coco17-full-timeline-v4e"
+    "official-segment-keypointrcnn-stable-track-bank-coco17-full-timeline-v4e"
 )
-V4E_RECOVERY_MODE = "keypointrcnn-single-source-kprcnn-only-path-v4e"
+V4E_RECOVERY_MODE = "keypointrcnn-single-source-stable-track-bank-v4e"
 V4E_REPRESENTATION = "unified_2d"
 V4E_REPRESENTATION_DETAIL = {
     "joints": "coco17",
@@ -64,16 +66,15 @@ class KeypointSingleSourceError(RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class AssociationWeights:
-    """One frozen Viterbi objective used for path stability comparison."""
+    """One frozen, motion-free identity association objective."""
 
     center: float
     log_scale: float
     shape: float
     anchor: float
-    action_motion: float = 0.0
-    action_motion_maximum_center_step: float = 0.12
-    action_motion_maximum_log_scale_step: float = 0.12
-    action_motion_maximum_morphology_step: float = 0.02
+    identity_maximum_center_step: float = 0.12
+    identity_maximum_log_scale_step: float = 0.12
+    identity_maximum_morphology_step: float = 0.02
 
     def __post_init__(self) -> None:
         values = (
@@ -81,42 +82,74 @@ class AssociationWeights:
             self.log_scale,
             self.shape,
             self.anchor,
-            self.action_motion,
         )
         if any(not math.isfinite(float(value)) or value < 0.0 for value in values):
             raise ValueError("association weights must be finite and non-negative")
         if not any(value > 0.0 for value in values):
             raise ValueError("association weights must be non-degenerate")
         continuity_limits = (
-            self.action_motion_maximum_center_step,
-            self.action_motion_maximum_log_scale_step,
-            self.action_motion_maximum_morphology_step,
+            self.identity_maximum_center_step,
+            self.identity_maximum_log_scale_step,
+            self.identity_maximum_morphology_step,
         )
         if any(
             not math.isfinite(float(value)) or value < 0.0
             for value in continuity_limits
         ):
             raise ValueError(
-                "action-motion continuity limits must be finite and non-negative"
+                "identity continuity limits must be finite and non-negative"
             )
 
     def to_dict(self) -> dict[str, float]:
         return {
             "anchor": float(self.anchor),
-            "action_motion": float(self.action_motion),
-            "action_motion_maximum_center_step": float(
-                self.action_motion_maximum_center_step
+            "identity_maximum_center_step": float(
+                self.identity_maximum_center_step
             ),
-            "action_motion_maximum_log_scale_step": float(
-                self.action_motion_maximum_log_scale_step
+            "identity_maximum_log_scale_step": float(
+                self.identity_maximum_log_scale_step
             ),
-            "action_motion_maximum_morphology_step": float(
-                self.action_motion_maximum_morphology_step
+            "identity_maximum_morphology_step": float(
+                self.identity_maximum_morphology_step
             ),
             "center": float(self.center),
             "log_scale": float(self.log_scale),
             "shape": float(self.shape),
         }
+
+
+def association_weights_from_settings(
+    settings: KeypointRCNNSingleSourceConfig,
+) -> tuple[AssociationWeights, AssociationWeights]:
+    """Build both frozen path objectives from the SHA-bound v4e config."""
+
+    continuity = {
+        "identity_maximum_center_step": (
+            settings.identity_maximum_center_step
+        ),
+        "identity_maximum_log_scale_step": (
+            settings.identity_maximum_log_scale_step
+        ),
+        "identity_maximum_morphology_step": (
+            settings.identity_maximum_morphology_step
+        ),
+    }
+    return (
+        AssociationWeights(
+            center=settings.primary_center_weight,
+            log_scale=settings.primary_log_scale_weight,
+            shape=settings.primary_shape_weight,
+            anchor=settings.primary_anchor_weight,
+            **continuity,
+        ),
+        AssociationWeights(
+            center=settings.secondary_center_weight,
+            log_scale=settings.secondary_log_scale_weight,
+            shape=settings.secondary_shape_weight,
+            anchor=settings.secondary_anchor_weight,
+            **continuity,
+        ),
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,6 +170,20 @@ class ViterbiPath:
 
 
 @dataclass(frozen=True, slots=True)
+class StableTrackBankResult:
+    """Motion-free identity hypotheses followed by whole-track actor ranking."""
+
+    selected_path: ViterbiPath
+    association_segments: tuple[tuple[int, ...], ...]
+    local_identity_gap_by_frame: dict[int, float]
+    identity_alternative_reachable_by_frame: dict[int, bool]
+    identity_unresolvable_frames: tuple[int, ...]
+    hypothesis_rows: tuple[dict[str, Any], ...]
+    selected_pair_utility_margin_by_variant: dict[str, dict[int, float]]
+    identity_hypothesis_table_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
 class CandidateEvidenceBundle:
     """Canonical ragged fresh-detector evidence persisted independently."""
 
@@ -154,6 +201,279 @@ class CanonicalDetectorFrame:
     diagnostics: dict[str, int]
     raw_output_sha256: str
     canonical_eligible_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
+class RawDetectorFrame:
+    """Exact CPU channels emitted by KPRCNN for one decoded frame."""
+
+    labels: NDArray[np.int64]
+    scores: NDArray[np.float32]
+    boxes: NDArray[np.float32]
+    keypoints: NDArray[np.float32]
+    keypoint_logits: NDArray[np.float32]
+    image_width: int
+    image_height: int
+
+
+@dataclass(frozen=True, slots=True)
+class RawDetectorEvidenceBundle:
+    """Ragged raw detector timeline required for independent canonical replay."""
+
+    frame_offsets: NDArray[np.int64]
+    labels: NDArray[np.int64]
+    scores: NDArray[np.float32]
+    boxes: NDArray[np.float32]
+    keypoints: NDArray[np.float32]
+    keypoint_logits: NDArray[np.float32]
+    frame_dimensions: NDArray[np.int64]
+
+
+def _empty_raw_detector_frame() -> RawDetectorFrame:
+    return RawDetectorFrame(
+        labels=np.empty(0, dtype=np.int64),
+        scores=np.empty(0, dtype=np.float32),
+        boxes=np.empty((0, 4), dtype=np.float32),
+        keypoints=np.empty((0, 17, 3), dtype=np.float32),
+        keypoint_logits=np.empty((0, 17), dtype=np.float32),
+        image_width=0,
+        image_height=0,
+    )
+
+
+def raw_detector_evidence_bundle(
+    frames: Sequence[RawDetectorFrame],
+) -> RawDetectorEvidenceBundle:
+    offsets = np.zeros(len(frames) + 1, dtype=np.int64)
+    labels: list[NDArray[np.int64]] = []
+    scores: list[NDArray[np.float32]] = []
+    boxes: list[NDArray[np.float32]] = []
+    keypoints: list[NDArray[np.float32]] = []
+    logits: list[NDArray[np.float32]] = []
+    dimensions = np.zeros((len(frames), 2), dtype=np.int64)
+    for frame_index, frame in enumerate(frames):
+        count = len(frame.labels)
+        if (
+            frame.labels.dtype != np.int64
+            or frame.labels.shape != (count,)
+            or frame.scores.dtype != np.float32
+            or frame.scores.shape != (count,)
+            or frame.boxes.dtype != np.float32
+            or frame.boxes.shape != (count, 4)
+            or frame.keypoints.dtype != np.float32
+            or frame.keypoints.shape != (count, 17, 3)
+            or frame.keypoint_logits.dtype != np.float32
+            or frame.keypoint_logits.shape != (count, 17)
+        ):
+            raise ValueError("raw detector frame schema mismatch")
+        if count > 100:
+            raise ValueError("raw detector frame exceeds frozen top100")
+        if count and (frame.image_width < 1 or frame.image_height < 1):
+            raise ValueError("non-empty raw detector frame lacks dimensions")
+        if not count and (frame.image_width < 0 or frame.image_height < 0):
+            raise ValueError("raw detector frame dimensions are negative")
+        if not (
+            np.isfinite(frame.scores).all()
+            and np.isfinite(frame.boxes).all()
+            and np.isfinite(frame.keypoints).all()
+            and np.isfinite(frame.keypoint_logits).all()
+        ):
+            raise ValueError("raw detector frame contains non-finite values")
+        if np.any(frame.scores < 0.0) or np.any(frame.scores > 1.0):
+            raise ValueError("raw detector scores are outside [0,1]")
+        if count and not np.all(frame.keypoints[:, :, 2] == np.float32(1.0)):
+            raise ValueError("raw detector keypoint visibility channel is not exact one")
+        if len(frame.boxes) and np.any(frame.boxes[:, 2:] < frame.boxes[:, :2]):
+            raise ValueError("raw detector frame has inverted boxes")
+        offsets[frame_index + 1] = offsets[frame_index] + count
+        dimensions[frame_index] = (frame.image_width, frame.image_height)
+        labels.append(np.ascontiguousarray(frame.labels))
+        scores.append(np.ascontiguousarray(frame.scores))
+        boxes.append(np.ascontiguousarray(frame.boxes))
+        keypoints.append(np.ascontiguousarray(frame.keypoints))
+        logits.append(np.ascontiguousarray(frame.keypoint_logits))
+
+    def packed(
+        rows: Sequence[NDArray[Any]],
+        *,
+        empty_shape: tuple[int, ...],
+        dtype: Any,
+    ) -> NDArray[Any]:
+        return np.ascontiguousarray(
+            np.concatenate(rows, axis=0) if rows else np.empty(empty_shape, dtype=dtype),
+            dtype=dtype,
+        )
+
+    return RawDetectorEvidenceBundle(
+        frame_offsets=np.ascontiguousarray(offsets),
+        labels=packed(labels, empty_shape=(0,), dtype=np.int64),
+        scores=packed(scores, empty_shape=(0,), dtype=np.float32),
+        boxes=packed(boxes, empty_shape=(0, 4), dtype=np.float32),
+        keypoints=packed(keypoints, empty_shape=(0, 17, 3), dtype=np.float32),
+        keypoint_logits=packed(logits, empty_shape=(0, 17), dtype=np.float32),
+        frame_dimensions=np.ascontiguousarray(dimensions),
+    )
+
+
+def write_raw_detector_evidence_npz(
+    path: str | Path,
+    bundle: RawDetectorEvidenceBundle,
+) -> None:
+    offsets = np.asarray(bundle.frame_offsets)
+    if (
+        offsets.dtype != np.int64
+        or offsets.ndim != 1
+        or len(offsets) < 1
+        or int(offsets[0]) != 0
+        or np.any(offsets[1:] < offsets[:-1])
+    ):
+        raise ValueError("raw detector bundle offsets are invalid")
+    dimensions = np.asarray(bundle.frame_dimensions)
+    if dimensions.dtype != np.int64 or dimensions.shape != (len(offsets) - 1, 2):
+        raise ValueError("raw detector bundle dimensions are invalid")
+    frames = []
+    for frame_index in range(len(offsets) - 1):
+        start, stop = int(offsets[frame_index]), int(offsets[frame_index + 1])
+        frames.append(
+            RawDetectorFrame(
+                labels=np.asarray(bundle.labels[start:stop]),
+                scores=np.asarray(bundle.scores[start:stop]),
+                boxes=np.asarray(bundle.boxes[start:stop]),
+                keypoints=np.asarray(bundle.keypoints[start:stop]),
+                keypoint_logits=np.asarray(bundle.keypoint_logits[start:stop]),
+                image_width=int(dimensions[frame_index, 0]),
+                image_height=int(dimensions[frame_index, 1]),
+            )
+        )
+    validated = raw_detector_evidence_bundle(frames)
+    for name in (
+        "frame_offsets",
+        "labels",
+        "scores",
+        "boxes",
+        "keypoints",
+        "keypoint_logits",
+        "frame_dimensions",
+    ):
+        if not np.array_equal(getattr(validated, name), getattr(bundle, name)):
+            raise ValueError(f"raw detector bundle is non-canonical: {name}")
+    destination = Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open("xb") as handle:
+        np.savez_compressed(
+            handle,
+            schema_version=np.asarray(2, dtype=np.int64),
+            frame_offsets=bundle.frame_offsets,
+            labels=bundle.labels,
+            scores=bundle.scores,
+            boxes=bundle.boxes,
+            keypoints=bundle.keypoints,
+            keypoint_logits=bundle.keypoint_logits,
+            frame_dimensions=bundle.frame_dimensions,
+        )
+
+
+def load_raw_detector_evidence_npz(path: str | Path) -> RawDetectorEvidenceBundle:
+    source = Path(path)
+    if source.is_symlink():
+        raise ValueError("raw detector evidence must not be a symlink")
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(source, flags)
+    try:
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode):
+            raise ValueError("raw detector evidence must be a regular file")
+        with os.fdopen(descriptor, "rb", closefd=False) as handle:
+            with np.load(handle, allow_pickle=False) as payload:
+                if set(payload.files) != {
+                    "schema_version",
+                    "frame_offsets",
+                    "labels",
+                    "scores",
+                    "boxes",
+                    "keypoints",
+                    "keypoint_logits",
+                    "frame_dimensions",
+                }:
+                    raise ValueError("raw detector evidence NPZ schema mismatch")
+                schema = np.asarray(payload["schema_version"])
+                offsets = np.asarray(payload["frame_offsets"])
+                labels = np.asarray(payload["labels"])
+                scores = np.asarray(payload["scores"])
+                boxes = np.asarray(payload["boxes"])
+                keypoints = np.asarray(payload["keypoints"])
+                logits = np.asarray(payload["keypoint_logits"])
+                dimensions = np.asarray(payload["frame_dimensions"])
+        closed = os.fstat(descriptor)
+        if (
+            opened.st_dev,
+            opened.st_ino,
+            opened.st_size,
+            opened.st_mtime_ns,
+        ) != (
+            closed.st_dev,
+            closed.st_ino,
+            closed.st_size,
+            closed.st_mtime_ns,
+        ):
+            raise ValueError("raw detector evidence changed while loading")
+    finally:
+        os.close(descriptor)
+    if schema.shape != () or schema.dtype != np.int64 or int(schema) != 2:
+        raise ValueError("raw detector evidence schema version mismatch")
+    if offsets.dtype != np.int64 or offsets.ndim != 1 or len(offsets) < 1:
+        raise ValueError("raw detector offsets are invalid")
+    frames = len(offsets) - 1
+    count = int(offsets[-1])
+    if (
+        int(offsets[0]) != 0
+        or np.any(offsets[1:] < offsets[:-1])
+        or np.any(offsets[1:] - offsets[:-1] > 100)
+    ):
+        raise ValueError("raw detector offsets violate the top100 timeline")
+    if (
+        labels.dtype != np.int64
+        or labels.shape != (count,)
+        or scores.dtype != np.float32
+        or scores.shape != (count,)
+        or boxes.dtype != np.float32
+        or boxes.shape != (count, 4)
+        or keypoints.dtype != np.float32
+        or keypoints.shape != (count, 17, 3)
+        or logits.dtype != np.float32
+        or logits.shape != (count, 17)
+        or dimensions.dtype != np.int64
+        or dimensions.shape != (frames, 2)
+    ):
+        raise ValueError("raw detector packed array schema mismatch")
+    if not (
+        np.isfinite(scores).all()
+        and np.isfinite(boxes).all()
+        and np.isfinite(keypoints).all()
+        and np.isfinite(logits).all()
+    ):
+        raise ValueError("raw detector evidence contains non-finite values")
+    if np.any(scores < 0.0) or np.any(scores > 1.0):
+        raise ValueError("raw detector evidence scores are outside [0,1]")
+    if count and not np.all(keypoints[:, :, 2] == np.float32(1.0)):
+        raise ValueError("raw detector keypoint visibility channel is not exact one")
+    if len(boxes) and np.any(boxes[:, 2:] < boxes[:, :2]):
+        raise ValueError("raw detector evidence has inverted boxes")
+    if np.any(dimensions < 0):
+        raise ValueError("raw detector evidence has negative frame dimensions")
+    for frame_index in range(frames):
+        start, stop = int(offsets[frame_index]), int(offsets[frame_index + 1])
+        if stop > start and np.any(dimensions[frame_index] < 1):
+            raise ValueError("non-empty raw detector frame lacks dimensions")
+    return RawDetectorEvidenceBundle(
+        frame_offsets=np.ascontiguousarray(offsets),
+        labels=np.ascontiguousarray(labels),
+        scores=np.ascontiguousarray(scores),
+        boxes=np.ascontiguousarray(boxes),
+        keypoints=np.ascontiguousarray(keypoints),
+        keypoint_logits=np.ascontiguousarray(logits),
+        frame_dimensions=np.ascontiguousarray(dimensions),
+    )
 
 
 def candidate_evidence_bundle(
@@ -200,12 +520,41 @@ def write_candidate_evidence_npz(
 def load_candidate_evidence_npz(path: str | Path) -> CandidateEvidenceBundle:
     """Fail closed on dtype, shape, offsets, finite values, and key schema."""
 
-    with np.load(Path(path), allow_pickle=False) as payload:
-        if set(payload.files) != {"schema_version", "frame_offsets", "candidates"}:
-            raise ValueError("candidate evidence NPZ schema mismatch")
-        schema = np.asarray(payload["schema_version"])
-        offsets = np.asarray(payload["frame_offsets"])
-        candidates = np.asarray(payload["candidates"])
+    source = Path(path)
+    if source.is_symlink():
+        raise ValueError("candidate evidence must not be a symlink")
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(source, flags)
+    try:
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode):
+            raise ValueError("candidate evidence must be a regular file")
+        with os.fdopen(descriptor, "rb", closefd=False) as handle:
+            with np.load(handle, allow_pickle=False) as payload:
+                if set(payload.files) != {
+                    "schema_version",
+                    "frame_offsets",
+                    "candidates",
+                }:
+                    raise ValueError("candidate evidence NPZ schema mismatch")
+                schema = np.asarray(payload["schema_version"])
+                offsets = np.asarray(payload["frame_offsets"])
+                candidates = np.asarray(payload["candidates"])
+        closed = os.fstat(descriptor)
+        if (
+            opened.st_dev,
+            opened.st_ino,
+            opened.st_size,
+            opened.st_mtime_ns,
+        ) != (
+            closed.st_dev,
+            closed.st_ino,
+            closed.st_size,
+            closed.st_mtime_ns,
+        ):
+            raise ValueError("candidate evidence changed while loading")
+    finally:
+        os.close(descriptor)
     if schema.shape != () or schema.dtype != np.int64 or int(schema) != 1:
         raise ValueError("candidate evidence schema version mismatch")
     if offsets.dtype != np.int64 or offsets.ndim != 1 or len(offsets) < 1:
@@ -441,6 +790,8 @@ def canonicalize_raw_detector_frame(
         raise ValueError("raw detector output contains non-finite values")
     if np.any(canonical_scores < 0.0) or np.any(canonical_scores > 1.0):
         raise ValueError("raw detector box scores are outside [0,1]")
+    if count and not np.all(canonical_keypoints[:, :, 2] == np.float32(1.0)):
+        raise ValueError("raw detector keypoint visibility channel is not exact one")
     if len(canonical_boxes) and np.any(canonical_boxes[:, 2:] < canonical_boxes[:, :2]):
         raise ValueError("raw detector box corners are inverted")
 
@@ -558,9 +909,7 @@ def _infer_coco17_batch(
     frames: Sequence[NDArray[np.uint8]],
     *,
     settings: KeypointRCNNSingleSourceConfig,
-) -> tuple[
-    tuple[NDArray[np.float32] | None, NDArray[np.float32] | None, dict[str, int]], ...
-]:
+) -> tuple[tuple[RawDetectorFrame, CanonicalDetectorFrame], ...]:
     """Infer raw COCO-17 candidates while retaining logits and box score."""
 
     tensors = []
@@ -574,9 +923,7 @@ def _infer_coco17_batch(
     with runtime.torch.inference_mode():
         outputs = runtime.model(tensors)
     _require(len(outputs) == len(frames), "detector batch output count mismatch")
-    results: list[
-        tuple[NDArray[np.float32] | None, NDArray[np.float32] | None, dict[str, int]]
-    ] = []
+    results: list[tuple[RawDetectorFrame, CanonicalDetectorFrame]] = []
     for output, (width, height) in zip(outputs, dimensions, strict=True):
         _require(
             isinstance(output, Mapping)
@@ -584,23 +931,36 @@ def _infer_coco17_batch(
             == {"boxes", "labels", "scores", "keypoints", "keypoints_scores"},
             "detector output schema mismatch",
         )
+        raw_frame = RawDetectorFrame(
+            labels=np.ascontiguousarray(
+                output["labels"].detach().cpu().numpy(), dtype=np.int64
+            ),
+            scores=np.ascontiguousarray(
+                output["scores"].detach().cpu().numpy(), dtype=np.float32
+            ),
+            boxes=np.ascontiguousarray(
+                output["boxes"].detach().cpu().numpy(), dtype=np.float32
+            ),
+            keypoints=np.ascontiguousarray(
+                output["keypoints"].detach().cpu().numpy(), dtype=np.float32
+            ),
+            keypoint_logits=np.ascontiguousarray(
+                output["keypoints_scores"].detach().cpu().numpy(), dtype=np.float32
+            ),
+            image_width=width,
+            image_height=height,
+        )
         canonical = canonicalize_raw_detector_frame(
-            labels=output["labels"].detach().cpu().numpy(),
-            scores=output["scores"].detach().cpu().numpy(),
-            boxes=output["boxes"].detach().cpu().numpy(),
-            keypoints=output["keypoints"].detach().cpu().numpy(),
-            keypoint_logits=output["keypoints_scores"].detach().cpu().numpy(),
+            labels=raw_frame.labels,
+            scores=raw_frame.scores,
+            boxes=raw_frame.boxes,
+            keypoints=raw_frame.keypoints,
+            keypoint_logits=raw_frame.keypoint_logits,
             image_width=width,
             image_height=height,
             settings=settings,
         )
-        results.append(
-            (
-                canonical.top_candidates,
-                canonical.all_eligible_candidates,
-                canonical.diagnostics,
-            )
-        )
+        results.append((raw_frame, canonical))
     return tuple(results)
 
 
@@ -710,27 +1070,35 @@ def similarity_procrustes_residual(
     return residual
 
 
-def _candidate_center_scale(candidate: NDArray[np.float32]) -> tuple[NDArray[np.float64], float]:
+def _identity_center_scale(
+    candidate: NDArray[np.float32],
+) -> tuple[NDArray[np.float64], float]:
+    """Use only bilateral shoulders/hips for action-insensitive association."""
+
     array = np.asarray(candidate, dtype=np.float32)
     reliable = (
         np.asarray(array[:, 4], dtype=np.float64) > 2.0
         if array.shape[1] >= 5
         else np.asarray(array[:, 3], dtype=np.float64) >= RELIABLE_VISIBILITY_MINIMUM
     )
-    if int(np.count_nonzero(reliable)) < MINIMUM_RELIABLE_JOINTS or not all(
-        bool(reliable[index]) for index in RELIABLE_TORSO_JOINTS
-    ):
-        raise KeypointSingleSourceError("candidate lacks reliable torso geometry")
-    xy = np.asarray(array[reliable, :2], dtype=np.float64)
-    minimum = np.min(xy, axis=0)
-    maximum = np.max(xy, axis=0)
-    center = 0.5 * (minimum + maximum)
-    scale = max(float(np.linalg.norm(maximum - minimum)), 1e-6)
-    return center, scale
+    if not all(bool(reliable[index]) for index in RELIABLE_TORSO_JOINTS):
+        raise KeypointSingleSourceError("candidate lacks identity torso geometry")
+    torso = np.asarray(array[list(RELIABLE_TORSO_JOINTS), :2], dtype=np.float64)
+    center = np.mean(torso, axis=0)
+    shoulder_width = float(np.linalg.norm(torso[0] - torso[1]))
+    hip_width = float(np.linalg.norm(torso[2] - torso[3]))
+    shoulder_center = 0.5 * (torso[0] + torso[1])
+    hip_center = 0.5 * (torso[2] + torso[3])
+    torso_height = float(np.linalg.norm(shoulder_center - hip_center))
+    scale = max(
+        float(np.sqrt(shoulder_width**2 + hip_width**2 + torso_height**2)),
+        1e-6,
+    )
+    return np.ascontiguousarray(center, dtype=np.float64), scale
 
 
 def _candidate_dominance_score(candidate: NDArray[np.float32]) -> float:
-    """Freeze the label-free dominant-subject extent x confidence prior."""
+    """Freeze an action-insensitive torso-scale x confidence identity prior."""
 
     array = np.asarray(candidate, dtype=np.float32)
     visibility = np.clip(np.asarray(array[:, 3], dtype=np.float64), 0.0, 1.0)
@@ -741,14 +1109,8 @@ def _candidate_dominance_score(candidate: NDArray[np.float32]) -> float:
     )
     if int(np.count_nonzero(reliable)) < MINIMUM_RELIABLE_JOINTS:
         raise KeypointSingleSourceError("candidate lacks enough reliable joints")
-    xy = np.asarray(array[reliable, :2], dtype=np.float64)
-    extent = np.max(xy, axis=0) - np.min(xy, axis=0)
-    spatial_extent = max(
-        float(extent[0] * extent[1]),
-        float(np.linalg.norm(extent)),
-        1e-9,
-    )
-    score = spatial_extent * float(np.mean(visibility[reliable]))
+    _, torso_scale = _identity_center_scale(candidate)
+    score = torso_scale * float(np.mean(visibility[reliable]))
     return max(score, 1e-12)
 
 
@@ -837,34 +1199,52 @@ def _transition_cost(
     frame_gap: int,
     weights: AssociationWeights,
 ) -> float:
-    previous_center, previous_scale = _candidate_center_scale(previous)
-    current_center, current_scale = _candidate_center_scale(current)
-    elapsed = max(int(frame_gap), 1)
-    common_scale = max(0.5 * (previous_scale + current_scale), 1e-6)
-    center = float(np.linalg.norm(current_center - previous_center)) / (common_scale * elapsed)
-    log_scale = abs(math.log(current_scale / previous_scale)) / elapsed
-    shape = 0.0
-    if weights.shape > 0.0 or weights.action_motion > 0.0:
-        shape = _candidate_morphology_step(previous, current) / elapsed
-    continuity_supports_motion = (
-        weights.action_motion > 0.0
-        and center <= weights.action_motion_maximum_center_step
-        and log_scale <= weights.action_motion_maximum_log_scale_step
-        and shape <= weights.action_motion_maximum_morphology_step
+    center, log_scale, shape = _identity_transition_metrics(
+        previous,
+        current,
+        frame_gap=frame_gap,
     )
-    # A raw action difference is not evidence of same-person motion: a jump
-    # between two people can be larger than any articulated movement.  The
-    # motion credit therefore exists only inside a frozen, strict same-track
-    # continuity envelope.  Outside that envelope the edge receives the full
-    # center/scale/morphology switch cost and no motion reward.
-    action_motion = 0.0
-    if continuity_supports_motion:
-        action_motion = min(_nonrigid_action_motion(previous, current) / elapsed, 0.25)
     return (
         weights.center * center
         + weights.log_scale * log_scale
         + weights.shape * shape
-        - weights.action_motion * action_motion
+    )
+
+
+def _identity_transition_metrics(
+    previous: NDArray[np.float32],
+    current: NDArray[np.float32],
+    *,
+    frame_gap: int,
+) -> tuple[float, float, float]:
+    """Return motion-free torso identity continuity metrics per elapsed frame."""
+
+    previous_center, previous_scale = _identity_center_scale(previous)
+    current_center, current_scale = _identity_center_scale(current)
+    elapsed = max(int(frame_gap), 1)
+    common_scale = max(0.5 * (previous_scale + current_scale), 1e-6)
+    center = float(np.linalg.norm(current_center - previous_center)) / (common_scale * elapsed)
+    log_scale = abs(math.log(current_scale / previous_scale)) / elapsed
+    shape = _candidate_morphology_step(previous, current) / elapsed
+    return center, log_scale, shape
+
+
+def _identity_transition_supported(
+    previous: NDArray[np.float32],
+    current: NDArray[np.float32],
+    *,
+    frame_gap: int,
+    weights: AssociationWeights,
+) -> bool:
+    center, log_scale, morphology = _identity_transition_metrics(
+        previous,
+        current,
+        frame_gap=frame_gap,
+    )
+    return bool(
+        center <= weights.identity_maximum_center_step
+        and log_scale <= weights.identity_maximum_log_scale_step
+        and morphology <= weights.identity_maximum_morphology_step
     )
 
 
@@ -914,6 +1294,8 @@ def select_top2_viterbi_paths(
     *,
     anchor_residuals: Sequence[tuple[float, ...] | None],
     weights: AssociationWeights,
+    seed_candidate_index: int | None = None,
+    require_identity_envelope: bool = False,
 ) -> ViterbiPath:
     """Select the best path and exact global runner-up with deterministic ties."""
 
@@ -942,6 +1324,9 @@ def select_top2_viterbi_paths(
     first_anchors = anchor_residuals[first_index]
     first_nodes: list[list[tuple[float, int, int]]] = []
     for candidate_index, candidate in enumerate(first):
+        if seed_candidate_index is not None and candidate_index != seed_candidate_index:
+            first_nodes.append([])
+            continue
         unary = _unary_score(
             candidate,
             anchor_residual=(
@@ -951,6 +1336,8 @@ def select_top2_viterbi_paths(
         )
         first_nodes.append([(unary, -1, -1)])
     histories.append(first_nodes)
+    if seed_candidate_index is not None and not 0 <= seed_candidate_index < len(first):
+        raise ValueError("seed candidate index is outside the first observed frame")
 
     for offset in range(1, len(observed)):
         previous_frame = observed[offset - 1]
@@ -973,6 +1360,13 @@ def select_top2_viterbi_paths(
             )
             hypotheses: list[tuple[float, int, int]] = []
             for previous_index, previous_candidate in enumerate(previous):
+                if require_identity_envelope and not _identity_transition_supported(
+                    previous_candidate,
+                    current_candidate,
+                    frame_gap=current_frame - previous_frame,
+                    weights=weights,
+                ):
+                    continue
                 transition = _transition_cost(
                     previous_candidate,
                     current_candidate,
@@ -994,6 +1388,10 @@ def select_top2_viterbi_paths(
         for rank, (score, _, _) in enumerate(hypotheses):
             terminals.append((score, candidate_index, rank))
     terminals.sort(key=lambda value: (-value[0], value[1], value[2]))
+    if not terminals:
+        raise KeypointSingleSourceError(
+            "no whole-track hypothesis satisfies the identity continuity envelope"
+        )
 
     def reconstruct(terminal: tuple[float, int, int]) -> tuple[int | None, ...]:
         _, candidate_index, rank = terminal
@@ -1040,48 +1438,346 @@ def _observed_segments(
     return tuple(tuple(segment) for segment in segments)
 
 
-def select_segmented_top2_viterbi_paths(
+def _identity_stable_segments(
+    frame_candidates: Sequence[NDArray[np.float32] | None],
+    *,
+    maximum_bridge_gap_frames: int,
+    weights: AssociationWeights,
+) -> tuple[tuple[int, ...], ...]:
+    """Split on missing gaps and on boundaries with no hard-stable edge."""
+
+    coarse = _observed_segments(
+        frame_candidates,
+        maximum_bridge_gap_frames=maximum_bridge_gap_frames,
+    )
+    result: list[tuple[int, ...]] = []
+    for segment in coarse:
+        current = [segment[0]]
+        for previous_frame, current_frame in zip(segment, segment[1:], strict=False):
+            previous = frame_candidates[previous_frame]
+            following = frame_candidates[current_frame]
+            _require(
+                previous is not None and following is not None,
+                "identity segment contains an empty observed frame",
+            )
+            any_supported = any(
+                _identity_transition_supported(
+                    left,
+                    right,
+                    frame_gap=current_frame - previous_frame,
+                    weights=weights,
+                )
+                for left in previous
+                for right in following
+            )
+            if any_supported:
+                current.append(current_frame)
+            else:
+                result.append(tuple(current))
+                current = [current_frame]
+        result.append(tuple(current))
+    return tuple(result)
+
+
+def _path_pair_motion_utilities(
+    frame_candidates: Sequence[NDArray[np.float32] | None],
+    path: ViterbiPath,
+    *,
+    segment: Sequence[int],
+    window_frames: int,
+    hop_frames: int,
+    native_frame_offset: int,
+) -> dict[int, float]:
+    """Compute sustained 2W action utility after identity edges are frozen."""
+
+    if not segment:
+        return {}
+    selected = _selected_candidates(frame_candidates, path)
+    segment_frames = set(int(value) for value in segment)
+    start_min = int(segment[0])
+    start_max = int(segment[-1]) - 2 * window_frames + 1
+    result: dict[int, float] = {}
+    for start in range(start_min, start_max + 1):
+        if (native_frame_offset + start) % hop_frames != 0:
+            continue
+        stop = start + 2 * window_frames
+        if any(index not in segment_frames for index in range(start, stop)):
+            continue
+        rows = selected[start:stop]
+        if any(candidate is None for candidate in rows):
+            continue
+        halves: list[dict[int, float]] = []
+        for half_start in (0, window_frames):
+            half = rows[half_start : half_start + window_frames]
+            values: dict[int, list[float]] = {
+                joint: [] for joint in RELIABLE_ACTION_JOINTS
+            }
+            for previous, current in zip(half, half[1:], strict=False):
+                _require(
+                    previous is not None and current is not None,
+                    "motion utility contains a missing selected candidate",
+                )
+                for joint, motion in _nonrigid_action_motion_by_joint(
+                    previous,
+                    current,
+                ).items():
+                    values[joint].append(float(motion))
+            minimum_steps = int(math.ceil(0.75 * max(window_frames - 1, 1)))
+            halves.append(
+                {
+                    joint: float(np.median(np.asarray(samples, dtype=np.float64)))
+                    for joint, samples in values.items()
+                    if len(samples) >= minimum_steps
+                }
+            )
+        shared = sorted(set(halves[0]) & set(halves[1]))
+        if len(shared) < 4:
+            continue
+        result[start] = float(
+            np.median(
+                np.asarray(
+                    [min(halves[0][joint], halves[1][joint]) for joint in shared],
+                    dtype=np.float64,
+                )
+            )
+        )
+    return result
+
+
+def select_segmented_stable_actor_paths(
     frame_candidates: Sequence[NDArray[np.float32] | None],
     *,
     anchor_residuals: Sequence[tuple[float, ...] | None],
     weights: AssociationWeights,
     maximum_bridge_gap_frames: int,
-) -> tuple[ViterbiPath, tuple[tuple[int, ...], ...]]:
-    """Run independent Viterbi paths across pre-registered gap resets."""
+    native_frame_offset: int = 0,
+) -> StableTrackBankResult:
+    """Associate motion-free whole tracks, then rank stable tracks by 2W motion."""
 
-    segments = _observed_segments(
+    if len(frame_candidates) != len(anchor_residuals):
+        raise ValueError("anchor residual timeline must match candidates")
+    if native_frame_offset < 0:
+        raise ValueError("native frame offset must be non-negative")
+    segments = _identity_stable_segments(
         frame_candidates,
         maximum_bridge_gap_frames=maximum_bridge_gap_frames,
+        weights=weights,
     )
-    selected: list[int | None] = [None] * len(frame_candidates)
+    selected_indices: list[int | None] = [None] * len(frame_candidates)
+    hypothesis_rows: list[dict[str, Any]] = []
+    local_gaps: dict[int, float] = {}
+    alternative_reachable: dict[int, bool] = {}
+    unresolved: set[int] = set()
+    pair_margins = {name: {} for name in CYCLEBACK_PAIR_VARIANTS}
     total_score = 0.0
-    observed_total = 0
-    runner_deltas: list[float] = []
-    for segment in segments:
+    total_observed = 0
+    same_seed_runner_deltas: list[float] = []
+
+    for segment_id, segment in enumerate(segments):
         start, stop = segment[0], segment[-1] + 1
-        result = select_top2_viterbi_paths(
-            frame_candidates[start:stop],
-            anchor_residuals=anchor_residuals[start:stop],
-            weights=weights,
-        )
-        for relative, candidate_index in enumerate(result.selected_indices):
-            if candidate_index is not None:
-                selected[start + relative] = candidate_index
-        if result.score is not None:
-            total_score += result.score
-        if result.score is not None and result.runner_up_score is not None:
-            runner_deltas.append(result.score - result.runner_up_score)
-        observed_total += result.observed_frames
-    score = total_score if observed_total else None
+        first = frame_candidates[segment[0]]
+        _require(first is not None, "stable identity segment has no seed candidates")
+        segment_hypotheses: list[dict[str, Any]] = []
+        for seed_index, seed_candidate in enumerate(first):
+            try:
+                local_path = select_top2_viterbi_paths(
+                    frame_candidates[start:stop],
+                    anchor_residuals=anchor_residuals[start:stop],
+                    weights=weights,
+                    seed_candidate_index=seed_index,
+                    require_identity_envelope=True,
+                )
+            except KeypointSingleSourceError:
+                continue
+            global_path_values: list[int | None] = [None] * len(frame_candidates)
+            for relative_index, candidate_index in enumerate(local_path.selected_indices):
+                if candidate_index is not None:
+                    global_path_values[start + relative_index] = candidate_index
+            global_path = ViterbiPath(
+                tuple(global_path_values),
+                local_path.score,
+                local_path.runner_up_score,
+                local_path.observed_frames,
+                _path_digest(global_path_values),
+            )
+            utilities = {
+                name: _path_pair_motion_utilities(
+                    frame_candidates,
+                    global_path,
+                    segment=segment,
+                    window_frames=window_frames,
+                    hop_frames=hop_frames,
+                    native_frame_offset=native_frame_offset,
+                )
+                for name, (window_frames, hop_frames) in CYCLEBACK_PAIR_VARIANTS.items()
+            }
+            if utilities["W16_H4_PE0"] != utilities["W16_H4"]:
+                raise KeypointSingleSourceError(
+                    "PE0 stable-track utility alias diverged from W16_H4"
+                )
+            ranking_values = tuple(utilities["W24_H4"].values())
+            identity_score = (
+                float(local_path.score / max(local_path.observed_frames, 1))
+                if local_path.score is not None
+                else -math.inf
+            )
+            row_without_digest: dict[str, Any] = {
+                "segment_id": segment_id,
+                "seed_candidate_sha256": hashlib.sha256(
+                    np.ascontiguousarray(seed_candidate, dtype=np.float32).tobytes(
+                        order="C"
+                    )
+                ).hexdigest(),
+                "selected_path_sha256": global_path.selected_path_sha256,
+                "selected_indices": [
+                    None if value is None else int(value)
+                    for value in global_path.selected_indices
+                ],
+                "identity_score_per_observed_frame": identity_score,
+                "same_seed_identity_runner_up_score": local_path.runner_up_score,
+                "motion_utility_by_variant": {
+                    name: {str(key): float(value) for key, value in rows.items()}
+                    for name, rows in utilities.items()
+                },
+                "ranking_utility_median": (
+                    None
+                    if not ranking_values
+                    else float(np.median(np.asarray(ranking_values, dtype=np.float64)))
+                ),
+                "ranking_utility_p10": _percentile(ranking_values, 0.1),
+                "identity_association_motion_free": True,
+            }
+            row = dict(row_without_digest)
+            row["hypothesis_sha256"] = _canonical_sha256(row_without_digest)
+            row["_path"] = global_path
+            row["_utilities"] = utilities
+            segment_hypotheses.append(row)
+        deduplicated: dict[str, dict[str, Any]] = {}
+        for row in segment_hypotheses:
+            digest = str(row["selected_path_sha256"])
+            incumbent = deduplicated.get(digest)
+            if incumbent is None or str(row["seed_candidate_sha256"]) < str(
+                incumbent["seed_candidate_sha256"]
+            ):
+                deduplicated[digest] = row
+        segment_hypotheses = list(deduplicated.values())
+        if not segment_hypotheses:
+            raise KeypointSingleSourceError(
+                "identity segment has no whole-track hard-envelope hypothesis"
+            )
+
+        def ranking_key(row: Mapping[str, Any]) -> tuple[Any, ...]:
+            median = row.get("ranking_utility_median")
+            p10 = row.get("ranking_utility_p10")
+            return (
+                0 if median is not None else 1,
+                -float(median or 0.0),
+                -float(p10 or 0.0),
+                -float(row["identity_score_per_observed_frame"]),
+                str(row["hypothesis_sha256"]),
+            )
+
+        segment_hypotheses.sort(key=ranking_key)
+        selected_row = segment_hypotheses[0]
+        selected_path = selected_row["_path"]
+        _require(isinstance(selected_path, ViterbiPath), "stable path row lost path")
+        for frame_index in segment:
+            selected_indices[frame_index] = selected_path.selected_indices[frame_index]
+        if selected_path.score is not None:
+            total_score += selected_path.score
+        total_observed += selected_path.observed_frames
+        if (
+            selected_path.score is not None
+            and selected_path.runner_up_score is not None
+        ):
+            same_seed_runner_deltas.append(
+                selected_path.score - selected_path.runner_up_score
+            )
+
+        for frame_index in segment:
+            frame = frame_candidates[frame_index]
+            selected_index = selected_path.selected_indices[frame_index]
+            if frame is None or selected_index is None or len(frame) < 2:
+                continue
+            selected_candidate = frame[selected_index]
+            reachable_alternatives = [
+                index
+                for index, candidate in enumerate(frame)
+                if index != selected_index
+                and _identity_transition_supported(
+                    selected_candidate,
+                    candidate,
+                    frame_gap=1,
+                    weights=weights,
+                )
+            ]
+            if reachable_alternatives:
+                unresolved.add(frame_index)
+                local_gaps[frame_index] = 0.0
+                alternative_reachable[frame_index] = True
+            else:
+                alternative_reachable[frame_index] = False
+
+        selected_utilities = selected_row["_utilities"]
+        _require(isinstance(selected_utilities, Mapping), "stable utility rows missing")
+        for variant in CYCLEBACK_PAIR_VARIANTS:
+            selected_variant = selected_utilities[variant]
+            _require(isinstance(selected_variant, Mapping), "selected utility variant missing")
+            for pair_start, selected_utility in selected_variant.items():
+                other_utilities = [
+                    float(row["_utilities"][variant][pair_start])
+                    for row in segment_hypotheses[1:]
+                    if pair_start in row["_utilities"][variant]
+                ]
+                margin = float(selected_utility) - max(other_utilities, default=0.0)
+                pair_margins[variant][int(pair_start)] = max(margin, 0.0)
+
+        for row in segment_hypotheses:
+            serialized = {
+                key: value
+                for key, value in row.items()
+                if key not in {"_path", "_utilities"}
+            }
+            serialized["selected_actor_hypothesis"] = row is selected_row
+            hypothesis_rows.append(serialized)
+
+    combined = tuple(selected_indices)
+    score = total_score if total_observed else None
     runner = (
         None
-        if score is None or not runner_deltas
-        else score - min(runner_deltas)
+        if score is None or not same_seed_runner_deltas
+        else score - min(same_seed_runner_deltas)
     )
-    path = tuple(selected)
-    return (
-        ViterbiPath(path, score, runner, observed_total, _path_digest(path)),
-        segments,
+    identity_table = [
+        {
+            "segment_id": row["segment_id"],
+            "seed_candidate_sha256": row["seed_candidate_sha256"],
+            "selected_path_sha256": row["selected_path_sha256"],
+            "selected_indices": row["selected_indices"],
+            "identity_score_per_observed_frame": row[
+                "identity_score_per_observed_frame"
+            ],
+            "same_seed_identity_runner_up_score": row[
+                "same_seed_identity_runner_up_score"
+            ],
+        }
+        for row in hypothesis_rows
+    ]
+    return StableTrackBankResult(
+        selected_path=ViterbiPath(
+            combined,
+            score,
+            runner,
+            total_observed,
+            _path_digest(combined),
+        ),
+        association_segments=segments,
+        local_identity_gap_by_frame=local_gaps,
+        identity_alternative_reachable_by_frame=alternative_reachable,
+        identity_unresolvable_frames=tuple(sorted(unresolved)),
+        hypothesis_rows=tuple(hypothesis_rows),
+        selected_pair_utility_margin_by_variant=pair_margins,
+        identity_hypothesis_table_sha256=_canonical_sha256(identity_table),
     )
 
 
@@ -1249,24 +1945,32 @@ def _candidate_evidence_sha256(
     return digest.hexdigest()
 
 
-def _strict_contiguous_valid_segments(
+def _strict_valid_segments_with_association(
     valid_mask: NDArray[np.bool_],
+    association_segments: Sequence[Sequence[int]],
 ) -> tuple[tuple[int, int], ...]:
-    """Return half-open runs; no missing frame or path reset may be crossed."""
+    """Return valid consecutive runs without crossing an association reset."""
 
     mask = np.asarray(valid_mask, dtype=np.bool_)
     if mask.ndim != 1:
         raise ValueError("valid mask must be one-dimensional")
     ranges: list[tuple[int, int]] = []
-    start: int | None = None
-    for index, value in enumerate(mask):
-        if bool(value) and start is None:
-            start = index
-        elif not bool(value) and start is not None:
-            ranges.append((start, index))
-            start = None
-    if start is not None:
-        ranges.append((start, len(mask)))
+    for segment in association_segments:
+        active_start: int | None = None
+        previous: int | None = None
+        for frame_index_value in segment:
+            frame_index = int(frame_index_value)
+            if not 0 <= frame_index < len(mask):
+                raise ValueError("association segment frame is outside the timeline")
+            consecutive = previous is not None and frame_index == previous + 1
+            if active_start is not None and (not consecutive or not bool(mask[frame_index])):
+                ranges.append((active_start, int(previous) + 1))
+                active_start = None
+            if bool(mask[frame_index]) and active_start is None:
+                active_start = frame_index
+            previous = frame_index
+        if active_start is not None and previous is not None:
+            ranges.append((active_start, previous + 1))
     return tuple(ranges)
 
 
@@ -1274,20 +1978,26 @@ def _selected_continuity_rows(
     track: Sequence[NDArray[np.float32] | None],
     *,
     maximum_bridge_gap_frames: int,
+    association_segments: Sequence[Sequence[int]],
 ) -> dict[int, dict[str, float | int]]:
     """Return reproducible selected-path center/scale transitions by right frame."""
 
     observed = [index for index, candidate in enumerate(track) if candidate is not None]
+    allowed_edges = {
+        (int(left), int(right))
+        for segment in association_segments
+        for left, right in zip(segment, segment[1:], strict=False)
+    }
     rows: dict[int, dict[str, float | int]] = {}
     for left, right in zip(observed, observed[1:], strict=False):
         missing = right - left - 1
-        if missing > maximum_bridge_gap_frames:
+        if missing > maximum_bridge_gap_frames or (left, right) not in allowed_edges:
             continue
         previous = track[left]
         current = track[right]
         _require(previous is not None and current is not None, "selected track missing")
-        previous_center, previous_scale = _candidate_center_scale(previous)
-        current_center, current_scale = _candidate_center_scale(current)
+        previous_center, previous_scale = _identity_center_scale(previous)
+        current_center, current_scale = _identity_center_scale(current)
         elapsed = max(right - left, 1)
         normalization = max(0.5 * (previous_scale + current_scale), 1e-6)
         rows[right] = {
@@ -1336,11 +2046,20 @@ def _continuity_steps(
     track: Sequence[NDArray[np.float32] | None],
     *,
     maximum_bridge_gap_frames: int,
+    association_segments: Sequence[Sequence[int]],
 ) -> tuple[float, ...]:
     observed = [index for index, candidate in enumerate(track) if candidate is not None]
+    allowed_edges = {
+        (int(left), int(right))
+        for segment in association_segments
+        for left, right in zip(segment, segment[1:], strict=False)
+    }
     steps: list[float] = []
     for left, right in zip(observed, observed[1:], strict=False):
-        if right - left - 1 > maximum_bridge_gap_frames:
+        if (
+            right - left - 1 > maximum_bridge_gap_frames
+            or (left, right) not in allowed_edges
+        ):
             continue
         previous = track[left]
         current = track[right]
@@ -1348,8 +2067,8 @@ def _continuity_steps(
             previous is not None and current is not None,
             "selected track unexpectedly misses an observed frame",
         )
-        previous_center, previous_scale = _candidate_center_scale(previous)
-        current_center, current_scale = _candidate_center_scale(current)
+        previous_center, previous_scale = _identity_center_scale(previous)
+        current_center, current_scale = _identity_center_scale(current)
         elapsed = max(right - left, 1)
         normalization = max(0.5 * (previous_scale + current_scale), 1e-6)
         steps.append(float(np.linalg.norm(current_center - previous_center)) / normalization / elapsed)
@@ -1397,6 +2116,10 @@ def reconstruct_canonical_frame_evidence(
     maximum_bridge_gap_frames: int,
     detector_diagnostics: Sequence[Mapping[str, int] | None],
     keypoint_logit_threshold: float,
+    detector_frame_digests: Sequence[Mapping[str, str] | None] | None = None,
+    detector_frame_source_indices: Sequence[Sequence[int] | None] | None = None,
+    identity_alternative_reachable_by_frame: Mapping[int, bool] | None = None,
+    identity_unresolvable_frames: Sequence[int] = (),
 ) -> list[dict[str, Any]]:
     """Rebuild every eligibility-relevant frame field from immutable inputs."""
 
@@ -1409,27 +2132,39 @@ def reconstruct_canonical_frame_evidence(
         == source_frames
     ):
         raise ValueError("canonical frame evidence timeline mismatch")
+    if detector_frame_digests is not None and len(detector_frame_digests) != source_frames:
+        raise ValueError("detector frame digest timeline mismatch")
+    if (
+        detector_frame_source_indices is not None
+        and len(detector_frame_source_indices) != source_frames
+    ):
+        raise ValueError("detector source-index timeline mismatch")
     selected = _selected_candidates(candidates, primary)
     selected_continuity = _selected_continuity_rows(
         selected,
         maximum_bridge_gap_frames=maximum_bridge_gap_frames,
+        association_segments=association_segments,
     )
     association_segment_by_frame: dict[int, int] = {}
     for segment_id, segment in enumerate(association_segments):
         for frame_index in segment:
             association_segment_by_frame[int(frame_index)] = segment_id
-    strict_segments = _strict_contiguous_valid_segments(sequence.valid_mask)
+    strict_segments = _strict_valid_segments_with_association(
+        sequence.valid_mask,
+        association_segments,
+    )
     strict_segment_by_frame: dict[int, int] = {}
     for segment_id, (start, stop) in enumerate(strict_segments):
         for frame_index in range(start, stop):
             strict_segment_by_frame[frame_index] = segment_id
 
     result: list[dict[str, Any]] = []
+    unresolvable = {int(value) for value in identity_unresolvable_frames}
     for frame_index, frame_candidates in enumerate(candidates):
         candidate_rows: list[dict[str, Any]] = []
         if frame_candidates is not None:
             for candidate_index, candidate in enumerate(frame_candidates):
-                center, scale = _candidate_center_scale(candidate)
+                center, scale = _identity_center_scale(candidate)
                 confident = candidate[:, 4] > keypoint_logit_threshold
                 normalized_xy = body_centered_uniform_scale_xy(
                     candidate[:, :2], visibility=candidate[:, 3]
@@ -1465,6 +2200,16 @@ def reconstruct_canonical_frame_evidence(
         primary_index = primary.selected_indices[frame_index]
         secondary_index = secondary.selected_indices[frame_index]
         diagnostics = detector_diagnostics[frame_index]
+        digests = (
+            None
+            if detector_frame_digests is None
+            else detector_frame_digests[frame_index]
+        )
+        source_indices = (
+            None
+            if detector_frame_source_indices is None
+            else detector_frame_source_indices[frame_index]
+        )
         result.append(
             {
                 "frame_index": frame_index,
@@ -1476,11 +2221,28 @@ def reconstruct_canonical_frame_evidence(
                     primary_index == secondary_index if primary_index is not None else None
                 ),
                 "ambiguous_max_marginal_gap": ambiguity_by_frame.get(frame_index),
+                "identity_alternative_reachable": (
+                    None
+                    if identity_alternative_reachable_by_frame is None
+                    else identity_alternative_reachable_by_frame.get(frame_index)
+                ),
+                "identity_assignment_unresolvable": frame_index in unresolvable,
                 "continuity_from_previous": selected_continuity.get(frame_index),
                 "association_segment_id": association_segment_by_frame.get(frame_index),
                 "trainable_segment_id": strict_segment_by_frame.get(frame_index),
                 "raw_normalization_eligible": bool(sequence.valid_mask[frame_index]),
                 "detector_filter_counts": None if diagnostics is None else dict(diagnostics),
+                "raw_detector_output_sha256": (
+                    None if digests is None else digests["raw_output_sha256"]
+                ),
+                "canonical_eligible_candidates_sha256": (
+                    None if digests is None else digests["canonical_eligible_sha256"]
+                ),
+                "canonical_source_indices_before_top4": (
+                    None
+                    if source_indices is None
+                    else [int(value) for value in source_indices]
+                ),
                 "crowd_quarantined": bool(
                     diagnostics is not None and int(diagnostics["dropped_by_top4"]) > 0
                 ),
@@ -1501,7 +2263,12 @@ def extract_single_source_video(
     expected_video_sha256: str,
     runtime: KeypointRCNNRuntime,
     settings: KeypointRCNNSingleSourceConfig,
-) -> tuple[PoseSequence, dict[str, Any], CandidateEvidenceBundle]:
+) -> tuple[
+    PoseSequence,
+    dict[str, Any],
+    CandidateEvidenceBundle,
+    RawDetectorEvidenceBundle,
+]:
     """Decode canonical video and emit a raw, non-authoritative v4e outcome."""
 
     source = Path(video_path).resolve(strict=True)
@@ -1538,26 +2305,42 @@ def extract_single_source_video(
 
     candidates: list[NDArray[np.float32] | None] = [None] * source_frames
     all_candidate_evidence: list[NDArray[np.float32] | None] = [None] * source_frames
+    raw_detector_frames: list[RawDetectorFrame] = [
+        _empty_raw_detector_frame() for _ in range(source_frames)
+    ]
     pending_frames: list[NDArray[np.uint8]] = []
     pending_indices: list[int] = []
     decoded_digest = hashlib.sha256()
     detector_rejected_unreliable_torso_total = 0
     detector_diagnostics: list[dict[str, int] | None] = [None] * source_frames
+    detector_frame_digests: list[dict[str, str] | None] = [None] * source_frames
+    detector_frame_source_indices: list[tuple[int, ...] | None] = [
+        None
+    ] * source_frames
 
     def flush() -> None:
         nonlocal pending_frames, pending_indices, detector_rejected_unreliable_torso_total
         if not pending_frames:
             return
         outputs = _infer_coco17_batch(runtime, pending_frames, settings=settings)
-        for index, (retained, all_retained, diagnostics) in zip(
+        for index, (raw_frame, canonical) in zip(
             pending_indices, outputs, strict=True
         ):
+            retained = canonical.top_candidates
+            all_retained = canonical.all_eligible_candidates
+            diagnostics = canonical.diagnostics
             detector_rejected_unreliable_torso_total += diagnostics[
                 "rejected_unreliable_torso"
             ]
+            raw_detector_frames[index] = raw_frame
             candidates[index] = retained
             all_candidate_evidence[index] = all_retained
             detector_diagnostics[index] = diagnostics
+            detector_frame_digests[index] = {
+                "raw_output_sha256": canonical.raw_output_sha256,
+                "canonical_eligible_sha256": canonical.canonical_eligible_sha256,
+            }
+            detector_frame_source_indices[index] = canonical.canonical_source_indices
         pending_frames = []
         pending_indices = []
 
@@ -1612,70 +2395,27 @@ def extract_single_source_video(
         maximum_seconds=settings.maximum_bridge_gap_seconds,
         frame_cap=settings.maximum_bridge_gap_frame_cap,
     )
-    primary_weights = AssociationWeights(
-        center=settings.primary_center_weight,
-        log_scale=settings.primary_log_scale_weight,
-        shape=settings.primary_shape_weight,
-        anchor=settings.primary_anchor_weight,
-        action_motion=settings.primary_action_motion_weight,
-        action_motion_maximum_center_step=(
-            settings.action_motion_maximum_center_step
-        ),
-        action_motion_maximum_log_scale_step=(
-            settings.action_motion_maximum_log_scale_step
-        ),
-        action_motion_maximum_morphology_step=(
-            settings.action_motion_maximum_morphology_step
-        ),
-    )
-    secondary_weights = AssociationWeights(
-        center=settings.secondary_center_weight,
-        log_scale=settings.secondary_log_scale_weight,
-        shape=settings.secondary_shape_weight,
-        anchor=settings.secondary_anchor_weight,
-        action_motion=settings.secondary_action_motion_weight,
-        action_motion_maximum_center_step=(
-            settings.action_motion_maximum_center_step
-        ),
-        action_motion_maximum_log_scale_step=(
-            settings.action_motion_maximum_log_scale_step
-        ),
-        action_motion_maximum_morphology_step=(
-            settings.action_motion_maximum_morphology_step
-        ),
-    )
-    primary, segments = select_segmented_top2_viterbi_paths(
+    primary_weights, secondary_weights = association_weights_from_settings(settings)
+    primary_bank = select_segmented_stable_actor_paths(
         candidates,
         anchor_residuals=no_anchors,
         weights=primary_weights,
         maximum_bridge_gap_frames=effective_bridge_gap,
     )
-    secondary, secondary_segments = select_segmented_top2_viterbi_paths(
+    secondary_bank = select_segmented_stable_actor_paths(
         candidates,
         anchor_residuals=no_anchors,
         weights=secondary_weights,
         maximum_bridge_gap_frames=effective_bridge_gap,
     )
-    _require(segments == secondary_segments, "dual Viterbi segment boundaries differ")
-    ambiguity_gap_rows: list[tuple[int, float]] = []
-    for segment in segments:
-        start, stop = segment[0], segment[-1] + 1
-        subpath = ViterbiPath(
-            primary.selected_indices[start:stop],
-            None,
-            None,
-            len(segment),
-            _path_digest(primary.selected_indices[start:stop]),
-        )
-        ambiguity_gap_rows.extend(
-            (start + relative_index, value)
-            for relative_index, value in _local_ambiguity_gap_rows(
-                candidates[start:stop],
-                anchor_residuals=no_anchors[start:stop],
-                weights=primary_weights,
-                selected_path=subpath,
-            )
-        )
+    primary = primary_bank.selected_path
+    secondary = secondary_bank.selected_path
+    segments = primary_bank.association_segments
+    _require(
+        segments == secondary_bank.association_segments,
+        "dual identity-stable segment boundaries differ",
+    )
+    ambiguity_gap_rows = list(primary_bank.local_identity_gap_by_frame.items())
     ambiguity_gaps = tuple(value for _, value in ambiguity_gap_rows)
     ambiguity_by_frame = dict(ambiguity_gap_rows)
     sequence = build_single_source_sequence(
@@ -1707,6 +2447,7 @@ def extract_single_source_video(
     continuity = _continuity_steps(
         selected,
         maximum_bridge_gap_frames=effective_bridge_gap,
+        association_segments=segments,
     )
     comparable = [
         index
@@ -1747,7 +2488,10 @@ def extract_single_source_video(
             "message": str(exc),
         }
     candidate_counts = [0 if item is None else int(len(item)) for item in candidates]
-    strict_segments = _strict_contiguous_valid_segments(sequence.valid_mask)
+    strict_segments = _strict_valid_segments_with_association(
+        sequence.valid_mask,
+        segments,
+    )
     frame_evidence = reconstruct_canonical_frame_evidence(
         candidates=candidates,
         primary=primary,
@@ -1758,6 +2502,12 @@ def extract_single_source_video(
         maximum_bridge_gap_frames=effective_bridge_gap,
         detector_diagnostics=detector_diagnostics,
         keypoint_logit_threshold=settings.keypoint_logit_threshold,
+        detector_frame_digests=detector_frame_digests,
+        detector_frame_source_indices=detector_frame_source_indices,
+        identity_alternative_reachable_by_frame=(
+            primary_bank.identity_alternative_reachable_by_frame
+        ),
+        identity_unresolvable_frames=primary_bank.identity_unresolvable_frames,
     )
     audit: dict[str, Any] = {
         "schema_version": 1,
@@ -1768,6 +2518,7 @@ def extract_single_source_video(
         "representation_detail": dict(V4E_REPRESENTATION_DETAIL),
         "video_id_sha256": hashlib.sha256(video_id.encode("utf-8")).hexdigest(),
         "source_frames": source_frames,
+        "fps": fps,
         "decoded_frames": decoded,
         "padded_tail_frames": source_frames - decoded,
         "valid_frames": int(np.count_nonzero(sequence.valid_mask)),
@@ -1804,6 +2555,7 @@ def extract_single_source_video(
         ),
         "raw_keypoint_logits_retained_in_candidate_evidence": True,
         "raw_box_scores_retained_in_candidate_evidence": True,
+        "all_raw_detector_outputs_persisted_for_independent_replay": True,
         "selected_top4_candidate_evidence_sha256": _candidate_evidence_sha256(candidates),
         "anchor_diagnostic_status": anchor_diagnostic_status,
         "anchor_diagnostic_error": anchor_diagnostic_error,
@@ -1815,8 +2567,29 @@ def extract_single_source_video(
         ),
         "primary_weights": primary_weights.to_dict(),
         "secondary_weights": secondary_weights.to_dict(),
+        "identity_association_motion_free": True,
+        "identity_hard_edge_policy": (
+            "torso-center-scale-morphology-all-within-bound-config-envelope-v1"
+        ),
+        "primary_identity_hypothesis_table_sha256": (
+            primary_bank.identity_hypothesis_table_sha256
+        ),
+        "secondary_identity_hypothesis_table_sha256": (
+            secondary_bank.identity_hypothesis_table_sha256
+        ),
+        "primary_stable_track_hypotheses": list(primary_bank.hypothesis_rows),
+        "secondary_stable_track_hypotheses": list(secondary_bank.hypothesis_rows),
+        "identity_assignment_unresolvable_frames": list(
+            primary_bank.identity_unresolvable_frames
+        ),
+        "selected_actor_pair_utility_margin_by_variant": {
+            name: {str(start): float(value) for start, value in rows.items()}
+            for name, rows in (
+                primary_bank.selected_pair_utility_margin_by_variant.items()
+            )
+        },
         "dominant_subject_unary_policy": (
-            "log(max(area,diagonal)*mean-visible-confidence)-kprcnn-only-v1"
+            "log(torso-geometry-scale*mean-reliable-confidence)-kprcnn-only-v2"
         ),
         "primary_path_score": primary.score,
         "primary_runner_up_score": primary.runner_up_score,
@@ -1880,7 +2653,12 @@ def extract_single_source_video(
         "baseline_training_authorized": False,
     }
     audit["video_evidence_sha256"] = _canonical_sha256(audit)
-    return sequence, audit, candidate_evidence_bundle(all_candidate_evidence)
+    return (
+        sequence,
+        audit,
+        candidate_evidence_bundle(all_candidate_evidence),
+        raw_detector_evidence_bundle(raw_detector_frames),
+    )
 
 
 def assess_track_stability(
@@ -1913,11 +2691,18 @@ def assess_track_stability(
             reasons.append("missing_or_normalization_rejected")
         if row.get("crowd_quarantined") is True:
             reasons.append("candidate_top4_truncation_crowd")
+        if row.get("identity_assignment_unresolvable") is True:
+            reasons.append("identity_assignment_unresolvable")
         candidate_count = int(row.get("candidate_count", 0))
         if candidate_count > 1:
-            gap = row.get("ambiguous_max_marginal_gap")
-            if gap is None or float(gap) < thresholds.minimum_frame_local_ambiguity_gap:
-                reasons.append("local_ambiguity_gap")
+            alternative_reachable = row.get("identity_alternative_reachable")
+            if alternative_reachable is not False:
+                gap = row.get("ambiguous_max_marginal_gap")
+                if (
+                    gap is None
+                    or float(gap) < thresholds.minimum_frame_local_ambiguity_gap
+                ):
+                    reasons.append("local_identity_gap")
             if row.get("dual_path_agrees") is not True:
                 reasons.append("dual_path_disagreement")
         transition = row.get("continuity_from_previous")
@@ -1968,9 +2753,40 @@ def assess_track_stability(
                         reasons.append("joint_mask_flicker")
         frame_reasons.append(reasons)
         identity_mask.append(not reasons)
-    identity_segments = _strict_contiguous_valid_segments(
-        np.asarray(identity_mask, dtype=np.bool_)
-    )
+    identity_segments: list[tuple[int, int]] = []
+    active_start: int | None = None
+    active_association_segment: int | None = None
+    for frame_index, eligible_frame in enumerate(identity_mask):
+        row = raw_frame_evidence[frame_index]
+        segment_value = row.get("association_segment_id")
+        segment_id = int(segment_value) if segment_value is not None else None
+        if not eligible_frame or segment_id is None:
+            if active_start is not None:
+                identity_segments.append((active_start, frame_index))
+            active_start = None
+            active_association_segment = None
+            continue
+        if active_start is None:
+            active_start = frame_index
+            active_association_segment = segment_id
+            continue
+        if segment_id != active_association_segment:
+            identity_segments.append((active_start, frame_index))
+            active_start = frame_index
+            active_association_segment = segment_id
+    if active_start is not None:
+        identity_segments.append((active_start, len(identity_mask)))
+    association_segment_ids = {
+        int(row["association_segment_id"])
+        for row in raw_frame_evidence
+        if isinstance(row, Mapping) and row.get("association_segment_id") is not None
+    }
+    single_pseudotrack_passed = len(association_segment_ids) == 1
+
+    raw_actor_margins = audit.get("selected_actor_pair_utility_margin_by_variant")
+    if not isinstance(raw_actor_margins, Mapping):
+        raise ValueError("stable actor pair-utility margins are required")
+
     def base_pair_starts(window_frames: int, hop_frames: int) -> list[int]:
         span_frames = 2 * window_frames
         starts: list[int] = []
@@ -1984,10 +2800,23 @@ def assess_track_stability(
             )
         return starts
 
-    def supported_pair_starts(window_frames: int, hop_frames: int) -> list[int]:
+    def supported_pair_starts(
+        variant: str,
+        window_frames: int,
+        hop_frames: int,
+    ) -> list[int]:
         span_frames = 2 * window_frames
         starts: list[int] = []
         for window_start in base_pair_starts(window_frames, hop_frames):
+            variant_margins = raw_actor_margins.get(variant)
+            if not isinstance(variant_margins, Mapping):
+                raise ValueError(f"stable actor utility margin variant missing: {variant}")
+            margin = variant_margins.get(str(window_start))
+            if (
+                margin is None
+                or float(margin) < thresholds.minimum_window_action_motion
+            ):
+                continue
             pair_supported = True
             joint_rows: list[list[bool]] = []
             selected_rows: list[Mapping[str, Any]] = []
@@ -2074,7 +2903,7 @@ def assess_track_stability(
         for name, (window_frames, hop_frames) in CYCLEBACK_PAIR_VARIANTS.items()
     }
     variant_starts = {
-        name: supported_pair_starts(window_frames, hop_frames)
+        name: supported_pair_starts(name, window_frames, hop_frames)
         for name, (window_frames, hop_frames) in CYCLEBACK_PAIR_VARIANTS.items()
     }
     if base_variant_starts["W16_H4_PE0"] != base_variant_starts["W16_H4"]:
@@ -2108,6 +2937,7 @@ def assess_track_stability(
     window_support_passed = bool(eligible_pair_spans)
     eligible = bool(
         agreement_passed
+        and single_pseudotrack_passed
         and coverage_passed
         and segment_frames_passed
         and segment_fraction_passed
@@ -2118,6 +2948,8 @@ def assess_track_stability(
         reasons.append("identity_eligible_coverage")
     if not agreement_passed:
         reasons.append("dual_path_agreement")
+    if not single_pseudotrack_passed:
+        reasons.append("multiple_association_pseudotracks")
     if not segment_frames_passed:
         reasons.append("minimum_contiguous_trainable_segment_frames")
     if not segment_fraction_passed:
@@ -2145,6 +2977,11 @@ def assess_track_stability(
         "frame_quarantine_reasons": frame_reasons,
         "eligible_frames": eligible_frames,
         "identity_eligible_coverage": identity_coverage,
+        "association_pseudotrack_count": len(association_segment_ids),
+        "association_pseudotrack_policy": (
+            "v1-full-video-eligibility-requires-exactly-one-pseudotrack;"
+            "cross-reset-training-and-count-aggregation-forbidden"
+        ),
         "track_stability_frame_ranges": [
             {"start": start, "stop": stop, "frames": stop - start}
             for start, stop in identity_segments
@@ -2165,6 +3002,7 @@ def assess_track_stability(
         "criteria": {
             "coverage": coverage_passed,
             "dual_path_agreement": agreement_passed,
+            "single_association_pseudotrack": single_pseudotrack_passed,
             "minimum_contiguous_trainable_segment_frames": segment_frames_passed,
             "minimum_contiguous_trainable_segment_fraction": segment_fraction_passed,
             "window_joint_and_action_motion_support": window_support_passed,

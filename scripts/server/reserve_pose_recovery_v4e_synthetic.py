@@ -157,6 +157,9 @@ def reserve_synthetic(
             "one_sided_clopper_pearson_alpha": 0.05,
             "minimum_known_identity_retention_lower_bound": 0.90,
             "maximum_false_eligible_upper_bound": 0.01,
+            "confidence_scope": (
+                "one-sided-bounds-apply-only-to-the-preregistered-synthetic-distribution"
+            ),
             "samples_per_family_per_split": 512,
             "tuple_selection": "minimum-severity-sum-then-frozen-field-lexicographic-v1",
             "frozen_threshold_field_order": list(FROZEN_THRESHOLD_FIELD_ORDER),

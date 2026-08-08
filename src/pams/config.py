@@ -271,30 +271,27 @@ class KeypointRCNNSingleSourceConfig(StrictModel):
     # consumes processed-v4a coordinates or penalizes articulated limb motion.
     primary_shape_weight: Literal[0.5] = 0.5
     primary_anchor_weight: Literal[0.0] = 0.0
-    primary_action_motion_weight: Literal[12.0] = 12.0
     secondary_center_weight: Literal[0.75] = 0.75
     secondary_log_scale_weight: Literal[0.5] = 0.5
     secondary_shape_weight: Literal[0.25] = 0.25
     secondary_anchor_weight: Literal[0.0] = 0.0
-    secondary_action_motion_weight: Literal[9.0] = 9.0
-    # Motion is usable only after this source-only continuity envelope has
-    # excluded cross-person jumps.  These mechanism constants are frozen
-    # before same39/full337 and are not selected from either dataset.
-    action_motion_maximum_center_step: Literal[0.12] = 0.12
-    action_motion_maximum_log_scale_step: Literal[0.12] = 0.12
-    action_motion_maximum_morphology_step: Literal[0.02] = 0.02
+    # These identity-only hard-edge limits are frozen before same39/full337.
+    # Articulated action motion is prohibited from this association objective.
+    identity_maximum_center_step: Literal[0.12] = 0.12
+    identity_maximum_log_scale_step: Literal[0.12] = 0.12
+    identity_maximum_morphology_step: Literal[0.02] = 0.02
     # This physical-time rule predates any full337 v4e observation.  The
     # effective association bridge is min(cap, floor(seconds * fps)); a zero
     # result is valid and means that no missing frame may be bridged.
     maximum_bridge_gap_seconds: Literal[0.25] = 0.25
     maximum_bridge_gap_frame_cap: Literal[8] = 8
     global_track_strategy: Literal[
-        "top2-viterbi-dominance-continuity-gated-action-motion-segmented-v3"
+        "seeded-stable-track-bank-motion-free-identity-then-2w-actor-utility-v4"
     ] = (
-        "top2-viterbi-dominance-continuity-gated-action-motion-segmented-v3"
+        "seeded-stable-track-bank-motion-free-identity-then-2w-actor-utility-v4"
     )
-    second_path_policy: Literal["independent-frozen-weight-viterbi-v1"] = (
-        "independent-frozen-weight-viterbi-v1"
+    second_path_policy: Literal["independent-frozen-weight-stable-track-bank-v2"] = (
+        "independent-frozen-weight-stable-track-bank-v2"
     )
     raw_extraction_authorizes_training: Literal[False] = False
 
@@ -305,14 +302,12 @@ class KeypointRCNNSingleSourceConfig(StrictModel):
             self.primary_log_scale_weight,
             self.primary_shape_weight,
             self.primary_anchor_weight,
-            self.primary_action_motion_weight,
         )
         secondary = (
             self.secondary_center_weight,
             self.secondary_log_scale_weight,
             self.secondary_shape_weight,
             self.secondary_anchor_weight,
-            self.secondary_action_motion_weight,
         )
         if not any(primary) or not any(secondary):
             raise ValueError("v4e requires two non-degenerate association weight sets")
@@ -332,7 +327,7 @@ class PoseConfig(StrictModel):
         "official-segment-heavy-video-fill-missing-full-timeline-v4b",
         "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c",
         "official-segment-v4a-locked-keypointrcnn-fill-missing-full-timeline-v4d",
-        "official-segment-keypointrcnn-single-source-coco17-full-timeline-v4e",
+        "official-segment-keypointrcnn-stable-track-bank-coco17-full-timeline-v4e",
     ] = "detected-span-minmax-zero-span-invalid-v2"
     model_id: str = "mediapipe-pose-0.10.14"
     model_complexity: int = Field(default=1, ge=0, le=2)
@@ -362,7 +357,7 @@ class PoseConfig(StrictModel):
                 "official-segment-heavy-video-fill-missing-full-timeline-v4b",
                 "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c",
                 "official-segment-v4a-locked-keypointrcnn-fill-missing-full-timeline-v4d",
-                "official-segment-keypointrcnn-single-source-coco17-full-timeline-v4e",
+                "official-segment-keypointrcnn-stable-track-bank-coco17-full-timeline-v4e",
             }
             and self.crop_to_detected_span
         ):
@@ -377,7 +372,7 @@ class PoseConfig(StrictModel):
                 "official-segment-heavy-video-fill-missing-full-timeline-v4b",
                 "official-segment-tasks-heavy-video-multipose4-fill-missing-full-timeline-v4c",
                 "official-segment-v4a-locked-keypointrcnn-fill-missing-full-timeline-v4d",
-                "official-segment-keypointrcnn-single-source-coco17-full-timeline-v4e",
+                "official-segment-keypointrcnn-stable-track-bank-coco17-full-timeline-v4e",
             }
             and self.incomplete_clip_policy != "error"
         ):
@@ -399,7 +394,7 @@ class PoseConfig(StrictModel):
         )
         v4e_revision = (
             self.preprocessing_revision
-            == "official-segment-keypointrcnn-single-source-coco17-full-timeline-v4e"
+            == "official-segment-keypointrcnn-stable-track-bank-coco17-full-timeline-v4e"
         )
         recovery_revision = v4a_revision or v4b_revision or v4c_revision
         if recovery_revision:

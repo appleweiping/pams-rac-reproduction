@@ -52,6 +52,7 @@ from pams.keypoint_single_source import (
     assess_track_stability,
     extract_single_source_video,
     write_candidate_evidence_npz,
+    write_raw_detector_evidence_npz,
 )
 
 APPROVED_RAW_EXTRACTION_SECURE_LAUNCH_AUTHORITY_SHA256 = ""
@@ -352,14 +353,24 @@ def run_raw_train337(
                 source_cache = pose_cache_path(same39_cache_root, record.video_id).resolve(strict=True)
                 target_cache = pose_cache_path(output_root, record.video_id)
                 source_candidate = (same39_evidence_root / f"{opaque_id}.candidates.npz").resolve(strict=True)
+                source_raw_detector = (
+                    same39_evidence_root / f"{opaque_id}.raw-detector.npz"
+                ).resolve(strict=True)
                 source_path = (same39_evidence_root / f"{opaque_id}.path.json").resolve(strict=True)
                 source_joint = (same39_joint_mask_root / f"{opaque_id}.joint-mask.npz").resolve(strict=True)
                 target_candidate = evidence_root / source_candidate.name
+                target_raw_detector = evidence_root / source_raw_detector.name
                 target_path = evidence_root / source_path.name
                 target_joint = joint_mask_root / source_joint.name
                 for source_artifact, target_artifact, sha_key, bytes_key in (
                     (source_cache, target_cache, "cache_sha256", "cache_bytes"),
                     (source_candidate, target_candidate, "candidate_evidence_sha256", "candidate_evidence_bytes"),
+                    (
+                        source_raw_detector,
+                        target_raw_detector,
+                        "raw_detector_evidence_sha256",
+                        "raw_detector_evidence_bytes",
+                    ),
                     (source_path, target_path, "path_segment_evidence_sha256", "path_segment_evidence_bytes"),
                     (source_joint, target_joint, "joint_valid_mask_sha256", "joint_valid_mask_bytes"),
                 ):
@@ -372,6 +383,9 @@ def run_raw_train337(
                     {
                         "cache_path": str(target_cache.resolve()),
                         "candidate_evidence_path": str(target_candidate.resolve()),
+                        "raw_detector_evidence_path": str(
+                            target_raw_detector.resolve()
+                        ),
                         "path_segment_evidence_path": str(target_path.resolve()),
                         "joint_valid_mask_path": str(target_joint.resolve()),
                         "cache_origin": "bytewise-reused-sealed-v4e-same39",
@@ -404,7 +418,12 @@ def run_raw_train337(
                 "sealed v4a decoded/padded timeline metadata is incomplete",
             )
             decoded_frames = int(base_metadata.decoded_clip_frames)
-            sequence, evidence, candidate_bundle = extract_single_source_video(
+            (
+                sequence,
+                evidence,
+                candidate_bundle,
+                raw_detector_bundle,
+            ) = extract_single_source_video(
                 video_path,
                 video_id=record.video_id,
                 clip_start_frame=int(record.clip_start_frame),
@@ -417,9 +436,16 @@ def run_raw_train337(
             )
             opaque_id = hashlib.sha256(record.video_id.encode("utf-8")).hexdigest()
             candidate_evidence_path = evidence_root / f"{opaque_id}.candidates.npz"
+            raw_detector_evidence_path = (
+                evidence_root / f"{opaque_id}.raw-detector.npz"
+            )
             joint_mask_path = joint_mask_root / f"{opaque_id}.joint-mask.npz"
             path_evidence_path = evidence_root / f"{opaque_id}.path.json"
             write_candidate_evidence_npz(candidate_evidence_path, candidate_bundle)
+            write_raw_detector_evidence_npz(
+                raw_detector_evidence_path,
+                raw_detector_bundle,
+            )
             joint_mask = np.zeros((sequence.num_frames, 17), dtype=np.bool_)
             for frame_row in evidence["frame_evidence"]:
                 selected_index = frame_row["primary_index"]
@@ -447,6 +473,12 @@ def run_raw_train337(
                 "eligibility_decision": decision,
                 "candidate_evidence_sha256": sha256_file(candidate_evidence_path),
                 "candidate_evidence_bytes": candidate_evidence_path.stat().st_size,
+                "raw_detector_evidence_sha256": sha256_file(
+                    raw_detector_evidence_path
+                ),
+                "raw_detector_evidence_bytes": (
+                    raw_detector_evidence_path.stat().st_size
+                ),
                 "joint_valid_mask_sha256": sha256_file(joint_mask_path),
                 "joint_valid_mask_bytes": joint_mask_path.stat().st_size,
             }
@@ -484,6 +516,15 @@ def run_raw_train337(
                     "candidate_evidence_path": str(candidate_evidence_path.resolve()),
                     "candidate_evidence_sha256": sha256_file(candidate_evidence_path),
                     "candidate_evidence_bytes": candidate_evidence_path.stat().st_size,
+                    "raw_detector_evidence_path": str(
+                        raw_detector_evidence_path.resolve()
+                    ),
+                    "raw_detector_evidence_sha256": sha256_file(
+                        raw_detector_evidence_path
+                    ),
+                    "raw_detector_evidence_bytes": (
+                        raw_detector_evidence_path.stat().st_size
+                    ),
                     "joint_valid_mask_path": str(joint_mask_path.resolve()),
                     "joint_valid_mask_sha256": sha256_file(joint_mask_path),
                     "joint_valid_mask_bytes": joint_mask_path.stat().st_size,
@@ -537,6 +578,9 @@ def run_raw_train337(
         "maximum_bridge_gap_seconds": settings.maximum_bridge_gap_seconds,
         "maximum_bridge_gap_frame_cap": settings.maximum_bridge_gap_frame_cap,
         "reset_identity_semantics": "each-association-segment-is-an-independent-pseudotrack",
+        "multi_segment_representation_eligibility": (
+            "v1-quarantine-no-cross-reset-training-or-count-aggregation"
+        ),
         "cross_reset_count_aggregation": "undefined-requires-separate-preregistered-policy",
         "trainable_segment_rule": "exact-prevalidated-2W-pair-spans-only-v1",
         "cycleback_pair_rule": "consume-only-listed-start-stop-without-expansion",
@@ -734,6 +778,7 @@ def run_raw_train337(
             (
                 Path(str(row["cache_path"])),
                 Path(str(row["candidate_evidence_path"])),
+                Path(str(row["raw_detector_evidence_path"])),
                 Path(str(row["path_segment_evidence_path"])),
                 Path(str(row["joint_valid_mask_path"])),
             )

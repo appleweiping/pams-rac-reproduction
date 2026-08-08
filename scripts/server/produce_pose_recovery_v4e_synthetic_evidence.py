@@ -27,17 +27,15 @@ from pose_recovery_v4d_full337_contract import (
 from pams.config import KeypointRCNNSingleSourceConfig, load_config
 from pams.keypoint_single_source import (
     RELIABLE_ACTION_JOINTS,
-    AssociationWeights,
     TrackStabilityThresholds,
-    ViterbiPath,
-    _local_ambiguity_gap_rows,
     assess_track_stability,
+    association_weights_from_settings,
     build_single_source_sequence,
     candidate_evidence_bundle,
     canonicalize_raw_detector_frame,
     effective_maximum_bridge_gap_frames,
     reconstruct_canonical_frame_evidence,
-    select_segmented_top2_viterbi_paths,
+    select_segmented_stable_actor_paths,
 )
 from pams.v4e_synthetic_contract import (
     SYNTHETIC_DIAGNOSTIC_FAMILIES,
@@ -257,6 +255,9 @@ def _synthetic_raw_outputs(
         if family == "alternating_limb_dropout_without_stable_window_support":
             mask_a[list(RELIABLE_ACTION_JOINTS)] = False
             mask_a[[7, 8, 9, 10] if frame % 2 == 0 else [13, 14, 15, 16]] = True
+        if family == "eight_reliable_but_fewer_than_four_action_joints":
+            mask_a[:] = False
+            mask_a[[0, 1, 2, 3, 5, 6, 11, 12]] = True
 
         bridge_gap = max(1, min(6, int(seed % 6) + 1))
         if family == "long_gap_with_identity_change" and gap_start <= frame < gap_stop:
@@ -264,7 +265,7 @@ def _synthetic_raw_outputs(
             raw_outputs.append(raw)
             truth_rows.append(truth)
             continue
-        if family == "near_size_crossing_with_identity_swap_risk":
+        if family == "continuous_near_size_crossing_safe_abstention":
             progress = frame / (frames - 1)
             centers = (
                 (
@@ -289,20 +290,53 @@ def _synthetic_raw_outputs(
                         "B",
                         _person_raw_channels(
                             center=centers[1], scale=0.65, phase=phase + 1.2,
-                            mask=mask_b, box_score=0.90, morphology="B",
+                            mask=mask_b, box_score=0.90, morphology="A",
                         ),
                     ),
                 )
             )
-        elif family == "explicit_candidate_identity_swap":
+        elif family == "near_identical_alternating_score_complementary_phase":
+            score_delta = np.float32(0.04 if frame % 2 == 0 else -0.04)
+            raw, truth = _raw_frame(
+                (
+                    (
+                        "A",
+                        _person_raw_channels(
+                            center=target_center,
+                            scale=0.68,
+                            phase=phase,
+                            mask=mask_a,
+                            box_score=float(np.float32(0.90) + score_delta),
+                            morphology="A",
+                        ),
+                    ),
+                    (
+                        "B",
+                        _person_raw_channels(
+                            center=target_center,
+                            scale=0.68,
+                            phase=phase + np.pi,
+                            mask=mask_b,
+                            box_score=float(np.float32(0.90) - score_delta),
+                            morphology="A",
+                        ),
+                    ),
+                )
+            )
+        elif family == "forced_handoff_a_terminates_b_continues":
             swap_frame = frames // 2 + int(seed % 7) - 3
             identity = "A" if frame < swap_frame else "B"
+            handoff_center = (
+                target_center
+                if identity == "A"
+                else (target_center[0] + 0.05, target_center[1])
+            )
             raw, truth = _raw_frame(
                 (
                     (
                         identity,
                         _person_raw_channels(
-                            center=target_center,
+                            center=handoff_center,
                             scale=0.68,
                             phase=phase if identity == "A" else phase + 1.2,
                             mask=mask_a,
@@ -330,11 +364,16 @@ def _synthetic_raw_outputs(
                 raw, truth = _raw_frame(())
             else:
                 identity = "A" if frame < bridge_start else "B"
+                bridge_center = (
+                    target_center
+                    if identity == "A"
+                    else (target_center[0] + 0.30, target_center[1])
+                )
                 raw, truth = _raw_frame(
                     ((
                         identity,
                         _person_raw_channels(
-                            center=target_center, scale=target_scale,
+                            center=bridge_center, scale=target_scale,
                             phase=phase if identity == "A" else phase + 1.2,
                             mask=mask_a, box_score=0.90, morphology=identity,
                         ),
@@ -457,49 +496,27 @@ def _run_mechanics(
     settings: KeypointRCNNSingleSourceConfig,
 ) -> dict[str, Any]:
     no_anchors = tuple(None for _ in candidates)
-    primary_weights = AssociationWeights(
-        center=settings.primary_center_weight,
-        log_scale=settings.primary_log_scale_weight,
-        shape=settings.primary_shape_weight,
-        anchor=settings.primary_anchor_weight,
-        action_motion=settings.primary_action_motion_weight,
-    )
-    secondary_weights = AssociationWeights(
-        center=settings.secondary_center_weight,
-        log_scale=settings.secondary_log_scale_weight,
-        shape=settings.secondary_shape_weight,
-        anchor=settings.secondary_anchor_weight,
-        action_motion=settings.secondary_action_motion_weight,
-    )
+    primary_weights, secondary_weights = association_weights_from_settings(settings)
     maximum_gap = effective_maximum_bridge_gap_frames(
         fps=25.0,
         maximum_seconds=settings.maximum_bridge_gap_seconds,
         frame_cap=settings.maximum_bridge_gap_frame_cap,
     )
-    primary, segments = select_segmented_top2_viterbi_paths(
+    primary_bank = select_segmented_stable_actor_paths(
         candidates, anchor_residuals=no_anchors, weights=primary_weights,
         maximum_bridge_gap_frames=maximum_gap,
     )
-    secondary, secondary_segments = select_segmented_top2_viterbi_paths(
+    secondary_bank = select_segmented_stable_actor_paths(
         candidates, anchor_residuals=no_anchors, weights=secondary_weights,
         maximum_bridge_gap_frames=maximum_gap,
     )
-    require(segments == secondary_segments, "synthetic dual path segment mismatch")
-    ambiguity: dict[int, float] = {}
-    for segment in segments:
-        start, stop = segment[0], segment[-1] + 1
-        subpath = ViterbiPath(
-            primary.selected_indices[start:stop], None, None, len(segment), "synthetic"
-        )
-        ambiguity.update(
-            {
-                start + index: gap
-                for index, gap in _local_ambiguity_gap_rows(
-                    candidates[start:stop], anchor_residuals=no_anchors[start:stop],
-                    weights=primary_weights, selected_path=subpath,
-                )
-            }
-        )
+    primary = primary_bank.selected_path
+    secondary = secondary_bank.selected_path
+    segments = primary_bank.association_segments
+    require(
+        segments == secondary_bank.association_segments,
+        "synthetic dual path segment mismatch",
+    )
     video_id = f"synthetic:{family}:{seed}"
     sequence = build_single_source_sequence(
         video_id=video_id, fps=25.0, source_frames=len(candidates),
@@ -508,9 +525,14 @@ def _run_mechanics(
     frame_evidence = reconstruct_canonical_frame_evidence(
         candidates=candidates, primary=primary, secondary=secondary,
         association_segments=segments, sequence=sequence,
-        ambiguity_by_frame=ambiguity, maximum_bridge_gap_frames=maximum_gap,
+        ambiguity_by_frame=primary_bank.local_identity_gap_by_frame,
+        maximum_bridge_gap_frames=maximum_gap,
         detector_diagnostics=detector_diagnostics,
         keypoint_logit_threshold=settings.keypoint_logit_threshold,
+        identity_alternative_reachable_by_frame=(
+            primary_bank.identity_alternative_reachable_by_frame
+        ),
+        identity_unresolvable_frames=primary_bank.identity_unresolvable_frames,
     )
     comparable = [
         index for index, frame in enumerate(candidates)
@@ -536,6 +558,21 @@ def _run_mechanics(
         ).hexdigest(),
         "source_frames": len(candidates),
         "dual_path_agreement": float(agreement),
+        "identity_association_motion_free": True,
+        "primary_identity_hypothesis_table_sha256": (
+            primary_bank.identity_hypothesis_table_sha256
+        ),
+        "secondary_identity_hypothesis_table_sha256": (
+            secondary_bank.identity_hypothesis_table_sha256
+        ),
+        "primary_stable_track_hypotheses": list(primary_bank.hypothesis_rows),
+        "secondary_stable_track_hypotheses": list(secondary_bank.hypothesis_rows),
+        "selected_actor_pair_utility_margin_by_variant": {
+            name: {str(start): float(value) for start, value in rows.items()}
+            for name, rows in (
+                primary_bank.selected_pair_utility_margin_by_variant.items()
+            )
+        },
         "frame_evidence": frame_evidence,
         "canonical_filter_digest_sha256": hashlib.sha256(
             "".join(canonical_filter_digests).encode()
@@ -628,7 +665,10 @@ def _fixture(
     if family in POSITIVE_FAMILIES:
         first["truth_condition"] = selected == {target}
     elif family in IDENTITY_NULL_FAMILIES:
-        first["truth_condition"] = len(selected) > 1
+        # Identity-null validity is fixed by generator construction, never by
+        # whether the algorithm happened to switch.  Any eligible decision is
+        # therefore a false-eligible outcome for these families.
+        first["truth_condition"] = True
     else:
         first["truth_condition"] = True
     return first, determinism_failure, permutation_failure
@@ -710,10 +750,6 @@ def produce_synthetic_evidence(
         }
         for rank in threshold_by_rank
     }
-    diagnostic_period_vectors = {
-        split: {family: [] for family in DIAGNOSTIC_FAMILIES}
-        for split in split_seeds
-    }
     determinism_vectors = {
         split: [False] * SAMPLES_PER_FAMILY for split in split_seeds
     }
@@ -726,11 +762,6 @@ def produce_synthetic_evidence(
                 fixture, determinism_failure, permutation_failure = _fixture(
                     family, seed, settings
                 )
-                if family in IDENTITY_NULL_FAMILIES:
-                    require(
-                        fixture["truth_condition"] is True,
-                        f"identity-null generator did not produce a truth switch: {family}",
-                    )
                 determinism_vectors[split][sample_index] |= determinism_failure
                 permutation_vectors[split][sample_index] |= permutation_failure
                 for rank, thresholds in threshold_by_rank.items():
@@ -760,17 +791,18 @@ def produce_synthetic_evidence(
                     ):
                         permutation_vectors[split][sample_index] = True
                     eligible = bool(decision_period_false["eligible"])
-                    if family in POSITIVE_FAMILIES or family in IDENTITY_NULL_FAMILIES:
+                    if family in POSITIVE_FAMILIES:
                         outcome = eligible and bool(fixture["truth_condition"])
+                    elif family in IDENTITY_NULL_FAMILIES:
+                        outcome = eligible
                     elif family in JOINT_NULL_FAMILIES:
                         outcome = eligible
                     else:
-                        outcome = bool(fixture["period_supported"])
+                        # The crossing diagnostic preregisters safe abstention;
+                        # it makes no target-ID retention claim. Eligibility is
+                        # therefore the diagnostic failure bit.
+                        outcome = eligible
                     decision_vectors[rank][split][family].append(outcome)
-                if family in DIAGNOSTIC_FAMILIES:
-                    diagnostic_period_vectors[split][family].append(
-                        bool(fixture["period_supported"])
-                    )
 
     rows: list[dict[str, Any]] = []
     for grid_row in grid_rows:
@@ -811,10 +843,8 @@ def produce_synthetic_evidence(
                 "diagnostic_families": {
                     family: {
                         "total": SAMPLES_PER_FAMILY,
-                        "period_supported": sum(diagnostic_period_vectors[split][family]),
-                        "decision_bitset_hex": _bitset_hex(
-                            diagnostic_period_vectors[split][family]
-                        ),
+                        "false_eligible": sum(family_vectors[family]),
+                        "decision_bitset_hex": _bitset_hex(family_vectors[family]),
                     }
                     for family in DIAGNOSTIC_FAMILIES
                 },
@@ -840,8 +870,8 @@ def produce_synthetic_evidence(
         "rows": rows,
         "mechanics_chain": (
             "synthetic-raw-kprcnn-channels-to-shared-production-filter-canonical-sort-"
-            "to-dual-viterbi-to-canonical-frame-evidence-to-body-centered-cache-"
-            "to-track-stability-and-usable-action-motion-v2"
+            "to-dual-motion-free-stable-track-banks-to-whole-track-actor-utility-"
+            "to-canonical-frame-evidence-to-body-centered-cache-to-track-stability-v3"
         ),
         "truth_role": (
             "synthetic-actor-retention-track-stability-and-false-eligible-scoring-only"

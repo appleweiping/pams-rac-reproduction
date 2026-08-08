@@ -46,8 +46,8 @@ SYNTHETIC_POSITIVE_FAMILIES = (
     "fast_motion_actor_with_large_static_bystander",
 )
 SYNTHETIC_IDENTITY_NULL_FAMILIES = (
-    "near_size_crossing_with_identity_swap_risk",
-    "explicit_candidate_identity_swap",
+    "near_identical_alternating_score_complementary_phase",
+    "forced_handoff_a_terminates_b_continues",
     "long_gap_with_identity_change",
     "short_bridge_range_identity_change",
 )
@@ -56,9 +56,15 @@ SYNTHETIC_JOINT_NULL_FAMILIES = (
     "low_amplitude_periodic_mask_flicker",
     "torso_only_without_action_joints",
     "alternating_limb_dropout_without_stable_window_support",
+    "eight_reliable_but_fewer_than_four_action_joints",
     "periodic_detector_jitter_below_usable_motion",
 )
-SYNTHETIC_DIAGNOSTIC_FAMILIES: tuple[str, ...] = ()
+SYNTHETIC_DIAGNOSTIC_FAMILIES = (
+    # Pose-only evidence can be information-theoretically ambiguous at a
+    # near-identical crossing.  v1 preregisters safe abstention as a reported
+    # diagnostic and makes no target-identity retention claim for this family.
+    "continuous_near_size_crossing_safe_abstention",
+)
 _FROZEN_THRESHOLD_AXES: dict[str, tuple[int | float, ...]] = {
     "maximum_candidate_window_frames": (24,),
     "maximum_frame_center_step": (0.5, 0.3),

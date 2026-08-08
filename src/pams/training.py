@@ -1822,10 +1822,7 @@ def require_generic_training_representation_supported(
 
     if stage not in {"encoder", "sshead"}:
         raise ValueError("generic training stage must be encoder or sshead")
-    if (
-        config.pose.preprocessing_revision
-        == "official-segment-keypointrcnn-single-source-coco17-full-timeline-v4e"
-    ):
+    if config.pose.keypoint_single_source is not None:
         raise RuntimeError(
             f"v4e representation is forbidden in generic {stage} training; "
             "an integration-authorized custom runner is required"

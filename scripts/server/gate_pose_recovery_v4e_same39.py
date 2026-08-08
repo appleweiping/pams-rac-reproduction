@@ -156,7 +156,12 @@ def gate_same39(
     eligible = 0
     for value in rows:
         require(isinstance(value, Mapping), "same39 row must be an object")
-        for prefix in ("candidate_evidence", "path_segment_evidence", "joint_valid_mask"):
+        for prefix in (
+            "candidate_evidence",
+            "raw_detector_evidence",
+            "path_segment_evidence",
+            "joint_valid_mask",
+        ):
             artifact_path = Path(str(value[f"{prefix}_path"])).resolve(strict=True)
             require(sha256_file(artifact_path) == value[f"{prefix}_sha256"], f"{prefix} SHA mismatch")
             require(artifact_path.stat().st_size == value[f"{prefix}_bytes"], f"{prefix} bytes mismatch")
