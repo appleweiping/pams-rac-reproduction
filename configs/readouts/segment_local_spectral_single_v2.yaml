@@ -31,10 +31,13 @@ fixed:
   minimum_observed_cycles: 2.0
   maximum_frequency_cycles_per_frame: 0.25
   harmonic_band_share_minimum: 0.25
+  coherent_dimension_fraction_minimum: 0.50
   signed_vector_acf_minimum: 0.20
   signed_vector_acf_half_lag_contrast_minimum: 0.20
   local_minimum_window_frames: 24
   local_hop_divisor: 4
+  static_probe_window_frames: 24
+  static_probe_hop_divisor: 4
   terminal_window: unique_terminal_after_zero_grid
   local_frequency_ratio_to_proposal: [0.45, 2.25]
   window_states: [periodic, static_zero_rate, ambiguous]

@@ -137,10 +137,13 @@ class FixedProtocolV2(StrictModel):
     minimum_observed_cycles: float
     maximum_frequency_cycles_per_frame: float
     harmonic_band_share_minimum: float
+    coherent_dimension_fraction_minimum: float
     signed_vector_acf_minimum: float
     signed_vector_acf_half_lag_contrast_minimum: float
     local_minimum_window_frames: Literal[24]
     local_hop_divisor: Literal[4]
+    static_probe_window_frames: Literal[24]
+    static_probe_hop_divisor: Literal[4]
     terminal_window: Literal["unique_terminal_after_zero_grid"]
     local_frequency_ratio_to_proposal: tuple[float, float]
     window_states: tuple[
@@ -180,6 +183,7 @@ class FixedProtocolV2(StrictModel):
             2.0,
             0.25,
             0.25,
+            0.5,
             0.2,
             0.2,
             0.000001,
@@ -191,6 +195,7 @@ class FixedProtocolV2(StrictModel):
             self.minimum_observed_cycles,
             self.maximum_frequency_cycles_per_frame,
             self.harmonic_band_share_minimum,
+            self.coherent_dimension_fraction_minimum,
             self.signed_vector_acf_minimum,
             self.signed_vector_acf_half_lag_contrast_minimum,
             self.static_maximum_relative_velocity,
@@ -488,6 +493,7 @@ class FundamentalCandidateDiagnostic:
     divisor: Literal[1, 2, 3]
     direct_to_dominant: float
     harmonic_band_share: float
+    coherent_dimension_fraction: float
     signed_acf: float
     half_lag_acf: float
     acf_contrast: float
@@ -497,7 +503,11 @@ class FundamentalCandidateDiagnostic:
     def __post_init__(self) -> None:
         if not isinstance(self.failed_checks, tuple):
             raise TypeError("failed_checks must be an exact tuple")
-        bounded = (self.direct_to_dominant, self.harmonic_band_share)
+        bounded = (
+            self.direct_to_dominant,
+            self.harmonic_band_share,
+            self.coherent_dimension_fraction,
+        )
         if any(not np.isfinite(value) or not 0.0 <= value <= 1.0 for value in bounded):
             raise ValueError("spectral support diagnostics must be in [0, 1]")
         correlations = (self.signed_acf, self.half_lag_acf, self.acf_contrast)
@@ -567,7 +577,10 @@ def _top_spectral_peaks(
             local.append(current)
     if not local:
         return ()
-    separation = max(1, int(math.ceil(fft_size / frame_count)))
+    # The Hann main lobe spans roughly two bins of the unpadded transform on
+    # either side.  Suppress the whole lobe so top-K represents distinct
+    # physical peaks instead of eight samples from one harmonic.
+    separation = max(1, int(math.ceil(2.0 * fft_size / (frame_count - 1))))
     selected: list[int] = []
     for index in sorted(local, key=lambda item: (-float(aggregate[item]), item)):
         if all(abs(index - previous) >= separation for previous in selected):
@@ -619,12 +632,27 @@ def _harmonic_union_power(
     return float(np.sum(aggregate[mask]))
 
 
+def _harmonic_union_mask(
+    frequencies: NDArray[np.float64],
+    frequency: float,
+    half_width: float,
+    maximum_frequency: float,
+) -> NDArray[np.bool_]:
+    mask = np.zeros(frequencies.shape, dtype=np.bool_)
+    for multiplier in (1, 2, 3):
+        center = frequency * multiplier
+        if center <= maximum_frequency:
+            mask |= np.abs(frequencies - center) <= half_width
+    return mask
+
+
 def _frequency_analysis(
     features: NDArray[np.float64],
     candidate: SpectralCandidateV2,
     protocol: FixedProtocolV2,
     *,
     frequency_bounds: tuple[float, float] | None = None,
+    proposal_mode: bool = False,
 ) -> FrequencyAnalysis:
     values = np.asarray(features, dtype=np.float64)
     if values.ndim != 2 or values.shape[0] < 2 or values.shape[1] < 1:
@@ -745,6 +773,23 @@ def _frequency_analysis(
             upper,
         )
         harmonic_share = float(np.clip(harmonic / allowed_total, 0.0, 1.0))
+        harmonic_mask = _harmonic_union_mask(
+            frequencies,
+            frequency,
+            half_width,
+            upper,
+        )
+        per_dimension_allowed = np.sum(power[allowed], axis=0)
+        per_dimension_harmonic = np.sum(power[harmonic_mask], axis=0)
+        per_dimension_share = np.divide(
+            per_dimension_harmonic,
+            per_dimension_allowed,
+            out=np.zeros_like(per_dimension_harmonic),
+            where=per_dimension_allowed > _EPSILON,
+        )
+        coherent_dimension_fraction = float(
+            np.mean(per_dimension_share >= protocol.harmonic_band_share_minimum)
+        )
         lag = int(math.floor(1.0 / frequency + 0.5))
         half_lag = max(1, int(math.floor(0.5 / frequency + 0.5)))
         signed_acf = _signed_vector_acf(signal, lag)
@@ -758,7 +803,13 @@ def _frequency_analysis(
             failed.append("insufficient_direct_fundamental_support")
         if harmonic_share < protocol.harmonic_band_share_minimum:
             failed.append("insufficient_harmonic_family_support")
-        if signed_acf < protocol.signed_vector_acf_minimum:
+        if coherent_dimension_fraction < protocol.coherent_dimension_fraction_minimum:
+            failed.append("insufficient_coherent_dimension_fraction")
+        # A full-segment proposal must remain usable under smoothly varying
+        # tempo, for which one exact lag is not expected to correlate.  Its
+        # signed evidence is the frozen positive half-lag contrast.  Local
+        # windows retain the stricter absolute ACF check.
+        if not proposal_mode and signed_acf < protocol.signed_vector_acf_minimum:
             failed.append("signed_vector_acf_below_minimum")
         if contrast < protocol.signed_vector_acf_half_lag_contrast_minimum:
             failed.append("half_lag_contrast_below_minimum")
@@ -769,6 +820,7 @@ def _frequency_analysis(
                 divisor=divisor,
                 direct_to_dominant=direct_ratio,
                 harmonic_band_share=harmonic_share,
+                coherent_dimension_fraction=coherent_dimension_fraction,
                 signed_acf=signed_acf,
                 half_lag_acf=half_acf,
                 acf_contrast=contrast,
@@ -789,13 +841,16 @@ def _frequency_analysis(
             peaks=peaks,
             fundamental_candidates=tuple(diagnostics),
         )
-    selected = min(
+    selected = max(
         trusted,
         key=lambda item: (
-            item.frequency,
-            -item.direct_to_dominant,
-            -item.harmonic_band_share,
-            item.divisor,
+            item.direct_to_dominant
+            * item.harmonic_band_share
+            * item.coherent_dimension_fraction
+            * float(np.clip((item.signed_acf + 1.0) / 2.0, 0.0, 1.0))
+            * float(np.clip(item.acf_contrast / 2.0, 0.0, 1.0)),
+            -item.frequency,
+            -item.divisor,
         ),
     )
     acf_strength = float(np.clip((selected.signed_acf + 1.0) / 2.0, 0.0, 1.0))
@@ -871,10 +926,15 @@ def _build_adaptive_windows(
     segment: AuthorizedSegment,
     window_length: int,
     protocol: FixedProtocolV2,
+    *,
+    hop_divisor: int | None = None,
 ) -> tuple[AdaptiveWindow, ...]:
     if window_length < 2 or window_length > segment.length:
         raise ValueError("adaptive window length must lie within the segment")
-    hop = max(1, window_length // protocol.local_hop_divisor)
+    divisor = protocol.local_hop_divisor if hop_divisor is None else int(hop_divisor)
+    if divisor < 1:
+        raise ValueError("window hop divisor must be positive")
+    hop = max(1, window_length // divisor)
     relative_terminal = segment.length - window_length
     relative_starts = list(range(0, relative_terminal + 1, hop))
     if not relative_starts or relative_starts[-1] != relative_terminal:
@@ -995,6 +1055,30 @@ def _estimate_adaptive_window(
         state="ambiguous",
         interval_rate=None,
         confidence=0.0,
+        reason=analysis.reason,
+        analysis=analysis,
+    )
+
+
+def _estimate_fixed_static_probe(
+    video: RepresentationVideo,
+    window: AdaptiveWindow,
+    candidate: SpectralCandidateV2,
+    protocol: FixedProtocolV2,
+) -> AdaptiveWindowEstimate | None:
+    """Return only proven static support from the frozen 24-frame probe grid."""
+
+    if not window.geometry_authorized:
+        return None
+    features = np.asarray(video.features[window.start : window.stop], dtype=np.float64)
+    analysis = _frequency_analysis(features, candidate, protocol)
+    if analysis.state != "static_zero_rate":
+        return None
+    return AdaptiveWindowEstimate(
+        window=window,
+        state="static_zero_rate",
+        interval_rate=0.0,
+        confidence=1.0,
         reason=analysis.reason,
         analysis=analysis,
     )
@@ -1236,14 +1320,40 @@ def _estimate_segment(
     protocol: FixedProtocolV2,
 ) -> SegmentEstimateV2:
     features = np.asarray(video.features[segment.start : segment.stop], dtype=np.float64)
-    proposal = _frequency_analysis(features, candidate, protocol)
+    proposal = _frequency_analysis(features, candidate, protocol, proposal_mode=True)
     if proposal.state == "ambiguous":
         return _abstaining_segment(segment, proposal, "ambiguous_full_segment_proposal")
     window_length = _adaptive_window_length(segment.length, proposal, candidate, protocol)
     authorities = _build_adaptive_windows(video, segment, window_length, protocol)
-    windows = tuple(
+    primary_windows = tuple(
         _estimate_adaptive_window(video, item, proposal, candidate, protocol)
         for item in authorities
+    )
+    # Static support uses its own frozen 24-frame scale.  It is not selected
+    # from outcomes and cannot contribute a periodic rate.  This is what lets
+    # genuine pauses write zero on their intervals even when the period-derived
+    # window must be longer than the pause itself.
+    static_length = min(segment.length, protocol.static_probe_window_frames)
+    static_authorities = _build_adaptive_windows(
+        video,
+        segment,
+        static_length,
+        protocol,
+        hop_divisor=protocol.static_probe_hop_divisor,
+    )
+    primary_keys = {item.window.key for item in primary_windows}
+    static_windows = tuple(
+        estimate
+        for item in static_authorities
+        if item.key not in primary_keys
+        for estimate in (_estimate_fixed_static_probe(video, item, candidate, protocol),)
+        if estimate is not None
+    )
+    windows = tuple(
+        sorted(
+            primary_windows + static_windows,
+            key=lambda item: (item.window.start, item.window.stop, item.state),
+        )
     )
     rates, static_support = _known_interval_rates(segment, windows)
     duration = segment.length - 1
