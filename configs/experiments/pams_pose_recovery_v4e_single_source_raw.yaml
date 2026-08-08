@@ -48,6 +48,9 @@ pose:
     secondary_shape_weight: 0.25
     secondary_anchor_weight: 0.0
     secondary_action_motion_weight: 9.0
+    action_motion_maximum_center_step: 0.12
+    action_motion_maximum_log_scale_step: 0.12
+    action_motion_maximum_morphology_step: 0.02
     maximum_bridge_gap_seconds: 0.25
     maximum_bridge_gap_frame_cap: 8
     raw_extraction_authorizes_training: false

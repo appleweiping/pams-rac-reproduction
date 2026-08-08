@@ -71,6 +71,9 @@ class AssociationWeights:
     shape: float
     anchor: float
     action_motion: float = 0.0
+    action_motion_maximum_center_step: float = 0.12
+    action_motion_maximum_log_scale_step: float = 0.12
+    action_motion_maximum_morphology_step: float = 0.02
 
     def __post_init__(self) -> None:
         values = (
@@ -84,11 +87,32 @@ class AssociationWeights:
             raise ValueError("association weights must be finite and non-negative")
         if not any(value > 0.0 for value in values):
             raise ValueError("association weights must be non-degenerate")
+        continuity_limits = (
+            self.action_motion_maximum_center_step,
+            self.action_motion_maximum_log_scale_step,
+            self.action_motion_maximum_morphology_step,
+        )
+        if any(
+            not math.isfinite(float(value)) or value < 0.0
+            for value in continuity_limits
+        ):
+            raise ValueError(
+                "action-motion continuity limits must be finite and non-negative"
+            )
 
     def to_dict(self) -> dict[str, float]:
         return {
             "anchor": float(self.anchor),
             "action_motion": float(self.action_motion),
+            "action_motion_maximum_center_step": float(
+                self.action_motion_maximum_center_step
+            ),
+            "action_motion_maximum_log_scale_step": float(
+                self.action_motion_maximum_log_scale_step
+            ),
+            "action_motion_maximum_morphology_step": float(
+                self.action_motion_maximum_morphology_step
+            ),
             "center": float(self.center),
             "log_scale": float(self.log_scale),
             "shape": float(self.shape),
@@ -214,12 +238,11 @@ def load_candidate_evidence_npz(path: str | Path) -> CandidateEvidenceBundle:
                 raise ValueError("candidate lacks reliable torso")
             if int(np.count_nonzero(confident[list(RELIABLE_ACTION_JOINTS)])) < 4:
                 raise ValueError("candidate lacks reliable action joints")
-            expected_visibility = np.zeros(17, dtype=np.float32)
-            expected_visibility[confident] = (
-                1.0
-                / (1.0 + np.exp(-candidate[confident, 4].astype(np.float64)))
-                * box
-            ).astype(np.float32)
+            expected_visibility = canonical_candidate_visibility(
+                candidate[:, 4],
+                box_score=np.float32(box),
+                keypoint_logit_threshold=np.float32(2.0),
+            )
             if not np.array_equal(candidate[:, 3], expected_visibility):
                 raise ValueError("candidate visibility/logit/box channels disagree")
     return CandidateEvidenceBundle(
@@ -327,6 +350,37 @@ def _percentile(values: Sequence[float], quantile: float) -> float | None:
     if not values:
         return None
     return float(np.quantile(np.asarray(values, dtype=np.float64), quantile))
+
+
+def canonical_candidate_visibility(
+    keypoint_logits: NDArray[Any],
+    *,
+    box_score: np.float32,
+    keypoint_logit_threshold: np.float32,
+) -> NDArray[np.float32]:
+    """Derive the stored visibility channel using one exact float32 path."""
+
+    logits = np.asarray(keypoint_logits)
+    if logits.dtype != np.float32 or logits.shape != (17,):
+        raise ValueError("candidate logits must have exact float32 shape [17]")
+    score = np.asarray(box_score)
+    threshold = np.asarray(keypoint_logit_threshold)
+    if score.shape != () or score.dtype != np.float32:
+        raise ValueError("candidate box score must be an exact float32 scalar")
+    if threshold.shape != () or threshold.dtype != np.float32:
+        raise ValueError("candidate logit threshold must be an exact float32 scalar")
+    if not (
+        np.isfinite(logits).all()
+        and np.isfinite(score)
+        and np.isfinite(threshold)
+        and np.float32(0.0) <= score <= np.float32(1.0)
+    ):
+        raise ValueError("candidate visibility inputs are invalid")
+    exponent = np.exp(-np.ascontiguousarray(logits, dtype=np.float32))
+    sigmoid = np.reciprocal(np.float32(1.0) + exponent)
+    visibility = np.multiply(sigmoid, score, dtype=np.float32)
+    visibility[logits <= threshold] = np.float32(0.0)
+    return np.ascontiguousarray(visibility, dtype=np.float32)
 
 
 def canonicalize_raw_detector_frame(
@@ -458,10 +512,11 @@ def canonicalize_raw_detector_frame(
         xy = np.array(canonical_keypoints[index, :, :2], dtype=np.float32, copy=True)
         xy[:, 0] = np.clip(xy[:, 0] / float(image_width), 0.0, 1.0)
         xy[:, 1] = np.clip(xy[:, 1] / float(image_height), 0.0, 1.0)
-        visibility = (
-            1.0 / (1.0 + np.exp(-canonical_logits[index].astype(np.float64)))
-        ).astype(np.float32) * np.float32(box_score)
-        visibility[~confident] = np.float32(0.0)
+        visibility = canonical_candidate_visibility(
+            canonical_logits[index],
+            box_score=np.float32(box_score),
+            keypoint_logit_threshold=np.float32(settings.keypoint_logit_threshold),
+        )
         candidate = np.zeros((17, 6), dtype=np.float32)
         candidate[:, :2] = xy
         candidate[:, 3] = visibility
@@ -789,13 +844,22 @@ def _transition_cost(
     center = float(np.linalg.norm(current_center - previous_center)) / (common_scale * elapsed)
     log_scale = abs(math.log(current_scale / previous_scale)) / elapsed
     shape = 0.0
-    if weights.shape > 0.0:
+    if weights.shape > 0.0 or weights.action_motion > 0.0:
         shape = _candidate_morphology_step(previous, current) / elapsed
-    action_motion = (
-        min(_nonrigid_action_motion(previous, current) / elapsed, 0.25)
-        if weights.action_motion > 0.0
-        else 0.0
+    continuity_supports_motion = (
+        weights.action_motion > 0.0
+        and center <= weights.action_motion_maximum_center_step
+        and log_scale <= weights.action_motion_maximum_log_scale_step
+        and shape <= weights.action_motion_maximum_morphology_step
     )
+    # A raw action difference is not evidence of same-person motion: a jump
+    # between two people can be larger than any articulated movement.  The
+    # motion credit therefore exists only inside a frozen, strict same-track
+    # continuity envelope.  Outside that envelope the edge receives the full
+    # center/scale/morphology switch cost and no motion reward.
+    action_motion = 0.0
+    if continuity_supports_motion:
+        action_motion = min(_nonrigid_action_motion(previous, current) / elapsed, 0.25)
     return (
         weights.center * center
         + weights.log_scale * log_scale
@@ -1554,6 +1618,15 @@ def extract_single_source_video(
         shape=settings.primary_shape_weight,
         anchor=settings.primary_anchor_weight,
         action_motion=settings.primary_action_motion_weight,
+        action_motion_maximum_center_step=(
+            settings.action_motion_maximum_center_step
+        ),
+        action_motion_maximum_log_scale_step=(
+            settings.action_motion_maximum_log_scale_step
+        ),
+        action_motion_maximum_morphology_step=(
+            settings.action_motion_maximum_morphology_step
+        ),
     )
     secondary_weights = AssociationWeights(
         center=settings.secondary_center_weight,
@@ -1561,6 +1634,15 @@ def extract_single_source_video(
         shape=settings.secondary_shape_weight,
         anchor=settings.secondary_anchor_weight,
         action_motion=settings.secondary_action_motion_weight,
+        action_motion_maximum_center_step=(
+            settings.action_motion_maximum_center_step
+        ),
+        action_motion_maximum_log_scale_step=(
+            settings.action_motion_maximum_log_scale_step
+        ),
+        action_motion_maximum_morphology_step=(
+            settings.action_motion_maximum_morphology_step
+        ),
     )
     primary, segments = select_segmented_top2_viterbi_paths(
         candidates,

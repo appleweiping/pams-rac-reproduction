@@ -277,15 +277,21 @@ class KeypointRCNNSingleSourceConfig(StrictModel):
     secondary_shape_weight: Literal[0.25] = 0.25
     secondary_anchor_weight: Literal[0.0] = 0.0
     secondary_action_motion_weight: Literal[9.0] = 9.0
+    # Motion is usable only after this source-only continuity envelope has
+    # excluded cross-person jumps.  These mechanism constants are frozen
+    # before same39/full337 and are not selected from either dataset.
+    action_motion_maximum_center_step: Literal[0.12] = 0.12
+    action_motion_maximum_log_scale_step: Literal[0.12] = 0.12
+    action_motion_maximum_morphology_step: Literal[0.02] = 0.02
     # This physical-time rule predates any full337 v4e observation.  The
     # effective association bridge is min(cap, floor(seconds * fps)); a zero
     # result is valid and means that no missing frame may be bridged.
     maximum_bridge_gap_seconds: Literal[0.25] = 0.25
     maximum_bridge_gap_frame_cap: Literal[8] = 8
     global_track_strategy: Literal[
-        "top2-viterbi-dominance-center-scale-torso-morphology-action-motion-segmented-v2"
+        "top2-viterbi-dominance-continuity-gated-action-motion-segmented-v3"
     ] = (
-        "top2-viterbi-dominance-center-scale-torso-morphology-action-motion-segmented-v2"
+        "top2-viterbi-dominance-continuity-gated-action-motion-segmented-v3"
     )
     second_path_policy: Literal["independent-frozen-weight-viterbi-v1"] = (
         "independent-frozen-weight-viterbi-v1"

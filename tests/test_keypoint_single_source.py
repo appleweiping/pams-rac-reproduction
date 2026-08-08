@@ -14,11 +14,12 @@ from pams.keypoint_single_source import (
     body_centered_uniform_scale_xy,
     build_single_source_sequence,
     candidate_evidence_bundle,
+    canonical_candidate_visibility,
     canonicalize_raw_detector_frame,
     coco17_xy_to_padded_pose,
     effective_maximum_bridge_gap_frames,
-    local_ambiguity_gaps,
     load_candidate_evidence_npz,
+    local_ambiguity_gaps,
     select_top2_viterbi_paths,
     similarity_procrustes_residual,
     write_candidate_evidence_npz,
@@ -54,7 +55,11 @@ def _raw_candidate(xy: np.ndarray, *, box_score: float = 0.9) -> np.ndarray:
     value[:, :2] = xy
     value[:, 4] = 3.0
     value[:, 5] = box_score
-    value[:, 3] = np.float32(1.0 / (1.0 + np.exp(-3.0)) * box_score)
+    value[:, 3] = canonical_candidate_visibility(
+        value[:, 4],
+        box_score=np.float32(box_score),
+        keypoint_logit_threshold=np.float32(2.0),
+    )
     return value
 
 
@@ -86,6 +91,9 @@ def test_v4e_config_is_single_source_and_raw_non_authoritative() -> None:
     assert settings.minimum_confident_action_keypoints == 4
     assert settings.primary_action_motion_weight == 12.0
     assert settings.secondary_action_motion_weight == 9.0
+    assert settings.action_motion_maximum_center_step == 0.12
+    assert settings.action_motion_maximum_log_scale_step == 0.12
+    assert settings.action_motion_maximum_morphology_step == 0.02
     assert config.data.normalization == "body_centered_uniform_scale"
 
 
