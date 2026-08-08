@@ -33,30 +33,29 @@ from pams.keypoint_single_source import (
     _local_ambiguity_gap_rows,
     assess_track_stability,
     build_single_source_sequence,
+    candidate_evidence_bundle,
+    canonicalize_raw_detector_frame,
     effective_maximum_bridge_gap_frames,
     reconstruct_canonical_frame_evidence,
     select_segmented_top2_viterbi_paths,
 )
+from pams.v4e_synthetic_contract import (
+    SYNTHETIC_DIAGNOSTIC_FAMILIES,
+    SYNTHETIC_IDENTITY_NULL_FAMILIES,
+    SYNTHETIC_JOINT_NULL_FAMILIES,
+    SYNTHETIC_POSITIVE_FAMILIES,
+    SYNTHETIC_SAMPLES_PER_FAMILY,
+    frozen_synthetic_seeds,
+)
 
-POSITIVE_FAMILIES = (
-    "clean_known_identity",
-    "short_occlusion_random30pct_joints_for20pct_time",
-    "inplane_affine_rotation15_scale15_translation10pct",
-)
-IDENTITY_NULL_FAMILIES = (
-    "crossing_with_identity_swap",
-    "explicit_candidate_identity_swap",
-    "long_gap_with_identity_change",
-)
-JOINT_NULL_FAMILIES = (
-    "periodic_joint_mask_flicker",
-    "torso_only_without_action_joints",
-    "alternating_limb_dropout_without_stable_window_support",
-)
-DIAGNOSTIC_FAMILIES = (
-    "fast_motion_with_large_static_bystander_period_must_be_unsupported",
-)
-SAMPLES_PER_FAMILY = 512
+POSITIVE_FAMILIES = SYNTHETIC_POSITIVE_FAMILIES
+IDENTITY_NULL_FAMILIES = SYNTHETIC_IDENTITY_NULL_FAMILIES
+JOINT_NULL_FAMILIES = SYNTHETIC_JOINT_NULL_FAMILIES
+DIAGNOSTIC_FAMILIES = SYNTHETIC_DIAGNOSTIC_FAMILIES
+SAMPLES_PER_FAMILY = SYNTHETIC_SAMPLES_PER_FAMILY
+# Deliberately empty in the science-core commit. A later secure-launch commit
+# must replace this with an independently inspected, source-bound authority.
+APPROVED_SYNTHETIC_SECURE_LAUNCH_AUTHORITY_SHA256 = ""
 
 
 def _object(path: Path, role: str) -> Mapping[str, Any]:
@@ -68,9 +67,23 @@ def _object(path: Path, role: str) -> Mapping[str, Any]:
 def _seed_manifest(path: Path, *, split: str) -> tuple[int, ...]:
     value = _object(path, f"{split} seed manifest")
     require(
-        value.get("artifact_type")
+        set(value)
+        == {
+            "schema_version",
+            "artifact_type",
+            "split",
+            "sample_total",
+            "seeds",
+            "real_data_observed",
+            "label_free",
+        }
+        and value.get("schema_version") == 1
+        and value.get("artifact_type")
         == "pams_pose_recovery_v4e_synthetic_seed_manifest_v1"
-        and value.get("split") == split,
+        and value.get("split") == split
+        and value.get("sample_total") == SAMPLES_PER_FAMILY
+        and value.get("real_data_observed") is False
+        and value.get("label_free") is True,
         f"{split} seed manifest schema mismatch",
     )
     seeds = value.get("seeds")
@@ -80,6 +93,10 @@ def _seed_manifest(path: Path, *, split: str) -> tuple[int, ...]:
         and len(set(seeds)) == SAMPLES_PER_FAMILY
         and all(isinstance(seed, int) and 0 <= seed < 2**63 for seed in seeds),
         f"{split} seed manifest must contain 512 unique uint63 values",
+    )
+    require(
+        seeds == frozen_synthetic_seeds(split),
+        f"{split} seed manifest differs from frozen derivation",
     )
     return tuple(int(seed) for seed in seeds)
 
@@ -101,14 +118,33 @@ _BASE_SHAPE = np.asarray(
 )
 
 
-def _candidate(
-    *, center: tuple[float, float], scale: float, phase: float, mask: np.ndarray,
-    box_score: float, affine: tuple[float, float, float, float] | None = None,
-) -> np.ndarray:
+def _person_raw_channels(
+    *,
+    center: tuple[float, float],
+    scale: float,
+    phase: float,
+    mask: np.ndarray,
+    box_score: float,
+    morphology: str,
+    affine: tuple[float, float, float, float] | None = None,
+    detector_jitter_amplitude: float = 0.0,
+    articulated_motion_amplitude: float = 0.06,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+    """Generate raw detector channels before any production filter."""
+
     shape = np.array(_BASE_SHAPE, copy=True)
-    motion = np.float32(0.06 * np.sin(phase))
+    if morphology == "B":
+        shape[[5, 11], 0] -= np.asarray([0.045, -0.018], dtype=np.float32)
+        shape[[6, 12], 0] += np.asarray([0.045, -0.018], dtype=np.float32)
+        shape[[0, 1, 2, 3, 4], 1] -= np.float32(0.025)
+    elif morphology != "A":
+        raise ValueError("unknown synthetic morphology")
+    motion = np.float32(articulated_motion_amplitude * np.sin(phase))
     shape[[9, 10], 1] += np.asarray([motion, -motion], dtype=np.float32)
     shape[[15, 16], 0] += np.asarray([-motion, motion], dtype=np.float32)
+    if detector_jitter_amplitude:
+        jitter = np.float32(detector_jitter_amplitude * np.sin(phase))
+        shape[list(RELIABLE_ACTION_JOINTS), 0] += jitter
     xy = np.asarray(center, dtype=np.float32) + np.float32(scale) * shape
     if affine is not None:
         angle_degrees, affine_scale, shift_x, shift_y = affine
@@ -119,21 +155,51 @@ def _candidate(
         )
         xy = (xy - 0.5) @ rotation * np.float32(affine_scale) + 0.5
         xy += np.asarray([shift_x, shift_y], dtype=np.float32)
-    xy = np.clip(xy, 0.0, 1.0).astype(np.float32)
     logits = np.where(mask, np.float32(3.0), np.float32(0.0))
-    visibility = np.zeros(17, dtype=np.float32)
-    visibility[mask] = np.float32(1.0 / (1.0 + np.exp(-3.0)) * box_score)
-    value = np.zeros((17, 6), dtype=np.float32)
-    value[:, :2] = xy
-    value[:, 3] = visibility
-    value[:, 4] = logits
-    value[:, 5] = np.float32(box_score)
-    return value
+    keypoints = np.zeros((17, 3), dtype=np.float32)
+    keypoints[:, :2] = xy * np.float32(1000.0)
+    keypoints[:, 2] = np.float32(1.0)
+    minimum = np.min(keypoints[:, :2], axis=0)
+    maximum = np.max(keypoints[:, :2], axis=0)
+    box = np.asarray([minimum[0], minimum[1], maximum[0], maximum[1]], dtype=np.float32)
+    return keypoints, logits, box, float(box_score)
 
 
-def _synthetic_candidates(
+def _raw_frame(
+    people: Sequence[tuple[str, tuple[np.ndarray, np.ndarray, np.ndarray, float]]],
+) -> tuple[dict[str, np.ndarray], tuple[str, ...]]:
+    if not people:
+        return (
+            {
+                "labels": np.empty(0, dtype=np.int64),
+                "scores": np.empty(0, dtype=np.float32),
+                "boxes": np.empty((0, 4), dtype=np.float32),
+                "keypoints": np.empty((0, 17, 3), dtype=np.float32),
+                "keypoint_logits": np.empty((0, 17), dtype=np.float32),
+            },
+            (),
+        )
+    identities = tuple(identity for identity, _ in people)
+    channels = tuple(value for _, value in people)
+    return (
+        {
+            "labels": np.ones(len(channels), dtype=np.int64),
+            "scores": np.asarray([value[3] for value in channels], dtype=np.float32),
+            "boxes": np.stack([value[2] for value in channels], axis=0).astype(np.float32),
+            "keypoints": np.stack([value[0] for value in channels], axis=0).astype(
+                np.float32
+            ),
+            "keypoint_logits": np.stack([value[1] for value in channels], axis=0).astype(
+                np.float32
+            ),
+        },
+        identities,
+    )
+
+
+def _synthetic_raw_outputs(
     family: str, seed: int,
-) -> tuple[list[np.ndarray | None], list[tuple[str, ...]], str]:
+) -> tuple[list[dict[str, np.ndarray]], list[tuple[str, ...]], str]:
     rng = np.random.default_rng(seed)
     frames = 256 if family == "short_occlusion_random30pct_joints_for20pct_time" else 96
     phase_offset = float(rng.uniform(-np.pi, np.pi))
@@ -144,7 +210,7 @@ def _synthetic_candidates(
     target_scale = float(rng.uniform(0.68, 0.75))
     distractor_scale = float(rng.uniform(0.31, 0.37))
     full_mask = np.ones(17, dtype=np.bool_)
-    candidates: list[np.ndarray | None] = []
+    raw_outputs: list[dict[str, np.ndarray]] = []
     truth_rows: list[tuple[str, ...]] = []
     affine = None
     if family == "inplane_affine_rotation15_scale15_translation10pct":
@@ -166,7 +232,6 @@ def _synthetic_candidates(
     gap_start = 36 + int(seed % 9)
     gap_stop = gap_start + 16
     crossing_edge = float(rng.uniform(0.25, 0.30))
-    explicit_separation = float(rng.uniform(0.14, 0.18))
 
     for frame in range(frames):
         phase = 2.0 * np.pi * frame / 16.0 + phase_offset
@@ -182,6 +247,10 @@ def _synthetic_candidates(
                 if frame % 2 == 0
                 else [2, 3, 4, 13, 14, 15, 16]
             ] = True
+        if family == "low_amplitude_periodic_mask_flicker":
+            action = list(RELIABLE_ACTION_JOINTS)
+            for offset in range(3):
+                mask_a[action[(frame + offset) % len(action)]] = False
         if family == "torso_only_without_action_joints":
             mask_a[:] = False
             mask_a[[5, 6, 11, 12]] = True
@@ -189,69 +258,173 @@ def _synthetic_candidates(
             mask_a[list(RELIABLE_ACTION_JOINTS)] = False
             mask_a[[7, 8, 9, 10] if frame % 2 == 0 else [13, 14, 15, 16]] = True
 
+        bridge_gap = max(1, min(6, int(seed % 6) + 1))
         if family == "long_gap_with_identity_change" and gap_start <= frame < gap_stop:
-            candidates.append(None)
-            truth_rows.append(())
+            raw, truth = _raw_frame(())
+            raw_outputs.append(raw)
+            truth_rows.append(truth)
             continue
-        if family in {"crossing_with_identity_swap", "explicit_candidate_identity_swap"}:
-            if family == "crossing_with_identity_swap":
-                progress = frame / (frames - 1)
-                centers = (
-                    (
-                        crossing_edge + (1.0 - 2.0 * crossing_edge) * progress,
-                        target_center[1],
-                    ),
-                    (
-                        1.0 - crossing_edge - (1.0 - 2.0 * crossing_edge) * progress,
-                        target_center[1],
-                    ),
-                )
-            else:
-                centers = (
-                    (target_center[0] - explicit_separation, target_center[1]),
-                    (target_center[0] + explicit_separation, target_center[1]),
-                )
-            frame_candidates = np.stack(
+        if family == "near_size_crossing_with_identity_swap_risk":
+            progress = frame / (frames - 1)
+            centers = (
                 (
-                    _candidate(center=centers[0], scale=0.65, phase=0.0, mask=mask_a, box_score=0.9),
-                    _candidate(center=centers[1], scale=0.65, phase=0.0, mask=mask_b, box_score=0.9),
+                    crossing_edge + (1.0 - 2.0 * crossing_edge) * progress,
+                    target_center[1],
                 ),
-                axis=0,
+                (
+                    1.0 - crossing_edge - (1.0 - 2.0 * crossing_edge) * progress,
+                    target_center[1] + 0.005,
+                ),
             )
-            swap_frame = (
-                2 * frames // 3 + int(seed % 5) - 2
-                if family == "crossing_with_identity_swap"
-                else frames // 2 + int(seed % 7) - 3
+            raw, truth = _raw_frame(
+                (
+                    (
+                        "A",
+                        _person_raw_channels(
+                            center=centers[0], scale=0.66, phase=phase,
+                            mask=mask_a, box_score=0.90, morphology="A",
+                        ),
+                    ),
+                    (
+                        "B",
+                        _person_raw_channels(
+                            center=centers[1], scale=0.65, phase=phase + 1.2,
+                            mask=mask_b, box_score=0.90, morphology="B",
+                        ),
+                    ),
+                )
             )
-            swapped = frame >= swap_frame
-            truth = ("B", "A") if swapped else ("A", "B")
+        elif family == "explicit_candidate_identity_swap":
+            swap_frame = frames // 2 + int(seed % 7) - 3
+            identity = "A" if frame < swap_frame else "B"
+            raw, truth = _raw_frame(
+                (
+                    (
+                        identity,
+                        _person_raw_channels(
+                            center=target_center,
+                            scale=0.68,
+                            phase=phase if identity == "A" else phase + 1.2,
+                            mask=mask_a,
+                            box_score=0.90,
+                            morphology=identity,
+                        ),
+                    ),
+                )
+            )
         elif family == "long_gap_with_identity_change":
-            frame_candidates = np.stack(
-                (_candidate(center=target_center, scale=target_scale, phase=phase, mask=mask_a, box_score=0.9),),
-                axis=0,
+            identity = "A" if frame < gap_start else "B"
+            raw, truth = _raw_frame(
+                ((
+                    identity,
+                    _person_raw_channels(
+                        center=target_center, scale=target_scale,
+                        phase=phase if identity == "A" else phase + 1.2,
+                        mask=mask_a, box_score=0.90, morphology=identity,
+                    ),
+                ),)
             )
-            truth = ("A" if frame < gap_start else "B",)
-        elif family == "fast_motion_with_large_static_bystander_period_must_be_unsupported":
-            frame_candidates = np.stack(
+        elif family == "short_bridge_range_identity_change":
+            bridge_start = frames // 2
+            if bridge_start <= frame < bridge_start + bridge_gap:
+                raw, truth = _raw_frame(())
+            else:
+                identity = "A" if frame < bridge_start else "B"
+                raw, truth = _raw_frame(
+                    ((
+                        identity,
+                        _person_raw_channels(
+                            center=target_center, scale=target_scale,
+                            phase=phase if identity == "A" else phase + 1.2,
+                            mask=mask_a, box_score=0.90, morphology=identity,
+                        ),
+                    ),)
+                )
+        elif family == "fast_motion_actor_with_large_static_bystander":
+            raw, truth = _raw_frame(
                 (
-                    _candidate(center=(0.30 + 0.003 * frame, 0.50), scale=0.48, phase=phase, mask=mask_a, box_score=0.9),
-                    _candidate(center=(0.68, 0.50), scale=0.78, phase=0.0, mask=mask_b, box_score=0.9),
-                ),
-                axis=0,
+                    (
+                        "A",
+                        _person_raw_channels(
+                            center=(0.30 + 0.0025 * frame, 0.50), scale=0.62,
+                            phase=phase, mask=mask_a, box_score=0.94, morphology="A",
+                        ),
+                    ),
+                    (
+                        "B",
+                        _person_raw_channels(
+                            center=(0.70, 0.50), scale=0.80, phase=0.0,
+                            mask=mask_b, box_score=0.90, morphology="B",
+                        ),
+                    ),
+                )
             )
-            truth = ("A", "B")
         else:
-            frame_candidates = np.stack(
-                (
-                    _candidate(center=target_center, scale=target_scale, phase=phase, mask=mask_a, box_score=0.9, affine=affine),
-                    _candidate(center=(0.78, target_center[1]), scale=distractor_scale, phase=0.0, mask=mask_b, box_score=0.95, affine=affine),
-                ),
-                axis=0,
+            jitter = (
+                0.001
+                if family == "periodic_detector_jitter_below_usable_motion"
+                else 0.0
             )
-            truth = ("A", "B")
-        candidates.append(np.ascontiguousarray(frame_candidates, dtype=np.float32))
+            raw, truth = _raw_frame(
+                (
+                    (
+                        "A",
+                        _person_raw_channels(
+                            center=target_center, scale=target_scale,
+                            phase=phase, mask=mask_a, box_score=0.94,
+                            morphology="A", affine=affine,
+                            detector_jitter_amplitude=jitter,
+                            articulated_motion_amplitude=(0.0 if jitter else 0.06),
+                        ),
+                    ),
+                    (
+                        "B",
+                        _person_raw_channels(
+                            center=(0.78, target_center[1]), scale=distractor_scale,
+                            phase=0.0, mask=mask_b, box_score=0.95,
+                            morphology="B", affine=affine,
+                        ),
+                    ),
+                )
+            )
+        raw_outputs.append(raw)
         truth_rows.append(truth)
-    return candidates, truth_rows, "A"
+    return raw_outputs, truth_rows, "A"
+
+
+def _canonicalize_synthetic_frames(
+    raw_outputs: Sequence[Mapping[str, np.ndarray]],
+    truth_rows: Sequence[tuple[str, ...]],
+    *,
+    settings: KeypointRCNNSingleSourceConfig,
+) -> tuple[
+    list[np.ndarray | None],
+    list[tuple[str, ...]],
+    list[dict[str, int]],
+    tuple[str, ...],
+]:
+    candidates: list[np.ndarray | None] = []
+    canonical_truth: list[tuple[str, ...]] = []
+    diagnostics: list[dict[str, int]] = []
+    canonical_digests: list[str] = []
+    for raw, truth in zip(raw_outputs, truth_rows, strict=True):
+        canonical = canonicalize_raw_detector_frame(
+            labels=raw["labels"],
+            scores=raw["scores"],
+            boxes=raw["boxes"],
+            keypoints=raw["keypoints"],
+            keypoint_logits=raw["keypoint_logits"],
+            image_width=1000,
+            image_height=1000,
+            settings=settings,
+        )
+        candidates.append(canonical.top_candidates)
+        canonical_truth.append(
+            tuple(truth[index] for index in canonical.canonical_source_indices[:4])
+        )
+        diagnostics.append(dict(canonical.diagnostics))
+        canonical_digests.append(canonical.canonical_eligible_sha256)
+    return candidates, canonical_truth, diagnostics, tuple(canonical_digests)
 
 
 def _period_supported(xyz: np.ndarray, valid_mask: np.ndarray) -> bool:
@@ -274,17 +447,29 @@ def _period_supported(xyz: np.ndarray, valid_mask: np.ndarray) -> bool:
 
 
 def _run_mechanics(
-    *, family: str, seed: int, candidates: Sequence[np.ndarray | None],
-    truth_rows: Sequence[tuple[str, ...]], settings: KeypointRCNNSingleSourceConfig,
+    *,
+    family: str,
+    seed: int,
+    candidates: Sequence[np.ndarray | None],
+    truth_rows: Sequence[tuple[str, ...]],
+    detector_diagnostics: Sequence[Mapping[str, int]],
+    canonical_filter_digests: Sequence[str],
+    settings: KeypointRCNNSingleSourceConfig,
 ) -> dict[str, Any]:
     no_anchors = tuple(None for _ in candidates)
     primary_weights = AssociationWeights(
-        settings.primary_center_weight, settings.primary_log_scale_weight,
-        settings.primary_shape_weight, settings.primary_anchor_weight,
+        center=settings.primary_center_weight,
+        log_scale=settings.primary_log_scale_weight,
+        shape=settings.primary_shape_weight,
+        anchor=settings.primary_anchor_weight,
+        action_motion=settings.primary_action_motion_weight,
     )
     secondary_weights = AssociationWeights(
-        settings.secondary_center_weight, settings.secondary_log_scale_weight,
-        settings.secondary_shape_weight, settings.secondary_anchor_weight,
+        center=settings.secondary_center_weight,
+        log_scale=settings.secondary_log_scale_weight,
+        shape=settings.secondary_shape_weight,
+        anchor=settings.secondary_anchor_weight,
+        action_motion=settings.secondary_action_motion_weight,
     )
     maximum_gap = effective_maximum_bridge_gap_frames(
         fps=25.0,
@@ -320,22 +505,11 @@ def _run_mechanics(
         video_id=video_id, fps=25.0, source_frames=len(candidates),
         decoded_frames=len(candidates), candidates=candidates, primary_path=primary,
     )
-    diagnostics = [
-        None
-        if frame is None
-        else {
-            "detector_output_total": len(frame), "rejected_non_person": 0,
-            "rejected_low_box_score": 0, "rejected_low_total_joint_support": 0,
-            "rejected_low_action_joint_support": 0, "rejected_unreliable_torso": 0,
-            "eligible_before_top4": len(frame), "dropped_by_top4": 0,
-        }
-        for frame in candidates
-    ]
     frame_evidence = reconstruct_canonical_frame_evidence(
         candidates=candidates, primary=primary, secondary=secondary,
         association_segments=segments, sequence=sequence,
         ambiguity_by_frame=ambiguity, maximum_bridge_gap_frames=maximum_gap,
-        detector_diagnostics=diagnostics,
+        detector_diagnostics=detector_diagnostics,
         keypoint_logit_threshold=settings.keypoint_logit_threshold,
     )
     comparable = [
@@ -354,6 +528,7 @@ def _run_mechanics(
         None if selected is None else truth_rows[index][int(selected)]
         for index, selected in enumerate(primary.selected_indices)
     )
+    candidate_bundle = candidate_evidence_bundle(candidates)
     audit = {
         "video_id_sha256": digest,
         "video_evidence_sha256": hashlib.sha256(
@@ -362,6 +537,13 @@ def _run_mechanics(
         "source_frames": len(candidates),
         "dual_path_agreement": float(agreement),
         "frame_evidence": frame_evidence,
+        "canonical_filter_digest_sha256": hashlib.sha256(
+            "".join(canonical_filter_digests).encode()
+        ).hexdigest(),
+        "canonical_candidate_bundle_sha256": hashlib.sha256(
+            candidate_bundle.frame_offsets.tobytes(order="C")
+            + candidate_bundle.candidates.tobytes(order="C")
+        ).hexdigest(),
     }
     return {
         "audit": audit,
@@ -375,12 +557,30 @@ def _run_mechanics(
 def _fixture(
     family: str, seed: int, settings: KeypointRCNNSingleSourceConfig,
 ) -> tuple[dict[str, Any], bool, bool]:
-    candidates, truths, target = _synthetic_candidates(family, seed)
+    raw_outputs, raw_truths, target = _synthetic_raw_outputs(family, seed)
+    candidates, truths, diagnostics, canonical_digests = _canonicalize_synthetic_frames(
+        raw_outputs, raw_truths, settings=settings
+    )
     first = _run_mechanics(
-        family=family, seed=seed, candidates=candidates, truth_rows=truths, settings=settings
+        family=family,
+        seed=seed,
+        candidates=candidates,
+        truth_rows=truths,
+        detector_diagnostics=diagnostics,
+        canonical_filter_digests=canonical_digests,
+        settings=settings,
+    )
+    repeat_candidates, repeat_truths, repeat_diagnostics, repeat_digests = (
+        _canonicalize_synthetic_frames(raw_outputs, raw_truths, settings=settings)
     )
     repeat = _run_mechanics(
-        family=family, seed=seed, candidates=candidates, truth_rows=truths, settings=settings
+        family=family,
+        seed=seed,
+        candidates=repeat_candidates,
+        truth_rows=repeat_truths,
+        detector_diagnostics=repeat_diagnostics,
+        canonical_filter_digests=repeat_digests,
+        settings=settings,
     )
     determinism_failure = not (
         first["audit"] == repeat["audit"]
@@ -389,24 +589,39 @@ def _fixture(
         and first["selected_truth"] == repeat["selected_truth"]
     )
     rng = np.random.default_rng(seed ^ 0x5A17)
-    permuted_candidates: list[np.ndarray | None] = []
-    permuted_truths: list[tuple[str, ...]] = []
-    for frame, truth in zip(candidates, truths, strict=True):
-        if frame is None:
-            permuted_candidates.append(None)
-            permuted_truths.append(())
-            continue
-        order = rng.permutation(len(frame))
-        permuted_candidates.append(np.ascontiguousarray(frame[order], dtype=np.float32))
-        permuted_truths.append(tuple(truth[int(index)] for index in order))
+    permuted_raw_outputs: list[dict[str, np.ndarray]] = []
+    permuted_raw_truths: list[tuple[str, ...]] = []
+    for raw, truth in zip(raw_outputs, raw_truths, strict=True):
+        order = rng.permutation(len(raw["labels"]))
+        permuted_raw_outputs.append(
+            {
+                key: np.ascontiguousarray(value[order])
+                for key, value in raw.items()
+            }
+        )
+        permuted_raw_truths.append(tuple(truth[int(index)] for index in order))
+    (
+        permuted_candidates,
+        permuted_truths,
+        permuted_diagnostics,
+        permuted_digests,
+    ) = _canonicalize_synthetic_frames(
+        permuted_raw_outputs, permuted_raw_truths, settings=settings
+    )
     permuted = _run_mechanics(
-        family=family, seed=seed, candidates=permuted_candidates,
-        truth_rows=permuted_truths, settings=settings,
+        family=family,
+        seed=seed,
+        candidates=permuted_candidates,
+        truth_rows=permuted_truths,
+        detector_diagnostics=permuted_diagnostics,
+        canonical_filter_digests=permuted_digests,
+        settings=settings,
     )
     permutation_failure = not (
         np.array_equal(first["sequence_xyz"], permuted["sequence_xyz"])
         and np.array_equal(first["sequence_valid_mask"], permuted["sequence_valid_mask"])
         and first["selected_truth"] == permuted["selected_truth"]
+        and first["audit"] == permuted["audit"]
     )
     first["permuted_audit"] = permuted["audit"]
     selected = {value for value in first["selected_truth"] if value is not None}
@@ -432,6 +647,10 @@ def produce_synthetic_evidence(
     registry_reservation_path: Path,
     output_path: Path,
 ) -> dict[str, Any]:
+    require(
+        len(APPROVED_SYNTHETIC_SECURE_LAUNCH_AUTHORITY_SHA256) == 64,
+        "v4e synthetic production is disabled pending monotonic secure authority",
+    )
     require(sha256_file(reservation_path) == expected_reservation_sha256, "reservation SHA mismatch")
     reservation = _object(reservation_path, "synthetic reservation")
     require(
@@ -620,10 +839,13 @@ def produce_synthetic_evidence(
         "diagnostic_families": list(DIAGNOSTIC_FAMILIES),
         "rows": rows,
         "mechanics_chain": (
-            "synthetic-coco17-candidates-to-dual-viterbi-to-canonical-frame-evidence-"
-            "to-body-centered-cache-to-track-stability-v1"
+            "synthetic-raw-kprcnn-channels-to-shared-production-filter-canonical-sort-"
+            "to-dual-viterbi-to-canonical-frame-evidence-to-body-centered-cache-"
+            "to-track-stability-and-usable-action-motion-v2"
         ),
-        "truth_role": "synthetic-identity-retention-and-false-eligible-scoring-only",
+        "truth_role": (
+            "synthetic-actor-retention-track-stability-and-false-eligible-scoring-only"
+        ),
         "period_invariance_checked": True,
         "candidate_order_permutation_checked": True,
         "bindings": dict(bindings),

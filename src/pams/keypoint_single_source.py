@@ -47,6 +47,7 @@ V4E_REPRESENTATION_DETAIL = {
 RELIABLE_VISIBILITY_MINIMUM = 0.1
 RELIABLE_TORSO_JOINTS = (5, 6, 11, 12)
 RELIABLE_ACTION_JOINTS = (7, 8, 9, 10, 13, 14, 15, 16)
+ACTION_PARENT_JOINT = {7: 5, 8: 6, 9: 7, 10: 8, 13: 11, 14: 12, 15: 13, 16: 14}
 MINIMUM_RELIABLE_JOINTS = 4
 CYCLEBACK_PAIR_VARIANTS: dict[str, tuple[int, int]] = {
     "W16_H2": (16, 2),
@@ -69,9 +70,16 @@ class AssociationWeights:
     log_scale: float
     shape: float
     anchor: float
+    action_motion: float = 0.0
 
     def __post_init__(self) -> None:
-        values = (self.center, self.log_scale, self.shape, self.anchor)
+        values = (
+            self.center,
+            self.log_scale,
+            self.shape,
+            self.anchor,
+            self.action_motion,
+        )
         if any(not math.isfinite(float(value)) or value < 0.0 for value in values):
             raise ValueError("association weights must be finite and non-negative")
         if not any(value > 0.0 for value in values):
@@ -80,6 +88,7 @@ class AssociationWeights:
     def to_dict(self) -> dict[str, float]:
         return {
             "anchor": float(self.anchor),
+            "action_motion": float(self.action_motion),
             "center": float(self.center),
             "log_scale": float(self.log_scale),
             "shape": float(self.shape),
@@ -109,6 +118,18 @@ class CandidateEvidenceBundle:
 
     frame_offsets: NDArray[np.int64]
     candidates: NDArray[np.float32]
+
+
+@dataclass(frozen=True, slots=True)
+class CanonicalDetectorFrame:
+    """Pure raw-detector filtering and canonical ordering result for one frame."""
+
+    top_candidates: NDArray[np.float32] | None
+    all_eligible_candidates: NDArray[np.float32] | None
+    canonical_source_indices: tuple[int, ...]
+    diagnostics: dict[str, int]
+    raw_output_sha256: str
+    canonical_eligible_sha256: str
 
 
 def candidate_evidence_bundle(
@@ -220,6 +241,7 @@ class TrackStabilityThresholds:
     minimum_dual_path_agreement: float
     maximum_frame_center_step: float
     maximum_frame_log_scale_step: float
+    maximum_frame_morphology_step: float
     maximum_frame_joint_mask_flicker_fraction: float
     minimum_source_coverage: float
     minimum_longest_trainable_segment_frames: int
@@ -227,6 +249,7 @@ class TrackStabilityThresholds:
     maximum_candidate_window_frames: int
     minimum_window_joint_support_fraction: float
     minimum_window_stable_action_joints: int
+    minimum_window_action_motion: float
 
     def __post_init__(self) -> None:
         bounded = (
@@ -240,9 +263,18 @@ class TrackStabilityThresholds:
             raise ValueError("track-stability fractions must be in [0,1]")
         if any(
             not math.isfinite(float(value)) or value < 0.0
-            for value in (self.maximum_frame_center_step, self.maximum_frame_log_scale_step)
+            for value in (
+                self.maximum_frame_center_step,
+                self.maximum_frame_log_scale_step,
+                self.maximum_frame_morphology_step,
+            )
         ):
             raise ValueError("track continuity thresholds must be finite and non-negative")
+        if (
+            not math.isfinite(float(self.minimum_window_action_motion))
+            or self.minimum_window_action_motion < 0.0
+        ):
+            raise ValueError("minimum window action motion must be finite and non-negative")
         if (
             not math.isfinite(float(self.minimum_frame_local_ambiguity_gap))
             or self.minimum_frame_local_ambiguity_gap < 0.0
@@ -297,6 +329,175 @@ def _percentile(values: Sequence[float], quantile: float) -> float | None:
     return float(np.quantile(np.asarray(values, dtype=np.float64), quantile))
 
 
+def canonicalize_raw_detector_frame(
+    *,
+    labels: NDArray[Any],
+    scores: NDArray[Any],
+    boxes: NDArray[Any],
+    keypoints: NDArray[Any],
+    keypoint_logits: NDArray[Any],
+    image_width: int,
+    image_height: int,
+    settings: KeypointRCNNSingleSourceConfig,
+) -> CanonicalDetectorFrame:
+    """Filter one raw KPRCNN frame and sort eligible candidates canonically.
+
+    This is the single production/synthetic path from raw model channels to
+    normalized COCO-17 candidates. Raw detector order is never a tie-breaker:
+    eligible rows are ordered by descending box score and then by the digest
+    of their complete canonical candidate bytes.
+    """
+
+    if image_width < 1 or image_height < 1:
+        raise ValueError("detector frame dimensions must be positive")
+    raw_labels = np.asarray(labels)
+    raw_scores = np.asarray(scores)
+    raw_boxes = np.asarray(boxes)
+    raw_keypoints = np.asarray(keypoints)
+    raw_logits = np.asarray(keypoint_logits)
+    if raw_labels.dtype != np.int64:
+        raise ValueError("raw detector labels must be exact int64")
+    if any(
+        array.dtype != np.float32
+        for array in (raw_scores, raw_boxes, raw_keypoints, raw_logits)
+    ):
+        raise ValueError("raw detector floating channels must be exact float32")
+    canonical_labels = np.ascontiguousarray(raw_labels, dtype=np.int64)
+    canonical_scores = np.ascontiguousarray(raw_scores, dtype=np.float32)
+    canonical_boxes = np.ascontiguousarray(raw_boxes, dtype=np.float32)
+    canonical_keypoints = np.ascontiguousarray(raw_keypoints, dtype=np.float32)
+    canonical_logits = np.ascontiguousarray(raw_logits, dtype=np.float32)
+    count = len(canonical_labels) if canonical_labels.ndim == 1 else -1
+    if (
+        canonical_labels.ndim != 1
+        or canonical_scores.shape != (count,)
+        or canonical_boxes.shape != (count, 4)
+        or canonical_keypoints.shape != (count, 17, 3)
+        or canonical_logits.shape != (count, 17)
+    ):
+        raise ValueError("raw detector output shape mismatch")
+    if count > settings.box_detections_per_image:
+        raise ValueError("raw detector output exceeds frozen top100 contract")
+    if not (
+        np.isfinite(canonical_scores).all()
+        and np.isfinite(canonical_boxes).all()
+        and np.isfinite(canonical_keypoints).all()
+        and np.isfinite(canonical_logits).all()
+    ):
+        raise ValueError("raw detector output contains non-finite values")
+    if np.any(canonical_scores < 0.0) or np.any(canonical_scores > 1.0):
+        raise ValueError("raw detector box scores are outside [0,1]")
+    if len(canonical_boxes) and np.any(canonical_boxes[:, 2:] < canonical_boxes[:, :2]):
+        raise ValueError("raw detector box corners are inverted")
+
+    raw_digest = hashlib.sha256()
+    raw_digest.update(np.asarray([image_width, image_height], dtype="<i8").tobytes())
+    for array in (
+        canonical_labels.astype("<i8", copy=False),
+        canonical_scores.astype("<f4", copy=False),
+        canonical_boxes.astype("<f4", copy=False),
+        canonical_keypoints.astype("<f4", copy=False),
+        canonical_logits.astype("<f4", copy=False),
+    ):
+        raw_digest.update(np.asarray(array.shape, dtype="<i8").tobytes())
+        raw_digest.update(np.ascontiguousarray(array).tobytes(order="C"))
+
+    counts = {
+        "detector_output_total": count,
+        "rejected_non_person": 0,
+        "rejected_low_box_score": 0,
+        "rejected_low_total_joint_support": 0,
+        "rejected_low_action_joint_support": 0,
+        "rejected_unreliable_torso": 0,
+        "eligible_before_top4": 0,
+        "dropped_by_top4": 0,
+        "raw_xy_out_of_frame_coordinate_total": int(
+            np.count_nonzero(
+                (canonical_keypoints[:, :, :2] < 0.0)
+                | (
+                    canonical_keypoints[:, :, :2]
+                    > np.asarray([image_width, image_height], dtype=np.float32)
+                )
+            )
+        ),
+        "raw_box_out_of_frame_coordinate_total": int(
+            np.count_nonzero(
+                (canonical_boxes < 0.0)
+                | (
+                    canonical_boxes
+                    > np.asarray(
+                        [image_width, image_height, image_width, image_height],
+                        dtype=np.float32,
+                    )
+                )
+            )
+        ),
+    }
+    retained: list[tuple[float, bytes, int, NDArray[np.float32]]] = []
+    for index, box_score_value in enumerate(canonical_scores):
+        box_score = float(box_score_value)
+        confident = canonical_logits[index] > settings.keypoint_logit_threshold
+        if int(canonical_labels[index]) != settings.person_label:
+            counts["rejected_non_person"] += 1
+            continue
+        if box_score < settings.box_score_threshold:
+            counts["rejected_low_box_score"] += 1
+            continue
+        if int(np.count_nonzero(confident)) < settings.minimum_confident_keypoints:
+            counts["rejected_low_total_joint_support"] += 1
+            continue
+        if (
+            int(np.count_nonzero(confident[list(RELIABLE_ACTION_JOINTS)]))
+            < settings.minimum_confident_action_keypoints
+        ):
+            counts["rejected_low_action_joint_support"] += 1
+            continue
+        if not all(bool(confident[joint]) for joint in RELIABLE_TORSO_JOINTS):
+            counts["rejected_unreliable_torso"] += 1
+            continue
+        xy = np.array(canonical_keypoints[index, :, :2], dtype=np.float32, copy=True)
+        xy[:, 0] = np.clip(xy[:, 0] / float(image_width), 0.0, 1.0)
+        xy[:, 1] = np.clip(xy[:, 1] / float(image_height), 0.0, 1.0)
+        visibility = (
+            1.0 / (1.0 + np.exp(-canonical_logits[index].astype(np.float64)))
+        ).astype(np.float32) * np.float32(box_score)
+        visibility[~confident] = np.float32(0.0)
+        candidate = np.zeros((17, 6), dtype=np.float32)
+        candidate[:, :2] = xy
+        candidate[:, 3] = visibility
+        candidate[:, 4] = canonical_logits[index]
+        candidate[:, 5] = np.float32(box_score)
+        digest = hashlib.sha256(candidate.tobytes(order="C")).digest()
+        retained.append((box_score, digest, index, candidate))
+    retained.sort(key=lambda item: (-item[0], item[1]))
+    counts["eligible_before_top4"] = len(retained)
+    counts["dropped_by_top4"] = max(
+        0, len(retained) - settings.maximum_candidates_per_frame
+    )
+    all_values = [item[3] for item in retained]
+    top_values = all_values[: settings.maximum_candidates_per_frame]
+    canonical_digest = hashlib.sha256()
+    canonical_digest.update(np.asarray([len(all_values)], dtype="<i8").tobytes())
+    for candidate in all_values:
+        canonical_digest.update(candidate.tobytes(order="C"))
+    return CanonicalDetectorFrame(
+        top_candidates=(
+            None
+            if not top_values
+            else np.ascontiguousarray(np.stack(top_values, axis=0), dtype=np.float32)
+        ),
+        all_eligible_candidates=(
+            None
+            if not all_values
+            else np.ascontiguousarray(np.stack(all_values, axis=0), dtype=np.float32)
+        ),
+        canonical_source_indices=tuple(item[2] for item in retained),
+        diagnostics=counts,
+        raw_output_sha256=raw_digest.hexdigest(),
+        canonical_eligible_sha256=canonical_digest.hexdigest(),
+    )
+
+
 def _infer_coco17_batch(
     runtime: KeypointRCNNRuntime,
     frames: Sequence[NDArray[np.uint8]],
@@ -322,88 +523,27 @@ def _infer_coco17_batch(
         tuple[NDArray[np.float32] | None, NDArray[np.float32] | None, dict[str, int]]
     ] = []
     for output, (width, height) in zip(outputs, dimensions, strict=True):
-        _require(width > 0 and height > 0, "decoded frame dimensions must be positive")
         _require(
             isinstance(output, Mapping)
-            and {"labels", "scores", "keypoints", "keypoints_scores"}.issubset(output),
+            and set(output)
+            == {"boxes", "labels", "scores", "keypoints", "keypoints_scores"},
             "detector output schema mismatch",
         )
-        labels = np.asarray(output["labels"].detach().cpu().numpy(), dtype=np.int64)
-        scores = np.asarray(output["scores"].detach().cpu().numpy(), dtype=np.float32)
-        keypoints = np.asarray(output["keypoints"].detach().cpu().numpy(), dtype=np.float32)
-        logits = np.asarray(
-            output["keypoints_scores"].detach().cpu().numpy(), dtype=np.float32
+        canonical = canonicalize_raw_detector_frame(
+            labels=output["labels"].detach().cpu().numpy(),
+            scores=output["scores"].detach().cpu().numpy(),
+            boxes=output["boxes"].detach().cpu().numpy(),
+            keypoints=output["keypoints"].detach().cpu().numpy(),
+            keypoint_logits=output["keypoints_scores"].detach().cpu().numpy(),
+            image_width=width,
+            image_height=height,
+            settings=settings,
         )
-        _require(labels.ndim == 1 and scores.shape == labels.shape, "detector score shape mismatch")
-        _require(
-            keypoints.shape == (len(labels), 17, 3)
-            and logits.shape == (len(labels), 17),
-            "detector keypoint shape mismatch",
-        )
-        _require(
-            np.isfinite(scores).all()
-            and np.isfinite(keypoints).all()
-            and np.isfinite(logits).all(),
-            "detector output contains non-finite values",
-        )
-        retained: list[tuple[float, bytes, NDArray[np.float32]]] = []
-        counts = {
-            "detector_output_total": len(labels),
-            "rejected_non_person": 0,
-            "rejected_low_box_score": 0,
-            "rejected_low_total_joint_support": 0,
-            "rejected_low_action_joint_support": 0,
-            "rejected_unreliable_torso": 0,
-            "eligible_before_top4": 0,
-            "dropped_by_top4": 0,
-        }
-        for index, box_score_value in enumerate(scores):
-            box_score = float(box_score_value)
-            confident = logits[index] > settings.keypoint_logit_threshold
-            if int(labels[index]) != settings.person_label:
-                counts["rejected_non_person"] += 1
-                continue
-            if box_score < settings.box_score_threshold:
-                counts["rejected_low_box_score"] += 1
-                continue
-            if int(np.count_nonzero(confident)) < settings.minimum_confident_keypoints:
-                counts["rejected_low_total_joint_support"] += 1
-                continue
-            if (
-                int(np.count_nonzero(confident[list(RELIABLE_ACTION_JOINTS)]))
-                < settings.minimum_confident_action_keypoints
-            ):
-                counts["rejected_low_action_joint_support"] += 1
-                continue
-            if not all(bool(confident[joint]) for joint in RELIABLE_TORSO_JOINTS):
-                counts["rejected_unreliable_torso"] += 1
-                continue
-            xy = np.array(keypoints[index, :, :2], dtype=np.float32, copy=True)
-            xy[:, 0] = np.clip(xy[:, 0] / float(width), 0.0, 1.0)
-            xy[:, 1] = np.clip(xy[:, 1] / float(height), 0.0, 1.0)
-            visibility = (
-                1.0 / (1.0 + np.exp(-logits[index].astype(np.float64)))
-            ).astype(np.float32) * np.float32(box_score)
-            visibility[~confident] = np.float32(0.0)
-            candidate = np.zeros((17, 6), dtype=np.float32)
-            candidate[:, :2] = xy
-            candidate[:, 3] = visibility
-            candidate[:, 4] = logits[index]
-            candidate[:, 5] = np.float32(box_score)
-            digest = hashlib.sha256(candidate.tobytes(order="C")).digest()
-            retained.append((box_score, digest, candidate))
-        retained.sort(key=lambda item: (-item[0], item[1]))
-        counts["eligible_before_top4"] = len(retained)
-        counts["dropped_by_top4"] = max(0, len(retained) - settings.maximum_candidates_per_frame)
-        values = [item[2] for item in retained[: settings.maximum_candidates_per_frame]]
-        all_values = [item[2] for item in retained]
         results.append(
             (
-                None if not values else np.stack(values, axis=0).astype(np.float32),
-                None
-                if not all_values
-                else np.stack(all_values, axis=0).astype(np.float32),
-                counts,
+                canonical.top_candidates,
+                canonical.all_eligible_candidates,
+                canonical.diagnostics,
             )
         )
     return tuple(results)
@@ -557,6 +697,84 @@ def _candidate_dominance_score(candidate: NDArray[np.float32]) -> float:
     return max(score, 1e-12)
 
 
+def _candidate_morphology_signature(
+    candidate: NDArray[np.float32],
+) -> NDArray[np.float64]:
+    """Return an action-insensitive same-source torso proportion signature."""
+
+    array = np.asarray(candidate, dtype=np.float32)
+    normalized = np.asarray(
+        body_centered_uniform_scale_xy(array[:, :2], visibility=array[:, 3]),
+        dtype=np.float64,
+    )
+    edges = ((5, 6), (11, 12), (5, 11), (6, 12), (5, 12), (6, 11))
+    lengths = np.asarray(
+        [np.linalg.norm(normalized[left] - normalized[right]) for left, right in edges],
+        dtype=np.float64,
+    )
+    reference = max(float(np.mean(lengths)), 1e-6)
+    return np.ascontiguousarray(lengths / reference, dtype=np.float64)
+
+
+def _candidate_morphology_step(
+    previous: NDArray[np.float32],
+    current: NDArray[np.float32],
+) -> float:
+    delta = _candidate_morphology_signature(current) - _candidate_morphology_signature(
+        previous
+    )
+    return float(np.sqrt(np.mean(np.square(delta))))
+
+
+def _nonrigid_action_motion_by_joint(
+    previous: NDArray[np.float32],
+    current: NDArray[np.float32],
+) -> dict[int, float]:
+    """Measure limb-vector change after body centering and isotropic scaling."""
+
+    previous_array = np.asarray(previous, dtype=np.float32)
+    current_array = np.asarray(current, dtype=np.float32)
+    previous_reliable = (
+        previous_array[:, 4] > 2.0
+        if previous_array.shape[1] >= 5
+        else previous_array[:, 3] >= RELIABLE_VISIBILITY_MINIMUM
+    )
+    current_reliable = (
+        current_array[:, 4] > 2.0
+        if current_array.shape[1] >= 5
+        else current_array[:, 3] >= RELIABLE_VISIBILITY_MINIMUM
+    )
+    previous_xy = body_centered_uniform_scale_xy(
+        previous_array[:, :2], visibility=previous_array[:, 3]
+    )
+    current_xy = body_centered_uniform_scale_xy(
+        current_array[:, :2], visibility=current_array[:, 3]
+    )
+    result: dict[int, float] = {}
+    for joint, parent in ACTION_PARENT_JOINT.items():
+        if not (
+            bool(previous_reliable[joint])
+            and bool(previous_reliable[parent])
+            and bool(current_reliable[joint])
+            and bool(current_reliable[parent])
+        ):
+            continue
+        previous_vector = previous_xy[joint] - previous_xy[parent]
+        current_vector = current_xy[joint] - current_xy[parent]
+        result[joint] = float(np.linalg.norm(current_vector - previous_vector))
+    return result
+
+
+def _nonrigid_action_motion(
+    previous: NDArray[np.float32],
+    current: NDArray[np.float32],
+) -> float:
+    rows = _nonrigid_action_motion_by_joint(previous, current)
+    if len(rows) < 4:
+        return 0.0
+    return float(np.median(np.asarray(tuple(rows.values()), dtype=np.float64)))
+
+
 def _transition_cost(
     previous: NDArray[np.float32],
     current: NDArray[np.float32],
@@ -572,22 +790,18 @@ def _transition_cost(
     log_scale = abs(math.log(current_scale / previous_scale)) / elapsed
     shape = 0.0
     if weights.shape > 0.0:
-        previous_shape = body_centered_uniform_scale_xy(previous[:, :2])
-        current_shape = body_centered_uniform_scale_xy(current[:, :2])
-        shape = float(
-            np.sqrt(
-                np.mean(
-                    np.sum(
-                        np.square(
-                            np.asarray(current_shape, dtype=np.float64)
-                            - np.asarray(previous_shape, dtype=np.float64)
-                        ),
-                        axis=1,
-                    )
-                )
-            )
-        ) / elapsed
-    return weights.center * center + weights.log_scale * log_scale + weights.shape * shape
+        shape = _candidate_morphology_step(previous, current) / elapsed
+    action_motion = (
+        min(_nonrigid_action_motion(previous, current) / elapsed, 0.25)
+        if weights.action_motion > 0.0
+        else 0.0
+    )
+    return (
+        weights.center * center
+        + weights.log_scale * log_scale
+        + weights.shape * shape
+        - weights.action_motion * action_motion
+    )
 
 
 def _anchor_residuals(
@@ -1021,6 +1235,12 @@ def _selected_continuity_rows(
             "absolute_log_scale_step_per_frame": float(
                 abs(math.log(current_scale / previous_scale)) / elapsed
             ),
+            "torso_morphology_step": float(
+                _candidate_morphology_step(previous, current)
+            ),
+            "nonrigid_action_motion_step_per_frame": float(
+                _nonrigid_action_motion(previous, current) / elapsed
+            ),
         }
     return rows
 
@@ -1147,6 +1367,9 @@ def reconstruct_canonical_frame_evidence(
             for candidate_index, candidate in enumerate(frame_candidates):
                 center, scale = _candidate_center_scale(candidate)
                 confident = candidate[:, 4] > keypoint_logit_threshold
+                normalized_xy = body_centered_uniform_scale_xy(
+                    candidate[:, :2], visibility=candidate[:, 3]
+                )
                 candidate_rows.append(
                     {
                         "candidate_index": candidate_index,
@@ -1158,6 +1381,18 @@ def reconstruct_canonical_frame_evidence(
                         ),
                         "center_xy": [float(center[0]), float(center[1])],
                         "scale": float(scale),
+                        "clipped_normalized_image_xy": [
+                            [float(value) for value in point]
+                            for point in candidate[:, :2]
+                        ],
+                        "body_centered_uniform_scale_xy": [
+                            [float(value) for value in point]
+                            for point in normalized_xy
+                        ],
+                        "torso_morphology_signature": [
+                            float(value)
+                            for value in _candidate_morphology_signature(candidate)
+                        ],
                         "candidate_sha256": hashlib.sha256(
                             np.ascontiguousarray(candidate, dtype=np.float32).tobytes(order="C")
                         ).hexdigest(),
@@ -1314,16 +1549,18 @@ def extract_single_source_video(
         frame_cap=settings.maximum_bridge_gap_frame_cap,
     )
     primary_weights = AssociationWeights(
-        settings.primary_center_weight,
-        settings.primary_log_scale_weight,
-        settings.primary_shape_weight,
-        settings.primary_anchor_weight,
+        center=settings.primary_center_weight,
+        log_scale=settings.primary_log_scale_weight,
+        shape=settings.primary_shape_weight,
+        anchor=settings.primary_anchor_weight,
+        action_motion=settings.primary_action_motion_weight,
     )
     secondary_weights = AssociationWeights(
-        settings.secondary_center_weight,
-        settings.secondary_log_scale_weight,
-        settings.secondary_shape_weight,
-        settings.secondary_anchor_weight,
+        center=settings.secondary_center_weight,
+        log_scale=settings.secondary_log_scale_weight,
+        shape=settings.secondary_shape_weight,
+        anchor=settings.secondary_anchor_weight,
+        action_motion=settings.secondary_action_motion_weight,
     )
     primary, segments = select_segmented_top2_viterbi_paths(
         candidates,
@@ -1611,6 +1848,9 @@ def assess_track_stability(
             log_scale_step = float(transition["absolute_log_scale_step_per_frame"])
             if log_scale_step > thresholds.maximum_frame_log_scale_step:
                 reasons.append("abnormal_log_scale_boundary")
+            morphology_step = float(transition["torso_morphology_step"])
+            if morphology_step > thresholds.maximum_frame_morphology_step:
+                reasons.append("abnormal_torso_morphology_boundary")
             previous_index = int(transition["previous_frame_index"])
             previous_row = raw_frame_evidence[previous_index]
             current_selected = row.get("primary_index")
@@ -1668,6 +1908,7 @@ def assess_track_stability(
         for window_start in base_pair_starts(window_frames, hop_frames):
             pair_supported = True
             joint_rows: list[list[bool]] = []
+            selected_rows: list[Mapping[str, Any]] = []
             for frame_index in range(window_start, window_start + span_frames):
                 row = raw_frame_evidence[frame_index]
                 selected_index = row.get("primary_index")
@@ -1684,6 +1925,7 @@ def assess_track_stability(
                     pair_supported = False
                     break
                 joint_rows.append([float(value) > 2.0 for value in logits])
+                selected_rows.append(candidate)
             if not pair_supported:
                 continue
             support = np.mean(np.asarray(joint_rows, dtype=np.float64), axis=0)
@@ -1694,6 +1936,53 @@ def assess_track_stability(
                 )
             )
             if stable_action < thresholds.minimum_window_stable_action_joints:
+                continue
+            motion_by_joint: dict[int, list[float]] = {
+                joint: [] for joint in RELIABLE_ACTION_JOINTS
+            }
+            for previous, current in zip(selected_rows, selected_rows[1:], strict=False):
+                previous_xy = np.asarray(
+                    previous.get("body_centered_uniform_scale_xy"), dtype=np.float64
+                )
+                current_xy = np.asarray(
+                    current.get("body_centered_uniform_scale_xy"), dtype=np.float64
+                )
+                previous_logits = np.asarray(
+                    previous.get("raw_keypoint_logits"), dtype=np.float64
+                )
+                current_logits = np.asarray(
+                    current.get("raw_keypoint_logits"), dtype=np.float64
+                )
+                if (
+                    previous_xy.shape != (17, 2)
+                    or current_xy.shape != (17, 2)
+                    or previous_logits.shape != (17,)
+                    or current_logits.shape != (17,)
+                ):
+                    pair_supported = False
+                    break
+                for joint, parent in ACTION_PARENT_JOINT.items():
+                    if not (
+                        previous_logits[joint] > 2.0
+                        and previous_logits[parent] > 2.0
+                        and current_logits[joint] > 2.0
+                        and current_logits[parent] > 2.0
+                    ):
+                        continue
+                    previous_vector = previous_xy[joint] - previous_xy[parent]
+                    current_vector = current_xy[joint] - current_xy[parent]
+                    motion_by_joint[joint].append(
+                        float(np.linalg.norm(current_vector - previous_vector))
+                    )
+            if not pair_supported:
+                continue
+            moving_action = sum(
+                bool(values)
+                and float(np.median(np.asarray(values, dtype=np.float64)))
+                >= thresholds.minimum_window_action_motion
+                for values in motion_by_joint.values()
+            )
+            if moving_action < thresholds.minimum_window_stable_action_joints:
                 continue
             starts.append(window_start)
         return starts
@@ -1752,7 +2041,7 @@ def assess_track_stability(
     if not segment_fraction_passed:
         reasons.append("minimum_contiguous_trainable_segment_fraction")
     if not window_support_passed:
-        reasons.append("window_joint_support")
+        reasons.append("window_joint_or_action_motion_support")
     return {
         "schema_version": 1,
         "artifact_type": "pams_pose_recovery_v4e_track_stability_decision_v1",
@@ -1764,6 +2053,9 @@ def assess_track_stability(
         "mediapipe_shape_evidence_scope": "diagnostic-only-not-used-for-eligibility",
         "identity_claim": "kprcnn-stability-only-no-target-identity-ground-truth",
         "period_scope": "diagnostic-only-separate-from-identity-and-trainability",
+        "usable_action_motion_scope": (
+            "label-free-nonrigid-limb-vector-motion-required-per-authorized-2w-pair"
+        ),
         "frame_identity_eligible_mask": identity_mask,
         "frame_identity_eligible_mask_sha256": hashlib.sha256(
             bytes(int(value) for value in identity_mask)
@@ -1793,7 +2085,7 @@ def assess_track_stability(
             "dual_path_agreement": agreement_passed,
             "minimum_contiguous_trainable_segment_frames": segment_frames_passed,
             "minimum_contiguous_trainable_segment_fraction": segment_fraction_passed,
-            "window_joint_support": window_support_passed,
+            "window_joint_and_action_motion_support": window_support_passed,
             "framewise_identity_mask_computed": True,
         },
         "quarantine_reasons": reasons if not eligible else [],
@@ -1801,6 +2093,7 @@ def assess_track_stability(
             {
                 "maximum_frame_center_step": thresholds.maximum_frame_center_step,
                 "maximum_frame_log_scale_step": thresholds.maximum_frame_log_scale_step,
+                "maximum_frame_morphology_step": thresholds.maximum_frame_morphology_step,
                 "maximum_frame_joint_mask_flicker_fraction": (
                     thresholds.maximum_frame_joint_mask_flicker_fraction
                 ),
@@ -1820,6 +2113,7 @@ def assess_track_stability(
                 "minimum_window_stable_action_joints": (
                     thresholds.minimum_window_stable_action_joints
                 ),
+                "minimum_window_action_motion": thresholds.minimum_window_action_motion,
             }
         ),
         "raw_extraction_authority_accepted": False,

@@ -208,6 +208,7 @@ def authorize_raw_extraction(
         == {
             "maximum_frame_center_step",
             "maximum_frame_log_scale_step",
+            "maximum_frame_morphology_step",
             "maximum_frame_joint_mask_flicker_fraction",
             "minimum_dual_path_agreement",
             "minimum_frame_local_ambiguity_gap",
@@ -216,6 +217,7 @@ def authorize_raw_extraction(
             "minimum_source_coverage",
             "maximum_candidate_window_frames",
             "minimum_window_joint_support_fraction",
+            "minimum_window_action_motion",
             "minimum_window_stable_action_joints",
         },
         "frozen threshold schema mismatch",

@@ -54,6 +54,8 @@ from pams.keypoint_single_source import (
     write_candidate_evidence_npz,
 )
 
+APPROVED_RAW_EXTRACTION_SECURE_LAUNCH_AUTHORITY_SHA256 = ""
+
 
 def _empty_pair_starts() -> dict[str, list[int]]:
     return {name: [] for name in CYCLEBACK_PAIR_VARIANTS}
@@ -178,6 +180,11 @@ def run_raw_train337(
     same39_joint_mask_dir: Path | None,
 ) -> dict[str, Any]:
     """Run fresh extraction from canonical videos; never reuse v4d bytes."""
+
+    require(
+        len(APPROVED_RAW_EXTRACTION_SECURE_LAUNCH_AUTHORITY_SHA256) == 64,
+        "v4e raw extraction is disabled pending monotonic secure authority",
+    )
 
     require(
         os.environ.get("PAMS_CONTAINER_SOURCE_REVISION") == source_revision,

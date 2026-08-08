@@ -267,24 +267,25 @@ class KeypointRCNNSingleSourceConfig(StrictModel):
     )
     primary_center_weight: Literal[1.0] = 1.0
     primary_log_scale_weight: Literal[0.25] = 0.25
-    # Inter-frame shape smoothness is intentionally disabled: it would favor a
-    # static bystander over the fast-moving actor. Processed-v4a shape is a
-    # post-selection diagnostic only and has zero association weight.
-    primary_shape_weight: Literal[0.0] = 0.0
+    # Shape means a same-source, torso-proportion signature only; it never
+    # consumes processed-v4a coordinates or penalizes articulated limb motion.
+    primary_shape_weight: Literal[0.5] = 0.5
     primary_anchor_weight: Literal[0.0] = 0.0
+    primary_action_motion_weight: Literal[12.0] = 12.0
     secondary_center_weight: Literal[0.75] = 0.75
     secondary_log_scale_weight: Literal[0.5] = 0.5
-    secondary_shape_weight: Literal[0.0] = 0.0
+    secondary_shape_weight: Literal[0.25] = 0.25
     secondary_anchor_weight: Literal[0.0] = 0.0
+    secondary_action_motion_weight: Literal[9.0] = 9.0
     # This physical-time rule predates any full337 v4e observation.  The
     # effective association bridge is min(cap, floor(seconds * fps)); a zero
     # result is valid and means that no missing frame may be bridged.
     maximum_bridge_gap_seconds: Literal[0.25] = 0.25
     maximum_bridge_gap_frame_cap: Literal[8] = 8
     global_track_strategy: Literal[
-        "top2-viterbi-dominance-center-scale-segmented-v1"
+        "top2-viterbi-dominance-center-scale-torso-morphology-action-motion-segmented-v2"
     ] = (
-        "top2-viterbi-dominance-center-scale-segmented-v1"
+        "top2-viterbi-dominance-center-scale-torso-morphology-action-motion-segmented-v2"
     )
     second_path_policy: Literal["independent-frozen-weight-viterbi-v1"] = (
         "independent-frozen-weight-viterbi-v1"
@@ -298,12 +299,14 @@ class KeypointRCNNSingleSourceConfig(StrictModel):
             self.primary_log_scale_weight,
             self.primary_shape_weight,
             self.primary_anchor_weight,
+            self.primary_action_motion_weight,
         )
         secondary = (
             self.secondary_center_weight,
             self.secondary_log_scale_weight,
             self.secondary_shape_weight,
             self.secondary_anchor_weight,
+            self.secondary_action_motion_weight,
         )
         if not any(primary) or not any(secondary):
             raise ValueError("v4e requires two non-degenerate association weight sets")

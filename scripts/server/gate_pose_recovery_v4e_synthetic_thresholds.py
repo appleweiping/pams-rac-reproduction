@@ -20,12 +20,19 @@ from pose_recovery_v4d_full337_contract import (
     write_json_exclusive,
 )
 
-from pams.v4e_synthetic_contract import canonical_threshold_grid_rows
+from pams.v4e_synthetic_contract import (
+    SYNTHETIC_DIAGNOSTIC_FAMILIES,
+    SYNTHETIC_IDENTITY_NULL_FAMILIES,
+    SYNTHETIC_JOINT_NULL_FAMILIES,
+    SYNTHETIC_POSITIVE_FAMILIES,
+    canonical_threshold_grid_rows,
+)
 
 THRESHOLD_KEYS = {
     "maximum_candidate_window_frames",
     "maximum_frame_center_step",
     "maximum_frame_log_scale_step",
+    "maximum_frame_morphology_step",
     "maximum_frame_joint_mask_flicker_fraction",
     "minimum_dual_path_agreement",
     "minimum_frame_local_ambiguity_gap",
@@ -33,26 +40,13 @@ THRESHOLD_KEYS = {
     "minimum_longest_trainable_segment_frames",
     "minimum_source_coverage",
     "minimum_window_joint_support_fraction",
+    "minimum_window_action_motion",
     "minimum_window_stable_action_joints",
 }
-REQUIRED_POSITIVE_FAMILIES = {
-    "clean_known_identity",
-    "short_occlusion_random30pct_joints_for20pct_time",
-    "inplane_affine_rotation15_scale15_translation10pct",
-}
-REQUIRED_DIAGNOSTIC_FAMILIES = {
-    "fast_motion_with_large_static_bystander_period_must_be_unsupported",
-}
-REQUIRED_IDENTITY_NULL_FAMILIES = {
-    "crossing_with_identity_swap",
-    "explicit_candidate_identity_swap",
-    "long_gap_with_identity_change",
-}
-REQUIRED_JOINT_NULL_FAMILIES = {
-    "periodic_joint_mask_flicker",
-    "torso_only_without_action_joints",
-    "alternating_limb_dropout_without_stable_window_support",
-}
+REQUIRED_POSITIVE_FAMILIES = set(SYNTHETIC_POSITIVE_FAMILIES)
+REQUIRED_DIAGNOSTIC_FAMILIES = set(SYNTHETIC_DIAGNOSTIC_FAMILIES)
+REQUIRED_IDENTITY_NULL_FAMILIES = set(SYNTHETIC_IDENTITY_NULL_FAMILIES)
+REQUIRED_JOINT_NULL_FAMILIES = set(SYNTHETIC_JOINT_NULL_FAMILIES)
 
 
 def _object(path: Path, role: str) -> Mapping[str, Any]:
@@ -142,9 +136,9 @@ def gate_synthetic_thresholds(
     )
     require(
         evidence.get("mechanics_chain")
-        == "synthetic-coco17-candidates-to-dual-viterbi-to-canonical-frame-evidence-to-body-centered-cache-to-track-stability-v1"
+        == "synthetic-raw-kprcnn-channels-to-shared-production-filter-canonical-sort-to-dual-viterbi-to-canonical-frame-evidence-to-body-centered-cache-to-track-stability-and-usable-action-motion-v2"
         and evidence.get("truth_role")
-        == "synthetic-identity-retention-and-false-eligible-scoring-only"
+        == "synthetic-actor-retention-track-stability-and-false-eligible-scoring-only"
         and evidence.get("period_invariance_checked") is True
         and evidence.get("candidate_order_permutation_checked") is True,
         "synthetic mechanics replay contract mismatch",

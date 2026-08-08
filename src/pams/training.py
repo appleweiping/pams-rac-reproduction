@@ -1808,6 +1808,30 @@ def _target_end_epoch(total_epochs: int, stop_after_epoch: int | None) -> int:
     return min(total_epochs, stop_after_epoch)
 
 
+def require_generic_training_representation_supported(
+    config: PAMSConfig,
+    *,
+    stage: str,
+) -> None:
+    """Reject v4e at every conventional trainer boundary.
+
+    A future joint integration runner must consume the sealed representation
+    outcome directly. It must not tunnel an authorization flag through these
+    historical trainers.
+    """
+
+    if stage not in {"encoder", "sshead"}:
+        raise ValueError("generic training stage must be encoder or sshead")
+    if (
+        config.pose.preprocessing_revision
+        == "official-segment-keypointrcnn-single-source-coco17-full-timeline-v4e"
+    ):
+        raise RuntimeError(
+            f"v4e representation is forbidden in generic {stage} training; "
+            "an integration-authorized custom runner is required"
+        )
+
+
 def train_encoder(
     sequences: Sequence[PoseSequence],
     config: PAMSConfig,
@@ -1824,6 +1848,7 @@ def train_encoder(
 ) -> EncoderTrainingResult:
     """Train the encoder with PAMS-TCC without accepting any ground truth."""
 
+    require_generic_training_representation_supported(config, stage="encoder")
     items = _materialize_sequences(sequences)
     destination = None if checkpoint_path is None else Path(checkpoint_path)
     progress_destination = None if progress_path is None else Path(progress_path)
@@ -2235,6 +2260,7 @@ def train_sshead(
 ) -> SSHeadTrainingResult:
     """Train only the inferred SSHead objective with the encoder frozen."""
 
+    require_generic_training_representation_supported(config, stage="sshead")
     items = _materialize_sequences(sequences)
     destination = None if checkpoint_path is None else Path(checkpoint_path)
     progress_destination = None if progress_path is None else Path(progress_path)

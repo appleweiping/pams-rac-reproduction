@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from pams.config import load_config
 from pams.keypoint_single_source import (
@@ -13,13 +14,21 @@ from pams.keypoint_single_source import (
     body_centered_uniform_scale_xy,
     build_single_source_sequence,
     candidate_evidence_bundle,
+    canonicalize_raw_detector_frame,
     coco17_xy_to_padded_pose,
     effective_maximum_bridge_gap_frames,
     local_ambiguity_gaps,
+    load_candidate_evidence_npz,
     select_top2_viterbi_paths,
     similarity_procrustes_residual,
+    write_candidate_evidence_npz,
 )
 from pams.types import PoseSequence
+from pams.v4e_synthetic_contract import (
+    canonical_threshold_grid_rows,
+    frozen_synthetic_seeds,
+    frozen_threshold_axes,
+)
 
 
 def _shape() -> np.ndarray:
@@ -75,7 +84,47 @@ def test_v4e_config_is_single_source_and_raw_non_authoritative() -> None:
     assert settings.raw_extraction_authorizes_training is False
     assert settings.minimum_confident_keypoints == 8
     assert settings.minimum_confident_action_keypoints == 4
+    assert settings.primary_action_motion_weight == 12.0
+    assert settings.secondary_action_motion_weight == 9.0
     assert config.data.normalization == "body_centered_uniform_scale"
+
+
+def test_generic_encoder_hard_rejects_v4e_before_materializing_inputs() -> None:
+    from pams.training import train_encoder
+
+    root = Path(__file__).resolve().parents[1]
+    config = load_config(
+        root / "configs/experiments/pams_pose_recovery_v4e_single_source_raw.yaml"
+    )
+    with pytest.raises(RuntimeError, match="integration-authorized custom runner"):
+        train_encoder((), config)
+
+
+def test_generic_sshead_hard_rejects_v4e_before_touching_model() -> None:
+    from pams.training import train_sshead
+
+    root = Path(__file__).resolve().parents[1]
+    config = load_config(
+        root / "configs/experiments/pams_pose_recovery_v4e_single_source_raw.yaml"
+    )
+    with pytest.raises(RuntimeError, match="integration-authorized custom runner"):
+        train_sshead((), config, model=None)  # type: ignore[arg-type]
+
+
+def test_synthetic_axes_and_seed_splits_are_exact_and_not_caller_selectable() -> None:
+    axes = frozen_threshold_axes()
+    rows = canonical_threshold_grid_rows(axes)
+    calibration = frozen_synthetic_seeds("calibration")
+    heldout = frozen_synthetic_seeds("heldout")
+
+    assert rows
+    assert len(calibration) == len(set(calibration)) == 512
+    assert len(heldout) == len(set(heldout)) == 512
+    assert not set(calibration) & set(heldout)
+    changed = frozen_threshold_axes()
+    changed["minimum_window_action_motion"] = [0.0]
+    with pytest.raises(ValueError, match="differ from the frozen synthetic contract"):
+        canonical_threshold_grid_rows(changed)
 
 
 def test_body_centered_uniform_scale_uses_coco17_and_zero_padding() -> None:
@@ -160,6 +209,33 @@ def test_dominant_subject_unary_rejects_small_high_confidence_bystander() -> Non
     assert path.selected_indices == (1,)
 
 
+def test_nonrigid_action_motion_retains_actor_over_larger_static_bystander() -> None:
+    base = _shape()
+    candidates = []
+    for frame in range(96):
+        actor_xy = 0.12 + 0.62 * base
+        motion = np.float32(0.06 * np.sin(2.0 * np.pi * frame / 16.0))
+        actor_xy = np.array(actor_xy, copy=True)
+        actor_xy[[9, 10], 1] += np.asarray([motion, -motion], dtype=np.float32)
+        actor_xy[[15, 16], 0] += np.asarray([-motion, motion], dtype=np.float32)
+        actor = _raw_candidate(actor_xy, box_score=0.94)
+        static = _raw_candidate(0.08 + 0.80 * base, box_score=0.90)
+        candidates.append(np.stack((actor, static), axis=0))
+    path = select_top2_viterbi_paths(
+        candidates,
+        anchor_residuals=[None] * len(candidates),
+        weights=AssociationWeights(
+            center=1.0,
+            log_scale=0.25,
+            shape=0.5,
+            anchor=0.0,
+            action_motion=12.0,
+        ),
+    )
+
+    assert path.selected_indices == (0,) * len(candidates)
+
+
 def test_pretop4_candidate_artifact_retains_fifth_candidate_for_crowd_audit() -> None:
     candidates = np.stack(
         tuple(_raw_candidate(_shape() + 0.01 * index) for index in range(5)),
@@ -171,12 +247,97 @@ def test_pretop4_candidate_artifact_retains_fifth_candidate_for_crowd_audit() ->
     assert bundle.candidates.shape == (5, 17, 6)
 
 
+def test_raw_detector_filter_is_permutation_invariant_and_npz_roundtrips(
+    tmp_path: Path,
+) -> None:
+    root = Path(__file__).resolve().parents[1]
+    settings = load_config(
+        root / "configs/experiments/pams_pose_recovery_v4e_single_source_raw.yaml"
+    ).pose.keypoint_single_source
+    assert settings is not None
+    xy = np.stack((_shape(), 0.1 + 0.75 * _shape()), axis=0) * np.float32(1000.0)
+    keypoints = np.zeros((2, 17, 3), dtype=np.float32)
+    keypoints[:, :, :2] = xy
+    keypoints[:, :, 2] = 1.0
+    boxes = np.stack(
+        tuple(
+            np.asarray(
+                [
+                    np.min(row[:, 0]),
+                    np.min(row[:, 1]),
+                    np.max(row[:, 0]),
+                    np.max(row[:, 1]),
+                ],
+                dtype=np.float32,
+            )
+            for row in xy
+        ),
+        axis=0,
+    )
+    inputs = {
+        "labels": np.ones(2, dtype=np.int64),
+        "scores": np.asarray([0.83, 0.91], dtype=np.float32),
+        "boxes": boxes,
+        "keypoints": keypoints,
+        "keypoint_logits": np.full((2, 17), 3.0, dtype=np.float32),
+    }
+    first = canonicalize_raw_detector_frame(
+        **inputs, image_width=1000, image_height=1000, settings=settings
+    )
+    order = np.asarray([1, 0], dtype=np.int64)
+    permuted = canonicalize_raw_detector_frame(
+        **{key: value[order] for key, value in inputs.items()},
+        image_width=1000,
+        image_height=1000,
+        settings=settings,
+    )
+
+    assert np.array_equal(first.top_candidates, permuted.top_candidates)
+    assert np.array_equal(first.all_eligible_candidates, permuted.all_eligible_candidates)
+    assert first.canonical_eligible_sha256 == permuted.canonical_eligible_sha256
+    assert first.raw_output_sha256 != permuted.raw_output_sha256
+    assert first.diagnostics == permuted.diagnostics
+    bundle = candidate_evidence_bundle([first.all_eligible_candidates])
+    artifact = tmp_path / "candidates.npz"
+    write_candidate_evidence_npz(artifact, bundle)
+    loaded = load_candidate_evidence_npz(artifact)
+    assert np.array_equal(loaded.frame_offsets, bundle.frame_offsets)
+    assert np.array_equal(loaded.candidates, bundle.candidates)
+
+
+def test_torso_only_raw_detection_is_rejected_by_shared_production_filter() -> None:
+    root = Path(__file__).resolve().parents[1]
+    settings = load_config(
+        root / "configs/experiments/pams_pose_recovery_v4e_single_source_raw.yaml"
+    ).pose.keypoint_single_source
+    assert settings is not None
+    keypoints = np.zeros((1, 17, 3), dtype=np.float32)
+    keypoints[0, :, :2] = _shape() * np.float32(1000.0)
+    logits = np.zeros((1, 17), dtype=np.float32)
+    logits[0, [5, 6, 11, 12]] = 3.0
+    result = canonicalize_raw_detector_frame(
+        labels=np.ones(1, dtype=np.int64),
+        scores=np.asarray([0.9], dtype=np.float32),
+        boxes=np.asarray([[0.0, 0.0, 900.0, 900.0]], dtype=np.float32),
+        keypoints=keypoints,
+        keypoint_logits=logits,
+        image_width=1000,
+        image_height=1000,
+        settings=settings,
+    )
+
+    assert result.top_candidates is None
+    assert result.all_eligible_candidates is None
+    assert result.diagnostics["rejected_low_total_joint_support"] == 1
+
+
 def test_kprcnn_stability_gate_never_claims_target_identity() -> None:
     thresholds = TrackStabilityThresholds(
         minimum_frame_local_ambiguity_gap=0.02,
         minimum_dual_path_agreement=0.90,
         maximum_frame_center_step=0.30,
         maximum_frame_log_scale_step=0.30,
+        maximum_frame_morphology_step=0.10,
         maximum_frame_joint_mask_flicker_fraction=0.25,
         minimum_source_coverage=0.80,
         minimum_longest_trainable_segment_frames=48,
@@ -184,6 +345,7 @@ def test_kprcnn_stability_gate_never_claims_target_identity() -> None:
         maximum_candidate_window_frames=24,
         minimum_window_joint_support_fraction=0.75,
         minimum_window_stable_action_joints=4,
+        minimum_window_action_motion=0.0,
     )
     evidence = {
         "video_id_sha256": "1" * 64,
@@ -201,7 +363,14 @@ def test_kprcnn_stability_gate_never_claims_target_identity() -> None:
                 "frame_index": index,
                 "candidate_count": 1,
                 "primary_index": 0,
-                "candidates": [{"raw_keypoint_logits": [3.0] * 17}],
+                "candidates": [
+                    {
+                        "raw_keypoint_logits": [3.0] * 17,
+                        "body_centered_uniform_scale_xy": (
+                            body_centered_uniform_scale_xy(_shape()).tolist()
+                        ),
+                    }
+                ],
                 "raw_normalization_eligible": True,
                 "continuity_from_previous": (
                     None
@@ -210,6 +379,7 @@ def test_kprcnn_stability_gate_never_claims_target_identity() -> None:
                         "previous_frame_index": index - 1,
                         "center_step_normalized_per_frame": 0.1,
                         "absolute_log_scale_step_per_frame": 0.0,
+                        "torso_morphology_step": 0.0,
                     }
                 ),
             }
@@ -289,6 +459,7 @@ def test_periodic_mask_flicker_and_torso_only_are_not_trainable() -> None:
         minimum_dual_path_agreement=0.85,
         maximum_frame_center_step=0.5,
         maximum_frame_log_scale_step=0.5,
+        maximum_frame_morphology_step=0.12,
         maximum_frame_joint_mask_flicker_fraction=0.3,
         minimum_source_coverage=0.8,
         minimum_longest_trainable_segment_frames=48,
@@ -296,6 +467,7 @@ def test_periodic_mask_flicker_and_torso_only_are_not_trainable() -> None:
         maximum_candidate_window_frames=24,
         minimum_window_joint_support_fraction=0.75,
         minimum_window_stable_action_joints=4,
+        minimum_window_action_motion=0.0,
     )
 
     def decision(*, torso_only: bool) -> dict[str, object]:
@@ -315,7 +487,10 @@ def test_periodic_mask_flicker_and_torso_only_are_not_trainable() -> None:
                         {
                             "raw_keypoint_logits": [
                                 3.0 if value else 0.0 for value in reliable
-                            ]
+                            ],
+                            "body_centered_uniform_scale_xy": (
+                                body_centered_uniform_scale_xy(_shape()).tolist()
+                            ),
                         }
                     ],
                     "raw_normalization_eligible": not torso_only,
@@ -326,6 +501,7 @@ def test_periodic_mask_flicker_and_torso_only_are_not_trainable() -> None:
                             "previous_frame_index": index - 1,
                             "center_step_normalized_per_frame": 0.01,
                             "absolute_log_scale_step_per_frame": 0.01,
+                            "torso_morphology_step": 0.0,
                         }
                     ),
                 }
@@ -381,6 +557,9 @@ def test_v4e_full337_cli_source_is_fail_closed_on_canonical_authority_chain() ->
     full_authorizer = (root / "scripts/server/authorize_pose_recovery_v4e_raw.py").read_text(
         encoding="utf-8"
     )
+    synthetic_producer = (
+        root / "scripts/server/produce_pose_recovery_v4e_synthetic_evidence.py"
+    ).read_text(encoding="utf-8")
 
     assert "v4e-full337-raw.authorization.json" in runner
     assert "canonical_registry_reservation_sha256" in runner
@@ -392,3 +571,5 @@ def test_v4e_full337_cli_source_is_fail_closed_on_canonical_authority_chain() ->
     ).replace("        ", " ")
     assert '"cycleback_representation_input_authorized": False' in full_authorizer
     assert '"baseline_training_authorized": False' in full_authorizer
+    assert 'APPROVED_RAW_EXTRACTION_SECURE_LAUNCH_AUTHORITY_SHA256 = ""' in runner
+    assert 'APPROVED_SYNTHETIC_SECURE_LAUNCH_AUTHORITY_SHA256 = ""' in synthetic_producer

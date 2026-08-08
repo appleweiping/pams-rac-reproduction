@@ -40,12 +40,14 @@ pose:
     identity_anchor_source: mediapipe-v4a-shape-diagnostic-only-not-viterbi
     primary_center_weight: 1.0
     primary_log_scale_weight: 0.25
-    primary_shape_weight: 0.0
+    primary_shape_weight: 0.5
     primary_anchor_weight: 0.0
+    primary_action_motion_weight: 12.0
     secondary_center_weight: 0.75
     secondary_log_scale_weight: 0.5
-    secondary_shape_weight: 0.0
+    secondary_shape_weight: 0.25
     secondary_anchor_weight: 0.0
+    secondary_action_motion_weight: 9.0
     maximum_bridge_gap_seconds: 0.25
     maximum_bridge_gap_frame_cap: 8
     raw_extraction_authorizes_training: false

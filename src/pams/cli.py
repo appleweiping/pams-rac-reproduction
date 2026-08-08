@@ -1971,15 +1971,19 @@ def train_encoder_command(
     """Train the PAMS encoder from label-free cached poses."""
 
     try:
-        from pams.training import train_encoder
+        from pams.training import (
+            require_generic_training_representation_supported,
+            train_encoder,
+        )
 
         _require_formal_label_free_inputs(
             label_free_inputs=label_free_inputs,
             operation="encoder training",
         )
         config_file_sha256 = _sha256_file(config_path)
-        dataset_manifest_sha256 = _sha256_file(manifest_path)
         config = load_config(config_path)
+        require_generic_training_representation_supported(config, stage="encoder")
+        dataset_manifest_sha256 = _sha256_file(manifest_path)
         if resume and (resume_checkpoint is None or resume_progress is None):
             raise ValueError("--resume requires both --resume-checkpoint and --resume-progress")
         if not resume and (resume_checkpoint is not None or resume_progress is not None):
@@ -2254,15 +2258,20 @@ def train_sshead_command(
     """Train the inferred self-supervised head with a frozen encoder."""
 
     try:
-        from pams.training import train_sshead, validate_terminal_checkpoint
+        from pams.training import (
+            require_generic_training_representation_supported,
+            train_sshead,
+            validate_terminal_checkpoint,
+        )
 
         _require_formal_label_free_inputs(
             label_free_inputs=label_free_inputs,
             operation="SSHead training",
         )
         config_file_sha256 = _sha256_file(config_path)
-        dataset_manifest_sha256 = _sha256_file(manifest_path)
         config = load_config(config_path)
+        require_generic_training_representation_supported(config, stage="sshead")
+        dataset_manifest_sha256 = _sha256_file(manifest_path)
         if resume and (resume_checkpoint is None or resume_progress is None):
             raise ValueError("--resume requires both --resume-checkpoint and --resume-progress")
         if not resume and (resume_checkpoint is not None or resume_progress is not None):
