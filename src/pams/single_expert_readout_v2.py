@@ -1529,7 +1529,7 @@ def synthetic_case_plan_v2() -> tuple[SyntheticCaseSpecV2, ...]:
 
 
 def _case_seed(seed: int, case_id: str) -> int:
-    digest = hashlib.sha256(f"v2\0{int(seed)}\0{case_id}".encode("utf-8")).digest()
+    digest = hashlib.sha256(f"v2\0{int(seed)}\0{case_id}".encode()).digest()
     return int.from_bytes(digest[:8], byteorder="little", signed=False)
 
 
