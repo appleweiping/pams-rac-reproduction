@@ -793,9 +793,10 @@ def produce_synthetic_evidence(
                     eligible = bool(decision_period_false["eligible"])
                     if family in POSITIVE_FAMILIES:
                         outcome = eligible and bool(fixture["truth_condition"])
-                    elif family in IDENTITY_NULL_FAMILIES:
-                        outcome = eligible
-                    elif family in JOINT_NULL_FAMILIES:
+                    elif (
+                        family in IDENTITY_NULL_FAMILIES
+                        or family in JOINT_NULL_FAMILIES
+                    ):
                         outcome = eligible
                     else:
                         # The crossing diagnostic preregisters safe abstention;

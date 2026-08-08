@@ -7,8 +7,8 @@ import pytest
 
 from pams.config import load_config
 from pams.keypoint_single_source import (
-    AssociationWeights,
     CYCLEBACK_PAIR_VARIANTS,
+    AssociationWeights,
     RawDetectorFrame,
     TrackStabilityThresholds,
     _anchor_residuals,

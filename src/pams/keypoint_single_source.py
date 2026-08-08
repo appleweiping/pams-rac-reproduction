@@ -383,27 +383,29 @@ def load_raw_detector_evidence_npz(path: str | Path) -> RawDetectorEvidenceBundl
         opened = os.fstat(descriptor)
         if not stat.S_ISREG(opened.st_mode):
             raise ValueError("raw detector evidence must be a regular file")
-        with os.fdopen(descriptor, "rb", closefd=False) as handle:
-            with np.load(handle, allow_pickle=False) as payload:
-                if set(payload.files) != {
-                    "schema_version",
-                    "frame_offsets",
-                    "labels",
-                    "scores",
-                    "boxes",
-                    "keypoints",
-                    "keypoint_logits",
-                    "frame_dimensions",
-                }:
-                    raise ValueError("raw detector evidence NPZ schema mismatch")
-                schema = np.asarray(payload["schema_version"])
-                offsets = np.asarray(payload["frame_offsets"])
-                labels = np.asarray(payload["labels"])
-                scores = np.asarray(payload["scores"])
-                boxes = np.asarray(payload["boxes"])
-                keypoints = np.asarray(payload["keypoints"])
-                logits = np.asarray(payload["keypoint_logits"])
-                dimensions = np.asarray(payload["frame_dimensions"])
+        with os.fdopen(descriptor, "rb", closefd=False) as handle, np.load(
+            handle,
+            allow_pickle=False,
+        ) as payload:
+            if set(payload.files) != {
+                "schema_version",
+                "frame_offsets",
+                "labels",
+                "scores",
+                "boxes",
+                "keypoints",
+                "keypoint_logits",
+                "frame_dimensions",
+            }:
+                raise ValueError("raw detector evidence NPZ schema mismatch")
+            schema = np.asarray(payload["schema_version"])
+            offsets = np.asarray(payload["frame_offsets"])
+            labels = np.asarray(payload["labels"])
+            scores = np.asarray(payload["scores"])
+            boxes = np.asarray(payload["boxes"])
+            keypoints = np.asarray(payload["keypoints"])
+            logits = np.asarray(payload["keypoint_logits"])
+            dimensions = np.asarray(payload["frame_dimensions"])
         closed = os.fstat(descriptor)
         if (
             opened.st_dev,
@@ -529,17 +531,19 @@ def load_candidate_evidence_npz(path: str | Path) -> CandidateEvidenceBundle:
         opened = os.fstat(descriptor)
         if not stat.S_ISREG(opened.st_mode):
             raise ValueError("candidate evidence must be a regular file")
-        with os.fdopen(descriptor, "rb", closefd=False) as handle:
-            with np.load(handle, allow_pickle=False) as payload:
-                if set(payload.files) != {
-                    "schema_version",
-                    "frame_offsets",
-                    "candidates",
-                }:
-                    raise ValueError("candidate evidence NPZ schema mismatch")
-                schema = np.asarray(payload["schema_version"])
-                offsets = np.asarray(payload["frame_offsets"])
-                candidates = np.asarray(payload["candidates"])
+        with os.fdopen(descriptor, "rb", closefd=False) as handle, np.load(
+            handle,
+            allow_pickle=False,
+        ) as payload:
+            if set(payload.files) != {
+                "schema_version",
+                "frame_offsets",
+                "candidates",
+            }:
+                raise ValueError("candidate evidence NPZ schema mismatch")
+            schema = np.asarray(payload["schema_version"])
+            offsets = np.asarray(payload["frame_offsets"])
+            candidates = np.asarray(payload["candidates"])
         closed = os.fstat(descriptor)
         if (
             opened.st_dev,
