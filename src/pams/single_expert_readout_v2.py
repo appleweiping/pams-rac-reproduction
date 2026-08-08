@@ -587,9 +587,21 @@ def _top_spectral_peaks(
             selected.append(index)
         if len(selected) == top_k:
             break
+    minimum_allowed = float(allowed_indices[0] / fft_size)
+    maximum_allowed = float(allowed_indices[-1] / fft_size)
     return tuple(
         SpectralPeak(
-            frequency=_parabolic_frequency(aggregate, index, fft_size),
+            # A boundary peak's unconstrained parabola can fall outside the
+            # preregistered band.  Clamp to the exact allowed FFT-bin domain;
+            # this preserves the L-1 count=2 endpoint instead of silently
+            # deleting it from fundamental candidates.
+            frequency=float(
+                np.clip(
+                    _parabolic_frequency(aggregate, index, fft_size),
+                    minimum_allowed,
+                    maximum_allowed,
+                )
+            ),
             power=float(aggregate[index]),
             rank=rank,
         )
@@ -917,7 +929,12 @@ def _adaptive_window_length(
         raise ValueError("periodic proposal is required to derive a periodic scale")
     # A W-frame window spans W-1 intervals.  Add one after deriving the
     # requested interval duration so scale and integration share one clock.
-    proposed = int(math.ceil(candidate.cycles_per_window / proposal.frequency)) + 1
+    low_ratio = protocol.local_frequency_ratio_to_proposal[0]
+    requested_intervals = max(
+        candidate.cycles_per_window / proposal.frequency,
+        protocol.minimum_observed_cycles / (proposal.frequency * low_ratio),
+    )
+    proposed = int(math.ceil(requested_intervals)) + 1
     return min(segment_length, max(protocol.local_minimum_window_frames, proposed))
 
 
