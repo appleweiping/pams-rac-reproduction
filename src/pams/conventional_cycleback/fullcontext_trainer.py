@@ -705,7 +705,7 @@ def _opaque_rank(*, seed: int, epoch: int, purpose: str, identity: str) -> bytes
         (
             f"pams-cycleback-fullcontext-v1\0{seed}\0{epoch}\0{purpose}\0"
             f"{identity}"
-        ).encode("utf-8")
+        ).encode()
     ).digest()
 
 
@@ -1480,13 +1480,12 @@ def build_fullcontext_checkpoint_payload(
         optimizer.state_dict(),
         expected_step=progress.global_optimizer_step,
     )
-    if progress.active_plan is not None:
-        if (
-            progress.active_plan.trainer_contract_fingerprint != contract.fingerprint
-            or progress.active_plan.representation_lineage_fingerprint
-            != lineage.fingerprint
-        ):
-            raise ValueError("active sampler plan differs from checkpoint lineage")
+    if progress.active_plan is not None and (
+        progress.active_plan.trainer_contract_fingerprint != contract.fingerprint
+        or progress.active_plan.representation_lineage_fingerprint
+        != lineage.fingerprint
+    ):
+        raise ValueError("active sampler plan differs from checkpoint lineage")
     model_state = _clone_model_state(model)
     rng_state = capture_fullcontext_rng_state()
     return {
