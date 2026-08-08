@@ -18,6 +18,8 @@ import hashlib
 import json
 import math
 import os
+import stat
+import tempfile
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -83,11 +85,27 @@ _CANDIDATE_LAUNCH_RECEIPT_TYPE = (
 _CANDIDATE_REGISTRY_RESERVATION_TYPE = (
     "pams_native_candidate_outcome_registry_reservation_v1"
 )
-_CANDIDATE_REGISTRY_OUTCOME_TYPE = "pams_native_candidate_outcome_registry_record_v1"
+_CANDIDATE_REGISTRY_OUTCOME_TYPE = "pams_native_candidate_outcome_registry_record_v2"
 _CANDIDATE_REGISTRY_OUTCOME_RECEIPT_TYPE = (
-    "pams_native_candidate_outcome_registry_record_receipt_v1"
+    "pams_native_candidate_outcome_registry_record_receipt_v2"
 )
 _CANDIDATE_ORDER = ("A", "B", "C")
+_CANONICAL_RUN_LOCATOR_PREFIX = ("runs", "pams-native-table2-baseline-v1")
+_CONTAINER_AUDIT_STAGES = (
+    "preflight",
+    "launch_authorization",
+    "encoder_epoch11",
+    "epoch11_gate",
+    "encoder_final",
+)
+_CONTAINER_AUDIT_ROLES = (
+    "create_id",
+    "configuration_inspect",
+    "configuration_verification",
+    "post_run_inspect",
+    "exit_code",
+)
+_CONTAINER_AUDIT_IDENTITY_KEYS = {"locator", "sha256", "bytes"}
 _FORBIDDEN_FIELD_NAMES = _epoch11._FORBIDDEN_FIELD_NAMES
 _FORBIDDEN_PATH_TOKEN = _epoch11._FORBIDDEN_PATH_TOKEN
 
@@ -562,6 +580,9 @@ _REGISTRY_OUTCOME_KEYS = {
     "key",
     "reservation_sha256",
     "reservation_bytes",
+    "attempt_reservation_locator",
+    "attempt_reservation_sha256",
+    "attempt_reservation_bytes",
     "train_run_receipt_locator",
     "train_run_receipt_sha256",
     "train_run_receipt_bytes",
@@ -571,6 +592,7 @@ _REGISTRY_OUTCOME_KEYS = {
     "terminal_receipt_locator",
     "terminal_receipt_sha256",
     "terminal_receipt_bytes",
+    "container_audits",
     "train_lineage",
     "prior_outcome_registry_ids",
     "aggregate_only",
@@ -608,6 +630,7 @@ _REGISTRY_OUTCOME_RECEIPT_KEYS = {
     "registry_id",
     "candidate_id",
     "reservation_sha256",
+    "attempt_reservation_sha256",
     "train_run_receipt_sha256",
     "terminal_artifact_sha256",
     "terminal_receipt_sha256",
@@ -929,9 +952,83 @@ def _reject_privileged_path(path: Path, *, role: str) -> None:
         raise ValueError(f"{role} path contains a forbidden privileged token")
 
 
-def _strict_json(path: Path, *, document: str) -> dict[str, Any]:
+def _strict_json(
+    path: Path,
+    *,
+    document: str,
+    expected_identity: tuple[str, int] | None = None,
+) -> dict[str, Any]:
     _reject_privileged_path(path, role=document)
-    return _epoch11._strict_json(path.read_text(encoding="utf-8"), document=document)
+    return _epoch11._strict_json(
+        _stable_file_bytes(path, expected_identity=expected_identity).decode("utf-8"),
+        document=document,
+    )
+
+
+def _strict_json_value(
+    path: Path,
+    *,
+    document: str,
+    expected_identity: tuple[str, int] | None = None,
+) -> Any:
+    """Load arbitrary JSON while rejecting duplicate keys and non-finite values."""
+
+    _reject_privileged_path(path, role=document)
+
+    def reject_duplicate(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"{document} contains duplicate JSON field {key!r}")
+            result[key] = value
+        return result
+
+    def reject_constant(value: str) -> None:
+        raise ValueError(f"{document} contains non-finite JSON constant {value}")
+
+    return json.loads(
+        _stable_file_bytes(path, expected_identity=expected_identity).decode("utf-8"),
+        object_pairs_hook=reject_duplicate,
+        parse_constant=reject_constant,
+    )
+
+
+def _stable_file_bytes(
+    path: Path,
+    *,
+    expected_identity: tuple[str, int] | None = None,
+) -> bytes:
+    """Read one non-symlink regular file from a stable descriptor."""
+
+    before = path.lstat()
+    if stat.S_ISLNK(before.st_mode) or not stat.S_ISREG(before.st_mode):
+        raise ValueError(f"registry input must be a regular non-symlink file: {path}")
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    descriptor = os.open(path, flags)
+    try:
+        opened = os.fstat(descriptor)
+        chunks: list[bytes] = []
+        while chunk := os.read(descriptor, 1024 * 1024):
+            chunks.append(chunk)
+        closed = os.fstat(descriptor)
+    finally:
+        os.close(descriptor)
+    after = path.lstat()
+    stable_fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns")
+    if any(
+        getattr(before, field) != getattr(opened, field)
+        or getattr(opened, field) != getattr(closed, field)
+        or getattr(closed, field) != getattr(after, field)
+        for field in stable_fields
+    ):
+        raise RuntimeError(f"registry input changed while it was read: {path}")
+    content = b"".join(chunks)
+    identity = (hashlib.sha256(content).hexdigest(), len(content))
+    if expected_identity is not None and identity != expected_identity:
+        raise ValueError(f"registry input identity mismatch: {path}")
+    return content
 
 
 def _load_candidate_config(path: Path) -> PAMSConfig:
@@ -2358,7 +2455,14 @@ def _validate_encoder_completion_receipt(
     artifacts = {artifact.role: artifact for artifact in receipt.artifacts}
     required = {
         "input_config",
+        "input_dataset_manifest",
         "input_pose_cache_snapshot",
+        "input_train_pose_inputs",
+        "input_train_pose_input_commitment",
+        "input_dev_pose_inputs",
+        "input_dev_pose_input_commitment",
+        "input_test_identity_pose_inputs",
+        "input_test_identity_pose_input_commitment",
         "input_resume_checkpoint",
         "input_resume_progress",
         "output_encoder_checkpoint",
@@ -2366,10 +2470,15 @@ def _validate_encoder_completion_receipt(
         "input_candidate_launch_authorization",
         "input_candidate_launch_authorization_receipt",
     }
-    if not required <= set(artifacts):
+    if set(artifacts) != required:
         raise ValueError(
-            "encoder completion receipt is missing required artifact roles: "
-            + repr(sorted(required - set(artifacts)))
+            "encoder completion receipt artifact role set mismatch: "
+            + repr(
+                {
+                    "missing": sorted(required - set(artifacts)),
+                    "extra": sorted(set(artifacts) - required),
+                }
+            )
         )
     epoch11_inputs = epoch11_artifact["inputs"]
     expected_artifacts = {
@@ -2393,26 +2502,39 @@ def _validate_encoder_completion_receipt(
         ],
     }
     resolved_required: dict[str, tuple[Path, tuple[str, int]]] = {}
-    for role, expected_identity in expected_artifacts.items():
+    for role in sorted(required):
         resolved = resolve_artifact_path(path, artifacts[role])
         _reject_privileged_path(resolved, role=f"encoder completion {role}")
         validate_artifact_receipt(resolved, artifacts[role])
         actual_identity = (artifacts[role].sha256, artifacts[role].bytes)
-        if actual_identity != expected_identity:
+        expected_identity = expected_artifacts.get(role)
+        if expected_identity is not None and actual_identity != expected_identity:
             raise ValueError(f"encoder completion receipt {role} identity mismatch")
         resolved_required[role] = (resolved.resolve(strict=True), actual_identity)
+    if artifacts["input_dataset_manifest"].sha256 != artifacts[
+        "input_train_pose_inputs"
+    ].sha256:
+        raise ValueError("encoder completion train identity artifacts differ")
     command = receipt.started.command
-    for option in (
-        "--candidate-launch-authorization",
-        "--candidate-launch-receipt",
-    ):
-        if command.count(option) != 1:
-            raise ValueError(
-                f"encoder started command must consume {option} exactly once"
-            )
+    if not _canonical_completion_command(command):
+        raise ValueError("encoder started command is not the canonical final resume")
+    resume_progress = _stable_file_bytes(
+        resolved_required["input_resume_progress"][0],
+        expected_identity=resolved_required["input_resume_progress"][1],
+    )
+    final_progress = _stable_file_bytes(
+        resolved_required["progress_log"][0],
+        expected_identity=resolved_required["progress_log"][1],
+    )
+    if not resume_progress or not final_progress.startswith(resume_progress):
+        raise ValueError("final encoder progress lacks the exact epoch11 prefix")
     started_path = path.with_name(f"{receipt.run_id}.started.json")
     started_identity = _stable_file_sha256(started_path)
-    started_payload = _strict_json(started_path, document="encoder started receipt")
+    started_payload = _strict_json(
+        started_path,
+        document="encoder started receipt",
+        expected_identity=started_identity,
+    )
     if started_payload != receipt.started.model_dump(mode="json"):
         raise ValueError("encoder started receipt bytes differ from embedded receipt")
     if started_identity[0] != receipt.start_manifest_sha256:
@@ -3182,7 +3304,11 @@ def _validate_prior_rejection_pair(
 ) -> dict[str, Any]:
     artifact_identity = _stable_file_sha256(artifact_path)
     receipt_identity = _stable_file_sha256(receipt_path)
-    artifact = _strict_json(artifact_path, document="prior scientific rejection artifact")
+    artifact = _strict_json(
+        artifact_path,
+        document="prior scientific rejection artifact",
+        expected_identity=artifact_identity,
+    )
     if set(artifact) != _OUTPUT_KEYS:
         raise ValueError("prior scientific rejection artifact schema mismatch")
     _validate_prior_terminal_payload(
@@ -3209,7 +3335,11 @@ def _validate_prior_rejection_pair(
     ):
         raise ValueError("prior artifact is not the required scientific rejection")
     declared_prior = artifact["candidate"]["prior_scientific_rejections"]
-    receipt = _strict_json(receipt_path, document="prior scientific rejection receipt")
+    receipt = _strict_json(
+        receipt_path,
+        document="prior scientific rejection receipt",
+        expected_identity=receipt_identity,
+    )
     if set(receipt) != _RECEIPT_KEYS:
         raise ValueError("prior scientific rejection receipt schema mismatch")
     next_candidate = (
@@ -3330,12 +3460,48 @@ def _candidate_registry_paths(root: Path, registry_id: str) -> dict[str, Path]:
         raise ValueError("candidate registry ID must be a lowercase SHA-256")
     return {
         "reservation": root / f"{registry_id}.reservation.json",
-        "outcome": root / f"{registry_id}.outcome.json",
-        "outcome_receipt": root / f"{registry_id}.outcome.json.receipt.json",
-        "terminal_artifact": root / f"{registry_id}.terminal.json",
-        "terminal_receipt": root / f"{registry_id}.terminal.json.receipt.json",
-        "train_run_receipt": root / f"{registry_id}.train-run.receipt.json",
+        "outcome_bundle": root / f"{registry_id}.outcome",
     }
+
+
+def _legacy_registry_outcome_paths(root: Path, registry_id: str) -> tuple[Path, ...]:
+    """Return the superseded non-atomic v1 outcome material paths."""
+
+    return (
+        root / f"{registry_id}.outcome.json",
+        root / f"{registry_id}.outcome.json.receipt.json",
+        root / f"{registry_id}.terminal.json",
+        root / f"{registry_id}.terminal.json.receipt.json",
+        root / f"{registry_id}.train-run.receipt.json",
+    )
+
+
+def _reject_legacy_registry_outcome(root: Path, registry_id: str) -> None:
+    if any(
+        path.exists() or path.is_symlink()
+        for path in _legacy_registry_outcome_paths(root, registry_id)
+    ):
+        raise ValueError(
+            "legacy non-atomic v1 registry outcome cannot authorize a predecessor; "
+            "publish a complete v2 outcome bundle"
+        )
+
+
+def _registry_bundle_paths(bundle_root: Path) -> dict[str, Path]:
+    paths = {
+        "outcome": bundle_root / "outcome.json",
+        "outcome_receipt": bundle_root / "outcome.receipt.json",
+        "attempt_reservation": bundle_root / "attempt.reservation.json",
+        "terminal_artifact": bundle_root / "terminal.json",
+        "terminal_receipt": bundle_root / "terminal.receipt.json",
+        "train_run_receipt": bundle_root / "train-run.receipt.json",
+    }
+    for stage in _CONTAINER_AUDIT_STAGES:
+        for role in _CONTAINER_AUDIT_ROLES:
+            paths[f"container_audit:{stage}:{role}"] = (
+                bundle_root / "container-audits" / stage / f"{role}.bin"
+            )
+    return paths
 
 
 def _safe_registry_root(path: str | Path) -> Path:
@@ -3355,18 +3521,82 @@ def _safe_run_locator(value: str, *, attempt_id: str) -> str:
         or locator.is_absolute()
         or ".." in locator.parts
         or not locator.parts
-        or locator.parts[-1] != attempt_id
+        or locator.parts
+        != (*_CANONICAL_RUN_LOCATOR_PREFIX, attempt_id)
     ):
         raise ValueError("candidate registry run locator is unsafe or mismatched")
     return locator.as_posix()
+
+
+def _safe_candidate_runs_root(path: str | Path) -> Path:
+    root = Path(path)
+    _reject_privileged_path(root, role="canonical candidate-runs root")
+    resolved = root.resolve(strict=True)
+    if not resolved.is_dir() or root.is_symlink():
+        raise ValueError("canonical candidate-runs root must be a real directory")
+    return resolved
+
+
+def _resolve_reserved_candidate_run_paths(
+    candidate_runs_root: str | Path,
+    reservation: Mapping[str, Any],
+) -> dict[str, Path]:
+    """Derive run artifacts exclusively from the reservation run locator."""
+
+    root = _safe_candidate_runs_root(candidate_runs_root)
+    run_binding = _require_exact_mapping(
+        reservation["run_binding"],
+        _REGISTRY_RUN_BINDING_KEYS,
+        role="candidate registry run binding",
+    )
+    attempt_id = run_binding["attempt_id"]
+    locator = _safe_run_locator(run_binding["run_locator"], attempt_id=attempt_id)
+    relative = PurePosixPath(locator)
+    cursor = root
+    for component in relative.parts:
+        cursor = cursor / component
+        if cursor.is_symlink():
+            raise ValueError("candidate run locator contains a symlink component")
+    run_root = cursor.resolve(strict=True)
+    try:
+        run_root.relative_to(root)
+    except ValueError as error:
+        raise ValueError("candidate run locator escapes the canonical root") from error
+    if not run_root.is_dir():
+        raise ValueError("reserved candidate run root is not a directory")
+    attempt_reservation = run_root / "attempt.reservation.json"
+    train_run_receipt = run_root / "audit" / "run.receipt.json"
+    for role, path in {
+        "candidate attempt reservation": attempt_reservation,
+        "candidate train run receipt": train_run_receipt,
+    }.items():
+        identity = _stable_file_sha256(path)
+        if role == "candidate attempt reservation" and identity != (
+            run_binding["attempt_reservation_sha256"],
+            run_binding["attempt_reservation_bytes"],
+        ):
+            raise ValueError(
+                "reserved candidate attempt bytes differ from the registry"
+            )
+        _strict_json(path, document=role, expected_identity=identity)
+    return {
+        "run_root": run_root,
+        "attempt_reservation": attempt_reservation,
+        "train_run_receipt": train_run_receipt,
+    }
 
 
 def _load_candidate_registry_reservation(
     path: Path,
     *,
     expected_key: Mapping[str, str],
+    expected_identity: tuple[str, int] | None = None,
 ) -> dict[str, Any]:
-    payload = _strict_json(path, document="candidate registry reservation")
+    payload = _strict_json(
+        path,
+        document="candidate registry reservation",
+        expected_identity=expected_identity,
+    )
     _require_exact_mapping(
         payload,
         _REGISTRY_RESERVATION_KEYS,
@@ -3457,12 +3687,16 @@ def reserve_candidate_registry_slot(
     if list(prior_outcome_registry_ids) != expected_prior_outcome_registry_ids:
         raise ValueError("candidate registry predecessor ID order mismatch")
     paths = _candidate_registry_paths(root, registry_id)
-    if any(paths[name].exists() for name in paths if name != "reservation"):
+    _reject_legacy_registry_outcome(root, registry_id)
+    if paths["outcome_bundle"].exists():
         raise FileExistsError("candidate registry already contains outcome material")
     run_reservation = Path(run_reservation_path)
     _reject_privileged_path(run_reservation, role="candidate run reservation")
+    reservation_identity = _stable_file_sha256(run_reservation)
     attempt_payload = _strict_json(
-        run_reservation, document="candidate run attempt reservation"
+        run_reservation,
+        document="candidate run attempt reservation",
+        expected_identity=reservation_identity,
     )
     attempt_id = attempt_payload.get("attempt_id")
     attempt_registry = attempt_payload.get("candidate_registry")
@@ -3492,7 +3726,6 @@ def reserve_candidate_registry_slot(
         is not True
     ):
         raise ValueError("candidate run reservation launch policy is not canonical")
-    reservation_identity = _stable_file_sha256(run_reservation)
     normalized_locator = _safe_run_locator(run_locator, attempt_id=attempt_id)
     payload = {
         "schema_version": 1,
@@ -3514,7 +3747,11 @@ def reserve_candidate_registry_slot(
     _write_new(paths["reservation"], _encoded_json(payload))
     fsync_directory(root)
     identity = _stable_file_sha256(paths["reservation"])
-    _load_candidate_registry_reservation(paths["reservation"], expected_key=key)
+    _load_candidate_registry_reservation(
+        paths["reservation"],
+        expected_key=key,
+        expected_identity=identity,
+    )
     return paths["reservation"], payload, identity
 
 
@@ -3546,10 +3783,41 @@ def _load_registry_outcome(
     specification: GateSpecification,
 ) -> dict[str, Any]:
     registry_id = sha256_json(dict(expected_key))
-    paths = _candidate_registry_paths(registry_root, registry_id)
+    registry_paths = _candidate_registry_paths(registry_root, registry_id)
+    _reject_legacy_registry_outcome(registry_root, registry_id)
+    bundle_root = registry_paths["outcome_bundle"]
+    if bundle_root.is_symlink() or not bundle_root.resolve(strict=True).is_dir():
+        raise ValueError("candidate registry outcome bundle must be a real directory")
+    try:
+        bundle_root.resolve(strict=True).relative_to(registry_root.resolve(strict=True))
+    except ValueError as error:
+        raise ValueError(
+            "candidate registry outcome bundle escaped the registry"
+        ) from error
+    paths = {**registry_paths, **_registry_bundle_paths(bundle_root)}
+    expected_bundle_files = {
+        path.relative_to(bundle_root).as_posix()
+        for name, path in paths.items()
+        if name not in {"reservation", "outcome_bundle"}
+    }
+    actual_bundle_files: set[str] = set()
+    for path in bundle_root.rglob("*"):
+        if path.is_symlink():
+            raise ValueError("candidate registry outcome bundle contains a symlink")
+        if path.is_dir():
+            continue
+        if not path.is_file():
+            raise ValueError(
+                "candidate registry outcome bundle has a non-regular entry"
+            )
+        actual_bundle_files.add(path.relative_to(bundle_root).as_posix())
+    if actual_bundle_files != expected_bundle_files:
+        raise ValueError("candidate registry outcome bundle file set mismatch")
     reservation_identity = _stable_file_sha256(paths["reservation"])
     reservation = _load_candidate_registry_reservation(
-        paths["reservation"], expected_key=expected_key
+        paths["reservation"],
+        expected_key=expected_key,
+        expected_identity=reservation_identity,
     )
     if reservation["prior_outcome_registry_ids"] != list(
         expected_prior_registry_ids
@@ -3557,26 +3825,50 @@ def _load_registry_outcome(
         raise ValueError("candidate registry reservation predecessor chain mismatch")
 
     outcome_identity = _stable_file_sha256(paths["outcome"])
-    outcome = _strict_json(paths["outcome"], document="candidate registry outcome")
+    outcome = _strict_json(
+        paths["outcome"],
+        document="candidate registry outcome",
+        expected_identity=outcome_identity,
+    )
     _require_exact_mapping(outcome, _REGISTRY_OUTCOME_KEYS, role="registry outcome")
     outcome_key = _require_exact_mapping(
         outcome["key"], _REGISTRY_KEY_KEYS, role="registry outcome key"
     )
     lineage = _validate_registry_train_lineage(outcome["train_lineage"])
+    attempt_reservation_identity = _stable_file_sha256(paths["attempt_reservation"])
+    archived_attempt = _strict_json(
+        paths["attempt_reservation"],
+        document="archived candidate attempt reservation",
+        expected_identity=attempt_reservation_identity,
+    )
     train_identity = _stable_file_sha256(paths["train_run_receipt"])
     archived_train = _strict_json(
-        paths["train_run_receipt"], document="archived candidate train run receipt"
+        paths["train_run_receipt"],
+        document="archived candidate train run receipt",
+        expected_identity=train_identity,
     )
     terminal_identity = _stable_file_sha256(paths["terminal_artifact"])
     terminal_receipt_identity = _stable_file_sha256(paths["terminal_receipt"])
     if (
-        outcome["schema_version"] != 1
+        outcome["schema_version"] != 2
         or outcome["artifact_type"] != _CANDIDATE_REGISTRY_OUTCOME_TYPE
         or outcome["status"] != "scientific_rejection"
         or outcome["registry_id"] != registry_id
         or dict(outcome_key) != dict(expected_key)
         or outcome["reservation_sha256"] != reservation_identity[0]
         or outcome["reservation_bytes"] != reservation_identity[1]
+        or outcome["attempt_reservation_locator"]
+        != paths["attempt_reservation"].name
+        or (
+            outcome["attempt_reservation_sha256"],
+            outcome["attempt_reservation_bytes"],
+        )
+        != attempt_reservation_identity
+        or attempt_reservation_identity
+        != (
+            reservation["run_binding"]["attempt_reservation_sha256"],
+            reservation["run_binding"]["attempt_reservation_bytes"],
+        )
         or outcome["train_run_receipt_locator"]
         != paths["train_run_receipt"].name
         or (outcome["train_run_receipt_sha256"], outcome["train_run_receipt_bytes"])
@@ -3593,6 +3885,17 @@ def _load_registry_outcome(
         or outcome["aggregate_only"] is not True
     ):
         raise ValueError("candidate registry outcome binding mismatch")
+    if (
+        archived_attempt.get("attempt_id")
+        != reservation["run_binding"]["attempt_id"]
+        or archived_attempt.get("source_revision") != expected_key["source_git_sha"]
+        or archived_attempt.get("candidate_id") != expected_key["candidate_id"]
+        or not isinstance(archived_attempt.get("candidate_registry"), Mapping)
+        or archived_attempt["candidate_registry"].get("registry_id") != registry_id
+        or archived_attempt["candidate_registry"].get("run_locator")
+        != reservation["run_binding"]["run_locator"]
+    ):
+        raise ValueError("archived candidate attempt reservation binding mismatch")
     archived_registry = archived_train.get("candidate_registry")
     archived_launch = archived_train.get("candidate_launch_authorization")
     archived_epoch11 = archived_train.get("epoch11_gate")
@@ -3633,7 +3936,40 @@ def _load_registry_outcome(
                 or not isinstance(identity["bytes"], int)
                 or identity["bytes"] < 1
             ):
-                raise ValueError("archived candidate container audit identity is invalid")
+                raise ValueError(
+                    "archived candidate container audit identity is invalid"
+                )
+    archived_audit_material = _require_exact_mapping(
+        outcome["container_audits"],
+        set(_CONTAINER_AUDIT_STAGES),
+        role="registry archived container audits",
+    )
+    material_paths: dict[tuple[str, str], Path] = {}
+    for stage in _CONTAINER_AUDIT_STAGES:
+        stage_material = _require_exact_mapping(
+            archived_audit_material[stage],
+            set(_CONTAINER_AUDIT_ROLES),
+            role=f"registry archived container audit {stage}",
+        )
+        for role in _CONTAINER_AUDIT_ROLES:
+            archive_identity = _require_exact_mapping(
+                stage_material[role],
+                _CONTAINER_AUDIT_IDENTITY_KEYS,
+                role=f"registry archived container audit {stage}.{role}",
+            )
+            archive_path = paths[f"container_audit:{stage}:{role}"]
+            if (
+                archive_identity["locator"]
+                != archive_path.relative_to(bundle_root).as_posix()
+                or _stable_file_sha256(archive_path)
+                != (archive_identity["sha256"], archive_identity["bytes"])
+                or archive_identity["sha256"]
+                != archived_audits[stage][role]["sha256"]
+                or archive_identity["bytes"]
+                != archived_audits[stage][role]["bytes"]
+            ):
+                raise ValueError("registry archived container audit binding mismatch")
+            material_paths[(stage, role)] = archive_path
     if (
         archived_train.get("status") != "completed"
         or archived_train.get("candidate_id") != expected_key["candidate_id"]
@@ -3644,6 +3980,8 @@ def _load_registry_outcome(
         or archived_registry.get("registry_id") != registry_id
         or archived_registry.get("reservation_sha256") != reservation_identity[0]
         or archived_registry.get("reservation_bytes") != reservation_identity[1]
+        or archived_registry.get("run_locator")
+        != reservation["run_binding"]["run_locator"]
         or archived_registry.get("exclusive_first_pass_reservation") is not True
         or not isinstance(archived_launch, Mapping)
         or archived_launch.get("authorization_sha256")
@@ -3694,13 +4032,30 @@ def _load_registry_outcome(
         != lineage["container_audits_sha256_commitment"]
     ):
         raise ValueError("archived candidate train run lineage mismatch")
+    _validate_container_audit_evidence(
+        bundle_root,
+        archived_audits,
+        attempt_id=reservation["run_binding"]["attempt_id"],
+        candidate_id=expected_key["candidate_id"],
+        run_locator=reservation["run_binding"]["run_locator"],
+        image_id=archived_train["container_image_id"],
+        environment_sha256=archived_train["container_environment_sha256"],
+        source_git_sha=expected_key["source_git_sha"],
+        source_receipt_sha256=archived_train["source_export_receipt_sha256"],
+        epoch11_completion_receipt_sha256=archived_epoch11[
+            "encoder_completion_receipt_sha256"
+        ],
+        material_paths=material_paths,
+    )
 
     outcome_receipt_identity = _stable_file_sha256(paths["outcome_receipt"])
     outcome_receipt = _strict_json(
-        paths["outcome_receipt"], document="candidate registry outcome receipt"
+        paths["outcome_receipt"],
+        document="candidate registry outcome receipt",
+        expected_identity=outcome_receipt_identity,
     )
     expected_outcome_receipt = {
-        "schema_version": 1,
+        "schema_version": 2,
         "artifact_type": _CANDIDATE_REGISTRY_OUTCOME_RECEIPT_TYPE,
         "artifact_locator": paths["outcome"].name,
         "artifact_sha256": outcome_identity[0],
@@ -3709,6 +4064,7 @@ def _load_registry_outcome(
         "registry_id": registry_id,
         "candidate_id": expected_key["candidate_id"],
         "reservation_sha256": reservation_identity[0],
+        "attempt_reservation_sha256": attempt_reservation_identity[0],
         "train_run_receipt_sha256": train_identity[0],
         "terminal_artifact_sha256": terminal_identity[0],
         "terminal_receipt_sha256": terminal_receipt_identity[0],
@@ -3735,7 +4091,9 @@ def _load_registry_outcome(
         source_git_sha=expected_key["source_git_sha"],
     )
     terminal_artifact = _strict_json(
-        paths["terminal_artifact"], document="candidate registry terminal artifact"
+        paths["terminal_artifact"],
+        document="candidate registry terminal artifact",
+        expected_identity=terminal_identity,
     )
     terminal_inputs = terminal_artifact["inputs"]
     if (
@@ -3752,7 +4110,9 @@ def _load_registry_outcome(
     ):
         raise ValueError("registry reservation differs from train/terminal lineage")
     terminal_receipt = _strict_json(
-        paths["terminal_receipt"], document="candidate registry terminal receipt"
+        paths["terminal_receipt"],
+        document="candidate registry terminal receipt",
+        expected_identity=terminal_receipt_identity,
     )
     if (
         terminal_receipt["candidate_registry_id"] != registry_id
@@ -4218,6 +4578,683 @@ def _run_relative_path(run_root: Path, locator: str, *, role: str) -> Path:
     return candidate
 
 
+def _container_name_for_stage(stage: str, *, attempt_id: str) -> str:
+    prefixes = {
+        "preflight": "pams-native-proxy-preflight-",
+        "launch_authorization": "pams-native-proxy-launch-",
+        "encoder_epoch11": "pams-native-proxy-epoch11-",
+        "epoch11_gate": "pams-native-proxy-gate-",
+        "encoder_final": "pams-native-proxy-final-",
+    }
+    return prefixes[stage] + attempt_id
+
+
+def _container_audit_locator(
+    stage: str,
+    role: str,
+    *,
+    attempt_id: str,
+) -> str:
+    suffixes = {
+        "create_id": ".create-id.txt",
+        "configuration_inspect": ".inspect.json",
+        "configuration_verification": ".inspect.verification.json",
+        "post_run_inspect": ".post-run.inspect.json",
+        "exit_code": ".exit-code.txt",
+    }
+    return "audit/" + _container_name_for_stage(
+        stage, attempt_id=attempt_id
+    ) + suffixes[role]
+
+
+def _expected_container_mount_modes(stage: str) -> dict[str, bool]:
+    source = {
+        "/workspace": False,
+        "/pams/source-export-receipt.json": False,
+    }
+    protocol = {
+        "/pams/input/config.yaml": False,
+        "/pams/protocol/train.inputs.json": False,
+        "/pams/protocol/train.inputs.commitment.json": False,
+        "/pams/protocol/dev.inputs.json": False,
+        "/pams/protocol/dev.inputs.commitment.json": False,
+        "/pams/protocol/test-identity.inputs.json": False,
+        "/pams/protocol/test-identity.inputs.commitment.json": False,
+    }
+    launch_pair = {
+        "/pams/launch/authorization.json": False,
+        "/pams/launch/authorization.json.receipt.json": False,
+    }
+    if stage == "preflight":
+        return {
+            **source,
+            **protocol,
+            "/pams/pose-recovery/config.yaml": False,
+            "/pams/pose-recovery/native-baseline-authorization.json": False,
+            "/pams/pose-recovery/paired-gate.json": False,
+            "/pams/pose-recovery/run.receipt.json": False,
+            "/pams/pose-recovery/train337.ledger.json": False,
+            "/pams/pose-cache": False,
+            "/pams/output": True,
+        }
+    if stage == "launch_authorization":
+        return {
+            **source,
+            "/pams/input/launch-training-pose-cache-snapshot.json": False,
+            "/pams/run/attempt.reservation.json": False,
+            "/pams/candidate-registry": True,
+            "/pams/output": True,
+        }
+    if stage == "encoder_epoch11":
+        return {
+            **source,
+            **protocol,
+            **launch_pair,
+            "/pams/pose-cache": False,
+            "/pams/output": True,
+        }
+    if stage == "epoch11_gate":
+        return {
+            **source,
+            **launch_pair,
+            "/pams/pose-cache": False,
+            "/pams/epoch11/encoder.pt": False,
+            "/pams/epoch11/encoder.jsonl": False,
+            "/pams/epoch11/training-pose-cache-snapshot.json": False,
+            "/pams/epoch11/completion.receipt.json": False,
+            "/pams/output": True,
+        }
+    if stage == "encoder_final":
+        return {
+            **source,
+            **protocol,
+            **launch_pair,
+            "/pams/pose-cache": False,
+            "/pams/resume/encoder.pt": False,
+            "/pams/resume/encoder.jsonl": False,
+            "/pams/output": True,
+        }
+    raise ValueError(f"unknown container audit stage: {stage}")
+
+
+def _canonical_encoder_command_tail(*, epochs: int, resume: bool) -> tuple[str, ...]:
+    command = [
+        "train",
+        "encoder",
+        "/pams/protocol/train.inputs.json",
+        "/pams/pose-cache",
+        "/pams/output/run",
+        "--epochs",
+        str(epochs),
+    ]
+    if resume:
+        command.extend(
+            [
+                "--resume",
+                "--resume-checkpoint",
+                "/pams/resume/encoder.pt",
+                "--resume-progress",
+                "/pams/resume/encoder.jsonl",
+            ]
+        )
+    command.extend(
+        [
+            "--config",
+            "/pams/input/config.yaml",
+            "--device",
+            "cuda:0",
+            "--microbatch-size",
+            "32",
+            "--label-free-inputs",
+            "--input-commitment",
+            "/pams/protocol/train.inputs.commitment.json",
+            "--dev-inputs",
+            "/pams/protocol/dev.inputs.json",
+            "--dev-input-commitment",
+            "/pams/protocol/dev.inputs.commitment.json",
+            "--test-identity-inputs",
+            "/pams/protocol/test-identity.inputs.json",
+            "--test-identity-commitment",
+            "/pams/protocol/test-identity.inputs.commitment.json",
+            "--candidate-launch-authorization",
+            "/pams/launch/authorization.json",
+            "--candidate-launch-receipt",
+            "/pams/launch/authorization.json.receipt.json",
+        ]
+    )
+    return tuple(command)
+
+
+def _canonical_completion_command(command: Sequence[str]) -> bool:
+    if not command or any(not isinstance(value, str) for value in command):
+        return False
+    entrypoint = command[0].replace("\\", "/")
+    return entrypoint in {"pams", "/workspace/src/pams/__main__.py"} and tuple(
+        command[1:]
+    ) == _canonical_encoder_command_tail(
+        epochs=150,
+        resume=True,
+    )
+
+
+def _container_option_pairs(
+    argv: Sequence[str],
+    *,
+    prefix: Sequence[str],
+) -> tuple[tuple[str, str], ...]:
+    if tuple(argv[: len(prefix)]) != tuple(prefix):
+        raise ValueError("container command prefix mismatch")
+    remainder = argv[len(prefix) :]
+    if len(remainder) % 2:
+        raise ValueError("container command options are not key/value pairs")
+    pairs: list[tuple[str, str]] = []
+    for index in range(0, len(remainder), 2):
+        option, value = remainder[index : index + 2]
+        if not option.startswith("--") or value.startswith("--"):
+            raise ValueError("container command option shape is invalid")
+        pairs.append((option, value))
+    return tuple(pairs)
+
+
+def _validate_container_command(
+    stage: str,
+    argv: Sequence[str],
+    *,
+    candidate_id: str,
+    run_locator: str,
+    epoch11_completion_receipt_sha256: str,
+) -> None:
+    if not argv or any(not isinstance(value, str) for value in argv):
+        raise ValueError(f"container {stage} command is not a string argv")
+    command = "\0".join(argv)
+    lowered = command.lower()
+    forbidden = (
+        ".targets",
+        "/dev-pose",
+        "/test-pose",
+        "--include-dev",
+        "train\0sshead",
+        "\0evaluate\0",
+        "dev-predict",
+        "dev-score",
+        "test-predict",
+        "test-score",
+    )
+    if any(token in lowered for token in forbidden):
+        raise ValueError(f"container {stage} command exposes a forbidden interface")
+    if stage == "preflight":
+        pairs = _container_option_pairs(
+            argv,
+            prefix=("python", "scripts/server/validate_pams_native_baseline_inputs.py"),
+        )
+        expected_names = (
+            "--candidate-config",
+            "--pose-recovery-version",
+            "--pose-recovery-config",
+            "--train-sidecar",
+            "--train-commitment",
+            "--dev-identity-sidecar",
+            "--dev-identity-commitment",
+            "--test-identity-sidecar",
+            "--test-identity-commitment",
+            "--pose-recovery-authorization",
+            "--expected-pose-recovery-authorization-sha256",
+            "--pose-recovery-paired-gate",
+            "--expected-pose-recovery-paired-gate-sha256",
+            "--pose-recovery-run-receipt",
+            "--expected-pose-recovery-run-receipt-sha256",
+            "--pose-recovery-ledger",
+            "--train-pose-cache",
+            "--output",
+        )
+        if tuple(option for option, _ in pairs) != expected_names:
+            raise ValueError("preflight container command option set or order drifted")
+        values = dict(pairs)
+        expected_values = {
+            "--candidate-config": "/pams/input/config.yaml",
+            "--pose-recovery-config": "/pams/pose-recovery/config.yaml",
+            "--train-sidecar": "/pams/protocol/train.inputs.json",
+            "--train-commitment": "/pams/protocol/train.inputs.commitment.json",
+            "--dev-identity-sidecar": "/pams/protocol/dev.inputs.json",
+            "--dev-identity-commitment": (
+                "/pams/protocol/dev.inputs.commitment.json"
+            ),
+            "--test-identity-sidecar": "/pams/protocol/test-identity.inputs.json",
+            "--test-identity-commitment": (
+                "/pams/protocol/test-identity.inputs.commitment.json"
+            ),
+            "--pose-recovery-authorization": (
+                "/pams/pose-recovery/native-baseline-authorization.json"
+            ),
+            "--pose-recovery-paired-gate": "/pams/pose-recovery/paired-gate.json",
+            "--pose-recovery-run-receipt": (
+                "/pams/pose-recovery/run.receipt.json"
+            ),
+            "--pose-recovery-ledger": "/pams/pose-recovery/train337.ledger.json",
+            "--train-pose-cache": "/pams/pose-cache",
+            "--output": "/pams/output/input-preflight.json",
+        }
+        if any(
+            values.get(option) != value
+            for option, value in expected_values.items()
+        ):
+            raise ValueError("preflight container command path binding drifted")
+        if not values["--pose-recovery-version"]:
+            raise ValueError("preflight pose-recovery version is empty")
+        for option in (
+            "--expected-pose-recovery-authorization-sha256",
+            "--expected-pose-recovery-paired-gate-sha256",
+            "--expected-pose-recovery-run-receipt-sha256",
+        ):
+            value = values[option]
+            if len(value) != 64 or any(
+                character not in "0123456789abcdef" for character in value
+            ):
+                raise ValueError(f"preflight container command has invalid {option}")
+        return
+    if stage == "launch_authorization":
+        expected_config = {
+            "A": (
+                "/workspace/configs/experiments/"
+                "pams_native_table2_baseline_proxy_v1.yaml"
+            ),
+            "B": (
+                "/workspace/configs/experiments/"
+                "pams_native_table2_baseline_proxy_b_w16_s2.yaml"
+            ),
+            "C": (
+                "/workspace/configs/experiments/"
+                "pams_native_table2_baseline_proxy_c_w24_s4.yaml"
+            ),
+        }[candidate_id]
+        expected = (
+            "python",
+            "scripts/server/prepare_pams_native_candidate_launch_authorization.py",
+            "--source-receipt",
+            "/pams/source-export-receipt.json",
+            "--config",
+            expected_config,
+            "--gate-specification",
+            "/workspace/configs/gates/pams_native_terminal_readout_gate_v1.yaml",
+            "--pose-snapshot",
+            "/pams/input/launch-training-pose-cache-snapshot.json",
+            "--candidate-id",
+            candidate_id,
+            "--candidate-registry-root",
+            "/pams/candidate-registry",
+            "--run-reservation",
+            "/pams/run/attempt.reservation.json",
+            "--run-locator",
+            run_locator,
+            "--output",
+            "/pams/output/authorization.json",
+        )
+        if tuple(argv) != expected:
+            raise ValueError("launch-authorization command is not canonical")
+        return
+    if stage in {"encoder_epoch11", "encoder_final"}:
+        expected = (
+            "python",
+            "-m",
+            "pams",
+            *_canonical_encoder_command_tail(
+                epochs=11 if stage == "encoder_epoch11" else 150,
+                resume=stage == "encoder_final",
+            ),
+        )
+        if tuple(argv) != expected:
+            raise ValueError(f"container {stage} encoder command is not canonical")
+        return
+    if stage == "epoch11_gate":
+        expected_config = {
+            "A": (
+                "/workspace/configs/experiments/"
+                "pams_native_table2_baseline_proxy_v1.yaml"
+            ),
+            "B": (
+                "/workspace/configs/experiments/"
+                "pams_native_table2_baseline_proxy_b_w16_s2.yaml"
+            ),
+            "C": (
+                "/workspace/configs/experiments/"
+                "pams_native_table2_baseline_proxy_c_w24_s4.yaml"
+            ),
+        }[candidate_id]
+        expected = (
+            "python",
+            "scripts/server/run_pams_native_epoch11_train_gate.py",
+            "--encoder-checkpoint",
+            "/pams/epoch11/encoder.pt",
+            "--encoder-progress",
+            "/pams/epoch11/encoder.jsonl",
+            "--encoder-completion-receipt",
+            "/pams/epoch11/completion.receipt.json",
+            "--expected-encoder-completion-receipt-sha256",
+            epoch11_completion_receipt_sha256,
+            "--config",
+            expected_config,
+            "--gate-specification",
+            "/workspace/configs/gates/pams_native_epoch11_train_gate_v1.yaml",
+            "--candidate-launch-authorization",
+            "/pams/launch/authorization.json",
+            "--candidate-launch-receipt",
+            "/pams/launch/authorization.json.receipt.json",
+            "--pose-cache-dir",
+            "/pams/pose-cache",
+            "--pose-snapshot",
+            "/pams/epoch11/training-pose-cache-snapshot.json",
+            "--output",
+            "/pams/output/gate.json",
+            "--device",
+            "cuda:0",
+            "--batch-size",
+            "16",
+        )
+        if tuple(argv) != expected:
+            raise ValueError("epoch11 gate command is not canonical")
+        return
+    raise ValueError(f"unknown container audit stage: {stage}")
+
+
+def _container_mounts(
+    item: Mapping[str, Any], *, stage: str
+) -> dict[str, dict[str, Any]]:
+    raw = item.get("Mounts")
+    if not isinstance(raw, list):
+        raise ValueError(f"container {stage} inspect lacks mounts")
+    mounts: dict[str, dict[str, Any]] = {}
+    for row in raw:
+        if not isinstance(row, Mapping):
+            raise ValueError(f"container {stage} mount row is invalid")
+        destination = row.get("Destination")
+        source = row.get("Source")
+        rw = row.get("RW")
+        if (
+            not isinstance(destination, str)
+            or not isinstance(source, str)
+            or type(rw) is not bool
+            or destination in mounts
+            or row.get("Type") != "bind"
+            or not Path(source).is_absolute()
+            or row.get("Propagation") != "rprivate"
+            or (
+                row.get("Mode") not in ({"", "rw"} if rw else {"", "ro"})
+            )
+        ):
+            raise ValueError(f"container {stage} mount row is not canonical")
+        mounts[destination] = {"source": source, "rw": rw}
+    expected = _expected_container_mount_modes(stage)
+    if set(mounts) != set(expected) or any(
+        mounts[destination]["rw"] is not expected_rw
+        for destination, expected_rw in expected.items()
+    ):
+        raise ValueError(f"container {stage} mount policy mismatch")
+    all_text = "\0".join(
+        [*mounts, *(str(value["source"]) for value in mounts.values())]
+    ).lower()
+    if any(
+        token in all_text
+        for token in (".targets", "/dev-pose", "/test-pose", "/test-target")
+    ):
+        raise ValueError(f"container {stage} mounts expose forbidden material")
+    return mounts
+
+
+def _container_semantic_view(
+    item: Mapping[str, Any],
+    *,
+    stage: str,
+    candidate_id: str,
+    attempt_id: str,
+    run_locator: str,
+    image_id: str,
+    environment_sha256: str,
+    source_git_sha: str,
+    source_receipt_sha256: str,
+    epoch11_completion_receipt_sha256: str,
+) -> dict[str, Any]:
+    config = item.get("Config")
+    host = item.get("HostConfig")
+    if not isinstance(config, Mapping) or not isinstance(host, Mapping):
+        raise ValueError(f"container {stage} inspect lacks Config or HostConfig")
+    expected_name = _container_name_for_stage(stage, attempt_id=attempt_id)
+    if (
+        item.get("Name") != "/" + expected_name
+        or item.get("Image") != image_id
+        or config.get("Image") != image_id
+        or config.get("User") != "1000:1000"
+        or config.get("WorkingDir") != "/workspace"
+        or host.get("NetworkMode") != "none"
+        or host.get("ReadonlyRootfs") is not True
+        or host.get("Privileged") is not False
+        or host.get("Init") is not True
+        or host.get("CapDrop") != ["ALL"]
+        or (host.get("CapAdd") or [])
+        or host.get("SecurityOpt") != ["no-new-privileges:true"]
+        or host.get("PidsLimit") != 4096
+        or host.get("Memory") != 96 * 1024**3
+        or host.get("NanoCpus") != 24_000_000_000
+        or host.get("ShmSize") != 8 * 1024**3
+        or set(host.get("Tmpfs") or {})
+        != {"/tmp", "/pams/tmp", "/pams/cache", "/pams/home"}
+    ):
+        raise ValueError(f"container {stage} hardening or identity mismatch")
+    argv = config.get("Cmd") or []
+    if not isinstance(argv, list):
+        raise ValueError(f"container {stage} command is not an argv list")
+    _validate_container_command(
+        stage,
+        argv,
+        candidate_id=candidate_id,
+        run_locator=run_locator,
+        epoch11_completion_receipt_sha256=epoch11_completion_receipt_sha256,
+    )
+    raw_environment = config.get("Env") or []
+    if not isinstance(raw_environment, list) or any(
+        not isinstance(value, str) or "=" not in value for value in raw_environment
+    ):
+        raise ValueError(f"container {stage} environment is invalid")
+    environment: dict[str, str] = {}
+    for value in raw_environment:
+        key, item_value = value.split("=", 1)
+        if key in environment:
+            raise ValueError(f"container {stage} environment contains duplicate keys")
+        environment[key] = item_value
+    required_environment = {
+        "PYTHONPATH": "/workspace/src",
+        "PYTHONOPTIMIZE": "",
+        "PAMS_AUDIT_MODE": "formal",
+        "PAMS_CONTAINER_IMAGE_ID": image_id,
+        "PAMS_CONTAINER_SOURCE_REVISION": source_git_sha,
+        "PAMS_CONTAINER_ENVIRONMENT_SHA256": environment_sha256,
+        "PAMS_SOURCE_EXPORT_RECEIPT": "/pams/source-export-receipt.json",
+        "PAMS_SOURCE_EXPORT_RECEIPT_SHA256": source_receipt_sha256,
+    }
+    if any(
+        environment.get(key) != value
+        for key, value in required_environment.items()
+    ):
+        raise ValueError(f"container {stage} runtime binding environment mismatch")
+    gpu_stages = {"encoder_epoch11", "epoch11_gate", "encoder_final"}
+    devices = host.get("DeviceRequests") or []
+    if stage in gpu_stages:
+        if (
+            len(devices) != 1
+            or not isinstance(devices[0], Mapping)
+            or "gpu" not in (devices[0].get("Capabilities") or [[None]])[0]
+            or environment.get("CUDA_VISIBLE_DEVICES") != "0"
+            or environment.get("CUBLAS_WORKSPACE_CONFIG") != ":4096:8"
+        ):
+            raise ValueError(f"container {stage} GPU binding mismatch")
+    elif devices or environment.get("CUDA_VISIBLE_DEVICES") != "":
+        raise ValueError(f"container {stage} must be CPU-only")
+    mounts = _container_mounts(item, stage=stage)
+    return {
+        "id": item.get("Id"),
+        "name": expected_name,
+        "image_id": image_id,
+        "argv": list(argv),
+        "environment": environment,
+        "mounts": mounts,
+        "network_mode": host.get("NetworkMode"),
+        "read_only_root": host.get("ReadonlyRootfs"),
+        "gpu_requested": bool(devices),
+    }
+
+
+def _validate_container_audit_evidence(
+    run_root: Path,
+    audits_value: Any,
+    *,
+    attempt_id: str,
+    candidate_id: str,
+    run_locator: str,
+    image_id: str,
+    environment_sha256: str,
+    source_git_sha: str,
+    source_receipt_sha256: str,
+    epoch11_completion_receipt_sha256: str,
+    material_paths: Mapping[tuple[str, str], Path] | None = None,
+) -> dict[tuple[str, str], tuple[Path, tuple[str, int]]]:
+    audits = _require_exact_mapping(
+        audits_value,
+        set(_CONTAINER_AUDIT_STAGES),
+        role="candidate container audits",
+    )
+    evidence: dict[tuple[str, str], tuple[Path, tuple[str, int]]] = {}
+    for stage in _CONTAINER_AUDIT_STAGES:
+        stage_mapping = _require_exact_mapping(
+            audits[stage],
+            set(_CONTAINER_AUDIT_ROLES),
+            role=f"candidate container audit {stage}",
+        )
+        for role in _CONTAINER_AUDIT_ROLES:
+            identity_mapping = _require_exact_mapping(
+                stage_mapping[role],
+                _CONTAINER_AUDIT_IDENTITY_KEYS,
+                role=f"candidate container audit {stage}.{role}",
+            )
+            expected_locator = _container_audit_locator(
+                stage, role, attempt_id=attempt_id
+            )
+            if identity_mapping["locator"] != expected_locator:
+                raise ValueError(
+                    f"candidate container audit locator mismatch: {stage}.{role}"
+                )
+            path = (
+                _run_relative_path(
+                    run_root,
+                    expected_locator,
+                    role=f"candidate container audit {stage}.{role}",
+                )
+                if material_paths is None
+                else material_paths[(stage, role)]
+            )
+            identity = _stable_file_sha256(path)
+            if identity != (
+                identity_mapping["sha256"],
+                identity_mapping["bytes"],
+            ):
+                raise ValueError(f"candidate container audit {stage}.{role} changed")
+            evidence[(stage, role)] = (path, identity)
+
+        create_id = _stable_file_bytes(
+            evidence[(stage, "create_id")][0],
+            expected_identity=evidence[(stage, "create_id")][1],
+        ).decode("utf-8").strip()
+        if len(create_id) != 64 or any(
+            value not in "0123456789abcdef" for value in create_id
+        ):
+            raise ValueError(f"container {stage} create ID is invalid")
+        inspect_value = _strict_json_value(
+            evidence[(stage, "configuration_inspect")][0],
+            document=f"container {stage} configuration inspect",
+            expected_identity=evidence[(stage, "configuration_inspect")][1],
+        )
+        post_value = _strict_json_value(
+            evidence[(stage, "post_run_inspect")][0],
+            document=f"container {stage} post-run inspect",
+            expected_identity=evidence[(stage, "post_run_inspect")][1],
+        )
+        if (
+            not isinstance(inspect_value, list)
+            or len(inspect_value) != 1
+            or not isinstance(inspect_value[0], Mapping)
+            or not isinstance(post_value, list)
+            or len(post_value) != 1
+            or not isinstance(post_value[0], Mapping)
+        ):
+            raise ValueError(f"container {stage} inspect envelope is invalid")
+        before_view = _container_semantic_view(
+            inspect_value[0],
+            stage=stage,
+            candidate_id=candidate_id,
+            attempt_id=attempt_id,
+            run_locator=run_locator,
+            image_id=image_id,
+            environment_sha256=environment_sha256,
+            source_git_sha=source_git_sha,
+            source_receipt_sha256=source_receipt_sha256,
+            epoch11_completion_receipt_sha256=epoch11_completion_receipt_sha256,
+        )
+        after_view = _container_semantic_view(
+            post_value[0],
+            stage=stage,
+            candidate_id=candidate_id,
+            attempt_id=attempt_id,
+            run_locator=run_locator,
+            image_id=image_id,
+            environment_sha256=environment_sha256,
+            source_git_sha=source_git_sha,
+            source_receipt_sha256=source_receipt_sha256,
+            epoch11_completion_receipt_sha256=epoch11_completion_receipt_sha256,
+        )
+        state = post_value[0].get("State")
+        if (
+            create_id != before_view["id"]
+            or before_view != after_view
+            or not isinstance(state, Mapping)
+            or state.get("Running") is not False
+            or state.get("ExitCode") != 0
+            or state.get("OOMKilled") is not False
+        ):
+            raise ValueError(f"container {stage} post-run identity or state mismatch")
+        exit_code = _stable_file_bytes(
+            evidence[(stage, "exit_code")][0],
+            expected_identity=evidence[(stage, "exit_code")][1],
+        ).decode("utf-8").strip()
+        if exit_code != "0":
+            raise ValueError(f"container {stage} exit-code audit is not zero")
+        verification = _strict_json(
+            evidence[(stage, "configuration_verification")][0],
+            document=f"container {stage} configuration verification",
+            expected_identity=evidence[(stage, "configuration_verification")][1],
+        )
+        expected_verification = {
+            "schema_version": 1,
+            "stage": stage.replace("_", "-"),
+            "verified": True,
+            "container_name": before_view["name"],
+            "image_id": image_id,
+            "network_mode": "none",
+            "read_only_root": True,
+            "gpu_requested": before_view["gpu_requested"],
+            "mounts": [
+                {
+                    "destination": destination,
+                    "source": row["source"],
+                    "rw": row["rw"],
+                }
+                for destination, row in sorted(before_view["mounts"].items())
+            ],
+        }
+        if verification != expected_verification:
+            raise ValueError(
+                f"container {stage} verification report is not reproducible"
+            )
+    return evidence
+
+
 def _validate_train_run_receipt(
     path: Path,
     *,
@@ -4228,10 +5265,14 @@ def _validate_train_run_receipt(
     pose_cache_set_sha256: str,
     registry_reservation: Mapping[str, Any],
     registry_reservation_identity: tuple[str, int],
+    attempt_reservation_identity: tuple[str, int],
     identities: Mapping[str, tuple[str, int]],
     epoch11_artifact: Mapping[str, Any],
     completion: CompletedRunReceipt,
-) -> dict[str, Any]:
+) -> tuple[
+    dict[str, Any],
+    dict[tuple[str, str], tuple[Path, tuple[str, int]]],
+]:
     if path.name != "run.receipt.json" or path.parent.name != "audit":
         raise ValueError("candidate train run receipt must use audit/run.receipt.json")
     run_root = path.parent.parent.resolve(strict=True)
@@ -4281,7 +5322,11 @@ def _validate_train_run_receipt(
         "test_scoring_authorized",
         "identity_only_dev_test_sidecars_required_by_cli_provenance",
     }
-    _require_exact_mapping(payload, expected_top_level, role="candidate train run receipt")
+    _require_exact_mapping(
+        payload,
+        expected_top_level,
+        role="candidate train run receipt",
+    )
     if (
         payload["schema_version"] != 1
         or payload["artifact_type"]
@@ -4297,6 +5342,8 @@ def _validate_train_run_receipt(
         or payload["config_fingerprint"] != config.fingerprint
         or payload["pose_fingerprint"] != config.pose_fingerprint
         or payload["pose_cache_set_sha256"] != pose_cache_set_sha256
+        or payload["fixed_period_frames"] != config.period.fixed_period_frames
+        or payload["anchor_stride"] != config.loss.anchor_stride
         or payload["classification"]
         != "independently_inferred_proxy_not_author_table2_baseline"
         or payload["protocol"] != "ucfrep_526"
@@ -4352,6 +5399,11 @@ def _validate_train_run_receipt(
         "exclusive_first_pass_reservation": True,
     }:
         raise ValueError("candidate train run registry binding mismatch")
+    if attempt_reservation_identity != (
+        registry_reservation["run_binding"]["attempt_reservation_sha256"],
+        registry_reservation["run_binding"]["attempt_reservation_bytes"],
+    ):
+        raise ValueError("candidate attempt reservation identity mismatch")
 
     launch = _require_exact_mapping(
         payload["candidate_launch_authorization"],
@@ -4513,36 +5565,23 @@ def _validate_train_run_receipt(
 
     audits = _require_exact_mapping(
         payload["container_audits"],
-        {"preflight", "launch_authorization", "encoder_epoch11", "epoch11_gate", "encoder_final"},
+        set(_CONTAINER_AUDIT_STAGES),
         role="candidate container audits",
     )
-    audit_roles = {
-        "create_id",
-        "configuration_inspect",
-        "configuration_verification",
-        "post_run_inspect",
-        "exit_code",
-    }
-    for stage, stage_value in audits.items():
-        stage_mapping = _require_exact_mapping(
-            stage_value, audit_roles, role=f"candidate container audit {stage}"
-        )
-        for role, identity_value in stage_mapping.items():
-            identity_mapping = _require_exact_mapping(
-                identity_value,
-                {"locator", "sha256", "bytes"},
-                role=f"candidate container audit {stage}.{role}",
-            )
-            audit_path = _run_relative_path(
-                run_root,
-                identity_mapping["locator"],
-                role=f"candidate container audit {stage}.{role}",
-            )
-            if _stable_file_sha256(audit_path) != (
-                identity_mapping["sha256"],
-                identity_mapping["bytes"],
-            ):
-                raise ValueError(f"candidate container audit {stage}.{role} changed")
+    audit_evidence = _validate_container_audit_evidence(
+        run_root,
+        audits,
+        attempt_id=payload["attempt_id"],
+        candidate_id=candidate_id,
+        run_locator=registry_reservation["run_binding"]["run_locator"],
+        image_id=payload["container_image_id"],
+        environment_sha256=payload["container_environment_sha256"],
+        source_git_sha=source_git_sha,
+        source_receipt_sha256=payload["source_export_receipt_sha256"],
+        epoch11_completion_receipt_sha256=epoch11_inputs[
+            "encoder_completion_receipt_sha256"
+        ],
+    )
     audit_commitment = sha256_json(audits)
     if payload["container_audits_sha256_commitment"] != audit_commitment:
         raise ValueError("candidate container audit commitment mismatch")
@@ -4585,7 +5624,7 @@ def _validate_train_run_receipt(
         "final_progress_bytes": identities["encoder_progress"][1],
         "final_pose_snapshot_sha256": identities["pose_snapshot"][0],
         "final_pose_snapshot_bytes": identities["pose_snapshot"][1],
-    }
+    }, audit_evidence
 
 
 def _preflight_progress_jsonl(path: Path) -> None:
@@ -4621,13 +5660,17 @@ def run_gate(
     pose_cache_dir: str | Path,
     pose_snapshot_path: str | Path,
     candidate_registry_root: str | Path,
-    train_run_receipt_path: str | Path,
+    candidate_runs_root: str | Path,
     *,
     candidate_id: str,
     device: str | torch.device | None = None,
     batch_size: int = 16,
 ) -> dict[str, Any]:
-    if isinstance(batch_size, bool) or not isinstance(batch_size, int) or not 1 <= batch_size <= 32:
+    if (
+        isinstance(batch_size, bool)
+        or not isinstance(batch_size, int)
+        or not 1 <= batch_size <= 32
+    ):
         raise ValueError("batch_size must be an integer in [1, 32]")
     if candidate_id not in _CANDIDATE_ORDER:
         raise ValueError("candidate_id must be one of A, B, C")
@@ -4648,7 +5691,6 @@ def run_gate(
         "epoch11_gate_artifact": Path(epoch11_gate_artifact_path),
         "epoch11_gate_receipt": Path(epoch11_gate_receipt_path),
         "pose_snapshot": Path(pose_snapshot_path),
-        "train_run_receipt": Path(train_run_receipt_path),
         "gate_runner": Path(__file__),
         "launch_authorization_runner": Path(__file__).with_name(
             "prepare_pams_native_candidate_launch_authorization.py"
@@ -4656,13 +5698,21 @@ def run_gate(
         "period_module": Path(
             estimate_period_from_embedding_velocity_vectors.__code__.co_filename
         ),
-        "recurrence_carrier_module": Path(build_recurrence_carrier_curves.__code__.co_filename),
-        "consensus_module": Path(MultiExpertCounter.__module__.replace(".", "/") + ".py"),
+        "recurrence_carrier_module": Path(
+            build_recurrence_carrier_curves.__code__.co_filename
+        ),
+        "consensus_module": Path(
+            MultiExpertCounter.__module__.replace(".", "/") + ".py"
+        ),
         "epoch11_gate_dependency": Path(_epoch11.__file__),
     }
     source_root = Path.cwd().resolve(strict=True)
     paths["consensus_module"] = source_root / "src" / paths["consensus_module"]
-    for role, path in {**paths, "pose_cache_directory": Path(pose_cache_dir)}.items():
+    for role, path in {
+        **paths,
+        "pose_cache_directory": Path(pose_cache_dir),
+        "canonical_candidate_runs_root": Path(candidate_runs_root),
+    }.items():
         _reject_privileged_path(path, role=role)
 
     source_covered = _epoch11._require_source_tree_membership(
@@ -4711,7 +5761,6 @@ def run_gate(
         document="candidate launch authorization receipt",
     )
     _strict_json(paths["pose_snapshot"], document="pose snapshot")
-    _strict_json(paths["train_run_receipt"], document="candidate train run receipt")
     _preflight_progress_jsonl(paths["encoder_progress"])
 
     _validate_source_receipt_binding(
@@ -4725,7 +5774,10 @@ def run_gate(
         config, specification, candidate_id=candidate_id
     )
     declared_snapshot = _epoch11._load_snapshot(paths["pose_snapshot"])
-    if _strict_json(paths["pose_snapshot"], document="pose snapshot") != declared_snapshot.to_dict():
+    if (
+        _strict_json(paths["pose_snapshot"], document="pose snapshot")
+        != declared_snapshot.to_dict()
+    ):
         raise ValueError("pose snapshot is not in canonical order or schema form")
     if len(declared_snapshot.entries) != specification.expected_training_video_total:
         raise ValueError("pose snapshot does not contain exactly train337")
@@ -4776,12 +5828,28 @@ def run_gate(
         registry_reservation_identity
     )
     registry_reservation = _load_candidate_registry_reservation(
-        registry_paths["reservation"], expected_key=registry_key
+        registry_paths["reservation"],
+        expected_key=registry_key,
+        expected_identity=registry_reservation_identity,
     )
     if registry_reservation["prior_outcome_registry_ids"] != [
         value["registry_id"] for value in prior_chain
     ]:
         raise ValueError("candidate registry reservation predecessor chain mismatch")
+    reserved_run_paths = _resolve_reserved_candidate_run_paths(
+        candidate_runs_root,
+        registry_reservation,
+    )
+    paths["candidate_attempt_reservation"] = reserved_run_paths[
+        "attempt_reservation"
+    ]
+    paths["train_run_receipt"] = reserved_run_paths["train_run_receipt"]
+    identities["candidate_attempt_reservation"] = _stable_file_sha256(
+        paths["candidate_attempt_reservation"]
+    )
+    identities["train_run_receipt"] = _stable_file_sha256(
+        paths["train_run_receipt"]
+    )
     _validate_candidate_launch_authorization(
         paths["candidate_launch_authorization"],
         paths["candidate_launch_authorization_receipt"],
@@ -4817,7 +5885,7 @@ def run_gate(
         or started_identity != identities["encoder_started_receipt"]
     ):
         raise RuntimeError("encoder started receipt identity changed after preflight")
-    train_lineage = _validate_train_run_receipt(
+    train_lineage, container_audit_evidence = _validate_train_run_receipt(
         paths["train_run_receipt"],
         candidate_id=candidate_id,
         source_git_sha=source_git_sha,
@@ -4826,10 +5894,17 @@ def run_gate(
         pose_cache_set_sha256=declared_snapshot.fingerprint,
         registry_reservation=registry_reservation,
         registry_reservation_identity=registry_reservation_identity,
+        attempt_reservation_identity=identities["candidate_attempt_reservation"],
         identities=identities,
         epoch11_artifact=epoch11_artifact,
         completion=completion,
     )
+    for (stage_name, role_name), (audit_path, audit_identity) in (
+        container_audit_evidence.items()
+    ):
+        identity_name = f"container_audit_{stage_name}_{role_name}"
+        paths[identity_name] = audit_path
+        identities[identity_name] = audit_identity
     stage, provenance = _peek_checkpoint(paths["encoder_checkpoint"], config)
     if stage != "encoder":
         raise ValueError("terminal gate requires an encoder checkpoint")
@@ -5142,26 +6217,20 @@ def _receipt_path(output: Path) -> Path:
     return Path(str(output) + ".receipt.json")
 
 
-def write_gate_artifact(
-    output: Path, payload: Mapping[str, Any]
-) -> tuple[Path, str]:
-    _reject_privileged_path(output, role="terminal gate output")
-    receipt_path = _receipt_path(output)
-    if output.exists() or receipt_path.exists():
-        raise FileExistsError("terminal gate artifact and receipt must both be new")
-    if set(payload) != _OUTPUT_KEYS:
-        raise ValueError("terminal gate payload schema mismatch")
-    _reject_forbidden_mapping_keys(payload, document="terminal gate payload")
-    encoded = _encoded_json(payload)
-    artifact_sha256 = hashlib.sha256(encoded).hexdigest()
-    _write_new(output, encoded)
+def _gate_receipt_payload(
+    output: Path,
+    payload: Mapping[str, Any],
+    *,
+    artifact_sha256: str,
+    artifact_bytes: int,
+) -> dict[str, Any]:
     prior_chain = payload["candidate"]["prior_scientific_rejections"]
     receipt = {
         "schema_version": 1,
         "artifact_type": _EXPECTED_RECEIPT_TYPE,
         "artifact_locator": output.name,
         "artifact_sha256": artifact_sha256,
-        "artifact_bytes": len(encoded),
+        "artifact_bytes": artifact_bytes,
         "artifact_status": payload["status"],
         "candidate_id": payload["candidate"]["id"],
         "overall_pass": payload["gate"]["overall_pass"],
@@ -5233,6 +6302,33 @@ def write_gate_artifact(
     }
     if set(receipt) != _RECEIPT_KEYS:
         raise RuntimeError("terminal gate receipt schema drifted")
+    return receipt
+
+
+def write_gate_artifact(
+    output: Path, payload: Mapping[str, Any]
+) -> tuple[Path, str]:
+    _reject_privileged_path(output, role="terminal gate output")
+    receipt_path = _receipt_path(output)
+    if (
+        output.exists()
+        or output.is_symlink()
+        or receipt_path.exists()
+        or receipt_path.is_symlink()
+    ):
+        raise FileExistsError("terminal gate artifact and receipt must both be new")
+    if set(payload) != _OUTPUT_KEYS:
+        raise ValueError("terminal gate payload schema mismatch")
+    _reject_forbidden_mapping_keys(payload, document="terminal gate payload")
+    encoded = _encoded_json(payload)
+    artifact_sha256 = hashlib.sha256(encoded).hexdigest()
+    _write_new(output, encoded)
+    receipt = _gate_receipt_payload(
+        output,
+        payload,
+        artifact_sha256=artifact_sha256,
+        artifact_bytes=len(encoded),
+    )
     _write_new(receipt_path, _encoded_json(receipt))
     return receipt_path, artifact_sha256
 
@@ -5240,12 +6336,12 @@ def write_gate_artifact(
 def write_candidate_registry_outcome(
     registry_root: str | Path,
     *,
-    train_run_receipt_path: str | Path,
+    candidate_runs_root: str | Path,
     terminal_artifact_path: Path,
     terminal_receipt_path: Path,
     payload: Mapping[str, Any],
 ) -> tuple[Path, Path]:
-    """Commit one immutable terminal outcome to the canonical registry."""
+    """Atomically publish one complete immutable terminal-outcome bundle."""
 
     root = _safe_registry_root(registry_root)
     expected_status = (
@@ -5256,8 +6352,10 @@ def write_candidate_registry_outcome(
     if payload["status"] != expected_status:
         raise ValueError("candidate registry outcome status differs from terminal gate")
     registry_id = payload["inputs"]["candidate_registry_id"]
-    paths = _candidate_registry_paths(root, registry_id)
-    if any(paths[name].exists() for name in paths if name != "reservation"):
+    registry_paths = _candidate_registry_paths(root, registry_id)
+    _reject_legacy_registry_outcome(root, registry_id)
+    final_bundle = registry_paths["outcome_bundle"]
+    if final_bundle.exists() or final_bundle.is_symlink():
         raise FileExistsError("candidate registry outcome material already exists")
     key = _candidate_registry_key(
         source_git_sha=payload["inputs"]["source_git_sha"],
@@ -5269,9 +6367,11 @@ def write_candidate_registry_outcome(
     )
     if sha256_json(key) != registry_id:
         raise ValueError("terminal payload candidate registry ID mismatch")
-    reservation_identity = _stable_file_sha256(paths["reservation"])
+    reservation_identity = _stable_file_sha256(registry_paths["reservation"])
     reservation = _load_candidate_registry_reservation(
-        paths["reservation"], expected_key=key
+        registry_paths["reservation"],
+        expected_key=key,
+        expected_identity=reservation_identity,
     )
     if (
         reservation_identity[0]
@@ -5283,18 +6383,54 @@ def write_candidate_registry_outcome(
     train_lineage = _validate_registry_train_lineage(
         payload["inputs"]["train_lineage"]
     )
-    train_path = Path(train_run_receipt_path)
+    reserved_run_paths = _resolve_reserved_candidate_run_paths(
+        candidate_runs_root,
+        reservation,
+    )
+    attempt_path = reserved_run_paths["attempt_reservation"]
+    train_path = reserved_run_paths["train_run_receipt"]
+    attempt_identity = _stable_file_sha256(attempt_path)
     train_identity = _stable_file_sha256(train_path)
     if train_identity != (
         payload["inputs"]["train_run_receipt_sha256"],
         payload["inputs"]["train_run_receipt_bytes"],
     ):
         raise ValueError("terminal payload train run receipt identity mismatch")
+    train_receipt = _strict_json(
+        train_path,
+        document="candidate train run receipt before registry commit",
+        expected_identity=train_identity,
+    )
+    if (
+        train_receipt.get("attempt_id") != reservation["run_binding"]["attempt_id"]
+        or train_receipt.get("candidate_id") != payload["candidate"]["id"]
+        or train_receipt.get("source_revision") != payload["inputs"]["source_git_sha"]
+        or train_receipt.get("container_audits_sha256_commitment")
+        != train_lineage["container_audits_sha256_commitment"]
+    ):
+        raise ValueError("candidate train run receipt differs from terminal lineage")
+    audit_evidence = _validate_container_audit_evidence(
+        reserved_run_paths["run_root"],
+        train_receipt.get("container_audits"),
+        attempt_id=reservation["run_binding"]["attempt_id"],
+        candidate_id=payload["candidate"]["id"],
+        run_locator=reservation["run_binding"]["run_locator"],
+        image_id=train_receipt["container_image_id"],
+        environment_sha256=train_receipt["container_environment_sha256"],
+        source_git_sha=payload["inputs"]["source_git_sha"],
+        source_receipt_sha256=train_receipt["source_export_receipt_sha256"],
+        epoch11_completion_receipt_sha256=train_receipt["epoch11_gate"][
+            "encoder_completion_receipt_sha256"
+        ],
+    )
     terminal_identity = _stable_file_sha256(terminal_artifact_path)
     if terminal_identity[0] != hashlib.sha256(_encoded_json(payload)).hexdigest():
         raise ValueError("terminal artifact bytes differ from the evaluated payload")
+    original_receipt_identity = _stable_file_sha256(terminal_receipt_path)
     original_receipt = _strict_json(
-        terminal_receipt_path, document="terminal gate receipt before registry commit"
+        terminal_receipt_path,
+        document="terminal gate receipt before registry commit",
+        expected_identity=original_receipt_identity,
     )
     if (
         set(original_receipt) != _RECEIPT_KEYS
@@ -5307,24 +6443,66 @@ def write_candidate_registry_outcome(
     ):
         raise ValueError("terminal gate receipt is not bound before registry commit")
 
-    _write_new(paths["train_run_receipt"], train_path.read_bytes())
-    _write_new(paths["terminal_artifact"], terminal_artifact_path.read_bytes())
+    staging_root = Path(
+        tempfile.mkdtemp(
+            prefix=f".{registry_id}.outcome.incomplete-",
+            dir=root,
+        )
+    )
+    paths = _registry_bundle_paths(staging_root)
+    _write_new(
+        paths["attempt_reservation"],
+        _stable_file_bytes(attempt_path, expected_identity=attempt_identity),
+    )
+    _write_new(
+        paths["train_run_receipt"],
+        _stable_file_bytes(train_path, expected_identity=train_identity),
+    )
+    _write_new(
+        paths["terminal_artifact"],
+        _stable_file_bytes(
+            terminal_artifact_path,
+            expected_identity=terminal_identity,
+        ),
+    )
     registry_terminal_receipt = dict(original_receipt)
     registry_terminal_receipt["artifact_locator"] = paths["terminal_artifact"].name
     _write_new(paths["terminal_receipt"], _encoded_json(registry_terminal_receipt))
+    archived_audits: dict[str, dict[str, dict[str, Any]]] = {}
+    for stage in _CONTAINER_AUDIT_STAGES:
+        archived_audits[stage] = {}
+        for role in _CONTAINER_AUDIT_ROLES:
+            source_path, source_identity = audit_evidence[(stage, role)]
+            archive_path = paths[f"container_audit:{stage}:{role}"]
+            _write_new(
+                archive_path,
+                _stable_file_bytes(source_path, expected_identity=source_identity),
+            )
+            copied_identity = _stable_file_sha256(archive_path)
+            if copied_identity != source_identity:
+                raise RuntimeError("container audit archive copy changed identity")
+            archived_audits[stage][role] = {
+                "locator": archive_path.relative_to(staging_root).as_posix(),
+                "sha256": copied_identity[0],
+                "bytes": copied_identity[1],
+            }
+    copied_attempt_identity = _stable_file_sha256(paths["attempt_reservation"])
     copied_train_identity = _stable_file_sha256(paths["train_run_receipt"])
     copied_terminal_identity = _stable_file_sha256(paths["terminal_artifact"])
     copied_terminal_receipt_identity = _stable_file_sha256(
         paths["terminal_receipt"]
     )
     outcome = {
-        "schema_version": 1,
+        "schema_version": 2,
         "artifact_type": _CANDIDATE_REGISTRY_OUTCOME_TYPE,
         "status": payload["status"],
         "registry_id": registry_id,
         "key": key,
         "reservation_sha256": reservation_identity[0],
         "reservation_bytes": reservation_identity[1],
+        "attempt_reservation_locator": paths["attempt_reservation"].name,
+        "attempt_reservation_sha256": copied_attempt_identity[0],
+        "attempt_reservation_bytes": copied_attempt_identity[1],
         "train_run_receipt_locator": paths["train_run_receipt"].name,
         "train_run_receipt_sha256": copied_train_identity[0],
         "train_run_receipt_bytes": copied_train_identity[1],
@@ -5334,16 +6512,19 @@ def write_candidate_registry_outcome(
         "terminal_receipt_locator": paths["terminal_receipt"].name,
         "terminal_receipt_sha256": copied_terminal_receipt_identity[0],
         "terminal_receipt_bytes": copied_terminal_receipt_identity[1],
+        "container_audits": archived_audits,
         "train_lineage": dict(train_lineage),
         "prior_outcome_registry_ids": reservation[
             "prior_outcome_registry_ids"
         ],
         "aggregate_only": True,
     }
+    if set(outcome) != _REGISTRY_OUTCOME_KEYS:
+        raise RuntimeError("candidate registry outcome schema drifted")
     _write_new(paths["outcome"], _encoded_json(outcome))
     outcome_identity = _stable_file_sha256(paths["outcome"])
     outcome_receipt = {
-        "schema_version": 1,
+        "schema_version": 2,
         "artifact_type": _CANDIDATE_REGISTRY_OUTCOME_RECEIPT_TYPE,
         "artifact_locator": paths["outcome"].name,
         "artifact_sha256": outcome_identity[0],
@@ -5352,6 +6533,7 @@ def write_candidate_registry_outcome(
         "registry_id": registry_id,
         "candidate_id": payload["candidate"]["id"],
         "reservation_sha256": reservation_identity[0],
+        "attempt_reservation_sha256": copied_attempt_identity[0],
         "train_run_receipt_sha256": copied_train_identity[0],
         "terminal_artifact_sha256": copied_terminal_identity[0],
         "terminal_receipt_sha256": copied_terminal_receipt_identity[0],
@@ -5360,12 +6542,30 @@ def write_candidate_registry_outcome(
         ],
         "aggregate_only": True,
     }
+    if set(outcome_receipt) != _REGISTRY_OUTCOME_RECEIPT_KEYS:
+        raise RuntimeError("candidate registry outcome receipt schema drifted")
     _write_new(paths["outcome_receipt"], _encoded_json(outcome_receipt))
+    staging_identities = {
+        name: _stable_file_sha256(path) for name, path in paths.items()
+    }
+    for path in paths.values():
+        os.chmod(path, 0o440)
+    for stage in _CONTAINER_AUDIT_STAGES:
+        stage_root = staging_root / "container-audits" / stage
+        fsync_directory(stage_root)
+        os.chmod(stage_root, 0o550)
+    fsync_directory(staging_root / "container-audits")
+    os.chmod(staging_root / "container-audits", 0o550)
+    fsync_directory(staging_root)
+    os.chmod(staging_root, 0o550)
+    if {
+        name: _stable_file_sha256(path) for name, path in paths.items()
+    } != staging_identities:
+        raise RuntimeError("candidate registry staging bundle changed before commit")
+    os.rename(staging_root, final_bundle)
     fsync_directory(root)
-    for name in paths:
-        os.chmod(paths[name], 0o440)
-    fsync_directory(root)
-    return paths["outcome"], paths["outcome_receipt"]
+    final_paths = _registry_bundle_paths(final_bundle)
+    return final_paths["outcome"], final_paths["outcome_receipt"]
 
 
 def _parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -5385,18 +6585,34 @@ def _parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--pose-cache-dir", type=Path, required=True)
     parser.add_argument("--pose-snapshot", type=Path, required=True)
     parser.add_argument("--candidate-registry-root", type=Path, required=True)
-    parser.add_argument("--candidate-run-receipt", type=Path, required=True)
+    parser.add_argument("--candidate-runs-root", type=Path, required=True)
     parser.add_argument("--candidate-id", choices=_CANDIDATE_ORDER, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument(
+        "--resume-outcome-publication",
+        action="store_true",
+        help=(
+            "re-evaluate the gate and atomically publish a missing registry outcome "
+            "from an already-written exact terminal artifact/receipt pair"
+        ),
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = _parse_arguments(argv)
     _reject_privileged_path(arguments.output, role="terminal gate output")
-    if arguments.output.exists() or _receipt_path(arguments.output).exists():
+    receipt_path = _receipt_path(arguments.output)
+    output_exists = arguments.output.exists() or arguments.output.is_symlink()
+    receipt_exists = receipt_path.exists() or receipt_path.is_symlink()
+    if arguments.resume_outcome_publication:
+        if not output_exists:
+            raise FileNotFoundError(
+                "publication recovery requires the existing terminal artifact"
+            )
+    elif output_exists or receipt_exists:
         raise FileExistsError("terminal gate output and receipt must both be new")
     payload = run_gate(
         arguments.encoder_checkpoint,
@@ -5412,15 +6628,63 @@ def main(argv: Sequence[str] | None = None) -> int:
         arguments.pose_cache_dir,
         arguments.pose_snapshot,
         arguments.candidate_registry_root,
-        arguments.candidate_run_receipt,
+        arguments.candidate_runs_root,
         candidate_id=arguments.candidate_id,
         device=arguments.device,
         batch_size=arguments.batch_size,
     )
-    receipt_path, artifact_sha256 = write_gate_artifact(arguments.output, payload)
+    if arguments.resume_outcome_publication:
+        expected_artifact = _encoded_json(payload)
+        actual_artifact = _stable_file_bytes(arguments.output)
+        if actual_artifact != expected_artifact:
+            if receipt_exists:
+                raise ValueError(
+                    "completed terminal pair differs from the fresh gate evaluation"
+                )
+            incomplete_identity = hashlib.sha256(actual_artifact).hexdigest()
+            quarantine = arguments.output.with_name(
+                f".{arguments.output.name}.incomplete-{incomplete_identity[:16]}"
+            )
+            if quarantine.exists() or quarantine.is_symlink():
+                if _stable_file_bytes(quarantine) != actual_artifact:
+                    raise FileExistsError(
+                        "terminal artifact recovery quarantine identity mismatch"
+                    )
+            else:
+                _write_new(quarantine, actual_artifact)
+            replacement = arguments.output.with_name(
+                "."
+                + arguments.output.name
+                + ".recovery-"
+                + hashlib.sha256(expected_artifact).hexdigest()[:16]
+            )
+            if replacement.exists() or replacement.is_symlink():
+                if _stable_file_bytes(replacement) != expected_artifact:
+                    raise FileExistsError(
+                        "terminal artifact recovery replacement identity mismatch"
+                    )
+            else:
+                _write_new(replacement, expected_artifact)
+            os.replace(replacement, arguments.output)
+            fsync_directory(arguments.output.parent)
+            actual_artifact = expected_artifact
+        artifact_sha256 = hashlib.sha256(actual_artifact).hexdigest()
+        if not receipt_exists:
+            receipt = _gate_receipt_payload(
+                arguments.output,
+                payload,
+                artifact_sha256=artifact_sha256,
+                artifact_bytes=len(actual_artifact),
+            )
+            _write_new(receipt_path, _encoded_json(receipt))
+    else:
+        receipt_path, artifact_sha256 = write_gate_artifact(
+            arguments.output,
+            payload,
+        )
     registry_outcome, registry_outcome_receipt = write_candidate_registry_outcome(
         arguments.candidate_registry_root,
-        train_run_receipt_path=arguments.candidate_run_receipt,
+        candidate_runs_root=arguments.candidate_runs_root,
         terminal_artifact_path=arguments.output,
         terminal_receipt_path=receipt_path,
         payload=payload,

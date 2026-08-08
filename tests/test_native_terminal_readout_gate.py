@@ -498,7 +498,7 @@ def test_interface_has_no_privileged_scientific_surface() -> None:
         "pose_cache_dir",
         "pose_snapshot_path",
         "candidate_registry_root",
-        "train_run_receipt_path",
+        "candidate_runs_root",
         "candidate_id",
         "device",
         "batch_size",
@@ -545,6 +545,26 @@ def test_forged_predecessor_json_has_no_authorization_surface() -> None:
             '{"status":"scientific_rejection"}\n', encoding="utf-8"
         )
         with pytest.raises(FileNotFoundError):
+            runner._load_predecessor_chain_from_registry(
+                candidate_id="B",
+                profile=runner.CandidateProfile(16, 2, ("A",)),
+                registry_root=registry,
+                specification=runner.load_gate_specification(SPECIFICATION),
+                gate_specification_sha256="a" * 64,
+                pose_cache_set_sha256="b" * 64,
+                source_git_sha="c" * 40,
+            )
+        legacy_id = runner.candidate_registry_id(
+            source_git_sha="c" * 40,
+            gate_specification_sha256="a" * 64,
+            pose_cache_set_sha256="b" * 64,
+            candidate_id="A",
+        )
+        (registry / f"{legacy_id}.outcome.json").write_text(
+            '{"schema_version":1,"status":"scientific_rejection"}\n',
+            encoding="utf-8",
+        )
+        with pytest.raises(ValueError, match="legacy non-atomic v1"):
             runner._load_predecessor_chain_from_registry(
                 candidate_id="B",
                 profile=runner.CandidateProfile(16, 2, ("A",)),
@@ -990,7 +1010,9 @@ def test_candidate_registry_reservation_is_exclusive_across_attempt_ids() -> Non
                     "candidate_id": "A",
                     "candidate_registry": {
                         "registry_id": registry_id,
-                        "run_locator": "runs/native/first-attempt",
+                        "run_locator": (
+                            "runs/pams-native-table2-baseline-v1/first-attempt"
+                        ),
                         "exclusive_first_pass_required": True,
                     },
                     "candidate_launch_policy": {
@@ -1017,7 +1039,9 @@ def test_candidate_registry_reservation_is_exclusive_across_attempt_ids() -> Non
                 pose_cache_set_sha256=pose_sha,
                 candidate_id="A",
                 run_reservation_path=attempt,
-                run_locator="runs/native/first-attempt",
+                run_locator=(
+                    "runs/pams-native-table2-baseline-v1/first-attempt"
+                ),
                 source_export_receipt_sha256="d" * 64,
                 experiment_config_sha256="e" * 64,
                 pose_snapshot_sha256="f" * 64,
@@ -1041,7 +1065,7 @@ def test_candidate_registry_reservation_is_exclusive_across_attempt_ids() -> Non
         second_payload = json.loads(attempt.read_text(encoding="utf-8"))
         second_payload["attempt_id"] = "second-attempt"
         second_payload["candidate_registry"]["run_locator"] = (
-            "runs/native/second-attempt"
+            "runs/pams-native-table2-baseline-v1/second-attempt"
         )
         second_attempt.write_text(
             json.dumps(second_payload, sort_keys=True) + "\n", encoding="utf-8"
@@ -1054,7 +1078,9 @@ def test_candidate_registry_reservation_is_exclusive_across_attempt_ids() -> Non
                 pose_cache_set_sha256=pose_sha,
                 candidate_id="A",
                 run_reservation_path=second_attempt,
-                run_locator="runs/native/second-attempt",
+                run_locator=(
+                    "runs/pams-native-table2-baseline-v1/second-attempt"
+                ),
                 source_export_receipt_sha256="d" * 64,
                 experiment_config_sha256="e" * 64,
                 pose_snapshot_sha256="f" * 64,
@@ -1062,7 +1088,369 @@ def test_candidate_registry_reservation_is_exclusive_across_attempt_ids() -> Non
             )
 
 
-def test_registry_predecessor_binds_train_terminal_and_launch_lineage() -> None:
+def _container_command_fixture(
+    stage: str,
+    *,
+    candidate_id: str,
+    run_locator: str,
+    epoch11_completion_receipt_sha256: str,
+) -> list[str]:
+    if stage == "preflight":
+        return [
+            "python",
+            "scripts/server/validate_pams_native_baseline_inputs.py",
+            "--candidate-config",
+            "/pams/input/config.yaml",
+            "--pose-recovery-version",
+            "pose-recovery-v1",
+            "--pose-recovery-config",
+            "/pams/pose-recovery/config.yaml",
+            "--train-sidecar",
+            "/pams/protocol/train.inputs.json",
+            "--train-commitment",
+            "/pams/protocol/train.inputs.commitment.json",
+            "--dev-identity-sidecar",
+            "/pams/protocol/dev.inputs.json",
+            "--dev-identity-commitment",
+            "/pams/protocol/dev.inputs.commitment.json",
+            "--test-identity-sidecar",
+            "/pams/protocol/test-identity.inputs.json",
+            "--test-identity-commitment",
+            "/pams/protocol/test-identity.inputs.commitment.json",
+            "--pose-recovery-authorization",
+            "/pams/pose-recovery/native-baseline-authorization.json",
+            "--expected-pose-recovery-authorization-sha256",
+            "1" * 64,
+            "--pose-recovery-paired-gate",
+            "/pams/pose-recovery/paired-gate.json",
+            "--expected-pose-recovery-paired-gate-sha256",
+            "2" * 64,
+            "--pose-recovery-run-receipt",
+            "/pams/pose-recovery/run.receipt.json",
+            "--expected-pose-recovery-run-receipt-sha256",
+            "3" * 64,
+            "--pose-recovery-ledger",
+            "/pams/pose-recovery/train337.ledger.json",
+            "--train-pose-cache",
+            "/pams/pose-cache",
+            "--output",
+            "/pams/output/input-preflight.json",
+        ]
+    config = {
+        "A": (
+            "/workspace/configs/experiments/"
+            "pams_native_table2_baseline_proxy_v1.yaml"
+        ),
+        "B": (
+            "/workspace/configs/experiments/"
+            "pams_native_table2_baseline_proxy_b_w16_s2.yaml"
+        ),
+        "C": (
+            "/workspace/configs/experiments/"
+            "pams_native_table2_baseline_proxy_c_w24_s4.yaml"
+        ),
+    }[candidate_id]
+    if stage == "launch_authorization":
+        return [
+            "python",
+            "scripts/server/prepare_pams_native_candidate_launch_authorization.py",
+            "--source-receipt",
+            "/pams/source-export-receipt.json",
+            "--config",
+            config,
+            "--gate-specification",
+            "/workspace/configs/gates/pams_native_terminal_readout_gate_v1.yaml",
+            "--pose-snapshot",
+            "/pams/input/launch-training-pose-cache-snapshot.json",
+            "--candidate-id",
+            candidate_id,
+            "--candidate-registry-root",
+            "/pams/candidate-registry",
+            "--run-reservation",
+            "/pams/run/attempt.reservation.json",
+            "--run-locator",
+            run_locator,
+            "--output",
+            "/pams/output/authorization.json",
+        ]
+    if stage in {"encoder_epoch11", "encoder_final"}:
+        return [
+            "python",
+            "-m",
+            "pams",
+            *runner._canonical_encoder_command_tail(
+                epochs=11 if stage == "encoder_epoch11" else 150,
+                resume=stage == "encoder_final",
+            ),
+        ]
+    if stage == "epoch11_gate":
+        return [
+            "python",
+            "scripts/server/run_pams_native_epoch11_train_gate.py",
+            "--encoder-checkpoint",
+            "/pams/epoch11/encoder.pt",
+            "--encoder-progress",
+            "/pams/epoch11/encoder.jsonl",
+            "--encoder-completion-receipt",
+            "/pams/epoch11/completion.receipt.json",
+            "--expected-encoder-completion-receipt-sha256",
+            epoch11_completion_receipt_sha256,
+            "--config",
+            config,
+            "--gate-specification",
+            "/workspace/configs/gates/pams_native_epoch11_train_gate_v1.yaml",
+            "--candidate-launch-authorization",
+            "/pams/launch/authorization.json",
+            "--candidate-launch-receipt",
+            "/pams/launch/authorization.json.receipt.json",
+            "--pose-cache-dir",
+            "/pams/pose-cache",
+            "--pose-snapshot",
+            "/pams/epoch11/training-pose-cache-snapshot.json",
+            "--output",
+            "/pams/output/gate.json",
+            "--device",
+            "cuda:0",
+            "--batch-size",
+            "16",
+        ]
+    raise ValueError(stage)
+
+
+def _json_value_bytes(value: object) -> bytes:
+    return (
+        json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n"
+    ).encode("utf-8")
+
+
+def _write_container_audit_fixture(
+    run_root: Path,
+    *,
+    attempt_id: str,
+    candidate_id: str,
+    run_locator: str,
+    image_id: str,
+    environment_sha256: str,
+    source_git_sha: str,
+    source_receipt_sha256: str,
+    epoch11_completion_receipt_sha256: str,
+) -> dict[str, object]:
+    audits: dict[str, object] = {}
+    for stage_index, stage in enumerate(runner._CONTAINER_AUDIT_STAGES):
+        container_id = f"{stage_index + 1:x}" * 64
+        command = _container_command_fixture(
+            stage,
+            candidate_id=candidate_id,
+            run_locator=run_locator,
+            epoch11_completion_receipt_sha256=(
+                epoch11_completion_receipt_sha256
+            ),
+        )
+        gpu_requested = stage in {
+            "encoder_epoch11",
+            "epoch11_gate",
+            "encoder_final",
+        }
+        environment = [
+            "PYTHONPATH=/workspace/src",
+            "PYTHONOPTIMIZE=",
+            "PAMS_AUDIT_MODE=formal",
+            f"PAMS_CONTAINER_IMAGE_ID={image_id}",
+            f"PAMS_CONTAINER_SOURCE_REVISION={source_git_sha}",
+            f"PAMS_CONTAINER_ENVIRONMENT_SHA256={environment_sha256}",
+            "PAMS_SOURCE_EXPORT_RECEIPT=/pams/source-export-receipt.json",
+            f"PAMS_SOURCE_EXPORT_RECEIPT_SHA256={source_receipt_sha256}",
+            f"CUDA_VISIBLE_DEVICES={'0' if gpu_requested else ''}",
+        ]
+        if gpu_requested:
+            environment.append("CUBLAS_WORKSPACE_CONFIG=:4096:8")
+        mounts = [
+            {
+                "Type": "bind",
+                "Source": str(run_root / f"source-{stage}-{index}"),
+                "Destination": destination,
+                "Mode": "" if rw else "ro",
+                "RW": rw,
+                "Propagation": "rprivate",
+            }
+            for index, (destination, rw) in enumerate(
+                runner._expected_container_mount_modes(stage).items()
+            )
+        ]
+        inspect_item = {
+            "Id": container_id,
+            "Name": "/" + runner._container_name_for_stage(
+                stage,
+                attempt_id=attempt_id,
+            ),
+            "Image": image_id,
+            "Config": {
+                "Image": image_id,
+                "User": "1000:1000",
+                "WorkingDir": "/workspace",
+                "Cmd": command,
+                "Env": environment,
+            },
+            "HostConfig": {
+                "NetworkMode": "none",
+                "ReadonlyRootfs": True,
+                "Privileged": False,
+                "Init": True,
+                "CapDrop": ["ALL"],
+                "CapAdd": [],
+                "SecurityOpt": ["no-new-privileges:true"],
+                "PidsLimit": 4096,
+                "Memory": 96 * 1024**3,
+                "NanoCpus": 24_000_000_000,
+                "ShmSize": 8 * 1024**3,
+                "Tmpfs": {
+                    "/tmp": "fixture",
+                    "/pams/tmp": "fixture",
+                    "/pams/cache": "fixture",
+                    "/pams/home": "fixture",
+                },
+                "DeviceRequests": (
+                    [{"Capabilities": [["gpu"]], "DeviceIDs": ["0"]}]
+                    if gpu_requested
+                    else []
+                ),
+            },
+            "Mounts": mounts,
+        }
+        post_item = deepcopy(inspect_item)
+        post_item["State"] = {
+            "Running": False,
+            "ExitCode": 0,
+            "OOMKilled": False,
+        }
+        verification = {
+            "schema_version": 1,
+            "stage": stage.replace("_", "-"),
+            "verified": True,
+            "container_name": inspect_item["Name"][1:],
+            "image_id": image_id,
+            "network_mode": "none",
+            "read_only_root": True,
+            "gpu_requested": gpu_requested,
+            "mounts": [
+                {
+                    "destination": item["Destination"],
+                    "source": item["Source"],
+                    "rw": item["RW"],
+                }
+                for item in sorted(mounts, key=lambda value: value["Destination"])
+            ],
+        }
+        content_by_role = {
+            "create_id": (container_id + "\n").encode(),
+            "configuration_inspect": _json_value_bytes([inspect_item]),
+            "configuration_verification": runner._encoded_json(verification),
+            "post_run_inspect": _json_value_bytes([post_item]),
+            "exit_code": b"0\n",
+        }
+        stage_audits: dict[str, object] = {}
+        for role, content in content_by_role.items():
+            locator = runner._container_audit_locator(
+                stage,
+                role,
+                attempt_id=attempt_id,
+            )
+            path = run_root.joinpath(*Path(locator).parts)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            runner._write_new(path, content)
+            identity = runner._stable_file_sha256(path)
+            stage_audits[role] = {
+                "locator": locator,
+                "sha256": identity[0],
+                "bytes": identity[1],
+            }
+        audits[stage] = stage_audits
+    return audits
+
+
+def test_container_audits_are_semantically_validated() -> None:
+    attempt_id = "fixture"
+    run_locator = "runs/pams-native-table2-baseline-v1/fixture"
+    image_id = "sha256:" + "1" * 64
+    environment_sha256 = "2" * 64
+    source_sha = "c" * 40
+    source_receipt_sha = "d" * 64
+    epoch11_completion_sha = "3" * 64
+    with tempfile.TemporaryDirectory(prefix="pams-gate-") as directory:
+        run_root = Path(directory)
+        audits = _write_container_audit_fixture(
+            run_root,
+            attempt_id=attempt_id,
+            candidate_id="A",
+            run_locator=run_locator,
+            image_id=image_id,
+            environment_sha256=environment_sha256,
+            source_git_sha=source_sha,
+            source_receipt_sha256=source_receipt_sha,
+            epoch11_completion_receipt_sha256=epoch11_completion_sha,
+        )
+        evidence = runner._validate_container_audit_evidence(
+            run_root,
+            audits,
+            attempt_id=attempt_id,
+            candidate_id="A",
+            run_locator=run_locator,
+            image_id=image_id,
+            environment_sha256=environment_sha256,
+            source_git_sha=source_sha,
+            source_receipt_sha256=source_receipt_sha,
+            epoch11_completion_receipt_sha256=epoch11_completion_sha,
+        )
+        assert len(evidence) == 25
+
+        exit_path = evidence[("encoder_final", "exit_code")][0]
+        exit_path.unlink()
+        runner._write_new(exit_path, b"1\n")
+        broken = deepcopy(audits)
+        exit_identity = runner._stable_file_sha256(exit_path)
+        broken["encoder_final"]["exit_code"].update(
+            sha256=exit_identity[0],
+            bytes=exit_identity[1],
+        )
+        with pytest.raises(ValueError, match="exit-code audit is not zero"):
+            runner._validate_container_audit_evidence(
+                run_root,
+                broken,
+                attempt_id=attempt_id,
+                candidate_id="A",
+                run_locator=run_locator,
+                image_id=image_id,
+                environment_sha256=environment_sha256,
+                source_git_sha=source_sha,
+                source_receipt_sha256=source_receipt_sha,
+                epoch11_completion_receipt_sha256=epoch11_completion_sha,
+            )
+        extra_command = _container_command_fixture(
+            "encoder_final",
+            candidate_id="A",
+            run_locator=run_locator,
+            epoch11_completion_receipt_sha256=epoch11_completion_sha,
+        ) + ["--extra"]
+        with pytest.raises(ValueError, match="not canonical"):
+            runner._validate_container_command(
+                "encoder_final",
+                extra_command,
+                candidate_id="A",
+                run_locator=run_locator,
+                epoch11_completion_receipt_sha256=epoch11_completion_sha,
+            )
+
+
+def test_registry_predecessor_binds_train_terminal_and_launch_lineage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     source_sha = "c" * 40
     gate_sha = "a" * 64
     pose_sha = "b" * 64
@@ -1071,6 +1459,10 @@ def test_registry_predecessor_binds_train_terminal_and_launch_lineage() -> None:
         root = Path(directory)
         registry = root / "registry"
         registry.mkdir()
+        candidate_runs_root = root / "candidate-runs"
+        run_locator = "runs/pams-native-table2-baseline-v1/fixture"
+        run_root = candidate_runs_root.joinpath(*Path(run_locator).parts)
+        (run_root / "audit").mkdir(parents=True)
         key = runner._candidate_registry_key(
             source_git_sha=source_sha,
             gate_specification_sha256=gate_sha,
@@ -1079,6 +1471,19 @@ def test_registry_predecessor_binds_train_terminal_and_launch_lineage() -> None:
         )
         registry_id = runner.sha256_json(key)
         paths = runner._candidate_registry_paths(registry, registry_id)
+        attempt = {
+            "attempt_id": "fixture",
+            "source_revision": source_sha,
+            "candidate_id": "A",
+            "candidate_registry": {
+                "registry_id": registry_id,
+                "run_locator": run_locator,
+                "exclusive_first_pass_required": True,
+            },
+        }
+        attempt_path = run_root / "attempt.reservation.json"
+        runner._write_new(attempt_path, runner._encoded_json(attempt))
+        attempt_identity = runner._stable_file_sha256(attempt_path)
         reservation = {
             "schema_version": 1,
             "artifact_type": runner._CANDIDATE_REGISTRY_RESERVATION_TYPE,
@@ -1087,9 +1492,9 @@ def test_registry_predecessor_binds_train_terminal_and_launch_lineage() -> None:
             "key": key,
             "run_binding": {
                 "attempt_id": "fixture",
-                "run_locator": "runs/native/fixture",
-                "attempt_reservation_sha256": "1" * 64,
-                "attempt_reservation_bytes": 1,
+                "run_locator": run_locator,
+                "attempt_reservation_sha256": attempt_identity[0],
+                "attempt_reservation_bytes": attempt_identity[1],
                 "source_export_receipt_sha256": digest,
                 "experiment_config_sha256": digest,
                 "pose_snapshot_sha256": digest,
@@ -1098,30 +1503,19 @@ def test_registry_predecessor_binds_train_terminal_and_launch_lineage() -> None:
         }
         runner._write_new(paths["reservation"], runner._encoded_json(reservation))
         reservation_identity = runner._stable_file_sha256(paths["reservation"])
-        audit_roles = (
-            "create_id",
-            "configuration_inspect",
-            "configuration_verification",
-            "post_run_inspect",
-            "exit_code",
+        image_id = "sha256:" + "1" * 64
+        environment_sha256 = "2" * 64
+        audits = _write_container_audit_fixture(
+            run_root,
+            attempt_id="fixture",
+            candidate_id="A",
+            run_locator=run_locator,
+            image_id=image_id,
+            environment_sha256=environment_sha256,
+            source_git_sha=source_sha,
+            source_receipt_sha256=digest,
+            epoch11_completion_receipt_sha256="3" * 64,
         )
-        audits: dict[str, object] = {
-            stage: {
-                role: {
-                    "locator": f"audit/{stage}.{role}.json",
-                    "sha256": "9" * 64,
-                    "bytes": 1,
-                }
-                for role in audit_roles
-            }
-            for stage in (
-                "preflight",
-                "launch_authorization",
-                "encoder_epoch11",
-                "epoch11_gate",
-                "encoder_final",
-            )
-        }
         audit_commitment = runner.sha256_json(audits)
         lineage = {
             "container_audits_sha256_commitment": audit_commitment,
@@ -1148,15 +1542,19 @@ def test_registry_predecessor_binds_train_terminal_and_launch_lineage() -> None:
         }
         train_receipt = {
             "status": "completed",
+            "attempt_id": "fixture",
             "candidate_id": "A",
             "source_revision": source_sha,
             "source_export_receipt_sha256": digest,
+            "container_image_id": image_id,
+            "container_environment_sha256": environment_sha256,
             "config_file_sha256": digest,
             "pose_cache_set_sha256": pose_sha,
             "candidate_registry": {
                 "registry_id": registry_id,
                 "reservation_sha256": reservation_identity[0],
                 "reservation_bytes": reservation_identity[1],
+                "run_locator": run_locator,
                 "exclusive_first_pass_reservation": True,
             },
             "candidate_launch_authorization": {
@@ -1188,7 +1586,7 @@ def test_registry_predecessor_binds_train_terminal_and_launch_lineage() -> None:
             "container_audits": audits,
             "container_audits_sha256_commitment": audit_commitment,
         }
-        train_path = root / "run.receipt.json"
+        train_path = run_root / "audit" / "run.receipt.json"
         runner._write_new(train_path, runner._encoded_json(train_receipt))
         train_identity = runner._stable_file_sha256(train_path)
         payload = _minimal_terminal_payload(
@@ -1212,13 +1610,47 @@ def test_registry_predecessor_binds_train_terminal_and_launch_lineage() -> None:
         )
         terminal_path = root / "terminal.json"
         terminal_receipt, _ = runner.write_gate_artifact(terminal_path, payload)
+        original_write_new = runner._write_new
+        publication_failed = False
+
+        def fail_partial_publication(path: Path, content: bytes) -> None:
+            nonlocal publication_failed
+            if (
+                not publication_failed
+                and ".outcome.incomplete-" in str(path)
+                and path.name == "train-run.receipt.json"
+            ):
+                publication_failed = True
+                raise OSError("simulated interrupted registry publication")
+            original_write_new(path, content)
+
+        monkeypatch.setattr(runner, "_write_new", fail_partial_publication)
+        with pytest.raises(OSError, match="simulated interrupted"):
+            runner.write_candidate_registry_outcome(
+                registry,
+                candidate_runs_root=candidate_runs_root,
+                terminal_artifact_path=terminal_path,
+                terminal_receipt_path=terminal_receipt,
+                payload=payload,
+            )
+        assert not paths["outcome_bundle"].exists()
+        assert list(registry.glob(f".{registry_id}.outcome.incomplete-*"))
+        monkeypatch.setattr(runner, "_write_new", original_write_new)
         runner.write_candidate_registry_outcome(
             registry,
-            train_run_receipt_path=train_path,
+            candidate_runs_root=candidate_runs_root,
             terminal_artifact_path=terminal_path,
             terminal_receipt_path=terminal_receipt,
             payload=payload,
         )
+        bundle_paths = runner._registry_bundle_paths(paths["outcome_bundle"])
+        published_outcome = runner._strict_json(
+            bundle_paths["outcome"],
+            document="published v2 outcome fixture",
+        )
+        assert published_outcome["schema_version"] == 2
+        assert published_outcome["artifact_type"].endswith("_v2")
+        assert len(published_outcome["container_audits"]) == 5
         chain = runner._load_predecessor_chain_from_registry(
             candidate_id="B",
             profile=runner.CandidateProfile(16, 2, ("A",)),
@@ -1231,7 +1663,7 @@ def test_registry_predecessor_binds_train_terminal_and_launch_lineage() -> None:
         assert chain[0]["registry_id"] == registry_id
         assert chain[0]["train_run_receipt_sha256"] == train_identity[0]
         assert chain[0]["container_audits_sha256_commitment"] == audit_commitment
-        archived_train_path = paths["train_run_receipt"]
+        archived_train_path = bundle_paths["train_run_receipt"]
         archived_train = runner._strict_json(
             archived_train_path, document="archived train tamper fixture"
         )
@@ -1260,7 +1692,9 @@ def test_launch_authorization_pair_binds_candidate_and_training_inputs() -> None
     source_sha = "b" * 40
     registry_reservation = {
         "registry_id": "3" * 64,
-        "run_binding": {"run_locator": "runs/native/fixture"},
+        "run_binding": {
+            "run_locator": "runs/pams-native-table2-baseline-v1/fixture"
+        },
     }
     registry_reservation_identity = ("4" * 64, 16)
     identities = {
@@ -1315,7 +1749,9 @@ def test_launch_authorization_pair_binds_candidate_and_training_inputs() -> None
         "candidate_registry_reservation_bytes": (
             registry_reservation_identity[1]
         ),
-        "candidate_registry_run_locator": "runs/native/fixture",
+        "candidate_registry_run_locator": (
+            "runs/pams-native-table2-baseline-v1/fixture"
+        ),
     }
     payload = {
         "schema_version": 1,
@@ -1403,6 +1839,86 @@ def test_artifact_is_aggregate_only_canonical_and_write_once() -> None:
         assert receipt_payload["aggregate_only"] is True
         with pytest.raises(FileExistsError):
             runner.write_gate_artifact(output, payload)
+
+
+def test_main_recovers_partial_terminal_pair_before_atomic_outcome_publication(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = _minimal_terminal_payload(
+        candidate_id="A",
+        gate_specification_sha256="a" * 64,
+        pose_cache_set_sha256="b" * 64,
+        source_git_sha="c" * 40,
+        prior=[],
+        passed=True,
+    )
+    with tempfile.TemporaryDirectory(prefix="pams-gate-") as directory:
+        root = Path(directory)
+        output = root / "terminal.json"
+        output.write_bytes(b"partial-terminal-artifact")
+        placeholder = root / "input"
+        registry = root / "registry"
+        runs_root = root / "runs-root"
+        registry.mkdir()
+        runs_root.mkdir()
+        monkeypatch.setattr(runner, "run_gate", lambda *args, **kwargs: payload)
+        monkeypatch.setattr(
+            runner,
+            "write_candidate_registry_outcome",
+            lambda *args, **kwargs: (
+                registry / "outcome.json",
+                registry / "outcome.receipt.json",
+            ),
+        )
+        result = runner.main(
+            [
+                "--encoder-checkpoint",
+                str(placeholder),
+                "--encoder-progress",
+                str(placeholder),
+                "--encoder-completion-receipt",
+                str(placeholder),
+                "--source-receipt",
+                str(placeholder),
+                "--config",
+                str(placeholder),
+                "--gate-specification",
+                str(placeholder),
+                "--candidate-launch-authorization",
+                str(placeholder),
+                "--candidate-launch-receipt",
+                str(placeholder),
+                "--epoch11-gate-artifact",
+                str(placeholder),
+                "--epoch11-gate-receipt",
+                str(placeholder),
+                "--pose-cache-dir",
+                str(placeholder),
+                "--pose-snapshot",
+                str(placeholder),
+                "--candidate-registry-root",
+                str(registry),
+                "--candidate-runs-root",
+                str(runs_root),
+                "--candidate-id",
+                "A",
+                "--output",
+                str(output),
+                "--resume-outcome-publication",
+            ]
+        )
+        assert result == 0
+        assert output.read_bytes() == runner._encoded_json(payload)
+        receipt = runner._strict_json(
+            runner._receipt_path(output),
+            document="recovered terminal receipt fixture",
+        )
+        assert receipt["artifact_sha256"] == hashlib.sha256(
+            output.read_bytes()
+        ).hexdigest()
+        quarantine = list(root.glob(".terminal.json.incomplete-*"))
+        assert len(quarantine) == 1
+        assert quarantine[0].read_bytes() == b"partial-terminal-artifact"
 
 
 def test_epoch11_artifact_and_receipt_are_hash_and_lineage_bound() -> None:
@@ -1610,7 +2126,9 @@ def test_epoch11_artifact_and_receipt_are_hash_and_lineage_bound() -> None:
             candidate_launch_authorization_identity=launch_identity,
             candidate_launch_receipt_identity=launch_receipt_identity,
         )
-        assert validated_receipt["artifact_sha256"] == hashlib.sha256(encoded).hexdigest()
+        assert validated_receipt["artifact_sha256"] == hashlib.sha256(
+            encoded
+        ).hexdigest()
         broken = deepcopy(receipt)
         broken["candidate_launch_authorization_bytes"] += 1
         receipt_path.unlink()
@@ -1650,7 +2168,6 @@ def test_completion_receipt_requires_epoch11_resume_lineage_and_started_bytes() 
             "input_config": "experiment_config",
             "input_pose_cache_snapshot": "pose_snapshot",
             "output_encoder_checkpoint": "encoder_checkpoint",
-            "progress_log": "encoder_progress",
             "input_candidate_launch_authorization": (
                 "candidate_launch_authorization"
             ),
@@ -1665,6 +2182,24 @@ def test_completion_receipt_requires_epoch11_resume_lineage_and_started_bytes() 
             runner._write_new(target, f"fixture:{role}".encode())
             role_paths[role] = target
             identities[identity_key] = runner._stable_file_sha256(target)
+        sidecar_roles = (
+            "input_dataset_manifest",
+            "input_train_pose_inputs",
+            "input_train_pose_input_commitment",
+            "input_dev_pose_inputs",
+            "input_dev_pose_input_commitment",
+            "input_test_identity_pose_inputs",
+            "input_test_identity_pose_input_commitment",
+        )
+        for role in sidecar_roles:
+            target = root / f"{role}.bin"
+            content = (
+                b"fixture:train-identity"
+                if role in {"input_dataset_manifest", "input_train_pose_inputs"}
+                else f"fixture:{role}".encode()
+            )
+            runner._write_new(target, content)
+            role_paths[role] = target
         for role in ("input_resume_checkpoint", "input_resume_progress"):
             target = root / f"{role}.bin"
             runner._write_new(target, f"fixture:{role}".encode())
@@ -1685,6 +2220,13 @@ def test_completion_receipt_requires_epoch11_resume_lineage_and_started_bytes() 
                 "encoder_progress_bytes": resume_progress_identity[1],
             }
         }
+        final_progress = root / "progress_log.bin"
+        runner._write_new(
+            final_progress,
+            role_paths["input_resume_progress"].read_bytes() + b"\nfixture:epoch150",
+        )
+        role_paths["progress_log"] = final_progress
+        identities["encoder_progress"] = runner._stable_file_sha256(final_progress)
         started = RunManifest(
             schema_version=2,
             receipt_type="started",
@@ -1692,12 +2234,7 @@ def test_completion_receipt_requires_epoch11_resume_lineage_and_started_bytes() 
             created_at_utc="2026-08-07T00:00:00+00:00",
             command=[
                 "pams",
-                "train",
-                "encoder",
-                "--candidate-launch-authorization",
-                "authorization.json",
-                "--candidate-launch-receipt",
-                "authorization.receipt.json",
+                *runner._canonical_encoder_command_tail(epochs=150, resume=True),
             ],
             git_sha=source_sha,
             config_sha256=config.fingerprint,
@@ -1806,7 +2343,57 @@ def test_completion_receipt_requires_epoch11_resume_lineage_and_started_bytes() 
             completion_path,
             runner._encoded_json(missing_resume.model_dump(mode="json")),
         )
-        with pytest.raises(ValueError, match="missing required artifact roles"):
+        with pytest.raises(ValueError, match="artifact role set mismatch"):
+            runner._validate_encoder_completion_receipt(
+                completion_path,
+                expected_source_git_sha=source_sha,
+                specification=runner.load_gate_specification(SPECIFICATION),
+                config=config,
+                identities=identities,
+                epoch11_artifact=epoch11_artifact,
+                epoch11_receipt=epoch11_receipt,
+            )
+
+        extra_path = root / "input_dev_targets.bin"
+        runner._write_new(extra_path, b"forbidden-targets")
+        extra_identity = runner._stable_file_sha256(extra_path)
+        extra_role = ArtifactReceipt(
+            role="input_dev_targets",
+            locator=extra_path.name,
+            sha256=extra_identity[0],
+            bytes=extra_identity[1],
+        )
+        extra_artifact = completion.model_copy(
+            update={"artifacts": (*artifacts, extra_role)}
+        )
+        completion_path.unlink()
+        runner._write_new(
+            completion_path,
+            runner._encoded_json(extra_artifact.model_dump(mode="json")),
+        )
+        with pytest.raises(ValueError, match="artifact role set mismatch"):
+            runner._validate_encoder_completion_receipt(
+                completion_path,
+                expected_source_git_sha=source_sha,
+                specification=runner.load_gate_specification(SPECIFICATION),
+                config=config,
+                identities=identities,
+                epoch11_artifact=epoch11_artifact,
+                epoch11_receipt=epoch11_receipt,
+            )
+
+        noncanonical_started = started.model_copy(
+            update={"command": [*started.command, "--extra"]}
+        )
+        noncanonical_completion = completion.model_copy(
+            update={"started": noncanonical_started}
+        )
+        completion_path.unlink()
+        runner._write_new(
+            completion_path,
+            runner._encoded_json(noncanonical_completion.model_dump(mode="json")),
+        )
+        with pytest.raises(ValueError, match="canonical final resume"):
             runner._validate_encoder_completion_receipt(
                 completion_path,
                 expected_source_git_sha=source_sha,
