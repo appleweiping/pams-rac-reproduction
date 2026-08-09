@@ -571,7 +571,7 @@ def test_mechanism_command_and_output_bind_pass_only_seed_checkpoint(
         )
 
     output_root = tmp_path / "stage-output/mechanism-bundle"
-    output_root.mkdir()
+    output_root.mkdir(parents=True)
     output = output_root / "mechanism-probe.json"
     checkpoint = output_root / "learned-encoder-L.pt"
     checkpoint.write_bytes(b"exact-learned-L")

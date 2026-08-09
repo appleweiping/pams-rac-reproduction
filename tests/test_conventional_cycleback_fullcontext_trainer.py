@@ -1109,6 +1109,12 @@ def test_mechanism_bundle_is_transactional_and_rejection_has_no_seed(
         )
     assert not failed_output.parent.exists()
     assert not failed_seed.exists()
+    assert not tuple(
+        failed_output.parent.parent.glob(".mechanism-bundle.*.incomplete")
+    )
+    assert not any(
+        failed_output.parent.parent.rglob("learned-encoder-L.pt")
+    )
 
 
 def test_low_level_optimizer_is_private_and_null_role_remains_non_optimizer() -> None:

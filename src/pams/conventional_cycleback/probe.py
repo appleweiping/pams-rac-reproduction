@@ -2231,6 +2231,7 @@ def _publish_mechanism_bundle(
 
     bundle_root = output_path.parent
     parent = bundle_root.parent
+    directory_flags = os.O_RDONLY | int(getattr(os, "O_DIRECTORY", 0))
     staging = Path(
         tempfile.mkdtemp(prefix=f".{bundle_root.name}.", suffix=".incomplete", dir=parent)
     )
@@ -2265,7 +2266,6 @@ def _publish_mechanism_bundle(
             staged_checkpoint
         ) != checkpoint_identity:
             raise RuntimeError("staged mechanism seed changed before bundle publication")
-        directory_flags = os.O_RDONLY | int(getattr(os, "O_DIRECTORY", 0))
         directory = os.open(staging, directory_flags)
         try:
             os.fsync(directory)
@@ -2280,15 +2280,38 @@ def _publish_mechanism_bundle(
             os.fsync(parent_descriptor)
         finally:
             os.close(parent_descriptor)
-    except BaseException:
+    except BaseException as error:
         cleanup = bundle_root if published else staging
-        if cleanup.exists():
-            shutil.rmtree(cleanup)
+        cleanup_failures: list[BaseException] = []
+        try:
+            if cleanup.exists():
+                shutil.rmtree(cleanup)
+        except BaseException as cleanup_error:
+            cleanup_failures.append(cleanup_error)
+        remaining_checkpoint = cleanup / seed_checkpoint_path.name
+        try:
+            if remaining_checkpoint.is_symlink():
+                remaining_checkpoint.unlink()
+            elif remaining_checkpoint.exists():
+                remaining_checkpoint.chmod(0o600)
+                remaining_checkpoint.unlink()
+            if cleanup.exists():
+                shutil.rmtree(cleanup)
+        except BaseException as cleanup_error:
+            cleanup_failures.append(cleanup_error)
+        try:
             parent_descriptor = os.open(parent, directory_flags)
             try:
                 os.fsync(parent_descriptor)
             finally:
                 os.close(parent_descriptor)
+        except BaseException as cleanup_error:
+            cleanup_failures.append(cleanup_error)
+        for cleanup_error in cleanup_failures:
+            error.add_note(
+                "mechanism bundle cleanup failure: "
+                f"{type(cleanup_error).__name__}"
+            )
         raise
 
 
