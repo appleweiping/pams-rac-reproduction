@@ -1901,6 +1901,7 @@ def zero_pair_segment_contexts(
             "policy": "zero_pose_over_full_authorized_stable_range_context",
             "position_indices_unchanged": True,
             "joint_masks_unchanged": True,
+            "authorized_for_real_optimizer": False,
         },
     )
 
@@ -2506,7 +2507,7 @@ def collate_to_device(
     )
     for index, sequence in enumerate(sequences):
         joint_mask[index, : sequence.num_frames] = torch.from_numpy(
-            np.asarray(sequence.joint_valid_mask)
+            np.asarray(sequence.joint_valid_mask).copy()
         ).to(device=device)
     return Unified2DBatch(
         pose_batch=pose_batch,

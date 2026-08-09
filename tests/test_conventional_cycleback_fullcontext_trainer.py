@@ -39,8 +39,8 @@ from pams.conventional_cycleback.fullcontext_trainer import (
     capture_fullcontext_backend_state,
     capture_fullcontext_rng_state,
     configure_fullcontext_determinism,
-    evaluate_unified2d_epoch11_label_free_controls,
     epoch11_gate_decision,
+    evaluate_unified2d_epoch11_label_free_controls,
     initial_epoch11_progress,
     initialize_epoch150_from_exact_epoch11_checkpoint,
     load_fullcontext_checkpoint,
@@ -56,6 +56,7 @@ from pams.conventional_cycleback.loss import ConventionalCycleBackLoss
 from pams.conventional_cycleback.runtime import (
     AugmentedSequenceViews,
     PairEligibility,
+    PairSegmentContexts,
     Unified2DSequence,
     collate_to_device,
     context_encoding_plan,
@@ -495,6 +496,9 @@ def _assert_nested_equal(first: Any, second: Any) -> None:
     if isinstance(first, torch.Tensor):
         assert isinstance(second, torch.Tensor)
         assert torch.equal(first, second)
+    elif isinstance(first, np.ndarray):
+        assert isinstance(second, np.ndarray)
+        assert np.array_equal(first, second)
     elif isinstance(first, Mapping):
         assert isinstance(second, Mapping)
         assert set(first) == set(second)
@@ -989,9 +993,12 @@ def test_single_step_api_consumes_progress_and_rejects_skip_or_replay() -> None:
             progress,
         )
     assert model_state_sha256(encoder) == before_rejection
-    wrong_objective_config = replace(
-        config,
-        objective=replace(config.objective, temperature=0.2),
+    wrong_objective_config = config.model_copy(
+        update={
+            "objective": config.objective.model_copy(
+                update={"temperature": 0.2}
+            )
+        }
     )
     with pytest.raises(ValueError, match="config/objective"):
         run_fullcontext_optimizer_step(
