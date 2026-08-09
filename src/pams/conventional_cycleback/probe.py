@@ -2,7 +2,9 @@
 
 This is a bounded train337-only scientific probe, not the historical epoch-11
 gate and not a full baseline training run.  Its artifact type and contract are
-intentionally incompatible with the old gate.
+intentionally incompatible with the old gate.  A scientific PASS also
+publishes the exact learned-L/AdamW/RNG seed, but grants no continuation
+authority.
 """
 
 from __future__ import annotations
@@ -11,6 +13,8 @@ import argparse
 import hashlib
 import json
 import math
+import os
+import random
 import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -19,7 +23,6 @@ from typing import Any
 import numpy as np
 import torch
 from torch import Tensor
-from torch.optim import AdamW
 
 from pams.conventional_cycleback.audit import _evaluate_embeddings
 from pams.conventional_cycleback.authority import (
@@ -30,6 +33,24 @@ from pams.conventional_cycleback.config import (
     ConventionalCycleBackConfig,
     MechanismProbeThresholds,
     parse_conventional_cycleback_config,
+)
+from pams.conventional_cycleback.fullcontext_trainer import (
+    FullContextTrainerContract,
+    MechanismSeedPredecessorLineage,
+    MechanismSeedSamplerState,
+    atomic_save_new_mechanism_seed_checkpoint,
+    build_fullcontext_adamw,
+    build_fullcontext_objective,
+    build_mechanism_seed_checkpoint_payload,
+    capture_fullcontext_backend_state,
+    capture_fullcontext_rng_state,
+    configure_fullcontext_determinism,
+    fullcontext_backend_state_sha256,
+    fullcontext_rng_state_sha256,
+    model_state_sha256,
+    optimizer_state_sha256,
+    preserve_fullcontext_diagnostic_state,
+    unified2d_fullcontext_representation_contract,
 )
 from pams.conventional_cycleback.loss import ConventionalCycleBackLoss
 from pams.conventional_cycleback.runtime import (
@@ -69,6 +90,16 @@ _IMAGE_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
 _CANONICAL_GEOMETRY_PARENT = Path(
     "/media/lenovo/data2/pams-rac/runs/pams-conventional-cycleback-geometry-v1"
 )
+
+
+def _canonical_json_bytes(payload: Any) -> bytes:
+    return json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
 
 
 def _validate_label_firewall(
@@ -459,23 +490,49 @@ def _cyclic_video_batch(
     return tuple(sequences[(start + offset) % len(sequences)] for offset in range(batch_size))
 
 
+def _update_mechanism_sampler_prefix(
+    video_batch_digest: Any,
+    pair_row_digest: Any,
+    *,
+    step: int,
+    selected: Sequence[Unified2DSequence],
+    pairs: NativeWindowPairBatch,
+) -> None:
+    video_batch_digest.update(
+        _canonical_json_bytes(
+            {
+                "optimizer_step": step,
+                "video_ids": [sequence.video_id for sequence in selected],
+            }
+        )
+    )
+    pair_row_digest.update(
+        _canonical_json_bytes(
+            {
+                "optimizer_step": step,
+                "video_ids": list(pairs.video_ids),
+                "starts_a": pairs.starts_a.detach().cpu().tolist(),
+                "starts_b": pairs.starts_b.detach().cpu().tolist(),
+                "segment_starts": pairs.segment_starts.detach().cpu().tolist(),
+                "segment_ends": pairs.segment_ends.detach().cpu().tolist(),
+                "source_indices_a": (
+                    pairs.source_indices_a.detach().cpu().tolist()
+                ),
+                "source_indices_b": (
+                    pairs.source_indices_b.detach().cpu().tolist()
+                ),
+                "native_lengths": pairs.native_lengths.detach().cpu().tolist(),
+            }
+        )
+    )
+
+
 def _finite_parameter_gradients(model: PAMSEncoder) -> bool:
     gradients = [parameter.grad for parameter in model.parameters() if parameter.requires_grad]
     return bool(gradients) and all(
         gradient is not None and torch.isfinite(gradient).all()
         for gradient in gradients
     )
-
-
-def _model_state_sha256(model: PAMSEncoder) -> str:
-    digest = hashlib.sha256()
-    for name, value in sorted(model.state_dict().items()):
-        tensor = value.detach().cpu().contiguous()
-        digest.update(name.encode())
-        digest.update(str(tensor.dtype).encode())
-        digest.update(json.dumps(list(tensor.shape), separators=(",", ":")).encode())
-        digest.update(tensor.numpy().tobytes(order="C"))
-    return digest.hexdigest()
 
 
 def _median(values: Sequence[float]) -> float:
@@ -712,12 +769,54 @@ def validate_mechanism_probe_contract(
     )
     if payload.get("config_fingerprint") != config.fingerprint:
         raise ValueError("mechanism probe config fingerprint mismatch")
+    trainer_contract = FullContextTrainerContract.from_candidate_config(config)
     training = payload.get("training")
     gate = payload.get("gate")
     if not isinstance(training, Mapping) or not isinstance(gate, Mapping):
         raise ValueError("mechanism probe training or gate schema mismatch")
     if training.get("optimizer_steps_completed") != 256:
         raise ValueError("mechanism probe did not complete exactly 256 optimizer steps")
+    if (
+        training.get("optimizer") != "AdamW"
+        or training.get("optimizer_contract")
+        != trainer_contract.to_dict()["optimizer"]
+        or training.get("scheduler") != "none"
+        or training.get("trainer_contract_fingerprint")
+        != trainer_contract.fingerprint
+    ):
+        raise ValueError("mechanism probe optimizer/trainer contract mismatch")
+    optimizer_state_sha256 = training.get("optimizer_state_sha256_at_step256")
+    if not isinstance(optimizer_state_sha256, str) or not _SHA256.fullmatch(
+        optimizer_state_sha256
+    ):
+        raise ValueError("mechanism probe optimizer state digest is invalid")
+    sampler_payload = training.get("mechanism_sampler_state")
+    if not isinstance(sampler_payload, Mapping) or set(sampler_payload) != {
+        "policy",
+        "eligible_video_total",
+        "ordered_eligible_video_ids_sha256",
+        "video_batch_size",
+        "maximum_pairs_per_step",
+        "completed_optimizer_steps",
+        "consumed_video_batch_chain_sha256",
+        "consumed_pair_row_chain_sha256",
+        "next_cyclic_start_index",
+        "mechanism_sampler_resume_allowed",
+        "epoch1_sampler_requires_new_sealed_plan",
+    }:
+        raise ValueError("mechanism probe sampler state is missing")
+    sampler_state = MechanismSeedSamplerState(**dict(sampler_payload))
+    if (
+        training.get("mechanism_sampler_state_sha256")
+        != sampler_state.fingerprint
+        or sampler_state.video_batch_size
+        != trainer_contract.mechanism_video_batch_size
+        or sampler_state.maximum_pairs_per_step
+        != trainer_contract.mechanism_maximum_pairs_per_step
+        or sampler_state.completed_optimizer_steps
+        != trainer_contract.mechanism_optimizer_steps
+    ):
+        raise ValueError("mechanism probe sampler state differs from trainer contract")
     if training.get("objective") != "symmetric_variance_aware_cycleback_regression":
         raise ValueError("mechanism probe objective mismatch")
     if training.get("encoder_segment_context_batch_size") != (
@@ -888,6 +987,90 @@ def validate_mechanism_probe_contract(
     expected_status = "passed" if overall else "rejected"
     if payload.get("status") != expected_status:
         raise ValueError("mechanism probe status differs from gate decision")
+    checkpoint = payload.get("mechanism_seed_checkpoint")
+    expected_checkpoint_keys = {
+        "artifact_type",
+        "produced",
+        "publication_status",
+        "relative_path",
+        "sha256",
+        "bytes",
+        "captured_boundary_model_state_sha256",
+        "captured_boundary_optimizer_state_sha256",
+        "captured_boundary_rng_state_sha256",
+        "captured_boundary_backend_state_sha256",
+        "captured_sampler_state_sha256",
+        "trainer_contract_fingerprint",
+        "representation_contract_sha256",
+        "seed_predecessor_lineage_fingerprint",
+        "boundary_state_captured_before_diagnostics",
+        "diagnostics_restored_exact_boundary",
+        "checkpoint_payload_validated_before_publication",
+        "retroactive_checkpoint_reconstruction_allowed",
+        "rejected_checkpoint_written",
+        "epoch11_train337_continuation_authorized",
+        "direct_epoch150_start_authorized",
+    }
+    if not isinstance(checkpoint, Mapping) or set(checkpoint) != expected_checkpoint_keys:
+        raise ValueError("mechanism seed checkpoint binding schema mismatch")
+    lineage = payload.get("lineage")
+    if not isinstance(lineage, Mapping):
+        raise ValueError("mechanism probe lineage is missing")
+    if (
+        checkpoint.get("artifact_type")
+        != "pams_conventional_cycleback_mechanism_seed_checkpoint_v1"
+        or checkpoint.get("produced") is not overall
+        or checkpoint.get("captured_boundary_model_state_sha256")
+        != training.get("final_model_state_sha256")
+        or checkpoint.get("captured_boundary_optimizer_state_sha256")
+        != optimizer_state_sha256
+        or checkpoint.get("captured_sampler_state_sha256")
+        != sampler_state.fingerprint
+        or checkpoint.get("trainer_contract_fingerprint")
+        != trainer_contract.fingerprint
+        or checkpoint.get("representation_contract_sha256")
+        != lineage.get("representation_contract_sha256")
+        or checkpoint.get("seed_predecessor_lineage_fingerprint")
+        != lineage.get("mechanism_seed_predecessor_lineage_fingerprint")
+        or checkpoint.get("boundary_state_captured_before_diagnostics") is not True
+        or checkpoint.get("diagnostics_restored_exact_boundary") is not True
+        or checkpoint.get("checkpoint_payload_validated_before_publication") is not True
+        or checkpoint.get("retroactive_checkpoint_reconstruction_allowed") is not False
+        or checkpoint.get("rejected_checkpoint_written") is not False
+        or checkpoint.get("epoch11_train337_continuation_authorized") is not False
+        or checkpoint.get("direct_epoch150_start_authorized") is not False
+    ):
+        raise ValueError("mechanism seed checkpoint semantics mismatch")
+    for key in (
+        "captured_boundary_model_state_sha256",
+        "captured_boundary_optimizer_state_sha256",
+        "captured_boundary_rng_state_sha256",
+        "captured_boundary_backend_state_sha256",
+        "captured_sampler_state_sha256",
+        "trainer_contract_fingerprint",
+        "representation_contract_sha256",
+        "seed_predecessor_lineage_fingerprint",
+    ):
+        value = checkpoint.get(key)
+        if not isinstance(value, str) or not _SHA256.fullmatch(value):
+            raise ValueError(f"mechanism seed checkpoint digest is invalid: {key}")
+    if overall and (
+        checkpoint.get("publication_status") != "passed_checkpoint_published"
+        or checkpoint.get("relative_path") != "learned-encoder-L.pt"
+        or not isinstance(checkpoint.get("sha256"), str)
+        or not _SHA256.fullmatch(checkpoint["sha256"])
+        or not isinstance(checkpoint.get("bytes"), int)
+        or isinstance(checkpoint.get("bytes"), bool)
+        or checkpoint["bytes"] < 1
+    ):
+        raise ValueError("passed mechanism lacks an exact seed checkpoint")
+    if not overall and (
+        checkpoint.get("publication_status") != "rejected_not_published"
+        or checkpoint.get("relative_path") is not None
+        or checkpoint.get("sha256") is not None
+        or checkpoint.get("bytes") is not None
+    ):
+        raise ValueError("rejected mechanism claims a seed checkpoint")
     if gate.get("epoch11_encoder_continuation_authorized") is not False:
         raise ValueError("mechanism probe must not authorize epoch11 continuation")
     for key in (
@@ -897,9 +1080,6 @@ def validate_mechanism_probe_contract(
     ):
         if gate.get(key) is not False:
             raise ValueError(f"mechanism probe illegally sets {key}")
-    lineage = payload.get("lineage")
-    if not isinstance(lineage, Mapping):
-        raise ValueError("mechanism probe lineage is missing")
     for key in (
         "config_sha256",
         "geometry_gate_sha256",
@@ -909,10 +1089,31 @@ def validate_mechanism_probe_contract(
         "pose_cache_set_sha256",
         "pose_input_authorization_sha256",
         "pose_input_authority_run_receipt_sha256",
+        "launch_authorization_sha256",
+        "launch_registry_receipt_sha256",
+        "source_export_manifest_sha256",
+        "representation_integration_outcome_sha256",
+        "representation_contract_sha256",
+        "mechanism_seed_predecessor_lineage_fingerprint",
     ):
         value = lineage.get(key)
         if not isinstance(value, str) or not _SHA256.fullmatch(value):
             raise ValueError(f"mechanism probe lineage digest is invalid: {key}")
+    for key in (
+        "config_bytes",
+        "launch_authorization_bytes",
+        "representation_integration_outcome_bytes",
+    ):
+        value = lineage.get(key)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError(f"mechanism probe lineage byte count is invalid: {key}")
+    if (
+        lineage.get("representation_integration_outcome_sha256")
+        != lineage.get("launch_authorization_sha256")
+        or lineage.get("representation_integration_outcome_bytes")
+        != lineage.get("launch_authorization_bytes")
+    ):
+        raise ValueError("mechanism representation integration binding mismatch")
     if not isinstance(lineage.get("source_git_sha"), str) or not _GIT_SHA.fullmatch(
         lineage["source_git_sha"]
     ):
@@ -1187,7 +1388,7 @@ def _fixed_real_evaluation(
         "possible_anchor_total": metrics["possible_anchor_total"],
         "symmetric_variance_aware_loss": metrics["symmetric_variance_aware_loss"],
         "symmetric_position_mse": metrics["symmetric_position_mse"],
-        "model_state_sha256": _model_state_sha256(encoder),
+        "model_state_sha256": model_state_sha256(encoder),
     }
 
 
@@ -1207,7 +1408,10 @@ def run_mechanism_probe(
     expected_pose_authorization_sha256: str,
     expected_pose_authority_run_receipt_sha256: str,
     source_git_sha: str,
+    source_export_manifest_sha256: str,
     container_image_id: str,
+    mechanism_output_path: str | Path,
+    seed_checkpoint_output: str | Path,
     device: str | torch.device | None = None,
     encoder_batch_size: int | None = None,
 ) -> dict[str, Any]:
@@ -1215,8 +1419,26 @@ def run_mechanism_probe(
 
     if not _GIT_SHA.fullmatch(source_git_sha):
         raise ValueError("source_git_sha must be a full lowercase Git SHA")
+    if not _SHA256.fullmatch(source_export_manifest_sha256):
+        raise ValueError("source export manifest must be a lowercase SHA-256")
     if not _IMAGE_ID.fullmatch(container_image_id):
         raise ValueError("container_image_id must be an immutable image ID")
+    output_path = Path(mechanism_output_path)
+    seed_checkpoint_path = Path(seed_checkpoint_output)
+    if output_path.is_symlink() or output_path.exists():
+        raise ValueError("mechanism probe JSON output must be absent")
+    if seed_checkpoint_path.is_symlink() or seed_checkpoint_path.exists():
+        raise ValueError("mechanism seed checkpoint output must be absent")
+    if (
+        output_path.name != "mechanism-probe.json"
+        or seed_checkpoint_path.name != "learned-encoder-L.pt"
+        or output_path.parent.resolve() != seed_checkpoint_path.parent.resolve()
+        or output_path.parent.is_symlink()
+        or not output_path.parent.is_dir()
+        or seed_checkpoint_path.parent.is_symlink()
+        or not seed_checkpoint_path.parent.is_dir()
+    ):
+        raise ValueError("mechanism seed checkpoint output locator is not canonical")
     launch = validate_cycleback_launch_registry(
         launch_registry_root,
         declared_host_root=declared_launch_registry_host_root,
@@ -1226,6 +1448,9 @@ def run_mechanism_probe(
         raise ValueError("source_git_sha differs from canonical launch registry")
     if container_image_id != launch.container_image_id:
         raise ValueError("container_image_id differs from canonical launch registry")
+    launch_authorization_identity = stable_file_identity(launch.authorization_path)
+    if launch_authorization_identity[0] != launch.authorization_sha256:
+        raise RuntimeError("launch authorization changed after validation")
     config_bytes_payload, config_identity = stable_file_bytes(config_path)
     config_source = Path(config_path).resolve(strict=True)
     frozen_source = Path(source_root).resolve(strict=True)
@@ -1241,6 +1466,8 @@ def run_mechanism_probe(
     ):
         raise ValueError("cycle-back config differs from canonical launch registry")
     config = parse_conventional_cycleback_config(config_bytes_payload)
+    trainer_contract = FullContextTrainerContract.from_candidate_config(config)
+    representation_contract = unified2d_fullcontext_representation_contract()
     frozen_batch_size = config.mechanism_probe.encoder_segment_context_batch_size
     if encoder_batch_size is not None and encoder_batch_size != frozen_batch_size:
         raise ValueError("encoder batch size differs from the fingerprinted config")
@@ -1251,6 +1478,9 @@ def run_mechanism_probe(
         expected_authorization_sha256=expected_pose_authorization_sha256,
         expected_run_receipt_sha256=expected_pose_authority_run_receipt_sha256,
     )
+    pose_authorization_identity = stable_file_identity(authority.authorization_path)
+    if pose_authorization_identity[0] != authority.authorization_sha256:
+        raise RuntimeError("pose authorization changed after validation")
     _, geometry_receipt_identity = _load_geometry_run_receipt(
         geometry_run_receipt_path,
         expected_sha256=expected_geometry_run_receipt_sha256,
@@ -1354,25 +1584,16 @@ def run_mechanism_probe(
         purpose="mechanism-training-order",
     )
     resolved_device = _device(device)
-    torch.use_deterministic_algorithms(True)
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
+    configure_fullcontext_determinism()
+    random.seed(config.seed)
+    np.random.seed(config.seed)
     torch.manual_seed(config.seed)
-    if resolved_device.type == "cuda":
+    if torch.cuda.is_available():
         torch.cuda.manual_seed_all(config.seed)
     encoder = build_encoder(config).to(resolved_device).train()
-    initial_state_sha256 = _model_state_sha256(encoder)
-    optimizer = AdamW(
-        encoder.parameters(),
-        lr=config.mechanism_probe.learning_rate,
-        weight_decay=config.mechanism_probe.weight_decay,
-    )
-    objective_config = config.objective
-    objective = ConventionalCycleBackLoss(
-        temperature=objective_config.temperature,
-        variance_log_weight=objective_config.variance_log_weight,
-        variance_floor=objective_config.variance_floor,
-    )
+    initial_state_sha256 = model_state_sha256(encoder)
+    optimizer = build_fullcontext_adamw(encoder, trainer_contract)
+    objective = build_fullcontext_objective(config, trainer_contract)
     (
         fixed_pairs,
         fixed_contexts,
@@ -1385,13 +1606,14 @@ def run_mechanism_probe(
         segment_ranges_by_video=segment_ranges_by_video,
         pair_eligibility=pair_eligibility,
     )
-    fixed_step0 = _fixed_real_evaluation(
-        encoder,
-        objective,
-        fixed_pairs,
-        fixed_contexts,
-        encoder_batch_size=frozen_batch_size,
-    )
+    with preserve_fullcontext_diagnostic_state(encoder):
+        fixed_step0 = _fixed_real_evaluation(
+            encoder,
+            objective,
+            fixed_pairs,
+            fixed_contexts,
+            encoder_batch_size=frozen_batch_size,
+        )
     if fixed_step0["model_state_sha256"] != initial_state_sha256:
         raise RuntimeError("step-0 fixed evaluation changed encoder state")
     loss_history: list[float] = []
@@ -1399,6 +1621,8 @@ def run_mechanism_probe(
     pair_history: list[int] = []
     unique_context_history: list[int] = []
     reused_context_reference_history: list[int] = []
+    video_batch_prefix = hashlib.sha256()
+    pair_row_prefix = hashlib.sha256()
     for step in range(config.mechanism_probe.optimizer_steps):
         selected = _cyclic_video_batch(
             eligible,
@@ -1421,6 +1645,13 @@ def run_mechanism_probe(
         )
         if pairs.pair_count < 2:
             raise RuntimeError("optimizer step has fewer than two eligible window pairs")
+        _update_mechanism_sampler_prefix(
+            video_batch_prefix,
+            pair_row_prefix,
+            step=step + 1,
+            selected=selected,
+            pairs=pairs,
+        )
         contexts = pair_segment_contexts(pairs, sequence_views)
         unique_context_history.append(
             int(contexts.transform_contract["unique_view_context_total"])
@@ -1467,23 +1698,89 @@ def run_mechanism_probe(
     completed_steps = len(loss_history)
     if completed_steps != 256:
         raise RuntimeError("mechanism probe did not complete exactly 256 optimizer steps")
-    final_state_sha256 = _model_state_sha256(encoder)
+    final_state_sha256 = model_state_sha256(encoder)
     if final_state_sha256 == initial_state_sha256:
         raise RuntimeError("encoder state did not change across optimizer steps")
+    sampler_state = MechanismSeedSamplerState(
+        eligible_video_total=len(eligible),
+        ordered_eligible_video_ids_sha256=hashlib.sha256(
+            _canonical_json_bytes([sequence.video_id for sequence in eligible])
+        ).hexdigest(),
+        video_batch_size=config.mechanism_probe.video_batch_size,
+        maximum_pairs_per_step=config.mechanism_probe.maximum_pairs_per_step,
+        completed_optimizer_steps=completed_steps,
+        consumed_video_batch_chain_sha256=video_batch_prefix.hexdigest(),
+        consumed_pair_row_chain_sha256=pair_row_prefix.hexdigest(),
+        next_cyclic_start_index=(
+            completed_steps * config.mechanism_probe.video_batch_size
+        )
+        % len(eligible),
+    )
+    seed_predecessor = MechanismSeedPredecessorLineage(
+        source_git_sha=source_git_sha,
+        source_tree_sha256=source_export_manifest_sha256,
+        container_image_id=container_image_id,
+        config_sha256=config_identity[0],
+        config_bytes=config_identity[1],
+        representation_integration_outcome_sha256=(
+            launch_authorization_identity[0]
+        ),
+        representation_integration_outcome_bytes=(
+            launch_authorization_identity[1]
+        ),
+        representation_contract_sha256=representation_contract.fingerprint,
+        representation_authorization_sha256=pose_authorization_identity[0],
+        representation_authorization_bytes=pose_authorization_identity[1],
+        mechanism_learned_model_state_sha256=final_state_sha256,
+    )
+    seed_checkpoint_payload = build_mechanism_seed_checkpoint_payload(
+        encoder,
+        optimizer,
+        trainer_contract,
+        seed_predecessor,
+        sampler_state,
+    )
+    boundary_optimizer_sha256 = seed_checkpoint_payload["optimizer_state_sha256"]
+    boundary_rng_sha256 = seed_checkpoint_payload["rng_state_sha256"]
+    boundary_backend_sha256 = seed_checkpoint_payload["backend_state_sha256"]
     first_median = _median(loss_history[:16])
     final_median = _median(loss_history[-16:])
     training_history_relative_drop = (
         None if first_median <= 0.0 else 1.0 - final_median / first_median
     )
-    fixed_step256 = _fixed_real_evaluation(
-        encoder,
-        objective,
-        fixed_pairs,
-        fixed_contexts,
-        encoder_batch_size=frozen_batch_size,
-    )
-    if fixed_step256["model_state_sha256"] != final_state_sha256:
-        raise RuntimeError("step-256 fixed evaluation changed encoder state")
+    with preserve_fullcontext_diagnostic_state(encoder) as diagnostic_boundary:
+        fixed_step256 = _fixed_real_evaluation(
+            encoder,
+            objective,
+            fixed_pairs,
+            fixed_contexts,
+            encoder_batch_size=frozen_batch_size,
+        )
+        if fixed_step256["model_state_sha256"] != final_state_sha256:
+            raise RuntimeError("step-256 fixed evaluation changed encoder state")
+        conditions, different_video, evaluation_scope = _final_conditions(
+            encoder,
+            objective,
+            config,
+            device=resolved_device,
+            encoder_batch_size=frozen_batch_size,
+            fixed_pairs=fixed_pairs,
+            fixed_contexts=fixed_contexts,
+            fixed_evaluation_video_total=fixed_evaluation_video_total,
+            fixed_view_seeds=fixed_view_seeds,
+        )
+    if (
+        diagnostic_boundary["model_state_sha256"] != final_state_sha256
+        or diagnostic_boundary["rng_state_sha256"] != boundary_rng_sha256
+        or diagnostic_boundary["backend_state_sha256"] != boundary_backend_sha256
+        or model_state_sha256(encoder) != final_state_sha256
+        or optimizer_state_sha256(optimizer) != boundary_optimizer_sha256
+        or fullcontext_rng_state_sha256(capture_fullcontext_rng_state())
+        != boundary_rng_sha256
+        or fullcontext_backend_state_sha256(capture_fullcontext_backend_state())
+        != boundary_backend_sha256
+    ):
+        raise RuntimeError("mechanism diagnostics changed the exact step-256 boundary")
     for key in (
         "pair_identity_sha256",
         "pair_payload_sha256",
@@ -1501,17 +1798,6 @@ def run_mechanism_probe(
         else 1.0 - fixed_final_loss / fixed_initial_loss
     )
 
-    conditions, different_video, evaluation_scope = _final_conditions(
-        encoder,
-        objective,
-        config,
-        device=resolved_device,
-        encoder_batch_size=frozen_batch_size,
-        fixed_pairs=fixed_pairs,
-        fixed_contexts=fixed_contexts,
-        fixed_evaluation_video_total=fixed_evaluation_video_total,
-        fixed_view_seeds=fixed_view_seeds,
-    )
     real_error = float(conditions["real"]["symmetric_position_mse"])
     null_error = min(
         float(conditions["zero_pose"]["symmetric_position_mse"]),
@@ -1560,6 +1846,68 @@ def run_mechanism_probe(
         final_pe_off_to_real_position_error_ratio=pe_off_ratio,
         thresholds=config.mechanism_probe.thresholds,
     )
+    if stable_file_identity(config_path) != config_identity:
+        raise RuntimeError("cycle-back config changed before checkpoint publication")
+    if stable_file_identity(launch.authorization_path) != launch_authorization_identity:
+        raise RuntimeError("launch authorization changed before checkpoint publication")
+    if stable_file_identity(authority.authorization_path) != pose_authorization_identity:
+        raise RuntimeError("pose authorization changed before checkpoint publication")
+    if stable_file_identity(authority.snapshot_path) != snapshot_identity:
+        raise RuntimeError("pose snapshot changed before checkpoint publication")
+    if stable_file_identity(authority.segment_index_path) != segment_index_identity:
+        raise RuntimeError("pose segment index changed before checkpoint publication")
+    if stable_file_identity(authority.joint_mask_snapshot_path) != joint_snapshot_identity:
+        raise RuntimeError("joint-mask snapshot changed before checkpoint publication")
+    if stable_file_identity(authority.identity_map_path) != identity_map_identity:
+        raise RuntimeError("pose identity map changed before checkpoint publication")
+    if (
+        stable_file_identity(authority.pair_eligibility_path)
+        != pair_eligibility_identity
+    ):
+        raise RuntimeError("pair eligibility changed before checkpoint publication")
+    if stable_file_identity(geometry_gate_path) != geometry_identity:
+        raise RuntimeError("geometry gate changed before checkpoint publication")
+    if stable_file_identity(geometry_run_receipt_path) != geometry_receipt_identity:
+        raise RuntimeError("geometry receipt changed before checkpoint publication")
+    checkpoint_identity: tuple[str, int] | None = None
+    if decision["overall_pass"]:
+        checkpoint_identity = atomic_save_new_mechanism_seed_checkpoint(
+            seed_checkpoint_payload,
+            seed_checkpoint_path,
+        )
+    elif seed_checkpoint_path.is_symlink() or seed_checkpoint_path.exists():
+        raise RuntimeError("rejected mechanism probe wrote a seed checkpoint")
+    checkpoint_record = {
+        "artifact_type": (
+            "pams_conventional_cycleback_mechanism_seed_checkpoint_v1"
+        ),
+        "produced": checkpoint_identity is not None,
+        "publication_status": (
+            "passed_checkpoint_published"
+            if checkpoint_identity is not None
+            else "rejected_not_published"
+        ),
+        "relative_path": (
+            seed_checkpoint_path.name if checkpoint_identity is not None else None
+        ),
+        "sha256": None if checkpoint_identity is None else checkpoint_identity[0],
+        "bytes": None if checkpoint_identity is None else checkpoint_identity[1],
+        "captured_boundary_model_state_sha256": final_state_sha256,
+        "captured_boundary_optimizer_state_sha256": boundary_optimizer_sha256,
+        "captured_boundary_rng_state_sha256": boundary_rng_sha256,
+        "captured_boundary_backend_state_sha256": boundary_backend_sha256,
+        "captured_sampler_state_sha256": sampler_state.fingerprint,
+        "trainer_contract_fingerprint": trainer_contract.fingerprint,
+        "representation_contract_sha256": representation_contract.fingerprint,
+        "seed_predecessor_lineage_fingerprint": seed_predecessor.fingerprint,
+        "boundary_state_captured_before_diagnostics": True,
+        "diagnostics_restored_exact_boundary": True,
+        "checkpoint_payload_validated_before_publication": True,
+        "retroactive_checkpoint_reconstruction_allowed": False,
+        "rejected_checkpoint_written": False,
+        "epoch11_train337_continuation_authorized": False,
+        "direct_epoch150_start_authorized": False,
+    }
     payload: dict[str, Any] = {
         "schema_version": 1,
         "artifact_type": config.mechanism_probe.artifact_type,
@@ -1571,6 +1919,7 @@ def run_mechanism_probe(
         "paper_table_claim_eligible": False,
         "candidate_id": config.candidate_id,
         "config_fingerprint": config.fingerprint,
+        "mechanism_seed_checkpoint": checkpoint_record,
         "label_firewall": {
             "accepted_inputs": [
                 "cycleback_proxy_config",
@@ -1621,7 +1970,19 @@ def run_mechanism_probe(
             "representation_bindings": dict(authority.representation_bindings),
             "launch_registry_id": launch.registry_id,
             "launch_authorization_sha256": launch.authorization_sha256,
+            "launch_authorization_bytes": launch_authorization_identity[1],
             "launch_registry_receipt_sha256": launch.receipt_sha256,
+            "source_export_manifest_sha256": source_export_manifest_sha256,
+            "representation_integration_outcome_sha256": (
+                launch_authorization_identity[0]
+            ),
+            "representation_integration_outcome_bytes": (
+                launch_authorization_identity[1]
+            ),
+            "representation_contract_sha256": representation_contract.fingerprint,
+            "mechanism_seed_predecessor_lineage_fingerprint": (
+                seed_predecessor.fingerprint
+            ),
             "training_video_total": len(sequences),
             "geometry_eligible_training_video_total": len(eligible),
             "source_git_sha": source_git_sha,
@@ -1657,6 +2018,12 @@ def run_mechanism_probe(
             "prototype_or_cluster_bank": False,
             "independent_skeleton_views_per_step": True,
             "optimizer": "AdamW",
+            "optimizer_contract": trainer_contract.to_dict()["optimizer"],
+            "optimizer_state_sha256_at_step256": boundary_optimizer_sha256,
+            "mechanism_sampler_state": sampler_state.to_dict(),
+            "mechanism_sampler_state_sha256": sampler_state.fingerprint,
+            "scheduler": "none",
+            "trainer_contract_fingerprint": trainer_contract.fingerprint,
             "optimizer_steps_completed": completed_steps,
             "encoder_segment_context_batch_size": frozen_batch_size,
             "deterministic_algorithms_enabled": torch.are_deterministic_algorithms_enabled(),
@@ -1740,6 +2107,10 @@ def run_mechanism_probe(
     validate_mechanism_probe_contract(payload, config)
     if stable_file_identity(config_path) != config_identity:
         raise RuntimeError("cycle-back config changed during mechanism probe")
+    if stable_file_identity(launch.authorization_path) != launch_authorization_identity:
+        raise RuntimeError("launch authorization changed during mechanism probe")
+    if stable_file_identity(authority.authorization_path) != pose_authorization_identity:
+        raise RuntimeError("pose authorization changed during mechanism probe")
     if stable_file_identity(authority.snapshot_path) != snapshot_identity:
         raise RuntimeError("pose snapshot changed during mechanism probe")
     if stable_file_identity(authority.segment_index_path) != segment_index_identity:
@@ -1757,6 +2128,14 @@ def run_mechanism_probe(
         raise RuntimeError("geometry-gate artifact changed during mechanism probe")
     if stable_file_identity(geometry_run_receipt_path) != geometry_receipt_identity:
         raise RuntimeError("geometry run receipt changed during mechanism probe")
+    if checkpoint_identity is None and (
+        seed_checkpoint_path.is_symlink() or seed_checkpoint_path.exists()
+    ):
+        raise RuntimeError("rejected mechanism probe has a checkpoint artifact")
+    if checkpoint_identity is not None and (
+        stable_file_identity(seed_checkpoint_path) != checkpoint_identity
+    ):
+        raise RuntimeError("mechanism seed checkpoint changed before probe publication")
     return payload
 
 
@@ -1769,9 +2148,26 @@ def _write_new_json(path: Path, payload: Mapping[str, Any]) -> None:
         ensure_ascii=False,
         allow_nan=False,
     )
-    with path.open("x", encoding="utf-8", newline="\n") as handle:
-        handle.write(encoded)
-        handle.write("\n")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    flags |= int(getattr(os, "O_NOFOLLOW", 0))
+    flags |= int(getattr(os, "O_CLOEXEC", 0))
+    descriptor = os.open(path, flags, 0o640)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
+            descriptor = -1
+            handle.write(encoded)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+    directory_flags = os.O_RDONLY | int(getattr(os, "O_DIRECTORY", 0))
+    directory = os.open(path.parent, directory_flags)
+    try:
+        os.fsync(directory)
+    finally:
+        os.close(directory)
 
 
 def parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -1790,7 +2186,9 @@ def parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--expected-pose-authorization-sha256", required=True)
     parser.add_argument("--expected-pose-authority-run-receipt-sha256", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--seed-checkpoint-output", type=Path, required=True)
     parser.add_argument("--source-git-sha", required=True)
+    parser.add_argument("--source-export-manifest-sha256", required=True)
     parser.add_argument("--container-image-id", required=True)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--encoder-batch-size", type=int)
@@ -1820,7 +2218,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             arguments.expected_pose_authority_run_receipt_sha256
         ),
         source_git_sha=arguments.source_git_sha,
+        source_export_manifest_sha256=(
+            arguments.source_export_manifest_sha256
+        ),
         container_image_id=arguments.container_image_id,
+        mechanism_output_path=arguments.output,
+        seed_checkpoint_output=arguments.seed_checkpoint_output,
         device=arguments.device,
         encoder_batch_size=arguments.encoder_batch_size,
     )
@@ -1832,6 +2235,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "overall_pass": payload["gate"]["overall_pass"],
                 "optimizer_steps": payload["training"]["optimizer_steps_completed"],
                 "output": str(arguments.output),
+                "mechanism_seed_checkpoint": payload[
+                    "mechanism_seed_checkpoint"
+                ]["relative_path"],
             },
             sort_keys=True,
         )

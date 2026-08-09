@@ -646,6 +646,8 @@ def _outcome_registry_path(role: str, candidate_id: str | None) -> Path:
         return OUTCOME_REGISTRY_ROOT / "pose-input/outcome.json"
     if role == "geometry" and candidate_id in CONFIGS:
         return OUTCOME_REGISTRY_ROOT / f"geometry/{candidate_id}.outcome.json"
+    if role == "mechanism" and candidate_id in CONFIGS:
+        return OUTCOME_REGISTRY_ROOT / f"mechanism/{candidate_id}.outcome.json"
     raise LaunchFailure("invalid predecessor outcome registry role")
 
 
@@ -660,6 +662,10 @@ def _load_predecessor(
     candidate_id: str | None,
     launch: Any,
 ) -> Predecessor:
+    if role == "mechanism":
+        raise LaunchFailure(
+            "mechanism predecessor consumption awaits the separate epoch11 authority"
+        )
     registry_path = _outcome_registry_path(role, candidate_id)
     record, _ = _read_json(registry_path, role=f"{role} outcome registry")
     if not isinstance(record, Mapping):
@@ -680,14 +686,12 @@ def _load_predecessor(
     if not isinstance(root_value, str):
         raise LaunchFailure(f"{role} outcome root is missing")
     root = _validate_directory(Path(root_value), role=f"{role} predecessor", sealed=True)
-    expected_parent = (
-        CANONICAL_ROOT
-        / (
+    expected_parent = CANONICAL_ROOT / {
+        "pose_input": (
             "runs/pams-conventional-cycleback-pose-input-authorization-v1"
-            if role == "pose_input"
-            else "runs/pams-conventional-cycleback-geometry-v1"
-        )
-    )
+        ),
+        "geometry": "runs/pams-conventional-cycleback-geometry-v1",
+    }[role]
     if root.parent != expected_parent or not root.name.startswith(
         f"{launch.source_revision[:12]}-"
     ):
@@ -917,9 +921,12 @@ def _stage_command(
     stage: str,
     candidate_id: str | None,
     config_relative: str | None,
+    source_export_manifest_sha256: str,
     launch: Any,
     predecessors: Sequence[Predecessor],
 ) -> tuple[list[str], list[dict[str, Any]], str]:
+    if not re.fullmatch(r"[0-9a-f]{64}", source_export_manifest_sha256):
+        raise LaunchFailure("source export manifest identity is invalid")
     mounts: list[dict[str, Any]] = [
         {
             "destination": "/workspace",
@@ -1046,6 +1053,10 @@ def _stage_command(
         os.fspath(geometry.root),
         "--output",
         "/pams/output/mechanism-probe.json",
+        "--seed-checkpoint-output",
+        "/pams/output/learned-encoder-L.pt",
+        "--source-export-manifest-sha256",
+        source_export_manifest_sha256,
     ]
     return command, mounts, "output/mechanism-probe.json"
 
@@ -1347,6 +1358,67 @@ def _publish_outcome_registry(
         },
         "broader_authority_granted": False,
     }
+    if role == "mechanism":
+        output_payload, _ = _read_json(output, role="published mechanism output")
+        receipt_payload, _ = _read_json(
+            receipt,
+            role="published mechanism receipt",
+        )
+        if not isinstance(output_payload, Mapping) or not isinstance(
+            receipt_payload, Mapping
+        ):
+            raise LaunchFailure("published mechanism artifacts are malformed")
+        seed_identity = _validated_mechanism_seed_identity(
+            output,
+            output_payload,
+            status="passed",
+        )
+        if seed_identity is None:
+            raise LaunchFailure("passed mechanism outcome lacks a learned-L seed")
+        seed_binding = output_payload["mechanism_seed_checkpoint"]
+        if (
+            receipt_payload.get("mechanism_seed_checkpoint_sha256")
+            != seed_identity.sha256
+            or receipt_payload.get("mechanism_seed_checkpoint_bytes")
+            != seed_identity.bytes
+            or receipt_payload.get("mechanism_seed_model_state_sha256")
+            != seed_binding.get("captured_boundary_model_state_sha256")
+            or receipt_payload.get("mechanism_seed_optimizer_state_sha256")
+            != seed_binding.get("captured_boundary_optimizer_state_sha256")
+            or receipt_payload.get("mechanism_seed_rng_state_sha256")
+            != seed_binding.get("captured_boundary_rng_state_sha256")
+            or receipt_payload.get("mechanism_seed_backend_state_sha256")
+            != seed_binding.get("captured_boundary_backend_state_sha256")
+            or receipt_payload.get("mechanism_seed_sampler_state_sha256")
+            != seed_binding.get("captured_sampler_state_sha256")
+            or receipt_payload.get("mechanism_seed_epoch11_continuation_authorized")
+            is not False
+        ):
+            raise LaunchFailure("mechanism receipt differs from learned-L seed binding")
+        record["mechanism_seed_checkpoint_relative"] = (
+            "output/learned-encoder-L.pt"
+        )
+        record["mechanism_seed_checkpoint"] = seed_identity.to_dict()
+        record["mechanism_seed_model_state_sha256"] = seed_binding[
+            "captured_boundary_model_state_sha256"
+        ]
+        record["mechanism_seed_optimizer_state_sha256"] = seed_binding[
+            "captured_boundary_optimizer_state_sha256"
+        ]
+        record["mechanism_seed_rng_state_sha256"] = seed_binding[
+            "captured_boundary_rng_state_sha256"
+        ]
+        record["mechanism_seed_backend_state_sha256"] = seed_binding[
+            "captured_boundary_backend_state_sha256"
+        ]
+        record["mechanism_seed_sampler_state_sha256"] = seed_binding[
+            "captured_sampler_state_sha256"
+        ]
+        record["mechanism_seed_predecessor_lineage_fingerprint"] = seed_binding[
+            "seed_predecessor_lineage_fingerprint"
+        ]
+        record["epoch11_train337_continuation_authorized"] = False
+        record["direct_epoch150_start_authorized"] = False
     registry_path = _outcome_registry_path(role, candidate_id)
     _write_json_exclusive(registry_path, record, mode=0o444)
 
@@ -1411,6 +1483,88 @@ def _parse_post_exit(encoded: bytes, *, container_id: str) -> int:
     return int(state["ExitCode"])
 
 
+def _validated_mechanism_seed_identity(
+    output_path: Path,
+    payload: Mapping[str, Any],
+    *,
+    status: str,
+) -> FileIdentity | None:
+    if status not in {"passed", "rejected"}:
+        raise LaunchFailure("mechanism seed status is invalid")
+    checkpoint = payload.get("mechanism_seed_checkpoint")
+    if not isinstance(checkpoint, Mapping):
+        raise LaunchFailure("mechanism output lacks a seed checkpoint binding")
+    training = payload.get("training")
+    if (
+        not isinstance(training, Mapping)
+        or checkpoint.get("captured_boundary_model_state_sha256")
+        != training.get("final_model_state_sha256")
+        or checkpoint.get("captured_boundary_optimizer_state_sha256")
+        != training.get("optimizer_state_sha256_at_step256")
+        or checkpoint.get("captured_sampler_state_sha256")
+        != training.get("mechanism_sampler_state_sha256")
+        or checkpoint.get("trainer_contract_fingerprint")
+        != training.get("trainer_contract_fingerprint")
+    ):
+        raise LaunchFailure("mechanism seed differs from the training boundary")
+    if (
+        checkpoint.get("artifact_type")
+        != "pams_conventional_cycleback_mechanism_seed_checkpoint_v1"
+        or checkpoint.get("boundary_state_captured_before_diagnostics") is not True
+        or checkpoint.get("diagnostics_restored_exact_boundary") is not True
+        or checkpoint.get("checkpoint_payload_validated_before_publication") is not True
+        or checkpoint.get("retroactive_checkpoint_reconstruction_allowed") is not False
+        or checkpoint.get("epoch11_train337_continuation_authorized") is not False
+        or checkpoint.get("direct_epoch150_start_authorized") is not False
+    ):
+        raise LaunchFailure("mechanism seed scientific boundary is invalid")
+    for field in (
+        "captured_boundary_model_state_sha256",
+        "captured_boundary_optimizer_state_sha256",
+        "captured_boundary_rng_state_sha256",
+        "captured_boundary_backend_state_sha256",
+        "captured_sampler_state_sha256",
+        "trainer_contract_fingerprint",
+        "representation_contract_sha256",
+        "seed_predecessor_lineage_fingerprint",
+    ):
+        value = checkpoint.get(field)
+        if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value):
+            raise LaunchFailure(f"mechanism seed digest is invalid: {field}")
+    checkpoint_path = output_path.with_name("learned-encoder-L.pt")
+    if status == "rejected" and (
+        checkpoint.get("produced") is not False
+        or checkpoint.get("publication_status") != "rejected_not_published"
+        or checkpoint.get("relative_path") is not None
+        or checkpoint.get("sha256") is not None
+        or checkpoint.get("bytes") is not None
+        or checkpoint.get("rejected_checkpoint_written") is not False
+        or checkpoint_path.is_symlink()
+        or checkpoint_path.exists()
+    ):
+        raise LaunchFailure("rejected mechanism published a seed checkpoint")
+    if status == "rejected":
+        return None
+    if (
+        checkpoint.get("produced") is not True
+        or checkpoint.get("publication_status") != "passed_checkpoint_published"
+        or checkpoint.get("relative_path") != checkpoint_path.name
+        or checkpoint.get("rejected_checkpoint_written") is not False
+        or not isinstance(checkpoint.get("sha256"), str)
+        or not re.fullmatch(r"[0-9a-f]{64}", checkpoint["sha256"])
+        or isinstance(checkpoint.get("bytes"), bool)
+        or not isinstance(checkpoint.get("bytes"), int)
+        or checkpoint["bytes"] < 1
+    ):
+        raise LaunchFailure("passed mechanism seed publication contract mismatch")
+    identity = _identity(checkpoint_path, role="mechanism learned-L seed checkpoint")
+    if checkpoint.get("sha256") != identity.sha256 or checkpoint.get("bytes") != (
+        identity.bytes
+    ):
+        raise LaunchFailure("mechanism learned-L seed bytes differ from output binding")
+    return identity
+
+
 def _validate_stage_output(
     *,
     stage: str,
@@ -1432,6 +1586,12 @@ def _validate_stage_output(
         or gate.get("overall_pass") is not (exit_code == 0)
     ):
         raise LaunchFailure(f"{stage} output status differs from container exit")
+    if stage == "mechanism":
+        _validated_mechanism_seed_identity(
+            output_path,
+            payload,
+            status=expected_status,
+        )
     return payload, identity, expected_status
 
 
@@ -1579,8 +1739,76 @@ def _stage_receipt(
             ),
         )
     else:
+        seed_binding = output_payload.get("mechanism_seed_checkpoint")
+        mechanism_lineage = output_payload.get("lineage")
+        if not isinstance(seed_binding, Mapping):
+            raise LaunchFailure("mechanism output seed binding is malformed")
+        if (
+            not isinstance(mechanism_lineage, Mapping)
+            or not isinstance(config_identity, Mapping)
+            or mechanism_lineage.get("source_git_sha") != launch.source_revision
+            or mechanism_lineage.get("container_image_id")
+            != launch.container_image_id
+            or mechanism_lineage.get("config_sha256")
+            != config_identity.get("sha256")
+            or mechanism_lineage.get("config_bytes")
+            != config_identity.get("bytes")
+            or mechanism_lineage.get("source_export_manifest_sha256")
+            != source_pre.sha256
+            or mechanism_lineage.get("launch_authorization_sha256")
+            != launch.authorization_sha256
+            or mechanism_lineage.get("launch_registry_receipt_sha256")
+            != launch.receipt_sha256
+            or mechanism_lineage.get("representation_contract_sha256")
+            != seed_binding.get("representation_contract_sha256")
+            or mechanism_lineage.get(
+                "mechanism_seed_predecessor_lineage_fingerprint"
+            )
+            != seed_binding.get("seed_predecessor_lineage_fingerprint")
+        ):
+            raise LaunchFailure("mechanism output lineage differs from host evidence")
+        seed_identity = _validated_mechanism_seed_identity(
+            output_path,
+            output_payload,
+            status=status,
+        )
         receipt.update(
             mechanism_probe_sha256=output_identity.sha256,
+            mechanism_seed_checkpoint_produced=seed_identity is not None,
+            mechanism_seed_checkpoint_relative=(
+                None if seed_identity is None else "output/learned-encoder-L.pt"
+            ),
+            mechanism_seed_checkpoint_sha256=(
+                None if seed_identity is None else seed_identity.sha256
+            ),
+            mechanism_seed_checkpoint_bytes=(
+                None if seed_identity is None else seed_identity.bytes
+            ),
+            mechanism_seed_model_state_sha256=seed_binding.get(
+                "captured_boundary_model_state_sha256"
+            ),
+            mechanism_seed_optimizer_state_sha256=seed_binding.get(
+                "captured_boundary_optimizer_state_sha256"
+            ),
+            mechanism_seed_rng_state_sha256=seed_binding.get(
+                "captured_boundary_rng_state_sha256"
+            ),
+            mechanism_seed_backend_state_sha256=seed_binding.get(
+                "captured_boundary_backend_state_sha256"
+            ),
+            mechanism_seed_sampler_state_sha256=seed_binding.get(
+                "captured_sampler_state_sha256"
+            ),
+            mechanism_seed_trainer_contract_fingerprint=seed_binding.get(
+                "trainer_contract_fingerprint"
+            ),
+            mechanism_seed_predecessor_lineage_fingerprint=seed_binding.get(
+                "seed_predecessor_lineage_fingerprint"
+            ),
+            mechanism_seed_diagnostics_restored_exact_boundary=seed_binding.get(
+                "diagnostics_restored_exact_boundary"
+            ),
+            mechanism_seed_epoch11_continuation_authorized=False,
             cycleback_mechanism_supported=(
                 status == "passed"
                 and output_payload.get("gate", {}).get("cycleback_mechanism_supported")
@@ -1786,6 +2014,10 @@ def launch_stage(
             "geometry", candidate_id
         ).exists():
             raise LaunchFailure("canonical geometry outcome slot is already occupied")
+        if stage == "mechanism" and _outcome_registry_path(
+            "mechanism", candidate_id
+        ).exists():
+            raise LaunchFailure("canonical mechanism outcome slot is already occupied")
         if STAGE_METADATA[stage]["gpu"]:
             if gpu_device is None or not gpu_device.isdigit():
                 raise LaunchFailure("GPU device must be a decimal device ID")
@@ -1844,6 +2076,7 @@ def launch_stage(
             stage=stage,
             candidate_id=candidate_id,
             config_relative=config_relative,
+            source_export_manifest_sha256=source_pre.sha256,
             launch=launch,
             predecessors=predecessors,
         )
@@ -2000,9 +2233,9 @@ def launch_stage(
         _seal_tree(staging)
         _publish_tree(staging, final_root)
         reservation_path.chmod(0o444)
-        if status == "passed" and stage in {"adapter", "geometry"}:
+        if status == "passed" and stage in {"adapter", "geometry", "mechanism"}:
             _publish_outcome_registry(
-                role="pose_input" if stage == "adapter" else "geometry",
+                role=("pose_input" if stage == "adapter" else stage),
                 candidate_id=candidate_id,
                 final_root=final_root,
                 output_relative=output_relative,

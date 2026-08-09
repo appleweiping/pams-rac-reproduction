@@ -2,11 +2,10 @@
 
 This module defines the deterministic training, sampler, checkpoint, and
 label-free gate contracts needed after the bounded 256-step mechanism probe.
-It deliberately does not expose a command-line entry point.  The current
-mechanism probe records only a model-state digest and therefore cannot satisfy
-the exact learned-state predecessor required here.  A future independently
-sealed integration outcome must provide the checkpoint bytes before any formal
-epoch-11 or epoch-150 continuation can be launched.
+It deliberately does not expose a command-line entry point.  A newly executed
+probe may publish an exact learned-state seed, but that seed grants no training
+authority: a future independently sealed integration outcome must bind its
+bytes before any formal epoch-11 or epoch-150 continuation can be launched.
 
 The implementation remains an independently inferred conventional cycle-back
 proxy.  PAMS names a conventional TCC baseline, but does not disclose this
@@ -178,6 +177,26 @@ class FullContextRepresentationContract:
         return _canonical_sha256(self.to_dict())
 
 
+def unified2d_fullcontext_representation_contract() -> FullContextRepresentationContract:
+    """Return the exact v4e representation contract used by this probe.
+
+    The continuation core remains typed and representation-generic.  This
+    helper exists only because the current mechanism producer consumes the
+    authorized unified-2D adapter and must embed those exact semantics.
+    """
+
+    return FullContextRepresentationContract(
+        representation_family="v4e_unified2d_coco17_padded33",
+        coordinate_contract="body-centered-uniform-rms-scale-xy-z0-v1",
+        pose_joint_count=33,
+        support_channel_count=17,
+        support_channel_to_pose_joint_indices=tuple(range(17)),
+        augmentation_adapter="unified2d_masked_xy_inplane_v1",
+        diagnostic_adapter="unified2d_coco17_joint_nulls_v1",
+        stable_range_policy="v4e_exact_all_valid_track_stability_ranges_v1",
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class FullContextTrainerContract:
     """Frozen inferred training choices shared by all three candidates."""
@@ -203,6 +222,8 @@ class FullContextTrainerContract:
     maximum_context_frames_per_batch: int = 2048
     encoder_context_batch_size: int = 8
     mechanism_optimizer_steps: int = _MECHANISM_OPTIMIZER_STEPS
+    mechanism_video_batch_size: int = 8
+    mechanism_maximum_pairs_per_step: int = 32
     epoch11_target: int = _EPOCH11_TARGET
     epoch150_target: int = _EPOCH150_TARGET
     classification: Literal[
@@ -258,6 +279,13 @@ class FullContextTrainerContract:
             or self.epoch150_target != _EPOCH150_TARGET
         ):
             raise ValueError("full-context stage boundaries are frozen")
+        if self.mechanism_video_batch_size != self.maximum_videos_per_batch:
+            raise ValueError("mechanism and continuation video-batch contracts differ")
+        _require_integer(
+            self.mechanism_maximum_pairs_per_step,
+            role="mechanism maximum pairs per step",
+            minimum=2,
+        )
 
     @classmethod
     def from_candidate_config(
@@ -283,6 +311,11 @@ class FullContextTrainerContract:
             objective_variance_floor=config.objective.variance_floor,
             encoder_context_batch_size=(
                 config.mechanism_probe.encoder_segment_context_batch_size
+            ),
+            mechanism_optimizer_steps=config.mechanism_probe.optimizer_steps,
+            mechanism_video_batch_size=config.mechanism_probe.video_batch_size,
+            mechanism_maximum_pairs_per_step=(
+                config.mechanism_probe.maximum_pairs_per_step
             ),
         )
 
@@ -326,6 +359,13 @@ class FullContextTrainerContract:
             ),
             "encoder_context_batch_size": self.encoder_context_batch_size,
             "mechanism_optimizer_steps": self.mechanism_optimizer_steps,
+            "mechanism_sampler": {
+                "policy": "ranked_sequences_then_cyclic_video_batch_v1",
+                "video_batch_size": self.mechanism_video_batch_size,
+                "maximum_pairs_per_step": self.mechanism_maximum_pairs_per_step,
+                "completed_optimizer_steps": self.mechanism_optimizer_steps,
+                "resume_after_gate": False,
+            },
             "epoch11_target": self.epoch11_target,
             "epoch150_target": self.epoch150_target,
             "classification": self.classification,
@@ -392,6 +432,179 @@ def validate_fullcontext_objective(
         or objective.variance_floor != contract.objective_variance_floor
     ):
         raise ValueError("cycle-back objective parameters differ from frozen config")
+
+
+@dataclass(frozen=True, slots=True)
+class MechanismSeedPredecessorLineage:
+    """Acyclic inputs embedded in a freshly produced learned-L seed.
+
+    The mechanism output, run receipt, and checkpoint identity do not exist
+    when the checkpoint bytes are serialized.  They are intentionally absent
+    here and must be bound later by the sealed mechanism outcome.
+    """
+
+    source_git_sha: str
+    source_tree_sha256: str
+    container_image_id: str
+    config_sha256: str
+    config_bytes: int
+    representation_integration_outcome_sha256: str
+    representation_integration_outcome_bytes: int
+    representation_contract_sha256: str
+    representation_authorization_sha256: str
+    representation_authorization_bytes: int
+    mechanism_learned_model_state_sha256: str
+
+    def __post_init__(self) -> None:
+        _require_git_sha(self.source_git_sha, role="source revision")
+        _require_image_id(self.container_image_id, role="container image")
+        for role, value in (
+            ("source tree", self.source_tree_sha256),
+            ("config", self.config_sha256),
+            (
+                "representation integration outcome",
+                self.representation_integration_outcome_sha256,
+            ),
+            ("representation contract", self.representation_contract_sha256),
+            (
+                "representation authorization",
+                self.representation_authorization_sha256,
+            ),
+            (
+                "mechanism learned model state",
+                self.mechanism_learned_model_state_sha256,
+            ),
+        ):
+            _require_sha256(value, role=role)
+        for role, value in (
+            ("config bytes", self.config_bytes),
+            (
+                "representation integration outcome bytes",
+                self.representation_integration_outcome_bytes,
+            ),
+            (
+                "representation authorization bytes",
+                self.representation_authorization_bytes,
+            ),
+        ):
+            _require_integer(value, role=role, minimum=1)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "source_git_sha": self.source_git_sha,
+            "source_tree_sha256": self.source_tree_sha256,
+            "container_image_id": self.container_image_id,
+            "config_sha256": self.config_sha256,
+            "config_bytes": self.config_bytes,
+            "representation_integration_outcome_sha256": (
+                self.representation_integration_outcome_sha256
+            ),
+            "representation_integration_outcome_bytes": (
+                self.representation_integration_outcome_bytes
+            ),
+            "representation_contract_sha256": self.representation_contract_sha256,
+            "representation_authorization_sha256": (
+                self.representation_authorization_sha256
+            ),
+            "representation_authorization_bytes": (
+                self.representation_authorization_bytes
+            ),
+            "mechanism_learned_model_state_sha256": (
+                self.mechanism_learned_model_state_sha256
+            ),
+        }
+
+    @property
+    def fingerprint(self) -> str:
+        return _canonical_sha256(self.to_dict())
+
+
+@dataclass(frozen=True, slots=True)
+class MechanismSeedSamplerState:
+    """Exact bounded-probe sample prefix captured with learned L."""
+
+    eligible_video_total: int
+    ordered_eligible_video_ids_sha256: str
+    video_batch_size: int
+    maximum_pairs_per_step: int
+    completed_optimizer_steps: int
+    consumed_video_batch_chain_sha256: str
+    consumed_pair_row_chain_sha256: str
+    next_cyclic_start_index: int
+    policy: Literal[
+        "ranked_sequences_then_cyclic_video_batch_v1"
+    ] = "ranked_sequences_then_cyclic_video_batch_v1"
+    mechanism_sampler_resume_allowed: Literal[False] = False
+    epoch1_sampler_requires_new_sealed_plan: Literal[True] = True
+
+    def __post_init__(self) -> None:
+        if (
+            self.policy != "ranked_sequences_then_cyclic_video_batch_v1"
+            or self.mechanism_sampler_resume_allowed is not False
+            or self.epoch1_sampler_requires_new_sealed_plan is not True
+        ):
+            raise ValueError("mechanism sampler transition policy mismatch")
+        _require_integer(
+            self.eligible_video_total,
+            role="mechanism eligible video total",
+            minimum=1,
+        )
+        _require_integer(
+            self.video_batch_size,
+            role="mechanism video batch size",
+            minimum=1,
+        )
+        _require_integer(
+            self.maximum_pairs_per_step,
+            role="mechanism maximum pairs per step",
+            minimum=2,
+        )
+        if self.video_batch_size > self.eligible_video_total:
+            raise ValueError("mechanism video batch exceeds eligible dataset")
+        if self.completed_optimizer_steps != _MECHANISM_OPTIMIZER_STEPS:
+            raise ValueError("mechanism sampler prefix must end at exact step 256")
+        _require_integer(
+            self.next_cyclic_start_index,
+            role="mechanism next cyclic index",
+        )
+        expected_next = (
+            self.completed_optimizer_steps * self.video_batch_size
+        ) % self.eligible_video_total
+        if self.next_cyclic_start_index != expected_next:
+            raise ValueError("mechanism next cyclic index differs from exact prefix")
+        for role, value in (
+            ("ordered eligible video IDs", self.ordered_eligible_video_ids_sha256),
+            ("consumed video batches", self.consumed_video_batch_chain_sha256),
+            ("consumed pair rows", self.consumed_pair_row_chain_sha256),
+        ):
+            _require_sha256(value, role=role)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "policy": self.policy,
+            "eligible_video_total": self.eligible_video_total,
+            "ordered_eligible_video_ids_sha256": (
+                self.ordered_eligible_video_ids_sha256
+            ),
+            "video_batch_size": self.video_batch_size,
+            "maximum_pairs_per_step": self.maximum_pairs_per_step,
+            "completed_optimizer_steps": self.completed_optimizer_steps,
+            "consumed_video_batch_chain_sha256": (
+                self.consumed_video_batch_chain_sha256
+            ),
+            "consumed_pair_row_chain_sha256": self.consumed_pair_row_chain_sha256,
+            "next_cyclic_start_index": self.next_cyclic_start_index,
+            "mechanism_sampler_resume_allowed": (
+                self.mechanism_sampler_resume_allowed
+            ),
+            "epoch1_sampler_requires_new_sealed_plan": (
+                self.epoch1_sampler_requires_new_sealed_plan
+            ),
+        }
+
+    @property
+    def fingerprint(self) -> str:
+        return _canonical_sha256(self.to_dict())
 
 
 @dataclass(frozen=True, slots=True)
@@ -489,20 +702,37 @@ class FullContextLineage:
             ),
         }
 
+    def mechanism_seed_predecessor(self) -> MechanismSeedPredecessorLineage:
+        """Derive the acyclic checkpoint predecessor from final lineage."""
+
+        return MechanismSeedPredecessorLineage(
+            source_git_sha=self.source_git_sha,
+            source_tree_sha256=self.source_tree_sha256,
+            container_image_id=self.container_image_id,
+            config_sha256=self.config_sha256,
+            config_bytes=self.config_bytes,
+            representation_integration_outcome_sha256=(
+                self.representation_integration_outcome_sha256
+            ),
+            representation_integration_outcome_bytes=(
+                self.representation_integration_outcome_bytes
+            ),
+            representation_contract_sha256=self.representation_contract_sha256,
+            representation_authorization_sha256=(
+                self.representation_authorization_sha256
+            ),
+            representation_authorization_bytes=(
+                self.representation_authorization_bytes
+            ),
+            mechanism_learned_model_state_sha256=(
+                self.mechanism_learned_model_state_sha256
+            ),
+        )
+
     def mechanism_seed_predecessor_dict(self) -> dict[str, Any]:
         """Return the acyclic lineage embedded inside the seed checkpoint."""
 
-        payload = self.to_dict()
-        for key in (
-            "mechanism_outcome_sha256",
-            "mechanism_outcome_bytes",
-            "mechanism_run_receipt_sha256",
-            "mechanism_run_receipt_bytes",
-            "mechanism_seed_checkpoint_sha256",
-            "mechanism_seed_checkpoint_bytes",
-        ):
-            del payload[key]
-        return payload
+        return self.mechanism_seed_predecessor().to_dict()
 
     @property
     def fingerprint(self) -> str:
@@ -1358,6 +1588,7 @@ class MechanismSeedLoadReceipt:
     learned_model_state_sha256: str
     optimizer_state_sha256: str
     optimizer_step: Literal[256]
+    mechanism_sampler_state_sha256: str
     rng_state_sha256: str
     backend_state_sha256: str
     trainer_contract_fingerprint: str
@@ -1371,6 +1602,7 @@ class MechanismSeedLoadReceipt:
             ("mechanism seed checkpoint", self.checkpoint_sha256),
             ("mechanism learned model", self.learned_model_state_sha256),
             ("mechanism optimizer state", self.optimizer_state_sha256),
+            ("mechanism sampler state", self.mechanism_sampler_state_sha256),
             ("mechanism RNG state", self.rng_state_sha256),
             ("mechanism backend state", self.backend_state_sha256),
             ("mechanism trainer contract", self.trainer_contract_fingerprint),
@@ -1400,6 +1632,9 @@ class MechanismSeedLoadReceipt:
             "learned_model_state_sha256": self.learned_model_state_sha256,
             "optimizer_state_sha256": self.optimizer_state_sha256,
             "optimizer_step": self.optimizer_step,
+            "mechanism_sampler_state_sha256": (
+                self.mechanism_sampler_state_sha256
+            ),
             "rng_state_sha256": self.rng_state_sha256,
             "backend_state_sha256": self.backend_state_sha256,
             "trainer_contract_fingerprint": self.trainer_contract_fingerprint,
@@ -2263,6 +2498,12 @@ def _backend_state_sha256(state: Mapping[str, Any]) -> str:
     return _canonical_sha256(dict(state))
 
 
+def fullcontext_backend_state_sha256(state: Mapping[str, Any]) -> str:
+    """Return the validated canonical backend-state digest."""
+
+    return _backend_state_sha256(state)
+
+
 def validate_frozen_fullcontext_backend_state(state: Mapping[str, Any]) -> None:
     _backend_state_sha256(state)
     if (
@@ -2414,6 +2655,12 @@ def _rng_state_sha256(state: Mapping[str, Any]) -> str:
         digest.update(materialized.numpy().tobytes(order="C"))
     digest.update(str(device_count).encode("ascii"))
     return digest.hexdigest()
+
+
+def fullcontext_rng_state_sha256(state: Mapping[str, Any]) -> str:
+    """Return the validated canonical Python/NumPy/Torch RNG digest."""
+
+    return _rng_state_sha256(state)
 
 
 def restore_fullcontext_rng_state(state: Mapping[str, Any]) -> None:
@@ -2680,6 +2927,7 @@ def _parse_mechanism_seed_load_receipt(
         "learned_model_state_sha256",
         "optimizer_state_sha256",
         "optimizer_step",
+        "mechanism_sampler_state_sha256",
         "rng_state_sha256",
         "backend_state_sha256",
         "trainer_contract_fingerprint",
@@ -2704,6 +2952,9 @@ def _parse_mechanism_seed_load_receipt(
         learned_model_state_sha256=payload["learned_model_state_sha256"],
         optimizer_state_sha256=payload["optimizer_state_sha256"],
         optimizer_step=payload["optimizer_step"],
+        mechanism_sampler_state_sha256=payload[
+            "mechanism_sampler_state_sha256"
+        ],
         rng_state_sha256=payload["rng_state_sha256"],
         backend_state_sha256=payload["backend_state_sha256"],
         trainer_contract_fingerprint=payload["trainer_contract_fingerprint"],
@@ -3062,6 +3313,50 @@ def atomic_save_fullcontext_checkpoint(
     return stable_file_bytes(destination)[1]
 
 
+def atomic_save_new_mechanism_seed_checkpoint(
+    payload: Mapping[str, Any],
+    path: str | Path,
+) -> tuple[str, int]:
+    """Publish one seed without any overwrite or post-check TOCTOU window."""
+
+    destination = Path(path)
+    parent = destination.parent
+    if parent.is_symlink() or not parent.is_dir():
+        raise ValueError("checkpoint parent must be an existing non-symlink directory")
+    if destination.is_symlink() or destination.exists():
+        raise ValueError("mechanism seed checkpoint destination must be absent")
+    temporary: Path | None = None
+    linked = False
+    try:
+        with tempfile.NamedTemporaryFile(
+            dir=parent,
+            prefix=f".{destination.name}.",
+            suffix=".incomplete",
+            delete=False,
+        ) as handle:
+            temporary = Path(handle.name)
+            torch.save(dict(payload), handle)
+            handle.flush()
+            os.fsync(handle.fileno())
+        try:
+            os.link(temporary, destination, follow_symlinks=False)
+        except FileExistsError as exc:
+            raise ValueError(
+                "mechanism seed checkpoint destination appeared during publication"
+            ) from exc
+        linked = True
+        temporary.unlink()
+        temporary = None
+        _fsync_directory(parent)
+        return stable_file_bytes(destination)[1]
+    finally:
+        if temporary is not None and temporary.exists():
+            temporary.unlink()
+            _fsync_directory(parent)
+        if not linked and destination.is_symlink():
+            raise ValueError("mechanism seed checkpoint destination became a symlink")
+
+
 def load_fullcontext_checkpoint(
     path: str | Path,
     *,
@@ -3199,17 +3494,136 @@ def initialize_epoch150_from_exact_epoch11_checkpoint(
     )
 
 
+def _mechanism_seed_predecessor(
+    lineage: FullContextLineage | MechanismSeedPredecessorLineage,
+) -> MechanismSeedPredecessorLineage:
+    if isinstance(lineage, FullContextLineage):
+        return lineage.mechanism_seed_predecessor()
+    if isinstance(lineage, MechanismSeedPredecessorLineage):
+        return lineage
+    raise TypeError("mechanism seed lineage has an unsupported type")
+
+
+def _mechanism_seed_view_state(
+    contract: FullContextTrainerContract,
+) -> dict[str, Any]:
+    digest = hashlib.sha256()
+    for step in range(1, _MECHANISM_OPTIMIZER_STEPS + 1):
+        consumed = independent_view_seeds(base_seed=contract.seed, step=step)
+        digest.update(_canonical_json_bytes([step, consumed[0], consumed[1]]))
+    return {
+        "policy": "pams-conventional-cycleback-view-v1",
+        "base_seed": contract.seed,
+        "first_optimizer_augmentation_step": 1,
+        "last_consumed_augmentation_step": _MECHANISM_OPTIMIZER_STEPS,
+        "consumed_view_seed_chain_sha256": digest.hexdigest(),
+        "next_augmentation_step": _MECHANISM_OPTIMIZER_STEPS + 1,
+        "next_view_seeds": list(
+            independent_view_seeds(
+                base_seed=contract.seed,
+                step=_MECHANISM_OPTIMIZER_STEPS + 1,
+            )
+        ),
+        "independent_views": True,
+    }
+
+
+def build_mechanism_seed_checkpoint_payload(
+    model: nn.Module,
+    optimizer: Optimizer,
+    contract: FullContextTrainerContract,
+    lineage: MechanismSeedPredecessorLineage,
+    sampler_state: MechanismSeedSamplerState,
+) -> dict[str, Any]:
+    """Capture the exact step-256 boundary before any diagnostic evaluation."""
+
+    validate_fullcontext_optimizer(optimizer, contract)
+    _validate_optimizer_model_binding(optimizer, model)
+    if not model.training:
+        raise ValueError("mechanism learned-L must be captured in training mode")
+    optimizer_state = copy.deepcopy(optimizer.state_dict())
+    _validate_adamw_state_contract(optimizer_state, contract)
+    _validate_adamw_state_step(
+        optimizer_state,
+        expected_step=_MECHANISM_OPTIMIZER_STEPS,
+    )
+    model_state = _clone_model_state(model)
+    observed_model_sha256 = model_state_sha256(model_state)
+    if observed_model_sha256 != lineage.mechanism_learned_model_state_sha256:
+        raise ValueError("mechanism seed learned-L digest differs from predecessor")
+    rng_state = capture_fullcontext_rng_state()
+    backend_state = capture_fullcontext_backend_state()
+    validate_frozen_fullcontext_backend_state(backend_state)
+    if (
+        sampler_state.video_batch_size != contract.mechanism_video_batch_size
+        or sampler_state.maximum_pairs_per_step
+        != contract.mechanism_maximum_pairs_per_step
+        or sampler_state.completed_optimizer_steps
+        != contract.mechanism_optimizer_steps
+    ):
+        raise ValueError("mechanism sampler state differs from trainer contract")
+    payload: dict[str, Any] = {
+        "schema_version": 1,
+        "artifact_type": (
+            "pams_conventional_cycleback_mechanism_seed_checkpoint_v1"
+        ),
+        "status": "passed",
+        "candidate_id": contract.candidate_id,
+        "trainer_contract": contract.to_dict(),
+        "trainer_contract_fingerprint": contract.fingerprint,
+        "representation_contract_sha256": (
+            lineage.representation_contract_sha256
+        ),
+        "lineage": lineage.to_dict(),
+        "lineage_fingerprint": lineage.fingerprint,
+        "completed_optimizer_steps": _MECHANISM_OPTIMIZER_STEPS,
+        "completed_epochs": 0,
+        "sampler_state": sampler_state.to_dict(),
+        "sampler_state_sha256": sampler_state.fingerprint,
+        "model_state": model_state,
+        "model_state_sha256": observed_model_sha256,
+        "model_state_role": "L_learned_cycleback_encoder",
+        "model_training_mode": True,
+        "optimizer_name": "AdamW",
+        "optimizer_state": optimizer_state,
+        "optimizer_state_sha256": optimizer_state_sha256(optimizer_state),
+        "scheduler": "none",
+        "scheduler_state": None,
+        "rng_state": rng_state,
+        "rng_state_sha256": _rng_state_sha256(rng_state),
+        "backend_state": backend_state,
+        "backend_state_sha256": _backend_state_sha256(backend_state),
+        "next_view_seed_state": _mechanism_seed_view_state(contract),
+        "capture_contract": {
+            "captured_in_training_process_at_exact_step256": True,
+            "captured_before_diagnostic_evaluation": True,
+            "retroactive_reconstruction_allowed": False,
+            "json_only_model_digest_may_substitute": False,
+        },
+        "epoch1_start_contract": {
+            "loaded_state_is_epoch1_start": True,
+            "optimizer_state_continues_exact_step256": True,
+            "optimizer_reset_allowed": False,
+            "direct_epoch150_start_authorized": False,
+        },
+        "authority_boundaries": _authority_boundaries(),
+    }
+    validate_mechanism_seed_checkpoint_payload(payload, contract, lineage)
+    return payload
+
+
 def validate_mechanism_seed_checkpoint_payload(
     payload: Mapping[str, Any],
     contract: FullContextTrainerContract,
-    lineage: FullContextLineage,
+    lineage: FullContextLineage | MechanismSeedPredecessorLineage,
 ) -> None:
-    """Validate the future exact L/optimizer/RNG seed required for epoch one.
+    """Validate an exact L/optimizer/RNG seed required for epoch one.
 
-    No currently produced mechanism artifact satisfies this schema.  In
-    particular, a JSON-only ``final_model_state_sha256`` is not a checkpoint
-    and cannot be upgraded or reconstructed after the run.
+    A JSON-only ``final_model_state_sha256`` remains insufficient and cannot
+    be upgraded or reconstructed after the run.
     """
+
+    predecessor = _mechanism_seed_predecessor(lineage)
 
     expected = {
         "schema_version",
@@ -3223,9 +3637,12 @@ def validate_mechanism_seed_checkpoint_payload(
         "lineage_fingerprint",
         "completed_optimizer_steps",
         "completed_epochs",
+        "sampler_state",
+        "sampler_state_sha256",
         "model_state",
         "model_state_sha256",
         "model_state_role",
+        "model_training_mode",
         "optimizer_name",
         "optimizer_state",
         "optimizer_state_sha256",
@@ -3236,6 +3653,7 @@ def validate_mechanism_seed_checkpoint_payload(
         "backend_state",
         "backend_state_sha256",
         "next_view_seed_state",
+        "capture_contract",
         "epoch1_start_contract",
         "authority_boundaries",
     }
@@ -3248,23 +3666,49 @@ def validate_mechanism_seed_checkpoint_payload(
         or payload["trainer_contract"] != contract.to_dict()
         or payload["trainer_contract_fingerprint"] != contract.fingerprint
         or payload["representation_contract_sha256"]
-        != lineage.representation_contract_sha256
-        or payload["lineage"] != lineage.mechanism_seed_predecessor_dict()
+        != predecessor.representation_contract_sha256
+        or payload["lineage"] != predecessor.to_dict()
         or payload["lineage_fingerprint"]
-        != _canonical_sha256(lineage.mechanism_seed_predecessor_dict())
+        != predecessor.fingerprint
         or payload["completed_optimizer_steps"] != _MECHANISM_OPTIMIZER_STEPS
         or payload["completed_epochs"] != 0
         or payload["model_state_role"] != "L_learned_cycleback_encoder"
+        or payload["model_training_mode"] is not True
         or payload["optimizer_name"] != "AdamW"
         or payload["scheduler"] != "none"
         or payload["scheduler_state"] is not None
     ):
         raise ValueError("mechanism seed checkpoint contract or lineage mismatch")
+    sampler_state = payload["sampler_state"]
+    if not isinstance(sampler_state, Mapping) or set(sampler_state) != {
+        "policy",
+        "eligible_video_total",
+        "ordered_eligible_video_ids_sha256",
+        "video_batch_size",
+        "maximum_pairs_per_step",
+        "completed_optimizer_steps",
+        "consumed_video_batch_chain_sha256",
+        "consumed_pair_row_chain_sha256",
+        "next_cyclic_start_index",
+        "mechanism_sampler_resume_allowed",
+        "epoch1_sampler_requires_new_sealed_plan",
+    }:
+        raise ValueError("mechanism seed sampler-state schema mismatch")
+    parsed_sampler = MechanismSeedSamplerState(**dict(sampler_state))
+    if (
+        parsed_sampler.fingerprint != payload["sampler_state_sha256"]
+        or parsed_sampler.video_batch_size != contract.mechanism_video_batch_size
+        or parsed_sampler.maximum_pairs_per_step
+        != contract.mechanism_maximum_pairs_per_step
+        or parsed_sampler.completed_optimizer_steps
+        != contract.mechanism_optimizer_steps
+    ):
+        raise ValueError("mechanism seed sampler state differs from contract")
     state = payload["model_state"]
     if not isinstance(state, Mapping) or (
         model_state_sha256(state) != payload["model_state_sha256"]
         or payload["model_state_sha256"]
-        != lineage.mechanism_learned_model_state_sha256
+        != predecessor.mechanism_learned_model_state_sha256
     ):
         raise ValueError("mechanism learned-L state digest mismatch")
     if not isinstance(payload["optimizer_state"], Mapping):
@@ -3289,29 +3733,15 @@ def validate_mechanism_seed_checkpoint_payload(
     ):
         raise ValueError("mechanism seed checkpoint backend-state digest mismatch")
     validate_frozen_fullcontext_backend_state(backend_state)
-    mechanism_view_digest = hashlib.sha256()
-    for step in range(1, _MECHANISM_OPTIMIZER_STEPS + 1):
-        consumed = independent_view_seeds(base_seed=contract.seed, step=step)
-        mechanism_view_digest.update(
-            _canonical_json_bytes([step, consumed[0], consumed[1]])
-        )
-    expected_view_state = {
-        "policy": "pams-conventional-cycleback-view-v1",
-        "base_seed": contract.seed,
-        "first_optimizer_augmentation_step": 1,
-        "last_consumed_augmentation_step": _MECHANISM_OPTIMIZER_STEPS,
-        "consumed_view_seed_chain_sha256": mechanism_view_digest.hexdigest(),
-        "next_augmentation_step": _MECHANISM_OPTIMIZER_STEPS + 1,
-        "next_view_seeds": list(
-            independent_view_seeds(
-                base_seed=contract.seed,
-                step=_MECHANISM_OPTIMIZER_STEPS + 1,
-            )
-        ),
-        "independent_views": True,
-    }
-    if payload["next_view_seed_state"] != expected_view_state:
+    if payload["next_view_seed_state"] != _mechanism_seed_view_state(contract):
         raise ValueError("mechanism seed next-view state mismatch")
+    if payload["capture_contract"] != {
+        "captured_in_training_process_at_exact_step256": True,
+        "captured_before_diagnostic_evaluation": True,
+        "retroactive_reconstruction_allowed": False,
+        "json_only_model_digest_may_substitute": False,
+    }:
+        raise ValueError("mechanism seed capture provenance mismatch")
     if payload["epoch1_start_contract"] != {
         "loaded_state_is_epoch1_start": True,
         "optimizer_state_continues_exact_step256": True,
@@ -3355,6 +3785,8 @@ def load_mechanism_seed_checkpoint(
     validate_mechanism_seed_checkpoint_payload(value, contract, lineage)
     if dict(value["backend_state"]) != current_backend:
         raise ValueError("mechanism seed backend differs from active process contract")
+    if not model.training:
+        raise ValueError("mechanism seed must be loaded into an epoch-one training model")
     validate_fullcontext_optimizer(optimizer, contract)
     _validate_optimizer_model_binding(optimizer, model)
     model.load_state_dict(value["model_state"], strict=True)
@@ -3383,6 +3815,7 @@ def load_mechanism_seed_checkpoint(
         learned_model_state_sha256=lineage.mechanism_learned_model_state_sha256,
         optimizer_state_sha256=value["optimizer_state_sha256"],
         optimizer_step=_MECHANISM_OPTIMIZER_STEPS,
+        mechanism_sampler_state_sha256=value["sampler_state_sha256"],
         rng_state_sha256=value["rng_state_sha256"],
         backend_state_sha256=value["backend_state_sha256"],
         trainer_contract_fingerprint=contract.fingerprint,

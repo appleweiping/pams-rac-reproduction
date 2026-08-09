@@ -30,12 +30,16 @@ from pams.conventional_cycleback.fullcontext_trainer import (
     FullContextTrainerContract,
     FullContextTrainingUnit,
     MechanismSeedLoadReceipt,
+    MechanismSeedPredecessorLineage,
+    MechanismSeedSamplerState,
     atomic_save_fullcontext_checkpoint,
+    atomic_save_new_mechanism_seed_checkpoint,
     build_epoch150_transition_bindings,
     build_fullcontext_adamw,
     build_fullcontext_checkpoint_payload,
     build_fullcontext_objective,
     build_length_bucket_plan,
+    build_mechanism_seed_checkpoint_payload,
     capture_fullcontext_backend_state,
     capture_fullcontext_rng_state,
     configure_fullcontext_determinism,
@@ -44,8 +48,10 @@ from pams.conventional_cycleback.fullcontext_trainer import (
     initial_epoch11_progress,
     initialize_epoch150_from_exact_epoch11_checkpoint,
     load_fullcontext_checkpoint,
+    load_mechanism_seed_checkpoint,
     model_state_sha256,
     optimizer_state_sha256,
+    preserve_fullcontext_diagnostic_state,
     run_fullcontext_optimizer_step,
     validate_fullcontext_checkpoint_payload,
     validate_fullcontext_objective,
@@ -148,11 +154,31 @@ def _seed_receipt(
         learned_model_state_sha256=lineage.mechanism_learned_model_state_sha256,
         optimizer_state_sha256="d" * 64,
         optimizer_step=256,
+        mechanism_sampler_state_sha256="e" * 64,
         rng_state_sha256="b" * 64,
         backend_state_sha256="c" * 64,
         trainer_contract_fingerprint=contract.fingerprint,
         representation_contract_sha256=_representation().fingerprint,
         representation_lineage_fingerprint=lineage.fingerprint,
+    )
+
+
+def _mechanism_sampler_state(
+    contract: FullContextTrainerContract,
+) -> MechanismSeedSamplerState:
+    return MechanismSeedSamplerState(
+        eligible_video_total=249,
+        ordered_eligible_video_ids_sha256="b" * 64,
+        video_batch_size=contract.mechanism_video_batch_size,
+        maximum_pairs_per_step=contract.mechanism_maximum_pairs_per_step,
+        completed_optimizer_steps=contract.mechanism_optimizer_steps,
+        consumed_video_batch_chain_sha256="c" * 64,
+        consumed_pair_row_chain_sha256="d" * 64,
+        next_cyclic_start_index=(
+            contract.mechanism_optimizer_steps
+            * contract.mechanism_video_batch_size
+        )
+        % 249,
     )
 
 
@@ -787,6 +813,139 @@ def test_json_only_mechanism_digest_cannot_substitute_for_learned_l_checkpoint()
             },
             _contract(),
             _lineage(),
+        )
+
+
+def test_mechanism_seed_captures_exact_step256_boundary_and_publishes_once(
+    tmp_path: Path,
+) -> None:
+    _enable_test_determinism()
+    random.seed(2026)
+    np.random.seed(2026)
+    torch.manual_seed(2026)
+    contract = _contract()
+    model = torch.nn.Linear(4, 3)
+    optimizer = build_fullcontext_adamw(model, contract)
+    _prime_adamw_state(model, optimizer, step=256)
+    lineage = replace(
+        _lineage(),
+        mechanism_learned_model_state_sha256=model_state_sha256(model),
+    )
+    predecessor = lineage.mechanism_seed_predecessor()
+    assert isinstance(predecessor, MechanismSeedPredecessorLineage)
+    payload = build_mechanism_seed_checkpoint_payload(
+        model,
+        optimizer,
+        contract,
+        predecessor,
+        _mechanism_sampler_state(contract),
+    )
+    validate_mechanism_seed_checkpoint_payload(
+        payload,
+        contract,
+        lineage,
+    )
+    boundary_optimizer = optimizer_state_sha256(optimizer)
+    with preserve_fullcontext_diagnostic_state(model):
+        model.eval()
+        _ = random.random()
+        _ = np.random.random()
+        _ = torch.rand(3)
+    assert model.training
+    assert model_state_sha256(model) == payload["model_state_sha256"]
+    assert optimizer_state_sha256(optimizer) == boundary_optimizer
+
+    checkpoint = tmp_path / "learned-encoder-L.pt"
+    identity = atomic_save_new_mechanism_seed_checkpoint(payload, checkpoint)
+    assert identity[0]
+    assert identity[1] > 0
+    restored_model = torch.nn.Linear(4, 3)
+    restored_optimizer = build_fullcontext_adamw(restored_model, contract)
+    final_lineage = replace(
+        lineage,
+        mechanism_seed_checkpoint_sha256=identity[0],
+        mechanism_seed_checkpoint_bytes=identity[1],
+    )
+    receipt = load_mechanism_seed_checkpoint(
+        checkpoint,
+        expected_sha256=identity[0],
+        expected_bytes=identity[1],
+        contract=contract,
+        lineage=final_lineage,
+        model=restored_model,
+        optimizer=restored_optimizer,
+    )
+    assert receipt.loaded_as_epoch1_start is True
+    assert receipt.mechanism_sampler_state_sha256 == (
+        payload["sampler_state_sha256"]
+    )
+    assert model_state_sha256(restored_model) == payload["model_state_sha256"]
+    assert optimizer_state_sha256(restored_optimizer) == (
+        payload["optimizer_state_sha256"]
+    )
+    with pytest.raises(ValueError, match="must be absent"):
+        atomic_save_new_mechanism_seed_checkpoint(payload, checkpoint)
+
+
+def test_mechanism_seed_rejects_wrong_step_state_lineage_and_optimizer() -> None:
+    _enable_test_determinism()
+    contract = _contract()
+    model = torch.nn.Linear(4, 3)
+    optimizer = build_fullcontext_adamw(model, contract)
+    _prime_adamw_state(model, optimizer, step=255)
+    predecessor = replace(
+        _lineage(),
+        mechanism_learned_model_state_sha256=model_state_sha256(model),
+    ).mechanism_seed_predecessor()
+    with pytest.raises(ValueError, match="optimizer step"):
+        build_mechanism_seed_checkpoint_payload(
+            model,
+            optimizer,
+            contract,
+            predecessor,
+            _mechanism_sampler_state(contract),
+        )
+
+    _prime_adamw_state(model, optimizer, step=256)
+    payload = build_mechanism_seed_checkpoint_payload(
+        model,
+        optimizer,
+        contract,
+        predecessor,
+        _mechanism_sampler_state(contract),
+    )
+    wrong_lineage = copy.deepcopy(payload)
+    wrong_lineage["lineage"]["source_tree_sha256"] = "f" * 64
+    with pytest.raises(ValueError, match="contract or lineage"):
+        validate_mechanism_seed_checkpoint_payload(
+            wrong_lineage,
+            contract,
+            predecessor,
+        )
+    wrong_optimizer = copy.deepcopy(payload)
+    first_state = next(iter(wrong_optimizer["optimizer_state"]["state"].values()))
+    first_state["exp_avg"].add_(1.0)
+    with pytest.raises(ValueError, match="optimizer-state digest"):
+        validate_mechanism_seed_checkpoint_payload(
+            wrong_optimizer,
+            contract,
+            predecessor,
+        )
+    wrong_sampler = copy.deepcopy(payload)
+    wrong_sampler["sampler_state"]["next_cyclic_start_index"] += 1
+    with pytest.raises(ValueError, match="cyclic index|sampler state"):
+        validate_mechanism_seed_checkpoint_payload(
+            wrong_sampler,
+            contract,
+            predecessor,
+        )
+    wrong_view = copy.deepcopy(payload)
+    wrong_view["next_view_seed_state"]["next_augmentation_step"] = 256
+    with pytest.raises(ValueError, match="next-view state"):
+        validate_mechanism_seed_checkpoint_payload(
+            wrong_view,
+            contract,
+            predecessor,
         )
 
 

@@ -508,6 +508,249 @@ def test_empty_bootstrap_rejects_before_registry_checkout_or_dynamic_import(
     assert launcher._BOOTSTRAP_INTEGRATION_AUTHORIZATION_SHA256 == ""
 
 
+def test_mechanism_command_and_output_bind_pass_only_seed_checkpoint(
+    tmp_path: Path,
+) -> None:
+    launcher = _load_module("cycleback_mechanism_seed_output_test", LAUNCHER_PATH)
+    launch = SimpleNamespace(
+        source_revision="a" * 40,
+        container_image_id="sha256:" + "b" * 64,
+    )
+    pose = launcher.Predecessor(
+        role="pose_input",
+        root=tmp_path / "pose",
+        output_path=tmp_path / "pose/authorization.json",
+        output_identity=launcher.FileIdentity("c" * 64, 10),
+        receipt_path=tmp_path / "pose/receipt.json",
+        receipt_identity=launcher.FileIdentity("d" * 64, 11),
+        tree_sha256="e" * 64,
+        tree_bytes=12,
+        tree_files=2,
+    )
+    geometry = launcher.Predecessor(
+        role="geometry",
+        root=tmp_path / "geometry",
+        output_path=tmp_path / "geometry/output/geometry-gate.json",
+        output_identity=launcher.FileIdentity("f" * 64, 13),
+        receipt_path=tmp_path / "geometry/audit/run.receipt.json",
+        receipt_identity=launcher.FileIdentity("1" * 64, 14),
+        tree_sha256="2" * 64,
+        tree_bytes=15,
+        tree_files=3,
+    )
+    command, _, output_relative = launcher._stage_command(
+        stage="mechanism",
+        candidate_id="W16_H4",
+        config_relative=launcher.CONFIGS["W16_H4"],
+        source_export_manifest_sha256="3" * 64,
+        launch=launch,
+        predecessors=(pose, geometry),
+    )
+    assert output_relative == "output/mechanism-probe.json"
+    assert command[command.index("--seed-checkpoint-output") + 1] == (
+        "/pams/output/learned-encoder-L.pt"
+    )
+    assert command[command.index("--source-export-manifest-sha256") + 1] == (
+        "3" * 64
+    )
+    launcher.OUTCOME_REGISTRY_ROOT = tmp_path / "outcomes"
+    assert launcher._outcome_registry_path(
+        "mechanism",
+        "W16_H4",
+    ) == tmp_path / "outcomes/mechanism/W16_H4.outcome.json"
+    with pytest.raises(launcher.LaunchFailure, match="separate epoch11 authority"):
+        launcher._load_predecessor(
+            role="mechanism",
+            candidate_id="W16_H4",
+            launch=launch,
+        )
+
+    output_root = tmp_path / "stage-output"
+    output_root.mkdir()
+    output = output_root / "mechanism-probe.json"
+    checkpoint = output_root / "learned-encoder-L.pt"
+    checkpoint.write_bytes(b"exact-learned-L")
+    checkpoint_identity = launcher._identity(
+        checkpoint,
+        role="test mechanism seed",
+    )
+    seed = {
+        "artifact_type": (
+            "pams_conventional_cycleback_mechanism_seed_checkpoint_v1"
+        ),
+        "produced": True,
+        "publication_status": "passed_checkpoint_published",
+        "relative_path": "learned-encoder-L.pt",
+        "sha256": checkpoint_identity.sha256,
+        "bytes": checkpoint_identity.bytes,
+        "rejected_checkpoint_written": False,
+        "boundary_state_captured_before_diagnostics": True,
+        "diagnostics_restored_exact_boundary": True,
+        "checkpoint_payload_validated_before_publication": True,
+        "retroactive_checkpoint_reconstruction_allowed": False,
+        "epoch11_train337_continuation_authorized": False,
+        "direct_epoch150_start_authorized": False,
+        "captured_boundary_model_state_sha256": "4" * 64,
+        "captured_boundary_optimizer_state_sha256": "5" * 64,
+        "captured_boundary_rng_state_sha256": "6" * 64,
+        "captured_boundary_backend_state_sha256": "7" * 64,
+        "captured_sampler_state_sha256": "8" * 64,
+        "trainer_contract_fingerprint": "9" * 64,
+        "representation_contract_sha256": "a" * 64,
+        "seed_predecessor_lineage_fingerprint": "b" * 64,
+    }
+    _write_json(
+        output,
+        {
+            "status": "passed",
+            "gate": {"overall_pass": True},
+            "training": {
+                "final_model_state_sha256": "4" * 64,
+                "optimizer_state_sha256_at_step256": "5" * 64,
+                "mechanism_sampler_state_sha256": "8" * 64,
+                "trainer_contract_fingerprint": "9" * 64,
+            },
+            "mechanism_seed_checkpoint": seed,
+        },
+    )
+    _, _, status = launcher._validate_stage_output(
+        stage="mechanism",
+        output_path=output,
+        exit_code=0,
+    )
+    assert status == "passed"
+
+    checkpoint.write_bytes(b"tampered-learned-L")
+    with pytest.raises(launcher.LaunchFailure, match="bytes differ"):
+        launcher._validate_stage_output(
+            stage="mechanism",
+            output_path=output,
+            exit_code=0,
+        )
+    checkpoint.unlink()
+    rejected = copy.deepcopy(seed)
+    rejected.update(
+        produced=False,
+        publication_status="rejected_not_published",
+        relative_path=None,
+        sha256=None,
+        bytes=None,
+    )
+    _write_json(
+        output,
+        {
+            "status": "rejected",
+            "gate": {"overall_pass": False},
+            "training": {
+                "final_model_state_sha256": "4" * 64,
+                "optimizer_state_sha256_at_step256": "5" * 64,
+                "mechanism_sampler_state_sha256": "8" * 64,
+                "trainer_contract_fingerprint": "9" * 64,
+            },
+            "mechanism_seed_checkpoint": rejected,
+        },
+    )
+    _, _, status = launcher._validate_stage_output(
+        stage="mechanism",
+        output_path=output,
+        exit_code=3,
+    )
+    assert status == "rejected"
+    checkpoint.write_bytes(b"forbidden")
+    with pytest.raises(launcher.LaunchFailure, match="rejected mechanism"):
+        launcher._validate_stage_output(
+            stage="mechanism",
+            output_path=output,
+            exit_code=3,
+        )
+
+
+def test_mechanism_outcome_registry_binds_checkpoint_and_receipt(
+    tmp_path: Path,
+) -> None:
+    launcher = _load_module("cycleback_mechanism_outcome_test", LAUNCHER_PATH)
+    launcher.OUTCOME_REGISTRY_ROOT = tmp_path / "outcomes"
+    root = tmp_path / "run"
+    output_root = root / "output"
+    audit_root = root / "audit"
+    output_root.mkdir(parents=True)
+    audit_root.mkdir()
+    checkpoint = output_root / "learned-encoder-L.pt"
+    checkpoint.write_bytes(b"sealed-L")
+    identity = launcher._identity(checkpoint, role="test sealed L")
+    seed = {
+        "artifact_type": (
+            "pams_conventional_cycleback_mechanism_seed_checkpoint_v1"
+        ),
+        "produced": True,
+        "publication_status": "passed_checkpoint_published",
+        "relative_path": "learned-encoder-L.pt",
+        "sha256": identity.sha256,
+        "bytes": identity.bytes,
+        "captured_boundary_model_state_sha256": "1" * 64,
+        "captured_boundary_optimizer_state_sha256": "2" * 64,
+        "captured_boundary_rng_state_sha256": "3" * 64,
+        "captured_boundary_backend_state_sha256": "4" * 64,
+        "captured_sampler_state_sha256": "5" * 64,
+        "trainer_contract_fingerprint": "6" * 64,
+        "representation_contract_sha256": "7" * 64,
+        "seed_predecessor_lineage_fingerprint": "8" * 64,
+        "boundary_state_captured_before_diagnostics": True,
+        "diagnostics_restored_exact_boundary": True,
+        "checkpoint_payload_validated_before_publication": True,
+        "retroactive_checkpoint_reconstruction_allowed": False,
+        "rejected_checkpoint_written": False,
+        "epoch11_train337_continuation_authorized": False,
+        "direct_epoch150_start_authorized": False,
+    }
+    _write_json(
+        output_root / "mechanism-probe.json",
+        {
+            "training": {
+                "final_model_state_sha256": "1" * 64,
+                "optimizer_state_sha256_at_step256": "2" * 64,
+                "mechanism_sampler_state_sha256": "5" * 64,
+                "trainer_contract_fingerprint": "6" * 64,
+            },
+            "mechanism_seed_checkpoint": seed,
+        },
+    )
+    _write_json(
+        audit_root / "run.receipt.json",
+        {
+            "mechanism_seed_checkpoint_sha256": identity.sha256,
+            "mechanism_seed_checkpoint_bytes": identity.bytes,
+            "mechanism_seed_model_state_sha256": "1" * 64,
+            "mechanism_seed_optimizer_state_sha256": "2" * 64,
+            "mechanism_seed_rng_state_sha256": "3" * 64,
+            "mechanism_seed_backend_state_sha256": "4" * 64,
+            "mechanism_seed_sampler_state_sha256": "5" * 64,
+            "mechanism_seed_epoch11_continuation_authorized": False,
+        },
+    )
+    launch = SimpleNamespace(
+        registry_id="9" * 64,
+        source_revision="a" * 40,
+        container_image_id="sha256:" + "b" * 64,
+    )
+    launcher._publish_outcome_registry(
+        role="mechanism",
+        candidate_id="W16_H4",
+        final_root=root,
+        output_relative="output/mechanism-probe.json",
+        launch=launch,
+    )
+    record = json.loads(
+        (tmp_path / "outcomes/mechanism/W16_H4.outcome.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert record["mechanism_seed_checkpoint"] == identity.to_dict()
+    assert record["mechanism_seed_model_state_sha256"] == "1" * 64
+    assert record["epoch11_train337_continuation_authorized"] is False
+    assert record["direct_epoch150_start_authorized"] is False
+
+
 def test_thin_wrappers_are_identity_free_and_python_isolated() -> None:
     for path in (ADAPTER, GEOMETRY, MECHANISM):
         source = path.read_text(encoding="utf-8")
@@ -549,6 +792,10 @@ def test_launcher_freezes_science_and_security_boundaries() -> None:
         "_outcome_slot_lock_path",
         "not container_create_attempted",
         "validate_cycleback_pose_authority",
+        '"--seed-checkpoint-output"',
+        '"--source-export-manifest-sha256"',
+        "mechanism_seed_checkpoint_sha256",
+        "mechanism_seed_checkpoint_relative",
     ):
         assert required in source
     assert "assert " not in source
