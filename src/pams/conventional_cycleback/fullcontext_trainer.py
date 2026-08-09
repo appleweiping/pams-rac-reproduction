@@ -25,7 +25,8 @@ import random
 import re
 import tempfile
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from contextlib import contextmanager
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Literal
 
@@ -40,19 +41,16 @@ from pams.conventional_cycleback.loss import ConventionalCycleBackLoss
 from pams.conventional_cycleback.runtime import (
     PairEligibility,
     PairSegmentContexts,
-    Unified2DSequence,
     build_encoder,
-    collate_to_device,
     encode_window_pairs,
     independent_view_seeds,
     independently_permuted_pair_segment_contexts,
     independently_permuted_pair_segment_positions,
     joint_support_null_segment_contexts,
-    pair_segment_contexts,
-    pairs_from_batch,
     require_real_optimizer_contexts,
     stable_file_bytes,
     temporal_rms_values,
+    validate_exact_authorized_pair_rows,
     zero_pair_segment_contexts,
 )
 from pams.conventional_cycleback.windows import NativeWindowPairBatch
@@ -195,6 +193,9 @@ class FullContextTrainerContract:
     learning_rate: float = 1e-4
     weight_decay: float = 1e-4
     scheduler: Literal["none"] = "none"
+    objective_temperature: float = 0.1
+    objective_variance_log_weight: float = 0.001
+    objective_variance_floor: float = 1e-6
     mechanism_optimizer_transition: Literal[
         "continue_exact_step256_adamw_state_no_reset"
     ] = "continue_exact_step256_adamw_state_no_reset"
@@ -231,6 +232,12 @@ class FullContextTrainerContract:
             raise ValueError("full-context AdamW hyperparameters are frozen")
         if self.scheduler != "none":
             raise ValueError("undisclosed scheduler must remain explicitly disabled")
+        if (
+            self.objective_temperature != 0.1
+            or self.objective_variance_log_weight != 0.001
+            or self.objective_variance_floor != 1e-6
+        ):
+            raise ValueError("full-context objective equation differs from candidate v1")
         if (
             self.mechanism_optimizer_transition
             != "continue_exact_step256_adamw_state_no_reset"
@@ -269,6 +276,11 @@ class FullContextTrainerContract:
             hop_frames=config.window_pair.hop_frames,
             seed=config.seed,
             maximum_native_length=config.encoder.maximum_native_length,
+            objective_temperature=config.objective.temperature,
+            objective_variance_log_weight=(
+                config.objective.variance_log_weight
+            ),
+            objective_variance_floor=config.objective.variance_floor,
             encoder_context_batch_size=(
                 config.mechanism_probe.encoder_segment_context_batch_size
             ),
@@ -293,8 +305,20 @@ class FullContextTrainerContract:
                 "eps": 1e-8,
                 "amsgrad": False,
                 "maximize": False,
+                "foreach": False,
+                "capturable": False,
+                "differentiable": False,
+                "fused": False,
             },
             "scheduler": self.scheduler,
+            "objective": {
+                "name": "symmetric_variance_aware_cycleback_regression",
+                "temperature": self.objective_temperature,
+                "variance_log_weight": self.objective_variance_log_weight,
+                "variance_floor": self.objective_variance_floor,
+                "directions": "a_to_b_to_a_and_b_to_a_to_b",
+                "normalization": "window_local_absolute_source_offset_div_w_minus_one",
+            },
             "mechanism_optimizer_transition": self.mechanism_optimizer_transition,
             "maximum_videos_per_batch": self.maximum_videos_per_batch,
             "maximum_context_frames_per_batch": (
@@ -318,6 +342,56 @@ class FullContextTrainerContract:
     @property
     def fingerprint(self) -> str:
         return _canonical_sha256(self.to_dict())
+
+
+def validate_fullcontext_candidate_config(
+    config: ConventionalCycleBackConfig,
+    contract: FullContextTrainerContract,
+) -> None:
+    if (
+        config.fingerprint != contract.candidate_config_fingerprint
+        or config.candidate_id != contract.candidate_id
+        or config.window_pair.length_frames != contract.window_frames
+        or config.window_pair.hop_frames != contract.hop_frames
+        or config.seed != contract.seed
+        or config.encoder.maximum_native_length != contract.maximum_native_length
+        or config.objective.objective
+        != "symmetric_variance_aware_cycleback_regression"
+        or config.objective.directions != "a_to_b_to_a_and_b_to_a_to_b"
+        or config.objective.temperature != contract.objective_temperature
+        or config.objective.variance_log_weight
+        != contract.objective_variance_log_weight
+        or config.objective.variance_floor != contract.objective_variance_floor
+    ):
+        raise ValueError("candidate config/objective differs from trainer contract")
+
+
+def build_fullcontext_objective(
+    config: ConventionalCycleBackConfig,
+    contract: FullContextTrainerContract,
+) -> ConventionalCycleBackLoss:
+    """Build the only objective accepted by continuation and its gates."""
+
+    validate_fullcontext_candidate_config(config, contract)
+    return ConventionalCycleBackLoss(
+        temperature=contract.objective_temperature,
+        variance_log_weight=contract.objective_variance_log_weight,
+        variance_floor=contract.objective_variance_floor,
+    )
+
+
+def validate_fullcontext_objective(
+    objective: ConventionalCycleBackLoss,
+    config: ConventionalCycleBackConfig,
+    contract: FullContextTrainerContract,
+) -> None:
+    validate_fullcontext_candidate_config(config, contract)
+    if type(objective) is not ConventionalCycleBackLoss or (
+        objective.temperature != contract.objective_temperature
+        or objective.variance_log_weight != contract.objective_variance_log_weight
+        or objective.variance_floor != contract.objective_variance_floor
+    ):
+        raise ValueError("cycle-back objective parameters differ from frozen config")
 
 
 @dataclass(frozen=True, slots=True)
@@ -864,18 +938,106 @@ def validate_fullcontext_optimizer(
 ) -> None:
     if type(optimizer) is not AdamW:
         raise ValueError("full-context optimizer must be exact torch.optim.AdamW")
-    if not optimizer.param_groups:
-        raise ValueError("full-context optimizer has no parameter groups")
+    expected_group_keys = {
+        "params",
+        "lr",
+        "betas",
+        "eps",
+        "weight_decay",
+        "amsgrad",
+        "maximize",
+        "foreach",
+        "capturable",
+        "differentiable",
+        "fused",
+    }
+    if len(optimizer.param_groups) != 1:
+        raise ValueError("full-context optimizer requires exactly one parameter group")
     for group in optimizer.param_groups:
+        params = group.get("params")
         if (
-            group.get("lr") != contract.learning_rate
+            set(group) != expected_group_keys
+            or not isinstance(params, list)
+            or not params
+            or len({id(parameter) for parameter in params}) != len(params)
+            or group.get("lr") != contract.learning_rate
             or group.get("weight_decay") != contract.weight_decay
             or tuple(group.get("betas", ())) != (0.9, 0.999)
             or group.get("eps") != 1e-8
             or group.get("amsgrad") is not False
             or group.get("maximize") is not False
+            or group.get("foreach") is not False
+            or group.get("capturable") is not False
+            or group.get("differentiable") is not False
+            or group.get("fused") is not False
         ):
             raise ValueError("full-context AdamW parameter group differs from contract")
+
+
+def _validate_optimizer_model_binding(
+    optimizer: Optimizer,
+    model: nn.Module,
+) -> None:
+    observed = tuple(
+        parameter
+        for group in optimizer.param_groups
+        for parameter in group["params"]
+    )
+    expected = tuple(model.parameters())
+    if len(observed) != len(expected) or any(
+        left is not right for left, right in zip(observed, expected, strict=True)
+    ):
+        raise ValueError("full-context optimizer is not bound to the exact encoder")
+
+
+def _validate_adamw_state_contract(
+    optimizer_state: Mapping[str, Any],
+    contract: FullContextTrainerContract,
+) -> None:
+    if set(optimizer_state) != {"state", "param_groups"}:
+        raise ValueError("AdamW checkpoint state schema mismatch")
+    groups = optimizer_state["param_groups"]
+    expected_group_keys = {
+        "params",
+        "lr",
+        "betas",
+        "eps",
+        "weight_decay",
+        "amsgrad",
+        "maximize",
+        "foreach",
+        "capturable",
+        "differentiable",
+        "fused",
+    }
+    if (
+        not isinstance(groups, list)
+        or len(groups) != 1
+        or not isinstance(groups[0], Mapping)
+        or set(groups[0]) != expected_group_keys
+    ):
+        raise ValueError("AdamW checkpoint parameter-group schema mismatch")
+    group = groups[0]
+    params = group["params"]
+    betas = group["betas"]
+    if (
+        not isinstance(params, list)
+        or not params
+        or any(isinstance(value, bool) or not isinstance(value, int) for value in params)
+        or len(set(params)) != len(params)
+        or group["lr"] != contract.learning_rate
+        or group["weight_decay"] != contract.weight_decay
+        or not isinstance(betas, list | tuple)
+        or tuple(betas) != (0.9, 0.999)
+        or group["eps"] != 1e-8
+        or group["amsgrad"] is not False
+        or group["maximize"] is not False
+        or group["foreach"] is not False
+        or group["capturable"] is not False
+        or group["differentiable"] is not False
+        or group["fused"] is not False
+    ):
+        raise ValueError("AdamW checkpoint hyperparameters differ from contract")
 
 
 def _validate_adamw_state_step(
@@ -899,7 +1061,16 @@ def _validate_adamw_state_step(
     ):
         raise ValueError("AdamW checkpoint must contain learned moment state")
     parameter_total = sum(len(group["params"]) for group in param_groups)
-    if len(state) != parameter_total:
+    parameter_ids = [
+        parameter_id
+        for group in param_groups
+        for parameter_id in group["params"]
+    ]
+    if (
+        len(state) != parameter_total
+        or len(set(parameter_ids)) != parameter_total
+        or set(state) != set(parameter_ids)
+    ):
         raise ValueError("AdamW checkpoint lacks state for an encoder parameter")
     observed: list[int] = []
     for parameter_state in state.values():
@@ -935,6 +1106,14 @@ class FullContextOptimizerStep:
     valid_anchor_total: int
     possible_anchor_total: int
     model_state_sha256: str
+    optimizer_state_sha256: str
+    dataset_fingerprint: str
+    active_plan_fingerprint: str
+    exact_pair_rows_sha256: str
+    representation_contract_sha256: str
+    representation_lineage_fingerprint: str
+    progress_before_sha256: str
+    progress_after_sha256: str
 
     def __post_init__(self) -> None:
         for role, value in (
@@ -957,7 +1136,58 @@ class FullContextOptimizerStep:
             raise ValueError("optimizer-step views require distinct seeds")
         if not math.isfinite(self.loss):
             raise ValueError("optimizer-step loss must be finite")
-        _require_sha256(self.model_state_sha256, role="optimizer-step model state")
+        for role, value in (
+            ("optimizer-step model state", self.model_state_sha256),
+            ("optimizer-step optimizer state", self.optimizer_state_sha256),
+            ("optimizer-step dataset", self.dataset_fingerprint),
+            ("optimizer-step active plan", self.active_plan_fingerprint),
+            ("optimizer-step exact pair rows", self.exact_pair_rows_sha256),
+            (
+                "optimizer-step representation contract",
+                self.representation_contract_sha256,
+            ),
+            (
+                "optimizer-step representation lineage",
+                self.representation_lineage_fingerprint,
+            ),
+            ("optimizer-step progress before", self.progress_before_sha256),
+            ("optimizer-step progress after", self.progress_after_sha256),
+        ):
+            _require_sha256(value, role=role)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "artifact_type": "pams_cycleback_fullcontext_optimizer_step_v1",
+            "global_optimizer_step": self.global_optimizer_step,
+            "sampler_epoch": self.sampler_epoch,
+            "sampler_batch_index": self.sampler_batch_index,
+            "video_ids": list(self.video_ids),
+            "pair_total": self.pair_total,
+            "unique_view_context_total": self.unique_view_context_total,
+            "reused_pair_side_context_references": (
+                self.reused_pair_side_context_references
+            ),
+            "view_seeds": list(self.view_seeds),
+            "loss": self.loss,
+            "valid_anchor_total": self.valid_anchor_total,
+            "possible_anchor_total": self.possible_anchor_total,
+            "model_state_sha256": self.model_state_sha256,
+            "optimizer_state_sha256": self.optimizer_state_sha256,
+            "dataset_fingerprint": self.dataset_fingerprint,
+            "active_plan_fingerprint": self.active_plan_fingerprint,
+            "exact_pair_rows_sha256": self.exact_pair_rows_sha256,
+            "representation_contract_sha256": (
+                self.representation_contract_sha256
+            ),
+            "representation_lineage_fingerprint": (
+                self.representation_lineage_fingerprint
+            ),
+            "progress_before_sha256": self.progress_before_sha256,
+            "progress_after_sha256": self.progress_after_sha256,
+            "null_context_used_by_optimizer": False,
+            "window_only_encoder_path_used": False,
+        }
 
 
 def model_state_sha256(model_or_state: nn.Module | Mapping[str, Tensor]) -> str:
@@ -982,6 +1212,64 @@ def model_state_sha256(model_or_state: nn.Module | Mapping[str, Tensor]) -> str:
     return digest.hexdigest()
 
 
+def _update_canonical_state_digest(digest: Any, value: Any) -> None:
+    if isinstance(value, Tensor):
+        tensor = value.detach().cpu().contiguous()
+        if tensor.is_floating_point() and not bool(torch.isfinite(tensor).all()):
+            raise ValueError("optimizer state contains a non-finite tensor")
+        digest.update(b"tensor\0")
+        digest.update(str(tensor.dtype).encode("ascii"))
+        digest.update(_canonical_json_bytes(list(tensor.shape)))
+        digest.update(tensor.numpy().tobytes(order="C"))
+    elif isinstance(value, Mapping):
+        digest.update(b"mapping\0")
+        keys = sorted(value, key=lambda item: (type(item).__name__, repr(item)))
+        for key in keys:
+            _update_canonical_state_digest(digest, key)
+            _update_canonical_state_digest(digest, value[key])
+    elif isinstance(value, tuple):
+        digest.update(b"tuple\0")
+        for item in value:
+            _update_canonical_state_digest(digest, item)
+    elif isinstance(value, list):
+        digest.update(b"list\0")
+        for item in value:
+            _update_canonical_state_digest(digest, item)
+    elif value is None:
+        digest.update(b"none\0")
+    elif isinstance(value, bool):
+        digest.update(b"bool\0true" if value else b"bool\0false")
+    elif isinstance(value, int):
+        digest.update(b"int\0")
+        digest.update(str(value).encode("ascii"))
+    elif isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError("optimizer state contains a non-finite scalar")
+        digest.update(b"float\0")
+        digest.update(value.hex().encode("ascii"))
+    elif isinstance(value, str):
+        digest.update(b"str\0")
+        digest.update(value.encode("utf-8"))
+    else:
+        raise ValueError(f"optimizer state contains unsupported {type(value).__name__}")
+    digest.update(b"\0end\0")
+
+
+def optimizer_state_sha256(
+    optimizer_or_state: Optimizer | Mapping[str, Any],
+) -> str:
+    state = (
+        optimizer_or_state.state_dict()
+        if isinstance(optimizer_or_state, Optimizer)
+        else optimizer_or_state
+    )
+    if not isinstance(state, Mapping) or set(state) != {"state", "param_groups"}:
+        raise ValueError("optimizer state digest requires an exact state_dict")
+    digest = hashlib.sha256()
+    _update_canonical_state_digest(digest, state)
+    return digest.hexdigest()
+
+
 def _finite_parameter_gradients(model: nn.Module) -> bool:
     gradients = [
         parameter.grad
@@ -994,7 +1282,7 @@ def _finite_parameter_gradients(model: nn.Module) -> bool:
     )
 
 
-def optimize_real_pair_contexts(
+def _optimize_real_pair_contexts(
     encoder: PAMSEncoder,
     optimizer: Optimizer,
     objective: ConventionalCycleBackLoss,
@@ -1046,111 +1334,222 @@ def optimize_real_pair_contexts(
     return output.total.detach(), output.valid_anchor_count, possible
 
 
-def run_unified2d_fullcontext_optimizer_step(
-    encoder: PAMSEncoder,
-    optimizer: Optimizer,
-    objective: ConventionalCycleBackLoss,
-    sequences_by_video: Mapping[str, Unified2DSequence],
-    segment_ranges_by_video: Mapping[str, Sequence[tuple[int, int]]],
-    pair_eligibility: PairEligibility,
-    candidate_config: ConventionalCycleBackConfig,
-    contract: FullContextTrainerContract,
-    representation: FullContextRepresentationContract,
-    lineage: FullContextLineage,
-    plan: LengthBucketPlan,
-    *,
-    batch_index: int,
-    global_optimizer_step: int,
-) -> FullContextOptimizerStep:
-    """Run the explicit v4e adapter into the representation-neutral optimizer."""
+def training_units_fingerprint(
+    units: Sequence[FullContextTrainingUnit],
+) -> str:
+    normalized = tuple(units)
+    if not normalized or len({unit.video_id for unit in normalized}) != len(normalized):
+        raise ValueError("training dataset units must be non-empty unique")
+    if normalized != tuple(sorted(normalized, key=lambda unit: unit.video_id)):
+        raise ValueError("training dataset units must use canonical video-ID order")
+    return _canonical_sha256(
+        {
+            "schema_version": 1,
+            "policy": "exact_authorized_units_canonical_opaque_video_order",
+            "units": [unit.to_dict() for unit in normalized],
+        }
+    )
 
-    validate_representation_contract_lineage(representation, lineage)
-    if (
-        representation.representation_family != "v4e_unified2d_coco17_padded33"
-        or representation.support_channel_to_pose_joint_indices != tuple(range(17))
-        or representation.diagnostic_adapter
-        != "unified2d_coco17_joint_nulls_v1"
-    ):
-        raise ValueError("unified2d adapter received a different representation type")
-    if contract.candidate_config_fingerprint != candidate_config.fingerprint:
-        raise ValueError("candidate config differs from full-context contract")
-    if plan.trainer_contract_fingerprint != contract.fingerprint:
-        raise ValueError("sampler plan differs from full-context contract")
-    if plan.representation_lineage_fingerprint != lineage.fingerprint:
-        raise ValueError("sampler plan differs from representation/mechanism lineage")
-    if not 0 <= batch_index < len(plan.batches):
-        raise ValueError("sampler batch cursor lies outside the plan")
-    _require_integer(
-        global_optimizer_step,
-        role="global optimizer step",
-        minimum=_MECHANISM_OPTIMIZER_STEPS + 1,
-    )
-    selected_ids = plan.batches[batch_index].video_ids
-    if any(video_id not in sequences_by_video for video_id in selected_ids):
-        raise ValueError("sampler plan references an unavailable pose sequence")
-    selected = tuple(sequences_by_video[video_id] for video_id in selected_ids)
-    if tuple(sequence.video_id for sequence in selected) != selected_ids:
-        raise ValueError("pose sequence identity differs from sampler plan")
-    device = next(encoder.parameters()).device
-    batch = collate_to_device(selected, device)
-    pairs, views = pairs_from_batch(
-        batch,
-        candidate_config,
-        step=global_optimizer_step,
-        segment_ranges_by_video=segment_ranges_by_video,
-        pair_eligibility=pair_eligibility,
-    )
-    unit_by_id = {unit.video_id: unit for unit in plan.units}
-    expected_pair_total = sum(
-        len(unit_by_id[video_id].authorized_pair_starts)
-        for video_id in selected_ids
-    )
-    if pairs.pair_count != expected_pair_total or set(pairs.video_ids) != set(
-        selected_ids
-    ):
-        raise RuntimeError("runtime pair set differs from the frozen sampler plan")
-    contexts = pair_segment_contexts(pairs, views)
-    if (
-        contexts.transform_contract.get("same_view_same_range_encoded_once") is not True
-        or contexts.transform_contract.get("window_only_encoder_path_used") is not False
-        or contexts.transform_contract.get("attention_context_boundary")
-        != "eligible_frame_range_start_stop"
-    ):
-        raise RuntimeError("full-context encode-once contract is incomplete")
-    expected_view_seeds = independent_view_seeds(
-        base_seed=contract.seed,
-        step=global_optimizer_step,
-    )
-    if views.view_seeds != expected_view_seeds:
-        raise RuntimeError("runtime view seeds differ from the checkpointable policy")
-    encoder.train()
-    loss, valid_anchors, possible_anchors = optimize_real_pair_contexts(
-        encoder,
-        optimizer,
-        objective,
-        pairs,
-        contexts,
-        contract,
-        expected_prior_optimizer_step=global_optimizer_step - 1,
-    )
-    return FullContextOptimizerStep(
-        global_optimizer_step=global_optimizer_step,
-        sampler_epoch=plan.epoch,
-        sampler_batch_index=batch_index,
-        video_ids=selected_ids,
-        pair_total=pairs.pair_count,
-        unique_view_context_total=int(
-            contexts.transform_contract["unique_view_context_total"]
-        ),
-        reused_pair_side_context_references=int(
-            contexts.transform_contract["reused_pair_side_context_references"]
-        ),
-        view_seeds=views.view_seeds,
-        loss=float(loss),
-        valid_anchor_total=valid_anchors,
-        possible_anchor_total=possible_anchors,
-        model_state_sha256=model_state_sha256(encoder),
-    )
+
+@dataclass(frozen=True, slots=True)
+class MechanismSeedLoadReceipt:
+    checkpoint_sha256: str
+    checkpoint_bytes: int
+    learned_model_state_sha256: str
+    optimizer_state_sha256: str
+    optimizer_step: Literal[256]
+    rng_state_sha256: str
+    backend_state_sha256: str
+    trainer_contract_fingerprint: str
+    representation_contract_sha256: str
+    representation_lineage_fingerprint: str
+    loaded_as_epoch1_start: Literal[True] = True
+    direct_epoch150_start_authorized: Literal[False] = False
+
+    def __post_init__(self) -> None:
+        for role, value in (
+            ("mechanism seed checkpoint", self.checkpoint_sha256),
+            ("mechanism learned model", self.learned_model_state_sha256),
+            ("mechanism optimizer state", self.optimizer_state_sha256),
+            ("mechanism RNG state", self.rng_state_sha256),
+            ("mechanism backend state", self.backend_state_sha256),
+            ("mechanism trainer contract", self.trainer_contract_fingerprint),
+            ("mechanism representation contract", self.representation_contract_sha256),
+            ("mechanism representation lineage", self.representation_lineage_fingerprint),
+        ):
+            _require_sha256(value, role=role)
+        _require_integer(
+            self.checkpoint_bytes,
+            role="mechanism seed checkpoint bytes",
+            minimum=1,
+        )
+        if self.optimizer_step != _MECHANISM_OPTIMIZER_STEPS:
+            raise ValueError("learned-L receipt must be the exact step-256 state")
+        if (
+            self.loaded_as_epoch1_start is not True
+            or self.direct_epoch150_start_authorized is not False
+        ):
+            raise ValueError("learned-L receipt has invalid continuation authority")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "artifact_type": "pams_cycleback_mechanism_seed_load_receipt_v1",
+            "checkpoint_sha256": self.checkpoint_sha256,
+            "checkpoint_bytes": self.checkpoint_bytes,
+            "learned_model_state_sha256": self.learned_model_state_sha256,
+            "optimizer_state_sha256": self.optimizer_state_sha256,
+            "optimizer_step": self.optimizer_step,
+            "rng_state_sha256": self.rng_state_sha256,
+            "backend_state_sha256": self.backend_state_sha256,
+            "trainer_contract_fingerprint": self.trainer_contract_fingerprint,
+            "representation_contract_sha256": self.representation_contract_sha256,
+            "representation_lineage_fingerprint": (
+                self.representation_lineage_fingerprint
+            ),
+            "loaded_as_epoch1_start": self.loaded_as_epoch1_start,
+            "direct_epoch150_start_authorized": (
+                self.direct_epoch150_start_authorized
+            ),
+            "checkpoint_self_authorizes_training": False,
+        }
+
+    @property
+    def fingerprint(self) -> str:
+        return _canonical_sha256(self.to_dict())
+
+
+@dataclass(frozen=True, slots=True)
+class CompletedEpochPlan:
+    epoch: int
+    plan_fingerprint: str
+    batch_total: int
+    cumulative_batch_total: int
+
+    def __post_init__(self) -> None:
+        _require_integer(self.epoch, role="completed plan epoch", minimum=1)
+        _require_sha256(self.plan_fingerprint, role="completed plan fingerprint")
+        _require_integer(self.batch_total, role="completed plan batch total", minimum=1)
+        _require_integer(
+            self.cumulative_batch_total,
+            role="completed cumulative batch total",
+            minimum=self.batch_total,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "epoch": self.epoch,
+            "plan_fingerprint": self.plan_fingerprint,
+            "batch_total": self.batch_total,
+            "cumulative_batch_total": self.cumulative_batch_total,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class Epoch150TransitionBindings:
+    candidate_id: CandidateId
+    epoch11_checkpoint_sha256: str
+    epoch11_checkpoint_bytes: int
+    epoch11_model_state_sha256: str
+    epoch11_optimizer_state_sha256: str
+    epoch11_progress_sha256: str
+    trainer_contract_fingerprint: str
+    representation_contract_sha256: str
+    representation_lineage_fingerprint: str
+    fixed_pair_identity_sha256: str
+    fixed_pair_payload_sha256: str
+    epoch11_gate_outcome_sha256: str
+    epoch11_gate_outcome_bytes: int
+    threshold_receipt_sha256: str
+    threshold_receipt_bytes: int
+    epoch150_launch_authorization_sha256: str
+    epoch150_launch_authorization_bytes: int
+    scientific_gate_passed: Literal[True] = True
+    epoch150_train337_continuation_authorized: Literal[True] = True
+    development_evaluation_authorized: Literal[False] = False
+    sealed_evaluation_authorized: Literal[False] = False
+    readout_authorized: Literal[False] = False
+
+    def __post_init__(self) -> None:
+        if self.candidate_id not in _CANDIDATE_GEOMETRY:
+            raise ValueError("epoch150 transition candidate is unsupported")
+        for role, value in (
+            ("epoch11 checkpoint", self.epoch11_checkpoint_sha256),
+            ("epoch11 model", self.epoch11_model_state_sha256),
+            ("epoch11 optimizer", self.epoch11_optimizer_state_sha256),
+            ("epoch11 progress", self.epoch11_progress_sha256),
+            ("trainer contract", self.trainer_contract_fingerprint),
+            ("representation contract", self.representation_contract_sha256),
+            ("representation lineage", self.representation_lineage_fingerprint),
+            ("fixed pair identity", self.fixed_pair_identity_sha256),
+            ("fixed pair payload", self.fixed_pair_payload_sha256),
+            ("epoch11 gate outcome", self.epoch11_gate_outcome_sha256),
+            ("epoch11 threshold receipt", self.threshold_receipt_sha256),
+            ("epoch150 launch authorization", self.epoch150_launch_authorization_sha256),
+        ):
+            _require_sha256(value, role=role)
+        for role, value in (
+            ("epoch11 checkpoint bytes", self.epoch11_checkpoint_bytes),
+            ("epoch11 gate outcome bytes", self.epoch11_gate_outcome_bytes),
+            ("epoch11 threshold receipt bytes", self.threshold_receipt_bytes),
+            (
+                "epoch150 launch authorization bytes",
+                self.epoch150_launch_authorization_bytes,
+            ),
+        ):
+            _require_integer(value, role=role, minimum=1)
+        if (
+            self.scientific_gate_passed is not True
+            or self.epoch150_train337_continuation_authorized is not True
+            or self.development_evaluation_authorized is not False
+            or self.sealed_evaluation_authorized is not False
+            or self.readout_authorized is not False
+        ):
+            raise ValueError("epoch150 transition authority flags are invalid")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "artifact_type": "pams_cycleback_epoch150_transition_bindings_v1",
+            "candidate_id": self.candidate_id,
+            "epoch11_checkpoint_sha256": self.epoch11_checkpoint_sha256,
+            "epoch11_checkpoint_bytes": self.epoch11_checkpoint_bytes,
+            "epoch11_model_state_sha256": self.epoch11_model_state_sha256,
+            "epoch11_optimizer_state_sha256": (
+                self.epoch11_optimizer_state_sha256
+            ),
+            "epoch11_progress_sha256": self.epoch11_progress_sha256,
+            "trainer_contract_fingerprint": self.trainer_contract_fingerprint,
+            "representation_contract_sha256": self.representation_contract_sha256,
+            "representation_lineage_fingerprint": (
+                self.representation_lineage_fingerprint
+            ),
+            "fixed_pair_identity_sha256": self.fixed_pair_identity_sha256,
+            "fixed_pair_payload_sha256": self.fixed_pair_payload_sha256,
+            "epoch11_gate_outcome_sha256": self.epoch11_gate_outcome_sha256,
+            "epoch11_gate_outcome_bytes": self.epoch11_gate_outcome_bytes,
+            "threshold_receipt_sha256": self.threshold_receipt_sha256,
+            "threshold_receipt_bytes": self.threshold_receipt_bytes,
+            "epoch150_launch_authorization_sha256": (
+                self.epoch150_launch_authorization_sha256
+            ),
+            "epoch150_launch_authorization_bytes": (
+                self.epoch150_launch_authorization_bytes
+            ),
+            "scientific_gate_passed": self.scientific_gate_passed,
+            "epoch150_train337_continuation_authorized": (
+                self.epoch150_train337_continuation_authorized
+            ),
+            "development_evaluation_authorized": (
+                self.development_evaluation_authorized
+            ),
+            "sealed_evaluation_authorized": self.sealed_evaluation_authorized,
+            "readout_authorized": self.readout_authorized,
+        }
+
+    @property
+    def fingerprint(self) -> str:
+        return _canonical_sha256(self.to_dict())
 
 
 @dataclass(frozen=True, slots=True)
@@ -1159,10 +1558,17 @@ class FullContextProgress:
     target_epoch: int
     completed_epochs: int
     continuation_optimizer_steps: int
+    units: tuple[FullContextTrainingUnit, ...]
+    dataset_fingerprint: str
+    mechanism_seed_load_receipt: MechanismSeedLoadReceipt
+    current_model_state_sha256: str
+    current_optimizer_state_sha256: str
+    completed_plan_prefix: tuple[CompletedEpochPlan, ...]
     active_plan: LengthBucketPlan | None
     sampler_cursor: int
     epoch11_prefix_checkpoint_sha256: str | None = None
     epoch11_prefix_checkpoint_bytes: int | None = None
+    epoch150_transition: Epoch150TransitionBindings | None = None
 
     def __post_init__(self) -> None:
         expected_target = {
@@ -1171,20 +1577,37 @@ class FullContextProgress:
         }.get(self.phase)
         if expected_target is None or self.target_epoch != expected_target:
             raise ValueError("full-context phase target mismatch")
+        if self.dataset_fingerprint != training_units_fingerprint(self.units):
+            raise ValueError("full-context dataset fingerprint mismatch")
+        _require_sha256(self.current_model_state_sha256, role="current model state")
+        _require_sha256(
+            self.current_optimizer_state_sha256,
+            role="current optimizer state",
+        )
         minimum_completed = 0 if self.phase == "epoch11" else _EPOCH11_TARGET
         if not minimum_completed <= self.completed_epochs <= self.target_epoch:
             raise ValueError("completed epoch count lies outside the phase")
-        _require_integer(
-            self.continuation_optimizer_steps,
-            role="continuation optimizer steps",
-        )
+        if len(self.completed_plan_prefix) != self.completed_epochs:
+            raise ValueError("completed epoch count differs from plan prefix")
+        cumulative = 0
+        for expected_epoch, record in enumerate(self.completed_plan_prefix, start=1):
+            cumulative += record.batch_total
+            if (
+                record.epoch != expected_epoch
+                or record.cumulative_batch_total != cumulative
+            ):
+                raise ValueError("completed sampler plan prefix is non-canonical")
         _require_integer(self.sampler_cursor, role="sampler cursor")
+        expected_steps = cumulative + self.sampler_cursor
+        if self.continuation_optimizer_steps != expected_steps:
+            raise ValueError("optimizer steps differ from plan-prefix/cursor total")
         if self.phase == "epoch11":
             if (
                 self.epoch11_prefix_checkpoint_sha256 is not None
                 or self.epoch11_prefix_checkpoint_bytes is not None
+                or self.epoch150_transition is not None
             ):
-                raise ValueError("epoch11 phase cannot name its own prefix checkpoint")
+                raise ValueError("epoch11 phase cannot carry epoch150 authority")
         else:
             if self.epoch11_prefix_checkpoint_sha256 is None:
                 raise ValueError("epoch150 phase requires the exact epoch11 prefix")
@@ -1197,6 +1620,13 @@ class FullContextProgress:
                 role="epoch11 prefix checkpoint bytes",
                 minimum=1,
             )
+            if self.epoch150_transition is None or (
+                self.epoch150_transition.epoch11_checkpoint_sha256
+                != self.epoch11_prefix_checkpoint_sha256
+                or self.epoch150_transition.epoch11_checkpoint_bytes
+                != self.epoch11_prefix_checkpoint_bytes
+            ):
+                raise ValueError("epoch150 transition differs from epoch11 prefix")
         if self.completed_epochs == self.target_epoch:
             if self.active_plan is not None or self.sampler_cursor != 0:
                 raise ValueError("completed phase cannot retain an active sampler plan")
@@ -1207,6 +1637,8 @@ class FullContextProgress:
                 raise ValueError("active sampler plan epoch is not the next epoch")
             if not 0 <= self.sampler_cursor < len(self.active_plan.batches):
                 raise ValueError("sampler cursor lies outside the active plan")
+            if tuple(self.active_plan.units) != self.units:
+                raise ValueError("active sampler plan changes permanent dataset units")
 
     @property
     def global_optimizer_step(self) -> int:
@@ -1216,6 +1648,29 @@ class FullContextProgress:
     def next_augmentation_step(self) -> int:
         return self.global_optimizer_step + 1
 
+    @property
+    def plan_dataset_prefix_sha256(self) -> str:
+        return _canonical_sha256(
+            {
+                "mechanism_seed_load_receipt_sha256": (
+                    self.mechanism_seed_load_receipt.fingerprint
+                ),
+                "dataset_fingerprint": self.dataset_fingerprint,
+                "completed_plan_prefix": [
+                    record.to_dict() for record in self.completed_plan_prefix
+                ],
+                "active_plan_fingerprint": (
+                    None if self.active_plan is None else self.active_plan.fingerprint
+                ),
+                "sampler_cursor": self.sampler_cursor,
+                "continuation_optimizer_steps": self.continuation_optimizer_steps,
+                "current_model_state_sha256": self.current_model_state_sha256,
+                "current_optimizer_state_sha256": (
+                    self.current_optimizer_state_sha256
+                ),
+            }
+        )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "phase": self.phase,
@@ -1223,6 +1678,21 @@ class FullContextProgress:
             "completed_epochs": self.completed_epochs,
             "continuation_optimizer_steps": self.continuation_optimizer_steps,
             "global_optimizer_step": self.global_optimizer_step,
+            "units": [unit.to_dict() for unit in self.units],
+            "dataset_fingerprint": self.dataset_fingerprint,
+            "mechanism_seed_load_receipt": (
+                self.mechanism_seed_load_receipt.to_dict()
+            ),
+            "mechanism_seed_load_receipt_sha256": (
+                self.mechanism_seed_load_receipt.fingerprint
+            ),
+            "current_model_state_sha256": self.current_model_state_sha256,
+            "current_optimizer_state_sha256": (
+                self.current_optimizer_state_sha256
+            ),
+            "completed_plan_prefix": [
+                record.to_dict() for record in self.completed_plan_prefix
+            ],
             "active_plan": (
                 None if self.active_plan is None else self.active_plan.to_dict()
             ),
@@ -1230,23 +1700,116 @@ class FullContextProgress:
                 None if self.active_plan is None else self.active_plan.fingerprint
             ),
             "sampler_cursor": self.sampler_cursor,
+            "plan_dataset_prefix_sha256": self.plan_dataset_prefix_sha256,
             "epoch11_prefix_checkpoint_sha256": (
                 self.epoch11_prefix_checkpoint_sha256
             ),
             "epoch11_prefix_checkpoint_bytes": (
                 self.epoch11_prefix_checkpoint_bytes
             ),
+            "epoch150_transition": (
+                None
+                if self.epoch150_transition is None
+                else self.epoch150_transition.to_dict()
+            ),
+            "epoch150_transition_sha256": (
+                None
+                if self.epoch150_transition is None
+                else self.epoch150_transition.fingerprint
+            ),
         }
 
+    @property
+    def fingerprint(self) -> str:
+        return _canonical_sha256(self.to_dict())
 
-def initial_epoch11_progress(plan: LengthBucketPlan) -> FullContextProgress:
+
+def validate_fullcontext_progress_schedule(
+    progress: FullContextProgress,
+    contract: FullContextTrainerContract,
+    lineage: FullContextLineage,
+) -> None:
+    if (
+        progress.mechanism_seed_load_receipt.trainer_contract_fingerprint
+        != contract.fingerprint
+        or progress.mechanism_seed_load_receipt.representation_contract_sha256
+        != lineage.representation_contract_sha256
+        or progress.mechanism_seed_load_receipt.representation_lineage_fingerprint
+        != lineage.fingerprint
+    ):
+        raise ValueError("learned-L receipt differs from continuation lineage")
+    if progress.continuation_optimizer_steps == 0 and (
+        progress.current_model_state_sha256
+        != progress.mechanism_seed_load_receipt.learned_model_state_sha256
+        or progress.current_optimizer_state_sha256
+        != progress.mechanism_seed_load_receipt.optimizer_state_sha256
+    ):
+        raise ValueError("epoch-one progress differs from exact learned-L state")
+    if (
+        progress.phase == "epoch150"
+        and progress.completed_epochs == _EPOCH11_TARGET
+        and progress.sampler_cursor == 0
+    ):
+        transition = progress.epoch150_transition
+        if transition is None or (
+            transition.epoch11_model_state_sha256
+            != progress.current_model_state_sha256
+            or transition.epoch11_optimizer_state_sha256
+            != progress.current_optimizer_state_sha256
+        ):
+            raise ValueError("epoch150 start differs from exact epoch11 state")
+    for record in progress.completed_plan_prefix:
+        expected = build_length_bucket_plan(
+            progress.units,
+            contract,
+            lineage,
+            epoch=record.epoch,
+        )
+        if (
+            record.plan_fingerprint != expected.fingerprint
+            or record.batch_total != len(expected.batches)
+        ):
+            raise ValueError("completed sampler plan prefix differs from replay")
+    if progress.active_plan is not None:
+        expected_active = build_length_bucket_plan(
+            progress.units,
+            contract,
+            lineage,
+            epoch=progress.completed_epochs + 1,
+        )
+        if progress.active_plan.to_dict() != expected_active.to_dict():
+            raise ValueError("active sampler plan differs from deterministic replay")
+
+
+def initial_epoch11_progress(
+    plan: LengthBucketPlan,
+    *,
+    mechanism_seed_load_receipt: MechanismSeedLoadReceipt,
+) -> FullContextProgress:
     if plan.epoch != 1:
         raise ValueError("epoch11 continuation must begin with epoch-one sampler plan")
+    if (
+        mechanism_seed_load_receipt.trainer_contract_fingerprint
+        != plan.trainer_contract_fingerprint
+        or mechanism_seed_load_receipt.representation_lineage_fingerprint
+        != plan.representation_lineage_fingerprint
+    ):
+        raise ValueError("epoch-one plan differs from learned-L load receipt")
     return FullContextProgress(
         phase="epoch11",
         target_epoch=_EPOCH11_TARGET,
         completed_epochs=0,
         continuation_optimizer_steps=0,
+        units=plan.units,
+        dataset_fingerprint=training_units_fingerprint(plan.units),
+        mechanism_seed_load_receipt=mechanism_seed_load_receipt,
+        current_model_state_sha256=(
+            mechanism_seed_load_receipt.learned_model_state_sha256
+        ),
+        current_optimizer_state_sha256=(
+            mechanism_seed_load_receipt.optimizer_state_sha256
+        ),
+        completed_plan_prefix=(),
         active_plan=plan,
         sampler_cursor=0,
     )
@@ -1255,93 +1818,544 @@ def initial_epoch11_progress(plan: LengthBucketPlan) -> FullContextProgress:
 def initial_epoch150_progress(
     plan: LengthBucketPlan,
     *,
-    epoch11_checkpoint_sha256: str,
-    epoch11_checkpoint_bytes: int,
-    epoch11_continuation_optimizer_steps: int,
+    completed_epoch11_progress: FullContextProgress,
+    transition: Epoch150TransitionBindings,
 ) -> FullContextProgress:
     if plan.epoch != _EPOCH11_TARGET + 1:
         raise ValueError("epoch150 continuation must begin with epoch-twelve plan")
+    if (
+        completed_epoch11_progress.phase != "epoch11"
+        or completed_epoch11_progress.completed_epochs != _EPOCH11_TARGET
+        or completed_epoch11_progress.active_plan is not None
+        or tuple(plan.units) != completed_epoch11_progress.units
+        or transition.epoch11_progress_sha256
+        != completed_epoch11_progress.fingerprint
+        or transition.epoch11_model_state_sha256
+        != completed_epoch11_progress.current_model_state_sha256
+        or transition.epoch11_optimizer_state_sha256
+        != completed_epoch11_progress.current_optimizer_state_sha256
+    ):
+        raise ValueError("epoch150 does not extend the exact completed epoch11 state")
     return FullContextProgress(
         phase="epoch150",
         target_epoch=_EPOCH150_TARGET,
         completed_epochs=_EPOCH11_TARGET,
-        continuation_optimizer_steps=epoch11_continuation_optimizer_steps,
+        continuation_optimizer_steps=(
+            completed_epoch11_progress.continuation_optimizer_steps
+        ),
+        units=completed_epoch11_progress.units,
+        dataset_fingerprint=completed_epoch11_progress.dataset_fingerprint,
+        mechanism_seed_load_receipt=(
+            completed_epoch11_progress.mechanism_seed_load_receipt
+        ),
+        current_model_state_sha256=(
+            completed_epoch11_progress.current_model_state_sha256
+        ),
+        current_optimizer_state_sha256=(
+            completed_epoch11_progress.current_optimizer_state_sha256
+        ),
+        completed_plan_prefix=completed_epoch11_progress.completed_plan_prefix,
         active_plan=plan,
         sampler_cursor=0,
-        epoch11_prefix_checkpoint_sha256=epoch11_checkpoint_sha256,
-        epoch11_prefix_checkpoint_bytes=epoch11_checkpoint_bytes,
+        epoch11_prefix_checkpoint_sha256=transition.epoch11_checkpoint_sha256,
+        epoch11_prefix_checkpoint_bytes=transition.epoch11_checkpoint_bytes,
+        epoch150_transition=transition,
     )
 
 
-def advance_fullcontext_progress(
+def _advance_fullcontext_progress(
     progress: FullContextProgress,
+    contract: FullContextTrainerContract,
+    lineage: FullContextLineage,
     *,
-    next_epoch_plan: LengthBucketPlan | None = None,
+    next_model_state_sha256: str,
+    next_optimizer_state_sha256: str,
 ) -> FullContextProgress:
-    """Advance exactly one completed optimizer step without losing cursor state."""
+    """Advance exactly the active cursor; next plans are replayed internally."""
 
+    validate_fullcontext_progress_schedule(progress, contract, lineage)
+    _require_sha256(next_model_state_sha256, role="advanced model state")
+    _require_sha256(next_optimizer_state_sha256, role="advanced optimizer state")
+    if (
+        next_model_state_sha256 == progress.current_model_state_sha256
+        and next_optimizer_state_sha256 == progress.current_optimizer_state_sha256
+    ):
+        raise ValueError("optimizer progress cannot advance without state change")
     if progress.active_plan is None:
         raise ValueError("completed full-context phase cannot advance")
     next_cursor = progress.sampler_cursor + 1
     next_steps = progress.continuation_optimizer_steps + 1
     if next_cursor < len(progress.active_plan.batches):
-        if next_epoch_plan is not None:
-            raise ValueError("next epoch plan supplied before the current epoch ended")
-        return FullContextProgress(
-            phase=progress.phase,
-            target_epoch=progress.target_epoch,
-            completed_epochs=progress.completed_epochs,
+        return replace(
+            progress,
             continuation_optimizer_steps=next_steps,
-            active_plan=progress.active_plan,
+            current_model_state_sha256=next_model_state_sha256,
+            current_optimizer_state_sha256=next_optimizer_state_sha256,
             sampler_cursor=next_cursor,
-            epoch11_prefix_checkpoint_sha256=(
-                progress.epoch11_prefix_checkpoint_sha256
-            ),
-            epoch11_prefix_checkpoint_bytes=(
-                progress.epoch11_prefix_checkpoint_bytes
-            ),
         )
+    previous_cumulative = (
+        0
+        if not progress.completed_plan_prefix
+        else progress.completed_plan_prefix[-1].cumulative_batch_total
+    )
+    completed_record = CompletedEpochPlan(
+        epoch=progress.active_plan.epoch,
+        plan_fingerprint=progress.active_plan.fingerprint,
+        batch_total=len(progress.active_plan.batches),
+        cumulative_batch_total=(
+            previous_cumulative + len(progress.active_plan.batches)
+        ),
+    )
     completed = progress.completed_epochs + 1
+    prefix = (*progress.completed_plan_prefix, completed_record)
     if completed == progress.target_epoch:
-        if next_epoch_plan is not None:
-            raise ValueError("completed phase cannot accept another sampler plan")
-        return FullContextProgress(
-            phase=progress.phase,
-            target_epoch=progress.target_epoch,
+        return replace(
+            progress,
             completed_epochs=completed,
             continuation_optimizer_steps=next_steps,
+            current_model_state_sha256=next_model_state_sha256,
+            current_optimizer_state_sha256=next_optimizer_state_sha256,
+            completed_plan_prefix=prefix,
             active_plan=None,
             sampler_cursor=0,
-            epoch11_prefix_checkpoint_sha256=(
-                progress.epoch11_prefix_checkpoint_sha256
-            ),
-            epoch11_prefix_checkpoint_bytes=(
-                progress.epoch11_prefix_checkpoint_bytes
-            ),
         )
-    if next_epoch_plan is None or next_epoch_plan.epoch != completed + 1:
-        raise ValueError("epoch boundary requires the exact next sampler plan")
-    if (
-        next_epoch_plan.trainer_contract_fingerprint
-        != progress.active_plan.trainer_contract_fingerprint
-        or next_epoch_plan.representation_lineage_fingerprint
-        != progress.active_plan.representation_lineage_fingerprint
-        or tuple(unit.identity_sha256 for unit in next_epoch_plan.units)
-        != tuple(unit.identity_sha256 for unit in progress.active_plan.units)
-    ):
-        raise ValueError("next sampler plan changes contract, lineage, or units")
-    return FullContextProgress(
-        phase=progress.phase,
-        target_epoch=progress.target_epoch,
+    next_plan = build_length_bucket_plan(
+        progress.units,
+        contract,
+        lineage,
+        epoch=completed + 1,
+    )
+    return replace(
+        progress,
         completed_epochs=completed,
         continuation_optimizer_steps=next_steps,
-        active_plan=next_epoch_plan,
+        current_model_state_sha256=next_model_state_sha256,
+        current_optimizer_state_sha256=next_optimizer_state_sha256,
+        completed_plan_prefix=prefix,
+        active_plan=next_plan,
         sampler_cursor=0,
-        epoch11_prefix_checkpoint_sha256=(
-            progress.epoch11_prefix_checkpoint_sha256
-        ),
-        epoch11_prefix_checkpoint_bytes=progress.epoch11_prefix_checkpoint_bytes,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class FullContextStepResult:
+    evidence: FullContextOptimizerStep
+    progress: FullContextProgress
+
+    def __post_init__(self) -> None:
+        if (
+            self.evidence.global_optimizer_step
+            != self.progress.global_optimizer_step
+            or self.evidence.progress_after_sha256 != self.progress.fingerprint
+        ):
+            raise ValueError("optimizer evidence does not bind the advanced progress")
+
+
+def _validate_prepared_real_context_rows(
+    pairs: NativeWindowPairBatch,
+    contexts: PairSegmentContexts,
+    *,
+    support_channel_count: int,
+) -> str:
+    require_real_optimizer_contexts(contexts)
+    expected_contract_keys = {
+        "policy",
+        "attention_context_boundary",
+        "association_reset_is_not_a_wider_attention_context",
+        "absolute_native_position_indices",
+        "window_only_encoder_path_used",
+        "pair_side_context_references",
+        "unique_view_context_total",
+        "reused_pair_side_context_references",
+        "same_view_same_range_encoded_once",
+    }
+    unique_keys = len(set(contexts.context_keys_a)) + len(
+        set(contexts.context_keys_b)
+    )
+    expected_contract = {
+        "policy": "full_authorized_all_valid_stable_range_then_slice_embeddings",
+        "attention_context_boundary": "eligible_frame_range_start_stop",
+        "association_reset_is_not_a_wider_attention_context": True,
+        "absolute_native_position_indices": True,
+        "window_only_encoder_path_used": False,
+        "pair_side_context_references": 2 * pairs.pair_count,
+        "unique_view_context_total": unique_keys,
+        "reused_pair_side_context_references": 2 * pairs.pair_count - unique_keys,
+        "same_view_same_range_encoded_once": True,
+    }
+    if (
+        contexts.video_ids != pairs.video_ids
+        or set(contexts.transform_contract) != expected_contract_keys
+        or dict(contexts.transform_contract) != expected_contract
+    ):
+        raise ValueError("prepared real contexts violate the exact encode-once contract")
+    for row, video_id in enumerate(pairs.video_ids):
+        start = int(pairs.segment_starts[row])
+        stop = int(pairs.segment_ends[row])
+        expected_positions = torch.arange(
+            start,
+            stop,
+            dtype=torch.long,
+            device=pairs.poses_a.device,
+        )
+        opaque = hashlib.sha256(video_id.encode("utf-8")).hexdigest()
+        if (
+            contexts.poses_a[row].shape[0] != stop - start
+            or contexts.poses_b[row].shape[0] != stop - start
+            or contexts.poses_a[row].device != pairs.poses_a.device
+            or contexts.poses_b[row].device != pairs.poses_b.device
+            or contexts.context_keys_a[row] != f"real:a:{opaque}:{start}:{stop}"
+            or contexts.context_keys_b[row] != f"real:b:{opaque}:{start}:{stop}"
+            or not torch.equal(contexts.position_indices_a[row], expected_positions)
+            or not torch.equal(contexts.position_indices_b[row], expected_positions)
+        ):
+            raise ValueError("prepared context identity/absolute positions are not exact")
+        local_a = pairs.source_indices_a[row] - start
+        local_b = pairs.source_indices_b[row] - start
+        if (
+            contexts.joint_valid_a[row].shape[1] != support_channel_count
+            or contexts.joint_valid_b[row].shape[1] != support_channel_count
+            or not torch.equal(contexts.poses_a[row][local_a], pairs.poses_a[row])
+            or not torch.equal(contexts.poses_b[row][local_b], pairs.poses_b[row])
+            or not torch.equal(
+                contexts.joint_valid_a[row][local_a],
+                pairs.joint_valid_a[row],
+            )
+            or not torch.equal(
+                contexts.joint_valid_b[row][local_b],
+                pairs.joint_valid_b[row],
+            )
+        ):
+            raise ValueError("prepared pair windows differ from their shared contexts")
+    identity_sha256, payload_sha256 = pair_context_fingerprints(pairs, contexts)
+    return _canonical_sha256(
+        {
+            "schema_version": 1,
+            "pair_context_identity_sha256": identity_sha256,
+            "pair_context_payload_sha256": payload_sha256,
+            "support_channel_count": support_channel_count,
+        }
+    )
+
+
+def run_fullcontext_optimizer_step(
+    encoder: PAMSEncoder,
+    optimizer: Optimizer,
+    pairs: NativeWindowPairBatch,
+    contexts: PairSegmentContexts,
+    authorized_ranges_by_video: Mapping[str, Sequence[tuple[int, int]]],
+    pair_eligibility: PairEligibility,
+    candidate_config: ConventionalCycleBackConfig,
+    contract: FullContextTrainerContract,
+    representation: FullContextRepresentationContract,
+    lineage: FullContextLineage,
+    progress: FullContextProgress,
+) -> FullContextStepResult:
+    """Execute the sole optimizer step API from the active progress cursor.
+
+    An independently authorized representation adapter constructs ``pairs``
+    and ``contexts``.  This core binds their exact geometry, support-channel
+    schema, view seeds, real-only role, and full-range encode-once semantics;
+    it never assumes COCO17 or MediaPipe33 support semantics itself.
+    """
+
+    validate_representation_contract_lineage(representation, lineage)
+    validate_fullcontext_candidate_config(candidate_config, contract)
+    validate_fullcontext_progress_schedule(progress, contract, lineage)
+    validate_frozen_fullcontext_backend_state(capture_fullcontext_backend_state())
+    plan = progress.active_plan
+    if plan is None:
+        raise ValueError("completed progress cannot run another optimizer step")
+    validate_train337_plan(plan, contract, pair_eligibility)
+    validate_fullcontext_optimizer(optimizer, contract)
+    _validate_optimizer_model_binding(optimizer, encoder)
+    observed_model_state_sha256 = model_state_sha256(encoder)
+    observed_optimizer_state_sha256 = optimizer_state_sha256(optimizer)
+    if (
+        observed_model_state_sha256 != progress.current_model_state_sha256
+        or observed_optimizer_state_sha256
+        != progress.current_optimizer_state_sha256
+    ):
+        raise ValueError("model/optimizer bytes differ from the active progress state")
+    _validate_adamw_state_step(
+        optimizer.state_dict(),
+        expected_step=progress.global_optimizer_step,
+    )
+    batch_index = progress.sampler_cursor
+    global_optimizer_step = progress.next_augmentation_step
+    selected_ids = plan.batches[batch_index].video_ids
+    selected_ranges = {
+        video_id: tuple(authorized_ranges_by_video[video_id])
+        for video_id in selected_ids
+    }
+    unit_by_id = {unit.video_id: unit for unit in progress.units}
+    if any(
+        selected_ranges[video_id] != unit_by_id[video_id].authorized_ranges
+        for video_id in selected_ids
+    ):
+        raise ValueError("prepared stable ranges differ from permanent training units")
+    support_channels = representation.support_channel_count
+    if (
+        pairs.joint_valid_a.shape[2] != support_channels
+        or pairs.joint_valid_b.shape[2] != support_channels
+        or any(
+            mask.shape[1] != support_channels
+            for mask in (
+                *contexts.joint_valid_a,
+                *contexts.joint_valid_b,
+            )
+        )
+    ):
+        raise ValueError("prepared batch differs from typed support-channel schema")
+    exact_pair_rows_sha256 = validate_exact_authorized_pair_rows(
+        pairs,
+        ordered_video_ids=selected_ids,
+        native_lengths={
+            video_id: pair_eligibility.native_lengths[video_id]
+            for video_id in selected_ids
+        },
+        authorized_ranges_by_video=selected_ranges,
+        base_valid_starts_by_video={
+            video_id: pair_eligibility.base_valid_starts_by_variant[
+                contract.candidate_id
+            ][video_id]
+            for video_id in selected_ids
+        },
+        eligible_starts_by_video={
+            video_id: unit_by_id[video_id].authorized_pair_starts
+            for video_id in selected_ids
+        },
+        window_frames=contract.window_frames,
+        hop_frames=contract.hop_frames,
+    )
+    for row, video_id in enumerate(pairs.video_ids):
+        emitted_range = (
+            int(pairs.segment_starts[row]),
+            int(pairs.segment_ends[row]),
+        )
+        if emitted_range not in unit_by_id[video_id].authorized_ranges:
+            raise RuntimeError("runtime pair references an unconsumed stable range")
+    exact_context_rows_sha256 = _validate_prepared_real_context_rows(
+        pairs,
+        contexts,
+        support_channel_count=support_channels,
+    )
+    exact_pair_rows_sha256 = _canonical_sha256(
+        {
+            "authorized_pair_rows_sha256": exact_pair_rows_sha256,
+            "prepared_context_rows_sha256": exact_context_rows_sha256,
+            "representation_contract_sha256": representation.fingerprint,
+        }
+    )
+    expected_view_seeds = independent_view_seeds(
+        base_seed=contract.seed,
+        step=global_optimizer_step,
+    )
+    if contexts.view_seeds != expected_view_seeds:
+        raise RuntimeError("runtime view seeds differ from checkpointable policy")
+    objective = build_fullcontext_objective(candidate_config, contract)
+    progress_before_sha256 = progress.fingerprint
+    encoder.train()
+    loss, valid_anchors, possible_anchors = _optimize_real_pair_contexts(
+        encoder,
+        optimizer,
+        objective,
+        pairs,
+        contexts,
+        contract,
+        expected_prior_optimizer_step=progress.global_optimizer_step,
+    )
+    next_model_state_sha256 = model_state_sha256(encoder)
+    next_optimizer_state_sha256 = optimizer_state_sha256(optimizer)
+    advanced = _advance_fullcontext_progress(
+        progress,
+        contract,
+        lineage,
+        next_model_state_sha256=next_model_state_sha256,
+        next_optimizer_state_sha256=next_optimizer_state_sha256,
+    )
+    _validate_adamw_state_step(
+        optimizer.state_dict(),
+        expected_step=advanced.global_optimizer_step,
+    )
+    evidence = FullContextOptimizerStep(
+        global_optimizer_step=global_optimizer_step,
+        sampler_epoch=plan.epoch,
+        sampler_batch_index=batch_index,
+        video_ids=selected_ids,
+        pair_total=pairs.pair_count,
+        unique_view_context_total=int(
+            contexts.transform_contract["unique_view_context_total"]
+        ),
+        reused_pair_side_context_references=int(
+            contexts.transform_contract["reused_pair_side_context_references"]
+        ),
+        view_seeds=contexts.view_seeds,
+        loss=float(loss),
+        valid_anchor_total=valid_anchors,
+        possible_anchor_total=possible_anchors,
+        model_state_sha256=next_model_state_sha256,
+        optimizer_state_sha256=next_optimizer_state_sha256,
+        dataset_fingerprint=progress.dataset_fingerprint,
+        active_plan_fingerprint=plan.fingerprint,
+        exact_pair_rows_sha256=exact_pair_rows_sha256,
+        representation_contract_sha256=representation.fingerprint,
+        representation_lineage_fingerprint=lineage.fingerprint,
+        progress_before_sha256=progress_before_sha256,
+        progress_after_sha256=advanced.fingerprint,
+    )
+    return FullContextStepResult(evidence=evidence, progress=advanced)
+
+
+def capture_fullcontext_backend_state() -> dict[str, Any]:
+    """Capture every backend switch that can change continuation numerics."""
+
+    return {
+        "torch_deterministic_algorithms": (
+            torch.are_deterministic_algorithms_enabled()
+        ),
+        "torch_deterministic_debug_mode": torch.get_deterministic_debug_mode(),
+        "cudnn_benchmark": torch.backends.cudnn.benchmark,
+        "cudnn_deterministic": torch.backends.cudnn.deterministic,
+        "cuda_matmul_allow_tf32": torch.backends.cuda.matmul.allow_tf32,
+        "cudnn_allow_tf32": torch.backends.cudnn.allow_tf32,
+        "sdpa_flash_enabled": torch.backends.cuda.flash_sdp_enabled(),
+        "sdpa_mem_efficient_enabled": (
+            torch.backends.cuda.mem_efficient_sdp_enabled()
+        ),
+        "sdpa_math_enabled": torch.backends.cuda.math_sdp_enabled(),
+        "cublas_workspace_config": os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
+        "cuda_device_count": torch.cuda.device_count(),
+    }
+
+
+def _backend_state_sha256(state: Mapping[str, Any]) -> str:
+    expected = {
+        "torch_deterministic_algorithms",
+        "torch_deterministic_debug_mode",
+        "cudnn_benchmark",
+        "cudnn_deterministic",
+        "cuda_matmul_allow_tf32",
+        "cudnn_allow_tf32",
+        "sdpa_flash_enabled",
+        "sdpa_mem_efficient_enabled",
+        "sdpa_math_enabled",
+        "cublas_workspace_config",
+        "cuda_device_count",
+    }
+    if set(state) != expected:
+        raise ValueError("full-context backend-state schema mismatch")
+    boolean_fields = expected - {
+        "torch_deterministic_debug_mode",
+        "cublas_workspace_config",
+        "cuda_device_count",
+    }
+    if any(not isinstance(state[key], bool) for key in boolean_fields):
+        raise ValueError("full-context backend flags must be booleans")
+    _require_integer(
+        state["torch_deterministic_debug_mode"],
+        role="torch deterministic debug mode",
+    )
+    _require_integer(state["cuda_device_count"], role="backend CUDA device count")
+    workspace = state["cublas_workspace_config"]
+    if workspace is not None and not isinstance(workspace, str):
+        raise ValueError("CUBLAS workspace contract must be a string or null")
+    return _canonical_sha256(dict(state))
+
+
+def validate_frozen_fullcontext_backend_state(state: Mapping[str, Any]) -> None:
+    _backend_state_sha256(state)
+    if (
+        state["torch_deterministic_algorithms"] is not True
+        or state["cudnn_benchmark"] is not False
+        or state["cudnn_deterministic"] is not True
+        or state["cuda_matmul_allow_tf32"] is not False
+        or state["cudnn_allow_tf32"] is not False
+        or state["sdpa_flash_enabled"] is not False
+        or state["sdpa_mem_efficient_enabled"] is not False
+        or state["sdpa_math_enabled"] is not True
+    ):
+        raise ValueError("full-context deterministic backend contract is not active")
+    if state["cuda_device_count"] and (
+        state["cublas_workspace_config"] != ":4096:8"
+    ):
+        raise ValueError("CUDA continuation lacks the frozen CUBLAS workspace")
+
+
+def configure_fullcontext_determinism() -> dict[str, Any]:
+    """Apply the frozen backend policy, refusing late CUBLAS configuration."""
+
+    if torch.cuda.device_count() and os.environ.get("CUBLAS_WORKSPACE_CONFIG") != (
+        ":4096:8"
+    ):
+        raise ValueError("CUBLAS_WORKSPACE_CONFIG must be frozen before process start")
+    torch.use_deterministic_algorithms(True)
+    torch.set_deterministic_debug_mode("error")
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
+    torch.backends.cuda.enable_flash_sdp(False)
+    torch.backends.cuda.enable_mem_efficient_sdp(False)
+    torch.backends.cuda.enable_math_sdp(True)
+    state = capture_fullcontext_backend_state()
+    validate_frozen_fullcontext_backend_state(state)
+    return state
+
+
+def restore_fullcontext_backend_state(state: Mapping[str, Any]) -> None:
+    """Restore a captured backend state exactly, including the environment key."""
+
+    _backend_state_sha256(state)
+    workspace = state["cublas_workspace_config"]
+    if workspace is None:
+        os.environ.pop("CUBLAS_WORKSPACE_CONFIG", None)
+    else:
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = workspace
+    torch.use_deterministic_algorithms(bool(state["torch_deterministic_algorithms"]))
+    torch.set_deterministic_debug_mode(int(state["torch_deterministic_debug_mode"]))
+    torch.backends.cudnn.benchmark = bool(state["cudnn_benchmark"])
+    torch.backends.cudnn.deterministic = bool(state["cudnn_deterministic"])
+    torch.backends.cuda.matmul.allow_tf32 = bool(state["cuda_matmul_allow_tf32"])
+    torch.backends.cudnn.allow_tf32 = bool(state["cudnn_allow_tf32"])
+    torch.backends.cuda.enable_flash_sdp(bool(state["sdpa_flash_enabled"]))
+    torch.backends.cuda.enable_mem_efficient_sdp(
+        bool(state["sdpa_mem_efficient_enabled"])
+    )
+    torch.backends.cuda.enable_math_sdp(bool(state["sdpa_math_enabled"]))
+    if capture_fullcontext_backend_state() != dict(state):
+        raise RuntimeError("full-context backend state did not restore exactly")
+
+
+@contextmanager
+def preserve_fullcontext_diagnostic_state(
+    encoder: nn.Module,
+) -> Any:
+    """Restore model mode, RNG streams, and backend flags after diagnostics."""
+
+    rng_state = capture_fullcontext_rng_state()
+    rng_sha256 = _rng_state_sha256(rng_state)
+    backend_state = capture_fullcontext_backend_state()
+    backend_sha256 = _backend_state_sha256(backend_state)
+    model_sha256 = model_state_sha256(encoder)
+    was_training = encoder.training
+    try:
+        yield {
+            "rng_state_sha256": rng_sha256,
+            "backend_state_sha256": backend_sha256,
+            "model_state_sha256": model_sha256,
+        }
+    finally:
+        encoder.train(was_training)
+        restore_fullcontext_backend_state(backend_state)
+        restore_fullcontext_rng_state(rng_state)
+        if (
+            _rng_state_sha256(capture_fullcontext_rng_state()) != rng_sha256
+            or _backend_state_sha256(capture_fullcontext_backend_state())
+            != backend_sha256
+            or model_state_sha256(encoder) != model_sha256
+        ):
+            raise RuntimeError("diagnostic evaluation changed a restored state")
 
 
 def capture_fullcontext_rng_state() -> dict[str, Any]:
@@ -1475,7 +2489,9 @@ def build_fullcontext_checkpoint_payload(
 ) -> dict[str, Any]:
     """Snapshot a complete continuation state; the checkpoint grants no authority."""
 
+    validate_fullcontext_progress_schedule(progress, contract, lineage)
     validate_fullcontext_optimizer(optimizer, contract)
+    _validate_optimizer_model_binding(optimizer, model)
     _validate_adamw_state_step(
         optimizer.state_dict(),
         expected_step=progress.global_optimizer_step,
@@ -1487,7 +2503,16 @@ def build_fullcontext_checkpoint_payload(
     ):
         raise ValueError("active sampler plan differs from checkpoint lineage")
     model_state = _clone_model_state(model)
+    optimizer_state = copy.deepcopy(optimizer.state_dict())
+    if (
+        model_state_sha256(model_state) != progress.current_model_state_sha256
+        or optimizer_state_sha256(optimizer_state)
+        != progress.current_optimizer_state_sha256
+    ):
+        raise ValueError("checkpoint model/optimizer differ from progress state")
     rng_state = capture_fullcontext_rng_state()
+    backend_state = capture_fullcontext_backend_state()
+    validate_frozen_fullcontext_backend_state(backend_state)
     return {
         "schema_version": 1,
         "artifact_type": "pams_cycleback_fullcontext_checkpoint_v1",
@@ -1501,15 +2526,19 @@ def build_fullcontext_checkpoint_payload(
         "model_state": model_state,
         "model_state_sha256": model_state_sha256(model_state),
         "optimizer_name": "AdamW",
-        "optimizer_state": copy.deepcopy(optimizer.state_dict()),
+        "optimizer_state": optimizer_state,
+        "optimizer_state_sha256": optimizer_state_sha256(optimizer_state),
         "scheduler": "none",
         "scheduler_state": None,
         "rng_state": rng_state,
         "rng_state_sha256": _rng_state_sha256(rng_state),
+        "backend_state": backend_state,
+        "backend_state_sha256": _backend_state_sha256(backend_state),
         "view_seed_state": _view_seed_state(contract, progress),
         "determinism_contract": {
             "length_bucket_plan_and_cursor_checkpointed": True,
             "python_numpy_torch_cpu_all_cuda_rng_checkpointed": True,
+            "torch_cudnn_tf32_sdpa_cublas_backend_state_checkpointed": True,
             "view_seed_policy_and_next_seeds_checkpointed": True,
             "same_view_same_range_encoded_once": True,
             "exact_length_context_buckets": True,
@@ -1638,6 +2667,132 @@ def _parse_length_bucket_plan(
     return plan
 
 
+def _parse_mechanism_seed_load_receipt(
+    payload: Mapping[str, Any],
+    *,
+    expected_fingerprint: str,
+) -> MechanismSeedLoadReceipt:
+    expected = {
+        "schema_version",
+        "artifact_type",
+        "checkpoint_sha256",
+        "checkpoint_bytes",
+        "learned_model_state_sha256",
+        "optimizer_state_sha256",
+        "optimizer_step",
+        "rng_state_sha256",
+        "backend_state_sha256",
+        "trainer_contract_fingerprint",
+        "representation_contract_sha256",
+        "representation_lineage_fingerprint",
+        "loaded_as_epoch1_start",
+        "direct_epoch150_start_authorized",
+        "checkpoint_self_authorizes_training",
+    }
+    if set(payload) != expected or (
+        payload["schema_version"] != 1
+        or payload["artifact_type"]
+        != "pams_cycleback_mechanism_seed_load_receipt_v1"
+        or payload["loaded_as_epoch1_start"] is not True
+        or payload["direct_epoch150_start_authorized"] is not False
+        or payload["checkpoint_self_authorizes_training"] is not False
+    ):
+        raise ValueError("mechanism seed load receipt schema mismatch")
+    receipt = MechanismSeedLoadReceipt(
+        checkpoint_sha256=payload["checkpoint_sha256"],
+        checkpoint_bytes=payload["checkpoint_bytes"],
+        learned_model_state_sha256=payload["learned_model_state_sha256"],
+        optimizer_state_sha256=payload["optimizer_state_sha256"],
+        optimizer_step=payload["optimizer_step"],
+        rng_state_sha256=payload["rng_state_sha256"],
+        backend_state_sha256=payload["backend_state_sha256"],
+        trainer_contract_fingerprint=payload["trainer_contract_fingerprint"],
+        representation_contract_sha256=payload["representation_contract_sha256"],
+        representation_lineage_fingerprint=payload[
+            "representation_lineage_fingerprint"
+        ],
+    )
+    if receipt.to_dict() != dict(payload) or receipt.fingerprint != expected_fingerprint:
+        raise ValueError("mechanism seed load receipt fingerprint mismatch")
+    return receipt
+
+
+def _parse_epoch150_transition(
+    payload: Mapping[str, Any],
+    *,
+    expected_fingerprint: str,
+) -> Epoch150TransitionBindings:
+    expected = {
+        "schema_version",
+        "artifact_type",
+        "candidate_id",
+        "epoch11_checkpoint_sha256",
+        "epoch11_checkpoint_bytes",
+        "epoch11_model_state_sha256",
+        "epoch11_optimizer_state_sha256",
+        "epoch11_progress_sha256",
+        "trainer_contract_fingerprint",
+        "representation_contract_sha256",
+        "representation_lineage_fingerprint",
+        "fixed_pair_identity_sha256",
+        "fixed_pair_payload_sha256",
+        "epoch11_gate_outcome_sha256",
+        "epoch11_gate_outcome_bytes",
+        "threshold_receipt_sha256",
+        "threshold_receipt_bytes",
+        "epoch150_launch_authorization_sha256",
+        "epoch150_launch_authorization_bytes",
+        "scientific_gate_passed",
+        "epoch150_train337_continuation_authorized",
+        "development_evaluation_authorized",
+        "sealed_evaluation_authorized",
+        "readout_authorized",
+    }
+    if set(payload) != expected or (
+        payload["schema_version"] != 1
+        or payload["artifact_type"]
+        != "pams_cycleback_epoch150_transition_bindings_v1"
+        or payload["scientific_gate_passed"] is not True
+        or payload["epoch150_train337_continuation_authorized"] is not True
+        or payload["development_evaluation_authorized"] is not False
+        or payload["sealed_evaluation_authorized"] is not False
+        or payload["readout_authorized"] is not False
+    ):
+        raise ValueError("epoch150 transition binding schema mismatch")
+    transition = Epoch150TransitionBindings(
+        candidate_id=payload["candidate_id"],
+        epoch11_checkpoint_sha256=payload["epoch11_checkpoint_sha256"],
+        epoch11_checkpoint_bytes=payload["epoch11_checkpoint_bytes"],
+        epoch11_model_state_sha256=payload["epoch11_model_state_sha256"],
+        epoch11_optimizer_state_sha256=payload[
+            "epoch11_optimizer_state_sha256"
+        ],
+        epoch11_progress_sha256=payload["epoch11_progress_sha256"],
+        trainer_contract_fingerprint=payload["trainer_contract_fingerprint"],
+        representation_contract_sha256=payload["representation_contract_sha256"],
+        representation_lineage_fingerprint=payload[
+            "representation_lineage_fingerprint"
+        ],
+        fixed_pair_identity_sha256=payload["fixed_pair_identity_sha256"],
+        fixed_pair_payload_sha256=payload["fixed_pair_payload_sha256"],
+        epoch11_gate_outcome_sha256=payload["epoch11_gate_outcome_sha256"],
+        epoch11_gate_outcome_bytes=payload["epoch11_gate_outcome_bytes"],
+        threshold_receipt_sha256=payload["threshold_receipt_sha256"],
+        threshold_receipt_bytes=payload["threshold_receipt_bytes"],
+        epoch150_launch_authorization_sha256=payload[
+            "epoch150_launch_authorization_sha256"
+        ],
+        epoch150_launch_authorization_bytes=payload[
+            "epoch150_launch_authorization_bytes"
+        ],
+    )
+    if transition.to_dict() != dict(payload) or transition.fingerprint != (
+        expected_fingerprint
+    ):
+        raise ValueError("epoch150 transition binding fingerprint mismatch")
+    return transition
+
+
 def _parse_progress(payload: Mapping[str, Any]) -> FullContextProgress:
     expected = {
         "phase",
@@ -1645,14 +2800,56 @@ def _parse_progress(payload: Mapping[str, Any]) -> FullContextProgress:
         "completed_epochs",
         "continuation_optimizer_steps",
         "global_optimizer_step",
+        "units",
+        "dataset_fingerprint",
+        "mechanism_seed_load_receipt",
+        "mechanism_seed_load_receipt_sha256",
+        "current_model_state_sha256",
+        "current_optimizer_state_sha256",
+        "completed_plan_prefix",
         "active_plan",
         "active_plan_fingerprint",
         "sampler_cursor",
+        "plan_dataset_prefix_sha256",
         "epoch11_prefix_checkpoint_sha256",
         "epoch11_prefix_checkpoint_bytes",
+        "epoch150_transition",
+        "epoch150_transition_sha256",
     }
     if set(payload) != expected:
         raise ValueError("checkpoint progress schema mismatch")
+    raw_units = payload["units"]
+    raw_receipt = payload["mechanism_seed_load_receipt"]
+    raw_prefix = payload["completed_plan_prefix"]
+    if (
+        not isinstance(raw_units, list)
+        or not isinstance(raw_receipt, Mapping)
+        or not isinstance(payload["mechanism_seed_load_receipt_sha256"], str)
+        or not isinstance(raw_prefix, list)
+    ):
+        raise ValueError("checkpoint permanent progress lineage is malformed")
+    units = tuple(_parse_training_unit(item) for item in raw_units)
+    receipt = _parse_mechanism_seed_load_receipt(
+        raw_receipt,
+        expected_fingerprint=payload["mechanism_seed_load_receipt_sha256"],
+    )
+    completed_prefix: list[CompletedEpochPlan] = []
+    for raw in raw_prefix:
+        if not isinstance(raw, Mapping) or set(raw) != {
+            "epoch",
+            "plan_fingerprint",
+            "batch_total",
+            "cumulative_batch_total",
+        }:
+            raise ValueError("checkpoint completed plan-prefix schema mismatch")
+        completed_prefix.append(
+            CompletedEpochPlan(
+                epoch=raw["epoch"],
+                plan_fingerprint=raw["plan_fingerprint"],
+                batch_total=raw["batch_total"],
+                cumulative_batch_total=raw["cumulative_batch_total"],
+            )
+        )
     active_payload = payload["active_plan"]
     active_fingerprint = payload["active_plan_fingerprint"]
     if active_payload is None:
@@ -1668,11 +2865,34 @@ def _parse_progress(payload: Mapping[str, Any]) -> FullContextProgress:
             active_payload,
             expected_fingerprint=active_fingerprint,
         )
+    raw_transition = payload["epoch150_transition"]
+    transition_fingerprint = payload["epoch150_transition_sha256"]
+    if raw_transition is None:
+        if transition_fingerprint is not None:
+            raise ValueError("absent epoch150 transition has a fingerprint")
+        transition = None
+    else:
+        if not isinstance(raw_transition, Mapping) or not isinstance(
+            transition_fingerprint, str
+        ):
+            raise ValueError("epoch150 transition schema mismatch")
+        transition = _parse_epoch150_transition(
+            raw_transition,
+            expected_fingerprint=transition_fingerprint,
+        )
     progress = FullContextProgress(
         phase=payload["phase"],
         target_epoch=payload["target_epoch"],
         completed_epochs=payload["completed_epochs"],
         continuation_optimizer_steps=payload["continuation_optimizer_steps"],
+        units=units,
+        dataset_fingerprint=payload["dataset_fingerprint"],
+        mechanism_seed_load_receipt=receipt,
+        current_model_state_sha256=payload["current_model_state_sha256"],
+        current_optimizer_state_sha256=payload[
+            "current_optimizer_state_sha256"
+        ],
+        completed_plan_prefix=tuple(completed_prefix),
         active_plan=active_plan,
         sampler_cursor=payload["sampler_cursor"],
         epoch11_prefix_checkpoint_sha256=payload[
@@ -1681,6 +2901,7 @@ def _parse_progress(payload: Mapping[str, Any]) -> FullContextProgress:
         epoch11_prefix_checkpoint_bytes=payload[
             "epoch11_prefix_checkpoint_bytes"
         ],
+        epoch150_transition=transition,
     )
     if progress.to_dict() != dict(payload):
         raise ValueError("checkpoint progress derived fields mismatch")
@@ -1708,10 +2929,13 @@ def validate_fullcontext_checkpoint_payload(
         "model_state_sha256",
         "optimizer_name",
         "optimizer_state",
+        "optimizer_state_sha256",
         "scheduler",
         "scheduler_state",
         "rng_state",
         "rng_state_sha256",
+        "backend_state",
+        "backend_state_sha256",
         "view_seed_state",
         "determinism_contract",
         "authority_boundaries",
@@ -1733,6 +2957,7 @@ def validate_fullcontext_checkpoint_payload(
     progress = _parse_progress(progress_payload)
     if progress.phase != expected_phase:
         raise ValueError("full-context checkpoint phase mismatch")
+    validate_fullcontext_progress_schedule(progress, contract, lineage)
     if progress.active_plan is not None and (
         progress.active_plan.trainer_contract_fingerprint != contract.fingerprint
         or progress.active_plan.representation_lineage_fingerprint
@@ -1742,6 +2967,7 @@ def validate_fullcontext_checkpoint_payload(
     model_state = payload["model_state"]
     if not isinstance(model_state, Mapping) or (
         model_state_sha256(model_state) != payload["model_state_sha256"]
+        or payload["model_state_sha256"] != progress.current_model_state_sha256
     ):
         raise ValueError("full-context checkpoint model-state digest mismatch")
     if (
@@ -1751,20 +2977,34 @@ def validate_fullcontext_checkpoint_payload(
         or payload["scheduler_state"] is not None
     ):
         raise ValueError("full-context checkpoint optimizer/scheduler mismatch")
+    _validate_adamw_state_contract(payload["optimizer_state"], contract)
     _validate_adamw_state_step(
         payload["optimizer_state"],
         expected_step=progress.global_optimizer_step,
     )
+    observed_optimizer_sha256 = optimizer_state_sha256(payload["optimizer_state"])
+    if (
+        observed_optimizer_sha256 != payload["optimizer_state_sha256"]
+        or observed_optimizer_sha256 != progress.current_optimizer_state_sha256
+    ):
+        raise ValueError("checkpoint optimizer bytes differ from progress state")
     rng_state = payload["rng_state"]
     if not isinstance(rng_state, Mapping) or (
         _rng_state_sha256(rng_state) != payload["rng_state_sha256"]
     ):
         raise ValueError("full-context checkpoint RNG-state digest mismatch")
+    backend_state = payload["backend_state"]
+    if not isinstance(backend_state, Mapping) or (
+        _backend_state_sha256(backend_state) != payload["backend_state_sha256"]
+    ):
+        raise ValueError("full-context checkpoint backend-state digest mismatch")
+    validate_frozen_fullcontext_backend_state(backend_state)
     if payload["view_seed_state"] != _view_seed_state(contract, progress):
         raise ValueError("full-context checkpoint next view seeds mismatch")
     if payload["determinism_contract"] != {
         "length_bucket_plan_and_cursor_checkpointed": True,
         "python_numpy_torch_cpu_all_cuda_rng_checkpointed": True,
+        "torch_cudnn_tf32_sdpa_cublas_backend_state_checkpointed": True,
         "view_seed_policy_and_next_seeds_checkpointed": True,
         "same_view_same_range_encoded_once": True,
         "exact_length_context_buckets": True,
@@ -1837,6 +3077,8 @@ def load_fullcontext_checkpoint(
 
     _require_sha256(expected_sha256, role="expected checkpoint")
     _require_integer(expected_bytes, role="expected checkpoint bytes", minimum=1)
+    current_backend = capture_fullcontext_backend_state()
+    validate_frozen_fullcontext_backend_state(current_backend)
     encoded, identity = stable_file_bytes(path)
     if identity != (expected_sha256, expected_bytes):
         raise ValueError("full-context checkpoint bytes differ from authority")
@@ -1853,17 +3095,28 @@ def load_fullcontext_checkpoint(
         lineage,
         expected_phase=expected_phase,
     )
+    if dict(value["backend_state"]) != current_backend:
+        raise ValueError("checkpoint backend differs from active process contract")
     validate_fullcontext_optimizer(optimizer, contract)
+    _validate_optimizer_model_binding(optimizer, model)
     model.load_state_dict(value["model_state"], strict=True)
     optimizer.load_state_dict(value["optimizer_state"])
     validate_fullcontext_optimizer(optimizer, contract)
+    _validate_optimizer_model_binding(optimizer, model)
     _validate_adamw_state_step(
         optimizer.state_dict(),
         expected_step=progress.global_optimizer_step,
     )
+    restore_fullcontext_backend_state(value["backend_state"])
     restore_fullcontext_rng_state(value["rng_state"])
     if model_state_sha256(model) != value["model_state_sha256"]:
         raise RuntimeError("restored full-context model state differs from checkpoint")
+    if optimizer_state_sha256(optimizer) != progress.current_optimizer_state_sha256:
+        raise RuntimeError("restored optimizer state differs from checkpoint progress")
+    if _rng_state_sha256(capture_fullcontext_rng_state()) != value["rng_state_sha256"]:
+        raise RuntimeError("restored full-context RNG differs from checkpoint")
+    if capture_fullcontext_backend_state() != dict(value["backend_state"]):
+        raise RuntimeError("restored full-context backend differs from checkpoint")
     return progress
 
 
@@ -1875,6 +3128,7 @@ def initialize_epoch150_from_exact_epoch11_checkpoint(
     contract: FullContextTrainerContract,
     lineage: FullContextLineage,
     epoch12_plan: LengthBucketPlan,
+    transition: Epoch150TransitionBindings,
     model: nn.Module,
     optimizer: Optimizer,
 ) -> FullContextProgress:
@@ -1897,18 +3151,51 @@ def initialize_epoch150_from_exact_epoch11_checkpoint(
         or prefix.sampler_cursor != 0
     ):
         raise ValueError("epoch150 requires an exactly completed epoch11 prefix")
+    validate_fullcontext_progress_schedule(prefix, contract, lineage)
+    expected_epoch11_steps = sum(
+        len(
+            build_length_bucket_plan(
+                prefix.units,
+                contract,
+                lineage,
+                epoch=epoch,
+            ).batches
+        )
+        for epoch in range(1, _EPOCH11_TARGET + 1)
+    )
+    if prefix.continuation_optimizer_steps != expected_epoch11_steps:
+        raise ValueError("epoch11 optimizer steps differ from epochs 1 through 11")
     if (
         epoch12_plan.trainer_contract_fingerprint != contract.fingerprint
         or epoch12_plan.representation_lineage_fingerprint != lineage.fingerprint
     ):
         raise ValueError("epoch12 sampler plan differs from the exact epoch11 lineage")
+    expected_epoch12 = build_length_bucket_plan(
+        prefix.units,
+        contract,
+        lineage,
+        epoch=_EPOCH11_TARGET + 1,
+    )
+    if epoch12_plan.to_dict() != expected_epoch12.to_dict():
+        raise ValueError("epoch12 plan is not the deterministic continuation prefix")
+    if (
+        transition.candidate_id != contract.candidate_id
+        or transition.epoch11_checkpoint_sha256 != expected_sha256
+        or transition.epoch11_checkpoint_bytes != expected_bytes
+        or transition.epoch11_model_state_sha256 != model_state_sha256(model)
+        or transition.epoch11_optimizer_state_sha256
+        != optimizer_state_sha256(optimizer)
+        or transition.epoch11_progress_sha256 != prefix.fingerprint
+        or transition.trainer_contract_fingerprint != contract.fingerprint
+        or transition.representation_contract_sha256
+        != lineage.representation_contract_sha256
+        or transition.representation_lineage_fingerprint != lineage.fingerprint
+    ):
+        raise ValueError("epoch150 gate/threshold/launch lineage differs from epoch11")
     return initial_epoch150_progress(
         epoch12_plan,
-        epoch11_checkpoint_sha256=expected_sha256,
-        epoch11_checkpoint_bytes=expected_bytes,
-        epoch11_continuation_optimizer_steps=(
-            prefix.continuation_optimizer_steps
-        ),
+        completed_epoch11_progress=prefix,
+        transition=transition,
     )
 
 
@@ -1929,7 +3216,9 @@ def validate_mechanism_seed_checkpoint_payload(
         "artifact_type",
         "status",
         "candidate_id",
+        "trainer_contract",
         "trainer_contract_fingerprint",
+        "representation_contract_sha256",
         "lineage",
         "lineage_fingerprint",
         "completed_optimizer_steps",
@@ -1939,11 +3228,15 @@ def validate_mechanism_seed_checkpoint_payload(
         "model_state_role",
         "optimizer_name",
         "optimizer_state",
+        "optimizer_state_sha256",
         "scheduler",
         "scheduler_state",
         "rng_state",
         "rng_state_sha256",
+        "backend_state",
+        "backend_state_sha256",
         "next_view_seed_state",
+        "epoch1_start_contract",
         "authority_boundaries",
     }
     if set(payload) != expected or (
@@ -1952,7 +3245,10 @@ def validate_mechanism_seed_checkpoint_payload(
         != "pams_conventional_cycleback_mechanism_seed_checkpoint_v1"
         or payload["status"] != "passed"
         or payload["candidate_id"] != contract.candidate_id
+        or payload["trainer_contract"] != contract.to_dict()
         or payload["trainer_contract_fingerprint"] != contract.fingerprint
+        or payload["representation_contract_sha256"]
+        != lineage.representation_contract_sha256
         or payload["lineage"] != lineage.mechanism_seed_predecessor_dict()
         or payload["lineage_fingerprint"]
         != _canonical_sha256(lineage.mechanism_seed_predecessor_dict())
@@ -1973,15 +3269,26 @@ def validate_mechanism_seed_checkpoint_payload(
         raise ValueError("mechanism learned-L state digest mismatch")
     if not isinstance(payload["optimizer_state"], Mapping):
         raise ValueError("mechanism seed checkpoint lacks optimizer state")
+    _validate_adamw_state_contract(payload["optimizer_state"], contract)
     _validate_adamw_state_step(
         payload["optimizer_state"],
         expected_step=_MECHANISM_OPTIMIZER_STEPS,
     )
+    if optimizer_state_sha256(payload["optimizer_state"]) != payload[
+        "optimizer_state_sha256"
+    ]:
+        raise ValueError("mechanism optimizer-state digest mismatch")
     rng_state = payload["rng_state"]
     if not isinstance(rng_state, Mapping) or (
         _rng_state_sha256(rng_state) != payload["rng_state_sha256"]
     ):
         raise ValueError("mechanism seed checkpoint RNG-state digest mismatch")
+    backend_state = payload["backend_state"]
+    if not isinstance(backend_state, Mapping) or (
+        _backend_state_sha256(backend_state) != payload["backend_state_sha256"]
+    ):
+        raise ValueError("mechanism seed checkpoint backend-state digest mismatch")
+    validate_frozen_fullcontext_backend_state(backend_state)
     mechanism_view_digest = hashlib.sha256()
     for step in range(1, _MECHANISM_OPTIMIZER_STEPS + 1):
         consumed = independent_view_seeds(base_seed=contract.seed, step=step)
@@ -2005,6 +3312,13 @@ def validate_mechanism_seed_checkpoint_payload(
     }
     if payload["next_view_seed_state"] != expected_view_state:
         raise ValueError("mechanism seed next-view state mismatch")
+    if payload["epoch1_start_contract"] != {
+        "loaded_state_is_epoch1_start": True,
+        "optimizer_state_continues_exact_step256": True,
+        "optimizer_reset_allowed": False,
+        "direct_epoch150_start_authorized": False,
+    }:
+        raise ValueError("mechanism seed epoch-one start contract mismatch")
     if payload["authority_boundaries"] != _authority_boundaries():
         raise ValueError("mechanism checkpoint may not self-authorize continuation")
 
@@ -2018,7 +3332,7 @@ def load_mechanism_seed_checkpoint(
     lineage: FullContextLineage,
     model: nn.Module,
     optimizer: Optimizer,
-) -> None:
+) -> MechanismSeedLoadReceipt:
     """Restore exact learned L only after byte and semantic verification."""
 
     if (
@@ -2026,6 +3340,8 @@ def load_mechanism_seed_checkpoint(
         or expected_bytes != lineage.mechanism_seed_checkpoint_bytes
     ):
         raise ValueError("mechanism seed identity differs from frozen lineage")
+    current_backend = capture_fullcontext_backend_state()
+    validate_frozen_fullcontext_backend_state(current_backend)
     encoded, identity = stable_file_bytes(path)
     if identity != (expected_sha256, expected_bytes):
         raise ValueError("mechanism seed checkpoint bytes differ from authority")
@@ -2037,17 +3353,45 @@ def load_mechanism_seed_checkpoint(
     if not isinstance(value, Mapping):
         raise ValueError("mechanism seed checkpoint root must be a mapping")
     validate_mechanism_seed_checkpoint_payload(value, contract, lineage)
+    if dict(value["backend_state"]) != current_backend:
+        raise ValueError("mechanism seed backend differs from active process contract")
     validate_fullcontext_optimizer(optimizer, contract)
+    _validate_optimizer_model_binding(optimizer, model)
     model.load_state_dict(value["model_state"], strict=True)
     optimizer.load_state_dict(value["optimizer_state"])
     validate_fullcontext_optimizer(optimizer, contract)
+    _validate_optimizer_model_binding(optimizer, model)
     _validate_adamw_state_step(
         optimizer.state_dict(),
         expected_step=_MECHANISM_OPTIMIZER_STEPS,
     )
+    restore_fullcontext_backend_state(value["backend_state"])
     restore_fullcontext_rng_state(value["rng_state"])
-    if model_state_sha256(model) != lineage.mechanism_learned_model_state_sha256:
-        raise RuntimeError("restored mechanism seed is not exact learned L")
+    if (
+        model_state_sha256(model)
+        != lineage.mechanism_learned_model_state_sha256
+        or optimizer_state_sha256(optimizer) != value["optimizer_state_sha256"]
+        or _rng_state_sha256(capture_fullcontext_rng_state())
+        != value["rng_state_sha256"]
+        or _backend_state_sha256(capture_fullcontext_backend_state())
+        != value["backend_state_sha256"]
+    ):
+        raise RuntimeError("restored mechanism seed differs from exact learned L state")
+    receipt = MechanismSeedLoadReceipt(
+        checkpoint_sha256=expected_sha256,
+        checkpoint_bytes=expected_bytes,
+        learned_model_state_sha256=lineage.mechanism_learned_model_state_sha256,
+        optimizer_state_sha256=value["optimizer_state_sha256"],
+        optimizer_step=_MECHANISM_OPTIMIZER_STEPS,
+        rng_state_sha256=value["rng_state_sha256"],
+        backend_state_sha256=value["backend_state_sha256"],
+        trainer_contract_fingerprint=contract.fingerprint,
+        representation_contract_sha256=lineage.representation_contract_sha256,
+        representation_lineage_fingerprint=lineage.fingerprint,
+    )
+    if not receipt.loaded_as_epoch1_start:
+        raise RuntimeError("mechanism learned-L was not loaded as the epoch-one start")
+    return receipt
 
 
 def pair_context_fingerprints(
@@ -2103,22 +3447,56 @@ def _finite_ratio(numerator: float, denominator: float) -> float | None:
 
 def evaluate_unified2d_epoch11_label_free_controls(
     encoder: PAMSEncoder,
-    objective: ConventionalCycleBackLoss,
     pairs: NativeWindowPairBatch,
     contexts: PairSegmentContexts,
     candidate_config: ConventionalCycleBackConfig,
     contract: FullContextTrainerContract,
     representation: FullContextRepresentationContract,
     lineage: FullContextLineage,
+    progress: FullContextProgress,
     *,
+    epoch11_checkpoint_sha256: str,
+    epoch11_checkpoint_bytes: int,
+    expected_epoch11_model_state_sha256: str,
+    expected_epoch11_optimizer_state_sha256: str,
     expected_pair_identity_sha256: str,
     expected_pair_payload_sha256: str,
 ) -> dict[str, Any]:
     """Evaluate the typed v4e null adapter; diagnostic contexts never backpropagate."""
 
     validate_representation_contract_lineage(representation, lineage)
+    validate_fullcontext_candidate_config(candidate_config, contract)
+    validate_fullcontext_progress_schedule(progress, contract, lineage)
+    _require_sha256(epoch11_checkpoint_sha256, role="epoch11 checkpoint")
+    _require_integer(
+        epoch11_checkpoint_bytes,
+        role="epoch11 checkpoint bytes",
+        minimum=1,
+    )
+    _require_sha256(
+        expected_epoch11_model_state_sha256,
+        role="expected epoch11 model state",
+    )
+    _require_sha256(
+        expected_epoch11_optimizer_state_sha256,
+        role="expected epoch11 optimizer state",
+    )
+    if (
+        progress.phase != "epoch11"
+        or progress.completed_epochs != _EPOCH11_TARGET
+        or progress.active_plan is not None
+        or progress.sampler_cursor != 0
+        or progress.current_model_state_sha256
+        != expected_epoch11_model_state_sha256
+        or progress.current_optimizer_state_sha256
+        != expected_epoch11_optimizer_state_sha256
+        or model_state_sha256(encoder) != expected_epoch11_model_state_sha256
+    ):
+        raise ValueError("epoch11 controls require the exact completed checkpoint state")
     if (
         representation.representation_family != "v4e_unified2d_coco17_padded33"
+        or representation.support_channel_count != 17
+        or representation.support_channel_to_pose_joint_indices != tuple(range(17))
         or representation.diagnostic_adapter
         != "unified2d_coco17_joint_nulls_v1"
     ):
@@ -2130,11 +3508,12 @@ def evaluate_unified2d_epoch11_label_free_controls(
         or observed_payload != expected_pair_payload_sha256
     ):
         raise ValueError("epoch11 evaluation pairs differ from the sealed fixed set")
-    was_training = encoder.training
-    encoder.eval()
+    objective = build_fullcontext_objective(candidate_config, contract)
+    validate_frozen_fullcontext_backend_state(capture_fullcontext_backend_state())
     conditions: dict[str, dict[str, Any]] = {}
     null_contracts: dict[str, Any] = {}
-    with torch.inference_mode():
+    with preserve_fullcontext_diagnostic_state(encoder) as boundary, torch.inference_mode():
+        encoder.eval()
         real_a, real_b = encode_window_pairs(
             encoder,
             pairs,
@@ -2214,7 +3593,6 @@ def evaluate_unified2d_epoch11_label_free_controls(
             pe_off_b,
             pairs,
         )
-    encoder.train(was_training)
     real_error = float(conditions["real"]["symmetric_position_mse"])
     ratios = {
         name: _finite_ratio(
@@ -2242,6 +3620,25 @@ def evaluate_unified2d_epoch11_label_free_controls(
         "pair_payload_sha256": observed_payload,
         "pair_total": pairs.pair_count,
         "view_seeds": list(contexts.view_seeds),
+        "bindings": {
+            "epoch11_checkpoint_sha256": epoch11_checkpoint_sha256,
+            "epoch11_checkpoint_bytes": epoch11_checkpoint_bytes,
+            "epoch11_model_state_sha256": expected_epoch11_model_state_sha256,
+            "epoch11_optimizer_state_sha256": (
+                expected_epoch11_optimizer_state_sha256
+            ),
+            "epoch11_progress_sha256": progress.fingerprint,
+            "plan_dataset_prefix_sha256": progress.plan_dataset_prefix_sha256,
+            "trainer_contract_fingerprint": contract.fingerprint,
+            "representation_contract_sha256": representation.fingerprint,
+            "representation_lineage_fingerprint": lineage.fingerprint,
+            "pair_identity_sha256": observed_identity,
+            "pair_payload_sha256": observed_payload,
+            "pre_gate_rng_state_sha256": boundary["rng_state_sha256"],
+            "pre_gate_backend_state_sha256": boundary["backend_state_sha256"],
+            "pre_gate_model_state_sha256": boundary["model_state_sha256"],
+            "rng_backend_and_model_restored_by_finally": True,
+        },
         "conditions": conditions,
         "ratios": ratios,
         "null_context_contracts": null_contracts,
@@ -2324,9 +3721,18 @@ def _criterion(value: float | None, *, relation: str, threshold: float) -> dict[
 def epoch11_gate_decision(
     controls: Mapping[str, Any],
     thresholds: Epoch11GateThresholds,
+    *,
+    threshold_receipt_sha256: str,
+    threshold_receipt_bytes: int,
 ) -> dict[str, Any]:
     """Return scientific eligibility only; a separate authority must launch 150."""
 
+    _require_sha256(threshold_receipt_sha256, role="epoch11 threshold receipt")
+    _require_integer(
+        threshold_receipt_bytes,
+        role="epoch11 threshold receipt bytes",
+        minimum=1,
+    )
     if (
         controls.get("artifact_type")
         != "pams_cycleback_epoch11_label_free_controls_v1"
@@ -2337,8 +3743,49 @@ def epoch11_gate_decision(
         raise ValueError("epoch11 controls contract mismatch")
     conditions = controls.get("conditions")
     ratios = controls.get("ratios")
-    if not isinstance(conditions, Mapping) or not isinstance(ratios, Mapping):
+    bindings = controls.get("bindings")
+    expected_binding_keys = {
+        "epoch11_checkpoint_sha256",
+        "epoch11_checkpoint_bytes",
+        "epoch11_model_state_sha256",
+        "epoch11_optimizer_state_sha256",
+        "epoch11_progress_sha256",
+        "plan_dataset_prefix_sha256",
+        "trainer_contract_fingerprint",
+        "representation_contract_sha256",
+        "representation_lineage_fingerprint",
+        "pair_identity_sha256",
+        "pair_payload_sha256",
+        "pre_gate_rng_state_sha256",
+        "pre_gate_backend_state_sha256",
+        "pre_gate_model_state_sha256",
+        "rng_backend_and_model_restored_by_finally",
+    }
+    if (
+        not isinstance(conditions, Mapping)
+        or not isinstance(ratios, Mapping)
+        or not isinstance(bindings, Mapping)
+        or set(bindings) != expected_binding_keys
+        or bindings.get("rng_backend_and_model_restored_by_finally") is not True
+    ):
         raise ValueError("epoch11 control metrics are missing")
+    for key in expected_binding_keys - {
+        "epoch11_checkpoint_bytes",
+        "rng_backend_and_model_restored_by_finally",
+    }:
+        _require_sha256(bindings[key], role=f"epoch11 control binding {key}")
+    _require_integer(
+        bindings["epoch11_checkpoint_bytes"],
+        role="epoch11 control checkpoint bytes",
+        minimum=1,
+    )
+    if (
+        bindings["pair_identity_sha256"] != controls.get("pair_identity_sha256")
+        or bindings["pair_payload_sha256"] != controls.get("pair_payload_sha256")
+        or bindings["epoch11_model_state_sha256"]
+        != bindings["pre_gate_model_state_sha256"]
+    ):
+        raise ValueError("epoch11 controls are not internally bound")
     required_conditions = {
         "real",
         "zero_pose",
@@ -2424,6 +3871,12 @@ def epoch11_gate_decision(
         ),
         "thresholds": thresholds.to_dict(),
         "thresholds_sha256": thresholds.fingerprint,
+        "bindings": {
+            **dict(bindings),
+            "controls_sha256": _canonical_sha256(dict(controls)),
+            "threshold_receipt_sha256": threshold_receipt_sha256,
+            "threshold_receipt_bytes": threshold_receipt_bytes,
+        },
         "criteria": criteria,
         "overall_pass": passed,
         "scientifically_eligible_for_epoch150_train337": passed,
@@ -2433,3 +3886,171 @@ def epoch11_gate_decision(
         "readout_authorized": False,
         "authorization_required_after_scientific_pass": True,
     }
+
+
+def build_epoch150_transition_bindings(
+    *,
+    gate_outcome: Mapping[str, Any],
+    gate_outcome_identity: tuple[str, int],
+    threshold_receipt: Mapping[str, Any],
+    threshold_receipt_identity: tuple[str, int],
+    launch_authorization: Mapping[str, Any],
+    launch_authorization_identity: tuple[str, int],
+    epoch11_checkpoint_identity: tuple[str, int],
+    epoch11_model_state_sha256: str,
+    epoch11_progress: FullContextProgress,
+    contract: FullContextTrainerContract,
+    representation: FullContextRepresentationContract,
+    lineage: FullContextLineage,
+) -> Epoch150TransitionBindings:
+    """Validate exact gate/threshold/launch semantics before epoch 12 exists.
+
+    The future secure adapter must additionally pin all three file identities.
+    This science layer deliberately grants no authority from paths or caller
+    values on its own.
+    """
+
+    for role, identity in (
+        ("epoch11 gate outcome", gate_outcome_identity),
+        ("epoch11 threshold receipt", threshold_receipt_identity),
+        ("epoch150 launch authorization", launch_authorization_identity),
+        ("epoch11 checkpoint", epoch11_checkpoint_identity),
+    ):
+        _require_sha256(identity[0], role=role)
+        _require_integer(identity[1], role=f"{role} bytes", minimum=1)
+    _require_sha256(epoch11_model_state_sha256, role="epoch11 model state")
+    validate_representation_contract_lineage(representation, lineage)
+    validate_fullcontext_progress_schedule(epoch11_progress, contract, lineage)
+    if (
+        epoch11_progress.phase != "epoch11"
+        or epoch11_progress.completed_epochs != _EPOCH11_TARGET
+        or epoch11_progress.active_plan is not None
+        or epoch11_progress.current_model_state_sha256
+        != epoch11_model_state_sha256
+    ):
+        raise ValueError("epoch150 transition requires completed epoch11 progress")
+    gate_bindings = gate_outcome.get("bindings")
+    if (
+        gate_outcome.get("artifact_type")
+        != "pams_cycleback_epoch11_scientific_gate_decision_v1"
+        or gate_outcome.get("overall_pass") is not True
+        or gate_outcome.get("scientifically_eligible_for_epoch150_train337")
+        is not True
+        or gate_outcome.get("epoch150_train337_continuation_authorized")
+        is not False
+        or gate_outcome.get("development_evaluation_authorized") is not False
+        or gate_outcome.get("sealed_evaluation_authorized") is not False
+        or gate_outcome.get("readout_authorized") is not False
+        or not isinstance(gate_bindings, Mapping)
+    ):
+        raise ValueError("epoch11 scientific gate outcome is not an exact PASS")
+    expected_gate_links = {
+        "epoch11_checkpoint_sha256": epoch11_checkpoint_identity[0],
+        "epoch11_checkpoint_bytes": epoch11_checkpoint_identity[1],
+        "epoch11_model_state_sha256": epoch11_model_state_sha256,
+        "epoch11_optimizer_state_sha256": (
+            epoch11_progress.current_optimizer_state_sha256
+        ),
+        "epoch11_progress_sha256": epoch11_progress.fingerprint,
+        "trainer_contract_fingerprint": contract.fingerprint,
+        "representation_contract_sha256": representation.fingerprint,
+        "representation_lineage_fingerprint": lineage.fingerprint,
+        "threshold_receipt_sha256": threshold_receipt_identity[0],
+        "threshold_receipt_bytes": threshold_receipt_identity[1],
+    }
+    if any(gate_bindings.get(key) != value for key, value in expected_gate_links.items()):
+        raise ValueError("epoch11 gate outcome lineage differs from exact checkpoint")
+    threshold_expected = {
+        "schema_version",
+        "artifact_type",
+        "status",
+        "candidate_id",
+        "thresholds_sha256",
+        "thresholds_frozen_before_execution",
+        "label_free",
+        "epoch150_train337_continuation_authorized",
+        "development_evaluation_authorized",
+        "sealed_evaluation_authorized",
+    }
+    if set(threshold_receipt) != threshold_expected or (
+        threshold_receipt["schema_version"] != 1
+        or threshold_receipt["artifact_type"]
+        != "pams_cycleback_epoch11_threshold_preregistration_receipt_v1"
+        or threshold_receipt["status"] != "frozen"
+        or threshold_receipt["candidate_id"] != contract.candidate_id
+        or threshold_receipt["thresholds_sha256"]
+        != gate_outcome.get("thresholds_sha256")
+        or threshold_receipt["thresholds_frozen_before_execution"] is not True
+        or threshold_receipt["label_free"] is not True
+        or threshold_receipt["epoch150_train337_continuation_authorized"]
+        is not False
+        or threshold_receipt["development_evaluation_authorized"] is not False
+        or threshold_receipt["sealed_evaluation_authorized"] is not False
+    ):
+        raise ValueError("epoch11 threshold preregistration receipt mismatch")
+    launch_expected = {
+        "schema_version",
+        "artifact_type",
+        "status",
+        "candidate_id",
+        "bindings",
+        "label_free",
+        "epoch150_train337_continuation_authorized",
+        "development_evaluation_authorized",
+        "sealed_evaluation_authorized",
+        "readout_authorized",
+    }
+    launch_bindings = launch_authorization.get("bindings")
+    if set(launch_authorization) != launch_expected or (
+        launch_authorization["schema_version"] != 1
+        or launch_authorization["artifact_type"]
+        != "pams_cycleback_epoch150_launch_authorization_v1"
+        or launch_authorization["status"] != "authorized"
+        or launch_authorization["candidate_id"] != contract.candidate_id
+        or launch_authorization["label_free"] is not True
+        or launch_authorization["epoch150_train337_continuation_authorized"]
+        is not True
+        or launch_authorization["development_evaluation_authorized"] is not False
+        or launch_authorization["sealed_evaluation_authorized"] is not False
+        or launch_authorization["readout_authorized"] is not False
+        or not isinstance(launch_bindings, Mapping)
+        or launch_bindings
+        != {
+            "epoch11_checkpoint_sha256": epoch11_checkpoint_identity[0],
+            "epoch11_checkpoint_bytes": epoch11_checkpoint_identity[1],
+            "epoch11_model_state_sha256": epoch11_model_state_sha256,
+            "epoch11_optimizer_state_sha256": (
+                epoch11_progress.current_optimizer_state_sha256
+            ),
+            "epoch11_progress_sha256": epoch11_progress.fingerprint,
+            "epoch11_gate_outcome_sha256": gate_outcome_identity[0],
+            "epoch11_gate_outcome_bytes": gate_outcome_identity[1],
+            "threshold_receipt_sha256": threshold_receipt_identity[0],
+            "threshold_receipt_bytes": threshold_receipt_identity[1],
+            "trainer_contract_fingerprint": contract.fingerprint,
+            "representation_contract_sha256": representation.fingerprint,
+            "representation_lineage_fingerprint": lineage.fingerprint,
+        }
+    ):
+        raise ValueError("epoch150 launch authorization lineage mismatch")
+    return Epoch150TransitionBindings(
+        candidate_id=contract.candidate_id,
+        epoch11_checkpoint_sha256=epoch11_checkpoint_identity[0],
+        epoch11_checkpoint_bytes=epoch11_checkpoint_identity[1],
+        epoch11_model_state_sha256=epoch11_model_state_sha256,
+        epoch11_optimizer_state_sha256=(
+            epoch11_progress.current_optimizer_state_sha256
+        ),
+        epoch11_progress_sha256=epoch11_progress.fingerprint,
+        trainer_contract_fingerprint=contract.fingerprint,
+        representation_contract_sha256=representation.fingerprint,
+        representation_lineage_fingerprint=lineage.fingerprint,
+        fixed_pair_identity_sha256=gate_bindings["pair_identity_sha256"],
+        fixed_pair_payload_sha256=gate_bindings["pair_payload_sha256"],
+        epoch11_gate_outcome_sha256=gate_outcome_identity[0],
+        epoch11_gate_outcome_bytes=gate_outcome_identity[1],
+        threshold_receipt_sha256=threshold_receipt_identity[0],
+        threshold_receipt_bytes=threshold_receipt_identity[1],
+        epoch150_launch_authorization_sha256=launch_authorization_identity[0],
+        epoch150_launch_authorization_bytes=launch_authorization_identity[1],
+    )

@@ -61,8 +61,17 @@ class NativeWindowPairBatch:
             ("joint_valid_a", self.joint_valid_a),
             ("joint_valid_b", self.joint_valid_b),
         ):
-            if value.shape != (pair_count, window, 17) or value.dtype is not torch.bool:
-                raise ValueError(f"{name} must be boolean [pairs, window, 17]")
+            if (
+                value.ndim != 3
+                or value.shape[:2] != (pair_count, window)
+                or value.shape[2] < 1
+                or value.dtype is not torch.bool
+            ):
+                raise ValueError(
+                    f"{name} must be boolean [pairs, window, support_channels]"
+                )
+        if self.joint_valid_a.shape != self.joint_valid_b.shape:
+            raise ValueError("paired support-channel masks must have identical shape")
         if bool(
             (self.joint_valid_a & ~self.valid_a.unsqueeze(-1)).any()
             or bool((self.joint_valid_b & ~self.valid_b.unsqueeze(-1)).any())

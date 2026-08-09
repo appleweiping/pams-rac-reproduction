@@ -29,16 +29,33 @@ own SHA; the later result and receipt bind the checkpoint SHA and byte count.
 - each unique `(video_id, stable range, augmentation view)` is encoded once;
 - contexts are encoded A then B in exact-length buckets and stable key order;
 - every pair gathers from that shared tensor by absolute source indices;
+- the sole public optimizer-step API derives epoch, plan, cursor, and next
+  augmentation step from `FullContextProgress`; lower-level loss/advance paths
+  are private and diagnostic contexts cannot enter them;
+- each emitted pair row is replayed in order against exact authorized native
+  length, stable range, A/B starts, absolute source indices, and raw/base/final
+  pair counts;
 - diagnostic zero, independent temporal shuffle, joint-mask, and PE controls
   are typed non-optimizer contexts;
+- the symmetric variance-aware objective is constructed from the frozen
+  candidate temperature, variance weight, and variance floor in both training
+  and epoch11 controls;
 - AdamW uses `lr=1e-4`, `weight_decay=1e-4`, and the exact step-256 optimizer
-  state without reset;
+  state without reset, with `foreach`, `fused`, `capturable`, and
+  `differentiable` all explicitly false;
 - scheduler is explicitly `none` because the paper does not disclose one;
 - epoch order is a deterministic label-free length-bucket plan with no dropped
   or repeated eligible training unit;
 - checkpoints include model, optimizer, epoch/step, full sampler plan/cursor,
   Python/NumPy/Torch CPU/all CUDA RNG states, next view seeds, config/source/
   image, representation integration, and mechanism lineage.
+- progress permanently binds the current model and optimizer state digests,
+  exact authorized training-unit fingerprint, deterministic per-epoch plan
+  prefix, cumulative batch total, and active cursor. Checkpoint validation
+  rehashes both states and requires the AdamW step to match progress.
+- deterministic continuation freezes deterministic algorithms/debug mode,
+  cuDNN benchmark/deterministic, matmul and cuDNN TF32, flash/memory-efficient/
+  math SDPA, CUDA device count, and the CUBLAS workspace contract.
 
 The first stage ends at exactly 11 completed train337 epochs. Its fixed,
 label-free mechanism controls may establish scientific eligibility for a
@@ -53,11 +70,14 @@ sealed `FullContextRepresentationContract` binds the 33x3 encoder input,
 coordinate system, support-channel-to-pose-joint mapping, augmentation adapter,
 diagnostic-null adapter, stable-range policy, and exact-start authority.
 
-The existing executable adapter is the v4e unified-2D COCO17-to-padded33 path.
-A MediaPipe33/v4a path may use the same sampler, optimizer, loss, and checkpoint
-core only after an independent adapter freezes its 33-joint support mapping,
-augmentation/null semantics, and exact contiguous-valid ranges. The v4a
-coverage observation does not relax or authorize the v4e representation gate.
+The optimizer core consumes typed, prepared real pair/context tensors and
+checks their support-channel count against this representation contract. The
+existing runtime preparation adapter is the v4e unified-2D
+COCO17-to-padded33 path; its COCO17 nulls remain adapter-specific. A
+MediaPipe33/v4a path may use the same single optimizer-step API only after an
+independent adapter freezes its 33-joint support mapping, augmentation/null
+semantics, and exact contiguous-valid ranges. The v4a coverage observation
+does not relax or authorize the v4e representation gate.
 
 ## Remaining prerequisite work
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import os
 import random
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
@@ -12,6 +13,7 @@ import pytest
 import torch
 
 import pams.conventional_cycleback.fullcontext_authority as authority_module
+import pams.conventional_cycleback.fullcontext_trainer as trainer_module
 from pams.conventional_cycleback.config import (
     ConventionalCycleBackConfig,
     load_conventional_cycleback_config,
@@ -27,31 +29,48 @@ from pams.conventional_cycleback.fullcontext_trainer import (
     FullContextRepresentationContract,
     FullContextTrainerContract,
     FullContextTrainingUnit,
-    advance_fullcontext_progress,
+    MechanismSeedLoadReceipt,
     atomic_save_fullcontext_checkpoint,
+    build_epoch150_transition_bindings,
     build_fullcontext_adamw,
     build_fullcontext_checkpoint_payload,
+    build_fullcontext_objective,
     build_length_bucket_plan,
+    capture_fullcontext_backend_state,
+    capture_fullcontext_rng_state,
+    configure_fullcontext_determinism,
+    evaluate_unified2d_epoch11_label_free_controls,
     epoch11_gate_decision,
     initial_epoch11_progress,
-    initial_epoch150_progress,
     initialize_epoch150_from_exact_epoch11_checkpoint,
     load_fullcontext_checkpoint,
     model_state_sha256,
-    optimize_real_pair_contexts,
+    optimizer_state_sha256,
+    run_fullcontext_optimizer_step,
     validate_fullcontext_checkpoint_payload,
+    validate_fullcontext_objective,
+    validate_fullcontext_optimizer,
     validate_mechanism_seed_checkpoint_payload,
 )
 from pams.conventional_cycleback.loss import ConventionalCycleBackLoss
 from pams.conventional_cycleback.runtime import (
     AugmentedSequenceViews,
+    PairEligibility,
+    Unified2DSequence,
+    collate_to_device,
     context_encoding_plan,
     encode_window_pairs,
     pair_segment_contexts,
+    pairs_from_batch,
+    validate_exact_authorized_pair_rows,
     zero_pair_segment_contexts,
 )
-from pams.conventional_cycleback.windows import enumerate_native_window_pairs
+from pams.conventional_cycleback.windows import (
+    NativeWindowPairBatch,
+    enumerate_native_window_pairs,
+)
 from pams.model import PAMSEncoder
+from pams.types import PoseSequence
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs/conventional_cycleback/w16_hop4_v1.yaml"
@@ -81,6 +100,19 @@ def _contract(*, tiny: bool = False) -> FullContextTrainerContract:
     )
 
 
+def _representation() -> FullContextRepresentationContract:
+    return FullContextRepresentationContract(
+        representation_family="v4e_unified2d_coco17_padded33",
+        coordinate_contract="body-centered-uniform-rms-scale-xy-z0-v1",
+        pose_joint_count=33,
+        support_channel_count=17,
+        support_channel_to_pose_joint_indices=tuple(range(17)),
+        augmentation_adapter="unified2d_masked_xy_inplane_v1",
+        diagnostic_adapter="unified2d_coco17_joint_nulls_v1",
+        stable_range_policy="v4e_exact_all_valid_track_stability_ranges_v1",
+    )
+
+
 def _lineage() -> FullContextLineage:
     return FullContextLineage(
         source_git_sha="1" * 40,
@@ -90,7 +122,7 @@ def _lineage() -> FullContextLineage:
         config_bytes=101,
         representation_integration_outcome_sha256="5" * 64,
         representation_integration_outcome_bytes=102,
-        representation_contract_sha256="c" * 64,
+        representation_contract_sha256=_representation().fingerprint,
         representation_authorization_sha256="6" * 64,
         representation_authorization_bytes=103,
         mechanism_outcome_sha256="7" * 64,
@@ -100,6 +132,26 @@ def _lineage() -> FullContextLineage:
         mechanism_seed_checkpoint_sha256="9" * 64,
         mechanism_seed_checkpoint_bytes=106,
         mechanism_learned_model_state_sha256="a" * 64,
+    )
+
+
+def _seed_receipt(
+    *,
+    tiny: bool = False,
+) -> MechanismSeedLoadReceipt:
+    contract = _contract(tiny=tiny)
+    lineage = _lineage()
+    return MechanismSeedLoadReceipt(
+        checkpoint_sha256=lineage.mechanism_seed_checkpoint_sha256,
+        checkpoint_bytes=lineage.mechanism_seed_checkpoint_bytes,
+        learned_model_state_sha256=lineage.mechanism_learned_model_state_sha256,
+        optimizer_state_sha256="d" * 64,
+        optimizer_step=256,
+        rng_state_sha256="b" * 64,
+        backend_state_sha256="c" * 64,
+        trainer_contract_fingerprint=contract.fingerprint,
+        representation_contract_sha256=_representation().fingerprint,
+        representation_lineage_fingerprint=lineage.fingerprint,
     )
 
 
@@ -130,6 +182,51 @@ def _plan(*, epoch: int = 1, tiny: bool = False):
         _lineage(),
         epoch=epoch,
     )
+
+
+def _initial_progress(*, tiny: bool = False) -> FullContextProgress:
+    return initial_epoch11_progress(
+        _plan(epoch=1, tiny=tiny),
+        mechanism_seed_load_receipt=_seed_receipt(tiny=tiny),
+    )
+
+
+def _initial_progress_for_state(
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    *,
+    tiny: bool = False,
+) -> FullContextProgress:
+    receipt = replace(
+        _seed_receipt(tiny=tiny),
+        learned_model_state_sha256=model_state_sha256(model),
+        optimizer_state_sha256=optimizer_state_sha256(optimizer),
+    )
+    return initial_epoch11_progress(
+        _plan(epoch=1, tiny=tiny),
+        mechanism_seed_load_receipt=receipt,
+    )
+
+
+def _completed_epoch11_progress(*, tiny: bool = False) -> FullContextProgress:
+    contract = _contract(tiny=tiny)
+    lineage = _lineage()
+    progress = _initial_progress(tiny=tiny)
+    while progress.active_plan is not None:
+        step = progress.next_augmentation_step
+        progress = trainer_module._advance_fullcontext_progress(
+            progress,
+            contract,
+            lineage,
+            next_model_state_sha256=f"{step:064x}"[-64:],
+            next_optimizer_state_sha256=f"{step + 10_000:064x}"[-64:],
+        )
+    return progress
+
+
+def _enable_test_determinism() -> None:
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+    configure_fullcontext_determinism()
 
 
 def _pair_inputs(
@@ -338,30 +435,32 @@ def test_representation_contract_types_coco17_and_mediapipe33_without_aliasing()
 
 
 def test_progress_binds_mid_epoch_cursor_and_exact_epoch11_prefix() -> None:
-    plan = _plan(epoch=1)
-    progress = initial_epoch11_progress(plan)
-    advanced = advance_fullcontext_progress(progress)
+    contract = _contract()
+    lineage = _lineage()
+    progress = _initial_progress()
+    advanced = trainer_module._advance_fullcontext_progress(
+        progress,
+        contract,
+        lineage,
+        next_model_state_sha256="e" * 64,
+        next_optimizer_state_sha256="f" * 64,
+    )
 
     assert advanced.completed_epochs == 0
     assert advanced.sampler_cursor == 1
     assert advanced.global_optimizer_step == 257
+    assert advanced.units == progress.units
+    assert advanced.dataset_fingerprint == progress.dataset_fingerprint
+    assert advanced.plan_dataset_prefix_sha256 != progress.plan_dataset_prefix_sha256
 
-    epoch12 = _plan(epoch=12)
-    continuation = initial_epoch150_progress(
-        epoch12,
-        epoch11_checkpoint_sha256="b" * 64,
-        epoch11_checkpoint_bytes=1234,
-        epoch11_continuation_optimizer_steps=99,
+    completed = _completed_epoch11_progress()
+    expected_steps = sum(
+        len(build_length_bucket_plan(completed.units, contract, lineage, epoch=epoch).batches)
+        for epoch in range(1, 12)
     )
-    assert continuation.completed_epochs == 11
-    assert continuation.epoch11_prefix_checkpoint_sha256 == "b" * 64
-    with pytest.raises(ValueError, match="epoch-twelve"):
-        initial_epoch150_progress(
-            plan,
-            epoch11_checkpoint_sha256="b" * 64,
-            epoch11_checkpoint_bytes=1234,
-            epoch11_continuation_optimizer_steps=99,
-        )
+    assert completed.completed_epochs == 11
+    assert completed.continuation_optimizer_steps == expected_steps
+    assert len(completed.completed_plan_prefix) == 11
 
 
 def _random_optimizer_update(
@@ -413,6 +512,7 @@ def _assert_nested_equal(first: Any, second: Any) -> None:
 def test_checkpoint_resume_restores_bitwise_model_optimizer_rng_and_view_state(
     tmp_path: Path,
 ) -> None:
+    _enable_test_determinism()
     random.seed(2026)
     np.random.seed(2026)
     torch.manual_seed(2026)
@@ -420,12 +520,18 @@ def test_checkpoint_resume_restores_bitwise_model_optimizer_rng_and_view_state(
         torch.cuda.manual_seed_all(2026)
     contract = _contract()
     lineage = _lineage()
-    progress = initial_epoch11_progress(_plan(epoch=1))
     model = torch.nn.Linear(4, 3)
     optimizer = build_fullcontext_adamw(model, contract)
     _prime_adamw_state(model, optimizer, step=256)
+    progress = _initial_progress_for_state(model, optimizer)
     _random_optimizer_update(model, optimizer)
-    progress = advance_fullcontext_progress(progress)
+    progress = trainer_module._advance_fullcontext_progress(
+        progress,
+        contract,
+        lineage,
+        next_model_state_sha256=model_state_sha256(model),
+        next_optimizer_state_sha256=optimizer_state_sha256(optimizer),
+    )
     payload = build_fullcontext_checkpoint_payload(
         model,
         optimizer,
@@ -463,6 +569,7 @@ def test_checkpoint_resume_restores_bitwise_model_optimizer_rng_and_view_state(
 
 
 def test_checkpoint_rejects_lineage_and_cursor_tampering() -> None:
+    _enable_test_determinism()
     contract = _contract()
     lineage = _lineage()
     model = torch.nn.Linear(4, 3)
@@ -473,7 +580,7 @@ def test_checkpoint_rejects_lineage_and_cursor_tampering() -> None:
         optimizer,
         contract,
         lineage,
-        initial_epoch11_progress(_plan(epoch=1)),
+        _initial_progress_for_state(model, optimizer),
     )
 
     wrong_lineage = copy.deepcopy(payload)
@@ -488,9 +595,40 @@ def test_checkpoint_rejects_lineage_and_cursor_tampering() -> None:
 
     wrong_cursor = copy.deepcopy(payload)
     wrong_cursor["progress"]["sampler_cursor"] = 10_000
-    with pytest.raises(ValueError, match="sampler cursor"):
+    with pytest.raises(ValueError, match="optimizer steps|sampler cursor"):
         validate_fullcontext_checkpoint_payload(
             wrong_cursor,
+            contract,
+            lineage,
+            expected_phase="epoch11",
+        )
+
+    wrong_dataset = copy.deepcopy(payload)
+    wrong_dataset["progress"]["dataset_fingerprint"] = "f" * 64
+    with pytest.raises(ValueError, match="dataset fingerprint"):
+        validate_fullcontext_checkpoint_payload(
+            wrong_dataset,
+            contract,
+            lineage,
+            expected_phase="epoch11",
+        )
+
+    wrong_optimizer = copy.deepcopy(payload)
+    first_state = next(iter(wrong_optimizer["optimizer_state"]["state"].values()))
+    first_state["exp_avg"].add_(1.0)
+    with pytest.raises(ValueError, match="optimizer bytes"):
+        validate_fullcontext_checkpoint_payload(
+            wrong_optimizer,
+            contract,
+            lineage,
+            expected_phase="epoch11",
+        )
+
+    decoupled_progress = copy.deepcopy(payload)
+    decoupled_progress["progress"]["current_model_state_sha256"] = "e" * 64
+    with pytest.raises(ValueError, match="progress derived fields|model-state digest"):
+        validate_fullcontext_checkpoint_payload(
+            decoupled_progress,
             contract,
             lineage,
             expected_phase="epoch11",
@@ -500,18 +638,18 @@ def test_checkpoint_rejects_lineage_and_cursor_tampering() -> None:
 def test_epoch150_initialization_restores_exact_completed_epoch11_prefix(
     tmp_path: Path,
 ) -> None:
+    _enable_test_determinism()
     contract = _contract()
     lineage = _lineage()
+    representation = _representation()
     model = torch.nn.Linear(4, 3)
     optimizer = build_fullcontext_adamw(model, contract)
-    _prime_adamw_state(model, optimizer, step=278)
-    completed = FullContextProgress(
-        phase="epoch11",
-        target_epoch=11,
-        completed_epochs=11,
-        continuation_optimizer_steps=22,
-        active_plan=None,
-        sampler_cursor=0,
+    completed = _completed_epoch11_progress()
+    _prime_adamw_state(model, optimizer, step=completed.global_optimizer_step)
+    completed = replace(
+        completed,
+        current_model_state_sha256=model_state_sha256(model),
+        current_optimizer_state_sha256=optimizer_state_sha256(optimizer),
     )
     checkpoint = tmp_path / "epoch11.pt"
     identity = atomic_save_fullcontext_checkpoint(
@@ -526,6 +664,95 @@ def test_epoch150_initialization_restores_exact_completed_epoch11_prefix(
     )
     restored_model = torch.nn.Linear(4, 3)
     restored_optimizer = build_fullcontext_adamw(restored_model, contract)
+    threshold_identity = ("d" * 64, 201)
+    gate_bindings = _control_bindings(
+        checkpoint_identity=identity,
+        model_state_sha256=model_state_sha256(model),
+        progress=completed,
+        contract=contract,
+        lineage=lineage,
+    )
+    gate = epoch11_gate_decision(
+        _controls(bindings=gate_bindings),
+        _thresholds(),
+        threshold_receipt_sha256=threshold_identity[0],
+        threshold_receipt_bytes=threshold_identity[1],
+    )
+    gate_identity = ("e" * 64, 202)
+    threshold_receipt = {
+        "schema_version": 1,
+        "artifact_type": (
+            "pams_cycleback_epoch11_threshold_preregistration_receipt_v1"
+        ),
+        "status": "frozen",
+        "candidate_id": contract.candidate_id,
+        "thresholds_sha256": gate["thresholds_sha256"],
+        "thresholds_frozen_before_execution": True,
+        "label_free": True,
+        "epoch150_train337_continuation_authorized": False,
+        "development_evaluation_authorized": False,
+        "sealed_evaluation_authorized": False,
+    }
+    launch_identity = ("f" * 64, 203)
+    launch_bindings = {
+        "epoch11_checkpoint_sha256": identity[0],
+        "epoch11_checkpoint_bytes": identity[1],
+        "epoch11_model_state_sha256": model_state_sha256(model),
+        "epoch11_optimizer_state_sha256": (
+            completed.current_optimizer_state_sha256
+        ),
+        "epoch11_progress_sha256": completed.fingerprint,
+        "epoch11_gate_outcome_sha256": gate_identity[0],
+        "epoch11_gate_outcome_bytes": gate_identity[1],
+        "threshold_receipt_sha256": threshold_identity[0],
+        "threshold_receipt_bytes": threshold_identity[1],
+        "trainer_contract_fingerprint": contract.fingerprint,
+        "representation_contract_sha256": representation.fingerprint,
+        "representation_lineage_fingerprint": lineage.fingerprint,
+    }
+    launch_authorization = {
+        "schema_version": 1,
+        "artifact_type": "pams_cycleback_epoch150_launch_authorization_v1",
+        "status": "authorized",
+        "candidate_id": contract.candidate_id,
+        "bindings": launch_bindings,
+        "label_free": True,
+        "epoch150_train337_continuation_authorized": True,
+        "development_evaluation_authorized": False,
+        "sealed_evaluation_authorized": False,
+        "readout_authorized": False,
+    }
+    transition = build_epoch150_transition_bindings(
+        gate_outcome=gate,
+        gate_outcome_identity=gate_identity,
+        threshold_receipt=threshold_receipt,
+        threshold_receipt_identity=threshold_identity,
+        launch_authorization=launch_authorization,
+        launch_authorization_identity=launch_identity,
+        epoch11_checkpoint_identity=identity,
+        epoch11_model_state_sha256=model_state_sha256(model),
+        epoch11_progress=completed,
+        contract=contract,
+        representation=representation,
+        lineage=lineage,
+    )
+    tampered_launch = copy.deepcopy(launch_authorization)
+    tampered_launch["bindings"]["epoch11_gate_outcome_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="launch authorization lineage"):
+        build_epoch150_transition_bindings(
+            gate_outcome=gate,
+            gate_outcome_identity=gate_identity,
+            threshold_receipt=threshold_receipt,
+            threshold_receipt_identity=threshold_identity,
+            launch_authorization=tampered_launch,
+            launch_authorization_identity=launch_identity,
+            epoch11_checkpoint_identity=identity,
+            epoch11_model_state_sha256=model_state_sha256(model),
+            epoch11_progress=completed,
+            contract=contract,
+            representation=representation,
+            lineage=lineage,
+        )
 
     epoch150 = initialize_epoch150_from_exact_epoch11_checkpoint(
         checkpoint,
@@ -534,6 +761,7 @@ def test_epoch150_initialization_restores_exact_completed_epoch11_prefix(
         contract=contract,
         lineage=lineage,
         epoch12_plan=_plan(epoch=12),
+        transition=transition,
         model=restored_model,
         optimizer=restored_optimizer,
     )
@@ -558,41 +786,165 @@ def test_json_only_mechanism_digest_cannot_substitute_for_learned_l_checkpoint()
         )
 
 
-def test_optimizer_guard_rejects_null_before_zero_grad_or_backward() -> None:
+def test_low_level_optimizer_is_private_and_null_role_remains_non_optimizer() -> None:
+    assert not hasattr(trainer_module, "optimize_real_pair_contexts")
+    assert not hasattr(trainer_module, "advance_fullcontext_progress")
+    _, contexts = _pairs_and_contexts((48,))
+    controlled = zero_pair_segment_contexts(contexts)
+    assert controlled.objective_role == "diagnostic_zero"
+    assert controlled.transform_contract["authorized_for_real_optimizer"] is False
+
+
+def test_objective_must_match_every_frozen_candidate_field() -> None:
     config = _candidate_config(tiny=True)
     contract = FullContextTrainerContract.from_candidate_config(config)
-    pairs, contexts = _pairs_and_contexts((48,))
-    encoder = PAMSEncoder(
-        input_dim=99,
-        model_dim=8,
-        embedding_dim=8,
-        num_layers=1,
-        num_heads=2,
-        feedforward_dim=16,
-        dropout=0.25,
-        max_length=128,
-    )
-    optimizer = build_fullcontext_adamw(encoder, contract)
-    before = model_state_sha256(encoder)
-
-    with pytest.raises(ValueError, match="diagnostic pair-segment contexts"):
-        optimize_real_pair_contexts(
-            encoder,
-            optimizer,
-            ConventionalCycleBackLoss(),
-            pairs,
-            zero_pair_segment_contexts(contexts),
+    exact = build_fullcontext_objective(config, contract)
+    validate_fullcontext_objective(exact, config, contract)
+    with pytest.raises(ValueError, match="objective parameters"):
+        validate_fullcontext_objective(
+            ConventionalCycleBackLoss(temperature=0.2),
+            config,
             contract,
         )
 
-    assert model_state_sha256(encoder) == before
-    assert optimizer.state == {}
+
+def test_adamw_foreach_fused_and_capture_flags_are_exact() -> None:
+    contract = _contract()
+    model = torch.nn.Linear(4, 3)
+    optimizer = build_fullcontext_adamw(model, contract)
+    validate_fullcontext_optimizer(optimizer, contract)
+    for key, value in (
+        ("foreach", True),
+        ("fused", True),
+        ("capturable", True),
+        ("differentiable", True),
+    ):
+        altered = build_fullcontext_adamw(torch.nn.Linear(4, 3), contract)
+        altered.param_groups[0][key] = value
+        with pytest.raises(ValueError, match="parameter group"):
+            validate_fullcontext_optimizer(altered, contract)
+    extra = build_fullcontext_adamw(torch.nn.Linear(4, 3), contract)
+    extra.param_groups[0]["unfrozen_option"] = False
+    with pytest.raises(ValueError, match="parameter group"):
+        validate_fullcontext_optimizer(extra, contract)
 
 
-def test_real_optimizer_step_continues_exact_step256_state_on_full_contexts() -> None:
+def test_exact_pair_replay_rejects_row_order_source_and_range_tampering() -> None:
+    pairs, _ = _pairs_and_contexts((48,))
+    expected = validate_exact_authorized_pair_rows(
+        pairs,
+        ordered_video_ids=("video-0",),
+        native_lengths={"video-0": 48},
+        authorized_ranges_by_video={"video-0": ((0, 48),)},
+        base_valid_starts_by_video={"video-0": (0, 4, 8, 12, 16)},
+        eligible_starts_by_video={"video-0": (0, 4, 8, 12, 16)},
+        window_frames=16,
+        hop_frames=4,
+    )
+    assert len(expected) == 64
+    reversed_pairs = pairs.select(torch.arange(pairs.pair_count - 1, -1, -1))
+    with pytest.raises(RuntimeError, match="order/source indices/range"):
+        validate_exact_authorized_pair_rows(
+            reversed_pairs,
+            ordered_video_ids=("video-0",),
+            native_lengths={"video-0": 48},
+            authorized_ranges_by_video={"video-0": ((0, 48),)},
+            base_valid_starts_by_video={"video-0": (0, 4, 8, 12, 16)},
+            eligible_starts_by_video={"video-0": (0, 4, 8, 12, 16)},
+            window_frames=16,
+            hop_frames=4,
+        )
+
+
+def _formal_step_inputs() -> tuple[
+    dict[str, Unified2DSequence],
+    dict[str, tuple[tuple[int, int], ...]],
+    PairEligibility,
+]:
+    selected = {
+        "opaque-video-a": (40, (0, 4, 8)),
+        "opaque-video-b": (80, (0, 4, 8, 12, 16)),
+    }
+    all_ids = (*selected, *(f"opaque-ineligible-{index:03d}" for index in range(335)))
+    native_lengths = {
+        video_id: selected.get(video_id, (1, ()))[0]
+        for video_id in all_ids
+    }
+    representation_eligible = {
+        video_id: video_id in selected for video_id in all_ids
+    }
+    variants = ("W16_H2", "W16_H4", "W16_H4_PE0", "W24_H4")
+    starts_by_variant = {
+        variant: {
+            video_id: (
+                selected[video_id][1]
+                if video_id in selected and variant in {"W16_H4", "W16_H4_PE0"}
+                else ()
+            )
+            for video_id in all_ids
+        }
+        for variant in variants
+    }
+    pair_eligibility = PairEligibility(
+        start_grid_policy="native_zero_based_start_mod_hop_equals_zero",
+        frozen_thresholds={},
+        minimum_window_stable_action_joints=6,
+        minimum_window_joint_support_fraction=0.75,
+        native_lengths=native_lengths,
+        representation_eligible=representation_eligible,
+        base_valid_starts_by_variant=starts_by_variant,
+        starts_by_variant=starts_by_variant,
+        identity=("a" * 64, 1),
+    )
+    sequences: dict[str, Unified2DSequence] = {}
+    ranges: dict[str, tuple[tuple[int, int], ...]] = {}
+    for video_id, (length, _) in selected.items():
+        xyz = np.zeros((length, 33, 3), dtype=np.float32)
+        timeline = np.arange(length, dtype=np.float32).reshape(length, 1)
+        xyz[:, :17, 0] = timeline
+        xyz[:, :17, 1] = timeline * 0.5
+        valid = np.ones((length,), dtype=np.bool_)
+        joint = np.ones((length, 17), dtype=np.bool_)
+        sequences[video_id] = Unified2DSequence(
+            PoseSequence(video_id=video_id, fps=30.0, xyz=xyz, valid_mask=valid),
+            joint,
+        )
+        ranges[video_id] = ((0, length),)
+    return sequences, ranges, pair_eligibility
+
+
+def _prepare_formal_step(
+    encoder: torch.nn.Module,
+    progress: FullContextProgress,
+    config: ConventionalCycleBackConfig,
+    sequences: Mapping[str, Unified2DSequence],
+    ranges: Mapping[str, Sequence[tuple[int, int]]],
+    eligibility: PairEligibility,
+) -> tuple[NativeWindowPairBatch, PairSegmentContexts]:
+    if progress.active_plan is None:
+        raise AssertionError("test progress unexpectedly completed")
+    selected_ids = progress.active_plan.batches[progress.sampler_cursor].video_ids
+    selected = tuple(sequences[video_id] for video_id in selected_ids)
+    batch = collate_to_device(selected, next(encoder.parameters()).device)
+    selected_ranges = {
+        video_id: tuple(ranges[video_id]) for video_id in selected_ids
+    }
+    pairs, views = pairs_from_batch(
+        batch,
+        config,
+        step=progress.next_augmentation_step,
+        segment_ranges_by_video=selected_ranges,
+        pair_eligibility=eligibility,
+    )
+    return pairs, pair_segment_contexts(pairs, views)
+
+
+def test_single_step_api_consumes_progress_and_rejects_skip_or_replay() -> None:
+    _enable_test_determinism()
     config = _candidate_config(tiny=True)
-    contract = FullContextTrainerContract.from_candidate_config(config)
-    pairs, contexts = _pairs_and_contexts((48,))
+    contract = _contract(tiny=True)
+    lineage = _lineage()
+    sequences, ranges, eligibility = _formal_step_inputs()
     encoder = PAMSEncoder(
         input_dim=99,
         model_dim=8,
@@ -605,28 +957,230 @@ def test_real_optimizer_step_continues_exact_step256_state_on_full_contexts() ->
     )
     optimizer = build_fullcontext_adamw(encoder, contract)
     _prime_adamw_state(encoder, optimizer, step=256)
-    before = model_state_sha256(encoder)
+    progress = _initial_progress_for_state(encoder, optimizer, tiny=True)
+    pairs, contexts = _prepare_formal_step(
+        encoder,
+        progress,
+        config,
+        sequences,
+        ranges,
+        eligibility,
+    )
+    tampered_positions = replace(
+        contexts,
+        position_indices_a=(
+            contexts.position_indices_a[0] + 1,
+            *contexts.position_indices_a[1:],
+        ),
+    )
+    before_rejection = model_state_sha256(encoder)
+    with pytest.raises(ValueError, match="identity/absolute positions"):
+        run_fullcontext_optimizer_step(
+            encoder,
+            optimizer,
+            pairs,
+            tampered_positions,
+            ranges,
+            eligibility,
+            config,
+            contract,
+            _representation(),
+            lineage,
+            progress,
+        )
+    assert model_state_sha256(encoder) == before_rejection
+    wrong_objective_config = replace(
+        config,
+        objective=replace(config.objective, temperature=0.2),
+    )
+    with pytest.raises(ValueError, match="config/objective"):
+        run_fullcontext_optimizer_step(
+            encoder,
+            optimizer,
+            pairs,
+            contexts,
+            ranges,
+            eligibility,
+            wrong_objective_config,
+            contract,
+            _representation(),
+            lineage,
+            progress,
+        )
 
-    loss, valid_anchors, possible_anchors = optimize_real_pair_contexts(
+    result = run_fullcontext_optimizer_step(
         encoder,
         optimizer,
-        ConventionalCycleBackLoss(),
         pairs,
         contexts,
+        ranges,
+        eligibility,
+        config,
         contract,
-        expected_prior_optimizer_step=256,
+        _representation(),
+        lineage,
+        progress,
     )
 
-    assert torch.isfinite(loss)
-    assert valid_anchors > 0
-    assert possible_anchors > 0
-    assert model_state_sha256(encoder) != before
-    assert {
-        int(float(state["step"])) for state in optimizer.state.values()
-    } == {257}
+    assert result.progress.global_optimizer_step == 257
+    assert result.evidence.progress_before_sha256 == progress.fingerprint
+    assert result.evidence.progress_after_sha256 == result.progress.fingerprint
+    assert len(result.evidence.exact_pair_rows_sha256) == 64
+    with pytest.raises(ValueError, match="model/optimizer bytes"):
+        run_fullcontext_optimizer_step(
+            encoder,
+            optimizer,
+            pairs,
+            contexts,
+            ranges,
+            eligibility,
+            config,
+            contract,
+            _representation(),
+            lineage,
+            progress,
+        )
+
+    alternate_encoder = copy.deepcopy(encoder)
+    with torch.no_grad():
+        next(alternate_encoder.parameters()).add_(1.0)
+    alternate_optimizer = build_fullcontext_adamw(alternate_encoder, contract)
+    _prime_adamw_state(alternate_encoder, alternate_optimizer, step=257)
+    with pytest.raises(ValueError, match="model/optimizer bytes"):
+        run_fullcontext_optimizer_step(
+            alternate_encoder,
+            alternate_optimizer,
+            pairs,
+            contexts,
+            ranges,
+            eligibility,
+            config,
+            contract,
+            _representation(),
+            lineage,
+            result.progress,
+        )
+
+    fresh_encoder = copy.deepcopy(encoder)
+    fresh_optimizer = build_fullcontext_adamw(fresh_encoder, contract)
+    _prime_adamw_state(fresh_encoder, fresh_optimizer, step=256)
+    skipped = trainer_module._advance_fullcontext_progress(
+        progress,
+        contract,
+        lineage,
+        next_model_state_sha256="e" * 64,
+        next_optimizer_state_sha256="f" * 64,
+    )
+    with pytest.raises(ValueError, match="model/optimizer bytes"):
+        run_fullcontext_optimizer_step(
+            fresh_encoder,
+            fresh_optimizer,
+            pairs,
+            contexts,
+            ranges,
+            eligibility,
+            config,
+            contract,
+            _representation(),
+            lineage,
+            skipped,
+        )
 
 
-def _controls(*, pe_ratio: float = 1.0) -> dict[str, Any]:
+def test_epoch11_controls_restore_rng_backends_and_bind_exact_checkpoint() -> None:
+    _enable_test_determinism()
+    config = _candidate_config(tiny=True)
+    contract = _contract(tiny=True)
+    lineage = _lineage()
+    progress = _completed_epoch11_progress(tiny=True)
+    pairs, contexts = _pairs_and_contexts((48,))
+    encoder = PAMSEncoder(
+        input_dim=99,
+        model_dim=8,
+        embedding_dim=8,
+        num_layers=1,
+        num_heads=2,
+        feedforward_dim=16,
+        dropout=0.25,
+        max_length=128,
+    )
+    model_sha256 = model_state_sha256(encoder)
+    progress = replace(progress, current_model_state_sha256=model_sha256)
+    pair_identity, pair_payload = trainer_module.pair_context_fingerprints(
+        pairs, contexts
+    )
+    before_rng = capture_fullcontext_rng_state()
+    before_backend = capture_fullcontext_backend_state()
+
+    controls = evaluate_unified2d_epoch11_label_free_controls(
+        encoder,
+        pairs,
+        contexts,
+        config,
+        contract,
+        _representation(),
+        lineage,
+        progress,
+        epoch11_checkpoint_sha256="d" * 64,
+        epoch11_checkpoint_bytes=456,
+        expected_epoch11_model_state_sha256=model_sha256,
+        expected_epoch11_optimizer_state_sha256=(
+            progress.current_optimizer_state_sha256
+        ),
+        expected_pair_identity_sha256=pair_identity,
+        expected_pair_payload_sha256=pair_payload,
+    )
+
+    _assert_nested_equal(capture_fullcontext_rng_state(), before_rng)
+    assert capture_fullcontext_backend_state() == before_backend
+    assert encoder.training is True
+    assert controls["bindings"]["epoch11_progress_sha256"] == progress.fingerprint
+    assert controls["bindings"]["epoch11_checkpoint_sha256"] == "d" * 64
+    assert controls["bindings"]["rng_backend_and_model_restored_by_finally"] is True
+
+
+def _control_bindings(
+    *,
+    checkpoint_identity: tuple[str, int] = ("1" * 64, 100),
+    model_state_sha256: str = "2" * 64,
+    progress: FullContextProgress | None = None,
+    contract: FullContextTrainerContract | None = None,
+    lineage: FullContextLineage | None = None,
+) -> dict[str, Any]:
+    resolved_contract = _contract() if contract is None else contract
+    resolved_lineage = _lineage() if lineage is None else lineage
+    progress_sha256 = "3" * 64 if progress is None else progress.fingerprint
+    prefix_sha256 = (
+        "4" * 64 if progress is None else progress.plan_dataset_prefix_sha256
+    )
+    return {
+        "epoch11_checkpoint_sha256": checkpoint_identity[0],
+        "epoch11_checkpoint_bytes": checkpoint_identity[1],
+        "epoch11_model_state_sha256": model_state_sha256,
+        "epoch11_optimizer_state_sha256": (
+            "a" * 64
+            if progress is None
+            else progress.current_optimizer_state_sha256
+        ),
+        "epoch11_progress_sha256": progress_sha256,
+        "plan_dataset_prefix_sha256": prefix_sha256,
+        "trainer_contract_fingerprint": resolved_contract.fingerprint,
+        "representation_contract_sha256": _representation().fingerprint,
+        "representation_lineage_fingerprint": resolved_lineage.fingerprint,
+        "pair_identity_sha256": "5" * 64,
+        "pair_payload_sha256": "6" * 64,
+        "pre_gate_rng_state_sha256": "7" * 64,
+        "pre_gate_backend_state_sha256": "8" * 64,
+        "pre_gate_model_state_sha256": model_state_sha256,
+        "rng_backend_and_model_restored_by_finally": True,
+    }
+
+
+def _controls(
+    *,
+    pe_ratio: float = 1.0,
+    bindings: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     condition_names = (
         "zero_pose",
         "within_video_pose_shuffle",
@@ -646,10 +1200,14 @@ def _controls(*, pe_ratio: float = 1.0) -> dict[str, Any]:
     for name in condition_names:
         ratio = pe_ratio if name in {"permuted_pe", "pe_off"} else 2.0
         conditions[name] = {"symmetric_position_mse": 0.10 * ratio}
+    resolved_bindings = dict(_control_bindings() if bindings is None else bindings)
     return {
         "artifact_type": "pams_cycleback_epoch11_label_free_controls_v1",
         "label_free": True,
         "optimizer_updates_during_evaluation": 0,
+        "pair_identity_sha256": resolved_bindings["pair_identity_sha256"],
+        "pair_payload_sha256": resolved_bindings["pair_payload_sha256"],
+        "bindings": resolved_bindings,
         "conditions": conditions,
         "ratios": {
             name: (
@@ -667,8 +1225,8 @@ def _controls(*, pe_ratio: float = 1.0) -> dict[str, Any]:
     }
 
 
-def test_epoch11_gate_uses_two_sided_pe_bounds_and_never_self_authorizes() -> None:
-    thresholds = Epoch11GateThresholds(
+def _thresholds() -> Epoch11GateThresholds:
+    return Epoch11GateThresholds(
         minimum_real_null_position_error_gap=0.05,
         minimum_valid_anchor_fraction=0.5,
         minimum_temporal_rms_median=0.01,
@@ -677,9 +1235,20 @@ def test_epoch11_gate_uses_two_sided_pe_bounds_and_never_self_authorizes() -> No
         maximum_pe_ratio=1.25,
     )
 
-    passed = epoch11_gate_decision(_controls(), thresholds)
-    too_low = epoch11_gate_decision(_controls(pe_ratio=0.1), thresholds)
-    too_high = epoch11_gate_decision(_controls(pe_ratio=4.0), thresholds)
+
+def test_epoch11_gate_uses_two_sided_pe_bounds_and_never_self_authorizes() -> None:
+    thresholds = _thresholds()
+    kwargs = {
+        "threshold_receipt_sha256": "9" * 64,
+        "threshold_receipt_bytes": 77,
+    }
+    passed = epoch11_gate_decision(_controls(), thresholds, **kwargs)
+    too_low = epoch11_gate_decision(
+        _controls(pe_ratio=0.1), thresholds, **kwargs
+    )
+    too_high = epoch11_gate_decision(
+        _controls(pe_ratio=4.0), thresholds, **kwargs
+    )
 
     assert passed["overall_pass"] is True
     assert passed["scientifically_eligible_for_epoch150_train337"] is True

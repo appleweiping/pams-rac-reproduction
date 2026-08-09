@@ -150,11 +150,15 @@ class AugmentedSequenceViews:
             self.valid_mask.dtype is not torch.bool
         ):
             raise ValueError("augmented sequence validity must be bool [batch,time]")
-        if self.joint_valid_mask.shape != (batch, time, 17) or (
-            self.joint_valid_mask.dtype is not torch.bool
+        if (
+            self.joint_valid_mask.ndim != 3
+            or self.joint_valid_mask.shape[:2] != (batch, time)
+            or self.joint_valid_mask.shape[2] < 1
+            or self.joint_valid_mask.dtype is not torch.bool
         ):
             raise ValueError(
-                "augmented sequence joint validity must be bool [batch,time,17]"
+                "augmented sequence joint validity must be bool "
+                "[batch,time,support_channels]"
             )
         if self.lengths.shape != (batch,) or self.lengths.dtype != torch.long:
             raise ValueError("augmented sequence lengths must be int64 [batch]")
@@ -214,6 +218,7 @@ class PairSegmentContexts:
             raise ValueError("pair-segment context collections must match pair count")
         if any(not key for key in self.context_keys_a + self.context_keys_b):
             raise ValueError("pair-segment context keys must be non-empty")
+        support_channels: int | None = None
         for index in range(pair_count):
             first = self.poses_a[index]
             second = self.poses_b[index]
@@ -221,8 +226,22 @@ class PairSegmentContexts:
                 raise ValueError("pair-segment poses must be [segment,33,3]")
             length = first.shape[0]
             for mask in (self.joint_valid_a[index], self.joint_valid_b[index]):
-                if mask.shape != (length, 17) or mask.dtype is not torch.bool:
-                    raise ValueError("pair-segment joint mask must be bool [segment,17]")
+                if (
+                    mask.ndim != 2
+                    or mask.shape[0] != length
+                    or mask.shape[1] < 1
+                    or mask.dtype is not torch.bool
+                ):
+                    raise ValueError(
+                        "pair-segment joint mask must be bool "
+                        "[segment,support_channels]"
+                    )
+                if support_channels is None:
+                    support_channels = int(mask.shape[1])
+                elif int(mask.shape[1]) != support_channels:
+                    raise ValueError(
+                        "pair-segment contexts mix support-channel schemas"
+                    )
             for positions in (
                 self.position_indices_a[index],
                 self.position_indices_b[index],
@@ -1332,6 +1351,8 @@ def joint_support_null_poses(
 ) -> dict[str, tuple[Tensor, Tensor, dict[str, Any]]]:
     """Build three deterministic label-free joint-support stress controls."""
 
+    if pairs.joint_valid_a.shape[2] != 17:
+        raise ValueError("COCO17 joint-support nulls require exactly 17 channels")
     results: dict[str, tuple[Tensor, Tensor, dict[str, Any]]] = {}
     torso = torch.zeros(17, dtype=torch.bool, device=pairs.poses_a.device)
     torso[torch.tensor([5, 6, 11, 12], device=torso.device)] = True
@@ -1433,6 +1454,203 @@ def pairs_from_batch(
         joint_valid_mask=batch.joint_valid_mask,
         lengths=batch.lengths,
         view_seeds=seeds,
+    )
+
+
+def validate_exact_authorized_pair_rows(
+    pairs: NativeWindowPairBatch,
+    *,
+    ordered_video_ids: Sequence[str],
+    native_lengths: Mapping[str, int],
+    authorized_ranges_by_video: Mapping[str, Sequence[tuple[int, int]]],
+    base_valid_starts_by_video: Mapping[str, Sequence[int]],
+    eligible_starts_by_video: Mapping[str, Sequence[int]],
+    window_frames: int,
+    hop_frames: int,
+) -> str:
+    """Replay every emitted pair row against the sealed representation geometry.
+
+    Counts and unordered membership are insufficient here: swapping two rows or
+    changing a segment boundary leaves both unchanged while altering dropout and
+    optimizer order.  This validator therefore binds the exact per-video order,
+    starts, absolute source indices, native length, containing stable range, and
+    all three per-video count layers.  The returned digest is safe to include in
+    step evidence and checkpoint prefix state.
+    """
+
+    identifiers = tuple(ordered_video_ids)
+    if not identifiers or len(set(identifiers)) != len(identifiers):
+        raise ValueError("ordered pair replay video IDs must be non-empty unique")
+    expected_membership = set(identifiers)
+    for role, values in (
+        ("native lengths", native_lengths),
+        ("authorized ranges", authorized_ranges_by_video),
+        ("base-valid starts", base_valid_starts_by_video),
+        ("eligible starts", eligible_starts_by_video),
+    ):
+        if set(values) != expected_membership:
+            raise ValueError(f"pair replay {role} membership mismatch")
+    for role, value in (
+        ("window frames", window_frames),
+        ("hop frames", hop_frames),
+    ):
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError(f"pair replay {role} must be a positive integer")
+    if pairs.window_length != window_frames:
+        raise RuntimeError("runtime pair window differs from authorized geometry")
+
+    expected_rows: list[dict[str, Any]] = []
+    expected_raw_counts: list[int] = []
+    expected_base_counts: list[int] = []
+    expected_eligible_counts: list[int] = []
+    for source_index, video_id in enumerate(identifiers):
+        native_length = native_lengths[video_id]
+        if (
+            isinstance(native_length, bool)
+            or not isinstance(native_length, int)
+            or native_length < 1
+        ):
+            raise ValueError("pair replay native length is invalid")
+        ranges = tuple(authorized_ranges_by_video[video_id])
+        base_starts = tuple(base_valid_starts_by_video[video_id])
+        starts = tuple(eligible_starts_by_video[video_id])
+        previous_stop = 0
+        for range_index, value in enumerate(ranges):
+            if (
+                not isinstance(value, tuple)
+                or len(value) != 2
+                or any(
+                    isinstance(item, bool) or not isinstance(item, int)
+                    for item in value
+                )
+            ):
+                raise ValueError("pair replay stable ranges are malformed")
+            range_start, range_stop = value
+            if (
+                not 0 <= range_start < range_stop <= native_length
+                or (range_index and range_start < previous_stop)
+            ):
+                raise ValueError("pair replay stable ranges are not canonical")
+            previous_stop = range_stop
+        if base_starts != tuple(sorted(set(base_starts))) or starts != tuple(
+            sorted(set(starts))
+        ):
+            raise ValueError("pair replay starts must be sorted unique")
+        if any(
+            isinstance(start, bool) or not isinstance(start, int)
+            for start in (*base_starts, *starts)
+        ):
+            raise ValueError("pair replay starts must be integer frame indices")
+        if not set(starts).issubset(set(base_starts)):
+            raise ValueError("pair replay eligible starts exceed base-valid starts")
+        maximum_start = native_length - 2 * window_frames
+        raw_count = 0 if maximum_start < 0 else maximum_start // hop_frames + 1
+        expected_raw_counts.append(raw_count)
+        expected_base_counts.append(len(base_starts))
+        expected_eligible_counts.append(len(starts))
+        for start in base_starts:
+            containing = tuple(
+                (range_start, range_stop)
+                for range_start, range_stop in ranges
+                if range_start <= start
+                and start + 2 * window_frames <= range_stop
+            )
+            if (
+                start < 0
+                or start % hop_frames
+                or len(containing) != 1
+            ):
+                raise ValueError(
+                    "base-valid pair start violates the sealed stable-range grid"
+                )
+        for start in starts:
+            containing = tuple(
+                (range_start, range_stop)
+                for range_start, range_stop in ranges
+                if range_start <= start
+                and start + 2 * window_frames <= range_stop
+            )
+            if len(containing) != 1:
+                raise RuntimeError(
+                    "authorized pair does not belong to exactly one stable range"
+                )
+            range_start, range_stop = containing[0]
+            expected_rows.append(
+                {
+                    "video_id": video_id,
+                    "source_video_index": source_index,
+                    "native_length": native_length,
+                    "start_a": start,
+                    "start_b": start + window_frames,
+                    "source_indices_a": list(range(start, start + window_frames)),
+                    "source_indices_b": list(
+                        range(start + window_frames, start + 2 * window_frames)
+                    ),
+                    "segment_start": range_start,
+                    "segment_end": range_stop,
+                }
+            )
+
+    if pairs.raw_grid_pair_counts != tuple(expected_raw_counts):
+        raise RuntimeError("runtime raw-grid pair counts differ from authority")
+    if pairs.available_pair_counts != tuple(expected_base_counts):
+        raise RuntimeError("runtime base-valid pair counts differ from authority")
+    if pairs.eligible_pair_counts != tuple(expected_eligible_counts):
+        raise RuntimeError("runtime eligible pair counts differ from authority")
+    if pairs.pair_count != len(expected_rows):
+        raise RuntimeError("runtime pair row total differs from authority")
+
+    observed_rows: list[dict[str, Any]] = []
+    for row, video_id in enumerate(pairs.video_ids):
+        observed_rows.append(
+            {
+                "video_id": video_id,
+                "source_video_index": int(pairs.source_video_indices[row]),
+                "native_length": int(pairs.native_lengths[row]),
+                "start_a": int(pairs.starts_a[row]),
+                "start_b": int(pairs.starts_b[row]),
+                "source_indices_a": pairs.source_indices_a[row]
+                .detach()
+                .cpu()
+                .tolist(),
+                "source_indices_b": pairs.source_indices_b[row]
+                .detach()
+                .cpu()
+                .tolist(),
+                "segment_start": int(pairs.segment_starts[row]),
+                "segment_end": int(pairs.segment_ends[row]),
+            }
+        )
+    if observed_rows != expected_rows:
+        raise RuntimeError(
+            "runtime pair order/source indices/range lineage differ from authority"
+        )
+    combined_source_indices = torch.cat(
+        (pairs.source_indices_a, pairs.source_indices_b),
+        dim=1,
+    )
+    sorted_source_indices = combined_source_indices.sort(dim=1).values
+    if pairs.pair_count and (
+        not bool(pairs.valid_a.all())
+        or not bool(pairs.valid_b.all())
+        or bool(
+            sorted_source_indices[:, 1:]
+            .eq(sorted_source_indices[:, :-1])
+            .any()
+        )
+    ):
+        raise RuntimeError("runtime pair rows are invalid or share source indices")
+    return canonical_json_sha256(
+        {
+            "schema_version": 1,
+            "policy": "exact_authorized_pair_rows_in_optimizer_order",
+            "window_frames": window_frames,
+            "hop_frames": hop_frames,
+            "rows": expected_rows,
+            "raw_grid_pair_counts": expected_raw_counts,
+            "base_valid_pair_counts": expected_base_counts,
+            "eligible_pair_counts": expected_eligible_counts,
+        }
     )
 
 
@@ -1929,6 +2147,11 @@ def joint_support_null_segment_contexts(
 ) -> dict[str, PairSegmentContexts]:
     """Apply deterministic joint-support nulls over full stable-range contexts."""
 
+    if any(
+        mask.shape[1] != 17
+        for mask in (*contexts.joint_valid_a, *contexts.joint_valid_b)
+    ):
+        raise ValueError("COCO17 joint-support nulls require exactly 17 channels")
     device = contexts.poses_a[0].device if contexts.poses_a else torch.device("cpu")
     torso = torch.zeros(17, dtype=torch.bool, device=device)
     torso[torch.tensor([5, 6, 11, 12], device=device)] = True
