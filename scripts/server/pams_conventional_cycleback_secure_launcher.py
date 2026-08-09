@@ -230,6 +230,48 @@ def _write_json_exclusive(path: Path, payload: Mapping[str, Any], *, mode: int =
     _fsync_directory(path.parent)
 
 
+def _write_json_transactional_exclusive(
+    path: Path,
+    payload: Mapping[str, Any],
+    *,
+    mode: int = 0o440,
+) -> None:
+    """Create one JSON file or remove bytes created by this exact call."""
+
+    encoded = (
+        json.dumps(
+            dict(payload),
+            indent=2,
+            sort_keys=True,
+            allow_nan=False,
+        )
+        + "\n"
+    ).encode("utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    flags |= int(getattr(os, "O_NOFOLLOW", 0))
+    flags |= int(getattr(os, "O_CLOEXEC", 0))
+    descriptor = -1
+    created = False
+    try:
+        descriptor = os.open(path, flags, mode)
+        created = True
+        with os.fdopen(descriptor, "wb") as handle:
+            descriptor = -1
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+        _fsync_directory(path.parent)
+    except BaseException:
+        if descriptor >= 0:
+            os.close(descriptor)
+        if created and path.exists():
+            path.chmod(0o600)
+            path.unlink()
+            _fsync_directory(path.parent)
+        raise
+
+
 def _run(
     arguments: Sequence[str],
     *,
@@ -1052,13 +1094,13 @@ def _stage_command(
         "--declared-geometry-host-root",
         os.fspath(geometry.root),
         "--output",
-        "/pams/output/mechanism-probe.json",
+        "/pams/output/mechanism-bundle/mechanism-probe.json",
         "--seed-checkpoint-output",
-        "/pams/output/learned-encoder-L.pt",
+        "/pams/output/mechanism-bundle/learned-encoder-L.pt",
         "--source-export-manifest-sha256",
         source_export_manifest_sha256,
     ]
-    return command, mounts, "output/mechanism-probe.json"
+    return command, mounts, "output/mechanism-bundle/mechanism-probe.json"
 
 
 def _container_spec(
@@ -1376,8 +1418,19 @@ def _publish_outcome_registry(
         if seed_identity is None:
             raise LaunchFailure("passed mechanism outcome lacks a learned-L seed")
         seed_binding = output_payload["mechanism_seed_checkpoint"]
+        semantic_log_identity = _identity(
+            final_root / "audit/mechanism-seed.semantic-validation.log",
+            role="published mechanism semantic validation",
+        )
         if (
-            receipt_payload.get("mechanism_seed_checkpoint_sha256")
+            receipt_payload.get("artifact_type")
+            != "pams_conventional_cycleback_mechanism_run_receipt_v1"
+            or receipt_payload.get("status") != "passed"
+            or receipt_payload.get("mechanism_probe_sha256")
+            != output_identity.sha256
+            or receipt_payload.get("output_sha256") != output_identity.sha256
+            or receipt_payload.get("output_bytes") != output_identity.bytes
+            or receipt_payload.get("mechanism_seed_checkpoint_sha256")
             != seed_identity.sha256
             or receipt_payload.get("mechanism_seed_checkpoint_bytes")
             != seed_identity.bytes
@@ -1391,12 +1444,37 @@ def _publish_outcome_registry(
             != seed_binding.get("captured_boundary_backend_state_sha256")
             or receipt_payload.get("mechanism_seed_sampler_state_sha256")
             != seed_binding.get("captured_sampler_state_sha256")
+            or receipt_payload.get("mechanism_seed_view_state_sha256")
+            != seed_binding.get("captured_view_state_sha256")
+            or receipt_payload.get(
+                "mechanism_seed_consumed_video_batch_chain_sha256"
+            )
+            != seed_binding.get("captured_consumed_video_batch_chain_sha256")
+            or receipt_payload.get(
+                "mechanism_seed_consumed_pair_row_chain_sha256"
+            )
+            != seed_binding.get("captured_consumed_pair_row_chain_sha256")
+            or receipt_payload.get("mechanism_seed_trainer_contract_fingerprint")
+            != seed_binding.get("trainer_contract_fingerprint")
+            or receipt_payload.get(
+                "mechanism_seed_predecessor_lineage_fingerprint"
+            )
+            != seed_binding.get("seed_predecessor_lineage_fingerprint")
+            or receipt_payload.get(
+                "mechanism_seed_diagnostics_restored_exact_boundary"
+            )
+            is not True
+            or receipt_payload.get("mechanism_seed_checkpoint_produced") is not True
+            or receipt_payload.get("mechanism_seed_checkpoint_relative")
+            != "output/mechanism-bundle/learned-encoder-L.pt"
             or receipt_payload.get("mechanism_seed_epoch11_continuation_authorized")
             is not False
+            or receipt_payload.get("mechanism_seed_host_semantic_validation")
+            != semantic_log_identity.to_dict()
         ):
             raise LaunchFailure("mechanism receipt differs from learned-L seed binding")
         record["mechanism_seed_checkpoint_relative"] = (
-            "output/learned-encoder-L.pt"
+            "output/mechanism-bundle/learned-encoder-L.pt"
         )
         record["mechanism_seed_checkpoint"] = seed_identity.to_dict()
         record["mechanism_seed_model_state_sha256"] = seed_binding[
@@ -1414,13 +1492,31 @@ def _publish_outcome_registry(
         record["mechanism_seed_sampler_state_sha256"] = seed_binding[
             "captured_sampler_state_sha256"
         ]
+        record["mechanism_seed_view_state_sha256"] = seed_binding[
+            "captured_view_state_sha256"
+        ]
+        record["mechanism_seed_consumed_video_batch_chain_sha256"] = seed_binding[
+            "captured_consumed_video_batch_chain_sha256"
+        ]
+        record["mechanism_seed_consumed_pair_row_chain_sha256"] = seed_binding[
+            "captured_consumed_pair_row_chain_sha256"
+        ]
         record["mechanism_seed_predecessor_lineage_fingerprint"] = seed_binding[
             "seed_predecessor_lineage_fingerprint"
         ]
+        record["mechanism_seed_trainer_contract_fingerprint"] = seed_binding[
+            "trainer_contract_fingerprint"
+        ]
+        record["mechanism_seed_representation_contract_sha256"] = seed_binding[
+            "representation_contract_sha256"
+        ]
+        record["mechanism_seed_host_semantic_validation"] = (
+            semantic_log_identity.to_dict()
+        )
         record["epoch11_train337_continuation_authorized"] = False
         record["direct_epoch150_start_authorized"] = False
     registry_path = _outcome_registry_path(role, candidate_id)
-    _write_json_exclusive(registry_path, record, mode=0o444)
+    _write_json_transactional_exclusive(registry_path, record, mode=0o444)
 
 
 def _representation_predecessor(launch: Any) -> Predecessor:
@@ -1503,6 +1599,12 @@ def _validated_mechanism_seed_identity(
         != training.get("optimizer_state_sha256_at_step256")
         or checkpoint.get("captured_sampler_state_sha256")
         != training.get("mechanism_sampler_state_sha256")
+        or checkpoint.get("captured_view_state_sha256")
+        != training.get("mechanism_view_state_sha256")
+        or checkpoint.get("captured_consumed_video_batch_chain_sha256")
+        != training.get("mechanism_consumed_video_batch_chain_sha256")
+        or checkpoint.get("captured_consumed_pair_row_chain_sha256")
+        != training.get("mechanism_consumed_pair_row_chain_sha256")
         or checkpoint.get("trainer_contract_fingerprint")
         != training.get("trainer_contract_fingerprint")
     ):
@@ -1524,6 +1626,9 @@ def _validated_mechanism_seed_identity(
         "captured_boundary_rng_state_sha256",
         "captured_boundary_backend_state_sha256",
         "captured_sampler_state_sha256",
+        "captured_view_state_sha256",
+        "captured_consumed_video_batch_chain_sha256",
+        "captured_consumed_pair_row_chain_sha256",
         "trainer_contract_fingerprint",
         "representation_contract_sha256",
         "seed_predecessor_lineage_fingerprint",
@@ -1595,6 +1700,69 @@ def _validate_stage_output(
     return payload, identity, expected_status
 
 
+def _validate_mechanism_seed_semantics_in_fresh_container(
+    *,
+    launch: Any,
+    source_export: Path,
+    output_root: Path,
+    output_path: Path,
+    config_relative: str,
+    audit_root: Path,
+) -> FileIdentity:
+    """Deserialize and validate the seed independently of the producer process."""
+
+    checkpoint = output_path.with_name("learned-encoder-L.pt")
+    log_path = audit_root / "mechanism-seed.semantic-validation.log"
+    command = [
+        DOCKER_BINARY,
+        "run",
+        "--rm",
+        "--pull",
+        "never",
+        "--network",
+        "none",
+        "--ipc",
+        "none",
+        "--user",
+        "1000:1000",
+        "--cap-drop",
+        "ALL",
+        "--security-opt",
+        "no-new-privileges",
+        "--read-only",
+        "--pids-limit",
+        "512",
+        "--tmpfs",
+        "/tmp:rw,nosuid,nodev,noexec,size=256m",
+        "--env",
+        "HOME=/tmp",
+        "--env",
+        "PYTHONHASHSEED=0",
+        "--mount",
+        f"type=bind,src={source_export},dst=/workspace,readonly",
+        "--mount",
+        f"type=bind,src={output_root},dst=/pams/output,readonly",
+        "--workdir",
+        "/workspace",
+        launch.container_image_id,
+        "/usr/bin/python3",
+        "-I",
+        "/workspace/scripts/server/validate_pams_conventional_cycleback_mechanism_seed.py",
+        "--output",
+        "/pams/output/mechanism-bundle/mechanism-probe.json",
+        "--checkpoint",
+        "/pams/output/mechanism-bundle/learned-encoder-L.pt",
+        "--config",
+        f"/workspace/{config_relative}",
+    ]
+    completed = _run(command, check=False, stdout_path=log_path)
+    if completed.returncode != 0:
+        raise LaunchFailure("fresh-container mechanism seed semantic validation failed")
+    if _identity(checkpoint, role="semantically validated mechanism seed").bytes < 1:
+        raise LaunchFailure("semantically validated mechanism seed is empty")
+    return _identity(log_path, role="mechanism seed semantic validation log")
+
+
 def _stage_receipt(
     *,
     stage: str,
@@ -1617,6 +1785,7 @@ def _stage_receipt(
     source_pre: FileIdentity,
     source_post: FileIdentity,
     artifact_manifest: FileIdentity,
+    semantic_validation: FileIdentity | None,
 ) -> dict[str, Any]:
     artifact_type = {
         "adapter": "pams_conventional_cycleback_pose_input_authorization_run_receipt_v1",
@@ -1739,6 +1908,10 @@ def _stage_receipt(
             ),
         )
     else:
+        if status == "passed" and semantic_validation is None:
+            raise LaunchFailure("passed mechanism lacks host semantic validation")
+        if status == "rejected" and semantic_validation is not None:
+            raise LaunchFailure("rejected mechanism has unexpected seed validation")
         seed_binding = output_payload.get("mechanism_seed_checkpoint")
         mechanism_lineage = output_payload.get("lineage")
         if not isinstance(seed_binding, Mapping):
@@ -1776,7 +1949,9 @@ def _stage_receipt(
             mechanism_probe_sha256=output_identity.sha256,
             mechanism_seed_checkpoint_produced=seed_identity is not None,
             mechanism_seed_checkpoint_relative=(
-                None if seed_identity is None else "output/learned-encoder-L.pt"
+                None
+                if seed_identity is None
+                else "output/mechanism-bundle/learned-encoder-L.pt"
             ),
             mechanism_seed_checkpoint_sha256=(
                 None if seed_identity is None else seed_identity.sha256
@@ -1799,6 +1974,15 @@ def _stage_receipt(
             mechanism_seed_sampler_state_sha256=seed_binding.get(
                 "captured_sampler_state_sha256"
             ),
+            mechanism_seed_view_state_sha256=seed_binding.get(
+                "captured_view_state_sha256"
+            ),
+            mechanism_seed_consumed_video_batch_chain_sha256=seed_binding.get(
+                "captured_consumed_video_batch_chain_sha256"
+            ),
+            mechanism_seed_consumed_pair_row_chain_sha256=seed_binding.get(
+                "captured_consumed_pair_row_chain_sha256"
+            ),
             mechanism_seed_trainer_contract_fingerprint=seed_binding.get(
                 "trainer_contract_fingerprint"
             ),
@@ -1809,6 +1993,11 @@ def _stage_receipt(
                 "diagnostics_restored_exact_boundary"
             ),
             mechanism_seed_epoch11_continuation_authorized=False,
+            mechanism_seed_host_semantic_validation=(
+                None
+                if semantic_validation is None
+                else semantic_validation.to_dict()
+            ),
             cycleback_mechanism_supported=(
                 status == "passed"
                 and output_payload.get("gate", {}).get("cycleback_mechanism_supported")
@@ -1949,6 +2138,27 @@ def _write_failure_and_publish(
     fallback_parent.mkdir(parents=True, exist_ok=True)
     fallback = fallback_parent / f"unreserved-{os.getpid()}.failure.receipt.json"
     _write_json_exclusive(fallback, {**dict(payload), "fallback": True}, mode=0o444)
+
+
+def _remove_mechanism_seed_from_failed_tree(root: Path | None) -> None:
+    """Ensure failure evidence can never retain learned seed bytes."""
+
+    if root is None or not root.exists():
+        return
+    candidates = tuple(root.rglob("learned-encoder-L.pt"))
+    for candidate in candidates:
+        if candidate.is_symlink() or not candidate.is_file():
+            raise LaunchFailure("failed mechanism seed locator is not a regular file")
+        root.chmod(0o700)
+        parent = candidate.parent
+        while parent != root:
+            parent.chmod(0o700)
+            parent = parent.parent
+        candidate.chmod(0o600)
+        candidate.unlink()
+        _fsync_directory(candidate.parent)
+    if any(root.rglob("learned-encoder-L.pt")):
+        raise LaunchFailure("failed mechanism tree still contains a seed checkpoint")
 
 
 def launch_stage(
@@ -2203,6 +2413,20 @@ def launch_stage(
             output_path=output_path,
             exit_code=exit_code,
         )
+        semantic_validation: FileIdentity | None = None
+        if stage == "mechanism" and status == "passed":
+            if config_relative is None:
+                raise LaunchFailure("mechanism semantic validation lacks config")
+            phase = "mechanism-seed-semantic-validation"
+            semantic_validation = _validate_mechanism_seed_semantics_in_fresh_container(
+                launch=launch,
+                source_export=source_export,
+                output_root=output_root,
+                output_path=output_path,
+                config_relative=config_relative,
+                audit_root=audit_root,
+            )
+            phase = "stage-output"
         manifest = _artifact_manifest(
             staging, audit_root / "pre-receipt-artifact.sha256"
         )
@@ -2227,6 +2451,7 @@ def launch_stage(
             source_pre=source_pre,
             source_post=source_post,
             artifact_manifest=manifest,
+            semantic_validation=semantic_validation,
         )
         _write_json_exclusive(audit_root / "run.receipt.json", receipt)
         phase = "sealed-atomic-publication"
@@ -2270,6 +2495,21 @@ def launch_stage(
             error=exc,
         )
         try:
+            if stage == "mechanism":
+                _remove_mechanism_seed_from_failed_tree(staging)
+                if final_root is not None and final_root.exists() and (
+                    staging is None or not staging.exists()
+                ):
+                    _remove_mechanism_seed_from_failed_tree(final_root)
+                    for candidate in sorted(
+                        final_root.rglob("*"),
+                        key=lambda item: len(item.parts),
+                        reverse=True,
+                    ):
+                        candidate.chmod(0o700 if candidate.is_dir() else 0o600)
+                    final_root.chmod(0o700)
+                    shutil.rmtree(final_root)
+                    _fsync_directory(final_root.parent)
             _write_failure_and_publish(
                 stage=stage,
                 staging=staging,

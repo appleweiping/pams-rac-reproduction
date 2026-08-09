@@ -11,11 +11,14 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import math
 import os
 import random
 import re
+import shutil
+import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -38,7 +41,6 @@ from pams.conventional_cycleback.fullcontext_trainer import (
     FullContextTrainerContract,
     MechanismSeedPredecessorLineage,
     MechanismSeedSamplerState,
-    atomic_save_new_mechanism_seed_checkpoint,
     build_fullcontext_adamw,
     build_fullcontext_objective,
     build_mechanism_seed_checkpoint_payload,
@@ -51,6 +53,7 @@ from pams.conventional_cycleback.fullcontext_trainer import (
     optimizer_state_sha256,
     preserve_fullcontext_diagnostic_state,
     unified2d_fullcontext_representation_contract,
+    validate_mechanism_seed_checkpoint_payload,
 )
 from pams.conventional_cycleback.loss import ConventionalCycleBackLoss
 from pams.conventional_cycleback.runtime import (
@@ -809,6 +812,10 @@ def validate_mechanism_probe_contract(
     if (
         training.get("mechanism_sampler_state_sha256")
         != sampler_state.fingerprint
+        or training.get("mechanism_consumed_video_batch_chain_sha256")
+        != sampler_state.consumed_video_batch_chain_sha256
+        or training.get("mechanism_consumed_pair_row_chain_sha256")
+        != sampler_state.consumed_pair_row_chain_sha256
         or sampler_state.video_batch_size
         != trainer_contract.mechanism_video_batch_size
         or sampler_state.maximum_pairs_per_step
@@ -1000,6 +1007,9 @@ def validate_mechanism_probe_contract(
         "captured_boundary_rng_state_sha256",
         "captured_boundary_backend_state_sha256",
         "captured_sampler_state_sha256",
+        "captured_view_state_sha256",
+        "captured_consumed_video_batch_chain_sha256",
+        "captured_consumed_pair_row_chain_sha256",
         "trainer_contract_fingerprint",
         "representation_contract_sha256",
         "seed_predecessor_lineage_fingerprint",
@@ -1026,6 +1036,12 @@ def validate_mechanism_probe_contract(
         != optimizer_state_sha256
         or checkpoint.get("captured_sampler_state_sha256")
         != sampler_state.fingerprint
+        or checkpoint.get("captured_view_state_sha256")
+        != training.get("mechanism_view_state_sha256")
+        or checkpoint.get("captured_consumed_video_batch_chain_sha256")
+        != sampler_state.consumed_video_batch_chain_sha256
+        or checkpoint.get("captured_consumed_pair_row_chain_sha256")
+        != sampler_state.consumed_pair_row_chain_sha256
         or checkpoint.get("trainer_contract_fingerprint")
         != trainer_contract.fingerprint
         or checkpoint.get("representation_contract_sha256")
@@ -1047,6 +1063,9 @@ def validate_mechanism_probe_contract(
         "captured_boundary_rng_state_sha256",
         "captured_boundary_backend_state_sha256",
         "captured_sampler_state_sha256",
+        "captured_view_state_sha256",
+        "captured_consumed_video_batch_chain_sha256",
+        "captured_consumed_pair_row_chain_sha256",
         "trainer_contract_fingerprint",
         "representation_contract_sha256",
         "seed_predecessor_lineage_fingerprint",
@@ -1425,18 +1444,17 @@ def run_mechanism_probe(
         raise ValueError("container_image_id must be an immutable image ID")
     output_path = Path(mechanism_output_path)
     seed_checkpoint_path = Path(seed_checkpoint_output)
-    if output_path.is_symlink() or output_path.exists():
-        raise ValueError("mechanism probe JSON output must be absent")
-    if seed_checkpoint_path.is_symlink() or seed_checkpoint_path.exists():
-        raise ValueError("mechanism seed checkpoint output must be absent")
+    bundle_root = output_path.parent
+    bundle_parent = bundle_root.parent
+    if bundle_root.is_symlink() or bundle_root.exists():
+        raise ValueError("mechanism probe bundle output must be absent")
     if (
         output_path.name != "mechanism-probe.json"
         or seed_checkpoint_path.name != "learned-encoder-L.pt"
-        or output_path.parent.resolve() != seed_checkpoint_path.parent.resolve()
-        or output_path.parent.is_symlink()
-        or not output_path.parent.is_dir()
-        or seed_checkpoint_path.parent.is_symlink()
-        or not seed_checkpoint_path.parent.is_dir()
+        or bundle_root.name != "mechanism-bundle"
+        or bundle_root != seed_checkpoint_path.parent
+        or bundle_parent.is_symlink()
+        or not bundle_parent.is_dir()
     ):
         raise ValueError("mechanism seed checkpoint output locator is not canonical")
     launch = validate_cycleback_launch_registry(
@@ -1870,13 +1888,27 @@ def run_mechanism_probe(
     if stable_file_identity(geometry_run_receipt_path) != geometry_receipt_identity:
         raise RuntimeError("geometry receipt changed before checkpoint publication")
     checkpoint_identity: tuple[str, int] | None = None
+    checkpoint_bytes: bytes | None = None
     if decision["overall_pass"]:
-        checkpoint_identity = atomic_save_new_mechanism_seed_checkpoint(
-            seed_checkpoint_payload,
-            seed_checkpoint_path,
+        checkpoint_buffer = io.BytesIO()
+        torch.save(seed_checkpoint_payload, checkpoint_buffer)
+        checkpoint_bytes = checkpoint_buffer.getvalue()
+        reloaded_seed = torch.load(
+            io.BytesIO(checkpoint_bytes),
+            map_location=torch.device("cpu"),
+            weights_only=False,
         )
-    elif seed_checkpoint_path.is_symlink() or seed_checkpoint_path.exists():
-        raise RuntimeError("rejected mechanism probe wrote a seed checkpoint")
+        if not isinstance(reloaded_seed, Mapping):
+            raise RuntimeError("serialized mechanism seed is not a mapping")
+        validate_mechanism_seed_checkpoint_payload(
+            reloaded_seed,
+            trainer_contract,
+            seed_predecessor,
+        )
+        checkpoint_identity = (
+            hashlib.sha256(checkpoint_bytes).hexdigest(),
+            len(checkpoint_bytes),
+        )
     checkpoint_record = {
         "artifact_type": (
             "pams_conventional_cycleback_mechanism_seed_checkpoint_v1"
@@ -1897,6 +1929,15 @@ def run_mechanism_probe(
         "captured_boundary_rng_state_sha256": boundary_rng_sha256,
         "captured_boundary_backend_state_sha256": boundary_backend_sha256,
         "captured_sampler_state_sha256": sampler_state.fingerprint,
+        "captured_view_state_sha256": seed_checkpoint_payload[
+            "next_view_seed_state_sha256"
+        ],
+        "captured_consumed_video_batch_chain_sha256": (
+            sampler_state.consumed_video_batch_chain_sha256
+        ),
+        "captured_consumed_pair_row_chain_sha256": (
+            sampler_state.consumed_pair_row_chain_sha256
+        ),
         "trainer_contract_fingerprint": trainer_contract.fingerprint,
         "representation_contract_sha256": representation_contract.fingerprint,
         "seed_predecessor_lineage_fingerprint": seed_predecessor.fingerprint,
@@ -2022,6 +2063,15 @@ def run_mechanism_probe(
             "optimizer_state_sha256_at_step256": boundary_optimizer_sha256,
             "mechanism_sampler_state": sampler_state.to_dict(),
             "mechanism_sampler_state_sha256": sampler_state.fingerprint,
+            "mechanism_view_state_sha256": seed_checkpoint_payload[
+                "next_view_seed_state_sha256"
+            ],
+            "mechanism_consumed_video_batch_chain_sha256": (
+                sampler_state.consumed_video_batch_chain_sha256
+            ),
+            "mechanism_consumed_pair_row_chain_sha256": (
+                sampler_state.consumed_pair_row_chain_sha256
+            ),
             "scheduler": "none",
             "trainer_contract_fingerprint": trainer_contract.fingerprint,
             "optimizer_steps_completed": completed_steps,
@@ -2128,14 +2178,13 @@ def run_mechanism_probe(
         raise RuntimeError("geometry-gate artifact changed during mechanism probe")
     if stable_file_identity(geometry_run_receipt_path) != geometry_receipt_identity:
         raise RuntimeError("geometry run receipt changed during mechanism probe")
-    if checkpoint_identity is None and (
-        seed_checkpoint_path.is_symlink() or seed_checkpoint_path.exists()
-    ):
-        raise RuntimeError("rejected mechanism probe has a checkpoint artifact")
-    if checkpoint_identity is not None and (
-        stable_file_identity(seed_checkpoint_path) != checkpoint_identity
-    ):
-        raise RuntimeError("mechanism seed checkpoint changed before probe publication")
+    _publish_mechanism_bundle(
+        output_path,
+        seed_checkpoint_path,
+        payload,
+        checkpoint_bytes=checkpoint_bytes,
+        checkpoint_identity=checkpoint_identity,
+    )
     return payload
 
 
@@ -2168,6 +2217,79 @@ def _write_new_json(path: Path, payload: Mapping[str, Any]) -> None:
         os.fsync(directory)
     finally:
         os.close(directory)
+
+
+def _publish_mechanism_bundle(
+    output_path: Path,
+    seed_checkpoint_path: Path,
+    payload: Mapping[str, Any],
+    *,
+    checkpoint_bytes: bytes | None,
+    checkpoint_identity: tuple[str, int] | None,
+) -> None:
+    """Publish JSON and an optional PASS seed as one directory transaction."""
+
+    bundle_root = output_path.parent
+    parent = bundle_root.parent
+    staging = Path(
+        tempfile.mkdtemp(prefix=f".{bundle_root.name}.", suffix=".incomplete", dir=parent)
+    )
+    published = False
+    try:
+        staged_output = staging / output_path.name
+        staged_checkpoint = staging / seed_checkpoint_path.name
+        if checkpoint_bytes is None:
+            if checkpoint_identity is not None:
+                raise ValueError("absent mechanism seed has a file identity")
+        else:
+            if checkpoint_identity != (
+                hashlib.sha256(checkpoint_bytes).hexdigest(),
+                len(checkpoint_bytes),
+            ):
+                raise ValueError("mechanism seed bytes differ from prepared identity")
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+            flags |= int(getattr(os, "O_NOFOLLOW", 0))
+            flags |= int(getattr(os, "O_CLOEXEC", 0))
+            descriptor = os.open(staged_checkpoint, flags, 0o640)
+            try:
+                with os.fdopen(descriptor, "wb") as handle:
+                    descriptor = -1
+                    handle.write(checkpoint_bytes)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+            finally:
+                if descriptor >= 0:
+                    os.close(descriptor)
+        _write_new_json(staged_output, payload)
+        if checkpoint_identity is not None and stable_file_identity(
+            staged_checkpoint
+        ) != checkpoint_identity:
+            raise RuntimeError("staged mechanism seed changed before bundle publication")
+        directory_flags = os.O_RDONLY | int(getattr(os, "O_DIRECTORY", 0))
+        directory = os.open(staging, directory_flags)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+        if bundle_root.is_symlink() or bundle_root.exists():
+            raise ValueError("mechanism bundle destination appeared before publication")
+        os.rename(staging, bundle_root)
+        published = True
+        parent_descriptor = os.open(parent, directory_flags)
+        try:
+            os.fsync(parent_descriptor)
+        finally:
+            os.close(parent_descriptor)
+    except BaseException:
+        cleanup = bundle_root if published else staging
+        if cleanup.exists():
+            shutil.rmtree(cleanup)
+            parent_descriptor = os.open(parent, directory_flags)
+            try:
+                os.fsync(parent_descriptor)
+            finally:
+                os.close(parent_descriptor)
+        raise
 
 
 def parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -2226,20 +2348,5 @@ def main(argv: Sequence[str] | None = None) -> int:
         seed_checkpoint_output=arguments.seed_checkpoint_output,
         device=arguments.device,
         encoder_batch_size=arguments.encoder_batch_size,
-    )
-    _write_new_json(arguments.output, payload)
-    print(
-        json.dumps(
-            {
-                "artifact_type": payload["artifact_type"],
-                "overall_pass": payload["gate"]["overall_pass"],
-                "optimizer_steps": payload["training"]["optimizer_steps_completed"],
-                "output": str(arguments.output),
-                "mechanism_seed_checkpoint": payload[
-                    "mechanism_seed_checkpoint"
-                ]["relative_path"],
-            },
-            sort_keys=True,
-        )
     )
     return 0 if payload["gate"]["overall_pass"] else 3

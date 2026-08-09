@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 import os
+import pickle
 import subprocess
 import sys
 from pathlib import Path
@@ -14,6 +16,9 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 LAUNCHER_PATH = ROOT / "scripts/server/pams_conventional_cycleback_secure_launcher.py"
 CONTRACT_PATH = ROOT / "scripts/server/pams_conventional_cycleback_wrapper_contract.py"
+SEED_VALIDATOR_PATH = (
+    ROOT / "scripts/server/validate_pams_conventional_cycleback_mechanism_seed.py"
+)
 GEOMETRY = ROOT / "scripts/server/run_pams_conventional_cycleback_geometry_gate_v1.sh"
 MECHANISM = ROOT / "scripts/server/run_pams_conventional_cycleback_mechanism_probe_v1.sh"
 ADAPTER = ROOT / "scripts/server/run_pams_conventional_cycleback_pose_input_authorization_v1.sh"
@@ -546,9 +551,9 @@ def test_mechanism_command_and_output_bind_pass_only_seed_checkpoint(
         launch=launch,
         predecessors=(pose, geometry),
     )
-    assert output_relative == "output/mechanism-probe.json"
+    assert output_relative == "output/mechanism-bundle/mechanism-probe.json"
     assert command[command.index("--seed-checkpoint-output") + 1] == (
-        "/pams/output/learned-encoder-L.pt"
+        "/pams/output/mechanism-bundle/learned-encoder-L.pt"
     )
     assert command[command.index("--source-export-manifest-sha256") + 1] == (
         "3" * 64
@@ -565,7 +570,7 @@ def test_mechanism_command_and_output_bind_pass_only_seed_checkpoint(
             launch=launch,
         )
 
-    output_root = tmp_path / "stage-output"
+    output_root = tmp_path / "stage-output/mechanism-bundle"
     output_root.mkdir()
     output = output_root / "mechanism-probe.json"
     checkpoint = output_root / "learned-encoder-L.pt"
@@ -595,6 +600,9 @@ def test_mechanism_command_and_output_bind_pass_only_seed_checkpoint(
         "captured_boundary_rng_state_sha256": "6" * 64,
         "captured_boundary_backend_state_sha256": "7" * 64,
         "captured_sampler_state_sha256": "8" * 64,
+        "captured_view_state_sha256": "c" * 64,
+        "captured_consumed_video_batch_chain_sha256": "d" * 64,
+        "captured_consumed_pair_row_chain_sha256": "e" * 64,
         "trainer_contract_fingerprint": "9" * 64,
         "representation_contract_sha256": "a" * 64,
         "seed_predecessor_lineage_fingerprint": "b" * 64,
@@ -608,6 +616,9 @@ def test_mechanism_command_and_output_bind_pass_only_seed_checkpoint(
                 "final_model_state_sha256": "4" * 64,
                 "optimizer_state_sha256_at_step256": "5" * 64,
                 "mechanism_sampler_state_sha256": "8" * 64,
+                "mechanism_view_state_sha256": "c" * 64,
+                "mechanism_consumed_video_batch_chain_sha256": "d" * 64,
+                "mechanism_consumed_pair_row_chain_sha256": "e" * 64,
                 "trainer_contract_fingerprint": "9" * 64,
             },
             "mechanism_seed_checkpoint": seed,
@@ -645,6 +656,9 @@ def test_mechanism_command_and_output_bind_pass_only_seed_checkpoint(
                 "final_model_state_sha256": "4" * 64,
                 "optimizer_state_sha256_at_step256": "5" * 64,
                 "mechanism_sampler_state_sha256": "8" * 64,
+                "mechanism_view_state_sha256": "c" * 64,
+                "mechanism_consumed_video_batch_chain_sha256": "d" * 64,
+                "mechanism_consumed_pair_row_chain_sha256": "e" * 64,
                 "trainer_contract_fingerprint": "9" * 64,
             },
             "mechanism_seed_checkpoint": rejected,
@@ -671,7 +685,7 @@ def test_mechanism_outcome_registry_binds_checkpoint_and_receipt(
     launcher = _load_module("cycleback_mechanism_outcome_test", LAUNCHER_PATH)
     launcher.OUTCOME_REGISTRY_ROOT = tmp_path / "outcomes"
     root = tmp_path / "run"
-    output_root = root / "output"
+    output_root = root / "output/mechanism-bundle"
     audit_root = root / "audit"
     output_root.mkdir(parents=True)
     audit_root.mkdir()
@@ -692,6 +706,9 @@ def test_mechanism_outcome_registry_binds_checkpoint_and_receipt(
         "captured_boundary_rng_state_sha256": "3" * 64,
         "captured_boundary_backend_state_sha256": "4" * 64,
         "captured_sampler_state_sha256": "5" * 64,
+        "captured_view_state_sha256": "9" * 64,
+        "captured_consumed_video_batch_chain_sha256": "a" * 64,
+        "captured_consumed_pair_row_chain_sha256": "b" * 64,
         "trainer_contract_fingerprint": "6" * 64,
         "representation_contract_sha256": "7" * 64,
         "seed_predecessor_lineage_fingerprint": "8" * 64,
@@ -703,17 +720,28 @@ def test_mechanism_outcome_registry_binds_checkpoint_and_receipt(
         "epoch11_train337_continuation_authorized": False,
         "direct_epoch150_start_authorized": False,
     }
+    output = output_root / "mechanism-probe.json"
     _write_json(
-        output_root / "mechanism-probe.json",
+        output,
         {
             "training": {
                 "final_model_state_sha256": "1" * 64,
                 "optimizer_state_sha256_at_step256": "2" * 64,
                 "mechanism_sampler_state_sha256": "5" * 64,
+                "mechanism_view_state_sha256": "9" * 64,
+                "mechanism_consumed_video_batch_chain_sha256": "a" * 64,
+                "mechanism_consumed_pair_row_chain_sha256": "b" * 64,
                 "trainer_contract_fingerprint": "6" * 64,
             },
             "mechanism_seed_checkpoint": seed,
         },
+    )
+    output_identity = launcher._identity(output, role="test mechanism output")
+    semantic_log = audit_root / "mechanism-seed.semantic-validation.log"
+    semantic_log.write_text("validated\n", encoding="utf-8")
+    semantic_identity = launcher._identity(
+        semantic_log,
+        role="test semantic validation",
     )
     _write_json(
         audit_root / "run.receipt.json",
@@ -725,7 +753,27 @@ def test_mechanism_outcome_registry_binds_checkpoint_and_receipt(
             "mechanism_seed_rng_state_sha256": "3" * 64,
             "mechanism_seed_backend_state_sha256": "4" * 64,
             "mechanism_seed_sampler_state_sha256": "5" * 64,
+            "mechanism_seed_view_state_sha256": "9" * 64,
+            "mechanism_seed_consumed_video_batch_chain_sha256": "a" * 64,
+            "mechanism_seed_consumed_pair_row_chain_sha256": "b" * 64,
+            "mechanism_seed_trainer_contract_fingerprint": "6" * 64,
+            "mechanism_seed_predecessor_lineage_fingerprint": "8" * 64,
+            "mechanism_seed_diagnostics_restored_exact_boundary": True,
+            "mechanism_seed_checkpoint_produced": True,
+            "mechanism_seed_checkpoint_relative": (
+                "output/mechanism-bundle/learned-encoder-L.pt"
+            ),
             "mechanism_seed_epoch11_continuation_authorized": False,
+            "artifact_type": (
+                "pams_conventional_cycleback_mechanism_run_receipt_v1"
+            ),
+            "status": "passed",
+            "mechanism_probe_sha256": output_identity.sha256,
+            "output_sha256": output_identity.sha256,
+            "output_bytes": output_identity.bytes,
+            "mechanism_seed_host_semantic_validation": (
+                semantic_identity.to_dict()
+            ),
         },
     )
     launch = SimpleNamespace(
@@ -737,7 +785,7 @@ def test_mechanism_outcome_registry_binds_checkpoint_and_receipt(
         role="mechanism",
         candidate_id="W16_H4",
         final_root=root,
-        output_relative="output/mechanism-probe.json",
+        output_relative="output/mechanism-bundle/mechanism-probe.json",
         launch=launch,
     )
     record = json.loads(
@@ -749,6 +797,95 @@ def test_mechanism_outcome_registry_binds_checkpoint_and_receipt(
     assert record["mechanism_seed_model_state_sha256"] == "1" * 64
     assert record["epoch11_train337_continuation_authorized"] is False
     assert record["direct_epoch150_start_authorized"] is False
+
+
+def test_failed_mechanism_tree_cannot_retain_seed_checkpoint(tmp_path: Path) -> None:
+    launcher = _load_module("cycleback_failed_seed_cleanup_test", LAUNCHER_PATH)
+    root = tmp_path / "failed-run"
+    bundle = root / "output/mechanism-bundle"
+    bundle.mkdir(parents=True)
+    seed = bundle / "learned-encoder-L.pt"
+    seed.write_bytes(b"must-not-survive")
+    (bundle / "mechanism-probe.json").write_text("{}\n", encoding="utf-8")
+    for path in (seed, bundle / "mechanism-probe.json"):
+        path.chmod(0o444)
+    bundle.chmod(0o555)
+    (root / "output").chmod(0o555)
+    root.chmod(0o555)
+
+    launcher._remove_mechanism_seed_from_failed_tree(root)
+
+    assert not seed.exists()
+    assert (bundle / "mechanism-probe.json").exists()
+
+
+def test_host_semantic_validator_failure_is_terminal(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    launcher = _load_module("cycleback_host_semantic_failure_test", LAUNCHER_PATH)
+    source = tmp_path / "source"
+    output = tmp_path / "output"
+    audit = tmp_path / "audit"
+    source.mkdir()
+    (output / "mechanism-bundle").mkdir(parents=True)
+    audit.mkdir()
+    mechanism_output = output / "mechanism-bundle/mechanism-probe.json"
+    mechanism_output.write_text("{}\n", encoding="utf-8")
+    (mechanism_output.with_name("learned-encoder-L.pt")).write_bytes(b"bad")
+    observed: list[str] = []
+
+    def failed_run(
+        arguments: list[str],
+        **_kwargs: object,
+    ) -> subprocess.CompletedProcess[bytes]:
+        observed.extend(arguments)
+        return subprocess.CompletedProcess(arguments, 7, b"", b"")
+
+    monkeypatch.setattr(launcher, "_run", failed_run)
+    with pytest.raises(launcher.LaunchFailure, match="semantic validation failed"):
+        launcher._validate_mechanism_seed_semantics_in_fresh_container(
+            launch=SimpleNamespace(container_image_id="sha256:" + "a" * 64),
+            source_export=source,
+            output_root=output,
+            output_path=mechanism_output,
+            config_relative="configs/conventional_cycleback/w16_hop4_v1.yaml",
+            audit_root=audit,
+        )
+    assert "--network" in observed
+    assert "none" in observed
+    assert "--read-only" in observed
+    assert observed[observed.index("--user") + 1] == "1000:1000"
+
+
+def test_fresh_seed_validator_rejects_arbitrary_checkpoint_bytes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    validator = _load_module("cycleback_seed_semantic_negative_test", SEED_VALIDATOR_PATH)
+    monkeypatch.setattr(
+        validator,
+        "validate_mechanism_probe_contract",
+        lambda *_args: None,
+    )
+    checkpoint = tmp_path / "learned-encoder-L.pt"
+    checkpoint.write_bytes(b"sealed-L-is-not-a-checkpoint")
+    output = tmp_path / "mechanism-probe.json"
+    _write_json(
+        output,
+        {
+            "mechanism_seed_checkpoint": {
+                "sha256": hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
+                "bytes": checkpoint.stat().st_size,
+            }
+        },
+    )
+    with pytest.raises((RuntimeError, ValueError, EOFError, pickle.UnpicklingError)):
+        validator.validate_seed(
+            output,
+            checkpoint,
+            ROOT / "configs/conventional_cycleback/w16_hop4_v1.yaml",
+        )
 
 
 def test_thin_wrappers_are_identity_free_and_python_isolated() -> None:
@@ -765,6 +902,7 @@ def test_thin_wrappers_are_identity_free_and_python_isolated() -> None:
 
 def test_launcher_freezes_science_and_security_boundaries() -> None:
     source = LAUNCHER_PATH.read_text(encoding="utf-8")
+    validator_source = SEED_VALIDATOR_PATH.read_text(encoding="utf-8")
     cli_source = (ROOT / "src/pams/cli.py").read_text(encoding="utf-8")
 
     for required in (
@@ -801,6 +939,10 @@ def test_launcher_freezes_science_and_security_boundaries() -> None:
     assert "assert " not in source
     assert "_CONTRACT_SPEC" not in source
     assert "PAMS_TRAIN337_POSE_SNAPSHOT" not in source
+    assert 'model.load_state_dict(value["model_state"], strict=True)' in (
+        validator_source
+    )
+    assert 'optimizer.load_state_dict(value["optimizer_state"])' in validator_source
     assert "_reject_v4e_from_generic_training(config" in cli_source
     assert cli_source.count("_reject_v4e_from_generic_training(config, operation=") == 2
 

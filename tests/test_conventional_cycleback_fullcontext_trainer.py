@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import os
 import random
 from collections.abc import Mapping, Sequence
@@ -14,6 +15,7 @@ import torch
 
 import pams.conventional_cycleback.fullcontext_authority as authority_module
 import pams.conventional_cycleback.fullcontext_trainer as trainer_module
+import pams.conventional_cycleback.probe as probe_module
 from pams.conventional_cycleback.config import (
     ConventionalCycleBackConfig,
     load_conventional_cycleback_config,
@@ -45,10 +47,9 @@ from pams.conventional_cycleback.fullcontext_trainer import (
     configure_fullcontext_determinism,
     epoch11_gate_decision,
     evaluate_unified2d_epoch11_label_free_controls,
-    initial_epoch11_progress,
+    initialize_epoch11_from_exact_mechanism_seed_checkpoint,
     initialize_epoch150_from_exact_epoch11_checkpoint,
     load_fullcontext_checkpoint,
-    load_mechanism_seed_checkpoint,
     model_state_sha256,
     optimizer_state_sha256,
     preserve_fullcontext_diagnostic_state,
@@ -139,6 +140,13 @@ def _lineage() -> FullContextLineage:
         mechanism_seed_checkpoint_sha256="9" * 64,
         mechanism_seed_checkpoint_bytes=106,
         mechanism_learned_model_state_sha256="a" * 64,
+        mechanism_optimizer_state_sha256="d" * 64,
+        mechanism_rng_state_sha256="b" * 64,
+        mechanism_backend_state_sha256="c" * 64,
+        mechanism_sampler_state_sha256="e" * 64,
+        mechanism_view_state_sha256="f" * 64,
+        mechanism_consumed_video_batch_chain_sha256="c" * 64,
+        mechanism_consumed_pair_row_chain_sha256="d" * 64,
     )
 
 
@@ -152,11 +160,18 @@ def _seed_receipt(
         checkpoint_sha256=lineage.mechanism_seed_checkpoint_sha256,
         checkpoint_bytes=lineage.mechanism_seed_checkpoint_bytes,
         learned_model_state_sha256=lineage.mechanism_learned_model_state_sha256,
-        optimizer_state_sha256="d" * 64,
+        optimizer_state_sha256=lineage.mechanism_optimizer_state_sha256,
         optimizer_step=256,
-        mechanism_sampler_state_sha256="e" * 64,
-        rng_state_sha256="b" * 64,
-        backend_state_sha256="c" * 64,
+        mechanism_sampler_state_sha256=lineage.mechanism_sampler_state_sha256,
+        mechanism_view_state_sha256=lineage.mechanism_view_state_sha256,
+        mechanism_consumed_video_batch_chain_sha256=(
+            lineage.mechanism_consumed_video_batch_chain_sha256
+        ),
+        mechanism_consumed_pair_row_chain_sha256=(
+            lineage.mechanism_consumed_pair_row_chain_sha256
+        ),
+        rng_state_sha256=lineage.mechanism_rng_state_sha256,
+        backend_state_sha256=lineage.mechanism_backend_state_sha256,
         trainer_contract_fingerprint=contract.fingerprint,
         representation_contract_sha256=_representation().fingerprint,
         representation_lineage_fingerprint=lineage.fingerprint,
@@ -198,7 +213,12 @@ def _unit(
     )
 
 
-def _plan(*, epoch: int = 1, tiny: bool = False):
+def _plan(
+    *,
+    epoch: int = 1,
+    tiny: bool = False,
+    lineage: FullContextLineage | None = None,
+):
     contract = _contract(tiny=tiny)
     return build_length_bucket_plan(
         (
@@ -206,13 +226,13 @@ def _plan(*, epoch: int = 1, tiny: bool = False):
             _unit("opaque-video-b", length=80, starts=(0, 4, 8, 12, 16)),
         ),
         contract,
-        _lineage(),
+        _lineage() if lineage is None else lineage,
         epoch=epoch,
     )
 
 
 def _initial_progress(*, tiny: bool = False) -> FullContextProgress:
-    return initial_epoch11_progress(
+    return trainer_module._initial_epoch11_progress_from_loaded_seed(
         _plan(epoch=1, tiny=tiny),
         mechanism_seed_load_receipt=_seed_receipt(tiny=tiny),
     )
@@ -223,15 +243,41 @@ def _initial_progress_for_state(
     optimizer: torch.optim.Optimizer,
     *,
     tiny: bool = False,
+    lineage: FullContextLineage | None = None,
 ) -> FullContextProgress:
+    bound_lineage = (
+        _lineage_for_state(model, optimizer)
+        if lineage is None
+        else lineage
+    )
     receipt = replace(
         _seed_receipt(tiny=tiny),
+        checkpoint_sha256=bound_lineage.mechanism_seed_checkpoint_sha256,
+        checkpoint_bytes=bound_lineage.mechanism_seed_checkpoint_bytes,
         learned_model_state_sha256=model_state_sha256(model),
         optimizer_state_sha256=optimizer_state_sha256(optimizer),
+        rng_state_sha256=trainer_module.fullcontext_rng_state_sha256(
+            capture_fullcontext_rng_state()
+        ),
+        representation_lineage_fingerprint=bound_lineage.fingerprint,
     )
-    return initial_epoch11_progress(
-        _plan(epoch=1, tiny=tiny),
+    return trainer_module._initial_epoch11_progress_from_loaded_seed(
+        _plan(epoch=1, tiny=tiny, lineage=bound_lineage),
         mechanism_seed_load_receipt=receipt,
+    )
+
+
+def _lineage_for_state(
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+) -> FullContextLineage:
+    return replace(
+        _lineage(),
+        mechanism_learned_model_state_sha256=model_state_sha256(model),
+        mechanism_optimizer_state_sha256=optimizer_state_sha256(optimizer),
+        mechanism_rng_state_sha256=trainer_module.fullcontext_rng_state_sha256(
+            capture_fullcontext_rng_state()
+        ),
     )
 
 
@@ -247,6 +293,7 @@ def _completed_epoch11_progress(*, tiny: bool = False) -> FullContextProgress:
             lineage,
             next_model_state_sha256=f"{step:064x}"[-64:],
             next_optimizer_state_sha256=f"{step + 10_000:064x}"[-64:],
+            next_rng_state_sha256=f"{step + 20_000:064x}"[-64:],
         )
     return progress
 
@@ -471,6 +518,7 @@ def test_progress_binds_mid_epoch_cursor_and_exact_epoch11_prefix() -> None:
         lineage,
         next_model_state_sha256="e" * 64,
         next_optimizer_state_sha256="f" * 64,
+        next_rng_state_sha256="0" * 64,
     )
 
     assert advanced.completed_epochs == 0
@@ -549,11 +597,11 @@ def test_checkpoint_resume_restores_bitwise_model_optimizer_rng_and_view_state(
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(2026)
     contract = _contract()
-    lineage = _lineage()
     model = torch.nn.Linear(4, 3)
     optimizer = build_fullcontext_adamw(model, contract)
     _prime_adamw_state(model, optimizer, step=256)
-    progress = _initial_progress_for_state(model, optimizer)
+    lineage = _lineage_for_state(model, optimizer)
+    progress = _initial_progress_for_state(model, optimizer, lineage=lineage)
     _random_optimizer_update(model, optimizer)
     progress = trainer_module._advance_fullcontext_progress(
         progress,
@@ -561,6 +609,9 @@ def test_checkpoint_resume_restores_bitwise_model_optimizer_rng_and_view_state(
         lineage,
         next_model_state_sha256=model_state_sha256(model),
         next_optimizer_state_sha256=optimizer_state_sha256(optimizer),
+        next_rng_state_sha256=trainer_module.fullcontext_rng_state_sha256(
+            capture_fullcontext_rng_state()
+        ),
     )
     payload = build_fullcontext_checkpoint_payload(
         model,
@@ -601,17 +652,31 @@ def test_checkpoint_resume_restores_bitwise_model_optimizer_rng_and_view_state(
 def test_checkpoint_rejects_lineage_and_cursor_tampering() -> None:
     _enable_test_determinism()
     contract = _contract()
-    lineage = _lineage()
     model = torch.nn.Linear(4, 3)
     optimizer = build_fullcontext_adamw(model, contract)
     _prime_adamw_state(model, optimizer, step=256)
+    lineage = _lineage_for_state(model, optimizer)
     payload = build_fullcontext_checkpoint_payload(
         model,
         optimizer,
         contract,
         lineage,
-        _initial_progress_for_state(model, optimizer),
+        _initial_progress_for_state(model, optimizer, lineage=lineage),
     )
+    parsed_only = validate_fullcontext_checkpoint_payload(
+        payload,
+        contract,
+        lineage,
+        expected_phase="epoch11",
+    )
+    with pytest.raises(ValueError, match="semantic evidence"):
+        build_fullcontext_checkpoint_payload(
+            model,
+            optimizer,
+            contract,
+            lineage,
+            parsed_only,
+        )
 
     wrong_lineage = copy.deepcopy(payload)
     wrong_lineage["lineage"]["mechanism_outcome_sha256"] = "f" * 64
@@ -670,8 +735,8 @@ def test_epoch150_initialization_restores_exact_completed_epoch11_prefix(
 ) -> None:
     _enable_test_determinism()
     contract = _contract()
-    lineage = _lineage()
     representation = _representation()
+    lineage = _lineage()
     model = torch.nn.Linear(4, 3)
     optimizer = build_fullcontext_adamw(model, contract)
     completed = _completed_epoch11_progress()
@@ -680,6 +745,9 @@ def test_epoch150_initialization_restores_exact_completed_epoch11_prefix(
         completed,
         current_model_state_sha256=model_state_sha256(model),
         current_optimizer_state_sha256=optimizer_state_sha256(optimizer),
+        current_rng_state_sha256=trainer_module.fullcontext_rng_state_sha256(
+            capture_fullcontext_rng_state()
+        ),
     )
     checkpoint = tmp_path / "epoch11.pt"
     identity = atomic_save_fullcontext_checkpoint(
@@ -830,6 +898,23 @@ def test_mechanism_seed_captures_exact_step256_boundary_and_publishes_once(
     lineage = replace(
         _lineage(),
         mechanism_learned_model_state_sha256=model_state_sha256(model),
+        mechanism_optimizer_state_sha256=optimizer_state_sha256(optimizer),
+        mechanism_rng_state_sha256=trainer_module.fullcontext_rng_state_sha256(
+            capture_fullcontext_rng_state()
+        ),
+        mechanism_backend_state_sha256=(
+            trainer_module.fullcontext_backend_state_sha256(
+                capture_fullcontext_backend_state()
+            )
+        ),
+        mechanism_sampler_state_sha256=_mechanism_sampler_state(contract).fingerprint,
+        mechanism_view_state_sha256="0" * 64,
+        mechanism_consumed_video_batch_chain_sha256=(
+            _mechanism_sampler_state(contract).consumed_video_batch_chain_sha256
+        ),
+        mechanism_consumed_pair_row_chain_sha256=(
+            _mechanism_sampler_state(contract).consumed_pair_row_chain_sha256
+        ),
     )
     predecessor = lineage.mechanism_seed_predecessor()
     assert isinstance(predecessor, MechanismSeedPredecessorLineage)
@@ -840,11 +925,21 @@ def test_mechanism_seed_captures_exact_step256_boundary_and_publishes_once(
         predecessor,
         _mechanism_sampler_state(contract),
     )
+    lineage = replace(
+        lineage,
+        mechanism_view_state_sha256=payload["next_view_seed_state_sha256"],
+    )
     validate_mechanism_seed_checkpoint_payload(
         payload,
         contract,
         lineage,
     )
+    with pytest.raises(ValueError, match="state closure"):
+        validate_mechanism_seed_checkpoint_payload(
+            payload,
+            contract,
+            replace(lineage, mechanism_rng_state_sha256="0" * 64),
+        )
     boundary_optimizer = optimizer_state_sha256(optimizer)
     with preserve_fullcontext_diagnostic_state(model):
         model.eval()
@@ -859,28 +954,31 @@ def test_mechanism_seed_captures_exact_step256_boundary_and_publishes_once(
     identity = atomic_save_new_mechanism_seed_checkpoint(payload, checkpoint)
     assert identity[0]
     assert identity[1] > 0
-    restored_model = torch.nn.Linear(4, 3)
-    restored_optimizer = build_fullcontext_adamw(restored_model, contract)
     final_lineage = replace(
         lineage,
         mechanism_seed_checkpoint_sha256=identity[0],
         mechanism_seed_checkpoint_bytes=identity[1],
     )
-    receipt = load_mechanism_seed_checkpoint(
+    epoch1_model = torch.nn.Linear(4, 3)
+    epoch1_optimizer = build_fullcontext_adamw(epoch1_model, contract)
+    epoch1 = initialize_epoch11_from_exact_mechanism_seed_checkpoint(
         checkpoint,
         expected_sha256=identity[0],
         expected_bytes=identity[1],
         contract=contract,
         lineage=final_lineage,
-        model=restored_model,
-        optimizer=restored_optimizer,
+        epoch1_plan=_plan(epoch=1, lineage=final_lineage),
+        model=epoch1_model,
+        optimizer=epoch1_optimizer,
     )
+    assert epoch1.completed_epochs == 0
+    receipt = epoch1.mechanism_seed_load_receipt
     assert receipt.loaded_as_epoch1_start is True
     assert receipt.mechanism_sampler_state_sha256 == (
         payload["sampler_state_sha256"]
     )
-    assert model_state_sha256(restored_model) == payload["model_state_sha256"]
-    assert optimizer_state_sha256(restored_optimizer) == (
+    assert model_state_sha256(epoch1_model) == payload["model_state_sha256"]
+    assert optimizer_state_sha256(epoch1_optimizer) == (
         payload["optimizer_state_sha256"]
     )
     with pytest.raises(ValueError, match="must be absent"):
@@ -949,9 +1047,90 @@ def test_mechanism_seed_rejects_wrong_step_state_lineage_and_optimizer() -> None
         )
 
 
+def test_mechanism_bundle_is_transactional_and_rejection_has_no_seed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rejected_output = tmp_path / "rejected/mechanism-bundle/mechanism-probe.json"
+    rejected_output.parent.parent.mkdir()
+    rejected_seed = rejected_output.with_name("learned-encoder-L.pt")
+    probe_module._publish_mechanism_bundle(
+        rejected_output,
+        rejected_seed,
+        {"status": "rejected"},
+        checkpoint_bytes=None,
+        checkpoint_identity=None,
+    )
+    assert rejected_output.exists()
+    assert not rejected_seed.exists()
+
+    passed_output = tmp_path / "passed/mechanism-bundle/mechanism-probe.json"
+    passed_output.parent.parent.mkdir()
+    passed_seed = passed_output.with_name("learned-encoder-L.pt")
+    passed_bytes = b"prepared-pass-seed"
+    passed_identity = (
+        hashlib.sha256(passed_bytes).hexdigest(),
+        len(passed_bytes),
+    )
+    probe_module._publish_mechanism_bundle(
+        passed_output,
+        passed_seed,
+        {"status": "passed"},
+        checkpoint_bytes=passed_bytes,
+        checkpoint_identity=passed_identity,
+    )
+    assert passed_seed.read_bytes() == passed_bytes
+    with pytest.raises(ValueError, match="destination appeared"):
+        probe_module._publish_mechanism_bundle(
+            passed_output,
+            passed_seed,
+            {"status": "passed"},
+            checkpoint_bytes=passed_bytes,
+            checkpoint_identity=passed_identity,
+        )
+
+    failed_output = tmp_path / "failed/mechanism-bundle/mechanism-probe.json"
+    failed_output.parent.parent.mkdir()
+    failed_seed = failed_output.with_name("learned-encoder-L.pt")
+
+    def fail_json(*_args: object, **_kwargs: object) -> None:
+        raise OSError("injected JSON publication failure")
+
+    monkeypatch.setattr(probe_module, "_write_new_json", fail_json)
+    encoded = b"prepared-seed"
+    identity = (hashlib.sha256(encoded).hexdigest(), len(encoded))
+    with pytest.raises(OSError, match="injected JSON"):
+        probe_module._publish_mechanism_bundle(
+            failed_output,
+            failed_seed,
+            {"status": "passed"},
+            checkpoint_bytes=encoded,
+            checkpoint_identity=identity,
+        )
+    assert not failed_output.parent.exists()
+    assert not failed_seed.exists()
+
+
 def test_low_level_optimizer_is_private_and_null_role_remains_non_optimizer() -> None:
     assert not hasattr(trainer_module, "optimize_real_pair_contexts")
     assert not hasattr(trainer_module, "advance_fullcontext_progress")
+    assert not hasattr(trainer_module, "initial_epoch11_progress")
+    assert not hasattr(trainer_module, "initial_epoch150_progress")
+    assert not hasattr(trainer_module, "load_mechanism_seed_checkpoint")
+    assert hasattr(
+        trainer_module,
+        "initialize_epoch11_from_exact_mechanism_seed_checkpoint",
+    )
+
+    class EqualityForgery:
+        def __eq__(self, _other: object) -> bool:
+            return True
+
+    with pytest.raises(ValueError, match="validated checkpoint load"):
+        replace(
+            _initial_progress(),
+            _runtime_attestation=EqualityForgery(),
+        )
     _, contexts = _pairs_and_contexts((48,))
     controlled = zero_pair_segment_contexts(contexts)
     assert controlled.objective_role == "diagnostic_zero"
@@ -1106,7 +1285,6 @@ def test_single_step_api_consumes_progress_and_rejects_skip_or_replay() -> None:
     _enable_test_determinism()
     config = _candidate_config(tiny=True)
     contract = _contract(tiny=True)
-    lineage = _lineage()
     sequences, ranges, eligibility = _formal_step_inputs()
     encoder = PAMSEncoder(
         input_dim=99,
@@ -1120,7 +1298,13 @@ def test_single_step_api_consumes_progress_and_rejects_skip_or_replay() -> None:
     )
     optimizer = build_fullcontext_adamw(encoder, contract)
     _prime_adamw_state(encoder, optimizer, step=256)
-    progress = _initial_progress_for_state(encoder, optimizer, tiny=True)
+    lineage = _lineage_for_state(encoder, optimizer)
+    progress = _initial_progress_for_state(
+        encoder,
+        optimizer,
+        tiny=True,
+        lineage=lineage,
+    )
     pairs, contexts = _prepare_formal_step(
         encoder,
         progress,
@@ -1129,6 +1313,23 @@ def test_single_step_api_consumes_progress_and_rejects_skip_or_replay() -> None:
         ranges,
         eligibility,
     )
+    preserved_rng = capture_fullcontext_rng_state()
+    _ = torch.rand(1)
+    with pytest.raises(ValueError, match="model/optimizer/RNG"):
+        run_fullcontext_optimizer_step(
+            encoder,
+            optimizer,
+            pairs,
+            contexts,
+            ranges,
+            eligibility,
+            config,
+            contract,
+            _representation(),
+            lineage,
+            progress,
+        )
+    trainer_module.restore_fullcontext_rng_state(preserved_rng)
     tampered_positions = replace(
         contexts,
         position_indices_a=(
@@ -1192,7 +1393,7 @@ def test_single_step_api_consumes_progress_and_rejects_skip_or_replay() -> None:
     assert result.evidence.progress_before_sha256 == progress.fingerprint
     assert result.evidence.progress_after_sha256 == result.progress.fingerprint
     assert len(result.evidence.exact_pair_rows_sha256) == 64
-    with pytest.raises(ValueError, match="model/optimizer bytes"):
+    with pytest.raises(ValueError, match="model/optimizer/RNG bytes"):
         run_fullcontext_optimizer_step(
             encoder,
             optimizer,
@@ -1212,7 +1413,7 @@ def test_single_step_api_consumes_progress_and_rejects_skip_or_replay() -> None:
         next(alternate_encoder.parameters()).add_(1.0)
     alternate_optimizer = build_fullcontext_adamw(alternate_encoder, contract)
     _prime_adamw_state(alternate_encoder, alternate_optimizer, step=257)
-    with pytest.raises(ValueError, match="model/optimizer bytes"):
+    with pytest.raises(ValueError, match="model/optimizer/RNG bytes"):
         run_fullcontext_optimizer_step(
             alternate_encoder,
             alternate_optimizer,
@@ -1236,8 +1437,9 @@ def test_single_step_api_consumes_progress_and_rejects_skip_or_replay() -> None:
         lineage,
         next_model_state_sha256="e" * 64,
         next_optimizer_state_sha256="f" * 64,
+        next_rng_state_sha256="0" * 64,
     )
-    with pytest.raises(ValueError, match="model/optimizer bytes"):
+    with pytest.raises(ValueError, match="model/optimizer/RNG bytes"):
         run_fullcontext_optimizer_step(
             fresh_encoder,
             fresh_optimizer,

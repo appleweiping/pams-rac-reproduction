@@ -25,7 +25,7 @@ import re
 import tempfile
 from collections.abc import Mapping, Sequence
 from contextlib import contextmanager
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Literal
 
@@ -69,6 +69,8 @@ _CANDIDATE_GEOMETRY: dict[str, tuple[int, int]] = {
 _MECHANISM_OPTIMIZER_STEPS = 256
 _EPOCH11_TARGET = 11
 _EPOCH150_TARGET = 150
+_FULLCONTEXT_RUNTIME_ATTESTATION = object()
+_FULLCONTEXT_PARSED_ATTESTATION = object()
 
 
 def _canonical_json_bytes(payload: Any) -> bytes:
@@ -628,6 +630,13 @@ class FullContextLineage:
     mechanism_seed_checkpoint_sha256: str
     mechanism_seed_checkpoint_bytes: int
     mechanism_learned_model_state_sha256: str
+    mechanism_optimizer_state_sha256: str
+    mechanism_rng_state_sha256: str
+    mechanism_backend_state_sha256: str
+    mechanism_sampler_state_sha256: str
+    mechanism_view_state_sha256: str
+    mechanism_consumed_video_batch_chain_sha256: str
+    mechanism_consumed_pair_row_chain_sha256: str
 
     def __post_init__(self) -> None:
         _require_git_sha(self.source_git_sha, role="source revision")
@@ -648,6 +657,19 @@ class FullContextLineage:
             ("mechanism run receipt", self.mechanism_run_receipt_sha256),
             ("mechanism seed checkpoint", self.mechanism_seed_checkpoint_sha256),
             ("mechanism learned model state", self.mechanism_learned_model_state_sha256),
+            ("mechanism optimizer state", self.mechanism_optimizer_state_sha256),
+            ("mechanism RNG state", self.mechanism_rng_state_sha256),
+            ("mechanism backend state", self.mechanism_backend_state_sha256),
+            ("mechanism sampler state", self.mechanism_sampler_state_sha256),
+            ("mechanism view state", self.mechanism_view_state_sha256),
+            (
+                "mechanism consumed video-batch chain",
+                self.mechanism_consumed_video_batch_chain_sha256,
+            ),
+            (
+                "mechanism consumed pair-row chain",
+                self.mechanism_consumed_pair_row_chain_sha256,
+            ),
         ):
             _require_sha256(value, role=role)
         for role, value in (
@@ -699,6 +721,19 @@ class FullContextLineage:
             "mechanism_seed_checkpoint_bytes": self.mechanism_seed_checkpoint_bytes,
             "mechanism_learned_model_state_sha256": (
                 self.mechanism_learned_model_state_sha256
+            ),
+            "mechanism_optimizer_state_sha256": (
+                self.mechanism_optimizer_state_sha256
+            ),
+            "mechanism_rng_state_sha256": self.mechanism_rng_state_sha256,
+            "mechanism_backend_state_sha256": self.mechanism_backend_state_sha256,
+            "mechanism_sampler_state_sha256": self.mechanism_sampler_state_sha256,
+            "mechanism_view_state_sha256": self.mechanism_view_state_sha256,
+            "mechanism_consumed_video_batch_chain_sha256": (
+                self.mechanism_consumed_video_batch_chain_sha256
+            ),
+            "mechanism_consumed_pair_row_chain_sha256": (
+                self.mechanism_consumed_pair_row_chain_sha256
             ),
         }
 
@@ -1202,6 +1237,37 @@ def validate_fullcontext_optimizer(
             or group.get("fused") is not False
         ):
             raise ValueError("full-context AdamW parameter group differs from contract")
+    parameters = tuple(optimizer.param_groups[0]["params"])
+    if optimizer.state:
+        if set(optimizer.state) != set(parameters):
+            raise ValueError("full-context AdamW runtime state is incomplete")
+        for parameter in parameters:
+            state = optimizer.state[parameter]
+            if not isinstance(state, Mapping) or set(state) != {
+                "step",
+                "exp_avg",
+                "exp_avg_sq",
+            }:
+                raise ValueError("full-context AdamW runtime state schema mismatch")
+            step = state["step"]
+            first = state["exp_avg"]
+            second = state["exp_avg_sq"]
+            if (
+                not isinstance(step, Tensor)
+                or step.numel() != 1
+                or not bool(torch.isfinite(step).all())
+                or not isinstance(first, Tensor)
+                or not isinstance(second, Tensor)
+                or first.shape != parameter.shape
+                or second.shape != parameter.shape
+                or first.dtype != parameter.dtype
+                or second.dtype != parameter.dtype
+                or first.device != parameter.device
+                or second.device != parameter.device
+                or not bool(torch.isfinite(first).all())
+                or not bool(torch.isfinite(second).all())
+            ):
+                raise ValueError("full-context AdamW runtime tensor state mismatch")
 
 
 def _validate_optimizer_model_binding(
@@ -1304,8 +1370,16 @@ def _validate_adamw_state_step(
         raise ValueError("AdamW checkpoint lacks state for an encoder parameter")
     observed: list[int] = []
     for parameter_state in state.values():
-        if not isinstance(parameter_state, Mapping) or "step" not in parameter_state:
-            raise ValueError("AdamW parameter state is missing its step")
+        if not isinstance(parameter_state, Mapping) or set(parameter_state) != {
+            "step",
+            "exp_avg",
+            "exp_avg_sq",
+        }:
+            raise ValueError("AdamW parameter state schema mismatch")
+        for moment_name in ("exp_avg", "exp_avg_sq"):
+            moment = parameter_state[moment_name]
+            if not isinstance(moment, Tensor) or not bool(torch.isfinite(moment).all()):
+                raise ValueError("AdamW moment state must be a finite tensor")
         step = parameter_state["step"]
         if isinstance(step, Tensor):
             if step.numel() != 1 or not bool(torch.isfinite(step).all()):
@@ -1337,6 +1411,7 @@ class FullContextOptimizerStep:
     possible_anchor_total: int
     model_state_sha256: str
     optimizer_state_sha256: str
+    rng_state_sha256: str
     dataset_fingerprint: str
     active_plan_fingerprint: str
     exact_pair_rows_sha256: str
@@ -1369,6 +1444,7 @@ class FullContextOptimizerStep:
         for role, value in (
             ("optimizer-step model state", self.model_state_sha256),
             ("optimizer-step optimizer state", self.optimizer_state_sha256),
+            ("optimizer-step RNG state", self.rng_state_sha256),
             ("optimizer-step dataset", self.dataset_fingerprint),
             ("optimizer-step active plan", self.active_plan_fingerprint),
             ("optimizer-step exact pair rows", self.exact_pair_rows_sha256),
@@ -1404,6 +1480,7 @@ class FullContextOptimizerStep:
             "possible_anchor_total": self.possible_anchor_total,
             "model_state_sha256": self.model_state_sha256,
             "optimizer_state_sha256": self.optimizer_state_sha256,
+            "rng_state_sha256": self.rng_state_sha256,
             "dataset_fingerprint": self.dataset_fingerprint,
             "active_plan_fingerprint": self.active_plan_fingerprint,
             "exact_pair_rows_sha256": self.exact_pair_rows_sha256,
@@ -1589,6 +1666,9 @@ class MechanismSeedLoadReceipt:
     optimizer_state_sha256: str
     optimizer_step: Literal[256]
     mechanism_sampler_state_sha256: str
+    mechanism_view_state_sha256: str
+    mechanism_consumed_video_batch_chain_sha256: str
+    mechanism_consumed_pair_row_chain_sha256: str
     rng_state_sha256: str
     backend_state_sha256: str
     trainer_contract_fingerprint: str
@@ -1603,6 +1683,15 @@ class MechanismSeedLoadReceipt:
             ("mechanism learned model", self.learned_model_state_sha256),
             ("mechanism optimizer state", self.optimizer_state_sha256),
             ("mechanism sampler state", self.mechanism_sampler_state_sha256),
+            ("mechanism view state", self.mechanism_view_state_sha256),
+            (
+                "mechanism consumed video-batch chain",
+                self.mechanism_consumed_video_batch_chain_sha256,
+            ),
+            (
+                "mechanism consumed pair-row chain",
+                self.mechanism_consumed_pair_row_chain_sha256,
+            ),
             ("mechanism RNG state", self.rng_state_sha256),
             ("mechanism backend state", self.backend_state_sha256),
             ("mechanism trainer contract", self.trainer_contract_fingerprint),
@@ -1634,6 +1723,13 @@ class MechanismSeedLoadReceipt:
             "optimizer_step": self.optimizer_step,
             "mechanism_sampler_state_sha256": (
                 self.mechanism_sampler_state_sha256
+            ),
+            "mechanism_view_state_sha256": self.mechanism_view_state_sha256,
+            "mechanism_consumed_video_batch_chain_sha256": (
+                self.mechanism_consumed_video_batch_chain_sha256
+            ),
+            "mechanism_consumed_pair_row_chain_sha256": (
+                self.mechanism_consumed_pair_row_chain_sha256
             ),
             "rng_state_sha256": self.rng_state_sha256,
             "backend_state_sha256": self.backend_state_sha256,
@@ -1798,12 +1894,18 @@ class FullContextProgress:
     mechanism_seed_load_receipt: MechanismSeedLoadReceipt
     current_model_state_sha256: str
     current_optimizer_state_sha256: str
+    current_rng_state_sha256: str
     completed_plan_prefix: tuple[CompletedEpochPlan, ...]
     active_plan: LengthBucketPlan | None
     sampler_cursor: int
     epoch11_prefix_checkpoint_sha256: str | None = None
     epoch11_prefix_checkpoint_bytes: int | None = None
     epoch150_transition: Epoch150TransitionBindings | None = None
+    _runtime_attestation: object = field(
+        default=None,
+        repr=False,
+        compare=False,
+    )
 
     def __post_init__(self) -> None:
         expected_target = {
@@ -1819,6 +1921,14 @@ class FullContextProgress:
             self.current_optimizer_state_sha256,
             role="current optimizer state",
         )
+        _require_sha256(self.current_rng_state_sha256, role="current RNG state")
+        if (
+            self._runtime_attestation is not _FULLCONTEXT_RUNTIME_ATTESTATION
+            and self._runtime_attestation is not _FULLCONTEXT_PARSED_ATTESTATION
+        ):
+            raise ValueError(
+                "full-context progress must originate from a validated checkpoint load"
+            )
         minimum_completed = 0 if self.phase == "epoch11" else _EPOCH11_TARGET
         if not minimum_completed <= self.completed_epochs <= self.target_epoch:
             raise ValueError("completed epoch count lies outside the phase")
@@ -1903,6 +2013,7 @@ class FullContextProgress:
                 "current_optimizer_state_sha256": (
                     self.current_optimizer_state_sha256
                 ),
+                "current_rng_state_sha256": self.current_rng_state_sha256,
             }
         )
 
@@ -1925,6 +2036,7 @@ class FullContextProgress:
             "current_optimizer_state_sha256": (
                 self.current_optimizer_state_sha256
             ),
+            "current_rng_state_sha256": self.current_rng_state_sha256,
             "completed_plan_prefix": [
                 record.to_dict() for record in self.completed_plan_prefix
             ],
@@ -1959,18 +2071,40 @@ class FullContextProgress:
         return _canonical_sha256(self.to_dict())
 
 
+def _require_live_fullcontext_progress(progress: FullContextProgress) -> None:
+    if progress._runtime_attestation is not _FULLCONTEXT_RUNTIME_ATTESTATION:
+        raise ValueError(
+            "full-context progress is semantic evidence, not a loaded runtime state"
+        )
+
+
 def validate_fullcontext_progress_schedule(
     progress: FullContextProgress,
     contract: FullContextTrainerContract,
     lineage: FullContextLineage,
 ) -> None:
+    receipt = progress.mechanism_seed_load_receipt
     if (
-        progress.mechanism_seed_load_receipt.trainer_contract_fingerprint
-        != contract.fingerprint
-        or progress.mechanism_seed_load_receipt.representation_contract_sha256
+        receipt.checkpoint_sha256 != lineage.mechanism_seed_checkpoint_sha256
+        or receipt.checkpoint_bytes != lineage.mechanism_seed_checkpoint_bytes
+        or receipt.learned_model_state_sha256
+        != lineage.mechanism_learned_model_state_sha256
+        or receipt.optimizer_state_sha256
+        != lineage.mechanism_optimizer_state_sha256
+        or receipt.mechanism_sampler_state_sha256
+        != lineage.mechanism_sampler_state_sha256
+        or receipt.mechanism_view_state_sha256
+        != lineage.mechanism_view_state_sha256
+        or receipt.mechanism_consumed_video_batch_chain_sha256
+        != lineage.mechanism_consumed_video_batch_chain_sha256
+        or receipt.mechanism_consumed_pair_row_chain_sha256
+        != lineage.mechanism_consumed_pair_row_chain_sha256
+        or receipt.rng_state_sha256 != lineage.mechanism_rng_state_sha256
+        or receipt.backend_state_sha256 != lineage.mechanism_backend_state_sha256
+        or receipt.trainer_contract_fingerprint != contract.fingerprint
+        or receipt.representation_contract_sha256
         != lineage.representation_contract_sha256
-        or progress.mechanism_seed_load_receipt.representation_lineage_fingerprint
-        != lineage.fingerprint
+        or receipt.representation_lineage_fingerprint != lineage.fingerprint
     ):
         raise ValueError("learned-L receipt differs from continuation lineage")
     if progress.continuation_optimizer_steps == 0 and (
@@ -1978,6 +2112,8 @@ def validate_fullcontext_progress_schedule(
         != progress.mechanism_seed_load_receipt.learned_model_state_sha256
         or progress.current_optimizer_state_sha256
         != progress.mechanism_seed_load_receipt.optimizer_state_sha256
+        or progress.current_rng_state_sha256
+        != progress.mechanism_seed_load_receipt.rng_state_sha256
     ):
         raise ValueError("epoch-one progress differs from exact learned-L state")
     if (
@@ -2016,7 +2152,7 @@ def validate_fullcontext_progress_schedule(
             raise ValueError("active sampler plan differs from deterministic replay")
 
 
-def initial_epoch11_progress(
+def _initial_epoch11_progress_from_loaded_seed(
     plan: LengthBucketPlan,
     *,
     mechanism_seed_load_receipt: MechanismSeedLoadReceipt,
@@ -2044,18 +2180,21 @@ def initial_epoch11_progress(
         current_optimizer_state_sha256=(
             mechanism_seed_load_receipt.optimizer_state_sha256
         ),
+        current_rng_state_sha256=mechanism_seed_load_receipt.rng_state_sha256,
         completed_plan_prefix=(),
         active_plan=plan,
         sampler_cursor=0,
+        _runtime_attestation=_FULLCONTEXT_RUNTIME_ATTESTATION,
     )
 
 
-def initial_epoch150_progress(
+def _initial_epoch150_progress_from_loaded_epoch11(
     plan: LengthBucketPlan,
     *,
     completed_epoch11_progress: FullContextProgress,
     transition: Epoch150TransitionBindings,
 ) -> FullContextProgress:
+    _require_live_fullcontext_progress(completed_epoch11_progress)
     if plan.epoch != _EPOCH11_TARGET + 1:
         raise ValueError("epoch150 continuation must begin with epoch-twelve plan")
     if (
@@ -2089,12 +2228,16 @@ def initial_epoch150_progress(
         current_optimizer_state_sha256=(
             completed_epoch11_progress.current_optimizer_state_sha256
         ),
+        current_rng_state_sha256=(
+            completed_epoch11_progress.current_rng_state_sha256
+        ),
         completed_plan_prefix=completed_epoch11_progress.completed_plan_prefix,
         active_plan=plan,
         sampler_cursor=0,
         epoch11_prefix_checkpoint_sha256=transition.epoch11_checkpoint_sha256,
         epoch11_prefix_checkpoint_bytes=transition.epoch11_checkpoint_bytes,
         epoch150_transition=transition,
+        _runtime_attestation=_FULLCONTEXT_RUNTIME_ATTESTATION,
     )
 
 
@@ -2105,12 +2248,15 @@ def _advance_fullcontext_progress(
     *,
     next_model_state_sha256: str,
     next_optimizer_state_sha256: str,
+    next_rng_state_sha256: str,
 ) -> FullContextProgress:
     """Advance exactly the active cursor; next plans are replayed internally."""
 
+    _require_live_fullcontext_progress(progress)
     validate_fullcontext_progress_schedule(progress, contract, lineage)
     _require_sha256(next_model_state_sha256, role="advanced model state")
     _require_sha256(next_optimizer_state_sha256, role="advanced optimizer state")
+    _require_sha256(next_rng_state_sha256, role="advanced RNG state")
     if (
         next_model_state_sha256 == progress.current_model_state_sha256
         and next_optimizer_state_sha256 == progress.current_optimizer_state_sha256
@@ -2126,6 +2272,7 @@ def _advance_fullcontext_progress(
             continuation_optimizer_steps=next_steps,
             current_model_state_sha256=next_model_state_sha256,
             current_optimizer_state_sha256=next_optimizer_state_sha256,
+            current_rng_state_sha256=next_rng_state_sha256,
             sampler_cursor=next_cursor,
         )
     previous_cumulative = (
@@ -2150,6 +2297,7 @@ def _advance_fullcontext_progress(
             continuation_optimizer_steps=next_steps,
             current_model_state_sha256=next_model_state_sha256,
             current_optimizer_state_sha256=next_optimizer_state_sha256,
+            current_rng_state_sha256=next_rng_state_sha256,
             completed_plan_prefix=prefix,
             active_plan=None,
             sampler_cursor=0,
@@ -2166,6 +2314,7 @@ def _advance_fullcontext_progress(
         continuation_optimizer_steps=next_steps,
         current_model_state_sha256=next_model_state_sha256,
         current_optimizer_state_sha256=next_optimizer_state_sha256,
+        current_rng_state_sha256=next_rng_state_sha256,
         completed_plan_prefix=prefix,
         active_plan=next_plan,
         sampler_cursor=0,
@@ -2294,6 +2443,7 @@ def run_fullcontext_optimizer_step(
     it never assumes COCO17 or MediaPipe33 support semantics itself.
     """
 
+    _require_live_fullcontext_progress(progress)
     validate_representation_contract_lineage(representation, lineage)
     validate_fullcontext_candidate_config(candidate_config, contract)
     validate_fullcontext_progress_schedule(progress, contract, lineage)
@@ -2306,12 +2456,14 @@ def run_fullcontext_optimizer_step(
     _validate_optimizer_model_binding(optimizer, encoder)
     observed_model_state_sha256 = model_state_sha256(encoder)
     observed_optimizer_state_sha256 = optimizer_state_sha256(optimizer)
+    observed_rng_state_sha256 = _rng_state_sha256(capture_fullcontext_rng_state())
     if (
         observed_model_state_sha256 != progress.current_model_state_sha256
         or observed_optimizer_state_sha256
         != progress.current_optimizer_state_sha256
+        or observed_rng_state_sha256 != progress.current_rng_state_sha256
     ):
-        raise ValueError("model/optimizer bytes differ from the active progress state")
+        raise ValueError("model/optimizer/RNG bytes differ from active progress")
     _validate_adamw_state_step(
         optimizer.state_dict(),
         expected_step=progress.global_optimizer_step,
@@ -2402,12 +2554,14 @@ def run_fullcontext_optimizer_step(
     )
     next_model_state_sha256 = model_state_sha256(encoder)
     next_optimizer_state_sha256 = optimizer_state_sha256(optimizer)
+    next_rng_state_sha256 = _rng_state_sha256(capture_fullcontext_rng_state())
     advanced = _advance_fullcontext_progress(
         progress,
         contract,
         lineage,
         next_model_state_sha256=next_model_state_sha256,
         next_optimizer_state_sha256=next_optimizer_state_sha256,
+        next_rng_state_sha256=next_rng_state_sha256,
     )
     _validate_adamw_state_step(
         optimizer.state_dict(),
@@ -2431,6 +2585,7 @@ def run_fullcontext_optimizer_step(
         possible_anchor_total=possible_anchors,
         model_state_sha256=next_model_state_sha256,
         optimizer_state_sha256=next_optimizer_state_sha256,
+        rng_state_sha256=next_rng_state_sha256,
         dataset_fingerprint=progress.dataset_fingerprint,
         active_plan_fingerprint=plan.fingerprint,
         exact_pair_rows_sha256=exact_pair_rows_sha256,
@@ -2736,6 +2891,7 @@ def build_fullcontext_checkpoint_payload(
 ) -> dict[str, Any]:
     """Snapshot a complete continuation state; the checkpoint grants no authority."""
 
+    _require_live_fullcontext_progress(progress)
     validate_fullcontext_progress_schedule(progress, contract, lineage)
     validate_fullcontext_optimizer(optimizer, contract)
     _validate_optimizer_model_binding(optimizer, model)
@@ -2758,6 +2914,8 @@ def build_fullcontext_checkpoint_payload(
     ):
         raise ValueError("checkpoint model/optimizer differ from progress state")
     rng_state = capture_fullcontext_rng_state()
+    if _rng_state_sha256(rng_state) != progress.current_rng_state_sha256:
+        raise ValueError("checkpoint RNG differs from progress state")
     backend_state = capture_fullcontext_backend_state()
     validate_frozen_fullcontext_backend_state(backend_state)
     return {
@@ -2928,6 +3086,9 @@ def _parse_mechanism_seed_load_receipt(
         "optimizer_state_sha256",
         "optimizer_step",
         "mechanism_sampler_state_sha256",
+        "mechanism_view_state_sha256",
+        "mechanism_consumed_video_batch_chain_sha256",
+        "mechanism_consumed_pair_row_chain_sha256",
         "rng_state_sha256",
         "backend_state_sha256",
         "trainer_contract_fingerprint",
@@ -2954,6 +3115,13 @@ def _parse_mechanism_seed_load_receipt(
         optimizer_step=payload["optimizer_step"],
         mechanism_sampler_state_sha256=payload[
             "mechanism_sampler_state_sha256"
+        ],
+        mechanism_view_state_sha256=payload["mechanism_view_state_sha256"],
+        mechanism_consumed_video_batch_chain_sha256=payload[
+            "mechanism_consumed_video_batch_chain_sha256"
+        ],
+        mechanism_consumed_pair_row_chain_sha256=payload[
+            "mechanism_consumed_pair_row_chain_sha256"
         ],
         rng_state_sha256=payload["rng_state_sha256"],
         backend_state_sha256=payload["backend_state_sha256"],
@@ -3057,6 +3225,7 @@ def _parse_progress(payload: Mapping[str, Any]) -> FullContextProgress:
         "mechanism_seed_load_receipt_sha256",
         "current_model_state_sha256",
         "current_optimizer_state_sha256",
+        "current_rng_state_sha256",
         "completed_plan_prefix",
         "active_plan",
         "active_plan_fingerprint",
@@ -3143,6 +3312,7 @@ def _parse_progress(payload: Mapping[str, Any]) -> FullContextProgress:
         current_optimizer_state_sha256=payload[
             "current_optimizer_state_sha256"
         ],
+        current_rng_state_sha256=payload["current_rng_state_sha256"],
         completed_plan_prefix=tuple(completed_prefix),
         active_plan=active_plan,
         sampler_cursor=payload["sampler_cursor"],
@@ -3153,6 +3323,7 @@ def _parse_progress(payload: Mapping[str, Any]) -> FullContextProgress:
             "epoch11_prefix_checkpoint_bytes"
         ],
         epoch150_transition=transition,
+        _runtime_attestation=_FULLCONTEXT_PARSED_ATTESTATION,
     )
     if progress.to_dict() != dict(payload):
         raise ValueError("checkpoint progress derived fields mismatch")
@@ -3242,6 +3413,7 @@ def validate_fullcontext_checkpoint_payload(
     rng_state = payload["rng_state"]
     if not isinstance(rng_state, Mapping) or (
         _rng_state_sha256(rng_state) != payload["rng_state_sha256"]
+        or payload["rng_state_sha256"] != progress.current_rng_state_sha256
     ):
         raise ValueError("full-context checkpoint RNG-state digest mismatch")
     backend_state = payload["backend_state"]
@@ -3412,7 +3584,10 @@ def load_fullcontext_checkpoint(
         raise RuntimeError("restored full-context RNG differs from checkpoint")
     if capture_fullcontext_backend_state() != dict(value["backend_state"]):
         raise RuntimeError("restored full-context backend differs from checkpoint")
-    return progress
+    return replace(
+        progress,
+        _runtime_attestation=_FULLCONTEXT_RUNTIME_ATTESTATION,
+    )
 
 
 def initialize_epoch150_from_exact_epoch11_checkpoint(
@@ -3487,7 +3662,7 @@ def initialize_epoch150_from_exact_epoch11_checkpoint(
         or transition.representation_lineage_fingerprint != lineage.fingerprint
     ):
         raise ValueError("epoch150 gate/threshold/launch lineage differs from epoch11")
-    return initial_epoch150_progress(
+    return _initial_epoch150_progress_from_loaded_epoch11(
         epoch12_plan,
         completed_epoch11_progress=prefix,
         transition=transition,
@@ -3562,6 +3737,7 @@ def build_mechanism_seed_checkpoint_payload(
         != contract.mechanism_optimizer_steps
     ):
         raise ValueError("mechanism sampler state differs from trainer contract")
+    next_view_seed_state = _mechanism_seed_view_state(contract)
     payload: dict[str, Any] = {
         "schema_version": 1,
         "artifact_type": (
@@ -3593,7 +3769,8 @@ def build_mechanism_seed_checkpoint_payload(
         "rng_state_sha256": _rng_state_sha256(rng_state),
         "backend_state": backend_state,
         "backend_state_sha256": _backend_state_sha256(backend_state),
-        "next_view_seed_state": _mechanism_seed_view_state(contract),
+        "next_view_seed_state": next_view_seed_state,
+        "next_view_seed_state_sha256": _canonical_sha256(next_view_seed_state),
         "capture_contract": {
             "captured_in_training_process_at_exact_step256": True,
             "captured_before_diagnostic_evaluation": True,
@@ -3653,6 +3830,7 @@ def validate_mechanism_seed_checkpoint_payload(
         "backend_state",
         "backend_state_sha256",
         "next_view_seed_state",
+        "next_view_seed_state_sha256",
         "capture_contract",
         "epoch1_start_contract",
         "authority_boundaries",
@@ -3733,8 +3911,28 @@ def validate_mechanism_seed_checkpoint_payload(
     ):
         raise ValueError("mechanism seed checkpoint backend-state digest mismatch")
     validate_frozen_fullcontext_backend_state(backend_state)
-    if payload["next_view_seed_state"] != _mechanism_seed_view_state(contract):
+    if (
+        payload["next_view_seed_state"] != _mechanism_seed_view_state(contract)
+        or payload["next_view_seed_state_sha256"]
+        != _canonical_sha256(payload["next_view_seed_state"])
+    ):
         raise ValueError("mechanism seed next-view state mismatch")
+    if isinstance(lineage, FullContextLineage) and (
+        payload["optimizer_state_sha256"]
+        != lineage.mechanism_optimizer_state_sha256
+        or payload["rng_state_sha256"] != lineage.mechanism_rng_state_sha256
+        or payload["backend_state_sha256"]
+        != lineage.mechanism_backend_state_sha256
+        or payload["sampler_state_sha256"]
+        != lineage.mechanism_sampler_state_sha256
+        or payload["next_view_seed_state_sha256"]
+        != lineage.mechanism_view_state_sha256
+        or parsed_sampler.consumed_video_batch_chain_sha256
+        != lineage.mechanism_consumed_video_batch_chain_sha256
+        or parsed_sampler.consumed_pair_row_chain_sha256
+        != lineage.mechanism_consumed_pair_row_chain_sha256
+    ):
+        raise ValueError("mechanism seed state closure differs from final lineage")
     if payload["capture_contract"] != {
         "captured_in_training_process_at_exact_step256": True,
         "captured_before_diagnostic_evaluation": True,
@@ -3753,7 +3951,7 @@ def validate_mechanism_seed_checkpoint_payload(
         raise ValueError("mechanism checkpoint may not self-authorize continuation")
 
 
-def load_mechanism_seed_checkpoint(
+def _load_mechanism_seed_checkpoint(
     path: str | Path,
     *,
     expected_sha256: str,
@@ -3816,6 +4014,13 @@ def load_mechanism_seed_checkpoint(
         optimizer_state_sha256=value["optimizer_state_sha256"],
         optimizer_step=_MECHANISM_OPTIMIZER_STEPS,
         mechanism_sampler_state_sha256=value["sampler_state_sha256"],
+        mechanism_view_state_sha256=value["next_view_seed_state_sha256"],
+        mechanism_consumed_video_batch_chain_sha256=value["sampler_state"][
+            "consumed_video_batch_chain_sha256"
+        ],
+        mechanism_consumed_pair_row_chain_sha256=value["sampler_state"][
+            "consumed_pair_row_chain_sha256"
+        ],
         rng_state_sha256=value["rng_state_sha256"],
         backend_state_sha256=value["backend_state_sha256"],
         trainer_contract_fingerprint=contract.fingerprint,
@@ -3825,6 +4030,44 @@ def load_mechanism_seed_checkpoint(
     if not receipt.loaded_as_epoch1_start:
         raise RuntimeError("mechanism learned-L was not loaded as the epoch-one start")
     return receipt
+
+
+def initialize_epoch11_from_exact_mechanism_seed_checkpoint(
+    path: str | Path,
+    *,
+    expected_sha256: str,
+    expected_bytes: int,
+    contract: FullContextTrainerContract,
+    lineage: FullContextLineage,
+    epoch1_plan: LengthBucketPlan,
+    model: nn.Module,
+    optimizer: Optimizer,
+) -> FullContextProgress:
+    """The sole public mechanism-load to epoch-one progress transition."""
+
+    receipt = _load_mechanism_seed_checkpoint(
+        path,
+        expected_sha256=expected_sha256,
+        expected_bytes=expected_bytes,
+        contract=contract,
+        lineage=lineage,
+        model=model,
+        optimizer=optimizer,
+    )
+    progress = _initial_epoch11_progress_from_loaded_seed(
+        epoch1_plan,
+        mechanism_seed_load_receipt=receipt,
+    )
+    validate_fullcontext_progress_schedule(progress, contract, lineage)
+    if (
+        model_state_sha256(model) != progress.current_model_state_sha256
+        or optimizer_state_sha256(optimizer)
+        != progress.current_optimizer_state_sha256
+        or _rng_state_sha256(capture_fullcontext_rng_state())
+        != progress.current_rng_state_sha256
+    ):
+        raise RuntimeError("epoch-one runtime differs from the loaded mechanism seed")
+    return progress
 
 
 def pair_context_fingerprints(
