@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-28",
+  "status": "operator_recorded_component_smoke_no_benchmark_metrics",
+  "source_git_sha": "5088cb14bafb95c24fead7d31422f0018571f928",
+  "container": {
+    "image_id": "sha256:6ebae4dfe79ff8f0bdc0634746a9f40b545a5d48262390efd011c5dd776b0dd2",
+    "environment_sha256": "506c735dd5751b05b809d980a45261140b67cc504cb44256ff542d8b4849b54a",
+    "apt_snapshot": "20260727T000000Z",
+    "network_mode": "none"
+  },
+  "hardware": {
+    "selected_gpu_index": 1,
+    "gpu_name": "NVIDIA RTX A6000",
+    "gpu_memory_mib": 49140,
+    "driver_version": "550.54.14",
+    "cpu_model": "Intel(R) Xeon(R) Silver 4210 CPU @ 2.20GHz",
+    "logical_cpu_count": 40
+  },
+  "quality_gates": {
+    "ruff": "passed",
+    "mypy_1_13_0": "passed",
+    "pip_check": "passed",
+    "pytest": {
+      "passed": 271,
+      "failed": 0,
+      "log_sha256": "5bb9d317a93336fb3f7bff73ec97b3549f3fba38583de5480227b410ab6361f5"
+    }
+  },
+  "ucfrep": {
+    "annotation_sha256": "08b2b8a88c2728e9aa6de6c62dc6b02f1941dfa2c3adb28dab5852c12695ae3c",
+    "official_manifest": {
+      "records": 526,
+      "split_counts": {
+        "train": 421,
+        "test": 105
+      },
+      "fingerprint": "f2ccbefa16787490f60c846d29ece2815198dadc7c5d91d1075d067ef3325d1e",
+      "file_sha256": "67621bcacf58e85caefaf19425ca074686d00931e8d9c69e40ceb0388e7bec85",
+      "strict_video_files": true,
+      "video_hashes_included": true
+    },
+    "development_manifest": {
+      "split_counts": {
+        "train": 337,
+        "dev": 84,
+        "test": 105
+      },
+      "fingerprint": "3f2b07f9fb1f0386a6cd343aca6f76123cf86e7acabbefb136a2f2aaaab275c3",
+      "file_sha256": "4c3e11f04151d09b7469737edfa123dccb6b4a08e9c26e64b5a33365e4f26a90",
+      "seed": 2026
+    },
+    "resolver_identity_audit": {
+      "direct_layout_matches": 502,
+      "fixed_directory_alias_matches": 24,
+      "missing": 0,
+      "ambiguous": 0,
+      "fixed_alias": {
+        "manifest_action": "HandStandPushups",
+        "official_directory": "HandstandPushups"
+      }
+    }
+  },
+  "pose_smoke": {
+    "video_id": "v_BabyCrawling_g01_c01",
+    "video_sha256": "fb0134ce92d97484e60202b7ba91bc5c550392b31c52ee421436d77c0296c770",
+    "pose_model": "mediapipe-pose-0.10.14",
+    "pose_fingerprint": "8ecb6c1384e1d6a088762322ed90bb6aa631683318e0ab7ed21c19541e5f6656",
+    "source_frames": 165,
+    "source_valid_frames": 165,
+    "cached_frames": 256,
+    "cached_valid_frames": 256,
+    "fps": 38.8719512195122,
+    "cache_sha256": "3c0aac59c7354aec6b8678545c8fa8d12d21bbd0989cea59f14eb7d448553ceb",
+    "first_run": {
+      "extracted": 1,
+      "failed": 0
+    },
+    "identity_resume_run": {
+      "extracted": 0,
+      "skipped": 1,
+      "failed": 0
+    }
+  },
+  "train_pose_preprocessing": {
+    "status": "complete_for_training_input_only",
+    "benchmark_eligible": false,
+    "selected_split": "train",
+    "test_records_selected": 0,
+    "initial_extraction": {
+      "selected": 421,
+      "completed": 421,
+      "extracted": 420,
+      "skipped": 1,
+      "failed": 0,
+      "failure_ledger_sha256": "b58703f3e302a91843f6fdd2343ed563d5ff4d79342473f0e9e3ed59d6f10422",
+      "combined_log_sha256": "50fff156f915c27c04171665e049a10b42f2606d05eac344f6e24f9884610a81",
+      "wrapper_status_receipt_usable": false,
+      "wrapper_status_receipt_issue": "newline escape was recorded as the literal byte n; excluded from evidence"
+    },
+    "identity_resume": {
+      "exit_code": 0,
+      "selected": 421,
+      "completed": 421,
+      "extracted": 0,
+      "skipped": 421,
+      "failed": 0,
+      "ledger_artifact": "pose421-identity-ledger.json",
+      "ledger_sha256": "8bd1d2e821f1ba07cdf768e8e2cfb6d7157eadd23246f5fd307417bbd30318d3",
+      "combined_log_sha256": "8f6e2541a7da0455e2011b68a942b4071dfd777179f341363b96e6dcd688a5ca"
+    },
+    "cache_audit": {
+      "status": "passed",
+      "execution_source_git_sha": "fb9b390e52cd3edc0877d848b033946b6fbc1cff",
+      "container_image_id": "sha256:4cbb20339a3681ccbc3a8e7eaeddc84076cbc3eb16fdfa84edace4dadf2d1791",
+      "audit_script_sha256": "f4f4f7159e8485e5d09b2ab2a7bba93aba991754c85589d868d4bc6d47db02ca",
+      "artifact": "pose421-cache-audit.json",
+      "artifact_sha256": "c4a6708592fd212d84e155d3f39dc11fea4649f8e020deb3eb74184f78e5cd5e",
+      "raw_container_stdout_sha256": "dd9df2d429821eaee0ae8eb4b4df76cab7c9072235df8cb9da1e127a5a1bffe3",
+      "training_fingerprint": "0987ded86f4344f4669aa72fdf3baffb7a890340da7273b63ddfdb3cb1f05fca",
+      "training_id_list_sha256": "776489ba3c556a105f96bd18788c527a9157dfaa451a0eb766c38faca27e416f",
+      "pose_cache_set_sha256": "d248852c787204c4ce93c905629fdd5e7bd1bb640dd273f30811e4489e5e43dc",
+      "cache_files": 421,
+      "missing_cache_files": 0,
+      "extra_cache_files": 0,
+      "unique_cache_sha256": 421,
+      "cached_valid_frames": 83376,
+      "cached_total_frames": 107776,
+      "cached_valid_fraction": 0.773604513064133,
+      "median_per_video_valid_fraction": 0.98828125,
+      "all_invalid_videos": 13
+    }
+  },
+  "synthetic_gates": {
+    "counter_sign_phase": {
+      "passed": true,
+      "case_count": 576,
+      "nmae": 0.0642650462962963,
+      "obo": 1.0,
+      "sha256": "d564ef104b99655aad00d1e80f3a7531675cc627e8cf7e128345ffa2c605475c"
+    },
+    "period_counter_sign_phase": {
+      "passed": true,
+      "case_count": 576,
+      "max_period_relative_error": 0.0,
+      "nmae": 0.0642650462962963,
+      "obo": 1.0,
+      "sha256": "556770f3e8a5b91d1ce5cdf36505c01338c838e9818c05164a6604d0b6c016fd"
+    },
+    "sshead_collapse": {
+      "passed": false,
+      "expected_exit_code": 1,
+      "all_finite": true,
+      "no_exact_constant_dead_points": false,
+      "all_near_collapse_gradients_safe": false,
+      "sha256": "e5709b77d1fa061ff1db7f440261bebbc5221b99f9842603105588d4aeaba942"
+    },
+    "spectral_proxy_full_stress": {
+      "diagnostic_only": true,
+      "eligible_for_paper_table": false,
+      "sample_count": 51,
+      "nmae": 0.03983831049125207,
+      "mae": 0.6274509803921569,
+      "rmse": 1.2207358757861475,
+      "obo": 0.8823529411764706,
+      "sha256": "95ef5fe625c5477a82293cf4dcc2eb63ba2ec74467fb3f3b7a3dec098c03b2a8"
+    }
+  },
+  "baseline_resource_gates": {
+    "countllm_lite": {
+      "status": "smoke_only",
+      "cuda_available": true,
+      "visible_gpu_count": 1,
+      "maximum_gpu_memory_gib_reported_by_torch": 47.3182373046875,
+      "minimum_gpu_memory_gib": 48.0,
+      "eligible_for_training": false,
+      "adapter_implemented": false
+    }
+  },
+  "benchmark_metrics": null,
+  "limitations": [
+    "This is an operator-recorded digest summary; the sanitized 421-cache audit and clean identity ledger are published, but raw videos, pose arrays, and raw server logs are not.",
+    "The initial extraction wrapper wrote a malformed status receipt and is excluded; the clean resume supplies current-invocation counts, while the independent cache audit supplies manifest, source-video, and pose-fingerprint binding.",
+    "No encoder or SSHead benchmark training is represented by this evidence.",
+    "No sealed-test prediction or UCFRep NMAE/OBO measurement has been produced.",
+    "Synthetic counter metrics are component diagnostics and are ineligible for comparison tables.",
+    "The inferred SSHead objective retains a documented collapse failure.",
+    "All named paper-baseline adapters remain blocked or smoke-only pending independent parity work."
+  ]
+}

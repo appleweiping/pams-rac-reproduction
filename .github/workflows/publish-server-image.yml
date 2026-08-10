@@ -1,0 +1,122 @@
+name: Publish frozen server image
+
+on:
+  push:
+    branches:
+      - main
+      - agent/initial-reproduction
+    tags:
+      - "v*"
+    paths:
+      - .github/workflows/publish-server-image.yml
+      - docker/server/**
+      - scripts/server/build_image.sh
+      - scripts/server/environment_fingerprint.sh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-server-image-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact source revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Reclaim ephemeral runner disk
+        run: |
+          set -euo pipefail
+          sudo rm -rf \
+            /opt/ghc \
+            /opt/hostedtoolcache/CodeQL \
+            /usr/local/lib/android \
+            /usr/share/dotnet
+          docker system prune --all --force
+          df -h /
+          available_kib="$(df --output=avail -k / | tail -n 1 | tr -d ' ')"
+          minimum_kib="$((30 * 1024 * 1024))"
+          if ((available_kib < minimum_kib)); then
+            echo "at least 30 GiB of free runner disk is required after cleanup" >&2
+            exit 1
+          fi
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build exact frozen image
+        env:
+          PAMS_IMAGE: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          PAMS_IMAGE_UID: "1000"
+          PAMS_IMAGE_GID: "1000"
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          bash scripts/server/build_image.sh
+
+      - name: Push and record immutable identities
+        id: publish
+        env:
+          PAMS_IMAGE: ghcr.io/${{ github.repository }}:${{ github.sha }}
+        run: |
+          set -euo pipefail
+          docker push "${PAMS_IMAGE}"
+          repo_digest="$(docker image inspect "${PAMS_IMAGE}" --format '{{index .RepoDigests 0}}')"
+          registry_digest="${repo_digest##*@}"
+          expected_repository="${PAMS_IMAGE%:*}"
+          image_id="$(docker image inspect "${PAMS_IMAGE}" --format '{{.Id}}')"
+          environment_sha256="$(
+            docker image inspect "${PAMS_IMAGE}" \
+              --format '{{index .Config.Labels "org.opencontainers.image.pams.environment-sha256"}}'
+          )"
+          source_revision="$(
+            docker image inspect "${PAMS_IMAGE}" \
+              --format '{{index .Config.Labels "org.opencontainers.image.revision"}}'
+          )"
+          apt_snapshot="$(
+            docker image inspect "${PAMS_IMAGE}" \
+              --format '{{index .Config.Labels "org.opencontainers.image.pams.apt-snapshot"}}'
+          )"
+          image_os="$(docker image inspect "${PAMS_IMAGE}" --format '{{.Os}}')"
+          image_architecture="$(docker image inspect "${PAMS_IMAGE}" --format '{{.Architecture}}')"
+          [[ "${registry_digest}" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "${image_id}" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "${environment_sha256}" =~ ^[0-9a-f]{64}$ ]]
+          test "${repo_digest%@*}" = "${expected_repository}"
+          test "${source_revision}" = "${GITHUB_SHA}"
+          test "${apt_snapshot}" = "20260727T000000Z"
+          test "${image_os}/${image_architecture}" = "linux/amd64"
+          docker buildx imagetools inspect "${repo_digest}"
+          {
+            printf '{\n'
+            printf '  "schema_version": 1,\n'
+            printf '  "image": "%s",\n' "${PAMS_IMAGE}"
+            printf '  "repo_digest": "%s",\n' "${repo_digest}"
+            printf '  "registry_digest": "%s",\n' "${registry_digest}"
+            printf '  "docker_image_id": "%s",\n' "${image_id}"
+            printf '  "environment_sha256": "%s",\n' "${environment_sha256}"
+            printf '  "apt_snapshot": "%s",\n' "${apt_snapshot}"
+            printf '  "platform": "%s/%s",\n' "${image_os}" "${image_architecture}"
+            printf '  "source_revision": "%s"\n' "${source_revision}"
+            printf '}\n'
+          } > server-image-identity.json
+          printf 'repo_digest=%s\n' "${repo_digest}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload image identity receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: server-image-identity-${{ github.sha }}
+          path: server-image-identity.json
+          if-no-files-found: error
+          retention-days: 90

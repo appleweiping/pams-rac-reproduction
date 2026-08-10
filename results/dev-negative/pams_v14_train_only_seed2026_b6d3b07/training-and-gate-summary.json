@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "classification": "partial reproduction; v14 rejected by target-free terminal gate",
+  "candidate": "pams_paper_aligned_corrections_v14",
+  "seed": 2026,
+  "protocol": "ucfrep_526",
+  "eligible_for_paper_table": false,
+  "training_algorithm_source_git_sha": "df2e7cdfcc91bb436eb99ee10852ddd66ee971e4",
+  "terminal_gate_source_git_sha": "b6d3b0749fe6fdf1b2b328bdcda51177e3e6e08b",
+  "config": {
+    "fingerprint": "42baeb7b4ff53ff519776ad4b8a2bf44183675810e7ac89f7e3d9918d08c4d45",
+    "sha256": "3b11c331fd7f9adb1fcb21981424ef2366e7ae4df226e2d100acb2d7b295e39b",
+    "pose_fingerprint": "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116"
+  },
+  "access_audit": {
+    "training_partition_videos": 337,
+    "training_count_or_action_targets_loaded": false,
+    "dev84_video_pose_identity_or_target_inputs_loaded": false,
+    "dev84_prediction_authorized": false,
+    "dev84_scoring_authorized": false,
+    "test105_accessed": false,
+    "test105_evaluation_authorized": false,
+    "external_label_fields_accessed": []
+  },
+  "gpu_smoke": {
+    "status": "completed",
+    "epochs": 1,
+    "optimizer_steps": 10,
+    "loss": 6.3029602527618405,
+    "cross_cluster_requested": 844206,
+    "cross_cluster_actual": 844206,
+    "cross_cluster_shortfall": 0,
+    "maximum_gpu_memory_mib": 5073
+  },
+  "epoch11_training": {
+    "status": "completed",
+    "epochs": 11,
+    "pose_period_epochs": 10,
+    "embedding_velocity_vector_acf_epochs": 1,
+    "final_loss": 3.971033048629761,
+    "optimizer_steps_per_epoch": 10,
+    "checkpoint_sha256": "9272355ffb229ae5a6cbf4996089736fd76e8aedae7b74b844e9f38fc3e39382"
+  },
+  "epoch11_target_free_gate": {
+    "status": "failed",
+    "operationally_completed": true,
+    "artifact_sha256": "d3786345c2f4ab6dbf9967adc25e113c157a7be08628eed0c585491c7e47a101",
+    "overall_pass": false,
+    "criteria": {
+      "synthetic_count_median_relative_error": {
+        "threshold": 0.05,
+        "operator": "<=",
+        "value": 0.003921592936796269,
+        "pass": true
+      },
+      "synthetic_harmonic_fundamental_fraction": {
+        "threshold": 0.95,
+        "operator": ">=",
+        "value": 0.0,
+        "pass": false
+      },
+      "synthetic_static_maximum_confidence": {
+        "threshold": 0.05,
+        "operator": "<=",
+        "value": 0.23629428446292877,
+        "pass": false
+      },
+      "training_boundary_share": {
+        "threshold": 0.25,
+        "operator": "<",
+        "value": 0.04747774480712166,
+        "pass": true
+      },
+      "training_mode_share": {
+        "threshold": 0.25,
+        "operator": "<",
+        "value": 0.9525222551928784,
+        "pass": false
+      },
+      "training_period_stream_std_median": {
+        "threshold": 0.05,
+        "operator": ">=",
+        "value": 0.0,
+        "pass": false
+      },
+      "training_time_scale_median_relative_error": {
+        "threshold": 0.15,
+        "operator": "<=",
+        "value": 0.3225806550152844,
+        "pass": false
+      }
+    }
+  },
+  "encoder150_training": {
+    "status": "completed",
+    "epochs": 150,
+    "optimizer_steps_total": 1500,
+    "final_loss": 3.97917582988739,
+    "minimum_epoch_loss": 3.351623606681824,
+    "final_learning_rate": 0.000001,
+    "cross_cluster_shortfall_total": 0,
+    "checkpoint_sha256": "fd1ac8308f1e84b9a68c4131d8294e76d2f09a03607ae838809c6facec180f68",
+    "progress_sha256": "4d88ddf53358d1a3e95f328077c575066f4ebe24fdd6e84a491dea88c3ce0f51",
+    "maximum_gpu_memory_mib": 5115
+  },
+  "sshead30_training": {
+    "status": "completed",
+    "implementation_status": "inferred_non_author_disclosed_completion",
+    "epochs": 30,
+    "optimizer_steps_total": 330,
+    "first_total_loss": 0.8057310211552356,
+    "final_total_loss": 0.2644268527229037,
+    "first_stream_std_median": 0.0046002562157809734,
+    "final_stream_std_median_epoch_aggregate": 0.004041220992803574,
+    "final_variance_loss": 0.9958848473933755,
+    "zero_grad_steps_total": 0,
+    "checkpoint_sha256": "085273ba0665984687fa6230d6ada1a9a2db0d87b2a404b2c6f20364b648e261",
+    "progress_sha256": "4b364a95524bf4053c0e796057035e91b167cac75af2db4ad2e7cbfc1422159c",
+    "maximum_gpu_memory_mib": 789
+  },
+  "terminal_target_free_gate": {
+    "status": "failed",
+    "operationally_completed": true,
+    "container_exit_code": 3,
+    "criteria_passed": 8,
+    "criteria_failed": 5,
+    "overall_pass": false,
+    "artifact_sha256": "781fff3cc8cb8414c2fb5e4bf833a17fa3dd8501b0fb3d574bc1c525ff677a75",
+    "artifact_bytes": 638315,
+    "criteria": {
+      "encoder_boundary_share": {
+        "operator": "<",
+        "threshold": 0.25,
+        "value": 0.04747774480712166,
+        "pass": true
+      },
+      "encoder_mode_share": {
+        "operator": "<",
+        "threshold": 0.25,
+        "value": 0.6765578635014837,
+        "pass": false
+      },
+      "encoder_time_scale_eligible_fraction": {
+        "operator": ">=",
+        "threshold": 0.5,
+        "value": 0.9525222551928784,
+        "pass": true
+      },
+      "encoder_time_scale_median_relative_error": {
+        "operator": "<=",
+        "threshold": 0.15,
+        "value": 1.0,
+        "pass": false
+      },
+      "sshead_boundary_share": {
+        "operator": "<",
+        "threshold": 0.25,
+        "value": 0.04747774480712166,
+        "pass": true
+      },
+      "sshead_centered_cross_video_median_absolute_correlation": {
+        "operator": "<",
+        "threshold": 0.9,
+        "value": 0.8649570873039125,
+        "pass": true
+      },
+      "sshead_centered_cross_video_pair_coverage": {
+        "operator": ">=",
+        "threshold": 0.9,
+        "value": 0.907164052564646,
+        "pass": true
+      },
+      "sshead_head_parameter_delta_l2": {
+        "operator": ">",
+        "threshold": 0.0,
+        "value": 0.8140820903279877,
+        "pass": true
+      },
+      "sshead_mode_share": {
+        "operator": "<",
+        "threshold": 0.25,
+        "value": 0.7329376854599406,
+        "pass": false
+      },
+      "sshead_stream_std_median": {
+        "operator": ">=",
+        "threshold": 0.05,
+        "value": 0.003972487989813089,
+        "pass": false
+      },
+      "sshead_time_scale_eligible_fraction": {
+        "operator": ">=",
+        "threshold": 0.5,
+        "value": 0.9525222551928784,
+        "pass": true
+      },
+      "sshead_time_scale_median_relative_error": {
+        "operator": "<=",
+        "threshold": 0.15,
+        "value": 0.7499999217689072,
+        "pass": false
+      },
+      "sshead_zero_grad_steps_total": {
+        "operator": "<=",
+        "threshold": 0.0,
+        "value": 0.0,
+        "pass": true
+      }
+    },
+    "encoder_period_histogram": {
+      "4": 16,
+      "17.0666676": 228,
+      "32": 93
+    },
+    "sshead_period_histogram": {
+      "4": 16,
+      "18.2857151": 247,
+      "36.5714302": 74
+    }
+  },
+  "runtime": {
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "container_image_id": "sha256:e35fde8ce2a2b40e53aa606a8304c9203ef183dd9c8cd1cc46a7a29f98bae30f",
+    "python": "3.11.10",
+    "torch": "2.5.1+cu124",
+    "cuda_runtime": "12.4",
+    "nvidia_driver": "550.54.14",
+    "gpu": "NVIDIA RTX A6000",
+    "torch_deterministic_algorithms_enabled": true,
+    "network_mode": "none",
+    "read_only_root_filesystem": true
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "artifact_type": "spectral_proxy_dev84_public_artifact_index",
+  "classification": "deterministic_reference_only_not_paper_baseline",
+  "files": {
+    "evaluation.json": "f718ef681f74d13041322ae87b128e39f0d872c18e226281bea281a256ac1ec8",
+    "evaluation.receipt.json": "1dfdab8db36cce49d28e3a9d0565bed7e1e62373ef5b24025cea56a65be6f7a2",
+    "identity.receipt.json": "16fef8581a03a7746df0a3fc2d98c133803edd679e63f3c21eff856179370a7f",
+    "predictions.json": "7efeec8c44e36786cd95b8f005357ad5a596f8a508c8290ee4b74f8a1dcf7261",
+    "predictions.receipt.json": "0c583ca68852940f7865a5b145f4dafcd61b07ab264ab6ca4880e7f4cd207417",
+    "run.manifest.json": "481902cb32e12a20e694e9981ec3ff1b25e103d2a20d654a20654f287c2b631b"
+  },
+  "label_firewall": {
+    "identity_preflight": {
+      "label_free_split_counts": {
+        "dev": 84,
+        "test": 105,
+        "train": 337
+      },
+      "targets_mounted": false
+    },
+    "prediction": {
+      "container_device_requests": null,
+      "container_exit_code": 0,
+      "network_mode": "none",
+      "read_only_root": true,
+      "read_only_mounts": [
+        "/workspace",
+        "/runner.py",
+        "/inputs/dev.inputs.json",
+        "/inputs/dev.inputs.commitment.json",
+        "/inputs/identity.receipt.json",
+        "/pose-cache"
+      ],
+      "read_write_mounts": [
+        "/output"
+      ],
+      "targets_mounted": false,
+      "test_identity_mounted": false
+    },
+    "scoring": {
+      "container_device_requests": null,
+      "container_exit_code": 0,
+      "network_mode": "none",
+      "read_only_root": true,
+      "read_only_mounts": [
+        "/workspace",
+        "/runner.py",
+        "/inputs/predictions.json",
+        "/inputs/predictions.receipt.json",
+        "/inputs/identity.receipt.json",
+        "/inputs/dev.targets.json"
+      ],
+      "read_write_mounts": [
+        "/output"
+      ],
+      "test_identity_mounted": false,
+      "test_targets_mounted": false
+    }
+  },
+  "runner_sha256": "705fff2028f5a26aad09db3cde6f152a803b6dd2c75cb45dc214b25db3ceb911",
+  "schema_version": 1,
+  "source_git_sha": "d2248a17c0ec25c4b0a3d3db8104a713dff9aad0",
+  "test105_status": "untouched: identity preflight only; no predictions or targets"
+}

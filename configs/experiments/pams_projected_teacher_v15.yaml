@@ -1,0 +1,96 @@
+# PRE-TRAIN FROZEN PROJECTED-TEACHER CAUSAL ABLATION (seed 2026).
+#
+# This configuration was frozen after the target-free v14 terminal
+# counterfactual artifact
+# 96da147df273c5cf82bcaefebd1b131bac21ae110837e80d2c892217c850e4c6
+# and before any v15 optimization.  On the checkpoint-bound train337 cache,
+# the pre-position-encoding projected-pose velocity vector ACF passed all four
+# preregistered teacher-readiness criteria:
+#   boundary share 0.136499 < 0.25;
+#   period mode share 0.086053 < 0.25;
+#   time-scale eligible fraction 0.830861 >= 0.50;
+#   time-scale median relative error 0.0 <= 0.15.
+#
+# The corresponding post-PE representation remained collapsed.  This v15
+# causal ablation therefore changes exactly one semantic field relative to
+# v14: the post-warm-up TCC period teacher.  It does not change the disclosed
+# architecture, augmentations, negatives, TCC scales, optimizer, SSHead, or
+# inference settings.  The projected teacher and all readiness criteria are
+# independently inferred, not disclosed by the PAMS authors.  No action or
+# count labels enter training.
+schema_version: 1
+protocol: ucfrep_526
+seed: 2026
+data:
+  frames: 256
+  keypoints: 33
+  coordinates: 3
+  normalization: per_frame_minmax
+  missing_value: 0.0
+pose:
+  preprocessing_revision: longest-contiguous-track-minmax-zero-span-invalid-v3
+  model_id: mediapipe-pose-0.10.14
+  model_complexity: 1
+  smooth_landmarks: true
+  min_detection_confidence: 0.5
+  min_tracking_confidence: 0.5
+  crop_to_detected_span: true
+model:
+  input_dim: 99
+  model_dim: 512
+  input_projection_scale: none
+  position_encoding_mode: sinusoidal
+  embedding_dim: 512
+  layers: 4
+  heads: 16
+  feedforward_dim: 2048
+  dropout: 0.1
+  norm_first: false
+  period_head_hidden_dim: 128
+period:
+  minimum: 4
+  maximum: 128
+  pose_energy_epochs: 10
+  training_mode: adaptive
+  fixed_period_frames: 16
+  post_warmup_source: projected_pose_velocity_vector_acf
+loss:
+  scales: [0.5, 1.0, 1.5]
+  temperature: 0.1
+  kmeans_clusters: 8
+  kmeans_refresh_epochs: 5
+  exclude_other_scale_positives_from_denominator: false
+training:
+  epochs: 150
+  effective_batch_size: 32
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  scheduler_factor: 0.5
+  scheduler_patience: 8
+  minimum_learning_rate: 0.000001
+  position_permutation_consistency_weight: 0.0
+  skeleton_augmentation:
+    enabled: true
+    rotation_degrees: [15.0, 15.0, 15.0]
+    scale_range: [0.85, 1.15]
+    jitter_std: 0.01
+sshead:
+  epochs: 30
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  architecture: pointwise_mlp
+  input_source: encoder_embedding
+  period_confidence_mode: nonzero_gate
+  cycle_weight: 1.0
+  spectral_weight: 1.0
+  variance_weight: 0.1
+  smoothness_weight: 0.01
+consensus:
+  expert_mode: multi
+  sigma_multipliers: [0.05, 0.12, 0.15]
+  distance_multipliers: [0.5, 0.8, 1.2]
+  short_window_multiplier: 0.5
+  long_window_multiplier: 2.0
+  height_factor: 0.6
+  prominence_factor: 0.25
+  long_window_weight: 0.6

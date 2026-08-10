@@ -1,0 +1,8 @@
+# Direct runtime requirements for the isolated official RepNet ckpt-70 sanity
+# environment. The generated requirements.lock freezes the full Linux x86_64
+# dependency graph and hashes every accepted distribution.
+tensorflow[and-cuda]==2.17.1
+keras==3.5.0
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+scipy==1.14.1

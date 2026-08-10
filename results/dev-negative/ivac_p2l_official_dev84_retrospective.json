@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "artifact_type": "sanitized_retrospective_baseline_result",
+  "status": "current_runner_rerun_complete",
+  "classification": "IVAC-P2L official RepCount-A checkpoint / modern compatibility / local 84-dev sanity",
+  "method_id": "ivac-p2l-official-modern-compat-repcounta",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "sample_count": 84,
+  "sealed_test_status": "untouched",
+  "claim_boundary": {
+    "eligible_for_original_paper_table": false,
+    "paper_protocol_parity": false,
+    "pams_verified_reproduction": false,
+    "current_runner_result": true
+  },
+  "current_code_compatibility": {
+    "legacy_artifact_generated_by_current_runner": false,
+    "tested_with_current_loader": true,
+    "current_runner_source_git_sha": "fb8028a1681cdc71313455c1c0b2f4a7946acb6b",
+    "current_runner_code_sha256": "e366573a81e8316ef8f95f33f8856ea3e15c066dae602b4a6b766530262175cb",
+    "current_scorer_code_sha256": "b84fa58f3dbc5c5d8e0d3dbf38c0eaafa7762f898e679b0f8e0a4168abd4f710",
+    "raw_predictions_identical_to_legacy": true,
+    "maximum_raw_count_absolute_difference": 0.0,
+    "rounded_predictions_identical_to_legacy": false,
+    "compatible_with_legacy_aggregate_metrics": false,
+    "requires_rerun": false,
+    "rounding_delta": {
+      "legacy": "PyTorch round-to-nearest-even",
+      "current": "half-up",
+      "affected_legacy_raw_count": 8.5,
+      "legacy_rounded_count": 8,
+      "current_rounded_count": 9,
+      "affected_rows": 1
+    },
+    "interpretation": "The current runner exactly reproduced all 84 legacy raw model outputs. One exact 8.5 output changed from legacy ties-to-even rounding to the frozen half-up rule, so current rounded metrics are reported separately."
+  },
+  "label_boundary": {
+    "prediction_labels_loaded": false,
+    "prediction_scoring_performed": false,
+    "prediction_target_mount": false,
+    "scoring_loaded_targets_only_after_current_prediction_validation": true,
+    "test_inputs_read": false,
+    "test_predictions_created": false
+  },
+  "run_outcome": {
+    "prediction_total": 84,
+    "decode_ok_total": 84,
+    "failure_total": 0,
+    "nonfinite_output_total": 0
+  },
+  "legacy_metrics": {
+    "nmae_rounded": 0.6637558419732066,
+    "obo_rounded": 0.3333333333333333,
+    "mae_raw_prediction": 3.5989757719494047,
+    "rmse_raw_prediction": 5.079865362668051,
+    "mae_rounded": 3.619047619047619,
+    "rmse_rounded": 5.166282627816271,
+    "exact_rounded": 0.09523809523809523
+  },
+  "legacy_bootstrap": {
+    "samples": 10000,
+    "seed": 2026,
+    "confidence_level": 0.95,
+    "interval_method": "paired_percentile",
+    "confidence_intervals": {
+      "nmae_rounded": [
+        0.5207793268068821,
+        0.8370757734158287
+      ],
+      "mae_raw_prediction": [
+        2.872650291806176,
+        4.398519897460937
+      ],
+      "rmse_raw_prediction": [
+        3.9224881130130966,
+        6.231638807312503
+      ],
+      "mae_rounded": [
+        2.869047619047619,
+        4.440476190476191
+      ],
+      "rmse_rounded": [
+        3.997022701485504,
+        6.332080076502357
+      ],
+      "obo_rounded": [
+        0.23809523809523808,
+        0.42857142857142855
+      ],
+      "exact_rounded": [
+        0.03571428571428571,
+        0.16666666666666666
+      ]
+    }
+  },
+  "current_metrics": {
+    "nmae_rounded": 0.666136794354159,
+    "obo_rounded": 0.3333333333333333,
+    "mae_raw_prediction": 3.5989757719494047,
+    "rmse_raw_prediction": 5.079865362668051,
+    "mae_rounded": 3.630952380952381,
+    "rmse_rounded": 5.174341457983762,
+    "exact_rounded": 0.09523809523809523
+  },
+  "current_bootstrap": {
+    "samples": 10000,
+    "seed": 2026,
+    "confidence_level": 0.95,
+    "interval_method": "paired_percentile",
+    "confidence_intervals": {
+      "nmae_rounded": [
+        0.5232047312635366,
+        0.8399722823102599
+      ],
+      "mae_raw_prediction": [
+        2.872650291806176,
+        4.398519897460937
+      ],
+      "rmse_raw_prediction": [
+        3.9224881130130966,
+        6.231638807312503
+      ],
+      "mae_rounded": [
+        2.892559523809524,
+        4.4523809523809526
+      ],
+      "rmse_rounded": [
+        4.00594795867583,
+        6.338680385232207
+      ],
+      "obo_rounded": [
+        0.23809523809523808,
+        0.42857142857142855
+      ],
+      "exact_rounded": [
+        0.03571428571428571,
+        0.16666666666666666
+      ]
+    }
+  },
+  "official_assets": {
+    "source_repository": "https://github.com/hwang-cs-ime/IVAC-P2L",
+    "source_commit": "0b1149e6958268ca5131d60ff66498c6e07f3b79",
+    "source_archive_bytes": 722651,
+    "source_archive_sha256": "9abaf839bf5f516741ed9f0b7c9a6dad5fe0327547e5563c22094f822d6e52b6",
+    "source_tree_files": 468,
+    "source_tree_bytes": 2630970,
+    "source_tree_sha256": "0c819eafa2194d77cb6e79736be5010c3839c0797f7e99eae6f48eb705f96823",
+    "source_license": "MIT",
+    "source_license_sha256": "13c2f5fa5221c728cb1e1f5ec84f95382cc6155bd0e43ba63e69ce84bf9e83e7",
+    "checkpoint_filename": "Epoch-67_MAE_0.4022_OBO_0.3444.pt",
+    "checkpoint_bytes": 297513885,
+    "checkpoint_sha256": "5f3be1c0b09ffc000cb9e9c41cc6e83fa4c69445eeaa678fda252569a15dafdd",
+    "checkpoint_payload_epoch": 67,
+    "checkpoint_state_dict_keys": 230,
+    "checkpoint_missing_keys": 0,
+    "checkpoint_unexpected_keys": 0,
+    "backbone_filename": "swin_tiny_patch244_window877_kinetics400_1k.pth",
+    "backbone_bytes": 127414861,
+    "backbone_sha256": "9950e3be6b0b3763f80575dfbbe7db7cbeb18345e32363b73e8d44952ef76acc",
+    "weights_license_status": "not_separately_specified",
+    "third_party_assets_redistributed": false
+  },
+  "runtime": {
+    "classification": "modern_compatibility_not_exact_official_environment",
+    "python": "3.11.10",
+    "torch": "2.5.1+cu124",
+    "torchvision": "0.20.1+cu124",
+    "cuda_runtime": "12.4",
+    "opencv": "4.10.0",
+    "mmcv": "1.4.0",
+    "mmaction": "0.15.0",
+    "gpu": "NVIDIA RTX A6000",
+    "logical_gpu_limit_mib": 8192,
+    "container_image_digest": "sha256:ea96abe0e7d17cf4720343e5867256aacd5209aca738087ec92f62b9fe31ff51"
+  },
+  "legacy_artifact_bindings": {
+    "input_manifest_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "input_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "input_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "staging_receipt_sha256": "af3a0233d80c0e7d40aa9dcb7db4fd80055ec2f5434102a4f1d9e64605714fe0",
+    "prediction_adapter_sha256": "9712cc53ae8bfa0d3327d61257c59eed9b149f766b492b619021a1a306f512cb",
+    "prediction_sha256": "1181fbcd791781df2cc670ad11068d9853b825e1f9e431bbc870e10bf1115d69",
+    "prediction_receipt_sha256": "3a541982fcdcb4ef4123f42b11648ce5630c23f4cda1796c1656fdcd1346d250",
+    "prediction_validation_sha256": "69d5485b8a29138200f1f4c116ef076b1328a027b9dd11b55e5ed2053c9b5ca5",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "legacy_scorer_sha256": "05b9d97e8eeb65c899a73df2a251f33736f01870859b9b3ef6c7735102c48a4b",
+    "evaluation_sha256": "035904ec3b267576c71cebabb62182eef818ab088e364abc867ef68d8000f142",
+    "evaluation_receipt_sha256": "60ad15230f03164442e9470452c57349cf969ff3e51c1e6338f2650bfd85fdd0",
+    "full_legacy_experiment_audit_sha256": "d239bd280e923f361a25d6556d04ff42fedd8c2e80fc9fcd8ed8c631de72f63a"
+  },
+  "current_artifact_bindings": {
+    "runner_source_git_sha": "fb8028a1681cdc71313455c1c0b2f4a7946acb6b",
+    "runner_code_sha256": "e366573a81e8316ef8f95f33f8856ea3e15c066dae602b4a6b766530262175cb",
+    "scorer_source_git_sha": "fb8028a1681cdc71313455c1c0b2f4a7946acb6b",
+    "scorer_code_sha256": "b84fa58f3dbc5c5d8e0d3dbf38c0eaafa7762f898e679b0f8e0a4168abd4f710",
+    "input_manifest_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "input_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "input_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "config_sha256": "4578bd9be4ef390c63d6bcd610660aaf0de220beebcf4f1eebe72c0746da5090",
+    "prediction_sha256": "5af33078ad60305f553a4d9712585952640852b66314473a9e01148fd23bbe00",
+    "prediction_receipt_sha256": "43f7850660073a4ea5adb46bb53f7f89eb200adb7117d52e71d5679b5d9d16a4",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "evaluation_sha256": "03929b17ce9c80b11ecdd5f96aa70d7720b4917b6cd711a42b1341dd7b3dfc84",
+    "evaluation_receipt_sha256": "c4142544d722cd3fab6f42f9e11581894bbf337d3359fe9b674f9b9051a8c7a8"
+  },
+  "limitations": [
+    "The legacy artifact predates the strict public schema; its metrics remain separate from the current runner result.",
+    "The current runner reproduced every raw count exactly, but the one-row rounding change means the legacy aggregate metrics must not be relabeled as current-runner metrics.",
+    "This is development-only negative evidence; it is not a sealed-test result or a verified paper reproduction.",
+    "No source tree, weights, videos, raw predictions, targets, or per-video data are redistributed."
+  ]
+}

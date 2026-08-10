@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "status": "partial_reproduction",
+  "scope": {
+    "protocol": "ucfrep_526",
+    "split": "dev",
+    "sample_count": 84,
+    "sealed_test_predictions_run": false,
+    "sealed_test_evaluation_run": false,
+    "eligible_for_paper_table": false
+  },
+  "server": {
+    "host_redacted": true,
+    "gpus": [
+      {
+        "index": 0,
+        "name": "NVIDIA RTX A6000",
+        "memory_total_mib": 49140
+      },
+      {
+        "index": 1,
+        "name": "NVIDIA RTX A6000",
+        "memory_total_mib": 49140
+      }
+    ],
+    "driver_version": "550.54.14",
+    "repnet_gpu_index": 0,
+    "repnet_logical_memory_limit_mib": 8192
+  },
+  "source": {
+    "prediction_git_sha": "4d4d708193587b694cec1b2f72ec1cba70f44345",
+    "repnet_scoring_git_sha": "b79f87c1d821e6889c7e472adc901ad8f4cb1d0c",
+    "pams_image_id": "sha256:23e5ae8056271deff9f8a250b65485c9b99d513f0e387229d14af63e1becb65e",
+    "pams_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "repnet_image_id": "sha256:cb405cf92dfd1f4542e954ffc5d3bb44a2d1db9406fcdc07410408b4098165a6",
+    "official_repnet_commit": "ec7c3d346277b737bc2decffcd1b533d4b7ec105",
+    "official_notebook_sha256": "44bf5ec222dfd3f5babb7a577e1c395114b8c490279918cc803ac12c329c2318",
+    "official_checkpoint_aggregate_sha256": "c199f40f7c5f734930be5767e812f9a1c53d998428e4fbeaacc8de8c67ad27ea"
+  },
+  "dev_identity": {
+    "sidecar_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6"
+  },
+  "synthetic_freeze": {
+    "classification": "synthetic-only parameter freeze",
+    "eligible_for_paper_table": false,
+    "selected_candidate": "frame_centered.min064.median",
+    "sample_count": 50,
+    "mae": 0.02,
+    "nmae": 0.0025,
+    "exact": 0.98,
+    "obo": 1.0,
+    "expected_replay_match": true,
+    "artifact_sha256": "ffb610db59c26d34220b92a44077b6b221aa4e7eb8f1354c17112af6f2d6d33c",
+    "receipt_sha256": "304591a88bb2301d129cd6ef4496d984a7062e8baa72101a7324e47e55b308ab"
+  },
+  "local_frequency_dev": {
+    "classification": "inferred synthetic-frozen label-free readout",
+    "eligible_for_paper_table": false,
+    "prediction_sha256": "33dd390433b23d33819292e7dde5fce145fad501ae4669f044dc9f4d44f2ec18",
+    "prediction_receipt_sha256": "3d5983a22d8e1fd7936f33518fc5517c2a1ade34ef08145825df6d42b0321bf3",
+    "evaluation_sha256": "be1b7444fa0e7fabf0ab85ac1298a77d376ee086d4b44744fecce060255b5512",
+    "evaluation_receipt_sha256": "c77ceafec40c2f9559a5324d3c5d790a1df921274f47a14ab0bd1200f142e2dd",
+    "pose_cache_set_sha256": "2e14cb39a4112f7ee1d10b759d166bb472f41e317e55e773776394331690256c",
+    "metrics": {
+      "nmae": 0.5145662219553846,
+      "mae": 3.488095238095238,
+      "rmse": 4.905050846782713,
+      "obo": 0.3333333333333333,
+      "exact": 0.17857142857142858
+    },
+    "paired_bootstrap_95_percent": {
+      "samples": 10000,
+      "seed": 2026,
+      "nmae": [0.44074864123971264, 0.5906458595967524],
+      "mae": [2.785416666666669, 4.25],
+      "rmse": [3.944556224662517, 5.8594652770823155],
+      "obo": [0.23809523809523808, 0.44047619047619047],
+      "exact": [0.10714285714285714, 0.2619047619047619]
+    },
+    "passes_dev_gate": false
+  },
+  "repnet_official_current_dev": {
+    "classification": "official-current-ckpt70 / independent sealed UCFRep dev evaluation",
+    "eligible_for_original_pams_repnet_cell": false,
+    "runtime": {
+      "tensorflow": "2.17.1",
+      "numpy": "1.26.4",
+      "scipy": "1.14.1",
+      "opencv": "4.10.0"
+    },
+    "checkpoint_restore_and_inference_succeeded": true,
+    "decoded_ok": 84,
+    "decode_failures": 0,
+    "prediction_sha256": "19b1d2884fff7d1d8d54ec6de2d7bef039de0b09afa507aaa413b999faceb263",
+    "evaluation_sha256": "3b60ff34bb74e092758f4868ed0c19b9c4041b2721ef3ece3a03bb93c5d051dd",
+    "evaluation_receipt_sha256": "62417623d54b6a5cc2f8a6533b23d84191fa3b4a7e4eb3506ec0dec5325b5c31",
+    "metrics": {
+      "nmae": 0.43450497914783626,
+      "mae": 2.238095238095238,
+      "rmse": 3.670993118515816,
+      "obo": 0.5833333333333334,
+      "exact": 0.16666666666666666
+    },
+    "paired_bootstrap_95_percent": {
+      "samples": 10000,
+      "seed": 2026,
+      "nmae": [0.33889404246547106, 0.5441936263141621],
+      "mae": [1.6785714285714286, 2.9047619047619047],
+      "rmse": [2.4784187263420074, 4.881969983127089],
+      "obo": [0.47619047619047616, 0.6904761904761905],
+      "exact": [0.09523809523809523, 0.25]
+    },
+    "sanity_repeat": {
+      "single_video_rounded_count_equal": true,
+      "five_video_rounded_counts_equal": true,
+      "byte_identical": false,
+      "observed_difference": "GPU floating-point variation in confidence and one sub-integer raw count; all five rounded counts and chosen strides were unchanged",
+      "single_run_a_sha256": "cd8cdeb4e9e94f78cb149b12b76be701b94ad42e98286655b1d5a3599cb53c76",
+      "single_run_b_sha256": "01c4b11cbd156cf188dac33069b704de4ba472e2f08b608d43dddcfc76280679",
+      "five_run_a_sha256": "ab0320dd0d8affa4d4682c819381ee8d416799d6cd67c3b5c2b118298a1c7330",
+      "five_run_b_sha256": "4fa613db0e608e7af411eb70bccedb8c7ce24cc406808d8c6ddbd8fd0dfa3c35"
+    },
+    "passes_dev_gate": false
+  },
+  "acceptance_gate": {
+    "nmae_maximum": 0.228,
+    "obo_minimum": 0.666,
+    "local_frequency_pass": false,
+    "repnet_official_current_pass": false
+  },
+  "limitations": [
+    "Both metric rows are development-only and cannot be promoted to the sealed test leaderboard.",
+    "The local-frequency readout is independently inferred and is not an author-disclosed PAMS component.",
+    "The RepNet row uses the current official notebook and ckpt-70 under an independently defined UCFRep dev protocol; it cannot occupy the original PAMS paper's RepNet cell.",
+    "Official RepNet integer counts were stable in the one- and five-video repeats, but auxiliary floating outputs were not byte-deterministic.",
+    "No UCFRep test video received a prediction and no test target was loaded."
+  ]
+}

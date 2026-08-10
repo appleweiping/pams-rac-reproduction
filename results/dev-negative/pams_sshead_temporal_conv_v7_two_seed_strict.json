@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "experiment_id": "pams-sshead-temporal-conv-v7-train337-dev84",
+  "status": "failed_inferred_repair_partial_reproduction",
+  "source_git_sha": "6ee25a2e1291c35c563140999e16c5aa65bc8ced",
+  "container_image_id": "sha256:620173fe7a9084d3b1492c3e775ea5f2bc6ac5a6d851d8560727a4969b3aab66",
+  "method": {
+    "author_disclosed": false,
+    "input_source": "projected_pose_pre_pe",
+    "period_confidence_mode": "normalized_weight",
+    "temporal_operator": "zero_initialized_residual_depthwise_conv1d",
+    "temporal_kernel_size": 5,
+    "temporal_groups": 512,
+    "temporal_parameter_count": 2560,
+    "disclosed_core": "512_to_128_to_1_gelu_mlp"
+  },
+  "protocol": {
+    "dataset": "standard_ucfrep_526",
+    "training_samples": 337,
+    "development_samples": 84,
+    "sealed_test_samples": 105,
+    "encoder_epochs": 150,
+    "sshead_epochs": 30,
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 2026,
+    "training_label_access": false,
+    "development_targets_opened_after_checkpoint_freeze": true,
+    "sealed_test_access": "none"
+  },
+  "acceptance_gate": {
+    "nmae_maximum": 0.228,
+    "obo_minimum": 0.666,
+    "required_seed_passes": 2,
+    "seed_passes": 0,
+    "passed": false
+  },
+  "results": [
+    {
+      "seed": 42,
+      "config_fingerprint": "0b44f415a8083fb35205ad6a1a085a92df68b6b4bcc2974cae101a9a381196c7",
+      "sample_count": 84,
+      "metrics": {
+        "nmae": 0.6944886086819584,
+        "mae": 4.261904761904762,
+        "rmse": 5.694608979427072,
+        "obo": 0.23809523809523808,
+        "exact": 0.09523809523809523
+      },
+      "confidence_intervals_95": {
+        "nmae": [0.6117161762020136, 0.778336251101799],
+        "mae": [3.5, 5.095238095238095],
+        "rmse": [4.652188425123938, 6.735677042366428],
+        "obo": [0.15476190476190477, 0.3333333333333333],
+        "exact": [0.03571428571428571, 0.16666666666666666]
+      },
+      "failure_counts": {
+        "zero_counts": 23,
+        "period_128_frames": 25
+      },
+      "final_sshead_epoch": {
+        "spectral_loss": 0.7989597951976765,
+        "stream_std_mean": 0.017259154940600135,
+        "stream_std_median": 0.01582537405192852,
+        "zero_grad_steps": 0
+      },
+      "artifacts": {
+        "encoder_checkpoint_sha256": "5e76225e0e0e6bd762c3792ef6064e579f3aa4a7c7942562b46907b44df02b50",
+        "encoder_progress_sha256": "367d890cfa9de00f60bf22024e6af397b794cbc4c0fa3d6445e43bb9cfc849b2",
+        "encoder_completion_receipt_sha256": "73f9876107afdc44319b80b7c10559996428876a2c624643ba0736794d9bc65c",
+        "sshead_checkpoint_sha256": "3d1e7cf5d541a83f1dfd96999d3fc6ca6aece3fcfe80a517c244f4c8c6a0d873",
+        "sshead_progress_sha256": "560a596a4129076082d5b9518b90596bd077c908093cf701eb49bb9242598ab0",
+        "sshead_completion_receipt_sha256": "c984f0f4f4a4eb5dec3d54d37150fe75c745d3d0bf36f6c97c7d716350186367",
+        "evaluation_sha256": "39c7ceeb7f5d9acbdd024fdbcf314ed8f62350491dfecd636374067787b51ce6",
+        "evaluation_completion_receipt_sha256": "b466097a570dd751efa1589745bb2b67f966acf7605d843aa6fd6fd4b4ef22a7",
+        "repository_evaluation": "pams_sshead_temporal_conv_v7_seed42_strict.json"
+      },
+      "passed": false
+    },
+    {
+      "seed": 2026,
+      "config_fingerprint": "317442965eb856a59a5b70f3ec63756fdceec16c55c9c31820b61a7c9d25ccca",
+      "sample_count": 84,
+      "metrics": {
+        "nmae": 0.7357284358361944,
+        "mae": 4.428571428571429,
+        "rmse": 5.794085654478071,
+        "obo": 0.19047619047619047,
+        "exact": 0.10714285714285714
+      },
+      "confidence_intervals_95": {
+        "nmae": [0.6561238601043865, 0.8150347114856041],
+        "mae": [3.6666666666666665, 5.261904761904762],
+        "rmse": [4.790833256928975, 6.785839597840421],
+        "obo": [0.10714285714285714, 0.27380952380952384],
+        "exact": [0.047619047619047616, 0.17857142857142858]
+      },
+      "failure_counts": {
+        "zero_counts": 31,
+        "period_128_frames": 30
+      },
+      "final_sshead_epoch": {
+        "spectral_loss": 0.7929075669817826,
+        "stream_std_mean": 0.014683544979011148,
+        "stream_std_median": 0.013317412696778774,
+        "zero_grad_steps": 0
+      },
+      "artifacts": {
+        "encoder_checkpoint_sha256": "c3370074e349640aa828d1fb886f65a9a4fce3a79ccabd528f90c11b53a1333b",
+        "encoder_progress_sha256": "dc2cffd8807da8509c5a30693e6b52c4cfa56dc552b958bb456d1635488adcbb",
+        "encoder_completion_receipt_sha256": "8cbe7058c5edc7d3b79533421e143370784bcca53ce7ac00b8f1e919934e810b",
+        "sshead_checkpoint_sha256": "0f88bcadd4236c48f2619ec9b4c51abb0c575e161b94c45a8e3e4cd4f82ce882",
+        "sshead_progress_sha256": "b202cc30540894daaa2249b4be84f8cc03143a1a18bec29b61823978405f1ea8",
+        "sshead_completion_receipt_sha256": "9e7e747679d86962198df7971878e20117f50b5cdcdec9d72dfbea46e24e1f57",
+        "evaluation_sha256": "1abcf7b14deff977476136803f1e44668a23e10b479e6715a682324c0fe25375",
+        "evaluation_completion_receipt_sha256": "28fe8a8c1cb882d67dd1d3cd41e52b879852a83c2de0f0fdb34fe2c6a36f5840",
+        "repository_evaluation": "pams_sshead_temporal_conv_v7_seed2026_strict.json"
+      },
+      "passed": false
+    }
+  ],
+  "two_seed_aggregate": {
+    "nmae_mean": 0.7151085222590764,
+    "nmae_sample_std": 0.02916096143572141,
+    "mae_mean": 4.345238095238095,
+    "mae_sample_std": 0.11785113019775813,
+    "rmse_mean": 5.744347316952571,
+    "rmse_sample_std": 0.0703406314984522,
+    "obo_mean": 0.21428571428571427,
+    "obo_sample_std": 0.03367175148507369,
+    "exact_mean": 0.10119047619047619,
+    "exact_sample_std": 0.008417937871268422
+  },
+  "paired_comparisons": {
+    "seed_2026_v7_minus_v6": {
+      "nmae_difference": 0.02418721467366791,
+      "nmae_difference_ci95": [-0.016856930272108734, 0.08309608110485574],
+      "obo_difference": 0.0,
+      "obo_difference_ci95": [-0.0357142857142857, 0.035714285714285726]
+    },
+    "seed_42_v7_minus_v5": {
+      "nmae_difference": -0.0458037486824433,
+      "nmae_difference_ci95": [-0.15622875014000326, 0.05103853144608992],
+      "obo_difference": -0.023809523809523836,
+      "obo_difference_ci95": [-0.10714285714285715, 0.059523809523809534]
+    }
+  },
+  "decision": {
+    "seed_3407": "not_run_after_two_of_two_prespecified_seeds_failed_both_gates",
+    "sealed_test_105": "not_run",
+    "claim": "partial_reproduction_only",
+    "diagnosis": "local temporal context was trainable but did not prevent low_frequency_or_zero_count degeneration"
+  }
+}

@@ -1,0 +1,13 @@
+schema_version: 1
+key: spkdb
+paper_name: SPKDB
+status: blocked_unimplemented
+implementation: clean_room_pending
+protocols:
+  source_faithful: ucfrep_pose_110_source
+  fair_target: ucfrep_pose_110_fair
+modality: pose_global_and_salient_joints
+eligible_for_comparison: false
+reason: No public implementation was located; clean-room branches are pending.
+sources:
+  - https://www.sciencedirect.com/science/article/pii/S1077314225001572

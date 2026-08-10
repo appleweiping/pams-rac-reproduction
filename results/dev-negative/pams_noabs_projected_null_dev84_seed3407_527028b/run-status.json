@@ -1,0 +1,74 @@
+{
+  "acceptance_gate": {
+    "joint_pass": false,
+    "nmae_pass": false,
+    "obo_pass": false,
+    "required_nmae_at_most": 0.228,
+    "required_obo_at_least": 0.666,
+    "verified_reproduction": false
+  },
+  "completed_utc": "2026-07-30T22:54:10.456523+00:00",
+  "confidence_intervals": {
+    "exact": {
+      "high": 0.2857142857142857,
+      "level": 0.95,
+      "low": 0.11904761904761904
+    },
+    "mae": {
+      "high": 4.380952380952381,
+      "level": 0.95,
+      "low": 2.7142857142857144
+    },
+    "nmae": {
+      "high": 0.8150131155191961,
+      "level": 0.95,
+      "low": 0.4822428267744616
+    },
+    "obo": {
+      "high": 0.4880952380952381,
+      "level": 0.95,
+      "low": 0.27380952380952384
+    },
+    "rmse": {
+      "high": 6.665498408084957,
+      "level": 0.95,
+      "low": 3.933941128349256
+    }
+  },
+  "evaluation_receipt_sha256": "65210495509b4e084e1c1d1125d0f32f2419c174c5e1bf523efe31a8b3d94643",
+  "evaluation_sha256": "8d97f681a8e9293b7432f35426ce5f1b4db251729b54cf12ac81fa5a8f38584d",
+  "metrics": {
+    "exact": 0.20238095238095238,
+    "mae": 3.5,
+    "nmae": 0.6288051468008364,
+    "obo": 0.38095238095238093,
+    "rmse": 5.282495802626056
+  },
+  "mount_firewall": {
+    "prediction_targets_mounted": false,
+    "prediction_test105_mounted": false,
+    "scoring_checkpoint_mounted": false,
+    "scoring_pose_mounted": false,
+    "scoring_test105_mounted": false
+  },
+  "prediction_exit_code": 0,
+  "prediction_receipt_sha256": "1ce629d749b7264ad5f36e78bf87f8c6415a9fe0813b5ba4a3ed19e07f940a79",
+  "prediction_sha256": "61624471a5be5671d53459a4e2d3a16f0dc76e0760ea131b8b12294aa94b1f58",
+  "prediction_summary": {
+    "confidence_positive_total": 19,
+    "confidence_zero_total": 65,
+    "count_max": 36,
+    "count_median": 3.0,
+    "count_min": 0,
+    "period_max": 128.0,
+    "period_median": 17.142857551574707,
+    "period_min": 4.0,
+    "record_total": 84,
+    "valid_frames_zero_total": 6
+  },
+  "schema_version": 1,
+  "score_exit_code": 0,
+  "source_git_sha": "527028b6ce157a07db70af8085f5729ce6799bcd",
+  "status": "completed",
+  "test105_accessed": false
+}

@@ -1,0 +1,73 @@
+{
+  "command": [
+    "/workspace/src/pams/__main__.py",
+    "train",
+    "encoder",
+    "/pams/protocol/train.inputs.json",
+    "/pams/pose-cache",
+    "/pams/output/run",
+    "--config",
+    "/pams/input/config.yaml",
+    "--device",
+    "cuda:0",
+    "--epochs",
+    "150",
+    "--microbatch-size",
+    "32",
+    "--label-free-inputs",
+    "--input-commitment",
+    "/pams/protocol/train.inputs.commitment.json",
+    "--dev-inputs",
+    "/pams/protocol/dev.inputs.json",
+    "--dev-input-commitment",
+    "/pams/protocol/dev.inputs.commitment.json",
+    "--test-identity-inputs",
+    "/pams/protocol/test-identity.inputs.json",
+    "--test-identity-commitment",
+    "/pams/protocol/test-identity.inputs.commitment.json"
+  ],
+  "config_sha256": "eaf9e2ce6047c4a13c13daaef10af1ae288542ad94ff9fb513d19e225912adf2",
+  "created_at_utc": "2026-07-30T02:55:21.506180+00:00",
+  "dataset_sha256": "177e3a70e6fb272bac7c976e9700f70355bc30adb3990dc1276485c3e0cbddd6",
+  "git_sha": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "hardware": {
+    "container": {
+      "environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+      "image_id": "sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005",
+      "source_revision": "07192debb7f5748c53a1c6d4f0c0d3f16228e229"
+    },
+    "cuda_runtime": "12.4",
+    "cudnn": 90100,
+    "gpus": [
+      {
+        "capability": "8.6",
+        "index": 0,
+        "name": "NVIDIA RTX A6000",
+        "total_memory_bytes": 50807570432
+      }
+    ],
+    "logical_cpu_count": 40,
+    "nvidia_driver": {
+      "status": "available",
+      "versions": [
+        "550.54.14"
+      ]
+    },
+    "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.35",
+    "processor": "x86_64",
+    "python": "3.11.10",
+    "torch": "2.5.1+cu124"
+  },
+  "notes": [
+    "count and action labels are not exposed to the training dataset",
+    "formal 337/84/105 label-free identity sidecars",
+    "pose cache set: f32d718ae922120778f535a6a4f467edba79cafeba90373b3a6a55bf11be6ee2",
+    "fresh run"
+  ],
+  "protocol": "ucfrep_526",
+  "receipt_type": "started",
+  "run_id": "20260730T025521Z-e6e6a2f657aa",
+  "schema_version": 2,
+  "seed": 2026,
+  "status": "started"
+}

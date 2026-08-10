@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "status": "failed_inferred_fixed_period_proxy",
+  "classification": "PAMS fixed-period-16 inferred dev diagnostic",
+  "method_id": "pams-fixed-period16-inferred-single-scale",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "seed": 2026,
+  "sample_count": 84,
+  "paper_table2_eligible": false,
+  "internal_period_ablation_eligible": true,
+  "sealed_test_status": "untouched",
+  "claim_boundary": {
+    "verified_reproduction": false,
+    "supports_period_adaptive_advantage": false,
+    "reason": "The paper calls its Table 2 baseline conventional TCC with a fixed window but does not disclose the fixed size or complete loss geometry. This independently frozen 16-frame proxy cannot recover the paper row. Against the matched adaptive single-scale encoder, it is better on NMAE for both readouts and better on OBO for both readouts, although the Literal NMAE and both OBO paired intervals cross zero."
+  },
+  "configuration": {
+    "training_mode": "fixed_period_inferred",
+    "fixed_period_frames": 16,
+    "scales": [
+      1.0
+    ],
+    "insufficient_evidence_rule": "Period confidence is zero when fewer than two complete fixed periods are valid.",
+    "inference_period_rule": "Inference remains Algorithm-1 FFT estimation from the emitted period stream; the fixed period changes only the training objective.",
+    "paper_disclosure_status": "inferred_not_uniquely_recoverable",
+    "config_file_sha256": "78aa6f422de91e4e7a07046376711d96dea432585ad3f0ac269db765069563db",
+    "config_fingerprint": "3978d2ec99f5d29f5ec4a24e9f24c1d0e77b9a339e74baabfd8b4258e05bfdb0",
+    "matched_adaptive_single_scale_config_fingerprint": "22fa68805731adb2c2b1cf49b63c966ca82019e223d1efb357f0c4a7741b5f1a"
+  },
+  "training_scope": {
+    "train_videos": 337,
+    "development_videos": 84,
+    "development_labels_loaded_during_training": false,
+    "test_identity_videos": 105,
+    "test_labels_loaded": false,
+    "encoder_epochs": 150,
+    "encoder_microbatch_size": 32,
+    "sshead_epochs": 30,
+    "sshead_microbatch_size": 32,
+    "sshead_classification": "inferred_non_author_completion",
+    "encoder_final": {
+      "loss": 1.5091588497161865,
+      "period_source": "fixed_period_inferred",
+      "period_confidence_mean": 0.93125,
+      "period_valid_fraction": 0.93125,
+      "cross_cluster_requested": 245021,
+      "cross_cluster_actual": 245021,
+      "cross_cluster_shortfall": 0
+    },
+    "sshead_final": {
+      "total_loss": 0.2624227360377326,
+      "stream_std_mean": 0.0022439327008417016,
+      "stream_std_median": 0.00226697139441967,
+      "stream_std_min": 0.0,
+      "variance_loss": 0.997756068182982,
+      "near_collapsed_fraction_1e3": 0.04154302670623145,
+      "zero_grad_steps": 0
+    }
+  },
+  "fixed_period_metrics": {
+    "literal": {
+      "nmae": 3.09908278411973,
+      "obo": 0.09523809523809523,
+      "mae": 11.714285714285714,
+      "rmse": 13.51454243187157,
+      "exact": 0.023809523809523808,
+      "bootstrap_10000_seed2026_95ci": {
+        "nmae": {
+          "low": 2.4893350040763833,
+          "high": 3.752529336199287
+        },
+        "obo": {
+          "low": 0.03571428571428571,
+          "high": 0.16666666666666666
+        },
+        "mae": {
+          "low": 10.297619047619047,
+          "high": 13.130952380952381
+        },
+        "rmse": {
+          "low": 12.320122428814441,
+          "high": 14.628331936283619
+        },
+        "exact": {
+          "low": 0.0,
+          "high": 0.05952380952380952
+        }
+      }
+    },
+    "sshead_inferred": {
+      "nmae": 1.7053730598219512,
+      "obo": 0.07142857142857142,
+      "mae": 6.476190476190476,
+      "rmse": 7.244045173533257,
+      "exact": 0.011904761904761904,
+      "bootstrap_10000_seed2026_95ci": {
+        "nmae": {
+          "low": 1.3988585988393563,
+          "high": 2.0402387457290474
+        },
+        "obo": {
+          "low": 0.023809523809523808,
+          "high": 0.13095238095238096
+        },
+        "mae": {
+          "low": 5.7976190476190474,
+          "high": 7.154761904761905
+        },
+        "rmse": {
+          "low": 6.59545297913646,
+          "high": 7.887603293414656
+        },
+        "exact": {
+          "low": 0.0,
+          "high": 0.03571428571428571
+        }
+      }
+    }
+  },
+  "matched_adaptive_single_scale_metrics": {
+    "literal": {
+      "nmae": 3.3130163361998335,
+      "obo": 0.08333333333333333,
+      "mae": 12.976190476190476,
+      "rmse": 15.64867254373202,
+      "exact": 0.023809523809523808
+    },
+    "sshead_inferred": {
+      "nmae": 4.62448430230142,
+      "obo": 0.047619047619047616,
+      "mae": 17.607142857142858,
+      "rmse": 19.910215133610855,
+      "exact": 0.011904761904761904
+    }
+  },
+  "paired_adaptive_minus_fixed": {
+    "pairing": "same 84 ordered video identities",
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 2026,
+    "literal": {
+      "changed_count_rows": 73,
+      "point_difference": {
+        "nmae": 0.21393355208010334,
+        "obo": -0.011904761904761904,
+        "mae": 1.2619047619047628,
+        "rmse": 2.1341301118604505,
+        "exact": 0.0
+      },
+      "confidence_intervals_95": {
+        "nmae": {
+          "low": -0.2362850082662279,
+          "high": 0.6174767788599375
+        },
+        "obo": {
+          "low": -0.09523809523809523,
+          "high": 0.07142857142857142
+        },
+        "mae": {
+          "low": -0.15505952380952384,
+          "high": 2.571428571428571
+        },
+        "rmse": {
+          "low": 1.048222460718014,
+          "high": 3.1020683748106017
+        },
+        "exact": {
+          "low": -0.047619047619047616,
+          "high": 0.047619047619047616
+        }
+      }
+    },
+    "sshead_inferred": {
+      "changed_count_rows": 77,
+      "point_difference": {
+        "nmae": 2.919111242479469,
+        "obo": -0.023809523809523808,
+        "mae": 11.130952380952381,
+        "rmse": 12.666169960077598,
+        "exact": 0.0
+      },
+      "confidence_intervals_95": {
+        "nmae": {
+          "low": 2.3653271793773643,
+          "high": 3.486879133597883
+        },
+        "obo": {
+          "low": -0.09523809523809525,
+          "high": 0.047619047619047616
+        },
+        "mae": {
+          "low": 9.357142857142858,
+          "high": 12.773809523809524
+        },
+        "rmse": {
+          "low": 11.31757976591871,
+          "high": 13.858164839423786
+        },
+        "exact": {
+          "low": -0.03571428571428571,
+          "high": 0.03571428571428571
+        }
+      }
+    },
+    "conclusion": "The observed direction does not support a period-adaptive advantage. The fixed proxy has lower NMAE and higher OBO for both readouts; the SSHead NMAE difference is large and its interval excludes zero. Because the fixed baseline geometry is inferred, this is a failure diagnostic rather than a recovered paper Table 2 row."
+  },
+  "fixed_sshead_minus_fixed_literal": {
+    "point_difference": {
+      "nmae": -1.393709724297779,
+      "obo": -0.023809523809523808,
+      "mae": -5.238095238095237,
+      "rmse": -6.270497258338313,
+      "exact": -0.011904761904761904
+    },
+    "paired_10000_bootstrap_95ci": {
+      "nmae": {
+        "low": -1.7505150213058929,
+        "high": -1.05756220118597
+      },
+      "obo": {
+        "low": -0.10714285714285715,
+        "high": 0.059523809523809534
+      },
+      "mae": {
+        "low": -6.345238095238096,
+        "high": -4.107142857142858
+      },
+      "rmse": {
+        "low": -7.119321345754662,
+        "high": -5.300032079806944
+      },
+      "exact": {
+        "low": -0.05952380952380952,
+        "high": 0.023809523809523808
+      }
+    },
+    "conclusion": "The inferred head lowers magnitude-based errors but does not improve OBO. Its very small output standard deviation and variance loss near one remain evidence of weak anti-collapse behavior."
+  },
+  "label_firewall": {
+    "protocol_identity_sha256": "7aaaea4fdd0620cc7abb4f307cf63a9506448540e3d3d920acf70957f6b8b97f",
+    "training_identity_sha256": "177e3a70e6fb272bac7c976e9700f70355bc30adb3990dc1276485c3e0cbddd6",
+    "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "train_inputs_sha256": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207",
+    "train_commitment_sha256": "ce39b1c9038bb1506354de010e46a23053b307b852222332f13df3f79d799044",
+    "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "dev_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "test_identity_inputs_sha256": "9eb2a057246b77fc7a1121ba4c9d27bf55177ad2fcd5dbb87237396a4a6015ca",
+    "test_identity_commitment_sha256": "232d3db7ce09018716594a1f1b332eec47b37410a8d3068e662b026ee2dc9c66",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "training_pose_cache_set_sha256": "34123ac27334ab06852c12254c7e0c046f7d86f3a066c81f9b8751c362dd0cd0",
+    "dev_pose_cache_set_sha256": "2e14cb39a4112f7ee1d10b759d166bb472f41e317e55e773776394331690256c",
+    "dev_pose_cache_snapshot_sha256": "f36e34059c6d99878c31404a6a63b44d8cf3c5da901a8f6e13e009a25d819208",
+    "prediction_process_loaded_dev_targets": false,
+    "prediction_process_loaded_test_targets": false,
+    "scoring_process_loaded_dev_targets": true,
+    "scoring_process_loaded_test_targets": false
+  },
+  "artifact_run_ids": {
+    "fixed_encoder": "fixed-period16-inferred-train337-dev84-ebbc296-seed2026-150ep-20260729-v1",
+    "fixed_sshead": "fixed-period16-inferred-sshead-train337-dev84-ebbc296-seed2026-30ep-20260729-v1",
+    "fixed_literal_prediction": "fixed-period16-inferred-literal-dev-predict-ebbc296-seed2026-20260729-v1",
+    "fixed_literal_evaluation": "fixed-period16-inferred-literal-dev-score-ebbc296-seed2026-20260729-v1",
+    "fixed_sshead_prediction": "fixed-period16-inferred-sshead-dev-predict-ebbc296-seed2026-20260729-v1",
+    "fixed_sshead_evaluation": "fixed-period16-inferred-sshead-dev-score-ebbc296-seed2026-20260729-v1",
+    "adaptive_literal_current_prediction": "adaptive-single-scale-literal-dev-predict-ebbc296-seed2026-20260729-v1",
+    "adaptive_literal_current_evaluation": "adaptive-single-scale-literal-dev-score-ebbc296-seed2026-20260729-v1",
+    "adaptive_sshead_current_prediction": "adaptive-single-scale-sshead-dev-predict-ebbc296-seed2026-20260729-v1",
+    "adaptive_sshead_current_evaluation": "adaptive-single-scale-sshead-dev-score-ebbc296-seed2026-20260729-v1"
+  },
+  "artifact_bindings": {
+    "fixed_encoder_started_receipt_sha256": "cc5f108884df6be31cfd4ca963405f5ef84bc41c4e41e5612c239415d2f992e9",
+    "fixed_encoder_checkpoint_sha256": "959fc1959b23ce028806d81769fe7d3a2139f1161bdaf4ecf9d5353addae64a5",
+    "fixed_encoder_progress_sha256": "80f03c547cf16f7379f7dae9e860eaee9db58bcba42242ad8c340c01d89ff4f9",
+    "fixed_encoder_completed_receipt_sha256": "83d7fa47d60bd85623182abf6205315d515ed3de02a9014faf67acd035f6e997",
+    "fixed_sshead_started_receipt_sha256": "31d34659e269c8d5ad19b590a534b6ddf4e6198ed231a709732a305502a302b8",
+    "fixed_sshead_checkpoint_sha256": "c20f48b424fa86f0bf40e2185ba7324b081940f4ba5b3bcf677d3dce22b343e2",
+    "fixed_sshead_progress_sha256": "9e19f74d354c882672a069e114a0704b22d15e274abbb4c259279a861300b3cb",
+    "fixed_sshead_completed_receipt_sha256": "e8bf8b42a29d63eae78666927f98f6c79648b3667133fcf756a5af1750bfebb3",
+    "fixed_literal_prediction_sha256": "801cf057458acc081db7dd0217a6ddd2779df82791db9262e85b5772b3e7332f",
+    "fixed_literal_prediction_receipt_sha256": "07e214f1a4d18ad173335a5eaefe3df9cf1a0c959fea94ae75f902d2b420b1e8",
+    "fixed_literal_evaluation_sha256": "6029a79f002bba3129883976f29221241d4049dacf2f9834cf149385e0d91eca",
+    "fixed_literal_evaluation_receipt_sha256": "d9663cc2a18795fd711a0dfd510529645b9ed26aacb2b6417dfd3df561ab7384",
+    "fixed_sshead_prediction_sha256": "f1da195ba2caad5d13f8741b8dd34d525b193a7db7ee9961517c4c35871cfe80",
+    "fixed_sshead_prediction_receipt_sha256": "58ccbe28db26795ea4b27a4290377a7140c2e37db07e6c90e21a5ac17944b850",
+    "fixed_sshead_evaluation_sha256": "5035cf21ed4cbfbc8ffc47689ad765824ab220865f80b3af256859808085328f",
+    "fixed_sshead_evaluation_receipt_sha256": "1da54f28115fad9bd0a158471d5facc3ec046c4d47cd6c78642041cd63205aa3",
+    "adaptive_literal_prediction_sha256": "1fb55455ee87cefb075c648a055aa0aeccd06dfce385174e719e35fdaa72b216",
+    "adaptive_literal_prediction_receipt_sha256": "94b90732db78d49c0eb1ffc34a59482caff00e2dc4d1ab546c7848b8863f0a03",
+    "adaptive_literal_evaluation_sha256": "e72cc82e33e0e35ede519c1735775c7c48b06c9db1b660c19da627d582cd938a",
+    "adaptive_literal_evaluation_receipt_sha256": "6a3537f1acfab3ee8289b5ea021dccc55a28b9db917f2dc4e710fd77a5db6b4b",
+    "adaptive_sshead_prediction_sha256": "69a57f625d91da6020e62e60f036ddf2da555e3d45ef8f07144db7e91e04e41a",
+    "adaptive_sshead_prediction_receipt_sha256": "41baade982421b08b7751094273da1c29c9ca701bf9900b5dd45406d10289bb2",
+    "adaptive_sshead_evaluation_sha256": "734f4199eedeea748452e985a3c597e8f905fa96ff8e8727e165e6ed1edd1a67",
+    "adaptive_sshead_evaluation_receipt_sha256": "88071fad98d3e9ad1e6be0e459c48b258fc3307da456b3093ebcd4c002562c00",
+    "adaptive_sshead_current_vs_legacy_compact_rows_exact": true,
+    "prediction_code_sha256": "f4776c5be629fccf731f2b9bc8f204e31ba95a601ba03fbdb152718d40d1e66c"
+  },
+  "runtime": {
+    "source_git_sha": "ebbc296db11c3d7d06f5fc3090a3487abed55e36",
+    "container_image_id": "sha256:6e8105129eade4f6c6aa49a81e2d732e98cba66d7a70cd557c3d39cfc66b7738",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "gpu": "NVIDIA RTX A6000",
+    "server_validation": {
+      "pytest": "54 passed",
+      "mypy": "Success: no issues found in 2 source files",
+      "ruff": "All checks passed"
+    }
+  },
+  "diagnostic_gate": {
+    "maximum_nmae": 0.228,
+    "minimum_obo": 0.666,
+    "literal_pass": false,
+    "sshead_pass": false
+  },
+  "limitations": [
+    "This is a development-only inferred proxy, not a recovered conventional-TCC baseline or sealed-test result.",
+    "The fixed value 16 and current positive/negative geometry are independently frozen because the paper does not disclose the author baseline.",
+    "PAMS-SSHead is itself an independent completion because the paper gives no head loss or gradient path.",
+    "The fixed proxy's better metrics do not prove fixed-window TCC is generally superior; they contradict the claimed direction under this executable closure.",
+    "The 105-video sealed test split has no predictions, targets, evaluation, or metrics."
+  ]
+}

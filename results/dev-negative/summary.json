@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "status": "partial_reproduction",
+  "evidence_class": "development_only_negative_result",
+  "protocol": "ucfrep_526",
+  "split": "development",
+  "sample_count": 84,
+  "source_revision": "f99f3fda91b8bf2c25fc75a42814d9c97df71ae0",
+  "source_aggregate_sha256": "c8f6a117ce635d91d7c4446b2f2aea156bb2f3ed0ae86460986685c16cdeb814",
+  "seeds": [
+    42,
+    2026,
+    3407
+  ],
+  "standard_deviation_kind": "sample_across_three_seeds",
+  "diagnostic_gate": {
+    "maximum_nmae": 0.228,
+    "minimum_obo": 0.666,
+    "required_individual_seed_passes": 2,
+    "development_pass_does_not_verify_reproduction": true
+  },
+  "variants": {
+    "pams-literal": {
+      "per_seed": {
+        "42": {
+          "nmae": 0.6384388981525682,
+          "mae": 3.738095238095238,
+          "rmse": 5.3873750123608,
+          "obo": 0.2857142857142857
+        },
+        "2026": {
+          "nmae": 0.6414461684320057,
+          "mae": 3.7261904761904763,
+          "rmse": 5.449989078189144,
+          "obo": 0.30952380952380953
+        },
+        "3407": {
+          "nmae": 0.9098893267150655,
+          "mae": 5.464285714285714,
+          "rmse": 7.378378967664658,
+          "obo": 0.15476190476190477
+        }
+      },
+      "seed_mean": {
+        "nmae": 0.7299247977665465,
+        "mae": 4.309523809523809,
+        "rmse": 6.071914352738201,
+        "obo": 0.25
+      },
+      "seed_sample_standard_deviation": {
+        "nmae": 0.15586110700999195,
+        "mae": 1.0000708591674936,
+        "rmse": 1.1318646000520964,
+        "obo": 0.08333333333333333
+      },
+      "individual_seed_gate_passes": 0,
+      "three_seed_mean_gate_pass": false
+    },
+    "pams-sshead-inferred": {
+      "per_seed": {
+        "42": {
+          "nmae": 5.225997706909037,
+          "mae": 20.0,
+          "rmse": 22.813425454157052,
+          "obo": 0.047619047619047616
+        },
+        "2026": {
+          "nmae": 5.008007059761986,
+          "mae": 19.154761904761905,
+          "rmse": 21.78766579862058,
+          "obo": 0.03571428571428571
+        },
+        "3407": {
+          "nmae": 4.589607819657082,
+          "mae": 17.476190476190474,
+          "rmse": 19.926053775086,
+          "obo": 0.07142857142857142
+        }
+      },
+      "seed_mean": {
+        "nmae": 4.941204195442701,
+        "mae": 18.876984126984127,
+        "rmse": 21.50904834262121,
+        "obo": 0.051587301587301584
+      },
+      "seed_sample_standard_deviation": {
+        "nmae": 0.3234114858196667,
+        "mae": 1.284629907206074,
+        "rmse": 1.4637108896110824,
+        "obo": 0.018184824186332698
+      },
+      "individual_seed_gate_passes": 0,
+      "three_seed_mean_gate_pass": false
+    }
+  },
+  "paired_sshead_minus_literal_bootstrap": {
+    "samples": 10000,
+    "seed": 2026,
+    "nmae_difference_95ci": {
+      "low": 3.333701027385732,
+      "high": 5.141728439859343
+    },
+    "obo_difference_95ci": {
+      "low": -0.2698412698412698,
+      "high": -0.13095238095238096
+    }
+  },
+  "seed_2026_diagnostics": {
+    "pose_period_only": {
+      "pams-literal": {
+        "nmae": 2.4754641271882654,
+        "mae": 9.202380952380953,
+        "rmse": 10.545253953906514,
+        "obo": 0.08333333333333333
+      },
+      "pams-sshead-inferred": {
+        "nmae": 4.7070330628366355,
+        "mae": 17.88095238095238,
+        "rmse": 20.475885933504923,
+        "obo": 0.05952380952380952
+      }
+    },
+    "single_scale": {
+      "pams-literal": {
+        "nmae": 4.368132073181334,
+        "mae": 17.178571428571427,
+        "rmse": 19.973494341012948,
+        "obo": 0.03571428571428571
+      },
+      "pams-sshead-inferred": {
+        "nmae": 4.314496324009871,
+        "mae": 16.19047619047619,
+        "rmse": 18.44877076818786,
+        "obo": 0.07142857142857142
+      }
+    }
+  },
+  "sealed_test": {
+    "sample_count": 105,
+    "predictions_run": false,
+    "evaluation_run": false,
+    "metrics_published": false,
+    "full_split_manifest_deserialized_by_development_cli": true,
+    "eligible_as_leak_free_sealed_result": false
+  },
+  "limitations": [
+    "Development metrics are not test metrics and cannot verify the reproduction.",
+    "The source aggregate and per-video predictions are not published in this directory.",
+    "The two seed-2026 diagnostics are not admissible component-ablation evidence."
+  ]
+}

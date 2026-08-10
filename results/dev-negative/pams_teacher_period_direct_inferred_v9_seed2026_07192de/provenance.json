@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "artifact_type": "pams_teacher_period_direct_inferred_public_package_provenance",
+  "classification": "dev84_negative_diagnostic",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "seed": 2026,
+  "checkpoint_source_revision": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "formal_cli_source_revision": "f7108edb24b70895ae1404eb354595208828a5dd",
+  "container_image_id": "sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005",
+  "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+  "config_sha256": "eb4072a195608757cd2542855b33fb000c987f96c94b83a1e448ab78f97e9374",
+  "config_fingerprint": "eaf9e2ce6047c4a13c13daaef10af1ae288542ad94ff9fb513d19e225912adf2",
+  "pose_fingerprint": "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116",
+  "encoder_checkpoint_sha256": "6817fe468d76c3fa2182dd831695d6fe3d6da208a2b7f8dfa90cffa6872e8053",
+  "encoder_progress_sha256": "aadc8f9bf067b3489efcd80db43c42cf09dba3477c2976bbc16571ff31684622",
+  "encoder_completion_receipt_sha256": "f4815e1961ba883c23ef479ddcdef44aea5cad8a50d54e17b8e6a4cccc613f3d",
+  "training_pose_cache_set_sha256": "f32d718ae922120778f535a6a4f467edba79cafeba90373b3a6a55bf11be6ee2",
+  "dev_pose_cache_set_sha256": "681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1",
+  "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+  "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+  "source_bundle_manifests_not_copied": {
+    "successful_predev_gate_artifact_manifest_sha256": "581b7cb3042178f2a1dbfb3258a38a35f5ae978b2188e5fef8cff9ac530895f1",
+    "one_off_artifact_manifest_sha256": "7b4da21f1a261278e7a9a589f8e6b1ef962b025f7d5b94e0967a0361157e5a12",
+    "reason": "the source lists contain host-absolute paths; each published source artifact is bound individually below"
+  },
+  "copied_artifacts": [
+    {
+      "path": "predev-gate/failed-predecessor/gate-script.py",
+      "bytes": 5577,
+      "sha256": "1b711c4612b9a4b21121212d588fa47030625c139c848ea1cf6fa6b35a239757"
+    },
+    {
+      "path": "predev-gate/failed-predecessor/reservation.json",
+      "bytes": 635,
+      "sha256": "cc162d550bf2aafdf109e527fd80a801efcc3d4ee88394f80284e41971c9f2bd"
+    },
+    {
+      "path": "predev-gate/failed-predecessor/gate.json",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "predev-gate/failed-predecessor/exit-code.txt",
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "predev-gate/failed-predecessor/stderr.log",
+      "bytes": 585,
+      "sha256": "b97927c60d4e298807da38ac9a50e0425a899d672bf4473fe9b4ebe32c3c706a"
+    },
+    {
+      "path": "predev-gate/passed-recovery/gate-script.py",
+      "bytes": 5814,
+      "sha256": "c20a6ac0f7827f6057a7e58a8f381cc085b7c1c6ab0c15dc3a2e3edad3433f25"
+    },
+    {
+      "path": "predev-gate/passed-recovery/reservation.json",
+      "bytes": 829,
+      "sha256": "573f08d0655b725ea0f24f30d81f53e605a39d497cbbd6ba87560a523a6358e3"
+    },
+    {
+      "path": "predev-gate/passed-recovery/gate.json",
+      "bytes": 14859,
+      "sha256": "21f6693c1592b52a36c9f033a91a4d8da0e4bdaa3ced2380640c77f345903580"
+    },
+    {
+      "path": "predev-gate/passed-recovery/status.json",
+      "bytes": 93,
+      "sha256": "8055fe832c331c09376b01124fa66b97dcb8879d7f8d4c59de5fd7e6f5af3b43"
+    },
+    {
+      "path": "predev-gate/passed-recovery/exit-code.txt",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "one-off/reservation.json",
+      "bytes": 855,
+      "sha256": "5a072ba0a5041ae11867e358baf944af171fc379381e4e33e128e518ed16ad42"
+    },
+    {
+      "path": "one-off/status.json",
+      "bytes": 137,
+      "sha256": "554fe26a4a9e40f461a850e3a30e16c80b3022decba5ab3d0264be4ed0f5319f"
+    },
+    {
+      "path": "one-off/predict-script.py",
+      "bytes": 5792,
+      "sha256": "4201d9193a7d2606ef004854c9a5d8a0e10a24024431a8defd99bc5744397fc3"
+    },
+    {
+      "path": "one-off/score-script.py",
+      "bytes": 2793,
+      "sha256": "253cfdcddce271a30273a41a80ade90ec65c288ae875ac5434458975282dd751"
+    },
+    {
+      "path": "one-off/predict/predictions.json",
+      "bytes": 27932,
+      "sha256": "501875b4234b01c80a6c712fd82174540a2856c625ab02f76411be386654853c"
+    },
+    {
+      "path": "one-off/predict/prediction.receipt.json",
+      "bytes": 962,
+      "sha256": "0de1cb9ca4e9af6eda76014b8198c3dda34a80010324cc5291de85db16689ff2"
+    },
+    {
+      "path": "one-off/score/evaluation.json",
+      "bytes": 28365,
+      "sha256": "1491ad51da7472244cee07afec775a7dcd2e4e3ba6bca908dec5f677205bd105"
+    },
+    {
+      "path": "one-off/score/evaluation.receipt.json",
+      "bytes": 684,
+      "sha256": "aea9ff0febba4e2182ab81c8acf1d4986c94be7fe6e5761ecfa6adaed774bc4b"
+    },
+    {
+      "path": "formal-cli/orchestration-status-before-recovery.json",
+      "bytes": 112,
+      "sha256": "4f07166ef6850574bf7baf680e869983cf323929c91527c587885c2555dd407f"
+    },
+    {
+      "path": "formal-cli/source-export.receipt.json",
+      "bytes": 7011,
+      "sha256": "50deab8238cdc6b8f119789acb55a8da89ac7a3a032289550241b9b784346816"
+    },
+    {
+      "path": "formal-cli/predict/predictions.json",
+      "bytes": 557402,
+      "sha256": "3de2e518fa5221f2a9f019affdba327fabd40bdde6c361f9ca94995160272a19"
+    },
+    {
+      "path": "formal-cli/predict/prediction.receipt.json",
+      "bytes": 3235,
+      "sha256": "0cd93ab72de3b5a4694ee9e50b793997f23885ff93d82a78d2ba5a098060ceae"
+    },
+    {
+      "path": "formal-cli/score/evaluation.json",
+      "bytes": 49277,
+      "sha256": "3f7048f3afaaf16d32a8574212c1e029d1b1969717ee05098292a303882eb0c6"
+    },
+    {
+      "path": "formal-cli/score/evaluation.receipt.json",
+      "bytes": 1481,
+      "sha256": "8dc9702b7169832364ecd08540f07001edcf770b02bebb87255b20e5e7c28e60"
+    },
+    {
+      "path": "formal-cli/recovery/formal-cli-equivalence.json",
+      "bytes": 1385,
+      "sha256": "4dbd3b90a1d75199daf29d548ab46d2ba3cdf9e5cbf62b0a98a0f522ca110f8a"
+    },
+    {
+      "path": "formal-cli/recovery/recovery.json",
+      "bytes": 2283,
+      "sha256": "66d0cefe9167fb17bb62228b8043347fedc59c0f15b6fb2f78ead4a197b7b38e"
+    },
+    {
+      "path": "formal-cli/recovery/mount-boundary-audit.json",
+      "bytes": 1192,
+      "sha256": "837edab3a502376a779201ea949abc682b98d1fb23758996d0d6bef971e59db0"
+    },
+    {
+      "path": "formal-cli/recovery/status.json",
+      "bytes": 157,
+      "sha256": "6884bf8aaea4fec3628e24a1d4ef4c8eb1f7324737a8ce2b964fa9d2410c7c88"
+    }
+  ],
+  "formal_equivalence_bindings": {
+    "one_off_prediction_sha256": "501875b4234b01c80a6c712fd82174540a2856c625ab02f76411be386654853c",
+    "formal_prediction_sha256": "3de2e518fa5221f2a9f019affdba327fabd40bdde6c361f9ca94995160272a19",
+    "one_off_evaluation_sha256": "1491ad51da7472244cee07afec775a7dcd2e4e3ba6bca908dec5f677205bd105",
+    "formal_evaluation_sha256": "3f7048f3afaaf16d32a8574212c1e029d1b1969717ee05098292a303882eb0c6",
+    "all_84_prediction_fields_exact": true,
+    "all_metrics_exact": true
+  },
+  "derived_analysis_artifacts": [
+    {
+      "path": "failure-analysis.json",
+      "bytes": 9491,
+      "sha256": "f457e287537126727d2ba5f5ba310feb85891517e678d8a4a2b44257cb036041"
+    },
+    {
+      "path": "formula-audit.json",
+      "bytes": 5105,
+      "sha256": "0383c3b70129d1b6cc32034a7fdc321a384c09f87fd003d5bbd7cb1525b04a79"
+    },
+    {
+      "path": "paired-comparisons.json",
+      "bytes": 7917,
+      "sha256": "35cba8b127f40ac7cc3913c3faac352d123cede90d012b06c022a86a7f12667e"
+    }
+  ],
+  "prediction_isolation": {
+    "development_targets_mounted": false,
+    "test_identity_sidecars_only": true,
+    "test_media_mounted": false,
+    "test_pose_mounted": false,
+    "test_labels_mounted": false,
+    "network_mode": "none"
+  },
+  "score_isolation": {
+    "frozen_prediction_validated_before_target_load": true,
+    "pose_mounted": false,
+    "encoder_mounted": false,
+    "development_targets_mounted": true,
+    "network_mode": "none"
+  },
+  "excluded_from_public_package": [
+    "raw Docker inspect records",
+    "container create-ID files",
+    "host runner scripts",
+    "host-absolute artifact hash lists",
+    "server addresses and SSH material",
+    "videos and pose caches",
+    "model weights",
+    "development target manifest",
+    "all test105 media, pose, and labels"
+  ],
+  "authorization": {
+    "paper_table": false,
+    "test105": false,
+    "seeds_42_3407": false
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "algorithm_parameters_sha256": "86c86b949e40259f9a74b8039d8cce345a68951379c03798c5c5f0eb63a7829e",
+  "artifact_type": "pams_noabspe_projected_null_dev_prediction_receipt_v12",
+  "checkpoint_sha256": "a5f08e8585cc0666eea265d9c38617d8845f3af0a4cf4fce92b1ef956e62b76d",
+  "config_sha256": "8295b51171da07138fb0c93cb14b25e52bde0964fb15fbb74868941b7ac07af3",
+  "dev_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+  "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+  "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+  "dev_pose_cache_set_sha256": "681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1",
+  "label_firewall": {
+    "gt_count_or_action_oracle_used": false,
+    "prediction_loaded_dev_targets": false,
+    "prediction_loaded_test_identity": false,
+    "prediction_loaded_test_targets": false
+  },
+  "method_id": "pams-noabspe-projected-null-multiexpert-v12",
+  "null_sha256": "884ccb0c4e88f152dce7ceae52568a4ffdafc1a1230c0fdb0b9f88d012779f54",
+  "passed_predev_sha256": "3eb154cb98c9f44b9ea06d616b711099d17e16ef3bc94955311efd4c8cbe8d08",
+  "predev_source_sha256": "78a843f35799194f0fba88bf00add9d4c00a764da68fd2f82553f8ce808a3f98",
+  "prediction_bytes": 706432,
+  "prediction_file": "predictions.json",
+  "prediction_sha256": "61624471a5be5671d53459a4e2d3a16f0dc76e0760ea131b8b12294aa94b1f58",
+  "protocol": "ucfrep_526",
+  "record_total": 84,
+  "schema_version": 1,
+  "source_code_sha256": "320a520ed1dfb1465dd89e3d096dc321e1e57e14113c47086fd3b4637b110e7f",
+  "split": "dev"
+}

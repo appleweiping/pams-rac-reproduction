@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this independent reproduction, cite both the original paper and this repository."
+title: "PAMS RAC Reproduction"
+type: software
+version: 0.1.0
+license: Apache-2.0
+repository-code: "https://github.com/appleweiping/pams-rac-reproduction"
+date-released: 2026-07-27
+keywords:
+  - repetitive action counting
+  - self-supervised learning
+  - computer vision

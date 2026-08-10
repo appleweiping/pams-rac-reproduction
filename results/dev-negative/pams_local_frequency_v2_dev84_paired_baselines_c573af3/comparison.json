@@ -1,0 +1,6154 @@
+{
+  "artifact_type": "ucfrep_dev84_paired_method_comparison",
+  "baseline_runs": [
+    {
+      "artifact_file": "local-frequency-v1.json",
+      "artifact_sha256": "be1b7444fa0e7fabf0ab85ac1298a77d376ee086d4b44744fecce060255b5512",
+      "group": "local-frequency-v1",
+      "method_id": "pams-local-frequency-synthetic-v1",
+      "per_video_json_path": "report.per_video",
+      "prediction_sha256": "33dd390433b23d33819292e7dde5fce145fad501ae4669f044dc9f4d44f2ec18",
+      "run": "single"
+    },
+    {
+      "artifact_file": "repnet-official.json",
+      "artifact_sha256": "3b60ff34bb74e092758f4868ed0c19b9c4041b2721ef3ece3a03bb93c5d051dd",
+      "group": "repnet-official",
+      "method_id": "repnet-official-current-ckpt70",
+      "per_video_json_path": "report.per_video",
+      "prediction_sha256": "19b1d2884fff7d1d8d54ec6de2d7bef039de0b09afa507aaa413b999faceb263",
+      "run": "ckpt70"
+    },
+    {
+      "artifact_file": "escounts-official.json",
+      "artifact_sha256": "531bd5ac8f42bec50773ec585374a9335717933511a2768dcde6edd986842beb",
+      "group": "escounts-official",
+      "method_id": "escounts-official-f18fcf1-zeroshot",
+      "per_video_json_path": "rounded_metrics.per_video",
+      "prediction_sha256": "854e5292b88447425141f7b4705d6472ab3aac9d94199e5248a8d2884a3b403a",
+      "run": "current"
+    },
+    {
+      "artifact_file": "jtsps-seed42.json",
+      "artifact_sha256": "1ef34521978dad1861905cea1166388e5f37acf8a25781c775a89cc537b7417c",
+      "group": "jtsps-count-only",
+      "method_id": null,
+      "per_video_json_path": "metrics.per_video",
+      "prediction_sha256": "38f554a7de6dc291fc2f7e19cbc9eaf07c1b5de9fc346040dc72e7ef2656e673",
+      "run": "seed42"
+    },
+    {
+      "artifact_file": "jtsps-seed2026.json",
+      "artifact_sha256": "0578d5d1d1243ae79ad1fc8bbbc68af6e8841f92b8a863f4e85d4bef8a933c00",
+      "group": "jtsps-count-only",
+      "method_id": null,
+      "per_video_json_path": "metrics.per_video",
+      "prediction_sha256": "2f21829cdd64477ddf8792d2c222e20e24ae48399f4b4b3d208c9d76f0cd4848",
+      "run": "seed2026"
+    },
+    {
+      "artifact_file": "jtsps-seed3407.json",
+      "artifact_sha256": "3c74408dcb32859f8b06df28c60a18e030072da17b738f79ce2e6af06a8ffa7d",
+      "group": "jtsps-count-only",
+      "method_id": null,
+      "per_video_json_path": "metrics.per_video",
+      "prediction_sha256": "33de2319f3be44c5dc8f44ad33dadba7c8a7d34a300b9773693acb43b40bbcc5",
+      "run": "seed3407"
+    }
+  ],
+  "candidate": {
+    "artifact_file": "candidate.json",
+    "artifact_sha256": "f5d795b30efc4ae4c81f1da5d202e9f77979ada37f0f32db0468a5a3e678e739",
+    "group": "local-frequency-v2",
+    "method_id": "pams-local-frequency-v2-target-free-selected-v1",
+    "per_video_json_path": "metrics.per_video",
+    "prediction_sha256": "99ed1c9c8c4ce0a4d7971901e35ec0e0de7c340ea5989ce75fb834ae82b2a912",
+    "run": "candidate"
+  },
+  "classification": "development-only frozen-prediction comparison",
+  "comparisons": {
+    "escounts-official": {
+      "baseline_run_labels": [
+        "current"
+      ],
+      "baseline_run_total": 1,
+      "metrics": {
+        "exact": {
+          "baseline_seed_mean": 0.2976190476190476,
+          "candidate": 0.27380952380952384,
+          "difference_candidate_minus_baseline": -0.02380952380952378,
+          "paired_bootstrap_95_percent": {
+            "high": 0.09523809523809523,
+            "low": -0.14285714285714285,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "mae": {
+          "baseline_seed_mean": 2.1547619047619047,
+          "candidate": 3.2738095238095237,
+          "difference_candidate_minus_baseline": 1.119047619047619,
+          "paired_bootstrap_95_percent": {
+            "high": 1.9285714285714286,
+            "low": 0.3333333333333335,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "nmae": {
+          "baseline_seed_mean": 0.3524188620401675,
+          "candidate": 0.4538043818524114,
+          "difference_candidate_minus_baseline": 0.10138551981224392,
+          "paired_bootstrap_95_percent": {
+            "high": 0.21443681678941837,
+            "low": -0.02359390842919161,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "obo": {
+          "baseline_seed_mean": 0.5952380952380952,
+          "candidate": 0.36904761904761907,
+          "difference_candidate_minus_baseline": -0.22619047619047616,
+          "paired_bootstrap_95_percent": {
+            "high": -0.10714285714285715,
+            "low": -0.34523809523809523,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "rmse": {
+          "baseline_seed_mean": 3.653113479655141,
+          "candidate": 5.029673851018478,
+          "difference_candidate_minus_baseline": 1.3765603713633365,
+          "paired_bootstrap_95_percent": {
+            "high": 2.99806005303953,
+            "low": -0.24008351868216354,
+            "samples": 10000,
+            "seed": 2026
+          }
+        }
+      }
+    },
+    "jtsps-count-only": {
+      "baseline_run_labels": [
+        "seed2026",
+        "seed3407",
+        "seed42"
+      ],
+      "baseline_run_total": 3,
+      "metrics": {
+        "exact": {
+          "baseline_seed_mean": 0.16269841269841268,
+          "candidate": 0.27380952380952384,
+          "difference_candidate_minus_baseline": 0.11111111111111116,
+          "paired_bootstrap_95_percent": {
+            "high": 0.23412698412698413,
+            "low": -0.007936507936507936,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "mae": {
+          "baseline_seed_mean": 2.9603174603174605,
+          "candidate": 3.2738095238095237,
+          "difference_candidate_minus_baseline": 0.31349206349206327,
+          "paired_bootstrap_95_percent": {
+            "high": 0.7420634920634921,
+            "low": -0.1428571428571428,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "nmae": {
+          "baseline_seed_mean": 0.48763353618649186,
+          "candidate": 0.4538043818524114,
+          "difference_candidate_minus_baseline": -0.03382915433408046,
+          "paired_bootstrap_95_percent": {
+            "high": 0.06826943459409582,
+            "low": -0.14063365721693927,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "obo": {
+          "baseline_seed_mean": 0.4087301587301588,
+          "candidate": 0.36904761904761907,
+          "difference_candidate_minus_baseline": -0.03968253968253971,
+          "paired_bootstrap_95_percent": {
+            "high": 0.09126984126984122,
+            "low": -0.17063492063492058,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "rmse": {
+          "baseline_seed_mean": 4.751683160185647,
+          "candidate": 5.029673851018478,
+          "difference_candidate_minus_baseline": 0.2779906908328309,
+          "paired_bootstrap_95_percent": {
+            "high": 0.8984912631127817,
+            "low": -0.3150938009975979,
+            "samples": 10000,
+            "seed": 2026
+          }
+        }
+      }
+    },
+    "local-frequency-v1": {
+      "baseline_run_labels": [
+        "single"
+      ],
+      "baseline_run_total": 1,
+      "metrics": {
+        "exact": {
+          "baseline_seed_mean": 0.17857142857142858,
+          "candidate": 0.27380952380952384,
+          "difference_candidate_minus_baseline": 0.09523809523809526,
+          "paired_bootstrap_95_percent": {
+            "high": 0.17857142857142855,
+            "low": 0.02380952380952378,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "mae": {
+          "baseline_seed_mean": 3.488095238095238,
+          "candidate": 3.2738095238095237,
+          "difference_candidate_minus_baseline": -0.2142857142857144,
+          "paired_bootstrap_95_percent": {
+            "high": 0.3690476190476186,
+            "low": -0.7142857142857144,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "nmae": {
+          "baseline_seed_mean": 0.5145662219553846,
+          "candidate": 0.4538043818524114,
+          "difference_candidate_minus_baseline": -0.0607618401029732,
+          "paired_bootstrap_95_percent": {
+            "high": 0.01735606715055605,
+            "low": -0.14450756584685154,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "obo": {
+          "baseline_seed_mean": 0.3333333333333333,
+          "candidate": 0.36904761904761907,
+          "difference_candidate_minus_baseline": 0.035714285714285754,
+          "paired_bootstrap_95_percent": {
+            "high": 0.11904761904761901,
+            "low": -0.035714285714285754,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "rmse": {
+          "baseline_seed_mean": 4.905050846782713,
+          "candidate": 5.029673851018478,
+          "difference_candidate_minus_baseline": 0.12462300423576433,
+          "paired_bootstrap_95_percent": {
+            "high": 1.372605656853704,
+            "low": -0.8759955906288195,
+            "samples": 10000,
+            "seed": 2026
+          }
+        }
+      }
+    },
+    "repnet-official": {
+      "baseline_run_labels": [
+        "ckpt70"
+      ],
+      "baseline_run_total": 1,
+      "metrics": {
+        "exact": {
+          "baseline_seed_mean": 0.16666666666666666,
+          "candidate": 0.27380952380952384,
+          "difference_candidate_minus_baseline": 0.10714285714285718,
+          "paired_bootstrap_95_percent": {
+            "high": 0.2142857142857143,
+            "low": 0.0,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "mae": {
+          "baseline_seed_mean": 2.238095238095238,
+          "candidate": 3.2738095238095237,
+          "difference_candidate_minus_baseline": 1.0357142857142856,
+          "paired_bootstrap_95_percent": {
+            "high": 1.964285714285714,
+            "low": 0.15476190476190466,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "nmae": {
+          "baseline_seed_mean": 0.43450497914783626,
+          "candidate": 0.4538043818524114,
+          "difference_candidate_minus_baseline": 0.01929940270457514,
+          "paired_bootstrap_95_percent": {
+            "high": 0.13363848792035357,
+            "low": -0.10309447616559683,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "obo": {
+          "baseline_seed_mean": 0.5833333333333334,
+          "candidate": 0.36904761904761907,
+          "difference_candidate_minus_baseline": -0.2142857142857143,
+          "paired_bootstrap_95_percent": {
+            "high": -0.09523809523809523,
+            "low": -0.33333333333333337,
+            "samples": 10000,
+            "seed": 2026
+          }
+        },
+        "rmse": {
+          "baseline_seed_mean": 3.670993118515816,
+          "candidate": 5.029673851018478,
+          "difference_candidate_minus_baseline": 1.3586807325026617,
+          "paired_bootstrap_95_percent": {
+            "high": 3.110161719315452,
+            "low": -0.36026637460439553,
+            "samples": 10000,
+            "seed": 2026
+          }
+        }
+      }
+    }
+  },
+  "estimand": {
+    "baseline_multi_run_policy": "metric per run, then arithmetic mean across runs",
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 2026,
+    "confidence_level": 0.95,
+    "difference": "candidate_minus_baseline",
+    "multi_run_rows_not_treated_as_independent": true,
+    "resampling_unit": "paired video"
+  },
+  "label_firewall": {
+    "accepts_evaluation_artifacts_only": true,
+    "dataset_manifest_accepted": false,
+    "pose_or_video_accepted": false,
+    "test105_accessed": false,
+    "test105_path_rejected": true
+  },
+  "paired_identity": {
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "sample_count": 84,
+    "target_rows_sha256": "850541977de481223b2376c33aff2ccae3c872df848798d5de7b4c631f722a27",
+    "video_id_sha256": "2199294a1d22da6c67d2fdaaafb4bebaa11e92a5bb3accd4670975815001f2c6",
+    "video_ids_unique": true
+  },
+  "paired_rows": [
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 2,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 4,
+      "video_id": "v_BabyCrawling_g02_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.1111111111111111,
+            "rounded_prediction": 10,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.5555555555555556,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.5555555555555556,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.5555555555555556,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 0.7777777777777778,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 9,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 7,
+        "exact": false,
+        "normalized_absolute_error": 0.7777777777777778,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 9,
+      "video_id": "v_BabyCrawling_g07_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 1,
+        "exact": false,
+        "normalized_absolute_error": 0.3333333333333333,
+        "rounded_prediction": 4,
+        "within_one": true
+      },
+      "target": 3,
+      "video_id": "v_BabyCrawling_g11_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.6,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 5,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 3,
+        "exact": false,
+        "normalized_absolute_error": 0.6,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 5,
+      "video_id": "v_BabyCrawling_g13_c06"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 4,
+        "within_one": true
+      },
+      "target": 4,
+      "video_id": "v_BenchPress_g04_c03"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 5,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 1,
+        "exact": false,
+        "normalized_absolute_error": 0.3333333333333333,
+        "rounded_prediction": 2,
+        "within_one": true
+      },
+      "target": 3,
+      "video_id": "v_BenchPress_g11_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 3,
+        "within_one": true
+      },
+      "target": 3,
+      "video_id": "v_BenchPress_g15_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 2,
+        "within_one": true
+      },
+      "target": 2,
+      "video_id": "v_BenchPress_g17_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 2,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 4,
+      "video_id": "v_Biking_g01_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.6,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.6,
+            "rounded_prediction": 2,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 3,
+        "exact": false,
+        "normalized_absolute_error": 0.6,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 5,
+      "video_id": "v_Biking_g05_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.2727272727272727,
+            "rounded_prediction": 8,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.5454545454545454,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.5454545454545454,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.5454545454545454,
+            "rounded_prediction": 5,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 9,
+            "exact": false,
+            "normalized_absolute_error": 0.8181818181818182,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.09090909090909091,
+            "rounded_prediction": 12,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 9,
+        "exact": false,
+        "normalized_absolute_error": 0.8181818181818182,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 11,
+      "video_id": "v_Biking_g10_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.2857142857142857,
+            "rounded_prediction": 5,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 7,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 5,
+        "exact": false,
+        "normalized_absolute_error": 0.7142857142857143,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 7,
+      "video_id": "v_Biking_g16_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 1,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 3,
+        "within_one": true
+      },
+      "target": 2,
+      "video_id": "v_BodyWeightSquats_g03_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 5,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 2,
+        "exact": false,
+        "normalized_absolute_error": 0.6666666666666666,
+        "rounded_prediction": 5,
+        "within_one": false
+      },
+      "target": 3,
+      "video_id": "v_BodyWeightSquats_g10_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 3,
+        "within_one": true
+      },
+      "target": 3,
+      "video_id": "v_BodyWeightSquats_g12_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 3,
+        "within_one": true
+      },
+      "target": 3,
+      "video_id": "v_BodyWeightSquats_g19_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 2,
+        "within_one": true
+      },
+      "target": 2,
+      "video_id": "v_BreastStroke_g01_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 6,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 5,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.4,
+            "rounded_prediction": 3,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 6,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 3,
+        "exact": false,
+        "normalized_absolute_error": 0.6,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 5,
+      "video_id": "v_BreastStroke_g02_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 3,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 3,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 3,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 2,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 4,
+      "video_id": "v_BreastStroke_g10_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 7,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.8571428571428571,
+            "rounded_prediction": 1,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.8571428571428571,
+            "rounded_prediction": 1,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.8571428571428571,
+            "rounded_prediction": 1,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.7142857142857143,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.14285714285714285,
+            "rounded_prediction": 8,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 5,
+        "exact": false,
+        "normalized_absolute_error": 0.7142857142857143,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 7,
+      "video_id": "v_BreastStroke_g12_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.1,
+            "rounded_prediction": 11,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 5,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 8,
+            "exact": false,
+            "normalized_absolute_error": 0.8,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.1,
+            "rounded_prediction": 11,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 6,
+        "exact": false,
+        "normalized_absolute_error": 0.6,
+        "rounded_prediction": 4,
+        "within_one": false
+      },
+      "target": 10,
+      "video_id": "v_CuttingInKitchen_g01_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 2,
+        "within_one": true
+      },
+      "target": 2,
+      "video_id": "v_CuttingInKitchen_g02_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.35714285714285715,
+            "rounded_prediction": 19,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 9,
+            "exact": false,
+            "normalized_absolute_error": 0.6428571428571429,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 9,
+            "exact": false,
+            "normalized_absolute_error": 0.6428571428571429,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 10,
+            "exact": false,
+            "normalized_absolute_error": 0.7142857142857143,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 12,
+            "exact": false,
+            "normalized_absolute_error": 0.8571428571428571,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.14285714285714285,
+            "rounded_prediction": 12,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 12,
+        "exact": false,
+        "normalized_absolute_error": 0.8571428571428571,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 14,
+      "video_id": "v_CuttingInKitchen_g03_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 1.5,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 1.5,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 1.5,
+            "rounded_prediction": 5,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 2,
+        "within_one": true
+      },
+      "target": 2,
+      "video_id": "v_FrontCrawl_g09_c03"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.2857142857142857,
+            "rounded_prediction": 9,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.14285714285714285,
+            "rounded_prediction": 6,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.14285714285714285,
+            "rounded_prediction": 6,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.14285714285714285,
+            "rounded_prediction": 6,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.7142857142857143,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.8571428571428571,
+            "rounded_prediction": 13,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 5,
+        "exact": false,
+        "normalized_absolute_error": 0.7142857142857143,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 7,
+      "video_id": "v_FrontCrawl_g11_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 2,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 2,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 2,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 1,
+        "exact": false,
+        "normalized_absolute_error": 0.3333333333333333,
+        "rounded_prediction": 2,
+        "within_one": true
+      },
+      "target": 3,
+      "video_id": "v_FrontCrawl_g15_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 1.5,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 1.5,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 1.5,
+            "rounded_prediction": 5,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 1.5,
+            "rounded_prediction": 5,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 2,
+        "within_one": true
+      },
+      "target": 2,
+      "video_id": "v_FrontCrawl_g17_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 1,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 1.5,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 1.5,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 1.5,
+            "rounded_prediction": 5,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 2,
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "rounded_prediction": 4,
+        "within_one": false
+      },
+      "target": 2,
+      "video_id": "v_HammerThrow_g05_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.16666666666666666,
+            "rounded_prediction": 7,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.16666666666666666,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.16666666666666666,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.16666666666666666,
+            "rounded_prediction": 5,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 6,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 4,
+        "exact": false,
+        "normalized_absolute_error": 0.6666666666666666,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 6,
+      "video_id": "v_HammerThrow_g06_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 2.5,
+            "rounded_prediction": 7,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 2.0,
+            "rounded_prediction": 6,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 1.5,
+            "rounded_prediction": 5,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 2,
+        "within_one": true
+      },
+      "target": 2,
+      "video_id": "v_HammerThrow_g08_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 6,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.75,
+            "rounded_prediction": 7,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 2,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 6,
+        "within_one": false
+      },
+      "target": 4,
+      "video_id": "v_HammerThrow_g19_c06"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 8,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.75,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.625,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 6,
+        "exact": false,
+        "normalized_absolute_error": 0.75,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 8,
+      "video_id": "v_Hammering_g01_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.14285714285714285,
+            "rounded_prediction": 6,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.42857142857142855,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.42857142857142855,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.42857142857142855,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.7142857142857143,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.14285714285714285,
+            "rounded_prediction": 8,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 5,
+        "exact": false,
+        "normalized_absolute_error": 0.7142857142857143,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 7,
+      "video_id": "v_Hammering_g06_c03"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.4166666666666667,
+            "rounded_prediction": 7,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 8,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 8,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 8,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 9,
+            "exact": false,
+            "normalized_absolute_error": 0.75,
+            "rounded_prediction": 3,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.16666666666666666,
+            "rounded_prediction": 14,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 10,
+        "exact": false,
+        "normalized_absolute_error": 0.8333333333333334,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 12,
+      "video_id": "v_Hammering_g10_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 6,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 5,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 6,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 1,
+        "exact": false,
+        "normalized_absolute_error": 0.2,
+        "rounded_prediction": 4,
+        "within_one": true
+      },
+      "target": 5,
+      "video_id": "v_Hammering_g17_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 1.5,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 1.5,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 2,
+        "within_one": true
+      },
+      "target": 2,
+      "video_id": "v_HandStandPushups_g02_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 2,
+        "within_one": true
+      },
+      "target": 2,
+      "video_id": "v_HandStandPushups_g06_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 4,
+        "within_one": true
+      },
+      "target": 4,
+      "video_id": "v_HandStandPushups_g12_c07"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 4,
+        "within_one": true
+      },
+      "target": 4,
+      "video_id": "v_HandStandPushups_g13_c07"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 6,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 2,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 4,
+      "video_id": "v_HandstandWalking_g03_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 0.5833333333333334,
+            "rounded_prediction": 5,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 0.5833333333333334,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 0.5833333333333334,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 8,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 10,
+            "exact": false,
+            "normalized_absolute_error": 0.8333333333333334,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 10,
+            "exact": false,
+            "normalized_absolute_error": 0.8333333333333334,
+            "rounded_prediction": 2,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 6,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 6,
+        "within_one": false
+      },
+      "target": 12,
+      "video_id": "v_HandstandWalking_g05_c05"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.625,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.375,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.375,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.375,
+            "rounded_prediction": 5,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.75,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.125,
+            "rounded_prediction": 7,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 6,
+        "exact": false,
+        "normalized_absolute_error": 0.75,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 8,
+      "video_id": "v_HandstandWalking_g07_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.4,
+            "rounded_prediction": 7,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.4,
+            "rounded_prediction": 3,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 5,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 3,
+        "exact": false,
+        "normalized_absolute_error": 0.6,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 5,
+      "video_id": "v_HandstandWalking_g19_c03"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 6,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.75,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.125,
+            "rounded_prediction": 7,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 6,
+        "exact": false,
+        "normalized_absolute_error": 0.75,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 8,
+      "video_id": "v_HulaHoop_g09_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 2,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 4,
+      "video_id": "v_HulaHoop_g12_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.16666666666666666,
+            "rounded_prediction": 7,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.16666666666666666,
+            "rounded_prediction": 7,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 3,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 3,
+        "within_one": false
+      },
+      "target": 6,
+      "video_id": "v_HulaHoop_g15_c05"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 10,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.625,
+            "rounded_prediction": 3,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.125,
+            "rounded_prediction": 9,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 8,
+        "within_one": true
+      },
+      "target": 8,
+      "video_id": "v_HulaHoop_g17_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 21,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 10,
+            "exact": false,
+            "normalized_absolute_error": 0.7142857142857143,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 10,
+            "exact": false,
+            "normalized_absolute_error": 0.7142857142857143,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 10,
+            "exact": false,
+            "normalized_absolute_error": 0.7142857142857143,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 12,
+            "exact": false,
+            "normalized_absolute_error": 0.8571428571428571,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.07142857142857142,
+            "rounded_prediction": 15,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 11,
+        "exact": false,
+        "normalized_absolute_error": 0.7857142857142857,
+        "rounded_prediction": 3,
+        "within_one": false
+      },
+      "target": 14,
+      "video_id": "v_JumpRope_g02_c07"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.1724137931034483,
+            "rounded_prediction": 24,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 25,
+            "exact": false,
+            "normalized_absolute_error": 0.8620689655172413,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 25,
+            "exact": false,
+            "normalized_absolute_error": 0.8620689655172413,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 25,
+            "exact": false,
+            "normalized_absolute_error": 0.8620689655172413,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.1724137931034483,
+            "rounded_prediction": 24,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 29,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 22,
+        "exact": false,
+        "normalized_absolute_error": 0.7586206896551724,
+        "rounded_prediction": 7,
+        "within_one": false
+      },
+      "target": 29,
+      "video_id": "v_JumpRope_g03_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 17,
+            "exact": false,
+            "normalized_absolute_error": 2.4285714285714284,
+            "rounded_prediction": 24,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.42857142857142855,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.42857142857142855,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.42857142857142855,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.5714285714285714,
+            "rounded_prediction": 11,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 10,
+            "exact": false,
+            "normalized_absolute_error": 1.4285714285714286,
+            "rounded_prediction": 17,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 3,
+        "exact": false,
+        "normalized_absolute_error": 0.42857142857142855,
+        "rounded_prediction": 10,
+        "within_one": false
+      },
+      "target": 7,
+      "video_id": "v_JumpRope_g15_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 3,
+        "exact": false,
+        "normalized_absolute_error": 1.5,
+        "rounded_prediction": 5,
+        "within_one": false
+      },
+      "target": 2,
+      "video_id": "v_JumpingJack_g01_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 3,
+        "exact": false,
+        "normalized_absolute_error": 1.5,
+        "rounded_prediction": 5,
+        "within_one": false
+      },
+      "target": 2,
+      "video_id": "v_JumpingJack_g09_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 3,
+        "within_one": true
+      },
+      "target": 3,
+      "video_id": "v_JumpingJack_g13_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 3,
+        "within_one": true
+      },
+      "target": 3,
+      "video_id": "v_JumpingJack_g18_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 2,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 4,
+      "video_id": "v_Kayaking_g10_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.4,
+            "rounded_prediction": 3,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.4,
+            "rounded_prediction": 3,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.4,
+            "rounded_prediction": 3,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.6,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.6,
+            "rounded_prediction": 2,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 3,
+        "exact": false,
+        "normalized_absolute_error": 0.6,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 5,
+      "video_id": "v_Kayaking_g16_c05"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 2,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 2,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 2,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 5,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 1,
+        "exact": false,
+        "normalized_absolute_error": 0.3333333333333333,
+        "rounded_prediction": 2,
+        "within_one": true
+      },
+      "target": 3,
+      "video_id": "v_Kayaking_g17_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.75,
+            "rounded_prediction": 1,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 3,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 1,
+        "exact": false,
+        "normalized_absolute_error": 0.25,
+        "rounded_prediction": 3,
+        "within_one": true
+      },
+      "target": 4,
+      "video_id": "v_PlayingCello_g03_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 8,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.75,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.625,
+            "rounded_prediction": 3,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 5,
+        "exact": false,
+        "normalized_absolute_error": 0.625,
+        "rounded_prediction": 3,
+        "within_one": false
+      },
+      "target": 8,
+      "video_id": "v_PlayingCello_g05_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 2,
+        "within_one": true
+      },
+      "target": 2,
+      "video_id": "v_PlayingCello_g08_c03"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 3,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 2,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 6,
+        "within_one": true
+      },
+      "target": 6,
+      "video_id": "v_PlayingCello_g18_c03"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 2,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 6,
+        "within_one": false
+      },
+      "target": 4,
+      "video_id": "v_PlayingViolin_g06_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 2,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 2,
+        "within_one": true
+      },
+      "target": 2,
+      "video_id": "v_PlayingViolin_g08_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 6,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 2,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 4,
+      "video_id": "v_PlayingViolin_g19_c03"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.42857142857142855,
+            "rounded_prediction": 4,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.42857142857142855,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.42857142857142855,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.42857142857142855,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.7142857142857143,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.2857142857142857,
+            "rounded_prediction": 9,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 5,
+        "exact": false,
+        "normalized_absolute_error": 0.7142857142857143,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 7,
+      "video_id": "v_PlayingViolin_g20_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.15384615384615385,
+            "rounded_prediction": 15,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 0.5384615384615384,
+            "rounded_prediction": 6,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 0.5384615384615384,
+            "rounded_prediction": 6,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 0.5384615384615384,
+            "rounded_prediction": 6,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 8,
+            "exact": false,
+            "normalized_absolute_error": 0.6153846153846154,
+            "rounded_prediction": 5,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.07692307692307693,
+            "rounded_prediction": 14,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 11,
+        "exact": false,
+        "normalized_absolute_error": 0.8461538461538461,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 13,
+      "video_id": "v_PommelHorse_g04_c05"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 13,
+            "exact": false,
+            "normalized_absolute_error": 2.1666666666666665,
+            "rounded_prediction": 19,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 1.1666666666666667,
+            "rounded_prediction": 13,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 4,
+        "exact": false,
+        "normalized_absolute_error": 0.6666666666666666,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 6,
+      "video_id": "v_PommelHorse_g07_c06"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.16666666666666666,
+            "rounded_prediction": 5,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 8,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 8,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 8,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 8,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 4,
+        "exact": false,
+        "normalized_absolute_error": 0.6666666666666666,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 6,
+      "video_id": "v_PommelHorse_g14_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 2,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 4,
+      "video_id": "v_Rowing_g01_c03"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 6,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 5,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 5,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 5,
+        "within_one": true
+      },
+      "target": 5,
+      "video_id": "v_Rowing_g11_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 8,
+            "exact": false,
+            "normalized_absolute_error": 1.1428571428571428,
+            "rounded_prediction": 15,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 1.0,
+            "rounded_prediction": 0,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.14285714285714285,
+            "rounded_prediction": 8,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 5,
+        "exact": false,
+        "normalized_absolute_error": 0.7142857142857143,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 7,
+      "video_id": "v_Rowing_g14_c07"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 3,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 2,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 2,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 4,
+      "video_id": "v_ShavingBeard_g02_c07"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 8,
+            "exact": false,
+            "normalized_absolute_error": 0.8,
+            "rounded_prediction": 2,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.6,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.6,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 5,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.4,
+            "rounded_prediction": 6,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 5,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 5,
+        "within_one": false
+      },
+      "target": 10,
+      "video_id": "v_ShavingBeard_g07_c04"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 0.4375,
+            "rounded_prediction": 9,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 12,
+            "exact": false,
+            "normalized_absolute_error": 0.75,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 12,
+            "exact": false,
+            "normalized_absolute_error": 0.75,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 12,
+            "exact": false,
+            "normalized_absolute_error": 0.75,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 14,
+            "exact": false,
+            "normalized_absolute_error": 0.875,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.375,
+            "rounded_prediction": 10,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 4,
+        "exact": false,
+        "normalized_absolute_error": 0.25,
+        "rounded_prediction": 12,
+        "within_one": false
+      },
+      "target": 16,
+      "video_id": "v_ShavingBeard_g15_c07"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 7,
+            "exact": false,
+            "normalized_absolute_error": 1.1666666666666667,
+            "rounded_prediction": 13,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 19,
+            "exact": false,
+            "normalized_absolute_error": 3.1666666666666665,
+            "rounded_prediction": 25,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 4,
+        "exact": false,
+        "normalized_absolute_error": 0.6666666666666666,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 6,
+      "video_id": "v_ShavingBeard_g17_c07"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.46153846153846156,
+            "rounded_prediction": 7,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 8,
+            "exact": false,
+            "normalized_absolute_error": 0.6153846153846154,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 8,
+            "exact": false,
+            "normalized_absolute_error": 0.6153846153846154,
+            "rounded_prediction": 5,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 9,
+            "exact": false,
+            "normalized_absolute_error": 0.6923076923076923,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 11,
+            "exact": false,
+            "normalized_absolute_error": 0.8461538461538461,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.46153846153846156,
+            "rounded_prediction": 7,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 10,
+        "exact": false,
+        "normalized_absolute_error": 0.7692307692307693,
+        "rounded_prediction": 3,
+        "within_one": false
+      },
+      "target": 13,
+      "video_id": "v_SoccerJuggling_g06_c05"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.7142857142857143,
+            "rounded_prediction": 2,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.2857142857142857,
+            "rounded_prediction": 5,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.42857142857142855,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.42857142857142855,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.7142857142857143,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.42857142857142855,
+            "rounded_prediction": 4,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 5,
+        "exact": false,
+        "normalized_absolute_error": 0.7142857142857143,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 7,
+      "video_id": "v_SoccerJuggling_g10_c01"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 6,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 12,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 14,
+            "exact": false,
+            "normalized_absolute_error": 0.7777777777777778,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 14,
+            "exact": false,
+            "normalized_absolute_error": 0.7777777777777778,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 14,
+            "exact": false,
+            "normalized_absolute_error": 0.7777777777777778,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 16,
+            "exact": false,
+            "normalized_absolute_error": 0.8888888888888888,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 9,
+            "exact": false,
+            "normalized_absolute_error": 0.5,
+            "rounded_prediction": 9,
+            "run": "ckpt70",
+            "within_one": false
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 16,
+        "exact": false,
+        "normalized_absolute_error": 0.8888888888888888,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 18,
+      "video_id": "v_SoccerJuggling_g18_c05"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.16666666666666666,
+            "rounded_prediction": 5,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": false
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.16666666666666666,
+            "rounded_prediction": 7,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.16666666666666666,
+            "rounded_prediction": 7,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 6,
+        "within_one": true
+      },
+      "target": 6,
+      "video_id": "v_TableTennisShot_g05_c03"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 5,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 6,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 6,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 1,
+        "exact": false,
+        "normalized_absolute_error": 0.2,
+        "rounded_prediction": 6,
+        "within_one": true
+      },
+      "target": 5,
+      "video_id": "v_TableTennisShot_g19_c07"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "single",
+            "within_one": true
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.25,
+            "rounded_prediction": 5,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 0,
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "rounded_prediction": 4,
+        "within_one": true
+      },
+      "target": 4,
+      "video_id": "v_TableTennisShot_g20_c03"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 7,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.14285714285714285,
+            "rounded_prediction": 6,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.14285714285714285,
+            "rounded_prediction": 6,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.2857142857142857,
+            "rounded_prediction": 5,
+            "run": "seed42",
+            "within_one": false
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 5,
+            "exact": false,
+            "normalized_absolute_error": 0.7142857142857143,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.14285714285714285,
+            "rounded_prediction": 8,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 5,
+        "exact": false,
+        "normalized_absolute_error": 0.7142857142857143,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 7,
+      "video_id": "v_TrampolineJumping_g12_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 2,
+            "exact": false,
+            "normalized_absolute_error": 0.3333333333333333,
+            "rounded_prediction": 4,
+            "run": "current",
+            "within_one": false
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 6,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 6,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.16666666666666666,
+            "rounded_prediction": 5,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 4,
+            "exact": false,
+            "normalized_absolute_error": 0.6666666666666666,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.16666666666666666,
+            "rounded_prediction": 7,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 3,
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "rounded_prediction": 3,
+        "within_one": false
+      },
+      "target": 6,
+      "video_id": "v_TrampolineJumping_g14_c02"
+    },
+    {
+      "baselines": {
+        "escounts-official": [
+          {
+            "absolute_error": 0,
+            "exact": true,
+            "normalized_absolute_error": 0.0,
+            "rounded_prediction": 5,
+            "run": "current",
+            "within_one": true
+          }
+        ],
+        "jtsps-count-only": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed2026",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed3407",
+            "within_one": true
+          },
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 4,
+            "run": "seed42",
+            "within_one": true
+          }
+        ],
+        "local-frequency-v1": [
+          {
+            "absolute_error": 3,
+            "exact": false,
+            "normalized_absolute_error": 0.6,
+            "rounded_prediction": 2,
+            "run": "single",
+            "within_one": false
+          }
+        ],
+        "repnet-official": [
+          {
+            "absolute_error": 1,
+            "exact": false,
+            "normalized_absolute_error": 0.2,
+            "rounded_prediction": 6,
+            "run": "ckpt70",
+            "within_one": true
+          }
+        ]
+      },
+      "candidate": {
+        "absolute_error": 3,
+        "exact": false,
+        "normalized_absolute_error": 0.6,
+        "rounded_prediction": 2,
+        "within_one": false
+      },
+      "target": 5,
+      "video_id": "v_TrampolineJumping_g17_c02"
+    }
+  ],
+  "protocol": "ucfrep_526",
+  "schema_version": 1,
+  "source": {
+    "git_sha": "c573af33876591f29aaab6f272b96b809256ca77",
+    "path": "scripts/compare_dev84_evaluations.py",
+    "sha256": "f0c39328e33fd034b58babd1475f1d9ca78d3b857e5bc0d5f0a963248ba096f4"
+  },
+  "split": "dev"
+}

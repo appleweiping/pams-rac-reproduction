@@ -1,0 +1,17 @@
+{
+  "artifact_type": "pams_local_frequency_v2_dev_evaluation_receipt",
+  "bootstrap_samples": 10000,
+  "bootstrap_seed": 2026,
+  "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+  "evaluation_bytes": 28031,
+  "evaluation_file": "evaluation.json",
+  "evaluation_sha256": "f5d795b30efc4ae4c81f1da5d202e9f77979ada37f0f32db0468a5a3e678e739",
+  "method_id": "pams-local-frequency-v2-target-free-selected-v1",
+  "prediction_receipt_sha256": "5c40f625e5dae5c29b24c742638ee919e358d7398ada0e939656cf047d87df27",
+  "prediction_sha256": "99ed1c9c8c4ce0a4d7971901e35ec0e0de7c340ea5989ce75fb834ae82b2a912",
+  "protocol": "ucfrep_526",
+  "runner_source_sha256": "f3c531d9ee33909b98a3307ddcab45bd1a58aced133eb249f9936aefc11f9577",
+  "schema_version": 1,
+  "split": "dev",
+  "test105_evaluation_authorized": false
+}

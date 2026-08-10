@@ -1,0 +1,13 @@
+{
+  "artifact_type": "pams_noabspe_projected_null_dev_evaluation_receipt_v12",
+  "bootstrap_samples": 10000,
+  "bootstrap_seed": 2026,
+  "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+  "evaluation_bytes": 27645,
+  "evaluation_sha256": "8d97f681a8e9293b7432f35426ce5f1b4db251729b54cf12ac81fa5a8f38584d",
+  "method_id": "pams-noabspe-projected-null-multiexpert-v12",
+  "prediction_receipt_sha256": "1ce629d749b7264ad5f36e78bf87f8c6415a9fe0813b5ba4a3ed19e07f940a79",
+  "prediction_sha256": "61624471a5be5671d53459a4e2d3a16f0dc76e0760ea131b8b12294aa94b1f58",
+  "schema_version": 1,
+  "test105_evaluation_authorized": false
+}

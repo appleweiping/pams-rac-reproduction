@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "artifact_type": "pams_sshead_temporal_conv_v7_seed3407_posthoc_server_audit",
+  "classification": "post-hoc-three-seed-variance-follow-up",
+  "status": "completed_negative_dev_experiment",
+  "server": {
+    "run_root": "/media/lenovo/data2/pams-rac/runs/followups/pams-sshead-temporal-conv-v7-seed3407-posthoc-6ee25a2-20260729T231000Z-v1",
+    "run_artifact_sha256_index": "ee3b2b2f78eb270fb24438dbb172ff7bac7d5c2b36516872c53a073d39b0d868",
+    "run_artifact_sha256_index_entries": 904,
+    "sha256_check_exit_code": 0,
+    "launcher_log_sha256": "085948190e78b197f71d9bc4be4a01160be1e17cd7dc985968ca6ee75815d059",
+    "hardware": {
+      "gpu_used": "GPU-18ce5833-27a4-ac4b-f952-49cc52045714",
+      "gpu_model": "NVIDIA RTX A6000",
+      "gpu_memory_mib": 49140,
+      "driver_version": "550.54.14"
+    }
+  },
+  "runtime": {
+    "source_git_sha": "6ee25a2e1291c35c563140999e16c5aa65bc8ced",
+    "container_image_id": "sha256:620173fe7a9084d3b1492c3e775ea5f2bc6ac5a6d851d8560727a4969b3aab66",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "launcher_sha256": "92357f0a6f7ccbc77365165eff35e555650e2c76bea5a6c7fd0d7783ef8cb0cf",
+    "config_file_sha256": "a6926c095a039379d1d1b22931568c6cd05f84a4a0913bccdfc6fc0f2aa9f053",
+    "config_fingerprint": "c329367692191849cabca3ccca9fec5e80788ef9f0d6328fb05e4fc8aef2869b",
+    "seed": 3407,
+    "cublas_workspace_config": ":4096:8"
+  },
+  "protocol_bindings": {
+    "protocol": "ucfrep_526",
+    "training_samples": 337,
+    "development_samples": 84,
+    "sealed_test_samples": 105,
+    "train_inputs_sha256": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207",
+    "train_commitment_sha256": "ce39b1c9038bb1506354de010e46a23053b307b852222332f13df3f79d799044",
+    "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "dev_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "test_identity_inputs_sha256": "9eb2a057246b77fc7a1121ba4c9d27bf55177ad2fcd5dbb87237396a4a6015ca",
+    "test_identity_commitment_sha256": "232d3db7ce09018716594a1f1b332eec47b37410a8d3068e662b026ee2dc9c66",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "training_identity_sha256": "177e3a70e6fb272bac7c976e9700f70355bc30adb3990dc1276485c3e0cbddd6",
+    "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "evaluation_dataset_sha256": "7aaaea4fdd0620cc7abb4f307cf63a9506448540e3d3d920acf70957f6b8b97f",
+    "pose_fingerprint": "8ecb6c1384e1d6a088762322ed90bb6aa631683318e0ab7ed21c19541e5f6656",
+    "training_pose_cache_set_sha256": "34123ac27334ab06852c12254c7e0c046f7d86f3a066c81f9b8751c362dd0cd0",
+    "development_pose_cache_set_sha256": "2e14cb39a4112f7ee1d10b759d166bb472f41e317e55e773776394331690256c",
+    "training_pose_view_files": 337,
+    "prediction_pose_view_files": 421
+  },
+  "container_contracts": [
+    {
+      "stage": "encoder",
+      "name": "pams-v7-s3407-enc-20260729t231000z-v1",
+      "exit_code": 0,
+      "verification_sha256": "46adb9ad054030dde2735193b62b32fc9f5d435129c12d3f45a7180e63e1d4d3",
+      "gpu_device": 0,
+      "dev_targets_mounted": false,
+      "test_pose_or_targets_mounted": false
+    },
+    {
+      "stage": "sshead",
+      "name": "pams-v7-s3407-head-20260729t231000z-v1",
+      "exit_code": 0,
+      "verification_sha256": "3c3ee8d2bdcd6ee8eac6db65e31e43ba26b37bc6027a4bffd1f99c20aca839c2",
+      "gpu_device": 0,
+      "dev_targets_mounted": false,
+      "test_pose_or_targets_mounted": false
+    },
+    {
+      "stage": "dev-predict",
+      "name": "pams-v7-s3407-predict-20260729t231000z-v1",
+      "exit_code": 0,
+      "verification_sha256": "dad02105019a71397057576e62a317ac921c2aef68db13f24057f9cc98c0bded",
+      "gpu_device": 0,
+      "dev_targets_mounted": false,
+      "test_pose_or_targets_mounted": false
+    },
+    {
+      "stage": "dev-score",
+      "name": "pams-v7-s3407-score-20260729t231000z-v1",
+      "exit_code": 0,
+      "verification_sha256": "e7d9b9e9c7bcacb3a65c2b61071ab3021021de2fd6e0fbb11f5558823e3031b3",
+      "gpu_device": null,
+      "dev_targets_mounted": true,
+      "test_pose_or_targets_mounted": false
+    }
+  ],
+  "seed3407_artifacts": {
+    "encoder_checkpoint": {
+      "sha256": "4d4bc065d3d011dc9f9d902ee5513ea3e88d12fc133e583a1b417076b3af221a",
+      "size_bytes": 161407502
+    },
+    "encoder_progress_sha256": "0841cb86490ba970f695b9c3e3288ab9218c69098dd4e21538c519a20a844655",
+    "encoder_completion_receipt_sha256": "b5bdd8672cce9dd2004e7c9a6bc3b50e2e105d39ca2125d0b85d43f979995ff8",
+    "sshead_checkpoint": {
+      "sha256": "745e707f9354d41adc074a90ab812e190ede3b7a1d23754ae9e04a2b5c16a152",
+      "size_bytes": 59911803
+    },
+    "sshead_progress_sha256": "3bba93af57a82a8016a3fce225d71a66a2622375c788588c0c9906d6043209e2",
+    "sshead_completion_receipt_sha256": "66caa137a1606b74caf5f80d52c89b395add12a1dbf7611f7c08171083f48ac2",
+    "prediction_sha256": "3f591fbfff73f8f9eab3cfe8df53acb224647eec6d63a4559da5f64da63ed1ad",
+    "prediction_receipt_sha256": "4acb450fe0d504fbfe18932419c4b77ada7f2e6d313960477d45e115ba4a3530",
+    "evaluation_sha256": "f54fc75c9ab08f78fce69f212bb87584049ce42cce6cde7d2e75819aef51f26c",
+    "evaluation_receipt_sha256": "e23b05571f8c38f7767b59664d9597d9eacdb771388805baad97cf16fd22e714"
+  },
+  "seed3407_metrics": {
+    "sample_count": 84,
+    "nmae": 0.7403675359032502,
+    "mae": 4.785714285714286,
+    "rmse": 6.611677980232077,
+    "obo": 0.20238095238095238,
+    "exact": 0.08333333333333333,
+    "zero_counts": 29,
+    "period_128_frames": 28,
+    "final_sshead_stream_std_mean": 0.015448922186209723,
+    "final_sshead_stream_std_median": 0.01425123866647482,
+    "final_sshead_zero_grad_steps": 0
+  },
+  "published_artifacts": {
+    "config_sha256": "a6926c095a039379d1d1b22931568c6cd05f84a4a0913bccdfc6fc0f2aa9f053",
+    "encoder_log_sha256": "0841cb86490ba970f695b9c3e3288ab9218c69098dd4e21538c519a20a844655",
+    "sshead_log_sha256": "3bba93af57a82a8016a3fce225d71a66a2622375c788588c0c9906d6043209e2",
+    "predictions_sha256": "3f591fbfff73f8f9eab3cfe8df53acb224647eec6d63a4559da5f64da63ed1ad",
+    "prediction_receipt_sha256": "4acb450fe0d504fbfe18932419c4b77ada7f2e6d313960477d45e115ba4a3530",
+    "evaluation_sha256": "f54fc75c9ab08f78fce69f212bb87584049ce42cce6cde7d2e75819aef51f26c",
+    "evaluation_receipt_sha256": "e23b05571f8c38f7767b59664d9597d9eacdb771388805baad97cf16fd22e714",
+    "three_seed_aggregate_sha256": "63ad52e596b46e7e45de21840c7b8aa64a4264751deed2cf8e796d97c91de5e0",
+    "attempt_reservation_sha256": "5795b615f3b5221b8c81024c196e417cb134e4cb6b3c00d810203207630c4a96",
+    "terminal_status_sha256": "e20849df7f9194e66ee668f16aa91071b1dde3ced21913eca9f1376c9f2a7649"
+  },
+  "claim_boundary": {
+    "post_hoc": true,
+    "development_only": true,
+    "paper_table_eligible": false,
+    "verified_reproduction_eligible": false,
+    "preregistered_three_seed_claim_eligible": false,
+    "test105_access": false,
+    "result": "0_of_3_seeds_passed_frozen_nmae_and_obo_gate"
+  },
+  "caveats": [
+    "Seeds 42 and 2026 use the legacy combined evaluation schema; their evaluation files do not internally carry source or dev-target hashes.",
+    "The host preflight re-hashed the known dev-target sidecar but no training or prediction container mounted or parsed it.",
+    "PyTorch disabled an optional FFT kernel cache because its cache subdirectory could not be created; all four stages and immutable receipts completed."
+  ]
+}

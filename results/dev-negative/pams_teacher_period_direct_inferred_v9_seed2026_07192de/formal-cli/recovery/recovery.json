@@ -1,0 +1,37 @@
+{
+  "artifact_type": "pams_teacher_period_direct_formal_cli_recovery_receipt",
+  "checkpoint_source_revision": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "classification": "post-score orchestration recovery; no model inference or scorer rerun",
+  "eligible_for_paper_table": false,
+  "r1": {
+    "boundary_disposition": "invalid orchestration attempt; host hashed dev target before prediction; no source export, container, prediction, or evaluation was produced",
+    "failure_cause": "incorrect expected dev-target SHA in host preflight",
+    "failure_stage": "preflight",
+    "runner_sha256": "c884cce823e74d84d831d2ecde30b42367fa434454fd099106e8479d97abf082",
+    "status_sha256": "fc780afdf90c38804025f3d3826da6b11d9474d5e0f836c79ea687a66273d582"
+  },
+  "r2": {
+    "boundary_disposition": "prediction and scoring completed in separate containers before the host-only comparison failed; frozen outputs were not modified",
+    "evaluation_receipt_sha256": "8dc9702b7169832364ecd08540f07001edcf770b02bebb87255b20e5e7c28e60",
+    "evaluation_sha256": "3f7048f3afaaf16d32a8574212c1e029d1b1969717ee05098292a303882eb0c6",
+    "failure_cause": "host Python 3.9 does not support zip(strict=True)",
+    "failure_stage": "equivalence",
+    "prediction_receipt_sha256": "0cd93ab72de3b5a4694ee9e50b793997f23885ff93d82a78d2ba5a098060ceae",
+    "prediction_sha256": "3de2e518fa5221f2a9f019affdba327fabd40bdde6c361f9ca94995160272a19",
+    "runner_sha256": "6d6cfb6b96585201d496b1738b610cca799de1ff63c8b19e88890a7448203fc0",
+    "source_export_receipt_sha256": "50deab8238cdc6b8f119789acb55a8da89ac7a3a032289550241b9b784346816",
+    "status_sha256": "4f07166ef6850574bf7baf680e869983cf323929c91527c587885c2555dd407f"
+  },
+  "recovery": {
+    "all_metrics_exact": true,
+    "all_prediction_fields_exact": true,
+    "comparison_runtime": "server host Python 3.9 compatible read-only comparator",
+    "formal_cli_equivalence_sha256": "4dbd3b90a1d75199daf29d548ab46d2ba3cdf9e5cbf62b0a98a0f522ca110f8a",
+    "inference_rerun": false,
+    "mount_boundary_audit_sha256": "837edab3a502376a779201ea949abc682b98d1fb23758996d0d6bef971e59db0",
+    "scoring_rerun": false
+  },
+  "schema_version": 1,
+  "source_revision": "f7108edb24b70895ae1404eb354595208828a5dd",
+  "test_evaluation_authorized": false
+}

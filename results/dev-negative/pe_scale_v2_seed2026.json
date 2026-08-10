@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "status": "failed_inferred_diagnostic",
+  "eligible_for_paper_table": false,
+  "protocol": "ucfrep_526",
+  "split": "development",
+  "sample_count": 84,
+  "seed": 2026,
+  "source_revision": "fea4a7db8f30c84ff541aa832f69545c72844fef",
+  "config": {
+    "classification": "inferred_non_author_variant",
+    "change_from_canonical": "input projection is multiplied by sqrt(model_dim) before sinusoidal positional encoding",
+    "sha256": "1278df4a966e0b4734295c7ef700fddedcb4f8384caf15c208dc89a4f535520f",
+    "fingerprint": "f1e51ae700ac6baecbb9bf740ec80ec1c7daec2070344b1be09defffb4b5ca05"
+  },
+  "container": {
+    "image_id": "sha256:dfa93f9275823d242713af3442a57252073846cce72a8115806d5827edae5f19",
+    "environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "construction": "metadata-only derivative of the audited f99 image; all 23 root filesystem layers were identical and only provenance labels changed",
+    "standard_registry_build_available": false,
+    "standard_registry_build_failure": "Ubuntu snapshot service returned HTTP 503"
+  },
+  "encoder": {
+    "completed_epochs": 150,
+    "final_loss": 2.1649826489962063,
+    "checkpoint_sha256": "5373b46d3ebef22351ee1128f2eb343ae69efb9cb674ea9c019d29bada3fdbb8",
+    "progress_sha256": "3040d3d74ac2a497d86f40a76cce9aa23d918fa06f7d4d5599d6cfdabf76ca41",
+    "completed_receipt_sha256": "38d1fd82f9f82c462ce016a2df93eefac6ba143e17d2388092a3c5c0c166cbe7",
+    "sampled_peak_gpu_memory_mib": 3338,
+    "sampled_minimum_free_gpu_memory_mib": 8355
+  },
+  "sshead": {
+    "classification": "inferred_non_author_completion",
+    "completed_epochs": 30,
+    "final_total_loss": 0.6821976043549399,
+    "checkpoint_sha256": "d1b6192f5554df6caea1cbd095f58f365e86ba53c6689061d2f55532cbad8c86",
+    "progress_sha256": "5941d937c8d589907734014be5c077646ab084716a6b82bbf3d9dc43eaff6666",
+    "completed_receipt_sha256": "22ee8f49d71cf5291e7bfaca13ff5c42d9b18f09333a4911d37a2b746e05a8a7"
+  },
+  "development_metrics": {
+    "literal_head_diagnostic": {
+      "evaluation_sha256": "402b1f997950ba9842ab34fcf3ce89e21479fa93f8319519a7dcf5345ea3f865",
+      "nmae": 0.677778755180233,
+      "mae": 4.630952380952381,
+      "rmse": 6.377975496078002,
+      "obo": 0.21428571428571427,
+      "nmae_95ci": [
+        0.6129578845427059,
+        0.7393302879101832
+      ],
+      "obo_95ci": [
+        0.13095238095238096,
+        0.30952380952380953
+      ]
+    },
+    "sshead_inferred_diagnostic": {
+      "evaluation_sha256": "255671493e4623e63b248d9aed5a7f1115334dfbe67504046e919bf41840b169",
+      "nmae": 4.626960711474259,
+      "mae": 17.702380952380953,
+      "rmse": 20.152690946396028,
+      "obo": 0.047619047619047616,
+      "nmae_95ci": [
+        3.780227798992424,
+        5.517289337874312
+      ],
+      "obo_95ci": [
+        0.011904761904761904,
+        0.09523809523809523
+      ]
+    }
+  },
+  "paired_v2_minus_f99_bootstrap": {
+    "samples": 10000,
+    "seed": 2026,
+    "literal_head_diagnostic": {
+      "nmae_difference": 0.03633258674822715,
+      "nmae_difference_95ci": [
+        -0.08342954403799539,
+        0.14900355135422866
+      ],
+      "obo_difference": -0.09523809523809523,
+      "obo_difference_95ci": [
+        -0.23809523809523808,
+        0.047619047619047616
+      ]
+    },
+    "sshead_inferred_diagnostic": {
+      "nmae_difference": -0.3810463482877276,
+      "nmae_difference_95ci": [
+        -0.4924907080980049,
+        -0.27506439587027637
+      ],
+      "obo_difference": 0.011904761904761904,
+      "obo_difference_95ci": [
+        -0.03571428571428571,
+        0.05952380952380952
+      ]
+    }
+  },
+  "label_free_shortcut_diagnostic": {
+    "sampled_training_videos": 64,
+    "f99_artifact_sha256": "43a9d0d85f867f8af87c57769031a8ea7193dd2e5be9cb97e0e59d4fbbff3643",
+    "v2_artifact_sha256": "c5851d3b8c5943bd493b5cdbde1ad77dfd24df65daa00c532137d0e93c9ac276",
+    "f99": {
+      "effective_projection_to_position_norm_ratio": 0.3808828783146425,
+      "frame_index_r2": 0.9733085033985553,
+      "period_top_bin_share": 0.859375,
+      "period_entropy_normalized": 0.12932470775922772,
+      "random_pose_period_confidence": 0.643962562084198,
+      "zero_pose_period_confidence": 0.5079958438873291,
+      "cross_scale_conflict_rate": 0.008956733352296072,
+      "orthogonal_period_unchanged_share": 0.75
+    },
+    "v2": {
+      "effective_projection_to_position_norm_ratio": 7.610968927527667,
+      "frame_index_r2": 0.967322831354284,
+      "period_top_bin_share": 0.53125,
+      "period_entropy_normalized": 0.22962232070561686,
+      "random_pose_period_confidence": 0.10883522778749466,
+      "zero_pose_period_confidence": 0.45523810386657715,
+      "cross_scale_conflict_rate": 0.17410504973705887,
+      "orthogonal_period_unchanged_share": 0.109375
+    }
+  },
+  "sealed_test": {
+    "predictions_run": false,
+    "evaluation_run": false,
+    "full_split_manifest_deserialized_by_development_cli": true,
+    "eligible_as_leak_free_sealed_result": false
+  },
+  "conclusion": "The inferred scale change weakens the random-input shortcut but does not remove absolute-position leakage, worsens cross-scale conflicts and basis sensitivity, and fails the development gate. It will not be expanded to the other preregistered seeds."
+}

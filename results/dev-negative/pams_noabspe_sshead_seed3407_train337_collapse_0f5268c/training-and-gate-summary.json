@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "classification": "partial reproduction; inferred SSHead rejected before dev",
+  "candidate": "pams_no_absolute_pe_sshead",
+  "seed": 3407,
+  "source_git_sha": "0f5268c8496bb708fe07388e063b04ae7ddef5b3",
+  "config_fingerprint": "e64029a8c1ae1bf258a71eabe03fd35cd9cd3f18bdf0c7e4ae17657cf9c6a13e",
+  "access_audit": {
+    "training_partition_videos": 337,
+    "training_count_or_action_targets_loaded": false,
+    "dev_video_inputs_loaded": false,
+    "dev_targets_loaded": false,
+    "test105_accessed": false
+  },
+  "encoder_training": {
+    "status": "completed",
+    "epochs": 150,
+    "epoch_records_contiguous": true,
+    "optimizer_steps_total": 1500,
+    "exit_code": 0,
+    "final_loss": 3.024673676490784,
+    "checkpoint_sha256": "a5f08e8585cc0666eea265d9c38617d8845f3af0a4cf4fce92b1ef956e62b76d",
+    "progress_sha256": "45113beaefc7135b6fa272fec139ce0bcd864849d1bfd074d3b60dd8a7407deb"
+  },
+  "sshead_training": {
+    "status": "completed",
+    "implementation_status": "inferred_non_author_disclosed_completion",
+    "epochs": 30,
+    "epoch_records_contiguous": true,
+    "optimizer_steps_total": 330,
+    "exit_code": 0,
+    "final_total_loss": 0.7685251557862369,
+    "final_stream_std_mean": 0.010684612648594759,
+    "final_stream_std_median_epoch_aggregate": 0.00987507589161396,
+    "final_collapsed_fraction_1e6": 0.04747774480712166,
+    "final_near_collapsed_fraction_1e3": 0.05637982195845697,
+    "zero_grad_steps_final": 0,
+    "checkpoint_sha256": "08aa0936b8412dc6ad01bc5dda634e8819829406e57b8bbe368f08dadb0f368b",
+    "progress_sha256": "65a019d955daec8d07223deb8b62e137642c30e81739514632f21907e1dda33c"
+  },
+  "target_free_diagnosis": {
+    "artifact_sha256": "8b63ef81bda5f48343abb960e481de78052ff84b9a14be9436322b44a57cd06e",
+    "head_stream_period_median_frames": 128.0,
+    "training_target_period_median_frames": 19.69230842590332,
+    "final_stream_std_median": 0.010406117886304855,
+    "constant_stream_total_loss": 1.100000023841858,
+    "constant_stream_total_gradient_nonzero_elements": 0,
+    "constant_stream_total_gradient_l2": 0.0
+  },
+  "gate_decision": {
+    "status": "rejected",
+    "dev_prediction_authorized": false,
+    "dev_scoring_authorized": false,
+    "test105_authorized": false,
+    "reason": "The final head saturates at the maximum evaluated period, has very low temporal variance, and the inferred loss admits a constant-stream zero-gradient stationary point."
+  }
+}

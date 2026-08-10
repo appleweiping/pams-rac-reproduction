@@ -1,0 +1,69 @@
+{
+  "acceptance_gate": {
+    "joint_pass": false,
+    "nmae_pass": false,
+    "obo_pass": false,
+    "required_nmae_at_most": 0.228,
+    "required_obo_at_least": 0.666,
+    "verified_reproduction": false
+  },
+  "completed": true,
+  "confidence_intervals": {
+    "exact": {
+      "high": 0.36904761904761907,
+      "level": 0.95,
+      "low": 0.17857142857142858
+    },
+    "mae": {
+      "high": 4.130952380952381,
+      "level": 0.95,
+      "low": 2.5
+    },
+    "nmae": {
+      "high": 0.5291528366782369,
+      "level": 0.95,
+      "low": 0.38103181711556094
+    },
+    "obo": {
+      "high": 0.47619047619047616,
+      "level": 0.95,
+      "low": 0.2619047619047619
+    },
+    "rmse": {
+      "high": 6.361177824270717,
+      "level": 0.95,
+      "low": 3.7192789155732853
+    }
+  },
+  "container_exit_code": 0,
+  "dev_inputs_mounted": false,
+  "dev_pose_mounted": false,
+  "dev_targets_mounted": true,
+  "evaluation_receipt_sha256": "cdb6f69a9b2e730ab753be7d0c8c4e2209ff9566d554630293b116b27bbd7830",
+  "evaluation_sha256": "f5d795b30efc4ae4c81f1da5d202e9f77979ada37f0f32db0468a5a3e678e739",
+  "independent_point_metric_recomputation_matches_within_1e-15": true,
+  "metrics": {
+    "exact": 0.27380952380952384,
+    "mae": 3.2738095238095237,
+    "nmae": 0.4538043818524114,
+    "obo": 0.36904761904761907,
+    "rmse": 5.029673851018478
+  },
+  "mounted_destinations": [
+    "/inputs/dev.targets.json",
+    "/inputs/prediction.receipt.json",
+    "/inputs/predictions.json",
+    "/output",
+    "/source"
+  ],
+  "network": "none",
+  "prediction_receipt_sha256": "5c40f625e5dae5c29b24c742638ee919e358d7398ada0e939656cf047d87df27",
+  "prediction_sha256": "99ed1c9c8c4ce0a4d7971901e35ec0e0de7c340ea5989ce75fb834ae82b2a912",
+  "record_total": 84,
+  "schema_version": 1,
+  "selector_artifact_mounted": false,
+  "selector_source_mounted": false,
+  "stage": "isolated-score",
+  "test105_accessed": false,
+  "test105_mounted": false
+}

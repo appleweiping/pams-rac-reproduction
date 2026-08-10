@@ -1,0 +1,406 @@
+{
+  "schema_version": 1,
+  "status": "failed_inferred_diagnostics",
+  "evidence_class": "strict_firewall_development_only_negative_result",
+  "eligible_for_paper_table": false,
+  "protocol": "ucfrep_526",
+  "split": "development",
+  "sample_count": 84,
+  "seed": 2026,
+  "source_revision": "375d8daffd2fc162b81afab71ea3e6a5cad97e55",
+  "training_scope": {
+    "unlabeled_videos": 421,
+    "train_videos": 337,
+    "development_videos": 84,
+    "include_development_without_labels": true,
+    "count_or_action_loaded_during_training": false
+  },
+  "label_firewall": {
+    "train_inputs_sha256": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207",
+    "train_commitment_sha256": "ce39b1c9038bb1506354de010e46a23053b307b852222332f13df3f79d799044",
+    "development_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "development_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "test_identity_inputs_sha256": "9eb2a057246b77fc7a1121ba4c9d27bf55177ad2fcd5dbb87237396a4a6015ca",
+    "test_identity_commitment_sha256": "232d3db7ce09018716594a1f1b332eec47b37410a8d3068e662b026ee2dc9c66",
+    "development_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "development_annotation_digest": "f86d2ffe5ae7500907ae4cffcfab3c9ede6ca538537e7a3e87023f0a1a61c349",
+    "sidecar_explicit_count_or_action_fields": false,
+    "full_labeled_manifest_deserialized_by_formal_commands": false
+  },
+  "container": {
+    "image_id": "sha256:b4b2f0e118967deb1e6abbee293060498bea7cab1968fab37712e3c5e4a0b62a",
+    "environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "apt_snapshot": "20260727T000000Z",
+    "construction": "metadata-only derivative of the audited fea4a7d image; all 23 root filesystem layers were identical",
+    "gpu": "NVIDIA RTX A6000",
+    "gpu_memory_mib": 49140,
+    "driver_version": "550.54.14",
+    "shared_gpu_execution": true
+  },
+  "variants": {
+    "projected_vector_period_v3": {
+      "classification": "inferred_non_author_diagnostic",
+      "config_file_sha256": "93102696511e35495bbd5879bb2c659a90225ec7ee630f3bd5a774e2c2b93877",
+      "config_fingerprint": "c3040cc4df79c253a4b38b4553fc0873ab05d930b1ccd609deaecec68a992ce0",
+      "nonseed_fingerprint": "d8674869eaf7ea7d258c111f32eddd15b115abfbe5269a04cf5e577c12085cb6",
+      "change_from_canonical": "after epoch 10, TCC correspondence periods use a mask-aware non-circular vector autocorrelation over pre-position-encoding projected-pose velocity",
+      "encoder": {
+        "completed_epochs": 150,
+        "checkpoint_sha256": "dc52cc38ad16e506c06f86fb3da318be79cd80b729d834ed010e23a159954063",
+        "progress_sha256": "b23b2930ab1ccf78ba5b97c424a148106ab4a12996e94b2d719c53e529c693ef",
+        "completed_receipt_sha256": "4a5d71184849f27f2b3753e8fdd6ace15384678763fbf3cf095e7219b077e31a"
+      },
+      "sshead": {
+        "classification": "inferred_non_author_completion",
+        "completed_epochs": 30,
+        "checkpoint_sha256": "832763e69a3ea8e91056d0c6db0cd9964b43453f7dd2d88f9ea1b7a59905f627",
+        "progress_sha256": "618fb289d72833c4399fe01a21133ed2ff8f0dfb9da916c29cc53b59f23c607f",
+        "completed_receipt_sha256": "133b161bdf46bbee518c0cc0385acba1ef5aad934e638484b01cc87c4d37c688"
+      },
+      "development_metrics": {
+        "literal_head_diagnostic": {
+          "evaluation_sha256": "e0e22f4247ac66f3a3c5dd31b2c76986ace2a4f22534a7161828224a7b64a8ea",
+          "nmae": 3.966840537791893,
+          "mae": 15.55952380952381,
+          "rmse": 17.993715834251955,
+          "obo": 0.05952380952380952,
+          "exact": 0.0,
+          "nmae_95ci": [
+            3.2290329030319023,
+            4.7424229719149675
+          ],
+          "obo_95ci": [
+            0.011904761904761904,
+            0.11904761904761904
+          ]
+        },
+        "sshead_inferred_diagnostic": {
+          "evaluation_sha256": "d15c80cbe4be2004b439441cd863ac208fb5a131c675a7d85ce8f31e1d576fbe",
+          "nmae": 2.0741897060246814,
+          "mae": 8.94047619047619,
+          "rmse": 11.84271928232701,
+          "obo": 0.20238095238095238,
+          "exact": 0.09523809523809523,
+          "nmae_95ci": [
+            1.5523412020895089,
+            2.6712319784587333
+          ],
+          "obo_95ci": [
+            0.11904761904761904,
+            0.2976190476190476
+          ]
+        }
+      }
+    },
+    "projected_vector_period_union_v4": {
+      "classification": "inferred_non_author_diagnostic",
+      "config_file_sha256": "2b6db0c54f8d86761947fb77255f77ba4c332f092e33e6bda49a7ca786b53ccd",
+      "config_fingerprint": "80fa0ad0e54dda2f7154a023e88141df69b3bd2db8ab4dc736e7b11a09525ef8",
+      "nonseed_fingerprint": "71f37a17b462074df106dccff1ecfa16e187ccd520c0ad28945cbe9c85718a50",
+      "change_from_v3": "other scales' positive timestamps are excluded from each scale's InfoNCE denominator",
+      "encoder": {
+        "completed_epochs": 150,
+        "checkpoint_sha256": "1badb1c7e5d1bf54521b2df81a46ae567000939d43401b4ea8a49473ef590233",
+        "progress_sha256": "0ad261b2bac1782a6c8756e47f786d2514afebcd9b3786705c8af97485542fe7",
+        "completed_receipt_sha256": "066e73ddde745ce63975e8d33e02ab75d900c00631b32d131d57327fc88aa69a"
+      },
+      "sshead": {
+        "classification": "inferred_non_author_completion",
+        "completed_epochs": 30,
+        "checkpoint_sha256": "59f1a7b5bf10482c2ad79ccffba524af7882025c3152fb173ac30ece016d8f49",
+        "progress_sha256": "7c089d19a65f0c6492537b1a51ab0f920c754826dd15c22acd19309b20934ef7",
+        "completed_receipt_sha256": "235aeece4efecbedc0b08fa3b7ca9dea9072d2a0224c6c4429b938e7896405c8"
+      },
+      "development_metrics": {
+        "literal_head_diagnostic": {
+          "evaluation_sha256": "0fab6fd350df9161611d30d89a4e2f7e47a2d785e7f112955eee838791e87bc8",
+          "nmae": 2.422483821483206,
+          "mae": 9.69047619047619,
+          "rmse": 12.09387881375966,
+          "obo": 0.13095238095238096,
+          "exact": 0.07142857142857142,
+          "nmae_95ci": [
+            1.8420091500533313,
+            3.0346330663583583
+          ],
+          "obo_95ci": [
+            0.05952380952380952,
+            0.20238095238095238
+          ]
+        },
+        "sshead_inferred_diagnostic": {
+          "evaluation_sha256": "e4bc7738818b8e9f1c4b6ee538efdd2c3e351655e893b149368cb2249785f08a",
+          "nmae": 2.6202941523446452,
+          "mae": 11.416666666666666,
+          "rmse": 15.323107356134363,
+          "obo": 0.10714285714285714,
+          "exact": 0.023809523809523808,
+          "nmae_95ci": [
+            1.9777667031415496,
+            3.3407184465666604
+          ],
+          "obo_95ci": [
+            0.047619047619047616,
+            0.17857142857142858
+          ]
+        }
+      }
+    }
+  },
+  "paired_bootstrap": {
+    "samples": 10000,
+    "seed": 2026,
+    "difference_definition": "first_method_minus_second_method",
+    "comparisons": {
+      "v3_literal_minus_f99_literal": {
+        "nmae_difference": 3.325394369359887,
+        "nmae_difference_95ci": [
+          2.5921272879,
+          4.0904942192
+        ],
+        "obo_difference": -0.25,
+        "obo_difference_95ci": [
+          -0.3571428571,
+          -0.1428571429
+        ]
+      },
+      "v4_literal_minus_f99_literal": {
+        "nmae_difference": 1.7810376530512003,
+        "nmae_difference_95ci": [
+          1.2061651041,
+          2.3835538272
+        ],
+        "obo_difference": -0.17857142857142858,
+        "obo_difference_95ci": [
+          -0.2857142857,
+          -0.0714285714
+        ]
+      },
+      "v4_literal_minus_v3_literal": {
+        "nmae_difference": -1.544356716308687,
+        "nmae_difference_95ci": [
+          -2.096051738,
+          -1.0568413971
+        ],
+        "obo_difference": 0.07142857142857144,
+        "obo_difference_95ci": [
+          0.0,
+          0.1428571429
+        ]
+      },
+      "v3_sshead_minus_f99_sshead": {
+        "nmae_difference": -2.9338173537373045,
+        "nmae_difference_95ci": [
+          -3.7767253178,
+          -2.1621992083
+        ],
+        "obo_difference": 0.16666666666666669,
+        "obo_difference_95ci": [
+          0.0714285714,
+          0.2738095238
+        ]
+      },
+      "v4_sshead_minus_f99_sshead": {
+        "nmae_difference": -2.387712907417341,
+        "nmae_difference_95ci": [
+          -3.2625461596,
+          -1.5862498054
+        ],
+        "obo_difference": 0.07142857142857142,
+        "obo_difference_95ci": [
+          0.0,
+          0.1428571429
+        ]
+      },
+      "v4_sshead_minus_v3_sshead": {
+        "nmae_difference": 0.5461044463199638,
+        "nmae_difference_95ci": [
+          0.3223098239,
+          0.7818812184
+        ],
+        "obo_difference": -0.09523809523809523,
+        "obo_difference_95ci": [
+          -0.1666666667,
+          -0.0238095238
+        ]
+      },
+      "v3_sshead_minus_v3_literal": {
+        "nmae_difference": -1.8926508317672116,
+        "nmae_difference_95ci": [
+          -2.5816951237,
+          -1.2166948137
+        ],
+        "obo_difference": 0.14285714285714285,
+        "obo_difference_95ci": [
+          0.0357142857,
+          0.25
+        ]
+      },
+      "v4_sshead_minus_v4_literal": {
+        "nmae_difference": 0.19781033086143914,
+        "nmae_difference_95ci": [
+          -0.7351012786,
+          1.1731224834
+        ],
+        "obo_difference": -0.02380952380952382,
+        "obo_difference_95ci": [
+          -0.119047619,
+          0.0714285714
+        ]
+      }
+    }
+  },
+  "development_tuned_readout_diagnostics": {
+    "classification": "exploratory_only_ineligible_due_to_development_model_selection",
+    "test_inputs_loaded": false,
+    "predictions_frozen_before_development_targets_loaded": true,
+    "global_spectral_sweep": {
+      "methods": 110,
+      "artifact_sha256": "94ce0bc9fd1177855ce56c3b50b769be0d30d3827221e002d01399e8d6cf238e",
+      "script_sha256": "150ac81349e34ee486e80b2da01c445cbcea039620704bd580d920c297b9e32e",
+      "best_method": "pose_xyz.d0.sum.harmonic",
+      "nmae": 0.4402257242620543,
+      "mae": 3.142857142857143,
+      "rmse": 4.5591352563522705,
+      "obo": 0.39285714285714285,
+      "exact": 0.2261904761904762
+    },
+    "acf_crop_sweep": {
+      "methods": 130,
+      "artifact_sha256": "98ff2ce91fefb8043e8c18b969e714c98393f4c9daf05c5dc91de89adddc89e0",
+      "script_sha256": "d17209ed0539c4b90b512b51e2b642c9b2931896e1c1eefe0f9070548e1ab94a",
+      "best_method": "pose.energy0.075.d0.fft_sum",
+      "nmae": 0.4033832717638137,
+      "mae": 2.8333333333333335,
+      "rmse": 4.217311262607288,
+      "obo": 0.4523809523809524,
+      "exact": 0.23809523809523808,
+      "minus_f99_literal_paired_nmae_difference": -0.238062896668192,
+      "minus_f99_literal_paired_nmae_difference_95ci": [
+        -0.3521661,
+        -0.1291442
+      ],
+      "minus_f99_literal_paired_obo_difference": 0.14285714285714285,
+      "minus_f99_literal_paired_obo_difference_95ci": [
+        0.0119048,
+        0.2738095
+      ]
+    },
+    "local_frequency_sweep": {
+      "methods": 512,
+      "artifact_sha256": "fe1083450288d43b7247f451344dc0e6f9f2f30c7bb5f99404a5d78fbada4780",
+      "script_sha256": "6dab892ca4d8557a21c01049210482578643c8d072ad30f8fede7038b2ff472c",
+      "best_nmae_method": {
+        "method": "centered.trim0.1.w96.sum.c1.5.mean",
+        "nmae": 0.3477609800115957,
+        "nmae_95ci": [
+          0.28575434100257063,
+          0.41879734774439203
+        ],
+        "mae": 2.2857142857142856,
+        "rmse": 3.5186577527449843,
+        "obo": 0.5119047619047619,
+        "obo_95ci": [
+          0.40476190476190477,
+          0.6190476190476191
+        ],
+        "exact": 0.23809523809523808,
+        "minus_f99_literal": {
+          "nmae_difference": -0.29368518842041,
+          "nmae_difference_95ci": [
+            -0.39885269204773527,
+            -0.19458336215417493
+          ],
+          "obo_difference": 0.20238095238095233,
+          "obo_difference_95ci": [
+            0.07142857142857145,
+            0.3333333333333333
+          ]
+        },
+        "minus_best_acf_crop": {
+          "nmae_difference": -0.055622291752218,
+          "nmae_difference_95ci": [
+            -0.12588843550743187,
+            0.025309974730387243
+          ],
+          "obo_difference": 0.05952380952380948,
+          "obo_difference_95ci": [
+            -0.0357142857142857,
+            0.15476190476190477
+          ]
+        }
+      },
+      "best_obo_method": {
+        "method": "xyz.trim0.075.w64.norm.c1.median",
+        "nmae": 0.36157319577886077,
+        "nmae_95ci": [
+          0.29723901309646383,
+          0.4291318252309632
+        ],
+        "mae": 2.2023809523809526,
+        "rmse": 3.4554994125996012,
+        "obo": 0.5833333333333334,
+        "obo_95ci": [
+          0.47619047619047616,
+          0.6904761904761905
+        ],
+        "exact": 0.21428571428571427,
+        "minus_f99_literal": {
+          "nmae_difference": -0.279872972653145,
+          "nmae_difference_95ci": [
+            -0.37207752815511447,
+            -0.19354078595073052
+          ],
+          "obo_difference": 0.27380952380952384,
+          "obo_difference_95ci": [
+            0.15476190476190477,
+            0.3928571428571428
+          ]
+        },
+        "minus_best_acf_crop": {
+          "nmae_difference": -0.041810075984952955,
+          "nmae_difference_95ci": [
+            -0.12031812931982258,
+            0.042808840436611366
+          ],
+          "obo_difference": 0.130952380952381,
+          "obo_difference_95ci": [
+            0.023809523809523836,
+            0.23809523809523808
+          ]
+        }
+      }
+    },
+    "bootstrap_audit": {
+      "samples": 10000,
+      "seed": 2026,
+      "confidence_level": 0.95,
+      "difference_definition": "selected_method_minus_reference",
+      "video_ids_unique_and_order_aligned": true,
+      "local_frequency_artifact_sha256": "fe1083450288d43b7247f451344dc0e6f9f2f30c7bb5f99404a5d78fbada4780",
+      "acf_crop_artifact_sha256": "98ff2ce91fefb8043e8c18b969e714c98393f4c9daf05c5dc91de89adddc89e0",
+      "f99_literal_artifact_sha256": "11b9125423093c14826b27bd0ad63aeaf9268775d762080890af8d16c32a342e",
+      "metrics_implementation_sha256": "7fdfcd540f3cbe19e3f66d076096f093b9e1b4a817e71bb44bc0373a268adc62",
+      "numpy_version": "2.4.6"
+    },
+    "search_stopped": true
+  },
+  "mechanism_finding": "The configured post-warmup period source changes only the training correspondences. Checkpoint inference still obtains its period stream from the Period Head; consequently, PAMS-Literal uses the undisclosed and untrained random head.",
+  "diagnostic_gate": {
+    "maximum_nmae": 0.228,
+    "minimum_obo": 0.666,
+    "v3_literal_pass": false,
+    "v3_sshead_pass": false,
+    "v4_literal_pass": false,
+    "v4_sshead_pass": false
+  },
+  "sealed_test": {
+    "sample_count": 105,
+    "identity_only_sidecar_loaded": true,
+    "count_or_action_loaded": false,
+    "predictions_run": false,
+    "evaluation_run": false,
+    "metrics_published": false
+  },
+  "conclusion": "Both inferred training repairs fail the preregistered development gate by a wide margin and will not be expanded to seeds 42 and 3407. The development-tuned readout sweep improved diagnostics but is permanently ineligible and also failed the gate. No sealed-test execution is justified by these results."
+}

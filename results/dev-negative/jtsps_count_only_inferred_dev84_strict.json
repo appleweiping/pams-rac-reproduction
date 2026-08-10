@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "artifact_type": "sanitized_strict_dev_baseline_result",
+  "status": "complete_negative_inferred_clean_room_not_source_parity",
+  "method_id": "jtsps-count-only-inferred",
+  "classification": "independently inferred JTSPS count-only closure / strict UCFRep-526 dev84 diagnostic",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "sample_count": 84,
+  "seed": 2026,
+  "created_at_utc": "2026-07-29T11:57:49Z",
+  "claim_boundary": {
+    "clean_room_implementation": true,
+    "source_protocol_uniquely_verifiable": false,
+    "source_parity": false,
+    "eligible_for_original_paper_table": false,
+    "eligible_for_verified_reproduction_claim": false,
+    "development_only": true,
+    "sealed_test_status": "untouched",
+    "conclusion": "This is a real trained negative result, not a random-weight smoke test. It cannot occupy the paper's JTSPS cell because the public material does not uniquely determine cycle-density supervision or decoding. It also fails the preregistered development gate by a wide margin."
+  },
+  "protocol_closure": {
+    "disclosure": "inferred-clean-room-not-source-parity",
+    "train_videos": 337,
+    "development_videos": 84,
+    "test_videos": 105,
+    "test_predictions_created": false,
+    "test_metrics_created": false,
+    "pose_input": "frozen MediaPipe 33x3 cache, uniformly resampled from 256 to 64 frames",
+    "frames": 64,
+    "joint_embedding_dim": 16,
+    "hidden_dim": 32,
+    "decoder": "sum of non-negative softplus density over valid frames",
+    "supervision": "video-level count only on train337",
+    "loss": "log-count SmoothL1 + 0.25 relative L1 + 0.1 impulse log-count auxiliary + 0.001 density total variation",
+    "optimizer": "AdamW",
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "gradient_clip_norm": 5.0,
+    "epochs": 30,
+    "batch_size": 8,
+    "rounding": "nearest integer, half up",
+    "bootstrap": {
+      "samples": 10000,
+      "seed": 2026,
+      "confidence_level": 0.95,
+      "interval_method": "paired percentile"
+    }
+  },
+  "label_firewall": {
+    "training_count_labels_used": true,
+    "training_action_labels_used": false,
+    "training_target_sidecar_contains_only_video_id_and_count": true,
+    "prediction_dev_targets_mounted": false,
+    "prediction_test_identity_mounted": false,
+    "prediction_annotation_archive_mounted": false,
+    "prediction_raw_videos_mounted": false,
+    "prediction_artifact_contains_targets_or_actions": false,
+    "scoring_ran_in_separate_cpu_process": true,
+    "scoring_targets_mounted_only_after_predictions_frozen": true,
+    "gt_count_oracle_used_for_prediction_or_selection": false,
+    "gt_action_oracle_used_for_prediction_or_selection": false
+  },
+  "run_outcome": {
+    "train_completed": true,
+    "completed_epochs": 30,
+    "prediction_total": 84,
+    "prediction_failure_total": 0,
+    "nonfinite_output_total": 0,
+    "first_epoch": {
+      "loss": 1.9081366838410843,
+      "mean_density_count": 20.888739652411882,
+      "mean_relative_error": 4.075742911460788
+    },
+    "terminal_epoch": {
+      "loss": 0.36736914896687795,
+      "mean_density_count": 4.310254618178966,
+      "mean_relative_error": 0.5481634867745776
+    }
+  },
+  "metrics": {
+    "nmae_rounded": 0.5022753758283316,
+    "mae_rounded": 2.9761904761904763,
+    "rmse_rounded": 4.728334046695819,
+    "obo_rounded": 0.39285714285714285,
+    "exact_rounded": 0.14285714285714285,
+    "nmae_raw": 0.5139921032546519,
+    "mae_raw": 2.946818313428334,
+    "rmse_raw": 4.64228241113968
+  },
+  "paired_bootstrap_95_percent": {
+    "nmae_rounded": [
+      0.4215299730031873,
+      0.5851221417015751
+    ],
+    "mae_rounded": [
+      2.2735119047619072,
+      3.8333333333333335
+    ],
+    "rmse_rounded": [
+      3.220054334427176,
+      6.368682670888285
+    ],
+    "obo_rounded": [
+      0.2976190476190476,
+      0.5
+    ],
+    "exact_rounded": [
+      0.07142857142857142,
+      0.21428571428571427
+    ],
+    "raw_metric_intervals_available": false
+  },
+  "acceptance_gate": {
+    "required_nmae_at_most": 0.228,
+    "required_obo_at_least": 0.666,
+    "nmae_pass": false,
+    "obo_pass": false,
+    "joint_pass": false,
+    "verified_reproduction": false
+  },
+  "source": {
+    "repository": "https://github.com/appleweiping/pams-rac-reproduction",
+    "branch": "agent/initial-reproduction",
+    "git_sha": "9df2646df90cb65e60b5da06616cbc47427ba3e9",
+    "git_tree": "3e22657ff22ea127b8596dd090cff48906293939",
+    "clean_checkout": true,
+    "runner_path": "src/pams/baselines/jtsps_count_only_experiment.py",
+    "runner_sha256": "1fc9311d037b9dc333f81941589955345c0ad480a1aea2fe9b3791fa4d10af31",
+    "model_scaffold_path": "src/pams/baselines/pose_cleanroom.py",
+    "model_scaffold_sha256": "0e9a43faf794f32332685256a0f6d550cc0aba136ba8027b1ff55c4e82754a1a"
+  },
+  "runtime": {
+    "server_gpu": "NVIDIA RTX A6000, 49140 MiB",
+    "project_gpu_lock": "gpu1.lock",
+    "observed_jtsps_cuda_process_memory_mib": 488,
+    "memory_budget_mib": 20480,
+    "container_image_id": "sha256:022103f69a42ef3e88ee43ddcfbd706dabfdeec6247c257d1d01fda2c0ea2f91",
+    "network_during_train_predict": "disabled",
+    "started_at_utc": "2026-07-29T11:55:48Z",
+    "finished_at_utc": "2026-07-29T11:57:49Z"
+  },
+  "server_paths": {
+    "classification": "operator-local paths, not portable public artifacts",
+    "source_checkout": "/media/lenovo/data2/pams-rac/checkouts/jtsps-9df2646",
+    "run_root": "/media/lenovo/data2/pams-rac/runs/baselines/jtsps-count-only-inferred-dev84-9df2646-seed2026-30ep-20260729T115546Z",
+    "operator_log_root": "/media/lenovo/data2/pams-rac/runs/operator-logs/9df2646/jtsps-count-only-inferred-dev84-9df2646-seed2026-30ep-20260729T115546Z"
+  },
+  "input_bindings": {
+    "train_inputs_sha256": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207",
+    "train_count_targets_sha256": "73999befa45bb55861acfbf8a6b34f04f4a9b34c1e46fa15bc51a88ed6bcfb1e",
+    "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "annotation_archive_sha256": "08b2b8a88c2728e9aa6de6c62dc6b02f1941dfa2c3adb28dab5852c12695ae3c",
+    "pose_fingerprint": "8ecb6c1384e1d6a088762322ed90bb6aa631683318e0ab7ed21c19541e5f6656",
+    "dev_pose_snapshot_fingerprint": "2e14cb39a4112f7ee1d10b759d166bb472f41e317e55e773776394331690256c"
+  },
+  "artifact_bindings": {
+    "checkpoint_sha256": "eb61916b528cde0f12de4c15cccb59d9c2758eeb10a2d31b122ac0c1c486b183",
+    "predictions_sha256": "2f21829cdd64477ddf8792d2c222e20e24ae48399f4b4b3d208c9d76f0cd4848",
+    "run_manifest_sha256": "8cc3708873be7dcbcffeb192ee2b7949374b04cf75691826a935df4a0a62ba00",
+    "evaluation_sha256": "0578d5d1d1243ae79ad1fc8bbbc68af6e8841f92b8a863f4e85d4bef8a933c00"
+  },
+  "operator_log_bindings": {
+    "artifact.sha256": "26b0e2c2ba057c84086cdf17fd1bb60f0115caf5363b1f27cac9b4598324549d",
+    "finished_at.txt": "f775091252dcfa7228094703eb8571f2b939ddc20b2c2fe6fb0ea27de203fc5c",
+    "gpu-memory-observation.txt": "c245bba809a352849ef2a60e0e163ac339aeb133eca6fb9751c83f166627041a",
+    "hardware.after.csv": "ce703d81ad2765e0bd03b289a1d408bc79280fc7a8e4bdc0c5d9eb9c6aeafa3c",
+    "hardware.before.csv": "18a17e06db0672305c4bae7c92edd44139ebe16e77e1945a9e3d54a3b106d4f9",
+    "image.id.txt": "72c5c25479ce611d5a51c21392450ef4b6a265a3133ea439ea144d482ca8f6fe",
+    "input.sha256": "362e1ffaaa8a862f8785e558a902d19ab6302fb6d6bd89f768b6b1af22dd6cb1",
+    "launcher.pid.txt": "62df8b4d3805a2c092e5013a028f3d5aa7a6459c84b4eea81bbf820ea222a047",
+    "mount.audit.txt": "899ae5d14033f77658981470ae5b8812c2cbf55596b1510cff6b86a3240de87e",
+    "output.path.txt": "95e0444da0595c80565c78d470988fccc3a2262cac3ddedef755c2904b91dcd4",
+    "run.name.txt": "645c848382ef98fe3370666dd19bd73ce73537647ee4625d990f2d3461fc6f03",
+    "score.sha256": "0a267b4f756fefde6f0995fa4c6fdc85b79c3f9714ce5ac79a65dfef2766c070",
+    "score.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "score.stdout.json": "7bd870ad693abde556885a8df4958f2b89457e522c70632ee209d040289c8703",
+    "source_git_sha.txt": "03f1d15efa7ae795813cabf1c0d75a4f71a554631f53fa958ce9db5d74bae52e",
+    "source_git_status.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "started_at.txt": "deb359e7d75ff1301f8a80239a4a9832a681907c721e114e980aa3328dc369b5",
+    "train.log": "a886d2626da4e3f90deb6c6d01be68bda7f0a4d1d701a30d641ac887ae1f565a"
+  },
+  "publication_boundary": {
+    "raw_predictions_published": false,
+    "targets_published": false,
+    "checkpoint_published_in_git": false,
+    "operator_paths_may_not_exist_outside_designated_server": true,
+    "third_party_data_or_weights_redistributed": false
+  },
+  "limitations": [
+    "The public JTSPS material does not uniquely disclose cycle-density supervision or decoding, so this independent count-only closure is not source parity.",
+    "Only seed 2026 was run. This result has no three-seed variance estimate and cannot satisfy the reproduction acceptance rule.",
+    "Five development videos have all-invalid pose caches and consequently produce zero counts; they remain masked under the dataset-wide failure policy rather than being dropped.",
+    "Development labels were used only by the separate scorer, but train337 count labels are intentionally used for this supervised count-only baseline.",
+    "The result fails both the frozen NMAE and OBO thresholds and is negative evidence, not support for a verified reproduction."
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "artifact_bytes": 758127,
+  "artifact_locator": "dual-path-counterfactual.json",
+  "artifact_sha256": "96da147df273c5cf82bcaefebd1b131bac21ae110837e80d2c892217c850e4c6",
+  "artifact_status": "projected_teacher_passed",
+  "artifact_type": "pams_v14_terminal_encoder_dual_path_counterfactual_receipt",
+  "checkpoint_algorithm_source_git_sha": "df2e7cdfcc91bb436eb99ee10852ddd66ee971e4",
+  "code_files_sha256_commitment": "749a6964a7050b4f292feeb49518180f02c1b9a30d345c3e4dbdd4517cebc0c7",
+  "config_sha256": "3b11c331fd7f9adb1fcb21981424ef2366e7ae4df226e2d100acb2d7b295e39b",
+  "encoder_checkpoint_sha256": "fd1ac8308f1e84b9a68c4131d8294e76d2f09a03607ae838809c6facec180f68",
+  "encoder_progress_sha256": "4d88ddf53358d1a3e95f328077c575066f4ebe24fdd6e84a491dea88c3ce0f51",
+  "gate_code_source_git_sha": "01935c2bd56d962f0a115a6e9bd184ff09ae171d",
+  "hardware_sha256": "eab46fe2baf67f1ee5b801837ee90e47d71b988e7e7950c01a7b8d52cb8983a2",
+  "runtime_sha256": "d4a6a465de3cb28cb3bcc4938816f394acd4ef4051afff37273c0726f0e8c6bd",
+  "schema_version": 1,
+  "source_export_receipt_sha256": "0235635128894aa24533cde02aa1d5986faaf8f1d1cc39d713eaadca03348588",
+  "train337_pose_cache_set_sha256": "f32d718ae922120778f535a6a4f467edba79cafeba90373b3a6a55bf11be6ee2",
+  "v15_encoder_training_authorized": true
+}
