@@ -1,0 +1,531 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/rac-cvpr27/result-manifest-v2.schema.json",
+  "title": "RAC CVPR 2027 Frozen Result Bundle",
+  "description": "One bundle contains per-method, per-protocol result families. JSON Schema checks structure; paper/scripts/validate_result_manifest.py enforces cross-record invariants.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "created_at",
+    "paper_title",
+    "anonymized",
+    "dataset",
+    "metric_contract",
+    "result_families",
+    "comparisons",
+    "generated_outputs",
+    "paper_bindings",
+    "manifest_integrity",
+    "provenance",
+    "audits"
+  ],
+  "properties": {
+    "schema_version": {"const": "2.0"},
+    "artifact_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "paper_title": {"const": "Count Each Person at Their Changing Pace: Multi-Person Tempo-Adaptive Repetition Counting"},
+    "anonymized": {"const": true},
+    "dataset": {"$ref": "#/$defs/dataset"},
+    "metric_contract": {"$ref": "#/$defs/metricContract"},
+    "result_families": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/resultFamily"}
+    },
+    "comparisons": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/comparison"}
+    },
+    "generated_outputs": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/generatedOutput"}
+    },
+    "paper_bindings": {"$ref": "#/$defs/paperBindings"},
+    "manifest_integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "algorithm", "result_manifest_path", "package_manifest_path",
+        "external_delivery_receipt_id", "package_manifest_excludes"
+      ],
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "result_manifest_path": {"$ref": "#/$defs/safeRelativePath"},
+        "package_manifest_path": {"$ref": "#/$defs/safeRelativePath"},
+        "external_delivery_receipt_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]+$",
+          "description": "Logical identifier only. The actual receipt is supplied out-of-bundle with --external-receipt."
+        },
+        "package_manifest_excludes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/safeRelativePath"}
+        }
+      },
+      "description": "The package manifest hashes the exact result-manifest and artifact bytes and excludes only itself. A truly external receipt, selected by CLI and identified by external_delivery_receipt_id, hashes the exact result-manifest and package-manifest bytes. No package object points at or hashes the receipt, so the graph is acyclic."
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_class", "frozen", "notes"],
+      "properties": {
+        "evidence_class": {"enum": ["real_gt", "synthetic_proxy", "self_supervised_proxy", "simulation_only", "human_eval"]},
+        "frozen": {"const": true},
+        "notes": {"type": "string"}
+      }
+    },
+    "audits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["experiment_audit", "result_to_claim", "paper_claim_audit"],
+      "properties": {
+        "experiment_audit": {"$ref": "#/$defs/auditReference"},
+        "result_to_claim": {"$ref": "#/$defs/auditReference"},
+        "paper_claim_audit": {"$ref": "#/$defs/auditReference"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "safeRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*(?:^|/)\\.(?:/|$)).+$",
+      "not": {"pattern": "^(TBD|SYNC-REQUIRED|\\[VERIFY\\])$"}
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "media_type", "role"],
+      "properties": {
+        "path": {"$ref": "#/$defs/safeRelativePath"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "media_type": {
+          "enum": [
+            "application/json",
+            "application/jsonl",
+            "text/csv",
+            "application/vnd.apache.parquet",
+            "text/plain",
+            "text/x-log",
+            "application/pdf",
+            "image/svg+xml"
+          ]
+        },
+        "role": {"type": "string", "minLength": 1}
+      }
+    },
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name", "release", "source_url", "downloaded_at", "split_name",
+        "videos", "annotations", "split_manifest", "evaluator", "preprocessing_spec"
+      ],
+      "properties": {
+        "name": {"const": "MultiRep"},
+        "release": {"type": "string", "minLength": 1},
+        "source_url": {"type": "string", "format": "uri"},
+        "downloaded_at": {"type": "string", "format": "date-time"},
+        "split_name": {"type": "string", "minLength": 1},
+        "videos": {"$ref": "#/$defs/artifact"},
+        "annotations": {"$ref": "#/$defs/artifact"},
+        "split_manifest": {"$ref": "#/$defs/artifact"},
+        "evaluator": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "revision", "source_url", "source_artifact"],
+          "properties": {
+            "name": {"type": "string", "minLength": 1},
+            "revision": {"type": "string", "minLength": 1},
+            "source_url": {"type": "string", "format": "uri"},
+            "source_artifact": {"$ref": "#/$defs/artifact"}
+          }
+        },
+        "preprocessing_spec": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "metricDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["display_name", "direction", "scale", "minimum", "maximum", "unit"],
+      "properties": {
+        "display_name": {"type": "string", "minLength": 1},
+        "direction": {"enum": ["higher", "lower"]},
+        "scale": {"enum": ["fraction_0_1", "percent_0_100", "nonnegative_ratio", "count"]},
+        "minimum": {"type": "number"},
+        "maximum": {"type": ["number", "null"]},
+        "unit": {"type": "string", "minLength": 1}
+      }
+    },
+    "metricContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Period-mAP", "AP50", "AP75", "AvgMAE", "AvgOBO", "HOTA", "IDF1", "IDSW"],
+      "properties": {
+        "Period-mAP": {"$ref": "#/$defs/metricDefinition"},
+        "AP50": {"$ref": "#/$defs/metricDefinition"},
+        "AP75": {"$ref": "#/$defs/metricDefinition"},
+        "AvgMAE": {"$ref": "#/$defs/metricDefinition"},
+        "AvgOBO": {"$ref": "#/$defs/metricDefinition"},
+        "HOTA": {"$ref": "#/$defs/metricDefinition"},
+        "IDF1": {"$ref": "#/$defs/metricDefinition"},
+        "IDSW": {"$ref": "#/$defs/metricDefinition"}
+      }
+    },
+    "method": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "repository_url", "source_revision", "input_modalities", "count_supervision", "period_supervision"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+        "name": {"type": "string", "minLength": 1},
+        "repository_url": {"type": "string", "format": "uri"},
+        "source_revision": {"type": "string", "minLength": 1},
+        "input_modalities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["rgb", "pose", "tracks", "exemplar"]}},
+        "count_supervision": {"enum": ["none", "video_count", "person_count", "period_boundaries", "mixed", "official_unspecified"]},
+        "period_supervision": {"enum": ["none", "person_period", "period_boundaries", "pseudo", "official_unspecified"]}
+      }
+    },
+    "pipeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name", "revision", "config", "source_artifact"],
+      "properties": {
+        "kind": {"enum": ["oracle_annotations", "common_frozen_frontend", "native_joint_pipeline"]},
+        "name": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "minLength": 1},
+        "config": {"$ref": "#/$defs/artifact"},
+        "source_artifact": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "pipeline", "track_artifact"],
+      "properties": {
+        "mode": {"enum": ["oracle_tracks", "common_predicted_tracks", "native_pipeline"]},
+        "pipeline": {"$ref": "#/$defs/pipeline"},
+        "track_artifact": {"$ref": "#/$defs/artifact"},
+        "tracking_metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["HOTA", "IDF1", "IDSW", "source"],
+          "properties": {
+            "HOTA": {"type": "number"},
+            "IDF1": {"type": "number"},
+            "IDSW": {"type": "integer", "minimum": 0},
+            "source": {"$ref": "#/$defs/artifact"}
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"mode": {"const": "common_predicted_tracks"}}, "required": ["mode"]},
+          "then": {
+            "required": ["tracking_metrics"],
+            "properties": {"pipeline": {"properties": {"kind": {"const": "common_frozen_frontend"}}}}
+          }
+        },
+        {
+          "if": {"properties": {"mode": {"const": "oracle_tracks"}}, "required": ["mode"]},
+          "then": {"properties": {"pipeline": {"properties": {"kind": {"const": "oracle_annotations"}}}}}
+        },
+        {
+          "if": {"properties": {"mode": {"const": "native_pipeline"}}, "required": ["mode"]},
+          "then": {"properties": {"pipeline": {"properties": {"kind": {"const": "native_joint_pipeline"}}}}}
+        }
+      ]
+    },
+    "implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "repository_clean", "config", "environment", "hardware", "preprocessing_fingerprint"],
+      "properties": {
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "repository_clean": {"const": true},
+        "config": {"$ref": "#/$defs/artifact"},
+        "environment": {"$ref": "#/$defs/artifact"},
+        "hardware": {"$ref": "#/$defs/artifact"},
+        "preprocessing_fingerprint": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "runMetric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric_id", "value", "source"],
+      "properties": {
+        "metric_id": {"enum": ["Period-mAP", "AP50", "AP75", "AvgMAE", "AvgOBO", "HOTA", "IDF1", "IDSW"]},
+        "value": {"type": "number"},
+        "source": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "seed", "status", "ground_truth", "predictions", "run_log", "evaluation_log", "per_instance_metrics", "metrics"],
+      "properties": {
+        "run_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+        "seed": {"type": "integer", "minimum": 0},
+        "status": {"const": "completed"},
+        "ground_truth": {"$ref": "#/$defs/artifact"},
+        "predictions": {"$ref": "#/$defs/artifact"},
+        "run_log": {"$ref": "#/$defs/artifact"},
+        "evaluation_log": {"$ref": "#/$defs/artifact"},
+        "per_instance_metrics": {"$ref": "#/$defs/artifact"},
+        "metrics": {"type": "array", "minItems": 5, "maxItems": 8, "items": {"$ref": "#/$defs/runMetric"}}
+      }
+    },
+    "aggregateMetric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["aggregate_id", "metric_id", "n_runs", "mean", "sample_standard_deviation", "run_ids", "source"],
+      "properties": {
+        "aggregate_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+        "metric_id": {"enum": ["Period-mAP", "AP50", "AP75", "AvgMAE", "AvgOBO", "HOTA", "IDF1", "IDSW"]},
+        "n_runs": {"type": "integer", "minimum": 1},
+        "mean": {"type": "number"},
+        "sample_standard_deviation": {"type": ["number", "null"], "minimum": 0},
+        "run_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "source": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "resultFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family_id", "evidence_role", "method", "protocol", "implementation",
+        "run_policy", "runs", "aggregate_metrics", "provenance", "eligibility",
+        "table_eligible", "family_artifacts"
+      ],
+      "properties": {
+        "family_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+        "evidence_role": {"enum": ["proposed_method", "common_frontend_baseline", "native_context"]},
+        "method": {"$ref": "#/$defs/method"},
+        "protocol": {"$ref": "#/$defs/protocol"},
+        "implementation": {"$ref": "#/$defs/implementation"},
+        "run_policy": {"enum": ["multi_seed_reproduction", "official_single_checkpoint"]},
+        "runs": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/run"}},
+        "aggregate_metrics": {"type": "array", "minItems": 5, "maxItems": 8, "items": {"$ref": "#/$defs/aggregateMetric"}},
+        "provenance": {"$ref": "#/$defs/familyProvenance"},
+        "eligibility": {"$ref": "#/$defs/familyEligibility"},
+        "table_eligible": {"type": "boolean"},
+        "family_artifacts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/artifact"}}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"run_policy": {"const": "multi_seed_reproduction"}}, "required": ["run_policy"]},
+          "then": {"properties": {"runs": {"minItems": 3}}}
+        },
+        {
+          "if": {"properties": {"evidence_role": {"const": "native_context"}}, "required": ["evidence_role"]},
+          "then": {"properties": {"protocol": {"properties": {"mode": {"const": "native_pipeline"}}}}}
+        }
+      ]
+    },
+    "familyProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_class", "origin", "frozen", "source"],
+      "properties": {
+        "evidence_class": {"enum": ["real_gt", "synthetic_proxy", "self_supervised_proxy", "simulation_only", "human_eval"]},
+        "origin": {"enum": ["collaborator_reproduction", "official_checkpoint", "paper_reported_context"]},
+        "frozen": {"const": true},
+        "source": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "familyEligibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason", "required_audits"],
+      "properties": {
+        "status": {"enum": ["eligible", "context_only", "excluded"]},
+        "reason": {"type": "string", "minLength": 1},
+        "required_audits": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"enum": ["experiment_audit", "result_to_claim", "paper_claim_audit"]}
+        }
+      }
+    },
+    "confidenceInterval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "confidence_level", "lower", "upper", "bootstrap_samples", "bootstrap_seed"],
+      "properties": {
+        "method": {"const": "percentile_bootstrap"},
+        "confidence_level": {"const": 0.95},
+        "lower": {"type": "number"},
+        "upper": {"type": "number"},
+        "bootstrap_samples": {"type": "integer", "minimum": 1000},
+        "bootstrap_seed": {"type": "integer", "minimum": 0}
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["comparison_id", "kind", "lhs_family_id", "rhs_family_id", "metric_id", "paired", "run_pairs", "estimate", "confidence_interval", "paper_eligible", "source"],
+      "properties": {
+        "comparison_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+        "kind": {"enum": ["primary_paired", "secondary_paired", "unpaired_context", "official_single_checkpoint_context"]},
+        "lhs_family_id": {"type": "string"},
+        "rhs_family_id": {"type": "string"},
+        "metric_id": {"enum": ["Period-mAP", "AP50", "AP75", "AvgMAE", "AvgOBO"]},
+        "paired": {"type": "boolean"},
+        "pairing_unit": {"enum": ["video_cluster"]},
+        "paired_ids": {"$ref": "#/$defs/artifact"},
+        "run_pairs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["seed", "lhs_run_id", "rhs_run_id"],
+            "properties": {
+              "seed": {"type": "integer", "minimum": 0},
+              "lhs_run_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+              "rhs_run_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"}
+            }
+          }
+        },
+        "estimate": {"type": "number"},
+        "confidence_interval": {"oneOf": [{"$ref": "#/$defs/confidenceInterval"}, {"type": "null"}]},
+        "paper_eligible": {"type": "boolean"},
+        "source": {"$ref": "#/$defs/artifact"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"paired": {"const": true}}, "required": ["paired"]},
+          "then": {
+            "required": ["pairing_unit", "paired_ids"],
+            "properties": {
+              "run_pairs": {"minItems": 1},
+              "confidence_interval": {"$ref": "#/$defs/confidenceInterval"}
+            }
+          },
+          "else": {"properties": {"run_pairs": {"maxItems": 0}}}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "primary_paired"}}, "required": ["kind"]},
+          "then": {"properties": {"paired": {"const": true}, "pairing_unit": {"const": "video_cluster"}}}
+        }
+      ]
+    },
+    "generatedOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["output_id", "kind", "family_ids", "source_data", "generator", "output"],
+      "properties": {
+        "output_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+        "kind": {"enum": ["table", "figure"]},
+        "family_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "source_data": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/artifact"}},
+        "generator": {"$ref": "#/$defs/artifact"},
+        "output": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "paperBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["abstract_result", "protocol_fields", "results", "claims"],
+      "properties": {
+        "abstract_result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sentence", "claim_ids", "result_keys", "sources"],
+          "properties": {
+            "sentence": {"type": "string", "minLength": 1},
+            "claim_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^C[0-9]{2}$"}},
+            "result_keys": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+            "sources": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/artifact"}}
+          }
+        },
+        "protocol_fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "value", "family_ids", "target_scope", "target_path", "source"],
+            "properties": {
+              "key": {"type": "string", "minLength": 1},
+              "value": {"type": "string", "minLength": 1},
+              "family_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+              "target_scope": {"enum": ["dataset", "result_family"]},
+              "target_path": {
+                "type": "string",
+                "pattern": "^/(?:[^/~]|~[01])+(?:/(?:[^/~]|~[01])+)*$",
+                "description": "RFC 6901 JSON Pointer relative to dataset or to each family named by family_ids."
+              },
+              "source": {"$ref": "#/$defs/artifact"}
+            }
+          }
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "formatted", "raw_value", "target_type", "target_id", "family_id", "metric_id", "statistic", "source"],
+            "properties": {
+              "key": {"type": "string", "minLength": 1},
+              "formatted": {"type": "string", "minLength": 1},
+              "raw_value": {"type": "number"},
+              "target_type": {"enum": ["run_metric", "aggregate_metric", "comparison"]},
+              "target_id": {"type": "string", "minLength": 1},
+              "family_id": {"type": "string", "minLength": 1},
+              "metric_id": {"enum": ["Period-mAP", "AP50", "AP75", "AvgMAE", "AvgOBO", "HOTA", "IDF1", "IDSW"]},
+              "statistic": {"enum": ["single_checkpoint", "mean", "sample_standard_deviation", "ci_lower", "ci_upper", "paired_difference"]},
+              "source": {"$ref": "#/$defs/artifact"}
+            }
+          }
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "text", "claim_ids", "result_keys", "comparison_ids", "sources"],
+            "properties": {
+              "key": {"type": "string", "minLength": 1},
+              "text": {"type": "string", "minLength": 1},
+              "claim_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^C[0-9]{2}$"}},
+              "result_keys": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+              "comparison_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+              "sources": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/artifact"}}
+            }
+          }
+        }
+      }
+    },
+    "auditReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verdict", "generated_at", "paper_freeze", "artifact"],
+      "properties": {
+        "verdict": {"enum": ["PASS", "WARN", "FAIL", "NOT_APPLICABLE", "BLOCKED", "ERROR"]},
+        "generated_at": {"type": "string", "format": "date-time"},
+        "paper_freeze": {"type": "string", "minLength": 1},
+        "artifact": {"$ref": "#/$defs/artifact"}
+      }
+    }
+  },
+  "x-rac-invariants": [
+    "family_id, run_id, aggregate_id, comparison_id, and output_id are globally unique; a repeated method.id has byte-for-byte stable semantic identity fields",
+    "every run and aggregate record belongs to exactly one method/protocol/config family",
+    "every family has digest-bound provenance and an eligibility status consistent with table_eligible and the required PASS audits",
+    "multi_seed_reproduction families have at least three distinct completed seeds",
+    "official_single_checkpoint families have exactly one completed run, null SD, and make no variance claim",
+    "every family has one unique, complete protocol-specific run and aggregate metric set; aggregate n_runs, run_ids, means, and sample SD recompute from the completed runs",
+    "all metric values, aggregates, comparisons, and intervals are finite and satisfy metric_contract scale and range",
+    "every referenced family_id and run_id resolves",
+    "eligible oracle and common-predicted blocks contain exactly RepNet, TransRAC, PoseRAC, PAMS, and Ours once each; eligible native context contains exactly MultiCounter and MultiCounter+",
+    "eligible common-predicted families use identical frontend/config/source/track hashes and identical tracking metrics; eligible oracle families use one identical oracle-track hash",
+    "exactly one primary paired comparison exists; its one-to-one same-seed run pairs resolve and its video-cluster artifact deterministically recomputes the estimate and two-sided percentile-bootstrap 95% interval",
+    "every paper result, protocol field, abstract result, and empirical claim resolves to an eligible run metric, aggregate metric, or paper-eligible comparison with the exact raw value",
+    "every path for ground truth, predictions, logs, evaluation, audits, tables, figures, and plotted data has a sha256 digest",
+    "the package manifest hashes the result manifest and every artifact but excludes itself and the delivery receipt; the external receipt hashes the exact result-manifest and package-manifest bytes"
+  ]
+}

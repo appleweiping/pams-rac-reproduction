@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "artifact": "paper/main_round1.pdf",
+  "sha256": "63794996aff675a57f522fc54e8c80725b45c688fe122a70bca8eb9de3417ae1",
+  "render": {
+    "tool": "Poppler pdftoppm",
+    "resolution_dpi": 120,
+    "pages_inspected": [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  },
+  "checks": {
+    "cropped_or_missing_content": "PASS",
+    "overlapping_text_or_figures": "PASS",
+    "broken_glyphs": "PASS",
+    "anonymous_author_block": "PASS",
+    "draft_banner_visible": "PASS",
+    "task_figure_legibility": "PASS",
+    "framework_figure_legibility": "PASS_WITH_ZOOM",
+    "result_placeholders_visibly_marked": "PASS",
+    "main_conclusion_within_page_eight": "PASS"
+  },
+  "advisories": [
+    "The framework remains information-dense at fit-page scale but is legible at ordinary PDF zoom.",
+    "Appendix pages 8--9 are intentionally sparse because this pre-results package retains complete table shells."
+  ],
+  "verdict": "PASS"
+}

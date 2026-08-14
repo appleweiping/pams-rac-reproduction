@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "verdict": "BLOCKED",
+  "reason_code": "no_cross_family_response",
+  "summary": "The official Claude-review overlay is installed, but this running Codex session obtained no live Claude reviewer response.",
+  "provider": "Anthropic Claude",
+  "model_family": "claude",
+  "reviewer_family": "anthropic",
+  "paper_freeze": "1aa65d0702fb6b46379e5af5542c6e2701d45e4f1a6d4ddefb758a7163230df8",
+  "source_freeze_sha256": "1aa65d0702fb6b46379e5af5542c6e2701d45e4f1a6d4ddefb758a7163230df8",
+  "checked_at": "2026-08-11T16:25:08Z",
+  "probe_status": "BLOCKED",
+  "trace": {
+    "path": "paper/.aris/reviewer-health/trace.md",
+    "sha256": "sha256:951b76a556b85a0fdfbd5a80a8733f2c0bbbf2c28a33f63124011ebb0f1679b4"
+  },
+  "probe": {
+    "path": "paper/.aris/reviewer-health/probe.json",
+    "sha256": "sha256:85a4d9a93e37bc3a4381b850024ba7dc9d78265655ea2e3ba567c9ff8a49babc",
+    "status": "BLOCKED"
+  },
+  "cross_family_review_obtained": false,
+  "submission_readiness_ceiling": "provisional"
+}

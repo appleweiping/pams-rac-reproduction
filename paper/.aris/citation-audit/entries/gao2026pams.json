@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "citation_key": "gao2026pams",
+  "reviewer_route": "fresh-zero-context/same-family",
+  "verdict": "FIX",
+  "post_fix_status": "PASS",
+  "confidence": 0.98,
+  "existence": "PASS",
+  "final_version": "PASS",
+  "metadata": "PASS",
+  "context_before_fix": "FAIL",
+  "context_after_fix": "PASS",
+  "primary_urls": [
+    "https://openaccess.thecvf.com/content/CVPR2026F/html/Gao_Count_What_Repeats_Period-Adaptive_Multi-Scale_Consistency_for_Self-Supervised_Repetitive_Action_CVPRF_2026_paper.html",
+    "https://openaccess.thecvf.com/content/CVPR2026F/papers/Gao_Count_What_Repeats_Period-Adaptive_Multi-Scale_Consistency_for_Self-Supervised_Repetitive_Action_CVPRF_2026_paper.pdf"
+  ],
+  "fix": {
+    "files": [
+      "paper/sections/1_introduction.tex",
+      "paper/sections/3_method.tex"
+    ],
+    "description": "Replaced the unsupported local-time-warp wording with the paper's uniform global speed-resampling evaluation and replaced 'period-offset positives' with the source-supported positive-pair description."
+  },
+  "context_rebind_status": "PASS",
+  "context_rebind_note": "A fresh zero-context reviewer verified the corrected global-resampling wording and all five exact current contexts against the official CVF record and PDF. A later algebraic-prose correction above the Method citation moved that unchanged, digest-identical paragraph from line 240 to line 243; the exact reviewed content and file did not change.",
+  "reviewed_contexts": [
+    {
+      "file": "appendix/a_experiment_contract.tex",
+      "line": 62,
+      "context_sha256": "sha256:136458327432caa019935e2b3e818f61fbc52a11a6f3b6c69bca54404123d698",
+      "verdict": "SUPPORTS"
+    },
+    {
+      "file": "sections/1_introduction.tex",
+      "line": 36,
+      "context_sha256": "sha256:a1cdac1a21a419673c557eec3b5f2248716a6a7cff8c15518ffb6e6631487066",
+      "verdict": "SUPPORTS"
+    },
+    {
+      "file": "sections/2_related_work.tex",
+      "line": 34,
+      "context_sha256": "sha256:0426ac52a89964d27d7c715838980245eb397a7bbfc7381b0eab379fe10d4836",
+      "verdict": "SUPPORTS"
+    },
+    {
+      "file": "sections/3_method.tex",
+      "line": 243,
+      "context_sha256": "sha256:6aa1db2c22104e4fb9d105e84a08a63de4ba5ddc6f2fc2c162542a685838b4d2",
+      "verdict": "SUPPORTS"
+    },
+    {
+      "file": "sections/4_experiments.tex",
+      "line": 95,
+      "context_sha256": "sha256:f85257bccb350d1360f630afedb60dbbe250eb7127eb135e476415cf86dae3c8",
+      "verdict": "SUPPORTS"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "C-R0-LITERAL-DEV",
+    "claim": "The current strict three-seed single-person literal-head dev diagnostic has raw mean NMAE 1.4896327534823017.",
+    "value": "1.4896327534823017",
+    "source": "results/dev-negative/pams_full_multiscale_three_seed_strict.json"
+  },
+  {
+    "id": "C-R0-SSHEAD-DEV",
+    "claim": "The current strict three-seed inferred-SSHead dev diagnostic has raw mean NMAE 5.0224710174730705.",
+    "value": "5.0224710174730705",
+    "source": "results/dev-negative/pams_full_multiscale_three_seed_strict.json"
+  },
+  {
+    "id": "C-R1-MULTIPERSON-EFFECT",
+    "claim": "The proposed identity-conditioned local-tempo method has a real-ground-truth MultiRep result.",
+    "value": "MultiRep",
+    "source": "results/multirep/**/*.json"
+  },
+  {
+    "id": "C-R2-PERSONWISE-IMPLEMENTATION",
+    "claim": "The current production code exposes a person-wise count vector.",
+    "value": "person_id",
+    "source": "src/pams/*.py"
+  },
+  {
+    "id": "C-R3-ABSTRACT-PERFORMANCE",
+    "claim": "A strongest quantitative result can be placed in the abstract.",
+    "value": "",
+    "source": ""
+  }
+]

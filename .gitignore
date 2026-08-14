@@ -41,6 +41,28 @@ htmlcov/
 dist/
 build/
 
+# Project-local ARIS installation and transient paper QA material
+.agents/
+.aris/overlay-copy-backup-*/
+.aris/claude-health.*
+.aris/installed-skills-codex.txt*
+.aris/tools/
+tmp/
+
+# The paper package intentionally versions its compiled and vector PDFs.
+!paper/**/*.pdf
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.brf
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/*.synctex.gz
+paper/compile.log
+paper/rendered/
+
 # Editors and operating systems
 .idea/
 .vscode/

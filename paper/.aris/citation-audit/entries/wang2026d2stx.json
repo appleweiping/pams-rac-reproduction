@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "citation_key": "wang2026d2stx",
+  "reviewer_route": "fresh-zero-context/same-family",
+  "verdict": "FIX",
+  "post_fix_status": "PASS",
+  "confidence": 0.97,
+  "existence": "PASS",
+  "final_version": "PASS",
+  "metadata_before_fix": "MINOR_INITIALS_NORMALIZATION",
+  "metadata_after_fix": "PASS",
+  "context_before_fix": "PASS_WITH_CODE_AVAILABILITY_PRESUPPOSITION",
+  "context_after_fix": "PASS",
+  "canonical": {
+    "authors": ["Xiaoai Wang", "Hang Wang", "Yan Liu", "Huan Hu", "Bruce X.B. Yu"],
+    "title": "D2-STX: Decoupling Spatial-Temporal Cross-Attention for Dual-branch Repetitive Action Counting",
+    "venue": "Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) Findings",
+    "pages": "8205--8214",
+    "year": 2026
+  },
+  "primary_urls": [
+    "https://openaccess.thecvf.com/content/CVPR2026F/html/Wang_D2-STX_Decoupling_Spatial-Temporal_Cross-Attention_for_Dual-branch_Repetitive_Action_Counting_CVPRF_2026_paper.html",
+    "https://openaccess.thecvf.com/content/CVPR2026F/papers/Wang_D2-STX_Decoupling_Spatial-Temporal_Cross-Attention_for_Dual-branch_Repetitive_Action_Counting_CVPRF_2026_paper.pdf",
+    "https://github.com/ZJU-Emerging-AI-Lab/D2-STX"
+  ],
+  "fix": {
+    "files": ["paper/references.bib", "paper/sections/4_experiments.tex"],
+    "description": "Canonicalized the final author's initials and made baseline inclusion conditional on a runnable public implementation rather than presupposing one. No DOI was invented because no authoritative record was found."
+  },
+  "context_rebind_status": "PASS",
+  "context_rebind_note": "A fresh zero-context reviewer verified the final metadata and all three exact current contexts after the shared Introduction paragraph changed.",
+  "reviewed_contexts": [
+    {
+      "file": "sections/1_introduction.tex",
+      "line": 34,
+      "context_sha256": "sha256:a1cdac1a21a419673c557eec3b5f2248716a6a7cff8c15518ffb6e6631487066",
+      "verdict": "SUPPORTS"
+    },
+    {
+      "file": "sections/2_related_work.tex",
+      "line": 31,
+      "context_sha256": "sha256:0426ac52a89964d27d7c715838980245eb397a7bbfc7381b0eab379fe10d4836",
+      "verdict": "SUPPORTS"
+    },
+    {
+      "file": "sections/4_experiments.tex",
+      "line": 96,
+      "context_sha256": "sha256:f85257bccb350d1360f630afedb60dbbe250eb7127eb135e476415cf86dae3c8",
+      "verdict": "SUPPORTS"
+    }
+  ]
+}

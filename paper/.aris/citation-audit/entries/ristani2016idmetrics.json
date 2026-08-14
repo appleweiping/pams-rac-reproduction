@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "citation_key": "ristani2016idmetrics",
+  "reviewer_route": "fresh-zero-context/same-family-child",
+  "verdict": "KEEP",
+  "post_fix_status": "PASS",
+  "confidence": 0.98,
+  "existence": "PASS",
+  "final_version": "PASS",
+  "metadata_before_fix": "PASS_WITH_OPTIONAL_PUBLISHER_COMPLETION",
+  "metadata_after_fix": "PASS",
+  "context_before_fix": "PASS",
+  "context_after_fix": "PASS",
+  "canonical": {
+    "authors": ["Ergys Ristani", "Francesco Solera", "Roger Zou", "Rita Cucchiara", "Carlo Tomasi"],
+    "title": "Performance Measures and a Data Set for Multi-Target, Multi-Camera Tracking",
+    "venue": "Computer Vision -- ECCV 2016 Workshops",
+    "series": "Lecture Notes in Computer Science",
+    "volume": "9914",
+    "pages": "17--35",
+    "year": 2016,
+    "doi": "10.1007/978-3-319-48881-3_2"
+  },
+  "primary_urls": [
+    "https://doi.org/10.1007/978-3-319-48881-3_2",
+    "https://link.springer.com/chapter/10.1007/978-3-319-48881-3_2",
+    "https://api.crossref.org/works/10.1007%2F978-3-319-48881-3_2"
+  ],
+  "fix": {
+    "files": ["paper/references.bib", "paper/sections/4_experiments.tex"],
+    "description": "The independent child reviewer returned KEEP. Publisher-complete metadata was adopted, and the combined HOTA/ID prose was sharpened without attributing invention of ID-switch counts to Ristani et al."
+  },
+  "reviewed_contexts": [
+    {
+      "file": "sections/4_experiments.tex",
+      "line": 42,
+      "context_sha256": "sha256:867578efd94cc9870bc568fd6c44f98dca28bffb29e2e11bab323465c83f6fe5",
+      "verdict": "SUPPORTS"
+    }
+  ]
+}

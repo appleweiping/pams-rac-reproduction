@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "citation_key": "hu2022transrac",
+  "reviewer_route": "fresh-zero-context/same-family",
+  "verdict": "FIX",
+  "post_fix_status": "PASS",
+  "confidence": 0.97,
+  "existence": "PASS",
+  "final_version": "PASS",
+  "metadata_before_fix": "PASS",
+  "metadata_after_fix": "PASS",
+  "context_before_fix": "PASS",
+  "context_after_fix": "PASS",
+  "canonical": {
+    "authors": ["Huazhang Hu", "Sixun Dong", "Yiqun Zhao", "Dongze Lian", "Zhengxin Li", "Shenghua Gao"],
+    "title": "TransRAC: Encoding Multi-scale Temporal Correlation with Transformers for Repetitive Action Counting",
+    "venue": "Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)",
+    "pages": "18991--19000",
+    "year": 2022,
+    "doi": "10.1109/CVPR52688.2022.01843"
+  },
+  "primary_urls": [
+    "https://doi.org/10.1109/CVPR52688.2022.01843",
+    "https://openaccess.thecvf.com/content/CVPR2022/html/Hu_TransRAC_Encoding_Multi-Scale_Temporal_Correlation_With_Transformers_for_Repetitive_Action_CVPR_2022_paper.html"
+  ],
+  "fix": {
+    "files": ["paper/references.bib"],
+    "description": "Normalized title capitalization and pagination to the IEEE version of record (18991--19000); no prose correction was required."
+  },
+  "context_rebind_status": "PASS",
+  "context_rebind_note": "Exact cited contexts support the claims; BibTeX metadata is normalized to the IEEE/Crossref version of record rather than the accepted-copy pagination.",
+  "reviewed_contexts": [
+    {
+      "file": "sections/1_introduction.tex",
+      "line": 18,
+      "context_sha256": "sha256:383fae1ce06456a5f26ba0754d8ac1ef9a8857c4165ce8e26e8d4b0063f645a8",
+      "verdict": "SUPPORTS"
+    },
+    {
+      "file": "sections/2_related_work.tex",
+      "line": 12,
+      "context_sha256": "sha256:e612d078c925a6039f1353337d0ce745937ff5e0a984500d1a4723245fa6e5d5",
+      "verdict": "SUPPORTS"
+    },
+    {
+      "file": "sections/4_experiments.tex",
+      "line": 94,
+      "context_sha256": "sha256:f85257bccb350d1360f630afedb60dbbe250eb7127eb135e476415cf86dae3c8",
+      "verdict": "SUPPORTS"
+    }
+  ]
+}

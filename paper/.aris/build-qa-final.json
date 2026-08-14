@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-11T21:04:53.338534Z",
+  "verdict": "PASS",
+  "pdf": {
+    "path": "main.pdf",
+    "sha256": "de951023634d5627f3c38cd7512da9fd7df20086781d24caf0a548b93b3d9522",
+    "bytes": 535868
+  },
+  "source_bundle_sha256": "0825451370575801e06b158284ac72235c910885e3a5523a904cd52dfdd4db8d",
+  "source_freeze_sha256": "1376b6a388d049b12548a589e9753237bd9e62802091d822cd46cb450aa26184",
+  "source_files": [
+    {
+      "path": "main.tex",
+      "sha256": "041bfa52c09d53faaa9dde6bd6a1e0fba37e2ab2009a43bdc84e607e622e787c"
+    },
+    {
+      "path": "preamble.tex",
+      "sha256": "248f035d6f420d297fc5628ff2f21918a3310836b466685a1e783c3b8d540a22"
+    },
+    {
+      "path": "math_commands.tex",
+      "sha256": "ab4b7a090dfbbb5bd2ea6cd18406ef1aef714147594d42df32d42f9649892309"
+    },
+    {
+      "path": "references.bib",
+      "sha256": "86fe2aab232ad7bea6c7ee3c2e17e4324054b2a22b17607f7a70effb3e9d7683"
+    },
+    {
+      "path": "sections/0_abstract.tex",
+      "sha256": "2bb5e32dec7a2f18cb572a423f58c97f39c174c400579f41a055fdea1f725d8a"
+    },
+    {
+      "path": "sections/1_introduction.tex",
+      "sha256": "d1f82e381a982b7c8075d4f09e86798703a4be28f713b90ced8cce801fbe6d3c"
+    },
+    {
+      "path": "sections/2_related_work.tex",
+      "sha256": "96ab7ac0d5a65e4552aadcbff423c23de69994901f4057d9ede7b7c461ab6d31"
+    },
+    {
+      "path": "sections/3_method.tex",
+      "sha256": "12f2b96e16e034a5c8ec3db887d70676919060e2e543180ca2c186cab9cd8b5b"
+    },
+    {
+      "path": "sections/4_experiments.tex",
+      "sha256": "36d1eb3d9e413a1e7e970e87e3e976bc6fc04478c3276f63b955ea412db13766"
+    },
+    {
+      "path": "sections/5_conclusion.tex",
+      "sha256": "e6d8a193e02fde717675b5858441b8368efdc898fb1d82b9a1023ef90a653091"
+    },
+    {
+      "path": "appendix/a_experiment_contract.tex",
+      "sha256": "25138c31c471c9b2542b8e3fbf326a38686f25eeed452edebf0e5257330f46d5"
+    },
+    {
+      "path": "figures/task_comparison.pdf",
+      "sha256": "2fd8046ccca522892fe45d9fcf7aa75d49bb69d3e1ffd58ab86fdd1a3496c3c0"
+    },
+    {
+      "path": "figures/framework.pdf",
+      "sha256": "b6545d0c4b21362b17dcf43dbb1c369d6e01f3f93cb513e1a7935a87d92c791f"
+    }
+  ],
+  "checks": {
+    "final_log_warning_count": 0,
+    "page_count": 11,
+    "letter_page_size": true,
+    "conclusion_page": 7,
+    "conclusion_within_eight_pages": true,
+    "font_count": 32,
+    "unembedded_font_count": 0,
+    "type3_font_count_advisory": 1,
+    "duplicate_labels": [],
+    "undefined_citation_keys": [],
+    "uncited_bib_keys": [],
+    "anonymous_author_visible": true,
+    "draft_banner_visible": true,
+    "unresolved_question_marks": false
+  },
+  "final_log_warnings": [],
+  "unembedded_fonts": []
+}

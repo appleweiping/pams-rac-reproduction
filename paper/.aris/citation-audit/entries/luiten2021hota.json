@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "citation_key": "luiten2021hota",
+  "reviewer_route": "fresh-zero-context/same-family",
+  "verdict": "FIX",
+  "post_fix_status": "PASS",
+  "confidence": 0.96,
+  "existence": "PASS",
+  "final_version": "PASS",
+  "metadata_before_fix": "INCOMPLETE",
+  "metadata_after_fix": "PASS",
+  "context_before_fix": "PASS_WITH_AGGREGATE_DIAGNOSTIC_AMBIGUITY",
+  "context_after_fix": "PASS",
+  "canonical": {
+    "authors": ["Jonathon Luiten", "Aljosa Osep", "Patrick Dendorfer", "Philip Torr", "Andreas Geiger", "Laura Leal-Taixe", "Bastian Leibe"],
+    "title": "HOTA: A Higher Order Metric for Evaluating Multi-object Tracking",
+    "venue": "International Journal of Computer Vision",
+    "volume": "129",
+    "number": "2",
+    "pages": "548--578",
+    "year": 2021,
+    "doi": "10.1007/s11263-020-01375-2"
+  },
+  "primary_urls": [
+    "https://doi.org/10.1007/s11263-020-01375-2",
+    "https://link.springer.com/article/10.1007/s11263-020-01375-2",
+    "https://api.crossref.org/works/10.1007/s11263-020-01375-2"
+  ],
+  "fix": {
+    "files": ["paper/references.bib", "paper/sections/4_experiments.tex"],
+    "description": "Completed issue and diacritic metadata and named DetA, AssA, and LocA so the diagnostic claim does not imply that aggregate HOTA alone identifies failure modes."
+  },
+  "reviewed_contexts": [
+    {
+      "file": "sections/4_experiments.tex",
+      "line": 41,
+      "context_sha256": "sha256:867578efd94cc9870bc568fd6c44f98dca28bffb29e2e11bab323465c83f6fe5",
+      "verdict": "SUPPORTS"
+    }
+  ]
+}

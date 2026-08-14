@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "citation_key": "zhang2022bytetrack",
+  "reviewer_route": "fresh-zero-context/same-family",
+  "verdict": "FIX",
+  "post_fix_status": "PASS",
+  "confidence": 0.99,
+  "existence": "PASS",
+  "final_version": "PASS",
+  "metadata_before_fix": "INCOMPLETE",
+  "metadata_after_fix": "PASS",
+  "context_before_fix": "PASS",
+  "context_after_fix": "PASS",
+  "canonical": {
+    "authors": ["Yifu Zhang", "Peize Sun", "Yi Jiang", "Dongdong Yu", "Fucheng Weng", "Zehuan Yuan", "Ping Luo", "Wenyu Liu", "Xinggang Wang"],
+    "title": "ByteTrack: Multi-object Tracking by Associating Every Detection Box",
+    "venue": "Computer Vision -- ECCV 2022",
+    "series": "Lecture Notes in Computer Science",
+    "volume": "13682",
+    "pages": "1--21",
+    "year": 2022,
+    "doi": "10.1007/978-3-031-20047-2_1"
+  },
+  "primary_urls": [
+    "https://doi.org/10.1007/978-3-031-20047-2_1",
+    "https://link.springer.com/chapter/10.1007/978-3-031-20047-2_1"
+  ],
+  "fix": {
+    "files": ["paper/references.bib"],
+    "description": "Added the LNCS volume and normalized the title to the Springer version of record; cited contexts required no change."
+  },
+  "context_rebind_status": "PASS",
+  "context_rebind_note": "Exact cited context supports the claim; BibTeX title capitalization now matches the Springer version of record.",
+  "reviewed_contexts": [
+    {
+      "file": "appendix/a_experiment_contract.tex",
+      "line": 180,
+      "context_sha256": "sha256:5509ce09517236115d4a46643b81ccb1138afff5164239174576928f89a7804b",
+      "verdict": "SUPPORTS"
+    }
+  ]
+}

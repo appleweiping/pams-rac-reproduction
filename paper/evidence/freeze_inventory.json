@@ -1,0 +1,78 @@
+{
+  "schema_version": "2.0",
+  "base_commit": "73cbc4bb9b581f24fbc90f2fe7421bc11e7c7454",
+  "external_delivery_receipt": "C:/Users/admin/.aris/private/rac-cvpr27-delivery-freeze.json",
+  "delivery_receipt_required_fields": [
+    "schema_version",
+    "delivery_commit",
+    "clean_status",
+    "package_manifest",
+    "package_manifest_sha256",
+    "source_freeze_sha256",
+    "created_at"
+  ],
+  "delivery_receipt_schema_version": "1.0",
+  "package_manifest": "MANIFEST.sha256",
+  "package_manifest_excludes": [
+    "MANIFEST.sha256"
+  ],
+  "manifest_scope_roots": [
+    ".aris",
+    "ARIS_LOCK.md",
+    "CITATION_AUDIT.json",
+    "CITATION_AUDIT.md",
+    "CLAIMS_EVIDENCE_MATRIX.md",
+    "CLAIMS_FROM_RESULTS.md",
+    "EXPERIMENT_AUDIT.json",
+    "EXPERIMENT_AUDIT.md",
+    "IMPLEMENTATION_SYNC_REPORT_ZH.md",
+    "KILL_ARGUMENT.json",
+    "KILL_ARGUMENT.md",
+    "NARRATIVE_REPORT.md",
+    "PAPER_ACCEPTANCE_CONTRACT.md",
+    "PAPER_CLAIM_AUDIT.json",
+    "PAPER_CLAIM_AUDIT.md",
+    "PAPER_IMPROVEMENT_LOG.md",
+    "PAPER_PLAN.md",
+    "PROOF_AUDIT.json",
+    "PROOF_AUDIT.md",
+    "RESULT_TO_CLAIM.json",
+    "SUBMISSION_GATE_REPORT.json",
+    "SUBMISSION_GATE_REPORT.md",
+    "findings.md",
+    "paper"
+  ],
+  "source_freeze_roots": [
+    "paper/main.tex",
+    "paper/preamble.tex",
+    "paper/math_commands.tex",
+    "paper/references.bib",
+    "paper/sections",
+    "paper/appendix",
+    "paper/figures",
+    "paper/evidence",
+    "paper/generated"
+  ],
+  "source_freeze_excludes": [
+    "paper/figures/*.png",
+    "paper/figures/*.drawio.png",
+    "paper/generated/README.md"
+  ],
+  "required_consistent_freeze_documents": [
+    "NARRATIVE_REPORT.md",
+    "CLAIMS_EVIDENCE_MATRIX.md",
+    "CLAIMS_FROM_RESULTS.md",
+    "PAPER_PLAN.md",
+    "PAPER_ACCEPTANCE_CONTRACT.md",
+    "paper/evidence/method_contract.yaml"
+  ],
+  "anonymity_release_globs": [
+    "paper/*.pdf",
+    "paper/figures/*.pdf",
+    "paper/figures/*.png",
+    "paper/*.log",
+    "paper/.aris/**/*.log"
+  ],
+  "clean_tree_required_after_delivery_commit": true,
+  "current_status": "BLOCKED_UNTIL_FINAL_COMMIT_MANIFEST_AND_EXTERNAL_RECEIPT"
+}

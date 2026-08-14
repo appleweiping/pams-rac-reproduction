@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "verdict": "PASS",
+  "allowlist_policy": "Only an explicit denial/prior-art limitation in the same local context is allowed; positive comparative language requires ClaimMap and evidence binding.",
+  "scanned": [
+    {
+      "file": "appendix/a_experiment_contract.tex",
+      "sha256": "f81f1f7ce815e87ea6451d728abe65853b2542e95b0983163a20d1817455cae6"
+    },
+    {
+      "file": "figures/framework.drawio",
+      "sha256": "5c47f364495ddbd4422d81a31a6fdc7204498cc24bce9fc1e66f3c9c316ca5a6"
+    },
+    {
+      "file": "figures/framework.svg",
+      "sha256": "81f02ee1f71585f0ad56516c7f584b237163658fe1a5913e0d3af9f685b2bde7"
+    },
+    {
+      "file": "figures/task_comparison.drawio",
+      "sha256": "0f9f55284abdcd0dcb04df0c51fe5715a7bd8dfbec036c659bb574e59b4a6726"
+    },
+    {
+      "file": "figures/task_comparison.svg",
+      "sha256": "a291ae56777174dde754685971bf7a853a29e8c1296bb01ef08921d2eab8841b"
+    },
+    {
+      "file": "main.tex",
+      "sha256": "332307d4b89dd94f3e6de65477d73d48b20949280779f4afc8dada52c482e583"
+    },
+    {
+      "file": "math_commands.tex",
+      "sha256": "ab4b7a090dfbbb5bd2ea6cd18406ef1aef714147594d42df32d42f9649892309"
+    },
+    {
+      "file": "preamble.tex",
+      "sha256": "248f035d6f420d297fc5628ff2f21918a3310836b466685a1e783c3b8d540a22"
+    },
+    {
+      "file": "sections/0_abstract.tex",
+      "sha256": "5de258d5d1dd85ba9ead51769ab1d18b6a4c44bf113dd133c3a7bb8f38294e4d"
+    },
+    {
+      "file": "sections/1_introduction.tex",
+      "sha256": "1524bbaca9fa416313f54637b518ad9dc12ed58237aceee19fec59121820d746"
+    },
+    {
+      "file": "sections/2_related_work.tex",
+      "sha256": "9c0fde2367de05c0ea038c602b8c7685d3f2edeee57ebe2885ead28e920c7f1f"
+    },
+    {
+      "file": "sections/3_method.tex",
+      "sha256": "323faea55a9a167c7eee65553bfecdb2187cbc9e2414d59f2d35d8931a407181"
+    },
+    {
+      "file": "sections/4_experiments.tex",
+      "sha256": "53da108e38ef86919eff66f79ec817dde3ccd708fc901fd12e2b81f2184811df"
+    },
+    {
+      "file": "sections/5_conclusion.tex",
+      "sha256": "6ca66036411ffdd7c38aa9159bd610fc3ac28f61265d08600439314c57b81c94"
+    },
+    {
+      "file": "submission_wrapper.tex",
+      "sha256": "68b3ad8a55017d3a669564d655c5ae8fce016c42afaeb0d744c0fac2cc7d8dbf"
+    }
+  ],
+  "violations": []
+}

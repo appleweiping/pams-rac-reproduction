@@ -1,0 +1,58 @@
+\section{Related Work}
+\label{sec:related_work}
+
+\paragraph{Single-instance counting and tempo modeling.}
+Early learned counters estimated a local cycle length in an online
+window~\cite{levy2015live}, while motion-centric methods used time-varying
+flow differentials and wavelets to address non-stationary
+repetition~\cite{runia2018realworld}. RepNet used temporal self-similarity as an
+intermediate representation bottleneck and introduced Countix as an in-the-wild
+benchmark for class-agnostic repetition counting~\cite{dwibedi2020repnet}.
+TransRAC regresses a density map from
+multi-scale temporal correlations~\cite{hu2022transrac}, and DeTRC represents
+cycles with dynamic action queries under a single-primary-action assumption
+~\cite{ma2026detrc}. ESCounts uses exemplar-conditioned correspondence during
+training and learns a latent used for exemplar-free, zero-shot inference
+~\cite{sinha2024escounts}; SkimFocusNet combines
+coarse contextual guidance with fine-grained views. Multi-RepCount evaluates
+exemplar-specified counting of one target action category in videos containing
+multiple repetitive-action categories, whereas MultiRep evaluates per-person
+counting for simultaneous human instances
+~\cite{zhao2025skimfocus,tang2024multicounter}.
+
+\paragraph{Pose-based and label-efficient counting.}
+Pose representations reduce appearance dependence and expose articulated
+motion directly. PoseRAC models actions through salient poses, uses foundation
+generative models to synthesize pose-conditioned training data, and
+incorporates CLIP text embeddings for open-set counting, enabling zero-shot
+prediction without real benchmark training samples~\cite{yao2025poserac};
+zero-shot prediction should not be conflated with a self-supervised training
+objective. D$^2$-STX instead fuses RGB and pose through
+decoupled spatial and temporal cross-attention~\cite{wang2026d2stx}. PAMS
+learns from unlabeled skeleton sequences using period-adaptive multi-scale
+temporal consistency and combines inference-time counting experts
+~\cite{gao2026pams}. Its expert consensus is not a learned fast--medium--slow
+mixture, and its single-stream formulation does not preserve multiple
+identities. Our intended use of pose and PAMS-TCC is therefore a foundation,
+not a novelty claim; the proposed distinction is track-indexed local routing in
+MRAC under a no-count-label objective. Local routing and normalized overlap-add
+are generic operations and are not claimed as independent inventions; any
+defensible novelty must come from their audited role in the stated MRAC
+supervision and non-stationary-tempo setting.
+
+\paragraph{Multi-instance repetition counting.}
+MultiCounter defines MRAC and introduces MultiRep, learning detection,
+association, period localization, and person-wise counting jointly
+~\cite{tang2024multicounter}. MultiCounter+ improves robustness and efficiency
+with a dynamically updated Siamese query and anchor-guided similarity
+reconstruction that represents long and short periods
+~\cite{tang2026multicounterplus}. These systems already address asynchronous
+people, variable speeds, pauses, and identity continuity. Our proposed setting
+differs along a narrower axis: an upstream tracker supplies masked pose tracks,
+the counting objective is intended to avoid person-wise count and period
+labels, and tempo specialization varies across local windows of each identity.
+This modular design is not described as end-to-end, and any comparison to
+native MRAC systems must disclose the different input and supervision
+protocols. Appendix~\ref{tab:prior_scope} makes these boundaries explicit; it
+also prevents generic local routing or overlap-add from being presented as a
+standalone novelty.

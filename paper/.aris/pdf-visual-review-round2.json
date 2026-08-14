@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "verdict": "PASS",
+  "scope": "complete final round-2 pre-results PDF",
+  "reviewer_route": "codex-visual-inspection",
+  "pdf": {
+    "path": "paper/main.pdf",
+    "sha256": "1b6501e8c79d51adaae0660e21d7905123f28442a216eb6de76847d8755bd91d",
+    "pages": 11,
+    "main_content_last_page": 8,
+    "conclusion_page": 7
+  },
+  "source_bundle_sha256": "79b4d26fea84c88e07275c8af1d9e202a88d3d1dd3763a5fa52b1118535e7655",
+  "renders": [
+    {"page": 1, "path": "paper/rendered/round2/final/page-01.png", "sha256": "e6c2688f5063992599ef89a4de7fb6d12abe53a986bd749e5167d6153f1f5760"},
+    {"page": 2, "path": "paper/rendered/round2/final/page-02.png", "sha256": "e0fa3df1071379be44ee90c14a6695c6d406ab99d55cc9ae2da5da7b31fec11c"},
+    {"page": 3, "path": "paper/rendered/round2/final/page-03.png", "sha256": "b0be980a0377c86667d1f22c667d196a2ae92e52320118aec1711e2c1b890f1a"},
+    {"page": 4, "path": "paper/rendered/round2/final/page-04.png", "sha256": "c6d55195b22d58cddd38e5546bf529a60cdd1f0c1a83b196d203f9d9e50fd647"},
+    {"page": 5, "path": "paper/rendered/round2/final/page-05.png", "sha256": "1402f0ebfa5c9a3d0217f7e21430addc2a30384bae628defaaa0a8ac6d7b8ccb"},
+    {"page": 6, "path": "paper/rendered/round2/final/page-06.png", "sha256": "fc744813eb1cf4343e751e9063a23b83678f1e0222249e6029df2f460f8ba6d6"},
+    {"page": 7, "path": "paper/rendered/round2/final/page-07.png", "sha256": "c0737678748f25e34e2178fd10558879e7ea6111d333b85bad36d1909aaeb907"},
+    {"page": 8, "path": "paper/rendered/round2/final/page-08.png", "sha256": "215a748637c2ae935d160a298e77b26a9e0658040c0114cebff76568de272c6c"},
+    {"page": 9, "path": "paper/rendered/round2/final/page-09.png", "sha256": "55458444407ffa23f2a7157c961d1e5dc2c97cb0deafaf4ea16eb943985a67ac"},
+    {"page": 10, "path": "paper/rendered/round2/final/page-10.png", "sha256": "a5bc8eabe0f82cb858a50f1d6df40ad96f7498ce328fe855e626a3feae4d9727"},
+    {"page": 11, "path": "paper/rendered/round2/final/page-11.png", "sha256": "95c927193f7cdedb6808f6f6d6d9e1ce446880a520344207179ed55334523546"}
+  ],
+  "checks": {
+    "all_pages_reviewed": true,
+    "no_clipping_or_overlap": true,
+    "figures_legible_at_page_scale": true,
+    "tables_legible_at_page_scale": true,
+    "draft_banner_visible": true,
+    "anonymous_author_visible": true,
+    "main_tables_before_references": true,
+    "references_not_interleaved_with_main_floats": true,
+    "appendix_starts_after_references": true
+  },
+  "non_blocking_advisories": [
+    "Page 7 has deliberate white space because the pre-results table shells are flushed to page 8 before references.",
+    "Pages 8 and 11 are intentionally sparse while empirical cells remain PENDING."
+  ]
+}

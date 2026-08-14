@@ -1,0 +1,15 @@
+{
+  "schema_version": 2,
+  "verdict": "FAIL",
+  "evidence_readiness": "BLOCKED",
+  "collaborator_freeze_status": "BLOCKED",
+  "component_count": 11,
+  "blocked_components": 11,
+  "audited_input_hashes": {
+    "paper/evidence/method_contract.yaml": "2682938d1b8b228a48bb465ea70ed495a69101e22f7a7a8c4b8e027cfa368d34",
+    "paper/evidence/supervision_firewall.json": "beb0599003f09cd3dd0274721dae358b98fef2419912d8c8762c00353b2060fa"
+  },
+  "errors": [
+    "known_sources/story_contract: SHA-256 mismatch"
+  ]
+}

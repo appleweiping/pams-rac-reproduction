@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "citation_key": "sinha2024escounts",
+  "reviewer_route": "fresh-zero-context/same-family",
+  "verdict": "FIX",
+  "post_fix_status": "PASS",
+  "confidence": 0.94,
+  "existence": "PASS",
+  "final_version": "PASS",
+  "metadata_before_fix": "VALID_ACCEPTED_COPY_NOT_FINAL_VOR",
+  "metadata_after_fix": "PASS",
+  "context_before_fix": "PASS_WITH_AMBIGUITY",
+  "context_after_fix": "PASS",
+  "canonical": {
+    "authors": ["Saptarshi Sinha", "Alexandros Stergiou", "Dima Damen"],
+    "title": "Every Shot Counts: Using Exemplars for Repetition Counting in Videos",
+    "venue": "Computer Vision -- ACCV 2024",
+    "series": "Lecture Notes in Computer Science",
+    "volume": "15474",
+    "pages": "384--402",
+    "year": 2025,
+    "doi": "10.1007/978-981-96-0908-6_22"
+  },
+  "primary_urls": [
+    "https://doi.org/10.1007/978-981-96-0908-6_22",
+    "https://link.springer.com/chapter/10.1007/978-981-96-0908-6_22",
+    "https://openaccess.thecvf.com/content/ACCV2024/html/Sinha_Every_Shot_Counts_Using_Exemplars_for_Repetition_Counting_in_Videos_ACCV_2024_paper.html",
+    "https://api.crossref.org/works/10.1007%2F978-981-96-0908-6_22"
+  ],
+  "fix": {
+    "files": ["paper/references.bib", "paper/sections/1_introduction.tex", "paper/sections/2_related_work.tex"],
+    "description": "Normalized to the final Springer LNCS record and separated the exemplar-conditioned, single-target-stream claim from the multiple-action-type claim."
+  },
+  "reviewed_contexts": [
+    {
+      "file": "sections/1_introduction.tex",
+      "line": 20,
+      "context_sha256": "sha256:383fae1ce06456a5f26ba0754d8ac1ef9a8857c4165ce8e26e8d4b0063f645a8",
+      "verdict": "SUPPORTS"
+    },
+    {
+      "file": "sections/2_related_work.tex",
+      "line": 16,
+      "context_sha256": "sha256:e612d078c925a6039f1353337d0ce745937ff5e0a984500d1a4723245fa6e5d5",
+      "verdict": "SUPPORTS"
+    }
+  ]
+}

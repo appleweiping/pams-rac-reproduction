@@ -1,0 +1,84 @@
+{
+  "audit_skill": "paper-claim-audit",
+  "verdict": "FAIL",
+  "reason_code": "MISSING_ELIGIBLE_MULTIREP_EVIDENCE_AND_BINDINGS",
+  "summary": "No populated unsupported paper-owned value, numeric contradiction, or source-PDF mismatch was detected, but all 225 controlled uses (214 unique bindings) remain unresolved and no eligible frozen MultiRep evidence exists.",
+  "paper_freeze": "1376b6a388d049b12548a589e9753237bd9e62802091d822cd46cb450aa26184",
+  "source_freeze_sha256": "1376b6a388d049b12548a589e9753237bd9e62802091d822cd46cb450aa26184",
+  "audited_input_hashes": {
+    "main.tex": "sha256:041bfa52c09d53faaa9dde6bd6a1e0fba37e2ab2009a43bdc84e607e622e787c",
+    "preamble.tex": "sha256:248f035d6f420d297fc5628ff2f21918a3310836b466685a1e783c3b8d540a22",
+    "math_commands.tex": "sha256:ab4b7a090dfbbb5bd2ea6cd18406ef1aef714147594d42df32d42f9649892309",
+    "sections/0_abstract.tex": "sha256:2bb5e32dec7a2f18cb572a423f58c97f39c174c400579f41a055fdea1f725d8a",
+    "sections/1_introduction.tex": "sha256:d1f82e381a982b7c8075d4f09e86798703a4be28f713b90ced8cce801fbe6d3c",
+    "sections/2_related_work.tex": "sha256:96ab7ac0d5a65e4552aadcbff423c23de69994901f4057d9ede7b7c461ab6d31",
+    "sections/3_method.tex": "sha256:12f2b96e16e034a5c8ec3db887d70676919060e2e543180ca2c186cab9cd8b5b",
+    "sections/4_experiments.tex": "sha256:36d1eb3d9e413a1e7e970e87e3e976bc6fc04478c3276f63b955ea412db13766",
+    "sections/5_conclusion.tex": "sha256:e6d8a193e02fde717675b5858441b8368efdc898fb1d82b9a1023ef90a653091",
+    "appendix/a_experiment_contract.tex": "sha256:25138c31c471c9b2542b8e3fbf326a38686f25eeed452edebf0e5257330f46d5",
+    "references.bib": "sha256:86fe2aab232ad7bea6c7ee3c2e17e4324054b2a22b17607f7a70effb3e9d7683",
+    "generated/README.md": "sha256:7ec75d9ab72706426039e0336ad958e06d062711fe065484e6b3bd7227bf17c5",
+    "main.pdf": "sha256:de951023634d5627f3c38cd7512da9fd7df20086781d24caf0a548b93b3d9522",
+    "D:\\Project\\rac\\results\\dev-negative\\summary.json": "sha256:2051ca2712a5e54a6516ceba341ea7db8c1555c27bec54ec386f68f69ae60b9f",
+    "D:\\Project\\rac\\configs\\protocols\\ucfrep_526.yaml": "sha256:6343cc67b36f33f4303e7d4204d3dbd34a0d35396e148e30450740aa9fe5ef65",
+    "D:\\Project\\rac\\configs\\pams.yaml": "sha256:058c45443b81f6b9861d2896e33544727e8921b7052d61ef331e9ba819be70c8"
+  },
+  "trace_path": ".aris/traces/paper-claim-audit/final/",
+  "agent_id": "/root/final_claim_audit_postfix",
+  "binding_agent_id": "/root/final_claim_audit_postfix/source_binding_audit",
+  "executor_model": "codex-gpt-5.6-sol",
+  "executor_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_family": "openai",
+  "reviewer_reasoning": "ultra",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "generated_at": "2026-08-11T21:10:14Z",
+  "detector_negative": true,
+  "submission_assurance_pass": false,
+  "details": {
+    "controlled_uses": 225,
+    "unique_bindings": 214,
+    "keyed_controlled_uses_excluding_abstract": 224,
+    "keyed_unique_bindings_excluding_abstract": 213,
+    "result_uses": 139,
+    "unique_result_bindings": 139,
+    "protocol_uses": 85,
+    "unique_protocol_bindings": 74,
+    "prose_claim_uses": 0,
+    "controlled_abstract_results": 1,
+    "populated_paper_owned_empirical_values": 0,
+    "missing_controlled_uses": 225,
+    "missing_unique_bindings": 214,
+    "missing_result_bindings": 139,
+    "missing_protocol_bindings": 74,
+    "missing_abstract_result_bindings": 1,
+    "numeric_contradictions": 0,
+    "source_pdf_mismatches": 0,
+    "source_pdf_consistency": "PASS",
+    "pdf_pages_audited": 11,
+    "admissible_multirep_evidence_present": false,
+    "excluded_evidence": [
+      {
+        "path": "D:/Project/rac/results/dev-negative/summary.json",
+        "reason": "UCFRep development-only negative evidence for a single-person PAMS partial reproduction; wrong dataset, task, implementation, and evidence class for MultiRep claims"
+      },
+      {
+        "path": "D:/Project/rac/configs/protocols/ucfrep_526.yaml",
+        "reason": "UCFRep single-person development/sealed-test protocol; not a MultiRep release, person-wise annotation, evaluator, or tracking protocol"
+      },
+      {
+        "path": "D:/Project/rac/configs/pams.yaml",
+        "reason": "Single-person PAMS configuration with no MultiRep path, identity-indexed tracks, router, continuity loss, boundary decoder, or new-method results"
+      }
+    ],
+    "blocking_conditions": [
+      "225 controlled call sites / 214 unique bindings are unresolved",
+      "no eligible MultiRep release, split, checksums, evaluator, or preprocessing fingerprint",
+      "no synchronized frozen implementation of the proposed multi-person method",
+      "no qualifying MultiRep oracle-track or predicted-track runs, seeds, event records, per-person outputs, matching tests, or bootstrap records",
+      "all main, ablation, robustness, efficiency, and data tables remain pending",
+      "the Abstract has no audited quantitative result sentence"
+    ]
+  }
+}

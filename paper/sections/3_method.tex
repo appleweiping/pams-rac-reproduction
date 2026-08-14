@@ -1,0 +1,272 @@
+\section{Method}
+\label{sec:method}
+
+\paragraph{Status boundary.}
+This section is a provisional method contract for synchronizing the paper with
+the collaborator's frozen implementation. It defines the intended data flow
+and the boundary between upstream perception and counting. Components marked
+\textbf{SYNC-REQUIRED} are not asserted as implemented or validated. If the
+frozen code differs from this contract, the equations and prose must change to
+match the code. The narrow supervision statement used throughout this draft is
+``without person-wise count or period supervision in the intended counting
+objective''; it does not describe the supervision used by the upstream
+detector, pose estimator, tracker, or any pretrained representation.
+
+\subsection{Problem Formulation and Overview}
+\label{sec:problem}
+
+Given a video, an upstream detector, pose estimator, and multi-object tracker
+produce \(N\) identity-indexed pose tracks. Track \(i\) consists of joint
+coordinates and a validity mask
+\begin{equation}
+  \begin{aligned}
+    \bX_i&=[\mathbf{x}_{i1},\ldots,\mathbf{x}_{iT_i}]
+      \in\mathbb{R}^{T_i\times J\times C}\\
+    \bm_i&=[m_{i1},\ldots,m_{iT_i}]\in\{0,1\}^{T_i}
+  \end{aligned}
+  \label{eq:track_input}
+\end{equation}
+Here \(T_i\) is the temporal extent, \(J\) the joint count, \(C\) the coordinate
+dimension, and \(m_{it}=1\) denotes a usable pose at time \(t\). Missing
+observations keep their original time indices and are masked rather than
+deleted. An upstream frontend may additionally expose joint-level visibility
+or confidence, but its deterministic reduction to \(m_{it}\) must be recorded
+in the synchronized preprocessing contract. The primary prediction is
+\begin{equation}
+  \hat{\bc}=[\hat c_1,\ldots,\hat c_N]^{\top}\in\mathbb{N}_0^N
+  \label{eq:count_vector}
+\end{equation}
+The optional total \(\sum_i\hat c_i\) is a diagnostic rather than the task
+definition. Under oracle tracks, index \(i\) denotes a ground-truth person and
+Equation~\ref{eq:count_vector} is person-wise. Under predicted tracks it denotes
+a tracker output, so the raw vector is track-wise: fragmentation may create
+several entries for one person and a merge may combine people. Person-wise
+predicted-track metrics are defined only after the frozen evaluator's matching
+step. The counter cannot undo an identity switch already embedded in its input;
+Section~\ref{sec:experiments} therefore separates oracle and predicted tracks.
+
+The design in Figure~\ref{fig:framework} uses a shared pose encoder and a
+shared bank of fast, medium, and slow experts. ``Person-specific'' means that
+observations, masks, temporal buffers, routing variables, and outputs are
+indexed by identity; it does not mean that a separate parameter set is
+instantiated for every person or that an identity embedding conditions the
+network. Computation is track-indexed and otherwise independent across people.
+Each track is processed in overlapping windows,
+whose continuous responses are fused before any discrete counting decision.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.99\textwidth]{figures/framework.pdf}
+  \caption{\textbf{Provisional method contract.} The upstream detector,
+  pose estimator, and tracker are outside the counting boundary. Within it,
+  parameters are shared across identities while masks, state, local tempo, and
+  output responses remain identity-indexed. Window responses are fused by
+  normalized overlap-add before one final decoding pass per track. Dashed
+  elements require synchronization with frozen training code.}
+  \label{fig:framework}
+\end{figure*}
+
+\subsection{Identity-Conditioned Local Encoding}
+\label{sec:encoding}
+
+A single track can accelerate, decelerate, pause, or contain observation gaps,
+so we do not assign one speed to the whole person. Let \(L\) and \(S\) denote
+window length and stride, and let \(s_{i\ell}\) be the start of window
+\(\ell\). Its local input at \(u\in\{1,\ldots,L\}\) is
+\begin{equation}
+  \mathbf{x}_{i\ell u}=\mathbf{x}_{i,s_{i\ell}+u-1},\qquad
+  m_{i\ell u}=m_{i,s_{i\ell}+u-1}
+  \label{eq:window_indexing}
+\end{equation}
+Out-of-range positions are padded with zero mask values. A shared encoder
+\(E_\theta\) maps each masked window to embeddings
+\begin{equation}
+  \bZ_{i\ell}=E_\theta(\bX_{i\ell},\bm_{i\ell})
+  =[\mathbf{z}_{i\ell1},\ldots,\mathbf{z}_{i\ell L}]
+  \in\mathbb{R}^{L\times d}
+  \label{eq:shared_encoder}
+\end{equation}
+Invalid positions are excluded from aggregation, period evidence, and counting
+responses. Independent application of the same encoder places people in one
+representation space without pooling their temporal state; \(d\) denotes the
+embedding dimension.
+
+\subsection{Local Period Evidence and Soft Routing}
+\label{sec:routing}
+
+We derive routing evidence within each window. With a fixed numerical
+stabilizer \(\epsilon>0\), the valid-frame mean is
+\begin{equation}
+  \bar{\mathbf z}_{i\ell}=
+  \frac{\sum_{u=1}^{L}m_{i\ell u}\mathbf z_{i\ell u}}
+  {\sum_{u=1}^{L}m_{i\ell u}+\epsilon}
+  \label{eq:valid_mean}
+\end{equation}
+On the uniform lag grid \(\delta\in\{0,\ldots,L-1\}\), let
+\(n_{i\ell}(\delta)=\sum_{u=1}^{L-\delta}m_{i\ell u}m_{i\ell,u+\delta}\).
+Write \(\widetilde{\mathbf z}_{i\ell u}=\mathbf z_{i\ell u}
+-\bar{\mathbf z}_{i\ell}\). We define a mask-normalized, non-circular
+autocorrelation and deterministically zero-fill unsupported grid locations
+\begin{equation}
+  \begin{aligned}
+    Q_{i\ell}(\delta)
+      &=\sum_{u=1}^{L-\delta}m_{i\ell u}m_{i\ell,u+\delta}
+        \langle\widetilde{\mathbf z}_{i\ell u},
+        \widetilde{\mathbf z}_{i\ell,u+\delta}\rangle\\
+    A_{i\ell}(\delta)
+      &=\frac{\mathbf{1}[n_{i\ell}(\delta)\geq n_{\min}]
+        Q_{i\ell}(\delta)}{n_{i\ell}(\delta)+\epsilon}
+  \end{aligned}
+  \label{eq:masked_acf}
+\end{equation}
+The support mask is retained separately so a zero-filled lag is never treated
+as observed evidence. For a deterministic taper \(h\), let \(\mathcal F\) be
+the nonzero frequency bins in
+cycles per frame whose reciprocal periods lie inside the declared range. We
+use the magnitude of the tapered autocorrelation transform as a routing score,
+not as a calibrated physical power spectral density
+\begin{equation}
+  \begin{aligned}
+    P_{i\ell}(f)&=\left|\operatorname{FFT}(h\odot A_{i\ell})_f\right|\\
+    f^*_{i\ell}&=\argmaxop_{f\in\mathcal F}P_{i\ell}(f),\qquad
+    \hat p_{i\ell}=1/f^*_{i\ell}
+  \end{aligned}
+  \label{eq:local_period}
+\end{equation}
+\begin{equation}
+  \gamma_{i\ell}=
+  \frac{P_{i\ell}(f^*_{i\ell})}
+  {\sum_{f\in\mathcal F}P_{i\ell}(f)+\epsilon}
+  \label{eq:period_confidence}
+\end{equation}
+Here \(\hat p_{i\ell}\) is measured in frames and is converted to seconds only
+with the manifest-bound frame rate. The contract stops the direct gradient
+from this evidence branch into the encoder; encoder updates can still change
+routing evidence on later optimization steps. A router maps the descriptor
+\(\bq_{i\ell}=[\log\hat p_{i\ell},\gamma_{i\ell}]^\top\) to a probability
+simplex over shared experts \(\cK=\{\mathrm f,\mathrm m,\mathrm s\}\). Let
+\(\boldsymbol{\pi}_0\) be a fixed fallback distribution for a supported but
+low-confidence window
+\begin{equation}
+  \begin{aligned}
+    \widetilde{\bg}_{i\ell}
+      &=\operatorname{softmax}\!\left(R_\psi(\bq_{i\ell})\right)\\
+    \bg_{i\ell}
+      &=\gamma_{i\ell}\widetilde{\bg}_{i\ell}
+        +(1-\gamma_{i\ell})\boldsymbol{\pi}_0\\
+    \sum_{k\in\cK}g_{i\ell k}&=1
+  \end{aligned}
+  \label{eq:soft_router}
+\end{equation}
+An eligibility flag \(v_{i\ell}\in\{0,1\}\) is one only when the window meets
+the frozen minimum valid-pair, minimum-cycle, activity, and spectral-prominence
+rules. If \(v_{i\ell}=0\), the implementation assigns a tensor-shape-only
+reference period, sets \(\gamma_{i\ell}=0\), and forces the window response to
+zero; it does not route a pause or unsupported window through a counting
+expert. The exact activity statistic, thresholds, harmonic-selection rule, and
+whether a learned null expert replaces this deterministic gate remain
+synchronization-required.
+Because \(\bg_{i\ell}\) is local, it may change between adjacent windows of
+one identity. Soft assignment also lets an ambiguous transition combine
+neighboring experts rather than commit to a hard tempo bin. The minimum
+support, confidence calibration, and whether \(\boldsymbol{\pi}_0\) is uniform
+or period-conditioned are synchronization-required. Expert-use histograms,
+entropy, and specialization curves must diagnose routing collapse.
+
+\subsection{Expert Fusion and Boundary Handling}
+\label{sec:fusion}
+
+Each expert \(F_{\phi_k}\) predicts a nonnegative response over one masked
+window. Parameters \(\phi_k\) are shared across identities, while each
+response remains identity-indexed
+\begin{equation}
+  \begin{aligned}
+    \mathbf r^{(k)}_{i\ell}
+      &=F_{\phi_k}(\bZ_{i\ell},\bm_{i\ell},\hat p_{i\ell})
+        \in\mathbb R_{\geq0}^{L}\\
+    r_{i\ell u}
+      &=v_{i\ell}m_{i\ell u}
+        \sum_{k\in\cK}g_{i\ell k}r^{(k)}_{i\ell u}
+  \end{aligned}
+  \label{eq:expert_fusion}
+\end{equation}
+Summing integer window counts creates a direct arithmetic double-counting path
+for cycles that straddle an overlap. We instead reconstruct a single response
+for each identity. With a taper \(a_u\geq a_{\min}>0\) on every covered frame and
+\(\Lambda_i(t)=\{(\ell,u):t=s_{i\ell}+u-1\}\), normalized overlap-add gives
+\begin{equation}
+  R_{it}=m_{it}
+  \frac{\sum_{(\ell,u)\in\Lambda_i(t)}a_u r_{i\ell u}}
+  {\sum_{(\ell,u)\in\Lambda_i(t)}a_u m_{i\ell u}+\epsilon}
+  \label{eq:normalized_ola}
+\end{equation}
+The ratio replaces the direct coverage-count scaling of an unnormalized sum
+with an \(\epsilon\)-stabilized valid-taper weighted average and excludes
+padding from the denominator. Its amplitude can still vary with the responses
+being averaged and retains a small support-dependent bias when \(\epsilon>0\),
+which the evaluation contract audits explicitly. Only then does a track-level
+decoder \(\cD\) extract repetition events
+\begin{equation}
+  \widehat{\cP}_i=
+  \cD(\mathbf R_i,\bm_i,\{\hat p_{i\ell},\gamma_{i\ell}\}_{\ell}),\qquad
+  \hat c_i=|\widehat{\cP}_i|
+  \label{eq:track_decoding}
+\end{equation}
+Thus overlapping windows never contribute separately rounded counts. Fusion
+does not by itself guarantee a single peak when window responses are
+phase-misaligned; boundary-straddling tests must measure whether the fused
+decoder reduces such errors. The frozen implementation must determine the
+taper, coverage rule, peak threshold, period aggregation, and minimum-distance
+rule. Constant motion, pauses, contiguous gaps, alternating masks, harmonic
+ambiguity, and boundary-straddling cycles are mandatory unit-test cases. The
+mask-normalized estimator in Equation~\ref{eq:masked_acf} is not pairwise
+variance-normalized, so corruption tests must also quantify mask-induced
+spectral artifacts.
+
+For Period-mAP evaluation, the event set must expose more than its cardinality.
+The synchronized adapter must export each proposal as
+\begin{equation}
+  \hat e_{ij}=(i,\hat\tau^{\mathrm{s}}_{ij},
+  \hat\tau^{\mathrm{e}}_{ij},\hat s_{ij},\widehat{\mathcal B}_{ij})
+  \label{eq:event_schema}
+\end{equation}
+where the tuple contains its track identity, temporal bounds, confidence, and
+the spatial/track support required by the frozen official evaluator. The count
+remains \(\hat c_i=|\widehat{\cP}_i|\). Exact interval construction, score
+calibration, and evaluator matching remain blocked until that adapter is
+bound to code and tests.
+
+\subsection{Training and Synchronization Boundary}
+\label{sec:training}
+
+The intended representation objective builds on PAMS-TCC
+~\cite{gao2026pams}, which uses temporally adjacent and cyclically
+corresponding positives across temporal scales, together with negatives from
+other temporal locations, other videos, and different clusters. At the
+method-contract level, training is represented by
+\begin{equation}
+  \cL=\cL_{\mathrm{PAMS\text{-}TCC}}
+  +\lambda_{\mathrm{route}}\cL_{\mathrm{route}}
+  +\lambda_{\mathrm{track}}\cL_{\mathrm{track}}
+  \label{eq:full_objective}
+\end{equation}
+The reserved routing term should transform assignments equivariantly under
+declared tempo changes rather than force invariance to them. By default, the
+reserved track term may connect observations only across gaps that retain one
+supplied track identity. It does not join fragments carrying different tracker
+IDs; any such re-association would be a separate module with its own signal,
+supervision disclosure, and evaluation. These are responsibilities, not
+recovered loss definitions.
+
+\noindent\textbf{SYNC-REQUIRED.}
+Equation~\ref{eq:full_objective} is not yet a complete trainable algorithm: it
+does not specify what trains expert responses or the decoder, how experts
+specialize, how router collapse is prevented, or how scores are calibrated.
+Synchronization must recover the exact architectures, response targets or
+self-supervised signals, pseudo-target provenance, formulas, sample
+construction, weights, gradient paths, frontend, track normalization, period
+range, window schedule, fallback route, and decoding settings. Every use of
+count, period, or identity annotations in training, tuning, calibration, and
+checkpoint selection must be disclosed. No contribution or result claim
+depending on these items is admissible before source anchors, tests, and
+ablation evidence exist.

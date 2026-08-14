@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "verdict": "PASS",
+  "scope": "complete final-freeze pre-results PDF after citation corrections",
+  "reviewed_at": "2026-08-12T04:48:33+08:00",
+  "reviewer_route": "codex-visual-inspection",
+  "pdf": {
+    "path": "paper/main.pdf",
+    "sha256": "de951023634d5627f3c38cd7512da9fd7df20086781d24caf0a548b93b3d9522",
+    "pages": 11,
+    "main_content_last_page": 8,
+    "conclusion_page": 7
+  },
+  "source_bundle_sha256": "0825451370575801e06b158284ac72235c910885e3a5523a904cd52dfdd4db8d",
+  "source_freeze_sha256": "1376b6a388d049b12548a589e9753237bd9e62802091d822cd46cb450aa26184",
+  "renders": [
+    {"page": 1, "path": "paper/rendered/final-freeze/page-01.png", "sha256": "78cad83afd4e187e867fa982ccac29b34c0fe377182919977d62c3ef1243bd6e"},
+    {"page": 2, "path": "paper/rendered/final-freeze/page-02.png", "sha256": "e0fa3df1071379be44ee90c14a6695c6d406ab99d55cc9ae2da5da7b31fec11c"},
+    {"page": 3, "path": "paper/rendered/final-freeze/page-03.png", "sha256": "b0be980a0377c86667d1f22c667d196a2ae92e52320118aec1711e2c1b890f1a"},
+    {"page": 4, "path": "paper/rendered/final-freeze/page-04.png", "sha256": "c6d55195b22d58cddd38e5546bf529a60cdd1f0c1a83b196d203f9d9e50fd647"},
+    {"page": 5, "path": "paper/rendered/final-freeze/page-05.png", "sha256": "9be9ad95e59d2c4e5158c2c01ce634380df5ef772e573113ec427218f3a11a3b"},
+    {"page": 6, "path": "paper/rendered/final-freeze/page-06.png", "sha256": "27cb0572222a8cf0b667daabfad2aadabff0d3d866e65cb02a5db2e48752d209"},
+    {"page": 7, "path": "paper/rendered/final-freeze/page-07.png", "sha256": "475fa9f1dbb9ec9cec8be3f4142632d8ba5c7edc24d7f586fe16aa779a2fe490"},
+    {"page": 8, "path": "paper/rendered/final-freeze/page-08.png", "sha256": "215a748637c2ae935d160a298e77b26a9e0658040c0114cebff76568de272c6c"},
+    {"page": 9, "path": "paper/rendered/final-freeze/page-09.png", "sha256": "a70f6b8ce5d39ca70a571ff1f48c492e426e668f25ee59a4e5396eb31e7e2f27"},
+    {"page": 10, "path": "paper/rendered/final-freeze/page-10.png", "sha256": "1191d33d53c470b1fc259aec1bf83146b37e3cd40137c11f775e01e734263116"},
+    {"page": 11, "path": "paper/rendered/final-freeze/page-11.png", "sha256": "95c927193f7cdedb6808f6f6d6d9e1ce446880a520344207179ed55334523546"}
+  ],
+  "checks": {
+    "all_pages_reviewed": true,
+    "no_clipping_or_overlap": true,
+    "figures_legible_at_page_scale": true,
+    "tables_legible_at_page_scale": true,
+    "draft_banner_visible": true,
+    "anonymous_author_visible": true,
+    "main_tables_before_references": true,
+    "references_not_interleaved_with_main_floats": true,
+    "appendix_starts_after_references": true
+  },
+  "non_blocking_advisories": [
+    "Page 7 has deliberate white space because the pre-results table shells are flushed to page 8 before references.",
+    "Pages 8 and 11 are intentionally sparse while empirical cells remain PENDING.",
+    "The provisional template identifies CVPR 2027 in the draft banner but remains based on the official CVPR 2026 kit until the CVPR 2027 kit is released."
+  ]
+}

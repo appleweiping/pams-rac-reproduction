@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "verdict": "PASS",
+  "pdf": {
+    "path": "main.pdf",
+    "sha256": "63794996aff675a57f522fc54e8c80725b45c688fe122a70bca8eb9de3417ae1",
+    "bytes": 733057
+  },
+  "source_bundle_sha256": "eda85f9c97c0590077c19ce378c2728ac1f3c3b99cdd568a2a2e5dae55ad8e6e",
+  "source_files": [
+    {
+      "path": "main.tex",
+      "sha256": "332307d4b89dd94f3e6de65477d73d48b20949280779f4afc8dada52c482e583"
+    },
+    {
+      "path": "preamble.tex",
+      "sha256": "248f035d6f420d297fc5628ff2f21918a3310836b466685a1e783c3b8d540a22"
+    },
+    {
+      "path": "math_commands.tex",
+      "sha256": "ab4b7a090dfbbb5bd2ea6cd18406ef1aef714147594d42df32d42f9649892309"
+    },
+    {
+      "path": "references.bib",
+      "sha256": "95be31738bc366563f36a3142a50f23cce3f2fd3ce36f6f8ca99ad17eaa74012"
+    },
+    {
+      "path": "sections/0_abstract.tex",
+      "sha256": "5de258d5d1dd85ba9ead51769ab1d18b6a4c44bf113dd133c3a7bb8f38294e4d"
+    },
+    {
+      "path": "sections/1_introduction.tex",
+      "sha256": "1524bbaca9fa416313f54637b518ad9dc12ed58237aceee19fec59121820d746"
+    },
+    {
+      "path": "sections/2_related_work.tex",
+      "sha256": "9c0fde2367de05c0ea038c602b8c7685d3f2edeee57ebe2885ead28e920c7f1f"
+    },
+    {
+      "path": "sections/3_method.tex",
+      "sha256": "6cffefd058c3595f1e78416ced767c21c52c27ec090a8fad2551667fa4103414"
+    },
+    {
+      "path": "sections/4_experiments.tex",
+      "sha256": "53da108e38ef86919eff66f79ec817dde3ccd708fc901fd12e2b81f2184811df"
+    },
+    {
+      "path": "sections/5_conclusion.tex",
+      "sha256": "6ca66036411ffdd7c38aa9159bd610fc3ac28f61265d08600439314c57b81c94"
+    },
+    {
+      "path": "appendix/a_experiment_contract.tex",
+      "sha256": "1bb5896136a54b0cf323fe4d7cb7ba001e5bc8a98157b901fe74498b16b05a71"
+    },
+    {
+      "path": "figures/task_comparison.pdf",
+      "sha256": "2fd8046ccca522892fe45d9fcf7aa75d49bb69d3e1ffd58ab86fdd1a3496c3c0"
+    },
+    {
+      "path": "figures/framework.pdf",
+      "sha256": "b6545d0c4b21362b17dcf43dbb1c369d6e01f3f93cb513e1a7935a87d92c791f"
+    }
+  ],
+  "checks": {
+    "final_log_warning_count": 0,
+    "page_count": 9,
+    "letter_page_size": true,
+    "conclusion_page": 6,
+    "conclusion_within_eight_pages": true,
+    "font_count": 31,
+    "unembedded_font_count": 0,
+    "type3_font_count_advisory": 1,
+    "duplicate_labels": [],
+    "undefined_citation_keys": [],
+    "uncited_bib_keys": [],
+    "anonymous_author_visible": true,
+    "draft_banner_visible": true,
+    "unresolved_question_marks": false
+  },
+  "final_log_warnings": [],
+  "unembedded_fonts": []
+}

@@ -1,0 +1,44 @@
+% Provisional CVPR 2027 manuscript using the official CVPR 2026 author kit.
+% The 2027 template migration is an explicit acceptance-contract gate.
+\pdfminorversion=7
+\pdfinfoomitdate=1
+\pdfsuppressptexinfo=15
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+\usepackage[review]{cvpr}
+\input{preamble}
+\input{math_commands}
+
+\def\paperID{DRAFT}
+\def\confName{CVPR}
+\def\confYear{2027}
+
+\title{Count Each Person at Their Changing Pace:\
+Multi-Person Tempo-Adaptive Repetition Counting}
+
+% Double-blind submission metadata only. Real author metadata is private and
+% intentionally stored outside this repository.
+\author{Anonymous CVPR submission}
+
+\begin{document}
+\maketitle
+
+\input{sections/0_abstract}
+\input{sections/1_introduction}
+\input{sections/2_related_work}
+\input{sections/3_method}
+\input{sections/4_experiments}
+\input{sections/5_conclusion}
+
+% Flush all main-paper result-table shells before the references so floats do
+% not interleave with bibliography entries in this pre-results package.
+\clearpage
+{\small
+\bibliographystyle{vendor/cvpr2026/ieeenat_fullname}
+\bibliography{references}
+}
+
+\appendix
+\input{appendix/a_experiment_contract}
+
+\end{document}

@@ -1,0 +1,827 @@
+ CVPR                                                                                                                                           CVPR
+#DRAFT                                                                                                                                         #DRAFT
+                             CVPR 2027 Submission #DRAFT. CONFIDENTIAL REVIEW COPY. DO NOT DISTRIBUTE.
+
+
+
+
+             Count Each Person at Their Changing Pace: Multi-Person Tempo-Adaptive
+                                       Repetition Counting
+
+                                                    Anonymous CVPR submission
+
+                                                            Paper ID DRAFT
+
+
+                                 Abstract                                   may slow down while another accelerates, a third may pause,         035
+                                                                            and tracks may contain gaps caused by occlusion. A single           036
+                                                                            response curve for the whole frame can therefore mix iden-          037
+ 001                 DRAFT — RESULTS PENDING                                tities and incompatible time scales, producing a plausible          038
+                                                                            scene total while assigning the wrong count to each person.         039
+ 002     Multi-person repetitive action counting (MRAC) must assign
+                                                                                Repetition counting has progressed from online local            040
+ 003     repetitions to the correct person even when several people
+                                                                            cycle estimation [4] and motion-frequency analysis [8] to           041
+ 004     act asynchronously and each person accelerates, deceler-
+                                                                            learned temporal self-similarity, density regression, and           042
+ 005     ates, pauses, or disappears behind an occluder. The Mul-
+                                                                            dynamic-query models [1, 3, 6]. ESCounts studies exemplar-          043
+ 006     tiCounter family jointly learns detection, association, and
+                                                                            conditioned counting and predicts one target density/count          044
+ 007     counting from annotated RGB videos, while label-efficient
+                                                                            stream [9]. SkimFocusNet studies exemplar-selected mul-             045
+ 008     pose counters are primarily developed for a single dominant
+                                                                            tiple action types [15]. These advances largely assume one          046
+ 009     actor. We study the complementary setting in which a count-
+                                                                            counted stream. MultiCounter formalizes multi-instance              047
+ 010     ing model receives identity-indexed pose tracks but uses no
+                                                                            repetitive action counting and jointly predicts people, iden-       048
+ 011     person-wise count or period annotation during its intended
+                                                                            tities, periodic intervals, and counts [10]; MultiCounter+          049
+ 012     counting training. Our proposed design shares one pose
+                                                                            strengthens temporal identity consistency and long/short-           050
+ 013     encoder and a bank of tempo experts across people while
+                                                                            period awareness [11]. Consequently, multi-person, person-          051
+ 014     keeping temporal state separate for every identity. Within
+                                                                            wise, asynchronous, and variable-speed counting are estab-          052
+ 015     overlapping windows, masked period evidence drives a soft
+                                                                            lished problems rather than novelty claims of this paper.           053
+ 016     fast–medium–slow router. Expert responses are fused by nor-
+ 017     malized overlap-add, after which each identity is decoded              The remaining opportunity lies at the intersection of super-    054
+
+ 018     once, removing the direct arithmetic double-counting path          vision, modality, and temporal granularity. Existing MRAC           055
+
+ 019     created by summing independent windows. The primary out-           systems are trained as supervised RGB pipelines, whereas            056
+
+ 020     put is a person-wise count vector rather than only a scene         pose-based and label-efficient counting has been developed          057
+
+ 021     total. Experimental evidence is pending synchronization            mostly for a single instance. PoseRAC exploits salient poses        058
+
+ 022     with the collaborator’s frozen implementation and audited          in an open-set, zero-shot framework [13]; D2 -STX combines          059
+
+ 023     MultiRep runs. The current manuscript is an evidence-gated         RGB and pose streams [12]; and PAMS learns pose repre-              060
+
+ 024     pre-results specification: exact auxiliary losses, frontend        sentations through period-adaptive multi-scale consistency          061
+
+ 025     choices, and every empirical statement remain blocked until        without repetition annotations [2]. PAMS also evaluates ro-         062
+
+ 026     they are reconciled with frozen code and machine-readable          bustness under uniform global speed resampling, but it does         063
+
+ 027     artifacts.                                                         not separate simultaneous identities. Conversely, MRAC              064
+                                                                            identity mechanisms do not directly provide an annotation-          065
+                                                                            efficient, pose-driven counter whose tempo assignment can           066
+                                                                            change from window to window along one person’s track.              067
+ 028     1. Introduction
+                                                                                We study that constrained setting. An upstream percep-          068
+ 029     Repetitive motion is a useful measurement primitive. Exer-         tion system supplies identity-indexed pose tracks and validity      069
+ 030     cise coaching, rehabilitation, industrial monitoring, sports       masks. The counting model shares its encoder and tempo              070
+ 031     analysis, and human–robot interaction all require more than        experts across people, but maintains independent buffers,           071
+ 032     recognizing that an action repeats: a system must determine        routing weights, and output streams for each identity. A            072
+ 033     how often each participant repeats it. In an uncontrolled          masked local period estimate selects a soft mixture of fast,        073
+ 034     scene, however, people need not move together. One person          medium, and slow experts within every overlapping win-              074
+
+
+                                                                        1
+ CVPR                                                                                                                                           CVPR
+#DRAFT                                                                                                                                         #DRAFT
+                              CVPR 2027 Submission #DRAFT. CONFIDENTIAL REVIEW COPY. DO NOT DISTRIBUTE.
+
+
+
+ 075     dow. Instead of counting windows and adding their integer             uses exemplar-conditioned correspondence during training         127
+ 076     outputs, the model stitches continuous responses with nor-            and learns a latent used for exemplar-free, zero-shot infer-     128
+ 077     malized overlap-add and performs one final peak extraction            ence [9]; SkimFocusNet combines coarse contextual guid-          129
+ 078     per track. This ordering makes the window boundary explicit           ance with fine-grained views. Multi-RepCount evaluates           130
+ 079     and removes the direct arithmetic path by which one repeti-           exemplar-specified counting of one target action category        131
+ 080     tion can be independently counted in two overlapping win-             in videos containing multiple repetitive-action categories,      132
+ 081     dows; it does not guarantee immunity to phase-misaligned              whereas MultiRep evaluates per-person counting for simul-        133
+ 082     responses.                                                            taneous human instances [10, 15].                                134
+ 083         Figure 1 contrasts the target output with a mixed single-
+ 084     stream counter. The formulation does not assume that track-
+ 085     ing errors have been solved: predicted-track experiments              Pose-based and label-efficient counting. Pose represen-          135
+ 086     must expose their effect, while oracle-track experiments iso-         tations reduce appearance dependence and expose articu-          136
+ 087     late the counting module. It also does not call the whole             lated motion directly. PoseRAC models actions through            137
+ 088     system free of all labels. A detector, pose estimator, tracker,       salient poses, uses foundation generative models to synthe-      138
+ 089     or backbone may have external supervision; the narrower               size pose-conditioned training data, and incorporates CLIP       139
+ 090     intended property is that the counting objective consumes             text embeddings for open-set counting, enabling zero-shot        140
+ 091     no person-wise repetition count or period labels.                     prediction without real benchmark training samples [13];         141
+ 092         The paper makes three falsifiable, currently evidence-            zero-shot prediction should not be conflated with a self-        142
+ 093     gated contributions:                                                  supervised training objective. D2 -STX instead fuses RGB         143
+ 094     • We formulate a pose-driven MRAC training setting whose              and pose through decoupled spatial and temporal cross-           144
+ 095        intended counting loss uses no person-wise count or pe-            attention [12]. PAMS learns from unlabeled skeleton se-          145
+ 096        riod annotations, while explicitly accounting for externally       quences using period-adaptive multi-scale temporal consis-       146
+ 097        supervised perception components. This supervision state-          tency and combines inference-time counting experts [2]. Its      147
+ 098        ment must be verified against the frozen training graph            expert consensus is not a learned fast–medium–slow mixture,      148
+ 099        before submission.                                                 and its single-stream formulation does not preserve multi-       149
+ 100     • We propose track-indexed, window-level tempo routing                ple identities. Our intended use of pose and PAMS-TCC is         150
+ 101       with shared parameters and per-track state, followed by             therefore a foundation, not a novelty claim; the proposed        151
+ 102        response-domain overlap-add and one track-level decod-             distinction is track-indexed local routing in MRAC under         152
+ 103        ing pass. Its benefit must be separated from the effects of        a no-count-label objective. Local routing and normalized         153
+ 104        tracking and the PAMS representation through controlled            overlap-add are generic operations and are not claimed as        154
+ 105        ablations.                                                         independent inventions; any defensible novelty must come         155
+ 106     • We establish an evaluation contract that pairs the official         from their audited role in the stated MRAC supervision and       156
+ 107        MultiRep counting metrics with oracle/predicted-track pro-         non-stationary-tempo setting.                                    157
+ 108        tocols, tracking diagnostics, non-stationary-tempo stress
+ 109        tests, and person-count scaling. Every final table cell must
+ 110        be generated from a frozen result manifest.
+                                                                               Multi-instance repetition counting. MultiCounter de-             158
+ 111         This pre-results draft freezes the scientific story and its
+                                                                               fines MRAC and introduces MultiRep, learning detection,          159
+ 112     evidence requirements; it does not assert that the multi-
+                                                                               association, period localization, and person-wise counting       160
+ 113     person modules are already implemented or that the pro-
+                                                                               jointly [10]. MultiCounter+ improves robustness and ef-          161
+ 114     posed method outperforms any baseline.
+                                                                               ficiency with a dynamically updated Siamese query and            162
+
+ 115     2. Related Work                                                       anchor-guided similarity reconstruction that represents long     163
+                                                                               and short periods [11]. These systems already address asyn-      164
+ 116     Single-instance counting and tempo modeling. Early                    chronous people, variable speeds, pauses, and identity conti-    165
+ 117     learned counters estimated a local cycle length in an                 nuity. Our proposed setting differs along a narrower axis: an    166
+ 118     online window [4], while motion-centric methods used                  upstream tracker supplies masked pose tracks, the counting       167
+ 119     time-varying flow differentials and wavelets to address               objective is intended to avoid person-wise count and period      168
+ 120     non-stationary repetition [8]. RepNet used temporal self-             labels, and tempo specialization varies across local windows     169
+ 121     similarity as an intermediate representation bottleneck and           of each identity. This modular design is not described as        170
+ 122     introduced Countix as an in-the-wild benchmark for class-             end-to-end, and any comparison to native MRAC systems            171
+ 123     agnostic repetition counting [1]. TransRAC regresses a den-           must disclose the different input and supervision protocols.     172
+ 124     sity map from multi-scale temporal correlations [3], and              Appendix 5 makes these boundaries explicit; it also prevents     173
+ 125     DeTRC represents cycles with dynamic action queries un-               generic local routing or overlap-add from being presented as     174
+ 126     der a single-primary-action assumption [6]. ESCounts                  a standalone novelty.                                            175
+
+
+                                                                           2
+ CVPR                                                                                                                                                                                       CVPR
+#DRAFT                                                                                                                                                                                     #DRAFT
+                                           CVPR 2027 Submission #DRAFT. CONFIDENTIAL REVIEW COPY. DO NOT DISTRIBUTE.
+
+
+
+
+               Input: identity-indexed pose tracks with asynchronous, within-track tempo changes                               P1   ━━━            P2 – – –        Pn ·····
+
+
+
+
+              (a) Pooled, single-stream response                                           (b) Person-wise, window-local target
+                                                                                                                              Fast — solid     Medium – – dashed   Slow ··· dotted
+
+
+                   X1 , m 1                                                                                     r1(t)
+                                                                  one response r(t)            X1 , m 1                                                                        ĉ1
+
+
+                   X2 , m 2
+                                          pool
+                                                                                                                r2(t)
+                                                                                               X2 , m 2                                                                        ĉ2
+
+                   Xn , m n
+
+
+                                                                       one scalar                               rn(t)
+                                                                           ĉ                   Xn , m n                                                                        ĉn
+
+
+
+                               Identity-specific tempo is not explicit after pooling                      person-wise count
+                                                                                                                                      ĉ = [ĉ1, ĉ2, …, ĉn]T
+                                                                                                                     vector
+
+
+
+
+         Figure 1. Target task and output. The left panel is a naı̈ve pooled single-stream failure mode, not MultiCounter or MultiCounter+. A
+         frame-level response can mix people who move at different and changing rates (left). We instead retain identity-indexed masked pose tracks,
+         estimate tempo locally within each track, and return a person-wise count vector (right). The scene total is only a derived diagnostic. This is a
+         problem illustration, not result evidence.
+
+
+ 176     3. Method                                                                                           primary prediction is                                                          201
+
+ 177     Status boundary. This section is a provisional method                                                                       ĉ = [ĉ1 , . . . , ĉN ]⊤ ∈ NN                 (2)    202
+                                                                                                                                                                   0
+ 178     contract for synchronizing the paper with the collaborator’s
+ 179     frozen implementation. It defines the intended data flow and                                                            P
+                                                                                                             The optional total i ĉi is a diagnostic rather than the task                  203
+ 180     the boundary between upstream perception and counting.                                              definition. Under oracle tracks, index i denotes a ground-                     204
+ 181     Components marked SYNC-REQUIRED are not asserted                                                    truth person and Equation 2 is person-wise. Under predicted                    205
+ 182     as implemented or validated. If the frozen code differs from                                        tracks it denotes a tracker output, so the raw vector is track-                206
+ 183     this contract, the equations and prose must change to match                                         wise: fragmentation may create several entries for one person                  207
+ 184     the code. The narrow supervision statement used throughout                                          and a merge may combine people. Person-wise predicted-                         208
+ 185     this draft is “without person-wise count or period supervision                                      track metrics are defined only after the frozen evaluator’s                    209
+ 186     in the intended counting objective”; it does not describe the                                       matching step. The counter cannot undo an identity switch                      210
+ 187     supervision used by the upstream detector, pose estimator,                                          already embedded in its input; Section 4 therefore separates                   211
+ 188     tracker, or any pretrained representation.                                                          oracle and predicted tracks.                                                   212
+                                                                                                                The design in Figure 2 uses a shared pose encoder and                       213
+ 189     3.1. Problem Formulation and Overview
+                                                                                                             a shared bank of fast, medium, and slow experts. “Person-                      214
+ 190     Given a video, an upstream detector, pose estimator, and                                            specific” means that observations, masks, temporal buffers,                    215
+ 191     multi-object tracker produce N identity-indexed pose tracks.                                        routing variables, and outputs are indexed by identity; it                     216
+ 192     Track i consists of joint coordinates and a validity mask                                           does not mean that a separate parameter set is instantiated                    217
+                                                                                                             for every person or that an identity embedding conditions                      218
+                              Xi = [xi1 , . . . , xiTi ] ∈ RTi ×J×C                                          the network. Computation is track-indexed and otherwise                        219
+ 193                                                                                         (1)             independent across people. Each track is processed in over-                    220
+                              mi = [mi1 , . . . , miTi ] ∈ {0, 1}Ti
+                                                                                                             lapping windows, whose continuous responses are fused                          221
+                                                                                                             before any discrete counting decision.                                         222
+ 194     Here Ti is the temporal extent, J the joint count, C the
+ 195     coordinate dimension, and mit = 1 denotes a usable pose
+                                                                                                             3.2. Identity-Conditioned Local Encoding                                       223
+ 196     at time t. Missing observations keep their original time
+ 197     indices and are masked rather than deleted. An upstream                                             A single track can accelerate, decelerate, pause, or contain                   224
+ 198     frontend may additionally expose joint-level visibility or                                          observation gaps, so we do not assign one speed to the whole                   225
+ 199     confidence, but its deterministic reduction to mit must be                                          person. Let L and S denote window length and stride, and let                   226
+ 200     recorded in the synchronized preprocessing contract. The                                            siℓ be the start of window ℓ. Its local input at u ∈ {1, . . . , L}            227
+
+
+                                                                                                      3
+ CVPR                                                                                                                                                                                                                                   CVPR
+#DRAFT                                                                                                                                                                                                                                 #DRAFT
+                                          CVPR 2027 Submission #DRAFT. CONFIDENTIAL REVIEW COPY. DO NOT DISTRIBUTE.
+
+
+
+
+                  Upstream                                                                                           RAC method boundary                                        PAPER SPECIFICATION · IMPLEMENTATION SYNC
+                  perception                                                                                identity-conditioned, window-local tempo adaptation                                  PENDING
+              outside method boundary
+
+
+
+
+                 video → detector
+                                                                                                                                         Shared tempo
+                 → pose → tracker                                                                                                          experts
+                                                                     Shared pose                                  Soft tempo                                                                                  One final peak
+                                           Masked tracks                                                                                    Fast — solid                                   Normalized
+                                                                       encoder          Local windows               router                                             Weighted                                     pass
+                                                                                                                                                                                           overlap-add
+                                           {Xi, mi, si}i=1N              Eθ            + period evidence             αi,k,e                                             fusion
+                                                                                                                                                                                               ri(t)            per identity
+                                            state per identity        same θ for all          pi,k              PROVISIONAL ·                                         Σe αi,k,eri,k,e
+                                                                                                                                        Medium – – dashed                                 blend boundaries    ĉ = [ĉ1, …, ĉN]T
+                                                                        identities                                 SYNC
+
+                   tracked poses                                                                                                           Slow ··· dotted
+                     {idi, Xi, mi}
+
+
+
+
+                                                                                                                          Training signals
+                                                                                                        dashed links; routing and continuity terms are provisional
+                Oracle and predicted
+                 tracks are reported     Track continuity on {si}                      PAMS-TCC objective      Routing consistency
+                     separately                                                                                                                  * DEFINITIONS AND WEIGHTS REQUIRE IMPLEMENTATION SYNCHRONIZATION
+                                                 Lcont *                                     LTCC                    Lroute *
+
+
+
+
+         Figure 2. Provisional method contract. The upstream detector, pose estimator, and tracker are outside the counting boundary. Within it,
+         parameters are shared across identities while masks, state, local tempo, and output responses remain identity-indexed. Window responses are
+         fused by normalized overlap-add before one final decoding pass per track. Dashed elements require synchronization with frozen training
+         code.
+
+
+ 228     is                                                                                                                The support mask is retained separately so a zero-filled lag is                                              248
+ 229                 xiℓu = xi,siℓ +u−1 ,                           miℓu = mi,siℓ +u−1                      (3)            never treated as observed evidence. For a deterministic taper                                                249
+                                                                                                                           h, let F be the nonzero frequency bins in cycles per frame                                                   250
+ 230     Out-of-range positions are padded with zero mask values.
+                                                                                                                           whose reciprocal periods lie inside the declared range. We                                                   251
+ 231     A shared encoder Eθ maps each masked window to embed-
+                                                                                                                           use the magnitude of the tapered autocorrelation transform                                                   252
+ 232     dings
+                                                                                                                           as a routing score, not as a calibrated physical power spectral                                              253
+ 233             Ziℓ = Eθ (Xiℓ , miℓ ) = [ziℓ1 , . . . , ziℓL ] ∈ RL×d                                      (4)            density                                                                                                      254
+
+
+ 234     Invalid positions are excluded from aggregation, period ev-                                                                       Piℓ (f ) = |FFT(h ⊙ Aiℓ )f |
+ 235     idence, and counting responses. Independent application                                                                                    ∗
+                                                                                                                                                   fiℓ = arg max Piℓ (f ),                                       ∗
+                                                                                                                                                                                                       p̂iℓ = 1/fiℓ              (7)    255
+                                                                                                                                                                     f ∈F
+ 236     of the same encoder places people in one representation
+ 237     space without pooling their temporal state; d denotes the                                                                                                                                                                      256
+                                                                                                                                                                             ∗
+                                                                                                                                                                       Piℓ (fiℓ )
+ 238     embedding dimension.                                                                                                                                γiℓ = P                                                             (8)    257
+                                                                                                                                                                    f ∈F Piℓ (f ) + ϵ
+ 239     3.3. Local Period Evidence and Soft Routing
+                                                                                                                            Here p̂iℓ is measured in frames and is converted to seconds                                                 258
+ 240     We derive routing evidence within each window. With a                                                              only with the manifest-bound frame rate. The contract stops                                                 259
+ 241     fixed numerical stabilizer ϵ > 0, the valid-frame mean is                                                          the direct gradient from this evidence branch into the en-                                                  260
+                                  PL                                                                                        coder; encoder updates can still change routing evidence                                                    261
+                                          miℓu ziℓu                                                                         on later optimization steps. A router maps the descriptor
+ 242                       z̄iℓ = Pu=1L
+                                                                   (5)                                                                                                                                                                  262
+                                      u=1 miℓu + ϵ                                                                          qiℓ = [log p̂iℓ , γiℓ ]⊤ to a probability simplex over shared ex-                                           263
+                                                                                                                            perts K = {f, m, s}. Let π 0 be a fixed fallback distribution                                               264
+ 243     On the uniform lag grid δ ∈ {0, . . . , L − 1}, let niℓ (δ) =                                                      for a supported but low-confidence window                                                                   265
+         PL−δ
+ 244       u=1 miℓu miℓ,u+δ . Write e ziℓu = ziℓu − z̄iℓ . We define
+ 245     a mask-normalized, non-circular autocorrelation and deter-                                                                                            eiℓ = softmax(Rψ (qiℓ ))
+                                                                                                                                                               g
+ 246     ministically zero-fill unsupported grid locations                                                                                                               eiℓ + (1 − γiℓ )π 0
+                                                                                                                                                               giℓ = γiℓ g
+                                                                                                                                                      X                                                                          (9)    266
+                                        L−δ
+                                        X                                                                                                                     giℓk = 1
+                       Qiℓ (δ) =               miℓu miℓ,u+δ ⟨e      ziℓ,u+δ ⟩
+                                                             ziℓu , e                                                                                 k∈K
+ 247                                    u=1                                                                 (6)
+                                        1[niℓ (δ) ≥ nmin ]Qiℓ (δ)                                                          An eligibility flag viℓ ∈ {0, 1} is one only when the win-                                                   267
+                        Aiℓ (δ) =                                                                                          dow meets the frozen minimum valid-pair, minimum-cycle,                                                      268
+                                                niℓ (δ) + ϵ
+
+                                                                                                                     4
+ CVPR                                                                                                                                             CVPR
+#DRAFT                                                                                                                                           #DRAFT
+                               CVPR 2027 Submission #DRAFT. CONFIDENTIAL REVIEW COPY. DO NOT DISTRIBUTE.
+
+
+
+ 269     activity, and spectral-prominence rules. If viℓ = 0, the im-           For Period-mAP evaluation, the event set must expose              315
+ 270     plementation assigns a tensor-shape-only reference period,          more than its cardinality. The synchronized adapter must             316
+ 271     sets γiℓ = 0, and forces the window response to zero; it does       export each proposal as                                              317
+ 272     not route a pause or unsupported window through a counting
+                                                                                                            s      e
+ 273     expert. The exact activity statistic, thresholds, harmonic-                           êij = (i, τ̂ij , τ̂ij , ŝij , Bbij )    (13)     318
+ 274     selection rule, and whether a learned null expert replaces
+ 275     this deterministic gate remain synchronization-required. Be-        where the tuple contains its track identity, temporal bounds,        319
+ 276     cause giℓ is local, it may change between adjacent windows          confidence, and the spatial/track support required by the            320
+ 277     of one identity. Soft assignment also lets an ambiguous tran-                                                           bi |. Exact
+                                                                             frozen official evaluator. The count remains ĉi = |P                321
+ 278     sition combine neighboring experts rather than commit to a          interval construction, score calibration, and evaluator match-       322
+ 279     hard tempo bin. The minimum support, confidence calibra-            ing remain blocked until that adapter is bound to code and           323
+ 280     tion, and whether π 0 is uniform or period-conditioned are          tests.                                                               324
+ 281     synchronization-required. Expert-use histograms, entropy,
+ 282     and specialization curves must diagnose routing collapse.           3.5. Training and Synchronization Boundary                           325
+
+                                                                             The intended representation objective builds on PAMS-TCC             326
+ 283     3.4. Expert Fusion and Boundary Handling                            [2], which uses temporally adjacent and cyclically corre-            327
+ 284     Each expert Fϕk predicts a nonnegative response over one            sponding positives across temporal scales, together with             328
+ 285     masked window. Parameters ϕk are shared across identities,          negatives from other temporal locations, other videos, and           329
+ 286     while each response remains identity-indexed                        different clusters. At the method-contract level, training is        330
+                       (k)
+                                                                             represented by                                                       331
+                      riℓ = Fϕk (Ziℓ , miℓ , p̂iℓ ) ∈ RL
+                                                       ≥0
+ 287
+                                      X           (k)            (10)           L = LPAMS-TCC + λroute Lroute + λtrack Ltrack            (14)     332
+                      riℓu = viℓ miℓu    giℓk riℓu
+                                        k∈K
+                                                                             The reserved routing term should transform assignments               333
+ 288     Summing integer window counts creates a direct arithmetic           equivariantly under declared tempo changes rather than force         334
+ 289     double-counting path for cycles that straddle an overlap.           invariance to them. By default, the reserved track term              335
+ 290     We instead reconstruct a single response for each identity.         may connect observations only across gaps that retain one            336
+ 291     With a taper au ≥ amin > 0 on every covered frame and               supplied track identity. It does not join fragments carrying         337
+ 292     Λi (t) = {(ℓ, u) : t = siℓ + u − 1}, normalized overlap-add         different tracker IDs; any such re-association would be a            338
+ 293     gives                      P                                        separate module with its own signal, supervision disclosure,         339
+                                       (ℓ,u)∈Λi (t) au riℓu                  and evaluation. These are responsibilities, not recovered loss       340
+ 294                 Rit = mit   P                              (11)
+                                    (ℓ,u)∈Λi (t) au miℓu + ϵ
+                                                                             definitions.                                                         341
+                                                                             SYNC-REQUIRED. Equation 14 is not yet a complete                     342
+ 295     The ratio replaces the direct coverage-count scaling of an
+                                                                             trainable algorithm: it does not specify what trains expert          343
+ 296     unnormalized sum with an ϵ-stabilized valid-taper weighted
+                                                                             responses or the decoder, how experts specialize, how router         344
+ 297     average and excludes padding from the denominator. Its
+                                                                             collapse is prevented, or how scores are calibrated. Syn-            345
+ 298     amplitude can still vary with the responses being averaged
+                                                                             chronization must recover the exact architectures, response          346
+ 299     and retains a small support-dependent bias when ϵ > 0,
+                                                                             targets or self-supervised signals, pseudo-target provenance,        347
+ 300     which the evaluation contract audits explicitly. Only then
+                                                                             formulas, sample construction, weights, gradient paths, fron-        348
+ 301     does a track-level decoder D extract repetition events
+                                                                             tend, track normalization, period range, window schedule,            349
+ 302          bi = D(Ri , mi , {p̂iℓ , γiℓ }ℓ ),
+              P                                           bi |
+                                                   ĉi = |P      (12)        fallback route, and decoding settings. Every use of count,           350
+                                                                             period, or identity annotations in training, tuning, calibration,    351
+ 303     Thus overlapping windows never contribute separately                and checkpoint selection must be disclosed. No contribution          352
+ 304     rounded counts. Fusion does not by itself guarantee a sin-          or result claim depending on these items is admissible before        353
+ 305     gle peak when window responses are phase-misaligned;                source anchors, tests, and ablation evidence exist.                  354
+ 306     boundary-straddling tests must measure whether the fused
+ 307     decoder reduces such errors. The frozen implementation              4. Experiments                                                       355
+ 308     must determine the taper, coverage rule, peak threshold, pe-
+ 309     riod aggregation, and minimum-distance rule. Constant mo-           Pre-results status. This section fixes the evaluation ques-          356
+ 310     tion, pauses, contiguous gaps, alternating masks, harmonic          tions, protocols, and table schemas; it contains no new-             357
+ 311     ambiguity, and boundary-straddling cycles are mandatory             method measurement or empirical conclusion. Red entries              358
+ 312     unit-test cases. The mask-normalized estimator in Equa-             are controlled evidence fields. Historical UCFRep dev84              359
+ 313     tion 6 is not pairwise variance-normalized, so corruption           diagnostics, proxy readouts, and runs involving an untrained         360
+ 314     tests must also quantify mask-induced spectral artifacts.           random Period Head are ineligible for every table below.             361
+
+
+                                                                         5
+ CVPR                                                                                                                                           CVPR
+#DRAFT                                                                                                                                         #DRAFT
+                              CVPR 2027 Submission #DRAFT. CONFIDENTIAL REVIEW COPY. DO NOT DISTRIBUTE.
+
+
+
+ 362     4.1. Evaluation Contract                                            Metrics and uncertainty. Using the frozen official evalua-         411
+                                                                             tor, we will report Period-mAP, AP50, AP75, AvgMAE,                412
+ 363     Data and integrity. The primary benchmark will be the
+                                                                             and AvgOBO, together with a matched person-count er-               413
+ 364     exact MultiRep release PENDING under its official PEND -
+                                                                             ror diagnostic after the evaluator’s frozen matching step.         414
+ 365     ING protocol. The original MultiCounter paper specifies
+                                                                             Period-mAP under common predicted tracks is the confir-            415
+ 366     1,157 synthetic videos, 52,590 periodic events, and a 7:2:1
+                                                                             matory metric; the primary contrast is our method minus            416
+ 367     train/validation/test split, while the current MultiCounter+
+                                                                             track-conditioned PAMS on identical videos and frontend            417
+ 368     repository reports the same size and provides a download
+                                                                             outputs. A claim of improvement requires the lower endpoint        418
+ 369     without a versioned release identifier or checksums [10, 11].
+                                                                             of its paired 95% interval to be above zero. Native-pipeline       419
+ 370     The final manifest must therefore bind the release identi-
+                                                                             rows are descriptive and cannot establish non-inferiority or       420
+ 371     fier, download source and time, video/annotation/split SHA-
+                                                                             superiority under a common-input protocol.                         421
+ 372     256 digests, evaluator revision, and preprocessing finger-
+                                                                                Every reproducible method uses at least three pre-              422
+ 373     print. A run is table-ineligible if any binding is missing
+                                                                             registered seeds, reported as mean and between-seed sam-           423
+ 374     or if incompatible artifacts are mixed. Before model com-
+                                                                             ple standard deviation. The confirmatory interval uses one         424
+ 375     parison, a frozen dataset characterization report must give
+                                                                             pre-declared paired hierarchical bootstrap: each replicate         425
+ 376     split-level counts of videos, ground-truth people, events,
+                                                                             resamples completed seed pairs and then videos within each         426
+ 377     active-person levels, within-track tempo dispersion, detected
+                                                                             sampled seed, retaining every identity of a sampled video          427
+ 378     accelerations/decelerations, pauses, observation gaps, and
+                                                                             and recomputing Period-mAP from event records rather than          428
+ 379     identities with enough cycles for every declared window
+                                                                             averaging per-video AP. Its point estimate is the mean of          429
+ 380     length. Stratum definitions and counts are fixed before look-
+                                                                             paired seed-level differences. The manifest fixes the resam-       430
+ 381     ing at method errors.
+                                                                             ple count, random seed, failed-run policy, and exact numbers       431
+                                                                             of completed seeds, videos, people, and events. Secondary          432
+                                                                             ablations are exploratory, with family-wise Holm correc-           433
+ 382     Oracle and predicted tracks. The oracle-track protocol
+                                                                             tion if formal significance statements are made. Official          434
+ 383     supplies official person identities and spatial support, iso-
+                                                                             single-checkpoint numbers remain explicitly marked and             435
+ 384     lating repetition counting from detection and association.
+                                                                             are excluded from variance and significance claims. Test           436
+ 385     The predicted-track protocol uses one frozen detector–pose–
+                                                                             annotations are not used for tuning, checkpoint selection,         437
+ 386     tracker frontend for all compatible track-conditioned coun-
+                                                                             routing calibration, or early stopping.                            438
+ 387     ters. Native joint MRAC systems retain their audited of-
+                                                                                The numerical stabilizer ϵ is fixed before evaluation in        439
+ 388     ficial pipelines and appear in a separate contextual block,
+                                                                             the units of each denominator. A sensitivity check spans           440
+ 389     not as if their inputs were controlled. Against ground-truth
+                                                                             representable smaller and larger values and reports changes        441
+ 390     identities and spatial support, HOTA and its DetA, AssA,
+                                                                             in response amplitude and count metrics by valid support;          442
+ 391     and LocA components [5] diagnose predicted-track detec-
+                                                                             it must expose, rather than hide, any coverage dependence          443
+ 392     tion, association, and localization quality. IDF1 and ID-
+                                                                             introduced by Equations 5 and 11.                                  444
+ 393     switch counts [7] provide complementary identity-duration
+ 394     and temporal-association diagnostics. When the same frozen
+ 395     tracks feed several counters, these tracking values must be         Baselines and supervision. The mandatory native base-              445
+ 396     identical and cannot be credited as counting gains.                 lines are MultiCounter and MultiCounter+ [10, 11]. Under           446
+                                                                             the common track interface we adapt RepNet [1], Tran-              447
+                                                                             sRAC [3], PoseRAC [13], and PAMS [2]; DeTRC [6]                    448
+ 397     Evaluator-ready outputs. Each counter adapter must emit             and D2 -STX [12] are candidate baselines and enter only if         449
+ 398     the scored event tuples in Equation 13, the raw per-track           runnable public implementations are available and their out-       450
+ 399     count vector, and the exact spatial support expected by the         put semantics pass the experiment audit. Tables disclose in-       451
+ 400     pinned evaluator. Oracle tracks retain official identity sup-       put modality, training labels, track source, run count, adapter    452
+ 401     port. Predicted tracks remain separate through evaluation:          code, crop/pose construction, training split, tuning budget,       453
+ 402     the manifest-bound adapter must specify one determinis-             pretrained checkpoint, and output conversion. Comparisons          454
+ 403     tic matching policy and how unmatched, duplicated, frag-            across supervision regimes are accuracy–annotation trade-          455
+ 404     mented, merged, and identity-switched tracks become false           offs, not claims of identical training information.                456
+ 405     positives or false negatives. No post-hoc fragment joining is
+ 406     allowed unless it is a separately audited method component.
+                                                                             4.2. Primary Questions                                             457
+
+ 407     Adapter source, tests, and per-instance outputs are required        The evaluation is organized around four questions. First,          458
+ 408     before Period-mAP or matched person-wise count metrics              how does a no-count-label pose counter compare on person-          459
+ 409     become table-eligible. Predicted-track outputs are called           wise oracle-track MRAC and on matched predicted tracks?            460
+ 410     track-wise until this matching is applied.                          Second, does local routing help beyond a track-conditioned         461
+
+
+                                                                         6
+ CVPR                                                                                                                                           CVPR
+#DRAFT                                                                                                                                         #DRAFT
+                              CVPR 2027 Submission #DRAFT. CONFIDENTIAL REVIEW COPY. DO NOT DISTRIBUTE.
+
+
+
+ 462     PAMS base when tempo changes within one identity? Third,             tion through oracle/predicted tracks, corruption analysis, and    514
+ 463     does response-domain overlap-add reduce boundary er-                 population-scaling measurements. Until those gates close,         515
+ 464     rors relative to summing independently decoded windows?              the paper remains provisional and data-pending. MultiRep is       516
+ 465     Fourth, how do tracking errors, active-person count, and up-         synthetic, and single-person transfer cannot establish multi-     517
+ 466     stream preprocessing affect robustness and efficiency? Each          person identity preservation; absent a real multi-person eval-    518
+ 467     question has a named table or figure and an associated claim         uation, any eventual conclusion must remain restricted to         519
+ 468     that remains withheld until the evidence audit passes. The           MultiRep and the declared controlled tracker corruptions.         520
+ 469     mechanism study must also compare against running PAMS
+ 470     independently per track, sliding-window PAMS without a
+ 471     learned router, deterministic tempo bins, non-overlapping
+ 472     and center-crop decoding, uniform response averaging, and
+ 473     phase-aligned fusion.
+ 474         The quantitative interpretation of Table 1 remains with-
+ 475     held until every displayed binding passes the empirical au-
+ 476     dits.
+ 477         The ablation interpretation remains withheld until all
+ 478     rows share one frozen protocol and have the required paired
+ 479     records. The full mechanism study also removes each com-
+ 480     ponent one at a time, crosses local-tempo estimation, routing,
+ 481     and stitching in a small factorial design, matches single- and
+ 482     multi-expert capacity, tests experts with and without direct
+ 483     p̂, and reports route occupancy, entropy, collapse, and spe-
+ 484     cialization by tempo stratum.
+ 485         The appendix pre-registers router variants, expert counts,
+ 486     local-versus-global tempo, shared batched execution ver-
+ 487     sus independent same-checkpoint replicas, boundary and
+ 488     continuity ablations, tempo/occlusion/identity-switch stress,
+ 489     cross-dataset transfer, and latency, memory, FLOPs, and
+ 490     throughput as the number of active identities grows. All
+ 491     plots and tables must be generated from frozen JSON, CSV,
+ 492     or Parquet records; manually transcribed values are inadmis-
+ 493     sible.
+
+ 494     5. Conclusion and Limitations
+ 495     We specify a pose-driven MRAC counter for people whose
+ 496     pace changes within a track. The central design separates
+ 497     identity state while sharing parameters, routes overlapping
+ 498     windows from local period evidence, fuses continuous re-
+ 499     sponses by normalized overlap-add, and decodes each track
+ 500     once. The setting does not remove all annotation and does
+ 501     not jointly optimize perception and counting: the counting
+ 502     objective is intended to avoid person-wise count and period
+ 503     labels, while upstream perception may use external supervi-
+ 504     sion.
+ 505        This draft has three material limitations. The current
+ 506     local checkout contains only a single-person PAMS repro-
+ 507     duction; the multi-person data path, router, continuity loss,
+ 508     and boundary decoder await synchronization with collabo-
+ 509     rator code. No eligible MultiRep artifact has been received,
+ 510     so the manuscript makes no performance claim. Finally,
+ 511     a modular pose/track pipeline inherits missed detections
+ 512     and identity switches and may scale with the number of
+ 513     active people. The final study must quantify each limita-
+
+
+                                                                          7
+ CVPR                                                                                                                                              CVPR
+#DRAFT                                                                                                                                            #DRAFT
+                                 CVPR 2027 Submission #DRAFT. CONFIDENTIAL REVIEW COPY. DO NOT DISTRIBUTE.
+
+
+
+         Table 1. Planned MultiRep main results. Reproducible rows will show the mean and sample standard deviation over pre-registered seeds;
+         official single-checkpoint rows will be marked. Protocol blocks answer different questions and will not be pooled into one ranking.
+
+                      Method            Track protocol       Count supervision Period-mAP↑ AP50↑ AP75↑ AvgMAE↓ AvgOBO↑
+                      Controlled oracle tracks
+                      RepNet          Oracle                 PENDING               PENDING   PENDING   PENDING   PENDING   PENDING
+                      TransRAC        Oracle                 PENDING               PENDING   PENDING   PENDING   PENDING   PENDING
+                      PoseRAC         Oracle                 PENDING               PENDING   PENDING   PENDING   PENDING   PENDING
+                      PAMS            Oracle                 PENDING               PENDING   PENDING   PENDING   PENDING   PENDING
+                      Ours            Oracle                 PENDING               PENDING   PENDING   PENDING   PENDING   PENDING
+
+                      Controlled common predicted tracks
+                      RepNet         Common predicted PENDING                      PENDING   PENDING   PENDING   PENDING   PENDING
+                      TransRAC       Common predicted PENDING                      PENDING   PENDING   PENDING   PENDING   PENDING
+                      PoseRAC        Common predicted PENDING                      PENDING   PENDING   PENDING   PENDING   PENDING
+                      PAMS           Common predicted PENDING                      PENDING   PENDING   PENDING   PENDING   PENDING
+                      Ours           Common predicted PENDING                      PENDING   PENDING   PENDING   PENDING   PENDING
+
+                      Native full-pipeline context; descriptive only
+                      MultiCounter Native                    PENDING               PENDING   PENDING   PENDING   PENDING   PENDING
+                      MultiCounter+ Native                   PENDING               PENDING   PENDING   PENDING   PENDING   PENDING
+
+
+
+         Table 2. Required protocol disclosure accompanying the main table. Native rows retain their official pipelines and are not pooled with
+         common-input rows. Every field is manifest-bound.
+
+                               Method            Result block   Input     Count labels Period labels Track source Runs
+                               RepNet        Common         PENDING       PENDING        PENDING       PENDING     PENDING
+                               TransRAC      Common         PENDING       PENDING        PENDING       PENDING     PENDING
+                               PoseRAC       Common         PENDING       PENDING        PENDING       PENDING     PENDING
+                               PAMS          Common         PENDING       PENDING        PENDING       PENDING     PENDING
+                               Ours          Common         PENDING       PENDING        PENDING       PENDING     PENDING
+                               MultiCounter Native context PENDING        PENDING        PENDING       PENDING     PENDING
+                               MultiCounter+ Native context PENDING       PENDING        PENDING       PENDING     PENDING
+
+
+
+
+         Table 3. Planned construction-path diagnostic under oracle tracks.
+         LT: local tempo; SR: soft routing; BS: boundary stitching; TC:
+         track-continuity objective. Causal conclusions use removals from
+         the full model and the factorial controls described below, not this
+         order-dependent path alone.
+
+            Variant         LT SR BS TC Period-mAP↑ AvgMAE↓
+            Track-PAMS                             PENDING      PENDING
+            + LT            ✓                      PENDING      PENDING
+            + SR            ✓    ✓                 PENDING      PENDING
+            + BS            ✓    ✓   ✓             PENDING      PENDING
+            + TC            ✓    ✓   ✓     ✓       PENDING      PENDING
+
+
+
+
+                                                                               8
+ CVPR                                                                                                                                                      CVPR
+#DRAFT                                                                                                                                                    #DRAFT
+                                CVPR 2027 Submission #DRAFT. CONFIDENTIAL REVIEW COPY. DO NOT DISTRIBUTE.
+
+
+
+ 521     References                                                                      Recognition (CVPR) Findings, pages 8205–8214, 2026. 1, 2,         577
+                                                                                         6                                                                 578
+ 522      [1] Debidatta Dwibedi, Yusuf Aytar, Jonathan Tompson, Pierre              [13] Ziyu Yao and Yuexian Zou. PoseRAC: Enhancing repetitive           579
+ 523          Sermanet, and Andrew Zisserman. Counting out time: Class                   action counting with salient poses. In Neural Information         580
+ 524          agnostic video repetition counting in the wild. In Proceedings             Processing: 31st International Conference, ICONIP 2024,           581
+ 525          of the IEEE/CVF Conference on Computer Vision and Pattern                  Proceedings, Part V, pages 255–270. Springer Nature Singa-        582
+ 526          Recognition (CVPR), pages 10384–10393, 2020. 1, 2, 6                       pore, 2025. 1, 2, 6                                               583
+ 527      [2] Shizhao Gao, Jun Li, and Qiming Li. Count what repeats:               [14] Yifu Zhang, Peize Sun, Yi Jiang, Dongdong Yu, Fucheng             584
+ 528          Period-adaptive multi-scale consistency for self-supervised                Weng, Zehuan Yuan, Ping Luo, Wenyu Liu, and Xinggang              585
+ 529          repetitive action counting. In Proceedings of the IEEE/CVF                 Wang. ByteTrack: Multi-object tracking by associating every       586
+ 530          Conference on Computer Vision and Pattern Recognition                      detection box. In Computer Vision – ECCV 2022, pages 1–21.        587
+ 531          (CVPR) Findings, pages 8143–8152, 2026. 1, 2, 5, 6, 10                     Springer Nature Switzerland, 2022. 10                             588
+ 532      [3] Huazhang Hu, Sixun Dong, Yiqun Zhao, Dongze Lian,                     [15] Zhengqi Zhao, Xiaohu Huang, Hao Zhou, Kun Yao, Errui              589
+ 533          Zhengxin Li, and Shenghua Gao. TransRAC: Encoding multi-                   Ding, Jingdong Wang, Xinggang Wang, Wenyu Liu, and Feng           590
+ 534          scale temporal correlation with transformers for repetitive                Bin. Skim then focus: Integrating contextual and fine-grained     591
+ 535          action counting. In Proceedings of the IEEE/CVF Conference                 views for repetitive action counting. International Journal of    592
+ 536          on Computer Vision and Pattern Recognition (CVPR), pages                   Computer Vision, 133(9):6347–6361, 2025. 1, 2                     593
+ 537          18991–19000, 2022. 1, 2, 6
+ 538      [4] Ofir Levy and Lior Wolf. Live repetition counting. In Pro-
+ 539          ceedings of the IEEE International Conference on Computer
+                                                                                    A. Extended Experimental Contract                                      594
+
+ 540          Vision (ICCV), pages 3020–3028, 2015. 1, 2                            This appendix records analyses that are required for the final         595
+ 541      [5] Jonathon Luiten, Aljoša Ošep, Patrick Dendorfer, Philip Torr,       evidence bundle but may move between main paper and                    596
+ 542          Andreas Geiger, Laura Leal-Taixé, and Bastian Leibe. HOTA:           supplementary material after results and the official CVPR             597
+ 543          A higher order metric for evaluating multi-object tracking.           2027 format are frozen.                                                598
+ 544          International Journal of Computer Vision, 129(2):548–578,
+ 545          2021. 6                                                               A.1. Artifact Manifest                                                 599
+ 546      [6] Xiaoxuan Ma, Zishi Li, Qiuyan Shang, Wentao Zhu, Hai Ci,
+                                                                                    Every table-eligible run must provide: model commit; evalu-            600
+ 547          Yu Qiao, and Yizhou Wang. Efficient action counting with
+                                                                                    ator commit; configuration and preprocessing fingerprints;             601
+ 548          dynamic queries. International Journal of Computer Vision,
+ 549          134(8):364, 2026. 1, 2, 6                                             seed; hardware and software environment; MultiRep release,             602
+                                                                                    source, download time, split, and checksums; per-video and             603
+ 550      [7] Ergys Ristani, Francesco Solera, Roger Zou, Rita Cucchiara,
+ 551          and Carlo Tomasi. Performance measures and a data set for             per-identity ground truth and predictions; oracle/predicted-           604
+ 552          multi-target, multi-camera tracking. In Computer Vision –             track status; logs; and generated-table provenance. An arti-           605
+ 553          ECCV 2016 Workshops, pages 17–35, Cham, 2016. Springer                fact lacking any required field is retained for diagnosis but          606
+ 554          International Publishing. 6                                           cannot support a paper claim. UCFRep’s sealed test parti-              607
+ 555      [8] Tom F. H. Runia, Cees G. M. Snoek, and Arnold W. M.                   tion remains untouched until the method, checkpoints, and              608
+ 556          Smeulders. Real-world repetition estimation by div, grad and          analysis code are frozen.                                              609
+ 557          curl. In Proceedings of the IEEE Conference on Computer
+ 558          Vision and Pattern Recognition (CVPR), pages 9009–9017.               A.2. Mechanism Ablations                                               610
+ 559          IEEE, 2018. 1, 2                                                      The mechanism study compares one global tempo per track                611
+ 560      [9] Saptarshi Sinha, Alexandros Stergiou, and Dima Damen. Ev-             against window-local tempo; uniform, hard, and soft rout-              612
+ 561          ery shot counts: Using exemplars for repetition counting in           ing; one, two, three, and five experts; PAMS independently             613
+ 562          videos. In Computer Vision – ACCV 2024, pages 384–402,                applied to each track; and sliding-window PAMS with deter-             614
+ 563          Singapore, 2025. Springer Nature Singapore. 1, 2                      ministic tempo bins. Boundary alternatives include non-                615
+ 564     [10] Yin Tang, Wei Luo, Jinrui Zhang, Wei Huang, Ruihai Jing,              overlapping windows, center-crop decoding, uniform re-                 616
+ 565          and Deyu Zhang. MultiCounter: Multiple action agnostic
+                                                                                    sponse averaging, phase-aligned fusion, normalized overlap-            617
+ 566          repetition counting in untrimmed videos. In ECAI 2024, pages
+                                                                                    add, and integer-window summation as a diagnostic failure              618
+ 567          242–249. IOS Press, 2024. 1, 2, 6, 10
+                                                                                    mode. Training is compared with and without the synchro-               619
+ 568     [11] Yin Tang, Deyu Zhang, Wei Luo, Jinrui Zhang, Wei Huang,
+                                                                                    nized within-track continuity term. An oracle router based on          620
+ 569          Ruihai Jing, and Yaoxue Zhang. MultiCounter+: Toward
+ 570          efficient and robust multi-instance repetitive action count-          ground-truth periods may serve as an upper-bound diagnos-              621
+ 571          ing. IEEE Transactions on Circuits and Systems for Video              tic only when the required annotation exists, and must never           622
+ 572          Technology, 36(7):9462–9476, 2026. 1, 2, 6, 10                        be grouped with deployable methods. Arbitrary person-                  623
+ 573     [12] Xiaoai Wang, Hang Wang, Yan Liu, Huan Hu, and Bruce X.B.              indexed parameter sets are excluded because identities do              624
+ 574          Yu. D2 -STX: Decoupling spatial-temporal cross-attention              not persist across videos; efficiency instead compares shared          625
+ 575          for dual-branch repetitive action counting. In Proceedings of         batched execution with independent replicas of the same                626
+ 576          the IEEE/CVF Conference on Computer Vision and Pattern                frozen checkpoint.                                                     627
+
+
+                                                                                9
+ CVPR                                                                                                                                                     CVPR
+#DRAFT                                                                                                                                                   #DRAFT
+                                CVPR 2027 Submission #DRAFT. CONFIDENTIAL REVIEW COPY. DO NOT DISTRIBUTE.
+
+
+
+         Table 4. Required characterization of the frozen MultiRep split before hypothesis testing. Every tempo or corruption stratum must also
+         report its exact number of videos, people, and events.
+                                   Split      Videos      People   Events   Active IDs Tempo-change    Pauses   Gaps     Window-eligible
+                                   Train      PENDING PENDING PENDING PENDING            PENDING      PENDING PENDING       PENDING
+                                   Validation PENDING PENDING PENDING PENDING            PENDING      PENDING PENDING       PENDING
+                                   Test       PENDING PENDING PENDING PENDING            PENDING      PENDING PENDING       PENDING
+
+
+
+         Table 5. Scope matrix for the three closest method families and this pre-results specification. “Intended” and “provisional” entries are not
+         implementation or performance claims.
+             Method             Counting input         Output scope           Counting supervision          Tempo unit              Identity mechanism
+             PAMS [2]           Pose stream            Single stream    Self-supervised representa- Period-adaptive      None
+                                                                        tion                        scales
+             MultiCounter [10] RGB video           Person/events        Supervised MRAC             Per-person intervals Joint association
+             MultiCounter+ [11] RGB video          Person/events        Supervised MRAC             Long/short-aware     Dynamic Siamese query
+             Ours (specification) Supplied    pose Oracle person / pre- Intended     no     person Window-local routing Supplied track index
+                                  tracks           dicted track         count/period
+
+
+
+ 628     A.3. Robustness and Tracking Diagnostics                                        one failure case is mandatory; curves may not be manually        663
+                                                                                         redrawn.                                                         664
+ 629     Natural tempo variation will be stratified by within-track
+ 630     cycle-duration dispersion. Deterministic count-preserving
+ 631     piecewise time warps, contiguous masking, and injected
+ 632     identity switches will measure degradation from each clean
+ 633     input using identical corruptions across methods. Perturba-
+ 634     tions are separated by pipeline level. Pre-tracking video cor-
+ 635     ruptions rerun the frozen frontend and may change HOTA,
+ 636     IDF1, and IDSW; post-track pose/mask corruptions hold
+ 637     tracks fixed, so tracking metrics must remain unchanged.
+ 638     The protocol must record whether an identity switch changes
+ 639     only the track identifier or also the pose content. Results will
+ 640     be stratified by active-person count, asynchronous starts and
+ 641     stops, pauses, occlusion, and track fragmentation.
+
+ 642     A.4. Generalization and Efficiency
+ 643     If protocol-compatible, a model trained on MultiRep will be
+ 644     evaluated without target-domain adaptation on the official
+ 645     RepCount and UCFRep single-person protocols. Dataset-
+ 646     native normalized MAE and OBO will retain their origi-
+ 647     nal names rather than being relabeled as MultiRep Avg-
+ 648     MAE/AvgOBO. Such transfer can support representation
+ 649     generalization only, not MRAC identity robustness. Ef-
+ 650     ficiency will separate detector/pose/tracker preprocessing
+ 651     from counting latency and report parameters, FLOPs,
+ 652     peak memory, latency, counting-only throughput, and full-
+ 653     pipeline throughput as active identities increase. Shared
+ 654     batched execution and independent same-checkpoint repli-
+ 655     cas are timed separately. If ByteTrack [14] is selected as the
+ 656     common tracker, its exact code and checkpoint revision will
+ 657     be frozen in the manifest; this mention does not pre-select
+ 658     the frontend.
+ 659         Qualitative figures must be generated directly from frozen
+ 660     per-frame artifacts and include persistent identity colors,
+ 661     valid masks, local period estimates, routing weights, fused
+ 662     responses, and ground-truth/predicted boundaries. At least
+
+
+                                                                                    10
+ CVPR                                                                                                                                                  CVPR
+#DRAFT                                                                                                                                                #DRAFT
+                               CVPR 2027 Submission #DRAFT. CONFIDENTIAL REVIEW COPY. DO NOT DISTRIBUTE.
+
+
+
+
+                        Table 6. Planned mechanism analysis. Parameter counts expose the cost of expert count and weight sharing.
+                                   Factor        Setting                  Period-mAP↑ AvgMAE↓ AvgOBO↑ Params (M)↓
+                                   Tempo scope Track-global                 PENDING      PENDING   PENDING     PENDING
+                                               Window-local                 PENDING      PENDING   PENDING     PENDING
+                                   Router      Uniform                      PENDING      PENDING   PENDING     PENDING
+                                               Hard                         PENDING      PENDING   PENDING     PENDING
+                                               Soft                         PENDING      PENDING   PENDING     PENDING
+                                   Boundary    Center crop                  PENDING      PENDING   PENDING     PENDING
+                                               Response average             PENDING      PENDING   PENDING     PENDING
+                                               Normalized overlap-add       PENDING      PENDING   PENDING     PENDING
+
+
+
+
+         Table 7. Planned robustness report. Parenthesized values will be paired changes from the corresponding clean input with video-cluster
+         bootstrap intervals.
+
+            Condition                Level              Severity            Stratum n     Period-mAP↑     AvgMAE↓         AvgOBO↑        IDF1↑
+            Clean                    –                  –                   PENDING          PENDING         PENDING        PENDING      PENDING
+            Natural tempo change     Data stratum       Low/medium/high     PENDING          PENDING         PENDING        PENDING      PENDING
+            Piecewise time warp      Post-track         PENDING             PENDING          PENDING         PENDING        PENDING     PENDING
+            Contiguous occlusion     Pre-track          PENDING             PENDING          PENDING         PENDING        PENDING      PENDING
+            Injected ID switches     Post-track         PENDING             PENDING          PENDING         PENDING        PENDING      PENDING
+
+
+
+
+         Table 8. Planned efficiency report under one frozen hardware and timing protocol. The final generator expands every method into one row
+         for each integer active-ID level from one through the frozen dataset maximum; the current Active IDs cell marks that pending grid rather
+         than one aggregate measurement.
+
+         Method            Active IDs       Params (M)↓     GFLOPs↓     Peak GB↓        Preprocess ms/frame↓    Count ms/frame↓       Pipeline FPS↑
+         MultiCounter       PENDING           PENDING         PENDING      PENDING            PENDING                  PENDING           PENDING
+         MultiCounter+      PENDING           PENDING         PENDING      PENDING            PENDING                  PENDING           PENDING
+         Ours               PENDING           PENDING         PENDING      PENDING            PENDING                  PENDING           PENDING
+
+
+
+
+                                                                             11
+

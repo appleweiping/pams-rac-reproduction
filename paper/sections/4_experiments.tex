@@ -1,0 +1,261 @@
+\section{Experiments}
+\label{sec:experiments}
+
+\paragraph{Pre-results status.}
+This section fixes the evaluation questions, protocols, and table schemas; it
+contains no new-method measurement or empirical conclusion. Red entries are
+controlled evidence fields. Historical UCFRep dev84 diagnostics, proxy
+readouts, and runs involving an untrained random Period Head are ineligible for
+every table below.
+
+\subsection{Evaluation Contract}
+\label{sec:evaluation_contract}
+\ClaimMap{C07,C10,C11,C12,C15}
+
+\paragraph{Data and integrity.}
+The primary benchmark will be the exact MultiRep release
+\Protocol{multirep.release} under its official \Protocol{multirep.split}
+protocol. The original MultiCounter paper specifies 1,157 synthetic videos,
+52,590 periodic events, and a 7:2:1 train/validation/test split, while the
+current MultiCounter+ repository reports the same size and provides a download
+without a versioned release identifier or checksums
+~\cite{tang2024multicounter,tang2026multicounterplus}. The final manifest must
+therefore bind the release identifier, download source and time,
+video/annotation/split SHA-256 digests, evaluator revision, and preprocessing
+fingerprint. A run is table-ineligible if any binding is missing or if
+incompatible artifacts are mixed. Before model comparison, a frozen dataset
+characterization report must give split-level counts of videos, ground-truth
+people, events, active-person levels, within-track tempo dispersion, detected
+accelerations/decelerations, pauses, observation gaps, and identities with
+enough cycles for every declared window length. Stratum definitions and counts
+are fixed before looking at method errors.
+
+\paragraph{Oracle and predicted tracks.}
+The oracle-track protocol supplies official person identities and spatial
+support, isolating repetition counting from detection and association. The
+predicted-track protocol uses one frozen detector--pose--tracker frontend for
+all compatible track-conditioned counters. Native joint MRAC systems retain
+their audited official pipelines and appear in a separate contextual block,
+not as if their inputs were controlled. Against ground-truth identities and
+spatial support, HOTA and its DetA, AssA, and LocA components
+~\cite{luiten2021hota} diagnose predicted-track detection, association, and
+localization quality. IDF1 and ID-switch counts~\cite{ristani2016idmetrics}
+provide complementary identity-duration and temporal-association diagnostics.
+When the same frozen tracks feed several counters, these tracking values must
+be identical and cannot be credited as counting gains.
+
+\paragraph{Evaluator-ready outputs.}
+Each counter adapter must emit the scored event tuples in
+Equation~\ref{eq:event_schema}, the raw per-track count vector, and the exact
+spatial support expected by the pinned evaluator. Oracle tracks retain official
+identity support. Predicted tracks remain separate through evaluation: the
+manifest-bound adapter must specify one deterministic matching policy and how
+unmatched, duplicated, fragmented, merged, and identity-switched tracks become
+false positives or false negatives. No post-hoc fragment joining is allowed
+unless it is a separately audited method component. Adapter source, tests, and
+per-instance outputs are required before Period-mAP or matched person-wise
+count metrics become table-eligible. Predicted-track outputs are called
+track-wise until this matching is applied.
+
+\paragraph{Metrics and uncertainty.}
+Using the frozen official evaluator, we will report Period-mAP, AP50, AP75,
+AvgMAE, and AvgOBO, together with a matched person-count error
+diagnostic after the evaluator's frozen matching step. Period-mAP under common
+predicted tracks is the confirmatory metric; the primary contrast is our method
+minus track-conditioned PAMS on identical videos and frontend outputs. A claim
+of improvement requires the lower endpoint of its paired 95\% interval to be
+above zero. Native-pipeline rows are descriptive and cannot establish
+non-inferiority or superiority under a common-input protocol.
+
+Every reproducible method uses at least three pre-registered seeds, reported
+as mean and between-seed sample standard deviation. The confirmatory interval
+uses one pre-declared paired hierarchical bootstrap: each replicate resamples
+completed seed pairs and then videos within each sampled seed, retaining every
+identity of a sampled video and recomputing Period-mAP from event records rather
+than averaging per-video AP. Its point estimate is the mean of paired
+seed-level differences. The manifest fixes the resample count, random seed,
+failed-run policy, and exact numbers of completed seeds, videos, people, and
+events. Secondary ablations are exploratory, with family-wise Holm correction
+if formal significance statements are made. Official
+single-checkpoint numbers remain explicitly marked and are excluded from
+variance and significance claims. Test annotations are not used for tuning,
+checkpoint selection, routing calibration, or early stopping.
+
+The numerical stabilizer \(\epsilon\) is fixed before evaluation in the units
+of each denominator. A sensitivity check spans representable smaller and larger
+values and reports changes in response amplitude and count metrics by valid
+support; it must expose, rather than hide, any coverage dependence introduced
+by Equations~\ref{eq:valid_mean} and~\ref{eq:normalized_ola}.
+
+\paragraph{Baselines and supervision.}
+The mandatory native baselines are MultiCounter and MultiCounter+
+~\cite{tang2024multicounter,tang2026multicounterplus}. Under the common track
+interface we adapt RepNet~\cite{dwibedi2020repnet},
+TransRAC~\cite{hu2022transrac}, PoseRAC~\cite{yao2025poserac}, and
+PAMS~\cite{gao2026pams}; DeTRC~\cite{ma2026detrc} and
+D$^2$-STX~\cite{wang2026d2stx} are candidate baselines and enter only if
+runnable public implementations are available and their output semantics
+pass the experiment audit. Tables disclose input modality, training labels,
+track source, run count, adapter code, crop/pose construction, training split,
+tuning budget, pretrained checkpoint, and output conversion. Comparisons across supervision regimes are
+accuracy--annotation trade-offs, not claims of identical training information.
+
+\subsection{Primary Questions}
+\label{sec:primary_questions}
+\ClaimMap{C03,C04,C05,C06,C12,C15}
+
+The evaluation is organized around four questions. First, how does a
+no-count-label pose counter compare on person-wise oracle-track MRAC and on
+matched predicted tracks? Second, does local routing help beyond a track-conditioned
+PAMS base when tempo changes within one identity? Third, does response-domain
+overlap-add reduce boundary errors relative to summing independently decoded
+windows? Fourth, how do tracking errors, active-person count, and upstream
+preprocessing affect robustness and efficiency? Each question has a named
+table or figure and an associated claim that remains withheld until the
+evidence audit passes. The mechanism study must also compare against running
+PAMS independently per track, sliding-window PAMS without a learned router,
+deterministic tempo bins, non-overlapping and center-crop decoding, uniform
+response averaging, and phase-aligned fusion.
+
+\begin{table*}[t]
+  \centering
+  \small
+  \setlength{\tabcolsep}{3.1pt}
+  \caption{Planned MultiRep main results. Reproducible rows will show the
+  mean and sample standard deviation over pre-registered seeds; official
+  single-checkpoint rows will be marked. Protocol blocks answer different
+  questions and will not be pooled into one ranking.}
+  \label{tab:main_multirep}
+  \begin{tabular}{lllccccc}
+    \toprule
+    Method & Track protocol & Count supervision &
+    Period-mAP$\uparrow$ & AP50$\uparrow$ & AP75$\uparrow$ &
+    AvgMAE$\downarrow$ & AvgOBO$\uparrow$ \\
+    \midrule
+    \multicolumn{8}{l}{\textit{Controlled oracle tracks}}\\
+    RepNet & Oracle & \Protocol{sup.repnet} & \R{main.oracle.repnet.pmap} &
+      \R{main.oracle.repnet.ap50} & \R{main.oracle.repnet.ap75} &
+      \R{main.oracle.repnet.mae} & \R{main.oracle.repnet.obo} \\
+    TransRAC & Oracle & \Protocol{sup.transrac} &
+      \R{main.oracle.transrac.pmap} & \R{main.oracle.transrac.ap50} &
+      \R{main.oracle.transrac.ap75} & \R{main.oracle.transrac.mae} &
+      \R{main.oracle.transrac.obo} \\
+    PoseRAC & Oracle & \Protocol{sup.poserac} & \R{main.oracle.poserac.pmap} &
+      \R{main.oracle.poserac.ap50} & \R{main.oracle.poserac.ap75} &
+      \R{main.oracle.poserac.mae} & \R{main.oracle.poserac.obo} \\
+    PAMS & Oracle & \Protocol{sup.pams} & \R{main.oracle.pams.pmap} &
+      \R{main.oracle.pams.ap50} & \R{main.oracle.pams.ap75} &
+      \R{main.oracle.pams.mae} & \R{main.oracle.pams.obo} \\
+    \textbf{Ours} & Oracle & \Protocol{sup.ours} & \R{main.oracle.ours.pmap} &
+      \R{main.oracle.ours.ap50} & \R{main.oracle.ours.ap75} &
+      \R{main.oracle.ours.mae} & \R{main.oracle.ours.obo} \\
+    \midrule
+    \multicolumn{8}{l}{\textit{Controlled common predicted tracks}}\\
+    RepNet & Common predicted & \Protocol{sup.repnet} &
+      \R{main.pred.repnet.pmap} & \R{main.pred.repnet.ap50} &
+      \R{main.pred.repnet.ap75} & \R{main.pred.repnet.mae} &
+      \R{main.pred.repnet.obo} \\
+    TransRAC & Common predicted & \Protocol{sup.transrac} &
+      \R{main.pred.transrac.pmap} & \R{main.pred.transrac.ap50} &
+      \R{main.pred.transrac.ap75} & \R{main.pred.transrac.mae} &
+      \R{main.pred.transrac.obo} \\
+    PoseRAC & Common predicted & \Protocol{sup.poserac} &
+      \R{main.pred.poserac.pmap} & \R{main.pred.poserac.ap50} &
+      \R{main.pred.poserac.ap75} & \R{main.pred.poserac.mae} &
+      \R{main.pred.poserac.obo} \\
+    PAMS & Common predicted & \Protocol{sup.pams} & \R{main.pred.pams.pmap} &
+      \R{main.pred.pams.ap50} & \R{main.pred.pams.ap75} &
+      \R{main.pred.pams.mae} & \R{main.pred.pams.obo} \\
+    \textbf{Ours} & Common predicted & \Protocol{sup.ours} & \R{main.pred.ours.pmap} &
+      \R{main.pred.ours.ap50} & \R{main.pred.ours.ap75} &
+      \R{main.pred.ours.mae} & \R{main.pred.ours.obo} \\
+    \midrule
+    \multicolumn{8}{l}{\textit{Native full-pipeline context; descriptive only}}\\
+    MultiCounter & Native & \Protocol{sup.multicounter} &
+      \R{main.native.multicounter.pmap} & \R{main.native.multicounter.ap50} &
+      \R{main.native.multicounter.ap75} & \R{main.native.multicounter.mae} &
+      \R{main.native.multicounter.obo} \\
+    MultiCounter+ & Native & \Protocol{sup.multicounterplus} &
+      \R{main.native.multicounterplus.pmap} &
+      \R{main.native.multicounterplus.ap50} &
+      \R{main.native.multicounterplus.ap75} &
+      \R{main.native.multicounterplus.mae} &
+      \R{main.native.multicounterplus.obo} \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+The quantitative interpretation of Table~\ref{tab:main_multirep} remains
+withheld until every displayed binding passes the empirical audits.
+
+\begin{table*}[t]
+  \centering
+  \small
+  \setlength{\tabcolsep}{3.0pt}
+  \caption{Required protocol disclosure accompanying the main table. Native
+  rows retain their official pipelines and are not pooled with common-input
+  rows. Every field is manifest-bound.}
+  \label{tab:protocol_disclosure}
+  \begin{tabular}{lllllll}
+    \toprule
+    Method & Result block & Input & Count labels & Period labels & Track source & Runs \\
+    \midrule
+    RepNet & Common & \Protocol{disc.repnet.input} & \Protocol{disc.repnet.count} &
+      \Protocol{disc.repnet.period} & \Protocol{disc.common.track} & \Protocol{disc.repnet.runs} \\
+    TransRAC & Common & \Protocol{disc.transrac.input} & \Protocol{disc.transrac.count} &
+      \Protocol{disc.transrac.period} & \Protocol{disc.common.track} & \Protocol{disc.transrac.runs} \\
+    PoseRAC & Common & \Protocol{disc.poserac.input} & \Protocol{disc.poserac.count} &
+      \Protocol{disc.poserac.period} & \Protocol{disc.common.track} & \Protocol{disc.poserac.runs} \\
+    PAMS & Common & \Protocol{disc.pams.input} & \Protocol{disc.pams.count} &
+      \Protocol{disc.pams.period} & \Protocol{disc.common.track} & \Protocol{disc.pams.runs} \\
+    \textbf{Ours} & Common & \Protocol{disc.ours.input} & \Protocol{disc.ours.count} &
+      \Protocol{disc.ours.period} & \Protocol{disc.common.track} & \Protocol{disc.ours.runs} \\
+    MultiCounter & Native context & \Protocol{disc.multicounter.input} &
+      \Protocol{disc.multicounter.count} & \Protocol{disc.multicounter.period} &
+      \Protocol{disc.multicounter.track} & \Protocol{disc.multicounter.runs} \\
+    MultiCounter+ & Native context & \Protocol{disc.multicounterplus.input} &
+      \Protocol{disc.multicounterplus.count} & \Protocol{disc.multicounterplus.period} &
+      \Protocol{disc.multicounterplus.track} & \Protocol{disc.multicounterplus.runs} \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\begin{table}[t]
+  \centering
+  \small
+  \setlength{\tabcolsep}{2.7pt}
+  \caption{Planned construction-path diagnostic under oracle tracks. LT: local
+  tempo; SR: soft routing; BS: boundary stitching; TC: track-continuity
+  objective. Causal conclusions use removals from the full model and the
+  factorial controls described below, not this order-dependent path alone.}
+  \label{tab:additive_ablation}
+  \begin{tabular}{lcccccc}
+    \toprule
+    Variant & LT & SR & BS & TC & Period-mAP$\uparrow$ & AvgMAE$\downarrow$ \\
+    \midrule
+    Track-PAMS & & & & & \R{abl.base.pmap} & \R{abl.base.mae} \\
+    $+$ LT & \checkmarkcell & & & & \R{abl.lt.pmap} & \R{abl.lt.mae} \\
+    $+$ SR & \checkmarkcell & \checkmarkcell & & &
+      \R{abl.sr.pmap} & \R{abl.sr.mae} \\
+    $+$ BS & \checkmarkcell & \checkmarkcell & \checkmarkcell & &
+      \R{abl.bs.pmap} & \R{abl.bs.mae} \\
+    $+$ TC & \checkmarkcell & \checkmarkcell & \checkmarkcell &
+      \checkmarkcell & \R{abl.tc.pmap} & \R{abl.tc.mae} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The ablation interpretation remains withheld until all rows share one frozen
+protocol and have the required paired records. The full mechanism study also
+removes each component one at a time, crosses local-tempo estimation, routing,
+and stitching in a small factorial design, matches single- and multi-expert
+capacity, tests experts with and without direct \(\hat p\), and reports route
+occupancy, entropy, collapse, and specialization by tempo stratum.
+
+The appendix pre-registers router variants, expert counts, local-versus-global
+tempo, shared batched execution versus independent same-checkpoint replicas,
+boundary and continuity ablations,
+tempo/occlusion/identity-switch stress, cross-dataset transfer, and latency,
+memory, FLOPs, and throughput as the number of active identities grows. All
+plots and tables must be generated from frozen JSON, CSV, or Parquet records;
+manually transcribed values are inadmissible.

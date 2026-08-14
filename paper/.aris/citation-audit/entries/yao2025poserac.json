@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "citation_key": "yao2025poserac",
+  "reviewer_route": "fresh-zero-context/same-family",
+  "verdict": "FIX",
+  "post_fix_status": "PASS",
+  "confidence": 0.96,
+  "existence": "PASS",
+  "final_version": "PASS",
+  "metadata": "PASS",
+  "context_before_fix": "FAIL",
+  "context_after_fix": "PASS",
+  "canonical": {
+    "authors": ["Ziyu Yao", "Yuexian Zou"],
+    "title": "PoseRAC: Enhancing Repetitive Action Counting with Salient Poses",
+    "venue": "Neural Information Processing: 31st International Conference, ICONIP 2024, Proceedings, Part V",
+    "series": "Lecture Notes in Computer Science",
+    "volume": "15290",
+    "pages": "255--270",
+    "publisher": "Springer Nature Singapore",
+    "year": 2025,
+    "doi": "10.1007/978-981-96-6588-4_18"
+  },
+  "primary_urls": [
+    "https://doi.org/10.1007/978-981-96-6588-4_18",
+    "https://link.springer.com/chapter/10.1007/978-981-96-6588-4_18",
+    "https://api.crossref.org/works/10.1007/978-981-96-6588-4_18",
+    "https://dblp.org/rec/conf/iconip/YaoZ24"
+  ],
+  "fix": {
+    "file": "paper/sections/2_related_work.tex",
+    "description": "Replaced the inaccurate phrase 'foundation-model and text representations' with the source-entailing description of pose-conditioned synthetic data and CLIP text embeddings."
+  },
+  "implementation_caveat": "The public MiracleDance/PoseRAC repository implements a different 2023 three-author paper; the final experiment manifest must identify and audit the actual baseline implementation.",
+  "context_rebind_status": "PASS",
+  "context_rebind_note": "A fresh zero-context reviewer verified all three exact current contexts against Springer, Crossref, and DBLP; the Springer record directly supports salient poses, foundation generative models, zero-shot/open-set counting, and the text-encoder/CLIP framing.",
+  "reviewed_contexts": [
+    {
+      "file": "sections/1_introduction.tex",
+      "line": 33,
+      "context_sha256": "sha256:a1cdac1a21a419673c557eec3b5f2248716a6a7cff8c15518ffb6e6631487066",
+      "verdict": "SUPPORTS"
+    },
+    {
+      "file": "sections/2_related_work.tex",
+      "line": 28,
+      "context_sha256": "sha256:0426ac52a89964d27d7c715838980245eb397a7bbfc7381b0eab379fe10d4836",
+      "verdict": "SUPPORTS"
+    },
+    {
+      "file": "sections/4_experiments.tex",
+      "line": 94,
+      "context_sha256": "sha256:f85257bccb350d1360f630afedb60dbbe250eb7127eb135e476415cf86dae3c8",
+      "verdict": "SUPPORTS"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "results": [
+    {
+      "id": "C-R0-LITERAL-DEV",
+      "claim": "The current strict three-seed single-person literal-head dev diagnostic has raw mean NMAE 1.4896327534823017.",
+      "value": "1.4896327534823017",
+      "source": "results\\dev-negative\\pams_full_multiscale_three_seed_strict.json",
+      "status": "verified",
+      "detail": "'1.4896327534823017' found in results\\dev-negative\\pams_full_multiscale_three_seed_strict.json"
+    },
+    {
+      "id": "C-R0-SSHEAD-DEV",
+      "claim": "The current strict three-seed inferred-SSHead dev diagnostic has raw mean NMAE 5.0224710174730705.",
+      "value": "5.0224710174730705",
+      "source": "results\\dev-negative\\pams_full_multiscale_three_seed_strict.json",
+      "status": "verified",
+      "detail": "'5.0224710174730705' found in results\\dev-negative\\pams_full_multiscale_three_seed_strict.json"
+    },
+    {
+      "id": "C-R1-MULTIPERSON-EFFECT",
+      "claim": "The proposed identity-conditioned local-tempo method has a real-ground-truth MultiRep result.",
+      "value": "MultiRep",
+      "source": "results/multirep/**/*.json",
+      "status": "path_missing",
+      "detail": "no file matches 'results/multirep/**/*.json' under '.'"
+    },
+    {
+      "id": "C-R2-PERSONWISE-IMPLEMENTATION",
+      "claim": "The current production code exposes a person-wise count vector.",
+      "value": "person_id",
+      "source": "src/pams/*.py",
+      "status": "value_not_found",
+      "detail": "'person_id' not found in 'src/pams/*.py' (32 file(s) checked) — send to the semantic reviewer"
+    },
+    {
+      "id": "C-R3-ABSTRACT-PERFORMANCE",
+      "claim": "A strongest quantitative result can be placed in the abstract.",
+      "value": "",
+      "source": "",
+      "status": "unparseable",
+      "detail": "claim has no usable (value, source) to pre-check"
+    }
+  ],
+  "summary": {
+    "verified": 2,
+    "path_missing": 1,
+    "value_not_found": 1,
+    "unparseable": 1
+  }
+}

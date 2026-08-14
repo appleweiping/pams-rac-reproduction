@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-12",
+  "evidence_freeze": "73cbc4bb9b581f24fbc90f2fe7421bc11e7c7454",
+  "integrity_status": "fail",
+  "integrity_reason": "NO_MULTI_PERSON_REAL_GT_EVIDENCE",
+  "route": "pivot",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "claims": [
+    {
+      "id": "C1",
+      "claim_supported": "no",
+      "confidence": "low",
+      "disposition": "method-contract-only"
+    },
+    {
+      "id": "C2",
+      "claim_supported": "partial",
+      "confidence": "low",
+      "disposition": "intended-supervision-boundary-unverified"
+    },
+    {
+      "id": "C3",
+      "claim_supported": "no",
+      "confidence": "low",
+      "disposition": "withhold-all-multirep-performance"
+    },
+    {
+      "id": "C4",
+      "claim_supported": "no",
+      "confidence": "low",
+      "disposition": "controlled-abstract-placeholder"
+    },
+    {
+      "id": "C5",
+      "claim_supported": "no",
+      "confidence": "low",
+      "disposition": "exclude-current-dev-results-from-main-table"
+    }
+  ]
+}

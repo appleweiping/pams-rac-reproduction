@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "artifact_id": "rac-cvpr27-supervision-firewall",
+  "allowed_text": "without person-wise count or period supervision in the intended counting objective",
+  "status": "BLOCKED",
+  "collaborator_commit": null,
+  "scope_audits": [
+    {"scope": "dataset_loaders", "source_anchors": [], "verdict": "BLOCKED"},
+    {"scope": "pseudo_label_generation", "source_anchors": [], "verdict": "BLOCKED"},
+    {"scope": "losses", "source_anchors": [], "verdict": "BLOCKED"},
+    {"scope": "router_inputs_and_targets", "source_anchors": [], "verdict": "BLOCKED"},
+    {"scope": "hyperparameter_tuning", "source_anchors": [], "verdict": "BLOCKED"},
+    {"scope": "checkpoint_selection", "source_anchors": [], "verdict": "BLOCKED"},
+    {"scope": "early_stopping", "source_anchors": [], "verdict": "BLOCKED"},
+    {"scope": "calibration", "source_anchors": [], "verdict": "BLOCKED"},
+    {"scope": "prediction_and_inference", "source_anchors": [], "verdict": "BLOCKED"}
+  ],
+  "source_anchor_schema": {
+    "required_fields": ["path", "symbol", "commit", "sha256", "verdict"],
+    "allowed_verdicts": ["PASS", "FAIL"]
+  },
+  "closure_rule": "PASS requires every named scope to have at least one digest-bound source anchor at the frozen collaborator commit and every scope verdict to be PASS.",
+  "blocking_reason": "The synchronized multi-person training graph, loaders, tuning code, and inference artifacts are not present in this repository."
+}

@@ -1,0 +1,61 @@
+{
+  "audit_skill": "experiment-audit",
+  "verdict": "FAIL",
+  "reason_code": "NO_MULTI_PERSON_REAL_GT_EVIDENCE",
+  "summary": "Current artifacts contain no real-ground-truth multi-person evidence.",
+  "audited_input_hashes": {
+    "D:\\Project\\rac-paper-writing\\results\\README.md": "sha256:0aeacbb1596448ecc7c8532ee0704f8e0dd0253753c7f2d707896829cbf7535f",
+    "D:\\Project\\rac-paper-writing\\results\\dev-negative\\pams_full_multiscale_three_seed_strict.json": "sha256:dd4001da4e971aaaedc8374dbe73238fe15882b434e86fc3eee8328e2a7dcb32",
+    "D:\\Project\\rac-paper-writing\\results\\dev-negative\\pams_table2_three_seed_strict.json": "sha256:c5c2d055b17d35251634c67367d4751a9a55250ad3f252ff77c04fc0c36e7b08",
+    "D:\\Project\\rac-paper-writing\\results\\dev-negative\\README.md": "sha256:43faf2350f6b8fdd78d635479daea5f2b0b4335a710803a37e90b800f09859f4",
+    "D:\\Project\\rac-paper-writing\\docs\\PAPER_AUDIT.md": "sha256:484a67993e257cef3cc2535073d53b4ead1824c544f8faea5fc09d670336706b",
+    "D:\\Project\\rac-paper-writing\\docs\\METHOD_SPEC.md": "sha256:56e74382e717eccb1f5cbd2e74ebffec4a07152761e48006a4a0dae6867a9c81",
+    "D:\\Project\\rac-paper-writing\\docs\\ASSUMPTIONS.md": "sha256:fe3de6107ccbeffd06132aac430e9c2c01ae45103201ed14f60a350ffdb720c0",
+    "D:\\Project\\rac-paper-writing\\docs\\BASELINE_PROTOCOLS.md": "sha256:2084578b70797bf2988768848b96b23f20013d92ff32d13334166350d19d910d",
+    "D:\\Project\\rac-paper-writing\\REPRODUCIBILITY.md": "sha256:2f28b6e71f3d3e9be1275d66bf3fcc9fae90f2f9a382a653600d46baff2161d4",
+    "D:\\Project\\rac-paper-writing\\DATA.md": "sha256:a5cc0c9929f0dec5bdad78e776254c0b508c4c1bb79fc8c8458dcda09b5e755f",
+    "D:\\Project\\rac-paper-writing\\src\\pams\\evaluation.py": "sha256:5a0f25f3892a05472014ea402c5baa4b9d2c7d383844c488b8709bdfddb63141",
+    "D:\\Project\\rac-paper-writing\\src\\pams\\metrics.py": "sha256:7fdfcd540f3cbe19e3f66d076096f093b9e1b4a817e71bb44bc0373a268adc62",
+    "D:\\Project\\rac-paper-writing\\src\\pams\\training.py": "sha256:dc02986346d581ac20bf4cccdfedc77d9185dd09985285b02210a398aa7d05f2",
+    "D:\\Project\\rac-paper-writing\\src\\pams\\losses.py": "sha256:72420302d1402de83ad8cfa2c11066f9d08470b2ef683cdeed7f91c36f5b11f9",
+    "D:\\Project\\rac-paper-writing\\src\\pams\\types.py": "sha256:78c2ad53e98856425492a1711faa62fc2bb7764767dc48a22f7c4d5e043a3e31",
+    "D:\\Project\\rac-paper-writing\\src\\pams\\pose.py": "sha256:e79e9d628685b8703e4dbe68adbe8721e55efb9665b64550c2239d397b9f5c80",
+    "D:\\Project\\rac-paper-writing\\src\\pams\\consensus.py": "sha256:29498df4156cac109496362d13b7cc7fc0de416a9b7d8a4831181abcc937cc34",
+    "D:\\Project\\rac-paper-writing\\src\\pams\\model.py": "sha256:155780de100e66dbae608e15e1e6eaf7a8c335b6781c265566cec0317d81310d",
+    "D:\\Project\\rac-paper-writing\\src\\pams\\period.py": "sha256:1c46f31d208a630bcb30101d47a8d22a0a3abaf6a4bed85941225d47a4b88b40"
+  },
+  "trace_path": ".aris/traces/experiment-audit/2026-08-12_run01/",
+  "agent_id": "fresh_experiment_audit",
+  "verdict_id": "fresh_experiment_audit",
+  "executor_model": "codex-gpt-5.6-sol",
+  "executor_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_family": "openai",
+  "reviewer_reasoning": "ultra",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "generated_at": "2026-08-11T16:46:41Z",
+  "date": "2026-08-12",
+  "auditor": "gpt-5.6-sol-ultra",
+  "overall_verdict": "fail",
+  "integrity_status": "fail",
+  "checks": {
+    "gt_provenance": {"status": "warn", "details": "Development targets are real, but historical sealing and artifact completeness are imperfect."},
+    "score_normalization": {"status": "pass", "details": "NMAE uses ground-truth count and OBO uses deterministic half-up rounding."},
+    "result_existence": {"status": "warn", "details": "Development summaries exist; some raw artifacts and all test results are absent."},
+    "dead_code": {"status": "warn", "details": "Current evaluation linkage is visible, but complete historical generator lineage is unavailable."},
+    "scope": {"status": "fail", "details": "There is no multi-person implementation, dataset, target, or evaluation."},
+    "eval_type": "single_person_dev_real_gt_plus_diagnostics"
+  },
+  "sealed_test": {"dataset": "UCFRep", "split": "test105", "accessed": false, "status": "preserved"},
+  "claims": [
+    {"id": "current_single_person_diagnostics", "impact": "needs_qualifier"},
+    {"id": "new_multi_person_method_effectiveness", "impact": "unsupported"},
+    {"id": "held_out_or_leaderboard_performance", "impact": "unsupported"}
+  ],
+  "final_eligibility": {
+    "supports_new_multi_person_paper": false,
+    "supports_ancillary_negative_or_protocol_discussion": true,
+    "all_current_results_table_eligible": false
+  }
+}

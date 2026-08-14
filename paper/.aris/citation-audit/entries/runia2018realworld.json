@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "citation_key": "runia2018realworld",
+  "reviewer_route": "fresh-zero-context/same-family",
+  "verdict": "FIX",
+  "post_fix_status": "PASS",
+  "confidence": 0.99,
+  "existence": "PASS",
+  "final_version": "PASS",
+  "metadata_before_fix": "INCOMPLETE",
+  "metadata_after_fix": "PASS",
+  "context": "PASS",
+  "canonical": {
+    "authors": ["Tom F. H. Runia", "Cees G. M. Snoek", "Arnold W. M. Smeulders"],
+    "title": "Real-World Repetition Estimation by Div, Grad and Curl",
+    "venue": "Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)",
+    "pages": "9009--9017",
+    "year": 2018,
+    "doi": "10.1109/CVPR.2018.00939"
+  },
+  "primary_urls": [
+    "https://doi.org/10.1109/CVPR.2018.00939",
+    "https://openaccess.thecvf.com/content_cvpr_2018/html/Runia_Real-World_Repetition_Estimation_CVPR_2018_paper.html",
+    "https://api.crossref.org/works/10.1109/CVPR.2018.00939",
+    "https://dblp.org/rec/conf/cvpr/RuniaSS18"
+  ],
+  "fix": {
+    "file": "paper/references.bib",
+    "description": "Added the canonical IEEE DOI and publisher; citing prose already entailed the motion-frequency, flow-differential, wavelet, and non-stationary claims."
+  },
+  "reviewed_contexts": [
+    {
+      "file": "sections/1_introduction.tex",
+      "line": 16,
+      "context_sha256": "sha256:383fae1ce06456a5f26ba0754d8ac1ef9a8857c4165ce8e26e8d4b0063f645a8",
+      "verdict": "SUPPORTS"
+    },
+    {
+      "file": "sections/2_related_work.tex",
+      "line": 8,
+      "context_sha256": "sha256:e612d078c925a6039f1353337d0ce745937ff5e0a984500d1a4723245fa6e5d5",
+      "verdict": "SUPPORTS"
+    }
+  ]
+}

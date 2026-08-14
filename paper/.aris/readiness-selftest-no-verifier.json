@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-11T18:31:15.478849Z",
+  "mode": "draft",
+  "verdict": "FAIL",
+  "submission_ready": false,
+  "source_freeze_sha256": "73d16500cf9f3827264d4a2644b8239d7c04ed04fc8e7c2a01b9d711d449a4fd",
+  "delivery_receipt": {
+    "path": "C:/Users/admin/.aris/private/rac-cvpr27-delivery-freeze.json",
+    "present": false,
+    "sha256": null
+  },
+  "deterministic_gates": [
+    {
+      "name": "delivery_freeze",
+      "status": "BLOCKED",
+      "exit_code": 2,
+      "stdout_sha256": "ab40c18c0644edafd419b5ce2d501815861af6534f8f5d0537fba8aefb7a04a9",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "report": "D:\\Project\\rac-paper-writing\\paper\\.aris\\readiness-gates\\delivery-freeze.json",
+      "report_sha256": "6f04fc7f9bbea17c19cb7c6f82e31e4edb4a00bb801e86123f805065bf5ffa23",
+      "reported_verdict": "BLOCKED"
+    },
+    {
+      "name": "story",
+      "status": "PASS",
+      "exit_code": 0,
+      "stdout_sha256": "b9784fe374867b279bce0a23fb2dca9342438b4fd2ae26f88db1c3c1a284b073",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "report": "D:\\Project\\rac-paper-writing\\paper\\.aris\\readiness-gates\\story.json",
+      "report_sha256": "45d1206e271342c093f6707c6f1e6ca2cbcf6a407d89143ca211c41e63a37ccf",
+      "reported_verdict": "PASS"
+    },
+    {
+      "name": "claim_scan",
+      "status": "FAIL",
+      "exit_code": 1,
+      "stdout_sha256": "a194b7579cd81099ecfdb80f5dcb72954ee5371f37ed308e9ebe07033445b435",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "report": "D:\\Project\\rac-paper-writing\\paper\\.aris\\readiness-gates\\claims.json",
+      "report_sha256": "22b37ca8bdd850af16f61ddca8effbb64329ef2dc7a979d70e965605e2104990",
+      "reported_verdict": "FAIL"
+    },
+    {
+      "name": "figures",
+      "status": "BLOCKED",
+      "exit_code": 2,
+      "stdout_sha256": "3429cf7456b32dd9fe0c8a58eb58888fe56b70b5be9e6d381e34475680ab125e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "report": "D:\\Project\\rac-paper-writing\\paper\\.aris\\readiness-gates\\figures.json",
+      "report_sha256": "93a4380190adafb0edb46d096a0a9863bdaeab84c73b90d0410a58f477316620",
+      "reported_verdict": "BLOCKED"
+    },
+    {
+      "name": "method_contract",
+      "status": "BLOCKED",
+      "exit_code": 1,
+      "stdout_sha256": "5eeed6d0cdead46d0b1990dcf9a4bb6316a0a8cad9fb136928a6df12a4d922b5",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "report": "D:\\Project\\rac-paper-writing\\paper\\.aris\\readiness-gates\\method.json",
+      "report_sha256": "4949de9213e172dc28f23bcff5813095174ae48b58d3fc7474e916fbd1454744",
+      "reported_verdict": "FAIL",
+      "evidence_readiness": "BLOCKED"
+    },
+    {
+      "name": "result_manifest",
+      "status": "BLOCKED",
+      "exit_code": 2,
+      "stdout_sha256": "b9d2a1bb3b86d5aa96501092ea5c08ee43a7f7e6609b1a11b8252d5e703f173f",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "anonymity",
+      "status": "FAIL",
+      "exit_code": 1,
+      "stdout_sha256": "000caa37cfae406018facee1ce980dc5176ace2212264a35df615a5b5129dc24",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "report": "D:\\Project\\rac-paper-writing\\paper\\.aris\\readiness-gates\\anonymity.json",
+      "report_sha256": "6ed3be39cf8e00bc7bf301597bf86d886bec6609180bca2119836d15d7da9e0d",
+      "reported_verdict": "FAIL"
+    },
+    {
+      "name": "submission_source",
+      "status": "FAIL",
+      "exit_code": 1,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "9312a61b80cb4d82c921db16b28effdacd1b1e0038590527deb6092ea427b40e"
+    },
+    {
+      "name": "aris_audit_verifier_runtime",
+      "status": "BLOCKED",
+      "detail": "pinned verifier script missing"
+    }
+  ],
+  "semantic_audits": [
+    {
+      "name": "experiment_audit",
+      "path": "EXPERIMENT_AUDIT.json",
+      "sha256": "a3d70b54ee0664baf026246cb69add2fe72b949df679976a83f79fbaafc9c951",
+      "status": "FAIL",
+      "verdict": "FAIL",
+      "paper_freeze": null,
+      "same_source_freeze": false,
+      "generated_at": "2026-08-11T16:46:41Z",
+      "timestamp_valid_and_not_after_receipt": true,
+      "allowed_not_applicable": false
+    },
+    {
+      "name": "result_to_claim",
+      "path": "RESULT_TO_CLAIM.json",
+      "sha256": "f76937103fe110599b0ca7951ceb1c5d9fd981d47adbd14c005d7b3066676984",
+      "status": "FAIL",
+      "verdict": "FAIL",
+      "paper_freeze": "73cbc4bb9b581f24fbc90f2fe7421bc11e7c7454",
+      "same_source_freeze": false,
+      "generated_at": "2026-08-12",
+      "timestamp_valid_and_not_after_receipt": true,
+      "allowed_not_applicable": false
+    },
+    {
+      "name": "proof_audit",
+      "path": "PROOF_AUDIT.json",
+      "status": "BLOCKED",
+      "detail": "missing"
+    },
+    {
+      "name": "paper_claim_audit",
+      "path": "PAPER_CLAIM_AUDIT.json",
+      "status": "BLOCKED",
+      "detail": "missing"
+    },
+    {
+      "name": "citation_audit",
+      "path": "CITATION_AUDIT.json",
+      "status": "BLOCKED",
+      "detail": "missing"
+    },
+    {
+      "name": "kill_argument",
+      "path": "KILL_ARGUMENT.json",
+      "status": "BLOCKED",
+      "detail": "missing"
+    },
+    {
+      "name": "audit_verifier",
+      "path": "paper/.aris/audit-verifier-report.json",
+      "status": "BLOCKED",
+      "detail": "missing"
+    },
+    {
+      "name": "paper_review_round1",
+      "status": "BLOCKED",
+      "path": ".aris/traces/paper-improvement/round1/reviewer.md",
+      "sha256": "8e7ef6b4588eb89ca1e5917effe1f63b0abf3efb6d45965e27d0e56da40eb70f",
+      "detail": "same-freeze review sidecar missing"
+    },
+    {
+      "name": "paper_review_round2",
+      "status": "BLOCKED",
+      "path": "paper/.aris/traces/paper-improvement/round2/reviewer.md",
+      "sha256": "b531d142d66d95ef0a86507563a9f002ac94739f1ae351e6f74eeaa493bdc6e0",
+      "detail": "same-freeze review sidecar missing"
+    }
+  ],
+  "package_checks": [
+    {
+      "name": "build_page_font",
+      "status": "FAIL",
+      "path": "D:\\Project\\rac-paper-writing\\paper\\.aris\\build-qa-round1.json",
+      "sha256": "4bb8ed2eb69013787403fe2238984d18ac07d6b29353eed27a26db7bd8fe2787",
+      "checks": {
+        "reported_pass": true,
+        "pdf_digest": false,
+        "source_digest_bindings": false,
+        "page_limit": true,
+        "letter_page_size": true,
+        "zero_log_warnings": true,
+        "zero_unembedded_fonts": true,
+        "zero_duplicate_labels": true,
+        "zero_undefined_citations": true,
+        "no_unresolved_question_marks": true,
+        "anonymous_author_visible": true
+      }
+    },
+    {
+      "name": "official_cvpr2027_template",
+      "status": "BLOCKED",
+      "path": "paper/TEMPLATE_PROVENANCE.md",
+      "sha256": "bafc36427168d97d6306c8452ceda17ce06a4f5c5d9bf85749fdd299c161275e",
+      "checks": {
+        "official_cvpr2027": true,
+        "not_pending_or_provisional": false,
+        "immutable_version": true
+      }
+    },
+    {
+      "name": "cross_family_reviewer_health",
+      "status": "BLOCKED",
+      "detail": "missing reviewer-health.json"
+    },
+    {
+      "name": "accepted_contract",
+      "status": "BLOCKED",
+      "sha256": "dee003c73f0c99bbc8f8d93f6ac953dbdb89404d8099508c7aa40170a7304750",
+      "review_trace": {
+        "name": "acceptance_contract_review",
+        "status": "BLOCKED",
+        "path": "paper/.aris/traces/acceptance-contract/round2/reviewer.md",
+        "sha256": "1594d67aa4da54499a5dfc3e1e16f3af49bbbb4516e8de0978e0b272e45abfbf",
+        "detail": "same-freeze review sidecar missing"
+      }
+    }
+  ],
+  "failure_policy": "Any missing, stale, cross-freeze, BLOCKED, FAIL, ERROR, provisional template, unhealthy reviewer, or unacceptable verdict prevents submission readiness."
+}

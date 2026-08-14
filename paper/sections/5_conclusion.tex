@@ -1,0 +1,24 @@
+\section{Conclusion and Limitations}
+\label{sec:conclusion}
+
+We specify a pose-driven MRAC counter for people whose pace changes within a
+track. The central design separates identity state while sharing parameters,
+routes overlapping windows from local period evidence, fuses continuous
+responses by normalized overlap-add, and decodes each track once. The setting
+does not remove all annotation and does not jointly optimize perception and
+counting: the counting objective is intended to avoid person-wise count and
+period labels, while upstream perception may use external supervision.
+
+This draft has three material limitations. The current local checkout contains
+only a single-person PAMS reproduction; the multi-person data path, router,
+continuity loss, and boundary decoder await synchronization with collaborator
+code. No eligible MultiRep artifact has been received, so the manuscript makes
+no performance claim. Finally, a modular pose/track pipeline inherits missed
+detections and identity switches and may scale with the number of active
+people. The final study must quantify each limitation through oracle/predicted
+tracks, corruption analysis, and population-scaling measurements. Until those
+gates close, the paper remains provisional and data-pending. MultiRep is
+synthetic, and single-person transfer cannot establish multi-person identity
+preservation; absent a real multi-person evaluation, any eventual conclusion
+must remain restricted to MultiRep and the declared controlled tracker
+corruptions.
