@@ -236,11 +236,20 @@ def main() -> int:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     root = args.root.resolve()
-    freeze = json.loads((root / "paper/evidence/freeze_inventory.json").read_text(encoding="utf-8"))
+    freeze_path = root / "paper/evidence/freeze_inventory.json"
+    try:
+        freeze = json.loads(freeze_path.read_text(encoding="utf-8"))
+    except Exception:
+        freeze = {}
     if args.output:
         output = args.output.resolve()
     elif args.mode == "submission":
-        output = Path(freeze["external_delivery_receipt"]).with_name("rac-cvpr27-delivery-freeze-check.json")
+        receipt = freeze.get("external_delivery_receipt")
+        output = (
+            Path(receipt).with_name("rac-icassp27-delivery-freeze-check.json")
+            if receipt
+            else root.parent / "rac-icassp27-delivery-freeze-check.json"
+        )
     else:
         output = root / "paper/.aris/delivery-freeze-check.json"
     try:
