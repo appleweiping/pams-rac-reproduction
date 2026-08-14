@@ -43,11 +43,17 @@ build/
 
 # Project-local ARIS installation and transient paper QA material
 .agents/
+AGENTS.md
 .aris/overlay-copy-backup-*/
 .aris/claude-health.*
 .aris/installed-skills-codex.txt*
+.aris/skills-declined-codex.txt
 .aris/tools/
 tmp/
+
+# Single-anonymous ICASSP author metadata remains local until the full
+# collaborator list and exact order are confirmed.
+paper/private/
 
 # The paper package intentionally versions its compiled and vector PDFs.
 !paper/**/*.pdf

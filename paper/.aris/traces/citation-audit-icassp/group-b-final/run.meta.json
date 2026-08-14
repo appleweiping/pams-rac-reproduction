@@ -1,0 +1,152 @@
+{
+  "schema_version": "1.0",
+  "audit_skill": "citation-audit",
+  "run_name": "citation-audit-icassp/group-b-final",
+  "generated_at": "2026-08-14T14:58:10Z",
+  "agent": {
+    "id": "/root/icassp_citation_reaudit_b",
+    "role": "fresh zero-context ICASSP citation final auditor B",
+    "model": "gpt-5.6-sol",
+    "model_family": "openai",
+    "reasoning_effort": "xhigh",
+    "fork_turns": "none"
+  },
+  "assurance": {
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "context_policy": "fresh",
+    "web_lookup_required": true,
+    "web_lookup_completed": true,
+    "prior_citation_audits_read": false,
+    "prior_history_or_logs_read": false
+  },
+  "scope": {
+    "paper_root": "D:/Project/rac-paper-writing-icassp27/paper",
+    "bib_file": "references.bib",
+    "pdf_file": "main.pdf",
+    "keys": [
+      "ma2026detrc",
+      "wang2026d2stx",
+      "welch1967fft",
+      "lomb1976unequal",
+      "griffin1984stft",
+      "shazeer2017moe",
+      "luiten2021hota",
+      "ristani2016idmetrics"
+    ],
+    "key_count": 8,
+    "active_occurrence_count": 11,
+    "mutations_allowed": [
+      ".aris/traces/citation-audit-icassp/group-b-final/prompt.md",
+      ".aris/traces/citation-audit-icassp/group-b-final/reviewer.md",
+      ".aris/traces/citation-audit-icassp/group-b-final/run.meta.json"
+    ],
+    "manuscript_or_bib_mutated": false
+  },
+  "pdf_gate": {
+    "algorithm": "sha256",
+    "expected": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+    "observed": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+    "matched": true
+  },
+  "declared_inputs": [
+    {
+      "path": "main.pdf",
+      "bytes": 348367,
+      "sha256": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+      "purpose": "frozen rendered-paper identity"
+    },
+    {
+      "path": "references.bib",
+      "bytes": 7907,
+      "sha256": "322a5d16b0078e8b3436608d4c6158b67c5c8922b0dcae94537ea456c9f6f646",
+      "purpose": "eight audited BibTeX entries"
+    },
+    {
+      "path": "main.tex",
+      "bytes": 1896,
+      "sha256": "a4fe29c47f200946c7d6f3522bd273f5895aabda2d7a959fdbf16397fe1cbe70",
+      "purpose": "active TeX root and include graph"
+    },
+    {
+      "path": "preamble.tex",
+      "bytes": 3467,
+      "sha256": "763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2",
+      "purpose": "active TeX input"
+    },
+    {
+      "path": "math_commands.tex",
+      "bytes": 469,
+      "sha256": "e6dabb7ce789e0d78026e6bda287fe17faedb6d20c0df9b4f603cb3b6c123bee",
+      "purpose": "active TeX input"
+    },
+    {
+      "path": "sections/0_abstract.tex",
+      "bytes": 1039,
+      "sha256": "fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef",
+      "purpose": "active TeX section; no scoped occurrence"
+    },
+    {
+      "path": "sections/1_introduction.tex",
+      "bytes": 4914,
+      "sha256": "6823651162f59e5f5263949f2d308f594b667cb3cba0044433c39031ae04db9d",
+      "purpose": "active TeX section; scoped citation contexts"
+    },
+    {
+      "path": "sections/3_method.tex",
+      "bytes": 7533,
+      "sha256": "7e92c00eb4a7956b059536fd47240cefbea960aee61d4f3fdef1a7e24930c50d",
+      "purpose": "active TeX section; scoped citation context"
+    },
+    {
+      "path": "sections/4_experiments.tex",
+      "bytes": 10852,
+      "sha256": "6052c816e94f7d7f50b560d397495a37863b05d240ed5e418e4b6ec4d3aa131b",
+      "purpose": "active TeX section; scoped citation contexts"
+    },
+    {
+      "path": "sections/5_conclusion.tex",
+      "bytes": 824,
+      "sha256": "e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c",
+      "purpose": "active TeX section; no scoped occurrence"
+    }
+  ],
+  "source_classes_consulted": [
+    "official publisher/proceedings",
+    "CVF Open Access",
+    "SpringerLink",
+    "IEEE Xplore",
+    "DBLP",
+    "Crossref REST API",
+    "OpenReview",
+    "arXiv",
+    "full article text/header where needed for context"
+  ],
+  "result": {
+    "overall_verdict": "PASS",
+    "reason_code": "all_entries_keep",
+    "counts": {
+      "KEEP": 8,
+      "FIX": 0,
+      "REPLACE": 0,
+      "REMOVE": 0,
+      "SUPPORTS": 11,
+      "WEAK": 0,
+      "WRONG": 0
+    },
+    "per_key": {
+      "ma2026detrc": "KEEP",
+      "wang2026d2stx": "KEEP",
+      "welch1967fft": "KEEP",
+      "lomb1976unequal": "KEEP",
+      "griffin1984stft": "KEEP",
+      "shazeer2017moe": "KEEP",
+      "luiten2021hota": "KEEP",
+      "ristani2016idmetrics": "KEEP"
+    }
+  },
+  "artifact_hashes": {
+    "prompt.md": "sha256:ebf8b16888b6679a76db959ede1bd677787455e8fac3069cd0bbea024b3f2cfa",
+    "reviewer.md": "sha256:ed79426735f9920773e9330b1c9c156cfe8281bf948743ae3d2f4c999d64e054"
+  }
+}

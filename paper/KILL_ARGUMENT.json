@@ -1,104 +1,80 @@
 {
   "audit_skill": "kill-argument",
   "verdict": "FAIL",
-  "reason_code": "unresolved_critical",
-  "summary": "The current draft cannot survive the evaluability attack until the method, supervision lineage, and MultiRep evidence are frozen.",
-  "paper_freeze": "1aa65d0702fb6b46379e5af5542c6e2701d45e4f1a6d4ddefb758a7163230df8",
-  "source_freeze_sha256": "1aa65d0702fb6b46379e5af5542c6e2701d45e4f1a6d4ddefb758a7163230df8",
+  "reason_code": "CORE_METHOD_AND_EVIDENCE_UNAVAILABLE",
+  "summary": "The strongest kill argument survives for the current frozen artifact. The package is honest and useful as an evidence-gated pre-results draft, but it is not scientifically submit-ready: the proposed multi-person method is absent, the decision-bearing interfaces are non-executable, and no eligible MultiRep evidence exists. Three P1 findings independently sustain strong rejection if submitted now.",
   "audited_input_hashes": {
-    "main.tex": "sha256:041bfa52c09d53faaa9dde6bd6a1e0fba37e2ab2009a43bdc84e607e622e787c",
-    "preamble.tex": "sha256:248f035d6f420d297fc5628ff2f21918a3310836b466685a1e783c3b8d540a22",
-    "math_commands.tex": "sha256:ab4b7a090dfbbb5bd2ea6cd18406ef1aef714147594d42df32d42f9649892309",
-    "sections/0_abstract.tex": "sha256:2bb5e32dec7a2f18cb572a423f58c97f39c174c400579f41a055fdea1f725d8a",
-    "sections/1_introduction.tex": "sha256:623bd6c15f2394677c55f47d6975ff632ce75ccc70f97aca8db0415b434a8ff0",
-    "sections/2_related_work.tex": "sha256:96ab7ac0d5a65e4552aadcbff423c23de69994901f4057d9ede7b7c461ab6d31",
-    "sections/3_method.tex": "sha256:812d0aa8f4efa8dffc4149092af67adf04e8b383186caf83421134a7880f7542",
-    "sections/4_experiments.tex": "sha256:36d1eb3d9e413a1e7e970e87e3e976bc6fc04478c3276f63b955ea412db13766",
-    "sections/5_conclusion.tex": "sha256:e6d8a193e02fde717675b5858441b8368efdc898fb1d82b9a1023ef90a653091",
-    "appendix/a_experiment_contract.tex": "sha256:25138c31c471c9b2542b8e3fbf326a38686f25eeed452edebf0e5257330f46d5",
-    "references.bib": "sha256:b7fe464b859545d50a09fb534572e827a3e63f615ecb1d76f7c756df3e552aef",
-    "main.pdf": "sha256:1b6501e8c79d51adaae0660e21d7905123f28442a216eb6de76847d8755bd91d"
+    "main.pdf": "sha256:873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+    "main.tex": "sha256:a4fe29c47f200946c7d6f3522bd273f5895aabda2d7a959fdbf16397fe1cbe70",
+    "preamble.tex": "sha256:763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2",
+    "math_commands.tex": "sha256:e6dabb7ce789e0d78026e6bda287fe17faedb6d20c0df9b4f603cb3b6c123bee",
+    "sections/0_abstract.tex": "sha256:fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef",
+    "sections/1_introduction.tex": "sha256:6823651162f59e5f5263949f2d308f594b667cb3cba0044433c39031ae04db9d",
+    "sections/3_method.tex": "sha256:7e92c00eb4a7956b059536fd47240cefbea960aee61d4f3fdef1a7e24930c50d",
+    "sections/4_experiments.tex": "sha256:6052c816e94f7d7f50b560d397495a37863b05d240ed5e418e4b6ec4d3aa131b",
+    "sections/5_conclusion.tex": "sha256:e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c",
+    "references.bib": "sha256:322a5d16b0078e8b3436608d4c6158b67c5c8922b0dcae94537ea456c9f6f646",
+    "figures/icassp_framework.pdf": "sha256:3afa9d1261e3a54b25c8da708dd7c4e036587d6d01d0d60fc704edcd2fd8eb81",
+    "evidence/method_manifest.yaml": "sha256:07823bb5bb11509e79556f87c9bbb19c9ce4f0ff1fdea1b5cb832e89ae8cd289",
+    "evidence/results_manifest.json": "sha256:4df513a3f4427950d23267965192253446e6ee2b6968907855e0bae1a6a53159",
+    ".aris/traces/kill-argument-icassp/final/attack.md": "sha256:e4ad358e3e1ec4bcc15e0bcbd980716ce71174bce71ad0123c37cb352de956b9",
+    ".aris/traces/kill-argument-icassp/final/attack.meta.json": "sha256:400a70a11dde891dfc3aa76c47c62f9f74eaa9bce6c55abb076beea6913c1cdb",
+    ".aris/traces/kill-argument-icassp/final/attack_prompt.md": "sha256:496175d4d17c4caf754844c9d0e8e61356da924059ffc97029d4b668e8d67a5a",
+    ".aris/traces/kill-argument-icassp/final/defense.md": "sha256:8344a96bad1dd6b785b1dd83e0319df611716b4d2a723acb73bce4163a7bb0d1",
+    ".aris/traces/kill-argument-icassp/final/defense.meta.json": "sha256:e42163489c1d85607e58dafb959c8e58504a6e360f7a8ce6206db2b60555e53c",
+    ".aris/traces/kill-argument-icassp/final/defense_prompt.md": "sha256:05651da69f81ecb8fd6fcb577e66c43bb327f44e1c448a99f38f52deb0352795"
   },
-  "trace_path": ".aris/traces/kill-argument/2026-08-12_run01/",
-  "agent_id": "/root/kill_argument_attack_final/kill_argument_defense_final",
-  "executor_model": "codex-gpt-5.6-sol",
-  "executor_family": "openai",
+  "trace_path": ".aris/traces/kill-argument-icassp/final/",
+  "agent_id": "/root/icassp_kill_defense",
   "reviewer_model": "gpt-5.6-sol",
-  "reviewer_family": "openai",
   "reviewer_reasoning": "ultra",
+  "executor_model": "gpt-5.6-sol",
+  "executor_family": "openai",
+  "reviewer_family": "openai",
   "review_independence": "same-family",
   "acceptance_status": "provisional",
-  "generated_at": "2026-08-11T19:24:24Z",
+  "generated_at": "2026-08-14T23:30:00+08:00",
   "details": {
-    "attack_agent_id": "/root/kill_argument_attack_final",
-    "defense_agent_id": "/root/kill_argument_attack_final/kill_argument_defense_final",
-    "attack_memo": "The submission does not yet contain a scientific contribution that can be evaluated. It explicitly presents an aspirational, evidence-gated specification rather than an implemented, trainable, or empirically tested method. Because the claimed MRAC system is absent, its objective and decoder are underdetermined, its supervision boundary is unaudited, and every relevant result is missing, the headline scope, novelty, and validity are presently non-falsifiable. Even if the missing machinery were later implemented, the current text makes multi-person largely an externally supplied track index and admits that the remaining ingredients are inherited or generic, so the paper still needs evidence that the composition is more than independent single-person counting per track.",
-    "decomposed_points": [
+    "attack_verdict": "KILL_STRONG_REJECT",
+    "defense_verdict": "KILL_SURVIVES_CURRENT_ARTIFACT",
+    "pre_results_package": "defensible_and_useful",
+    "evidence_integrity": "PASS",
+    "visual_integrity": "PASS",
+    "submission_ready": false,
+    "scientifically_acceptable_now": false,
+    "strongest_kill_argument_survives": true,
+    "kill_scope": "current_frozen_artifact_only",
+    "finding_counts": {
+      "answered": 2,
+      "partially_answered": 10,
+      "still_unresolved": 5
+    },
+    "fatal_findings": [
       {
-        "id": "P_1",
-        "label": "implementation absent",
-        "attack_claim": "The proposed MRAC method is explicitly not implemented or synchronized.",
-        "verdict": "still_unresolved",
-        "evidence": "sections/3_method.tex:4-13 and 258-269 call the method provisional and incomplete; sections/5_conclusion.tex:12-20 confirms the missing multi-person path and artifacts.",
-        "severity_if_unresolved": "critical",
-        "recommended_fix": "Freeze a complete runnable MRAC commit, synchronize every equation and module, and provide code maps plus focused end-to-end tests."
+        "id": "P1.1",
+        "status": "still_unresolved",
+        "label": "proposed method absent"
       },
       {
-        "id": "P_2",
-        "label": "training and decoding underdetermined",
-        "attack_claim": "The written method is not a reproducible or fully trainable algorithm.",
-        "verdict": "still_unresolved",
-        "evidence": "sections/3_method.tex:161-174, 193-234, and 239-269 leave eligibility, losses, calibration, and decoding semantics unresolved.",
-        "severity_if_unresolved": "critical",
-        "recommended_fix": "Specify exact architecture, pseudocode, scalar losses and weights, targets, gradient paths, schedules, fallbacks, decoding, matching, and executable tests."
+        "id": "P1.2",
+        "status": "still_unresolved",
+        "label": "no eligible scientific evidence"
       },
       {
-        "id": "P_3",
-        "label": "no new-method evidence",
-        "attack_claim": "There is zero new-method empirical evidence, so validity and benefit cannot be evaluated.",
-        "verdict": "still_unresolved",
-        "evidence": "sections/0_abstract.tex:18-22 and sections/4_experiments.tex:4-9 and 120-253 withhold every empirical conclusion; the PDF renders pending tables.",
-        "severity_if_unresolved": "critical",
-        "recommended_fix": "Populate the frozen MultiRep protocol with repeated seeds, paired uncertainty, same-track controls, core ablations, and tracking/efficiency analyses."
-      },
-      {
-        "id": "P_4",
-        "label": "multi-person scope depends on supplied tracks",
-        "attack_claim": "The headline identity capability is outsourced to a tracker and may reduce to independent single-track inference.",
-        "verdict": "partially_answered",
-        "evidence": "sections/3_method.tex:39-55 and sections/2_related_work.tex:43-58 disclose track-wise semantics and no cross-person mechanism, but discriminating evidence is absent.",
-        "severity_if_unresolved": "major",
-        "recommended_fix": "Report same-track PAMS and sliding-window controls; narrow the title to track-conditioned counting if evidence does not establish a nontrivial MRAC contribution."
-      },
-      {
-        "id": "P_5",
-        "label": "composition novelty unverified",
-        "attack_claim": "The method composes acknowledged prior or generic ingredients without demonstrated synergy.",
-        "verdict": "partially_answered",
-        "evidence": "sections/1_introduction.tex:14-39 and sections/2_related_work.tex:23-58 narrow novelty responsibly, while planned factorial controls remain unpopulated.",
-        "severity_if_unresolved": "major",
-        "recommended_fix": "State one precise interaction hypothesis and populate capacity-matched factorial, routing, and boundary controls."
-      },
-      {
-        "id": "P_6",
-        "label": "supervision boundary unverified",
-        "attack_claim": "The no-person-wise-count-or-period-supervision property is intended but not provenance-audited.",
-        "verdict": "partially_answered",
-        "evidence": "sections/1_introduction.tex:53-60 and sections/3_method.tex:239-269 narrowly define the claim but lack a frozen training graph and data-lineage record.",
-        "severity_if_unresolved": "critical",
-        "recommended_fix": "Publish a frozen training-graph and data-lineage audit covering pretrained assets, pseudo-labels, tuning, calibration, and checkpoint selection."
+        "id": "P1.3",
+        "status": "still_unresolved",
+        "label": "non-executable specification"
       }
     ],
-    "counts": {
-      "answered_by_current_text": 0,
-      "partially_answered": 3,
-      "still_unresolved": 3
+    "reinforcing_unresolved_finding": {
+      "id": "P3.2",
+      "label": "mechanism ablation remains confounded"
     },
-    "net_assessment": "The strongest kill argument survives current-text defense. Explicit limitations prevent misleading overclaiming, but they do not substitute for a synchronized trainable method, supervision provenance, or empirical evidence; P1-P3 independently sustain rejection.",
-    "top_action_items": [
-      "Freeze and synchronize the complete runnable method, objective, decoder, code map, and tests.",
-      "Freeze supervision and data lineage and populate the protocol accounting.",
-      "Run the predeclared MultiRep same-track and oracle experiments with Track-PAMS/sliding-window controls and paired repeated-seed uncertainty."
+    "not_a_basis_for_kill": [
+      "fabrication",
+      "concealed evidence",
+      "typography",
+      "author placeholders"
     ]
   }
 }

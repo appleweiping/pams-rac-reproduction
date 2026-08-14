@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "audit": "citation-audit-icassp/group-b",
+  "agent_id": "/root/icassp_citation_audit_b",
+  "model": "gpt-5 (Codex deployment; exact variant not exposed to agent)",
+  "reasoning": "not exposed to agent",
+  "fork": "none",
+  "fresh_zero_context": true,
+  "same_family": true,
+  "provisional": true,
+  "provisional_reason": "Same-family reviewer artifact; substantive audit is complete and reports PASS, but independence metadata remains provisional.",
+  "read_prior_audits_or_logs": false,
+  "modified_scientific_sources": false,
+  "timestamp_local": "2026-08-14T22:31:28.219+08:00",
+  "timestamp_utc": "2026-08-14T14:31:28.219Z",
+  "timezone": "Asia/Shanghai",
+  "overall_verdict": "PASS",
+  "keys": [
+    "ma2026detrc",
+    "wang2026d2stx",
+    "welch1967fft",
+    "lomb1976unequal",
+    "griffin1984stft",
+    "shazeer2017moe",
+    "luiten2021hota",
+    "ristani2016idmetrics"
+  ],
+  "input_hash_algorithm": "SHA-256 raw bytes",
+  "input_hashes": {
+    "paper/references.bib": "322a5d16b0078e8b3436608d4c6158b67c5c8922b0dcae94537ea456c9f6f646",
+    "paper/main.tex": "a4fe29c47f200946c7d6f3522bd273f5895aabda2d7a959fdbf16397fe1cbe70",
+    "paper/sections/0_abstract.tex": "fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef",
+    "paper/sections/1_introduction.tex": "6b9a712638ab71e48c712f79a3eec5b2931fb0aa98ea405fb686ead0c8c0e539",
+    "paper/sections/3_method.tex": "7e92c00eb4a7956b059536fd47240cefbea960aee61d4f3fdef1a7e24930c50d",
+    "paper/sections/4_experiments.tex": "6013d1a197e8557b97ea08f6dc70978b4d900e14a0c9487036f343781a572b62",
+    "paper/sections/5_conclusion.tex": "e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c"
+  },
+  "counts": {
+    "keys": 8,
+    "existence_pass": 8,
+    "metadata_pass": 8,
+    "context_pass": 8,
+    "context_paragraphs": 4,
+    "requested_source_edits": 0
+  }
+}

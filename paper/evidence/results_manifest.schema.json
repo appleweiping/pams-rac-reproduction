@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/rac/icassp2027/results_manifest.schema.json",
+  "title": "ICASSP 2027 RAC frozen results manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "document_type", "status", "artifact_id",
+    "artifact_family", "frozen", "table_eligible", "method_commit",
+    "dataset", "protocol", "seeds", "statistics", "hardware",
+    "configuration_files", "run_logs", "prediction_artifacts",
+    "source_artifacts", "metrics", "audits", "paper_bindings",
+    "eligibility", "blocking_reasons"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": "1.0"},
+    "document_type": {"const": "icassp_results_manifest"},
+    "status": {"enum": ["data-pending", "frozen-eligible", "excluded"]},
+    "artifact_id": {"type": ["string", "null"]},
+    "artifact_family": {"type": ["string", "null"]},
+    "frozen": {"type": "boolean"},
+    "table_eligible": {"type": "boolean"},
+    "method_commit": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "release", "split", "checksum"],
+      "properties": {
+        "name": {"const": "MultiRep"},
+        "release": {"type": ["string", "null"]},
+        "split": {"type": ["string", "null"]},
+        "checksum": {"type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["track_modes", "native_contextual_separated", "common_track_frontend", "evaluation_script", "evaluation_type"],
+      "properties": {
+        "track_modes": {"type": "array", "items": {"enum": ["oracle", "predicted"]}, "uniqueItems": true},
+        "native_contextual_separated": {"const": true},
+        "common_track_frontend": {"type": ["string", "null"]},
+        "evaluation_script": {"type": ["string", "null"]},
+        "evaluation_type": {"enum": ["real_gt", "synthetic_proxy", "self_supervised_proxy", "simulation_only", "human_eval", null]}
+      }
+    },
+    "seeds": {"type": "array", "items": {"type": "integer"}, "uniqueItems": true},
+    "statistics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mean", "sample_standard_deviation", "paired_video_cluster_bootstrap_95ci", "bootstrap_unit"],
+      "properties": {
+        "mean": {"type": "boolean"},
+        "sample_standard_deviation": {"type": "boolean"},
+        "paired_video_cluster_bootstrap_95ci": {"type": "boolean"},
+        "bootstrap_unit": {"type": ["string", "null"]}
+      }
+    },
+    "hardware": {"type": ["object", "null"]},
+    "configuration_files": {"type": "array", "items": {"$ref": "#/$defs/pathHash"}},
+    "run_logs": {"type": "array", "items": {"$ref": "#/$defs/pathHash"}},
+    "prediction_artifacts": {"type": "array", "items": {"$ref": "#/$defs/pathHash"}},
+    "source_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path", "format", "sha256", "frozen"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"},
+          "path": {"type": "string"},
+          "format": {"enum": ["json", "csv"]},
+          "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "frozen": {"const": true}
+        }
+      }
+    },
+    "metrics": {"type": "object"},
+    "audits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["experiment_audit", "result_to_claim", "paper_claim_audit"],
+      "properties": {
+        "experiment_audit": {"$ref": "#/$defs/audit"},
+        "result_to_claim": {"$ref": "#/$defs/audit"},
+        "paper_claim_audit": {"$ref": "#/$defs/audit"}
+      }
+    },
+    "paper_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol_fields", "results", "claims", "abstract_result"],
+      "properties": {
+        "protocol_fields": {"type": "array", "items": {"$ref": "#/$defs/binding"}},
+        "results": {"type": "array", "items": {"$ref": "#/$defs/binding"}},
+        "claims": {"type": "array", "items": {"$ref": "#/$defs/binding"}},
+        "abstract_result": {"oneOf": [{"$ref": "#/$defs/sourceLocator"}, {"type": "null"}]}
+      }
+    },
+    "eligibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["new_synchronized_multirep_family", "method_commit_bound", "dataset_release_bound", "protocol_bound", "three_or_more_seeds", "uncertainty_complete", "raw_artifacts_hash_bound", "audits_pass"],
+      "properties": {
+        "new_synchronized_multirep_family": {"type": "boolean"},
+        "method_commit_bound": {"type": "boolean"},
+        "dataset_release_bound": {"type": "boolean"},
+        "protocol_bound": {"type": "boolean"},
+        "three_or_more_seeds": {"type": "boolean"},
+        "uncertainty_complete": {"type": "boolean"},
+        "raw_artifacts_hash_bound": {"type": "boolean"},
+        "audits_pass": {"type": "boolean"}
+      }
+    },
+    "blocking_reasons": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "pathHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string"},
+        "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "path", "sha256"],
+      "properties": {
+        "status": {"enum": ["pending", "PASS", "WARN", "FAIL", "BLOCKED", "NOT_APPLICABLE"]},
+        "path": {"type": ["string", "null"]},
+        "sha256": {"type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    },
+    "sourceLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "locator"],
+      "properties": {
+        "key": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$"},
+        "source_id": {"type": "string"},
+        "locator": {
+          "oneOf": [
+            {"type": "object", "additionalProperties": false, "required": ["json_pointer"], "properties": {"json_pointer": {"type": "string", "pattern": "^/"}}},
+            {"type": "object", "additionalProperties": false, "required": ["row", "column"], "properties": {"row": {"type": "integer", "minimum": 0}, "column": {"type": "string"}}}
+          ]
+        }
+      }
+    },
+    "binding": {
+      "allOf": [
+        {"$ref": "#/$defs/sourceLocator"},
+        {"type": "object", "required": ["key"], "properties": {"key": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$"}}}
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "frozen-eligible"}}, "required": ["status"]},
+      "then": {
+        "properties": {
+          "artifact_id": {"type": "string", "minLength": 1},
+          "artifact_family": {"type": "string", "minLength": 1},
+          "frozen": {"const": true},
+          "table_eligible": {"const": true},
+          "method_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "seeds": {"minItems": 3},
+          "source_artifacts": {"minItems": 1},
+          "blocking_reasons": {"maxItems": 0}
+        }
+      }
+    }
+  ]
+}

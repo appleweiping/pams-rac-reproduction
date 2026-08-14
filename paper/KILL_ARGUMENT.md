@@ -1,52 +1,23 @@
-# Kill Argument Report
+# Kill-Argument Audit — ICASSP 2027 Pre-results Draft
 
-**Date:** 2026-08-12  
-**Review:** two fresh zero-context `gpt-5.6-sol` ultra agents  
-**Attack agent:** `/root/kill_argument_attack_final`  
-**Adjudicator:** `/root/kill_argument_attack_final/kill_argument_defense_final`  
-**Verdict:** `FAIL` (`unresolved_critical`; same-family/provisional)
+**Verdict: FAIL — strongest kill argument survives (same-family / provisional).**
 
-## Net assessment
+The attack and defense were performed by separate fresh zero-context `gpt-5.6-sol` agents at `ultra` reasoning against the same frozen five-page PDF and exact source/evidence hashes. Both reviewers inspected all five PDF pages. The attack recommends strong rejection; the defense concludes that the artifact is defensible and useful as an honest pre-results package, but agrees that it is not scientifically acceptable for submission now.
 
-The strongest rejection survives the current-text defense. The manuscript's
-explicit limitations prevent misleading overclaiming, but they cannot replace a
-synchronized trainable method, supervision provenance, or empirical evidence.
-Three independently critical points remain unresolved.
+## Fatal findings
 
-## Attack memo (verbatim)
+| ID | Defense ruling | Reason |
+|---|---|---|
+| P1.1 | `still_unresolved` | The proposed multi-person router/expert/reconstruction method has no frozen implementation commit, source anchors, or tests. |
+| P1.2 | `still_unresolved` | No eligible MultiRep result, prediction, protocol binding, seed set, or uncertainty artifact exists. |
+| P1.3 | `still_unresolved` | The four-equation narrative deliberately leaves decision-bearing estimator, router, expert, loss, fallback, and decoder interfaces synchronized only by future collaborator evidence. |
 
-> The submission does not yet contain a scientific contribution that can be
-> evaluated. It explicitly presents an aspirational, evidence-gated
-> specification rather than an implemented, trainable, or empirically tested
-> method. Because the claimed MRAC system is absent, its objective and decoder
-> are underdetermined, its supervision boundary is unaudited, and every relevant
-> result is missing, the headline scope, novelty, and validity are presently
-> non-falsifiable. Even if the missing machinery were later implemented, the
-> current text makes "multi-person" largely an externally supplied track index
-> and admits that the remaining ingredients are inherited or generic, so the
-> paper still needs evidence that the composition is more than independent
-> single-person counting per track.
+The defense ruled 2 of 17 findings answered, 10 partially answered, and 5 still unresolved. P3.2 also remains unresolved because the planned mechanism ablations cannot identify a mechanism until the underlying executable system and controls exist.
 
-## Adjudication
+## What passes
 
-| Point | Ruling | Severity | Short reason |
-|---|---|---:|---|
-| P1: implementation absent | `still_unresolved` | critical | The multi-person method is explicitly provisional and unsynchronized. |
-| P2: algorithm underdetermined | `still_unresolved` | critical | Training targets, losses, calibration, and decoding remain unspecified. |
-| P3: no new-method evidence | `still_unresolved` | critical | Every new empirical field is controlled and pending. |
-| P4: supplied-track scope | `partially_answered` | major | Scope is disclosed, but nontriviality beyond per-track inference is untested. |
-| P5: composition novelty | `partially_answered` | major | Claims are narrow, but synergy is not demonstrated. |
-| P6: supervision provenance | `partially_answered` | critical | The semantic boundary is narrow, but the frozen information flow is absent. |
+- Evidence integrity: the draft visibly withholds results and never fabricates a method or number.
+- Visual integrity: all five pages are legible; technical content ends on page 4 and page 5 contains references only.
+- Scope discipline: the paper avoids prohibited novelty/SOTA claims and marks source-sensitive interfaces `SYNC-REQUIRED`.
 
-Counts: 0 answered, 3 partially answered, and 3 still unresolved.
-
-## Priority actions
-
-1. Freeze and synchronize the runnable method, objective, decoder, code map,
-   and tests.
-2. Freeze supervision/data lineage and populate protocol accounting.
-3. Run the predeclared MultiRep same-track and oracle comparisons with
-   Track-PAMS/sliding-window controls and paired repeated-seed uncertainty.
-
-The complete attack and adjudication records are under
-`.aris/traces/kill-argument/2026-08-12_run01/`.
+The full attack, independent defense, prompts, metadata, and hashes are archived under `.aris/traces/kill-argument-icassp/final/`. This audit is intentionally blocking and applies only to the current frozen pre-results artifact; it must be rerun after synchronized code and eligible results arrive.

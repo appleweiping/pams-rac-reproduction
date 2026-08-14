@@ -1,23 +1,14 @@
-\begin{abstract}
-\draftbanner
-Multi-person repetitive action counting (MRAC) must assign repetitions to
-the correct person even when several people act asynchronously and each
-person accelerates, decelerates, pauses, or disappears behind an occluder.
-The MultiCounter family jointly learns detection, association, and counting
-from annotated RGB videos, while label-efficient pose counters are
-primarily developed for a single dominant actor. We study the complementary
-setting in which a counting model receives identity-indexed pose tracks but
-uses no person-wise count or period annotation during its intended counting
-training. Our proposed design shares one pose encoder and a bank of tempo
-experts across people while keeping temporal state separate for every
-identity. Within overlapping windows, masked period evidence drives a soft
-fast--medium--slow router. Expert responses are fused by normalized
-overlap-add, after which each identity is decoded once, removing the direct
-arithmetic double-counting path created by summing independent windows. The
-primary output is a
-person-wise count vector rather than only a scene total. \ControlledAbstractResult{} The
-current manuscript is an evidence-gated pre-results specification: exact
-auxiliary losses, frontend choices, and every empirical statement remain
-blocked until they are reconciled with frozen code and machine-readable
-artifacts.
-\end{abstract}
+Multi-person repetition counting estimates a count for each supplied persistent
+identity track rather than only a scene total. The task is difficult when people move
+asynchronously, individual pace changes within a trajectory, and missing poses
+turn each trajectory into a masked nonstationary signal. We propose an
+identity-indexed signal-processing specification that receives supplied pose
+tracks and targets counting without person-wise count or period labels, while
+acknowledging external supervision in the pose and tracking frontends.
+Overlapping windows share an encoder and fast, medium, and slow response
+experts; masked autocorrelation and Fourier evidence yield local period cues
+and confidence. Soft routing mixes expert responses, and normalized overlap-add
+reconstructs one response and decodes it once per identity. This design
+separates per-track state from shared parameters and avoids independently
+counting every overlapping window, removing one structural source of boundary
+double-counting. \ControlledAbstractResult

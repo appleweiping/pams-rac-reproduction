@@ -1,132 +1,105 @@
-# Paper Improvement Log
+# ICASSP 2027 paper improvement log
 
-## Baseline (Round 0)
+Status: `provisional/data-pending`
+
+This log covers the fresh same-family ARIS improvement loop. It cannot establish
+cross-family acceptance and does not override missing implementation, experiment,
+author, or venue evidence.
+
+## Round 0
 
 - Artifact: `paper/main_round0_original.pdf`
-- Build: 9 pages, letter paper, all fonts embedded, zero final LaTeX warnings,
-  zero undefined references/citations, zero duplicate labels, zero overfull or
-  underfull boxes.
-- Status: anonymous pre-results draft; empirical fields intentionally pending.
-- Review coverage: fresh same-family reviewer; Claude cross-family overlay was
-  installed but not healthy, so assurance remains provisional.
+- SHA-256: `26eeb9e5b913fa8160276447e9c31b38c9fe147ef7f64666aed41144427ecd26`
+- Pages: 5; page 5 references only
+- Visual verdict: PASS
+- Scientific status: honest pre-results specification; not submission-ready
 
 ## Round 1
 
-Reviewer trace: `.aris/traces/paper-improvement/round1/reviewer.md`
+- Reviewer: fresh `gpt-5.6-sol`, xhigh, zero inherited context
+- Trace: `paper/.aris/traces/paper-improvement/round1/`
+- Reviewer verdict: `PROVISIONAL MAJOR REVISION`; `ROUND1_ACCEPTED: NO`
+- Unresolved critical blocker: the collaborator-frozen trainable graph, decoder,
+  supervision paths, and MultiRep evidence do not exist locally.
 
-Changes applied or queued:
+Implemented writing-side changes:
 
-- Marked the training objective as an incomplete schematic and enumerated the
-  exact expert/decoder/specialization/calibration evidence required at sync.
-- Added an evaluator-ready scored-event contract and blocked official metrics
-  until adapter and predicted-track matching tests exist.
-- Defined valid-frame mean, units, non-DC frequency support, low-confidence
-  fallback, direct-gradient boundary, route-collapse diagnostics, and
-  within-track-only continuity semantics.
-- Softened overlap-add claims to removal of arithmetic double-counting rather
-  than a guarantee against phase-induced duplicate peaks.
-- Added independent/sliding-window PAMS, deterministic routing, and stronger
-  boundary-fusion controls; removed arbitrary person-indexed weights.
-- Pre-registered Period-mAP versus track-conditioned PAMS as the primary paired
-  contrast, separated seed/video uncertainty, and scoped multiplicity.
-- Expanded common-interface baseline rows and added a protocol-disclosure
-  table for modality, labels, track source, and run count.
-- Split robustness by pipeline level and added active-identity efficiency
-  reporting for counting-only and full-pipeline costs.
-- Reworked evidence schemas, story/notation checks, and acceptance-contract
-  gates in response to the independent contract review.
-- Simplified both editable vector figures, increased task-figure label sizes,
-  collapsed the framework to one eight-stage inference spine, and retained an
-  explicit provisional training strip.
-- Reflowed the soft-router equation and efficiency table to eliminate the two
-  new overfull boxes introduced during revision.
+1. Reframed the empirical section as a planned, not completed, protocol.
+2. Added signal-processing antecedents for windowed spectra, irregular samples,
+   overlap-add, and expert routing; explicitly disclaimed component-level novelty.
+3. Added a result-free, falsifiable local-versus-global tempo hypothesis.
+4. Exposed predicted-track lifecycle and ground-truth association as source-bound
+   protocol fields instead of assuming stable identities.
+5. Added mask-spectrum leakage controls, minimum-support requirements, and an
+   irregular-sampling alternative to the period-estimator contract.
+6. Expanded matched ablations to isolate ACF/FFT evidence, single/hard/soft
+   routing, global/local tempo, and response reconstruction; defined delta signs.
+7. Weakened the overlap-add claim to the guarantee supported by operation order
+   and added timestamp/positive-coverage conditions.
+8. Aligned figure notation with the equations, enlarged labels, and simplified
+   the provisional training strip without claiming implementation.
+9. Compressed the manuscript to approximately 2,377 words while retaining four
+   core equation environments and the 4+1-page layout.
 
-Frozen round-1 artifact: `paper/main_round1.pdf`, SHA-256
-`63794996aff675a57f522fc54e8c80725b45c688fe122a70bca8eb9de3417ae1`.
-Deterministic build QA passes on nine letter-size pages with zero final LaTeX
-warnings, undefined citations/references, duplicate labels, overfull boxes, or
-unembedded fonts. All nine rendered pages passed visual inspection; the
-framework-density and sparse-appendix observations remain non-blocking draft
-advisories.
+Round-1 compiled artifact:
 
-Blocked rather than invented:
-
-- exact expert and decoder learning signals;
-- routing/continuity loss definitions and weights;
-- official evaluator adapter and matching policy;
-- multi-person implementation, artifacts, and all empirical interpretations.
+- `paper/main_round1.pdf`
+- SHA-256: `0e521ad303b21fbb98d7c3ea52cb2aec2c5376ea07400986bb1721b0ca3c9a17`
+- Build: zero undefined references/citations, zero duplicate labels, zero
+  overfull boxes; all fonts embedded
+- Visual review: all five pages PASS; page 5 contains references only
 
 ## Round 2
 
-Reviewer trace: `.aris/traces/paper-improvement/round2/reviewer.md`
+- Reviewer: fresh `gpt-5.6-sol`, xhigh, zero inherited context
+- Trace: `paper/.aris/traces/paper-improvement/round2/`
+- Reviewer verdict: `PROVISIONAL MAJOR REVISION / WEAK REJECT`;
+  `ROUND2_ACCEPTED: NO`
+- Unresolved submission blockers: executable collaborator-frozen router, expert,
+  decoder, and training definitions; persistent-identity semantics beyond supplied
+  tracks; frozen MultiRep protocol and evidence.
 
-The fresh reviewer correctly kept the paper at strong-reject/data-pending
-status because the synchronized training graph and all MultiRep evidence are
-absent. Safe specification changes made without inventing those facts:
+Implemented writing-side changes:
 
-- Distinguished ground-truth people from predicted tracker outputs: the raw
-  predicted vector is track-wise, and person-wise metrics exist only after the
-  frozen evaluator's matching step.
-- Replaced broad identity-conditioning language with track-indexed computation
-  and stated explicitly that no identity embedding or cross-person interaction
-  is currently specified.
-- Defined a uniform lag grid, valid-pair support mask, zero-filled unsupported
-  lags, and a provisional eligibility/zero-response path for pauses and
-  unsupported windows; harmonic, mask-artifact, and activity rules remain
-  synchronization blockers.
-- Pre-registered dataset tempo/pause/gap/window-eligibility characterization,
-  a two-level paired seed/video bootstrap that recomputes Period-mAP, exact
-  adapter disclosures, and a stricter label firewall.
-- Added controlled/native table panels, matched metric terminology,
-  removal/factorial/capacity controls, route-collapse diagnostics, stratum
-  sample sizes, a closest-work scope matrix, and explicit synthetic-data limits.
-- Labeled Figure 1's left panel as a naïve pooled failure mode, suppressed PDF
-  creation metadata, and documented numerical-stabilizer sensitivity checks.
+1. Scoped the primary output claim to supplied persistent identity tracks and
+   separated predicted-track robustness from that claim.
+2. Replaced ambiguous causal wording with processing order.
+3. Added a matched supplied-oracle-track block to isolate the counter from the
+   tracking frontend.
+4. Bound metric activation to release-native definitions plus frozen evaluation
+   unit, assignment, unmatched, aggregation, empty-support, and zero-count rules.
+5. Added a direct decode-each-window-then-aggregate control; defined the boxcar
+   control, set the reference deltas to zero by definition, and required a
+   boundary-offset test.
+6. Required the tempo-warp artifact to transform frames, masks, and event times;
+   freeze interpolation, support, duration, and severity bins; and include a
+   held-out natural-nonstationarity analysis.
+7. Moved the planned diagnostic source after its first textual introduction and
+   simplified the active framework figure for print-scale readability.
 
-Still blocked rather than invented:
+The method itself was not invented to satisfy review. Every implementation-
+sensitive interface remains source-bound and submission-blocking.
 
-- every expert/decoder/event-score learning signal and loss weight;
-- static-window activity/null-expert and harmonic policy from frozen code;
-- official event adapter, matching semantics, and MultiRep release statistics;
-- any result, improvement, generalization, or real-world MRAC conclusion.
+Round-2 compiled artifact:
 
-Frozen round-2 artifact: `paper/main_round2.pdf`, SHA-256
-`1b6501e8c79d51adaae0660e21d7905123f28442a216eb6de76847d8755bd91d`.
-It remains the immutable round-2 snapshot. The delivery `paper/main.pdf` was
-subsequently rebuilt after citation-context corrections, so the two files are
-intentionally no longer byte-identical. Round-2 deterministic QA passed on
-eleven letter-size pages: the main text and planned-result table shells end on
-page 8, references and the extended experimental contract follow, and the
-conclusion is on page 7.
+- `paper/main_round2.pdf`
+- SHA-256: `873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45`
+- Build: five pages; zero undefined references/citations, duplicate labels,
+  overfull boxes, or unembedded fonts
+- Page rule: technical content ends on page 4; page 5 contains references only
+- Visual review: all five rendered pages PASS
 
-The final acceptance-contract review was the third and last negotiated round.
-Its remaining infrastructure findings were implemented after review, but ARIS
-forbids a fourth acceptance round; the contract therefore remains contested
-pending a human tie-break, independently of the already-blocking missing data,
-official CVPR 2027 kit, and cross-family reviewer health.
+## Final pre-results stabilization
 
-## Post-round citation correction and delivery freeze
-
-The citation audit identified one scientifically material wording error: PAMS
-tests uniform whole-video speed resampling, not local time warps. The
-Introduction now states the supported global-resampling result. TransRAC
-pagination and title capitalization were normalized to the IEEE/Crossref
-version of record, and ByteTrack title capitalization was normalized to the
-Springer version of record. No empirical value or performance claim was added.
-
-An initial fresh proof audit then caught an over-exact algebraic sentence around
-Eq. (11): the positive numerical stabilizer means overlap-add does not have
-literal coverage-count invariance. The final prose now claims only removal of
-the direct unnormalized coverage-count scaling and explicitly discloses the
-remaining support-dependent stabilizer bias. The failed pre-fix review is
-preserved in `.aris/traces/proof-checker/final-pre-fix/`.
-
-The current delivery PDF is `paper/main.pdf`, SHA-256
-`de951023634d5627f3c38cd7512da9fd7df20086781d24caf0a548b93b3d9522`.
-Its source-freeze SHA-256 is
-`1376b6a388d049b12548a589e9753237bd9e62802091d822cd46cb450aa26184`.
-Deterministic build QA passes with 11 letter-size pages, zero final LaTeX
-warnings, zero undefined citations/references, zero duplicate labels, zero
-overfull/underfull boxes, and all fonts embedded. Every page of this exact PDF
-was rendered and visually inspected. This remains a pre-results delivery, not a
-submission-ready artifact.
+- `paper/main.pdf` is byte-identical to `paper/main_round2.pdf` at SHA-256
+  `873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45`.
+- Canonical MultiRep metric names were corrected to `Period-mAP`,
+  `Period-AP50`, `Period-AP75`, `AvgMAE`, and `AvgOBO` and re-audited against
+  the active citation contexts.
+- The proof audit is `NOT_APPLICABLE`; the citation audit passes under the
+  same-family provisional ceiling. The claim and kill-argument audits remain
+  blocking because no synchronized multi-person implementation or eligible
+  result artifact exists.
+- Submission mode remains intentionally fail-closed for pending method/results,
+  an incomplete author roster, the unavailable official 2027 kit, the absent
+  cross-family response, and unresolved final scientific evidence.

@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-14T15:33:33.205749Z",
+  "verdict": "PASS",
+  "pdf": {
+    "path": "main.pdf",
+    "sha256": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+    "bytes": 348367
+  },
+  "source_bundle_sha256": "b778aad1c34a582362d6d5e541460dc2d594c36f9fa788e08dfea8ad766489ed",
+  "source_files": [
+    {
+      "path": "main.tex",
+      "sha256": "a4fe29c47f200946c7d6f3522bd273f5895aabda2d7a959fdbf16397fe1cbe70"
+    },
+    {
+      "path": "preamble.tex",
+      "sha256": "763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2"
+    },
+    {
+      "path": "math_commands.tex",
+      "sha256": "e6dabb7ce789e0d78026e6bda287fe17faedb6d20c0df9b4f603cb3b6c123bee"
+    },
+    {
+      "path": "references.bib",
+      "sha256": "322a5d16b0078e8b3436608d4c6158b67c5c8922b0dcae94537ea456c9f6f646"
+    },
+    {
+      "path": "sections/0_abstract.tex",
+      "sha256": "fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef"
+    },
+    {
+      "path": "sections/1_introduction.tex",
+      "sha256": "6823651162f59e5f5263949f2d308f594b667cb3cba0044433c39031ae04db9d"
+    },
+    {
+      "path": "sections/3_method.tex",
+      "sha256": "7e92c00eb4a7956b059536fd47240cefbea960aee61d4f3fdef1a7e24930c50d"
+    },
+    {
+      "path": "sections/4_experiments.tex",
+      "sha256": "6052c816e94f7d7f50b560d397495a37863b05d240ed5e418e4b6ec4d3aa131b"
+    },
+    {
+      "path": "sections/5_conclusion.tex",
+      "sha256": "e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c"
+    },
+    {
+      "path": "figures/icassp_framework.pdf",
+      "sha256": "3afa9d1261e3a54b25c8da708dd7c4e036587d6d01d0d60fc704edcd2fd8eb81"
+    }
+  ],
+  "checks": {
+    "final_log_warning_count": 0,
+    "page_count": 5,
+    "letter_page_size": true,
+    "conclusion_page": 4,
+    "conclusion_within_four_pages": true,
+    "font_count": 20,
+    "unembedded_font_count": 0,
+    "type3_font_count_advisory": 0,
+    "duplicate_labels": [],
+    "undefined_citation_keys": [],
+    "uncited_bib_keys": [],
+    "draft_author_placeholder_visible": true,
+    "draft_banner_visible": true,
+    "unresolved_question_marks": false
+  },
+  "final_log_warnings": [],
+  "unembedded_fonts": []
+}

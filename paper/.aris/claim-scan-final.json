@@ -1,106 +1,280 @@
 {
-  "schema_version": 2,
-  "mode": "submission",
-  "verdict": "PASS",
-  "allowlist_policy": "Only the exact phrase-level contextual exceptions named in this report are allowed; generic nearby negation is not an exception.",
-  "positive_comparison_policy": "Own-method positive comparisons require both a manifest-resolved claim binding and a manifest-resolved comparison binding in local context.",
-  "result_manifest_sha256": null,
-  "pdf_binding": {
-    "status": "PASS",
-    "pdf_sha256": "de951023634d5627f3c38cd7512da9fd7df20086781d24caf0a548b93b3d9522",
-    "extracted_text_sha256": "d5af89370fcdcfc5417ae7e863dbd7ba24a1b28b4d3b01b3ae96140e5838d6a9",
-    "extractor": "pdftotext -layout",
-    "exact_extraction_match": true
+  "blockers": [
+    "PENDING, SYNC-REQUIRED, [VERIFY], TBD, or TODO remains in submission prose",
+    "claim ledger has unlicensed submission-facing claims",
+    "evidence macros are used but generated/evidence_values.tex is absent"
+  ],
+  "checks": [
+    {
+      "detail": "8 active TeX files",
+      "id": "active_source_graph",
+      "status": "PASS"
+    },
+    {
+      "detail": "0 unallowlisted hits",
+      "id": "forbidden_claims",
+      "status": "PASS"
+    },
+    {
+      "detail": "33 hits",
+      "id": "placeholders",
+      "status": "BLOCKED"
+    },
+    {
+      "detail": "0 suspect tables",
+      "id": "empty_tables",
+      "status": "PASS"
+    },
+    {
+      "detail": "evidence macros are used but generated/evidence_values.tex is absent",
+      "id": "evidence_macro_bindings",
+      "status": "BLOCKED"
+    },
+    {
+      "detail": "exactly 16 claims",
+      "id": "claim_ledger_schema",
+      "status": "PASS"
+    },
+    {
+      "detail": "mapped=0, unlicensed_core=11",
+      "id": "claim_mapping",
+      "status": "BLOCKED"
+    }
+  ],
+  "claim_mapping": {
+    "mapped_ids": [],
+    "unknown_ids": [],
+    "unlicensed_ids": [
+      "AC01",
+      "AC02",
+      "AC03",
+      "AC04",
+      "AC05",
+      "AC06",
+      "AC07",
+      "AC08",
+      "AC09",
+      "AC10",
+      "AC13"
+    ]
   },
-  "scanned": [
-    {
-      "file": "appendix/a_experiment_contract.tex",
-      "sha256": "25138c31c471c9b2542b8e3fbf326a38686f25eeed452edebf0e5257330f46d5"
-    },
-    {
-      "file": "figures/framework.drawio",
-      "sha256": "eb5db275950887b28ba57e343030ce52f07630c770bac06b69ec0de8c5bcdd5f"
-    },
-    {
-      "file": "figures/framework.svg",
-      "sha256": "db56b4e316a569f8a6eda30e713b1f145d8eeca818a57754114292eaa1f4947f"
-    },
-    {
-      "file": "figures/task_comparison.drawio",
-      "sha256": "0f9f55284abdcd0dcb04df0c51fe5715a7bd8dfbec036c659bb574e59b4a6726"
-    },
-    {
-      "file": "figures/task_comparison.svg",
-      "sha256": "4ad6503ec3c75fe8377ab69488fd33eb3a261c95e67f64636c50f968efed3f5c"
-    },
-    {
-      "file": "generated/README.md",
-      "sha256": "7ec75d9ab72706426039e0336ad958e06d062711fe065484e6b3bd7227bf17c5"
-    },
-    {
-      "file": "main.tex",
-      "sha256": "041bfa52c09d53faaa9dde6bd6a1e0fba37e2ab2009a43bdc84e607e622e787c"
-    },
-    {
-      "file": "math_commands.tex",
-      "sha256": "ab4b7a090dfbbb5bd2ea6cd18406ef1aef714147594d42df32d42f9649892309"
-    },
-    {
-      "file": "preamble.tex",
-      "sha256": "248f035d6f420d297fc5628ff2f21918a3310836b466685a1e783c3b8d540a22"
-    },
-    {
-      "file": "sections/0_abstract.tex",
-      "sha256": "2bb5e32dec7a2f18cb572a423f58c97f39c174c400579f41a055fdea1f725d8a"
-    },
-    {
-      "file": "sections/1_introduction.tex",
-      "sha256": "d1f82e381a982b7c8075d4f09e86798703a4be28f713b90ced8cce801fbe6d3c"
-    },
-    {
-      "file": "sections/2_related_work.tex",
-      "sha256": "96ab7ac0d5a65e4552aadcbff423c23de69994901f4057d9ede7b7c461ab6d31"
-    },
-    {
-      "file": "sections/3_method.tex",
-      "sha256": "12f2b96e16e034a5c8ec3db887d70676919060e2e543180ca2c186cab9cd8b5b"
-    },
-    {
-      "file": "sections/4_experiments.tex",
-      "sha256": "36d1eb3d9e413a1e7e970e87e3e976bc6fc04478c3276f63b955ea412db13766"
-    },
-    {
-      "file": "sections/5_conclusion.tex",
-      "sha256": "e6d8a193e02fde717675b5858441b8368efdc898fb1d82b9a1023ef90a653091"
-    },
-    {
-      "file": "submission_wrapper.tex",
-      "sha256": "68b3ad8a55017d3a669564d655c5ae8fce016c42afaeb0d744c0fac2cc7d8dbf"
-    },
-    {
-      "file": "main.pdf:extracted-text",
-      "sha256": "d5af89370fcdcfc5417ae7e863dbd7ba24a1b28b4d3b01b3ae96140e5838d6a9"
-    }
+  "gate": "submission_prose",
+  "mode": "draft",
+  "schema_version": "1.0",
+  "sources": [
+    "main.tex",
+    "math_commands.tex",
+    "preamble.tex",
+    "sections/0_abstract.tex",
+    "sections/1_introduction.tex",
+    "sections/3_method.tex",
+    "sections/4_experiments.tex",
+    "sections/5_conclusion.tex"
   ],
-  "allowlisted_occurrences": [
-    {
-      "rule": "positive_comparison",
-      "file": "sections/1_introduction.tex",
-      "allowlist_id": "draft_denial",
-      "context_sha256": "928cd2ed2ce64fcbf05bcf3005b6badece2e27901b43d6db6e91d73584dc7bd6"
-    },
-    {
-      "rule": "end_to_end",
-      "file": "sections/2_related_work.tex",
-      "allowlist_id": "prior_art_boundary",
-      "context_sha256": "3f5c3c4bed6fa42b4d1fd071a01fad7dba06449adbb7e52e5097460b5e68ca22"
-    },
-    {
-      "rule": "end_to_end",
-      "file": "main.pdf:extracted-text",
-      "allowlist_id": "prior_art_boundary",
-      "context_sha256": "9e2e9873b140ef40678f0f447156f9623ceb333a4183cefb6848dd5cca271603"
-    }
-  ],
-  "violations": []
+  "status": "PROVISIONAL",
+  "submission_ready": false,
+  "violations": {
+    "empty_tables": 0,
+    "forbidden": [],
+    "placeholders": [
+      {
+        "context": "\\name{AUTHOR ROSTER PENDING}",
+        "line": 23,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\address{AFFILIATIONS PENDING}",
+        "line": 24,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\name{AUTHOR ROSTER PENDING}",
+        "line": 27,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\address{Affiliations pending collaborator confirmation}",
+        "line": 28,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "Funding and conflict-of-interest declarations are \\Pending{author-declarations}.",
+        "line": 53,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "The final ethical-compliance statement is \\Pending{ethical-compliance} and will",
+        "line": 54,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\color{DraftRed}\\bfseries DATA-PENDING DIAGNOSTIC SHELL\\\\[2pt]",
+        "line": 161,
+        "source": "sections/4_experiments.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "AUTHOR ROSTER PENDING",
+        "line": 4,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Affiliations pending collaborator confirmation",
+        "line": 6,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "DRAFT – RESULTS PENDING that track, then reconstructing one response before count decoding.",
+        "line": 9,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "double-counting. Experimental evidence is pending synchronization supervised training data. The exact supervision path, including model",
+        "line": 28,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "PROPOSED • SYNC-REQUIRED",
+        "line": 137,
+        "source": "PDF_BODY",
+        "token": "SYNC-REQUIRED"
+      },
+      {
+        "context": "CONTRACT START SYNC-REQUIRED • DELETE IF ABSENT",
+        "line": 158,
+        "source": "PDF_BODY",
+        "token": "SYNC-REQUIRED"
+      },
+      {
+        "context": "remain PENDING, PENDING, and PENDING, respectively, until the same baseline enters the common-track block only if its temporal input and",
+        "line": 179,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "evaluator fields remain PENDING and PENDING. The frozen bundle becoming a simulated ablation. Each contrast will report the paired",
+        "line": 198,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "MultiCounter [7] native/contextual PENDING PENDING PENDING PENDING PENDING",
+        "line": 208,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "MultiCounter+ [8] native/contextual PENDING PENDING PENDING PENDING PENDING",
+        "line": 209,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Track-PAMS [6] supplied oracle tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 211,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Track-global tempo supplied oracle tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 212,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Identity-indexed local routing supplied oracle tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 213,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Track-PAMS [6] common predicted tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 215,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Track-global tempo common predicted tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 216,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Identity-indexed local routing common predicted tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 217,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "global ACF+FFT uniform NOLA→decode PENDING PENDING",
+        "line": 228,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local ACF only soft NOLA→decode PENDING PENDING",
+        "line": 230,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local FFT only soft NOLA→decode PENDING PENDING masked, identity-indexed pose signals whose tempo can change",
+        "line": 231,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local ACF+FFT single NOLA→decode PENDING PENDING within a track. The proposed specification estimates local periodic",
+        "line": 232,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local ACF+FFT hard NOLA→decode PENDING PENDING",
+        "line": 233,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local ACF+FFT soft boxcar→decode PENDING PENDING",
+        "line": 234,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local ACF+FFT soft decode→aggregate PENDING PENDING identity response with normalized overlap-add, and decodes that",
+        "line": 236,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "and conflict-of-interest declarations are PENDING. The final ethical-",
+        "line": 250,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "compliance statement is PENDING and will be bound to the dataset",
+        "line": 252,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "DATA-PENDING DIAGNOSTIC SHELL tion counting,” in Proceedings of the IEEE/CVF Conference on",
+        "line": 280,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      }
+    ]
+  }
 }

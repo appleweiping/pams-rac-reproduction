@@ -1,10 +1,18 @@
-# Final PDF visual review
+# ICASSP final pre-results PDF visual review
 
-**Verdict:** `PASS` for the current pre-results PDF (`de951023...d9522`).
+- Artifact: `paper/main.pdf`
+- SHA-256: `873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45`
+- Render: five 150-dpi PNG pages under `paper/rendered/final/`
+- Reviewer: primary agent `/root`
+- Verdict: **PASS (draft only)**
 
-All 11 pages were rendered at 144 dpi and inspected. No clipping, overlap, obscured columns, unreadable figure labels, or table overflow was observed. The anonymous author block and `DRAFT — RESULTS PENDING` banner are visible. The conclusion ends on page 7, the planned main tables occupy page 8, references begin on page 9, and the appendix follows the references.
+All five pages were re-rendered and re-inspected after the citation-driven
+Period-AP nomenclature correction. There is no clipping, overlap, broken glyph,
+table overflow, or unresolved reference marker. The corrected Period-AP50 and
+Period-AP75 headings fit Table 1. The final vector framework is readable and
+explicitly marked proposed/synchronization-required. Page 5 contains only
+bibliography entries [6]--[16].
 
-The final inspection includes the corrected Eq. (11) qualification on page 5;
-the added stabilizer-bias caveat introduces no overflow or layout defect.
-
-The white space on pages 7, 8, and 11 is expected for a deliberately incomplete pre-results package. It is not treated as submission-ready layout evidence.
+Page verdicts: pages 1--4 PASS for layout and visual integrity; page 5 PASS for
+the references-only restriction. This pass does not lift the
+`provisional/data-pending` state.

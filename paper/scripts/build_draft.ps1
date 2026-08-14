@@ -7,7 +7,7 @@ if (-not (Get-Command perl -ErrorAction SilentlyContinue) -and
     $env:Path = "$gitPerlDir;$env:Path"
 }
 $previousTexInputs = $env:TEXINPUTS
-$templateDir = Join-Path $paperDir 'vendor\cvpr2026'
+$templateDir = Join-Path $paperDir 'vendor\icassp2026'
 $env:TEXINPUTS = "$templateDir;$previousTexInputs"
 Push-Location $paperDir
 try {

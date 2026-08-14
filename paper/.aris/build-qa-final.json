@@ -1,81 +1,68 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-11T21:04:53.338534Z",
+  "generated_at": "2026-08-14T14:41:02.573812Z",
   "verdict": "PASS",
   "pdf": {
     "path": "main.pdf",
-    "sha256": "de951023634d5627f3c38cd7512da9fd7df20086781d24caf0a548b93b3d9522",
-    "bytes": 535868
+    "sha256": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+    "bytes": 348367
   },
-  "source_bundle_sha256": "0825451370575801e06b158284ac72235c910885e3a5523a904cd52dfdd4db8d",
-  "source_freeze_sha256": "1376b6a388d049b12548a589e9753237bd9e62802091d822cd46cb450aa26184",
+  "source_bundle_sha256": "b778aad1c34a582362d6d5e541460dc2d594c36f9fa788e08dfea8ad766489ed",
   "source_files": [
     {
       "path": "main.tex",
-      "sha256": "041bfa52c09d53faaa9dde6bd6a1e0fba37e2ab2009a43bdc84e607e622e787c"
+      "sha256": "a4fe29c47f200946c7d6f3522bd273f5895aabda2d7a959fdbf16397fe1cbe70"
     },
     {
       "path": "preamble.tex",
-      "sha256": "248f035d6f420d297fc5628ff2f21918a3310836b466685a1e783c3b8d540a22"
+      "sha256": "763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2"
     },
     {
       "path": "math_commands.tex",
-      "sha256": "ab4b7a090dfbbb5bd2ea6cd18406ef1aef714147594d42df32d42f9649892309"
+      "sha256": "e6dabb7ce789e0d78026e6bda287fe17faedb6d20c0df9b4f603cb3b6c123bee"
     },
     {
       "path": "references.bib",
-      "sha256": "86fe2aab232ad7bea6c7ee3c2e17e4324054b2a22b17607f7a70effb3e9d7683"
+      "sha256": "322a5d16b0078e8b3436608d4c6158b67c5c8922b0dcae94537ea456c9f6f646"
     },
     {
       "path": "sections/0_abstract.tex",
-      "sha256": "2bb5e32dec7a2f18cb572a423f58c97f39c174c400579f41a055fdea1f725d8a"
+      "sha256": "fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef"
     },
     {
       "path": "sections/1_introduction.tex",
-      "sha256": "d1f82e381a982b7c8075d4f09e86798703a4be28f713b90ced8cce801fbe6d3c"
-    },
-    {
-      "path": "sections/2_related_work.tex",
-      "sha256": "96ab7ac0d5a65e4552aadcbff423c23de69994901f4057d9ede7b7c461ab6d31"
+      "sha256": "6823651162f59e5f5263949f2d308f594b667cb3cba0044433c39031ae04db9d"
     },
     {
       "path": "sections/3_method.tex",
-      "sha256": "12f2b96e16e034a5c8ec3db887d70676919060e2e543180ca2c186cab9cd8b5b"
+      "sha256": "7e92c00eb4a7956b059536fd47240cefbea960aee61d4f3fdef1a7e24930c50d"
     },
     {
       "path": "sections/4_experiments.tex",
-      "sha256": "36d1eb3d9e413a1e7e970e87e3e976bc6fc04478c3276f63b955ea412db13766"
+      "sha256": "6052c816e94f7d7f50b560d397495a37863b05d240ed5e418e4b6ec4d3aa131b"
     },
     {
       "path": "sections/5_conclusion.tex",
-      "sha256": "e6d8a193e02fde717675b5858441b8368efdc898fb1d82b9a1023ef90a653091"
+      "sha256": "e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c"
     },
     {
-      "path": "appendix/a_experiment_contract.tex",
-      "sha256": "25138c31c471c9b2542b8e3fbf326a38686f25eeed452edebf0e5257330f46d5"
-    },
-    {
-      "path": "figures/task_comparison.pdf",
-      "sha256": "2fd8046ccca522892fe45d9fcf7aa75d49bb69d3e1ffd58ab86fdd1a3496c3c0"
-    },
-    {
-      "path": "figures/framework.pdf",
-      "sha256": "b6545d0c4b21362b17dcf43dbb1c369d6e01f3f93cb513e1a7935a87d92c791f"
+      "path": "figures/icassp_framework.pdf",
+      "sha256": "3afa9d1261e3a54b25c8da708dd7c4e036587d6d01d0d60fc704edcd2fd8eb81"
     }
   ],
   "checks": {
     "final_log_warning_count": 0,
-    "page_count": 11,
+    "page_count": 5,
     "letter_page_size": true,
-    "conclusion_page": 7,
-    "conclusion_within_eight_pages": true,
-    "font_count": 32,
+    "conclusion_page": 4,
+    "conclusion_within_four_pages": true,
+    "font_count": 20,
     "unembedded_font_count": 0,
-    "type3_font_count_advisory": 1,
+    "type3_font_count_advisory": 0,
     "duplicate_labels": [],
     "undefined_citation_keys": [],
     "uncited_bib_keys": [],
-    "anonymous_author_visible": true,
+    "draft_author_placeholder_visible": true,
     "draft_banner_visible": true,
     "unresolved_question_marks": false
   },

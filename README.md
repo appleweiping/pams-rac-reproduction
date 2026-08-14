@@ -28,7 +28,8 @@ Action Counting** (CVPR Findings 2026).
 > checkpoints have separate
 > development-only sanity results; both use explicitly labeled modern
 > compatibility environments and are not original-protocol parity. The sealed 105-video
-> UCFRep test split remains untouched, so no test metric or successful
+> UCFRep test split remains unscored; an older development CLI deserialized its
+> full manifest, but no predictions, evaluation, or metrics exist, so no successful
 > reproduction claim exists.
 
 ## Why this repository exists

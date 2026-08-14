@@ -1,236 +1,262 @@
 #!/usr/bin/env python3
-"""Scan submission sources and a digest-bound PDF for unsupported claims."""
+"""Scan active submission prose for placeholders and unlicensed claims."""
 
 from __future__ import annotations
 
 import argparse
-import hashlib
-import json
+import csv
 import re
-import subprocess
 from pathlib import Path
+from typing import Any
 
+from evidence_common import add_check, emit_report, finish_report
 
-TEXT_SUFFIXES = {".tex", ".drawio", ".svg", ".txt", ".md", ".csv", ".json", ".jsonl", ".yaml", ".yml"}
-SUBMISSION_ROOTS = (
-    "sections", "appendix", "tables", "figures", "generated", "supplement", "supplementary"
-)
-TOP_LEVEL_TEXT = {"main.tex", "preamble.tex", "math_commands.tex", "submission_wrapper.tex"}
-PATTERNS = {
-    # Catch grammatical primacy variants, not only the literal "we are the
-    # first".  In particular, headline claims such as "the first multi-person
-    # framework" and "we introduce the first pose-driven method" must not slip
-    # through merely because a qualifier occurs between ``first`` and the
-    # artefact noun.
-    "primacy": re.compile(
-        r"\b(?:"
-        r"(?:we\s+(?:are|present|introduce|propose|develop|build)\s+)?(?:the\s+)?"
-        r"first(?:[-\s]+ever)?\s+"
-        r"(?:(?:multi[-\s]*person|person[-\s]*wise|asynchronous|variable[-\s]*tempo|"
-        r"tempo[-\s]*adaptive|pose[-\s]*driven|self[-\s]*supervised|repetition[-\s]*counting)\s+){0,4}"
-        r"(?:framework|method|system|approach|model|counter|work|architecture|pipeline)"
-        r"|(?:we\s+(?:are\s+)?)?(?:the\s+)?first\s+to\b"
-        r")",
-        re.I,
-    ),
-    "annotation_free": re.compile(r"\bannotation[- ]free\b", re.I),
-    "label_free": re.compile(r"\blabel[- ]free\b", re.I),
-    "end_to_end": re.compile(r"\bend[- ]to[- ]end\b", re.I),
-    "constant_time": re.compile(r"\bconstant[- ]time\b", re.I),
-    "sota": re.compile(r"\b(?:SOTA|state[- ]of[- ]the[- ]art)\b", re.I),
-    "positive_comparison": re.compile(
-        r"\b(?:our|ours|proposed)\b[^.]{0,180}?\b(?:outperform\w*|superior(?:ity)?|better than|improv(?:e|es|ed|ement)|competitive)\b",
-        re.I,
-    ),
+FORBIDDEN = {
+    "first": re.compile(r"\bfirst\b", re.IGNORECASE),
+    "annotation-free": re.compile(r"\bannotation[- ]free\b", re.IGNORECASE),
+    "label-free": re.compile(r"\blabel[- ]free\b", re.IGNORECASE),
+    "end-to-end": re.compile(r"\bend[- ]to[- ]end\b", re.IGNORECASE),
+    "constant-time": re.compile(r"\bconstant[- ]time\b", re.IGNORECASE),
+    "sota": re.compile(r"\bSOTA\b|\bstate[- ]of[- ]the[- ]art\b", re.IGNORECASE),
 }
-
-# Exact phrase-level exceptions. A generic nearby negation is intentionally not
-# sufficient: changing one of these sentences forces review of the exception.
-ALLOWLIST = {
-    "end_to_end": {
-        "prior_art_boundary": re.compile(r"this modular design is not described as.{0,240}end-to-\s*end", re.I),
-    },
-    "positive_comparison": {
-        "draft_denial": re.compile(r"does not assert that.{0,180}the proposed method outperforms any baseline", re.I),
-    },
+PLACEHOLDERS = {
+    "PENDING": re.compile(r"\bPENDING\b", re.IGNORECASE),
+    "SYNC-REQUIRED": re.compile(r"\bSYNC-REQUIRED\b", re.IGNORECASE),
+    "[VERIFY]": re.compile(r"\[\s*VERIFY\s*\]", re.IGNORECASE),
+    "TBD": re.compile(r"\bTBD\b", re.IGNORECASE),
+    "TODO": re.compile(r"\bTODO\b", re.IGNORECASE),
 }
+INPUT_RE = re.compile(r"\\(?:input|include)\s*\{([^}]+)\}|\\InputIfFileExists\s*\{([^}]+)\}")
+PROSE_EXCLUDE = {"preamble.tex", "math_commands.tex", "submission_wrapper.tex"}
+CORE_LEDGER_IDS = {*(f"AC{number:02d}" for number in range(1, 11)), "AC13"}
 
 
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def strip_comments(text: str) -> str:
+    cleaned: list[str] = []
+    for line in text.splitlines():
+        index = 0
+        while True:
+            marker = line.find("%", index)
+            if marker < 0:
+                cleaned.append(line)
+                break
+            backslashes = 0
+            cursor = marker - 1
+            while cursor >= 0 and line[cursor] == "\\":
+                backslashes += 1
+                cursor -= 1
+            if backslashes % 2 == 0:
+                cleaned.append(line[:marker])
+                break
+            index = marker + 1
+    return "\n".join(cleaned)
 
 
-def strip_tex_comments(text: str) -> str:
-    return "\n".join(re.sub(r"(?<!\\)%.*$", "", line) for line in text.splitlines())
+def active_tex_files(paper_dir: Path, entry: Path) -> list[Path]:
+    paper_dir = paper_dir.resolve()
+    pending = [entry.resolve()]
+    seen: set[Path] = set()
+    while pending:
+        path = pending.pop()
+        if path in seen or not path.is_file():
+            continue
+        try:
+            path.relative_to(paper_dir)
+        except ValueError:
+            continue
+        seen.add(path)
+        text = strip_comments(path.read_text(encoding="utf-8", errors="strict"))
+        for match in INPUT_RE.finditer(text):
+            declared = match.group(1) or match.group(2)
+            candidate = Path(declared)
+            if not candidate.suffix:
+                candidate = candidate.with_suffix(".tex")
+            candidates = ((path.parent / candidate).resolve(), (paper_dir / candidate).resolve())
+            for resolved in candidates:
+                if resolved.is_file():
+                    pending.append(resolved)
+                    break
+    return sorted(seen)
 
 
-def normalize(text: str) -> str:
-    return " ".join(text.split())
+def _line_context(line: str) -> str:
+    return re.sub(r"\s+", " ", line).strip()[:240]
 
 
-def submission_text_files(paper_dir: Path) -> list[Path]:
-    paths = [paper_dir / name for name in TOP_LEVEL_TEXT]
-    for root_name in SUBMISSION_ROOTS:
-        directory = paper_dir / root_name
-        if directory.is_dir():
-            paths.extend(path for path in directory.rglob("*") if path.is_file() and path.suffix.lower() in TEXT_SUFFIXES)
-    return sorted({path.resolve() for path in paths if path.is_file()})
+def _allowed_forbidden_context(name: str, line: str) -> bool:
+    lower = re.sub(r"\\[A-Za-z@]+\*?", " ", line).lower()
+    if name == "first" and re.search(r"\b(first|second|third)\b\s*[,;:]", lower):
+        return True
+    return bool(
+        re.search(
+            r"\b(?:do not|does not|did not|not|never)\s+(?:claim\s+)?(?:to\s+be\s+)?(?:the\s+)?(?:first|annotation[- ]free|label[- ]free|end[- ]to[- ]end|constant[- ]time|sota|state[- ]of[- ]the[- ]art)\b",
+            lower,
+        )
+        or re.search(r"\b(?:prior|previous|earlier|existing)\s+(?:work|method|study|approach)s?\b", lower)
+        or re.search(r"\b(?:introduced|proposed|reported|described|presented)\s+by\b", lower)
+    )
 
 
-def local_context(text: str, start: int, end: int, radius: int = 260) -> str:
-    left = max(0, start - radius)
-    right = min(len(text), end + radius)
-    return normalize(text[left:right])
+def scan_text(text: str, label: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    forbidden: list[dict[str, Any]] = []
+    placeholders: list[dict[str, Any]] = []
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        for name, pattern in FORBIDDEN.items():
+            if pattern.search(line) and not _allowed_forbidden_context(name, line):
+                forbidden.append({"source": label, "line": line_number, "token": name, "context": _line_context(line)})
+        for name, pattern in PLACEHOLDERS.items():
+            if pattern.search(line):
+                placeholders.append({"source": label, "line": line_number, "token": name, "context": _line_context(line)})
+    return forbidden, placeholders
 
 
-def allowlisted(rule: str, context: str, matched_text: str) -> str | None:
-    normalized_match = normalize(matched_text)
-    occurrence = context.casefold().find(normalized_match.casefold())
-    if occurrence < 0:
-        return None
-    for allowlist_id, pattern in ALLOWLIST.get(rule, {}).items():
-        allowed = pattern.search(context)
-        if allowed and allowed.start() <= occurrence and occurrence + len(normalized_match) <= allowed.end():
-            return allowlist_id
-    return None
+def _load_ledger(path: Path) -> tuple[dict[str, dict[str, str]], list[str]]:
+    errors: list[str] = []
+    try:
+        with path.open("r", encoding="utf-8", newline="") as handle:
+            rows = list(csv.DictReader(handle))
+    except Exception as exc:
+        return {}, [type(exc).__name__]
+    required_columns = {"claim_id", "claim_class", "claim", "evidence_required", "evidence_paths", "status", "submission_licensed"}
+    if not rows or set(rows[0]) != required_columns:
+        errors.append("ledger columns do not match the fixed schema")
+    ledger: dict[str, dict[str, str]] = {}
+    for row in rows:
+        claim_id = row.get("claim_id", "")
+        if claim_id in ledger or not re.fullmatch(r"AC(?:0[1-9]|1[0-6])", claim_id):
+            errors.append("ledger has a duplicate or malformed claim id")
+        ledger[claim_id] = row
+    expected = {f"AC{number:02d}" for number in range(1, 17)}
+    if set(ledger) != expected:
+        errors.append("ledger must contain exactly AC01 through AC16")
+    return ledger, errors
 
 
-def load_bindings(path: Path | None) -> tuple[dict[str, dict], set[str], str | None]:
-    if not path or not path.is_file():
-        return {}, set(), None
-    data = json.loads(path.read_text(encoding="utf-8"))
-    claims = {item["key"]: item for item in data.get("paper_bindings", {}).get("claims", [])}
-    comparisons = {item["comparison_id"] for item in data.get("comparisons", [])}
-    return claims, comparisons, sha256(path)
+def _binding_checks(texts: list[str], generated: str | None) -> list[str]:
+    combined = "\n".join(texts)
+    result_uses = set(re.findall(r"\\R\{([^}]*)\}", combined))
+    protocol_uses = set(re.findall(r"\\Protocol\{([^}]*)\}", combined))
+    claim_uses = set(re.findall(r"\\C\{([^}]*)\}", combined))
+    issues: list[str] = []
+    if "" in result_uses | protocol_uses | claim_uses:
+        issues.append("empty evidence macro key")
+    if generated is None:
+        if result_uses or protocol_uses or claim_uses or "\\ControlledAbstractResult" in combined:
+            issues.append("evidence macros are used but generated/evidence_values.tex is absent")
+        return issues
+    declarations = {
+        "result": set(re.findall(r"\\DeclareResult\{([^}]+)\}", generated)),
+        "protocol": set(re.findall(r"\\DeclareProtocolField\{([^}]+)\}", generated)),
+        "claim": set(re.findall(r"\\DeclareResultClaim\{([^}]+)\}", generated)),
+    }
+    if result_uses - declarations["result"]:
+        issues.append("unbound result macro keys")
+    if protocol_uses - declarations["protocol"]:
+        issues.append("unbound protocol macro keys")
+    if claim_uses - declarations["claim"]:
+        issues.append("unbound result-claim macro keys")
+    if "\\ControlledAbstractResult" in combined and "\\DeclareAbstractResult{" not in generated:
+        issues.append("controlled abstract result is unbound")
+    return issues
 
 
-def scan_text(label: str, text: str, file_sha256: str, claims: dict[str, dict], comparisons: set[str]) -> tuple[list[dict], list[dict], dict]:
-    violations: list[dict] = []
-    exceptions: list[dict] = []
-    for rule, pattern in PATTERNS.items():
-        for match in pattern.finditer(text):
-            context = local_context(text, match.start(), match.end())
-            allowlist_id = allowlisted(rule, context, match.group())
-            if allowlist_id:
-                exceptions.append({
-                    "rule": rule,
-                    "file": label,
-                    "allowlist_id": allowlist_id,
-                    "context_sha256": hashlib.sha256(context.encode("utf-8")).hexdigest(),
-                })
-                continue
-            detail: dict[str, object] = {}
-            if rule == "positive_comparison":
-                claim_keys = re.findall(r"\\C\{([^}]+)\}", context)
-                comparison_ids = re.findall(r"\\Comparison\{([^}]+)\}", context)
-                resolved_claims = [key for key in claim_keys if key in claims]
-                resolved_comparisons = [key for key in comparison_ids if key in comparisons]
-                if resolved_claims and resolved_comparisons:
-                    continue
-                detail = {
-                    "required": "nearby \\C{manifest-claim-key} and \\Comparison{manifest-comparison-id}",
-                    "claim_keys": claim_keys,
-                    "comparison_ids": comparison_ids,
-                    "resolved_claim_keys": resolved_claims,
-                    "resolved_comparison_ids": resolved_comparisons,
-                }
-            line = text.count("\n", 0, match.start()) + 1
-            violations.append({
-                "rule": rule,
-                "file": label,
-                "line": line,
-                "context_sha256": hashlib.sha256(context.encode("utf-8")).hexdigest(),
-                **detail,
-            })
-    return violations, exceptions, {"file": label, "sha256": file_sha256}
+def _empty_table_issues(text: str) -> int:
+    issues = 0
+    for match in re.finditer(r"\\begin\{tabular\*?\}.*?\\end\{tabular\*?\}", text, re.DOTALL):
+        body = match.group(0)
+        if "\\\\" not in body or re.search(r"&\s*(?:&|\\\\)", body):
+            issues += 1
+    return issues
 
 
-def extract_pdf_text(pdf: Path) -> bytes:
-    return subprocess.check_output(["pdftotext", "-layout", str(pdf), "-"])
+def validate(paper_dir: Path, mode: str, entry: Path | None, pdf_text: Path | None) -> tuple[dict[str, Any], int]:
+    checks: list[dict[str, Any]] = []
+    blockers: list[str] = []
+    entry = entry or paper_dir / "main.tex"
+    try:
+        files = active_tex_files(paper_dir, entry)
+    except Exception as exc:
+        add_check(checks, "active_source_graph", False, type(exc).__name__)
+        return finish_report(gate="submission_prose", mode=mode, checks=checks, structural_failure=True)
+    add_check(checks, "active_source_graph", bool(files), f"{len(files)} active TeX files")
+
+    forbidden: list[dict[str, Any]] = []
+    placeholders: list[dict[str, Any]] = []
+    prose_texts: list[str] = []
+    for path in files:
+        if path.name in PROSE_EXCLUDE:
+            continue
+        text = strip_comments(path.read_text(encoding="utf-8", errors="strict"))
+        prose_texts.append(text)
+        bad, pending = scan_text(text, path.relative_to(paper_dir).as_posix())
+        forbidden.extend(bad)
+        placeholders.extend(pending)
+    if pdf_text is not None:
+        text = pdf_text.read_text(encoding="utf-8", errors="replace")
+        body = re.split(r"(?im)^\s*references\s*$", text, maxsplit=1)[0]
+        bad, pending = scan_text(body, "PDF_BODY")
+        forbidden.extend(bad)
+        placeholders.extend(pending)
+
+    if forbidden:
+        blockers.append("forbidden claim language remains in submission prose")
+    if placeholders:
+        blockers.append("PENDING, SYNC-REQUIRED, [VERIFY], TBD, or TODO remains in submission prose")
+    add_check(checks, "forbidden_claims", not forbidden, f"{len(forbidden)} unallowlisted hits", blocking=False)
+    add_check(checks, "placeholders", not placeholders, f"{len(placeholders)} hits", blocking=False)
+
+    table_issues = sum(_empty_table_issues(text) for text in prose_texts)
+    if table_issues:
+        blockers.append("empty table cells or bodies remain")
+    add_check(checks, "empty_tables", table_issues == 0, f"{table_issues} suspect tables", blocking=False)
+
+    generated_path = paper_dir / "generated/evidence_values.tex"
+    generated = generated_path.read_text(encoding="utf-8") if generated_path.is_file() else None
+    binding_issues = _binding_checks(prose_texts, generated)
+    if binding_issues:
+        blockers.extend(binding_issues)
+    add_check(checks, "evidence_macro_bindings", not binding_issues, "; ".join(binding_issues) if binding_issues else "all used macros are bound", blocking=False)
+
+    ledger, ledger_errors = _load_ledger(paper_dir / "evidence/claim_evidence.csv")
+    add_check(checks, "claim_ledger_schema", not ledger_errors, "; ".join(ledger_errors) if ledger_errors else "exactly 16 claims")
+    mapped = set(re.findall(r"\\ClaimMap\{(AC(?:0[1-9]|1[0-6]))\}", "\n".join(prose_texts)))
+    unknown_maps = mapped - set(ledger)
+    unlicensed_maps = {claim_id for claim_id in mapped if ledger.get(claim_id, {}).get("submission_licensed", "").lower() != "true"}
+    core_unlicensed = {claim_id for claim_id in CORE_LEDGER_IDS if ledger.get(claim_id, {}).get("submission_licensed", "").lower() != "true"}
+    if unknown_maps:
+        blockers.append("manuscript contains claim mappings absent from the ledger")
+    if unlicensed_maps or core_unlicensed:
+        blockers.append("claim ledger has unlicensed submission-facing claims")
+    add_check(checks, "claim_mapping", not unknown_maps and not unlicensed_maps and not core_unlicensed, f"mapped={len(mapped)}, unlicensed_core={len(core_unlicensed)}", blocking=False)
+
+    report, code = finish_report(
+        gate="submission_prose",
+        mode=mode,
+        checks=checks,
+        blockers=blockers,
+        structural_failure=any(item["status"] == "FAIL" for item in checks),
+    )
+    report["sources"] = [path.relative_to(paper_dir).as_posix() for path in files]
+    report["violations"] = {"forbidden": forbidden, "placeholders": placeholders, "empty_tables": table_issues}
+    report["claim_mapping"] = {"mapped_ids": sorted(mapped), "unknown_ids": sorted(unknown_maps), "unlicensed_ids": sorted(unlicensed_maps | core_unlicensed)}
+    return report, code
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--paper-dir", type=Path, required=True)
+    parser.add_argument("--paper-dir", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--mode", choices=("draft", "submission"), default="draft")
-    parser.add_argument("--pdf", type=Path)
+    parser.add_argument("--entry", type=Path)
     parser.add_argument("--pdf-text", type=Path)
-    parser.add_argument("--result-manifest", type=Path)
+    parser.add_argument("--pdf", type=Path, help="accepted for compatibility; use --pdf-text for deterministic scanning")
+    parser.add_argument("--result-manifest", type=Path, help="deprecated compatibility option")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     paper_dir = args.paper_dir.resolve()
-    claims, comparisons, result_manifest_sha256 = load_bindings(args.result_manifest.resolve() if args.result_manifest else None)
-
-    violations: list[dict] = []
-    exceptions: list[dict] = []
-    scanned: list[dict] = []
-    for path in submission_text_files(paper_dir):
-        text = path.read_text(encoding="utf-8", errors="replace")
-        if path.suffix.lower() == ".tex":
-            text = strip_tex_comments(text)
-        found, allowed, record = scan_text(path.relative_to(paper_dir).as_posix(), text, sha256(path), claims, comparisons)
-        violations.extend(found)
-        exceptions.extend(allowed)
-        scanned.append(record)
-
-    pdf_binding: dict[str, object] = {"required": args.mode == "submission", "status": "NOT_PROVIDED"}
-    pdf = args.pdf.resolve() if args.pdf else None
-    pdf_text = args.pdf_text.resolve() if args.pdf_text else None
-    if bool(pdf) != bool(pdf_text):
-        violations.append({"rule": "pdf_binding", "file": "main.pdf", "detail": "--pdf and --pdf-text must be supplied together"})
-        pdf_binding["status"] = "FAIL"
-    elif pdf and pdf_text:
-        if not pdf.is_file() or not pdf_text.is_file():
-            violations.append({"rule": "pdf_binding", "file": "main.pdf", "detail": "PDF or extracted text is missing"})
-            pdf_binding["status"] = "FAIL"
-        else:
-            supplied_bytes = pdf_text.read_bytes()
-            try:
-                extracted_bytes = extract_pdf_text(pdf)
-            except Exception as exc:
-                extracted_bytes = b""
-                violations.append({"rule": "pdf_binding", "file": "main.pdf", "detail": f"extractor error:{type(exc).__name__}"})
-            exact = supplied_bytes.replace(b"\r\n", b"\n") == extracted_bytes.replace(b"\r\n", b"\n")
-            if not exact:
-                violations.append({"rule": "pdf_binding", "file": "main.pdf", "detail": "extracted text is not byte-bound to this PDF"})
-            pdf_binding = {
-                "status": "PASS" if exact else "FAIL",
-                "pdf_sha256": sha256(pdf),
-                "extracted_text_sha256": sha256(pdf_text),
-                "extractor": "pdftotext -layout",
-                "exact_extraction_match": exact,
-            }
-            text = supplied_bytes.decode("utf-8", errors="replace")
-            found, allowed, record = scan_text("main.pdf:extracted-text", text, sha256(pdf_text), claims, comparisons)
-            violations.extend(found)
-            exceptions.extend(allowed)
-            scanned.append(record)
-    elif args.mode == "submission":
-        violations.append({"rule": "pdf_binding", "file": "main.pdf", "detail": "submission mode requires --pdf and --pdf-text"})
-
-    if violations:
-        verdict = "FAIL"
-    elif args.mode == "draft" and pdf_binding["status"] == "NOT_PROVIDED":
-        verdict = "PROVISIONAL"
-    else:
-        verdict = "PASS"
-    report = {
-        "schema_version": 2,
-        "mode": args.mode,
-        "verdict": verdict,
-        "allowlist_policy": "Only the exact phrase-level contextual exceptions named in this report are allowed; generic nearby negation is not an exception.",
-        "positive_comparison_policy": "Own-method positive comparisons require both a manifest-resolved claim binding and a manifest-resolved comparison binding in local context.",
-        "result_manifest_sha256": result_manifest_sha256,
-        "pdf_binding": pdf_binding,
-        "scanned": scanned,
-        "allowlisted_occurrences": exceptions,
-        "violations": violations,
-    }
-    output = args.output or paper_dir / ".aris/claim-scan.json"
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    print(f"CLAIM_SCAN={verdict}; files={len(scanned)}; violations={len(violations)}")
-    return 0 if verdict in {"PASS", "PROVISIONAL"} else 1
+    entry = args.entry.resolve() if args.entry else None
+    report, code = validate(paper_dir, args.mode, entry, args.pdf_text.resolve() if args.pdf_text else None)
+    emit_report(report, args.output)
+    return code
 
 
 if __name__ == "__main__":

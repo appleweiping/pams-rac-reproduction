@@ -1,0 +1,326 @@
+{
+  "schema_version": "1.0",
+  "document_type": "aris_kill_argument_defense",
+  "stage": "defense_and_adjudication",
+  "status": "provisional",
+  "verdict": "KILL_SURVIVES_CURRENT_ARTIFACT",
+  "recommendation": "strong_reject_if_submitted_now",
+  "confidence": "high",
+  "generated_at": "2026-08-14T23:26:18.3444231+08:00",
+  "reviewer": {
+    "agent": "/root/icassp_kill_defense",
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "ultra",
+    "fork_turns": "none",
+    "reviewer_family": "same-family",
+    "fresh_zero_context": true
+  },
+  "review_independence": {
+    "family": "same-family",
+    "status": "provisional",
+    "reason": "The attack and defense reviewers use the same model family; the defense was nevertheless performed from a fresh zero-context fork against the frozen inputs only."
+  },
+  "contamination_control": {
+    "current_frozen_attack_read": true,
+    "prior_kill_history_read": false,
+    "prior_proof_history_read": false,
+    "prior_claim_history_read": false,
+    "prior_citation_history_read": false,
+    "prior_review_history_read": false,
+    "acceptance_contracts_read": false,
+    "prior_logs_read": false,
+    "old_kill_traces_read": false,
+    "preexisting_defense_read": false,
+    "only_allowed_review_inputs_read": true
+  },
+  "hash_verification": {
+    "algorithm": "SHA-256",
+    "allowed_input_count": 16,
+    "all_allowed_inputs_verified": true,
+    "all_allowed_inputs_matched": true,
+    "attack_expected_sha256": "e4ad358e3e1ec4bcc15e0bcbd980716ce71174bce71ad0123c37cb352de956b9",
+    "attack_observed_sha256": "e4ad358e3e1ec4bcc15e0bcbd980716ce71174bce71ad0123c37cb352de956b9",
+    "attack_hash_match": true
+  },
+  "inputs": [
+    {
+      "path": "paper/main.pdf",
+      "sha256": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+      "bytes": 348367,
+      "role": "reviewed_pdf"
+    },
+    {
+      "path": "paper/main.tex",
+      "sha256": "a4fe29c47f200946c7d6f3522bd273f5895aabda2d7a959fdbf16397fe1cbe70",
+      "bytes": 1896,
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/preamble.tex",
+      "sha256": "763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2",
+      "bytes": 3467,
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/math_commands.tex",
+      "sha256": "e6dabb7ce789e0d78026e6bda287fe17faedb6d20c0df9b4f603cb3b6c123bee",
+      "bytes": 469,
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/sections/0_abstract.tex",
+      "sha256": "fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef",
+      "bytes": 1039,
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/sections/1_introduction.tex",
+      "sha256": "6823651162f59e5f5263949f2d308f594b667cb3cba0044433c39031ae04db9d",
+      "bytes": 4914,
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/sections/3_method.tex",
+      "sha256": "7e92c00eb4a7956b059536fd47240cefbea960aee61d4f3fdef1a7e24930c50d",
+      "bytes": 7533,
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/sections/4_experiments.tex",
+      "sha256": "6052c816e94f7d7f50b560d397495a37863b05d240ed5e418e4b6ec4d3aa131b",
+      "bytes": 10852,
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/sections/5_conclusion.tex",
+      "sha256": "e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c",
+      "bytes": 824,
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/references.bib",
+      "sha256": "322a5d16b0078e8b3436608d4c6158b67c5c8922b0dcae94537ea456c9f6f646",
+      "bytes": 7907,
+      "role": "bibliography"
+    },
+    {
+      "path": "paper/figures/icassp_framework.pdf",
+      "sha256": "3afa9d1261e3a54b25c8da708dd7c4e036587d6d01d0d60fc704edcd2fd8eb81",
+      "bytes": 98695,
+      "role": "active_figure"
+    },
+    {
+      "path": "paper/evidence/method_manifest.yaml",
+      "sha256": "07823bb5bb11509e79556f87c9bbb19c9ce4f0ff1fdea1b5cb832e89ae8cd289",
+      "bytes": 4823,
+      "role": "method_evidence"
+    },
+    {
+      "path": "paper/evidence/results_manifest.json",
+      "sha256": "4df513a3f4427950d23267965192253446e6ee2b6968907855e0bae1a6a53159",
+      "bytes": 1850,
+      "role": "result_evidence"
+    },
+    {
+      "path": "paper/.aris/traces/kill-argument-icassp/final/attack.md",
+      "sha256": "e4ad358e3e1ec4bcc15e0bcbd980716ce71174bce71ad0123c37cb352de956b9",
+      "bytes": 19730,
+      "role": "frozen_attack"
+    },
+    {
+      "path": "paper/.aris/traces/kill-argument-icassp/final/attack.meta.json",
+      "sha256": "400a70a11dde891dfc3aa76c47c62f9f74eaa9bce6c55abb076beea6913c1cdb",
+      "bytes": 3766,
+      "role": "frozen_attack_metadata"
+    },
+    {
+      "path": "paper/.aris/traces/kill-argument-icassp/final/attack_prompt.md",
+      "sha256": "496175d4d17c4caf754844c9d0e8e61356da924059ffc97029d4b668e8d67a5a",
+      "bytes": 3471,
+      "role": "frozen_attack_prompt"
+    }
+  ],
+  "pdf_review": {
+    "reviewed_pdf": "paper/main.pdf",
+    "page_count": 5,
+    "page_size_points": "612 x 792",
+    "all_pages_visually_inspected": true,
+    "render_dpi": 180,
+    "body_pages": "1-4",
+    "reference_only_page": 5,
+    "active_figure_source_visually_inspected": true,
+    "active_figure_page_count": 1,
+    "visual_defects_material_to_verdict": false,
+    "observations": [
+      "Draft and results-pending status is prominent on page 1.",
+      "Sync-required markers and pending result cells are legible.",
+      "The data-pending diagnostic shell is visibly non-empirical.",
+      "No clipping, overlap, unreadable table, broken glyph, or hidden result was observed."
+    ]
+  },
+  "adjudication": {
+    "finding_count": 17,
+    "counts": {
+      "answered": 2,
+      "partially_answered": 10,
+      "still_unresolved": 5
+    },
+    "by_severity": {
+      "P1": {
+        "answered": 0,
+        "partially_answered": 0,
+        "still_unresolved": 3
+      },
+      "P2": {
+        "answered": 0,
+        "partially_answered": 3,
+        "still_unresolved": 0
+      },
+      "P3": {
+        "answered": 1,
+        "partially_answered": 2,
+        "still_unresolved": 1
+      },
+      "P4": {
+        "answered": 0,
+        "partially_answered": 2,
+        "still_unresolved": 0
+      },
+      "P5": {
+        "answered": 1,
+        "partially_answered": 0,
+        "still_unresolved": 0
+      },
+      "P6": {
+        "answered": 0,
+        "partially_answered": 3,
+        "still_unresolved": 1
+      }
+    },
+    "findings": [
+      {
+        "id": "P1.1",
+        "status": "still_unresolved",
+        "short_name": "proposed_method_absent"
+      },
+      {
+        "id": "P1.2",
+        "status": "still_unresolved",
+        "short_name": "no_eligible_scientific_evidence"
+      },
+      {
+        "id": "P1.3",
+        "status": "still_unresolved",
+        "short_name": "non_executable_specification"
+      },
+      {
+        "id": "P2.1",
+        "status": "partially_answered",
+        "short_name": "person_tracklet_semantics"
+      },
+      {
+        "id": "P2.2",
+        "status": "partially_answered",
+        "short_name": "compositional_novelty"
+      },
+      {
+        "id": "P2.3",
+        "status": "partially_answered",
+        "short_name": "supervision_boundary"
+      },
+      {
+        "id": "P3.1",
+        "status": "partially_answered",
+        "short_name": "unfrozen_estimand"
+      },
+      {
+        "id": "P3.2",
+        "status": "still_unresolved",
+        "short_name": "confounded_mechanism_ablation"
+      },
+      {
+        "id": "P3.3",
+        "status": "partially_answered",
+        "short_name": "protocol_fairness"
+      },
+      {
+        "id": "P3.4",
+        "status": "answered",
+        "short_name": "reconstruction_overclaim"
+      },
+      {
+        "id": "P4.1",
+        "status": "partially_answered",
+        "short_name": "scalar_tempo_identifiability"
+      },
+      {
+        "id": "P4.2",
+        "status": "partially_answered",
+        "short_name": "statistical_plan"
+      },
+      {
+        "id": "P5",
+        "status": "answered",
+        "short_name": "pre_results_submission_readiness"
+      },
+      {
+        "id": "P6.1",
+        "status": "partially_answered",
+        "short_name": "person_identity_tracklet_terminology"
+      },
+      {
+        "id": "P6.2",
+        "status": "still_unresolved",
+        "short_name": "undefined_state"
+      },
+      {
+        "id": "P6.3",
+        "status": "partially_answered",
+        "short_name": "undefined_expert_scales"
+      },
+      {
+        "id": "P6.4",
+        "status": "partially_answered",
+        "short_name": "undefined_reconstruction_invariant"
+      }
+    ]
+  },
+  "final_verdict": {
+    "pre_results_package": "defensible_and_useful",
+    "evidence_integrity": "passes",
+    "visual_integrity": "passes",
+    "submission_ready": false,
+    "scientifically_acceptable_now": false,
+    "strongest_kill_argument_survives": true,
+    "kill_scope": "current_frozen_artifact_only",
+    "recommendation_if_submitted_now": "strong_reject",
+    "fatal_basis": [
+      "P1.1",
+      "P1.2",
+      "P1.3"
+    ],
+    "reinforcing_unresolved_finding": "P3.2",
+    "not_a_basis_for_kill": [
+      "fabrication",
+      "concealed_evidence",
+      "typography",
+      "author_placeholders"
+    ]
+  },
+  "outputs": {
+    "defense_prompt": {
+      "path": "paper/.aris/traces/kill-argument-icassp/final/defense_prompt.md",
+      "sha256": "05651da69f81ecb8fd6fcb577e66c43bb327f44e1c448a99f38f52deb0352795",
+      "bytes": 4568
+    },
+    "defense": {
+      "path": "paper/.aris/traces/kill-argument-icassp/final/defense.md",
+      "sha256": "8344a96bad1dd6b785b1dd83e0319df611716b4d2a723acb73bce4163a7bb0d1",
+      "bytes": 20087
+    },
+    "defense_meta": "paper/.aris/traces/kill-argument-icassp/final/defense.meta.json",
+    "kill_argument_json_generated": false,
+    "kill_argument_md_generated": false,
+    "manuscript_modified": false
+  }
+}

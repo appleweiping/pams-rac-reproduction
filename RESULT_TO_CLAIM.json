@@ -1,42 +1,31 @@
 {
-  "schema_version": 1,
-  "generated_at": "2026-08-12",
-  "evidence_freeze": "73cbc4bb9b581f24fbc90f2fe7421bc11e7c7454",
-  "integrity_status": "fail",
-  "integrity_reason": "NO_MULTI_PERSON_REAL_GT_EVIDENCE",
+  "audit_skill": "result-to-claim",
+  "verdict": "FAIL",
+  "reason_code": "NO_MULTI_PERSON_REAL_GT_EVIDENCE",
   "route": "pivot",
+  "summary": "No synchronized multi-person implementation or eligible MultiRep artifact exists; write only a method/protocol scaffold with visibly pending empirical controls.",
+  "integrity_status": "fail",
   "review_independence": "same-family",
   "acceptance_status": "provisional",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "ultra",
+  "agent_id": "/root/icassp_result_to_claim",
+  "generated_at": "2026-08-14T21:37:16+08:00",
+  "trace_path": "paper/.aris/traces/result-to-claim/2026-08-14_run01/",
+  "audited_input_hashes": {
+    "EXPERIMENT_AUDIT.json": "sha256:2a2aaba57f5b24c2955635ef3770b442d34a7c6f1b647495fb102c582da6f8d7",
+    "EXPERIMENT_AUDIT.md": "sha256:146900f9d62c5b9267e98b07f151c3640b3d796a944c721e5f88c72c34803c79",
+    "CLAIMS_EVIDENCE_MATRIX.md": "sha256:849ebc903fbb8384f540fe6483ee38e80d91d82dfb304a0265fbc2d559657926",
+    "paper/evidence/results_manifest.json": "sha256:4df513a3f4427950d23267965192253446e6ee2b6968907855e0bae1a6a53159",
+    "paper/evidence/method_manifest.yaml": "sha256:07823bb5bb11509e79556f87c9bbb19c9ce4f0ff1fdea1b5cb832e89ae8cd289"
+  },
   "claims": [
-    {
-      "id": "C1",
-      "claim_supported": "no",
-      "confidence": "low",
-      "disposition": "method-contract-only"
-    },
-    {
-      "id": "C2",
-      "claim_supported": "partial",
-      "confidence": "low",
-      "disposition": "intended-supervision-boundary-unverified"
-    },
-    {
-      "id": "C3",
-      "claim_supported": "no",
-      "confidence": "low",
-      "disposition": "withhold-all-multirep-performance"
-    },
-    {
-      "id": "C4",
-      "claim_supported": "no",
-      "confidence": "low",
-      "disposition": "controlled-abstract-placeholder"
-    },
-    {
-      "id": "C5",
-      "claim_supported": "no",
-      "confidence": "low",
-      "disposition": "exclude-current-dev-results-from-main-table"
-    }
+    {"id": "R1", "claim_supported": "no", "confidence": "low", "revision": "We propose an identity-indexed local-tempo counter; its implementation remains synchronization-pending."},
+    {"id": "R2", "claim_supported": "partial", "confidence": "low", "revision": "The intended counting objective is designed not to use person-wise count or period annotations; this remains unaudited, and pose/tracking supervision must be disclosed."},
+    {"id": "R3", "claim_supported": "no", "confidence": "low", "revision": "MultiRep effectiveness and competitiveness remain to be evaluated under the preregistered protocol."},
+    {"id": "R4", "claim_supported": "no", "confidence": "low", "revision": "Quantitative ICASSP results are pending."},
+    {"id": "R5", "claim_supported": "no", "confidence": "low", "revision": "We preregister ablations and a piecewise time-warp diagnostic to test routing, reconstruction, and any implemented continuity mechanism."},
+    {"id": "R6", "claim_supported": "no", "confidence": "low", "revision": "Existing local UCFRep dev84, proxy, and smoke outputs are diagnostic only and are excluded from ICASSP result tables."}
   ]
 }
+

@@ -1,43 +1,75 @@
 {
   "audit_skill": "proof-checker",
-  "verdict": "PASS",
-  "reason_code": "PASS_NO_UNDISCHARGED_PROOF_OBLIGATIONS",
-  "summary": "No theorem-family or proof environments and no theorem-like claims requiring a separate proof were found. All 14 displayed equations are definitions or explicitly provisional method-contract formulas with adequate qualifiers.",
-  "paper_freeze": "1376b6a388d049b12548a589e9753237bd9e62802091d822cd46cb450aa26184",
-  "source_freeze_sha256": "1376b6a388d049b12548a589e9753237bd9e62802091d822cd46cb450aa26184",
-  "audited_input_hashes": {
-    "main.tex": "sha256:041bfa52c09d53faaa9dde6bd6a1e0fba37e2ab2009a43bdc84e607e622e787c",
-    "preamble.tex": "sha256:248f035d6f420d297fc5628ff2f21918a3310836b466685a1e783c3b8d540a22",
-    "math_commands.tex": "sha256:ab4b7a090dfbbb5bd2ea6cd18406ef1aef714147594d42df32d42f9649892309",
-    "sections/0_abstract.tex": "sha256:2bb5e32dec7a2f18cb572a423f58c97f39c174c400579f41a055fdea1f725d8a",
-    "sections/1_introduction.tex": "sha256:d1f82e381a982b7c8075d4f09e86798703a4be28f713b90ced8cce801fbe6d3c",
-    "sections/2_related_work.tex": "sha256:96ab7ac0d5a65e4552aadcbff423c23de69994901f4057d9ede7b7c461ab6d31",
-    "sections/3_method.tex": "sha256:12f2b96e16e034a5c8ec3db887d70676919060e2e543180ca2c186cab9cd8b5b",
-    "sections/4_experiments.tex": "sha256:36d1eb3d9e413a1e7e970e87e3e976bc6fc04478c3276f63b955ea412db13766",
-    "sections/5_conclusion.tex": "sha256:e6d8a193e02fde717675b5858441b8368efdc898fb1d82b9a1023ef90a653091",
-    "appendix/a_experiment_contract.tex": "sha256:25138c31c471c9b2542b8e3fbf326a38686f25eeed452edebf0e5257330f46d5",
-    "main.pdf": "sha256:de951023634d5627f3c38cd7512da9fd7df20086781d24caf0a548b93b3d9522"
+  "verdict": "NOT_APPLICABLE",
+  "reason_code": "NO_FORMAL_PROOF_OBLIGATION",
+  "summary": "No theorem, lemma, proposition, corollary, proof, formal bound, convergence result, or other proof obligation is present. The four displayed equations are proposal-level definitions with implementation-sensitive semantics explicitly synchronization-gated. No blocking mathematical misstatement or unsupported formal guarantee was found; three non-blocking precision caveats are recorded for Equations (2)-(4).",
+  "formal_proof_inventory": {
+    "theorems": 0,
+    "lemmas": 0,
+    "propositions": 0,
+    "corollaries": 0,
+    "proofs": 0,
+    "proof_sketches": 0,
+    "formal_bounds_or_convergence_claims": 0
   },
-  "trace_path": ".aris/traces/proof-checker/final/",
-  "agent_id": "/root/final_proof_audit_postfix",
-  "executor_model": "codex-gpt-5.6-sol",
-  "executor_family": "openai",
+  "blocking_issues": [],
+  "formula_assessment": [
+    {
+      "equation": 1,
+      "status": "sound_as_proposal_specification",
+      "note": "Per-identity typing and dependency are specified; source-level mask and lifecycle invariants remain explicitly unverified."
+    },
+    {
+      "equation": 2,
+      "status": "non_blocking_precision_gap",
+      "note": "Summation support, out-of-window indexing, domains, units, centering, and Phi are not closed definitions, but the manuscript explicitly marks them synchronization-required and makes no estimator guarantee."
+    },
+    {
+      "equation": 3,
+      "status": "non_blocking_wording_caveat",
+      "note": "Softmax gives simplex weights when defined, but it does not guarantee high uncertainty at tempo transitions; that behavior remains empirical."
+    },
+    {
+      "equation": 4,
+      "status": "sound_with_non_blocking_precision_caveat",
+      "note": "The ordering avoids independent per-window decoding and explicitly does not guarantee one peak. The epsilon-regularized denominator is not an exact perfect-reconstruction normalization, which the manuscript does not claim."
+    }
+  ],
+  "hidden_guarantee_assessment": {
+    "status": "no_blocking_misstatement",
+    "notes": [
+      "Boundary double-counting language is limited to one structural source.",
+      "Parameter-count independence is correctly limited to the fixed shared expert bank; runtime and memory claims are withheld.",
+      "Robustness, stationary-track preservation, expert specialization, confidence validity, and mechanism isolation are hypotheses or planned tests.",
+      "Auxiliary losses are explicitly a synchronization contract rather than an implemented or justified objective."
+    ]
+  },
+  "pdf_review": {
+    "expected_sha256": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+    "hash_matches": true,
+    "page_count": 5,
+    "pages_visually_reviewed": [1, 2, 3, 4, 5],
+    "formula_rendering_defects": 0
+  },
+  "audited_input_hashes": {
+    "main.pdf": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+    "main.tex": "a4fe29c47f200946c7d6f3522bd273f5895aabda2d7a959fdbf16397fe1cbe70",
+    "preamble.tex": "763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2",
+    "math_commands.tex": "e6dabb7ce789e0d78026e6bda287fe17faedb6d20c0df9b4f603cb3b6c123bee",
+    "sections/0_abstract.tex": "fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef",
+    "sections/1_introduction.tex": "6823651162f59e5f5263949f2d308f594b667cb3cba0044433c39031ae04db9d",
+    "sections/3_method.tex": "7e92c00eb4a7956b059536fd47240cefbea960aee61d4f3fdef1a7e24930c50d",
+    "sections/4_experiments.tex": "6052c816e94f7d7f50b560d397495a37863b05d240ed5e418e4b6ec4d3aa131b",
+    "sections/5_conclusion.tex": "e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c"
+  },
+  "trace_path": ".aris/traces/proof-audit-icassp/final",
+  "agent_id": "/root/icassp_proof_audit",
   "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "xhigh",
+  "executor_model": "gpt-5.6-sol",
+  "executor_family": "openai",
   "reviewer_family": "openai",
   "review_independence": "same-family",
   "acceptance_status": "provisional",
-  "reviewer_reasoning": "ultra",
-  "generated_at": "2026-08-11T20:58:01Z",
-  "details": {
-    "files_audited": 10,
-    "pdf_pages_audited": 11,
-    "theorem_family_environments": 0,
-    "proof_environments": 0,
-    "ordinary_equations_reviewed": 14,
-    "hidden_proof_obligations": 0,
-    "source_pdf_consistency": "PASS",
-    "new_critical_or_major_issues": 0,
-    "epsilon_overlap_add_issue": "RESOLVED",
-    "issues": []
-  }
+  "generated_at": "2026-08-14T22:43:31+08:00"
 }

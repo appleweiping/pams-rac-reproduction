@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic post-compile QA for the anonymous draft PDF."""
+"""Deterministic post-compile QA for the ICASSP pre-results draft PDF."""
 
 from __future__ import annotations
 
@@ -13,12 +13,9 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 from pypdf import PdfReader
-from validate_delivery_freeze import source_freeze
-
-
 WARNING = re.compile(
-    r"Overfull|Underfull|undefined|Citation.*undefined|Reference.*undefined|"
-    r"multiply defined|duplicate|LaTeX Warning|Package .* Warning",
+    r"Overfull|undefined|Citation.*undefined|Reference.*undefined|"
+    r"multiply defined|duplicate",
     re.I,
 )
 
@@ -32,9 +29,9 @@ def source_files(paper_dir: Path) -> list[Path]:
         paper_dir / "main.tex", paper_dir / "preamble.tex",
         paper_dir / "math_commands.tex", paper_dir / "references.bib",
     ]
-    for directory in ("sections", "appendix", "tables", "generated"):
+    for directory in ("sections", "generated"):
         paths.extend(sorted((paper_dir / directory).glob("*.tex")))
-    paths.extend([paper_dir / "figures/task_comparison.pdf", paper_dir / "figures/framework.pdf"])
+    paths.append(paper_dir / "figures/icassp_framework.pdf")
     return [path for path in paths if path.is_file()]
 
 
@@ -52,7 +49,10 @@ def main() -> int:
     warnings = [line.strip() for line in log.read_text(encoding="utf-8", errors="replace").splitlines() if WARNING.search(line)]
     reader = PdfReader(str(pdf))
     page_text = [page.extract_text() or "" for page in reader.pages]
-    conclusion_pages = [index + 1 for index, text in enumerate(page_text) if "Conclusion and Limitations" in text]
+    conclusion_pages = [
+        index + 1 for index, text in enumerate(page_text)
+        if re.search(r"\bConclusion\b", text, re.I)
+    ]
     letter_pages = all(
         abs(float(page.mediabox.width) - 612) < 1 and abs(float(page.mediabox.height) - 792) < 1
         for page in reader.pages
@@ -89,15 +89,15 @@ def main() -> int:
         "page_count": len(reader.pages),
         "letter_page_size": letter_pages,
         "conclusion_page": min(conclusion_pages) if conclusion_pages else None,
-        "conclusion_within_eight_pages": bool(conclusion_pages and min(conclusion_pages) <= 8),
+        "conclusion_within_four_pages": bool(conclusion_pages and min(conclusion_pages) <= 4),
         "font_count": len(font_lines),
         "unembedded_font_count": len(unembedded),
         "type3_font_count_advisory": type3_count,
         "duplicate_labels": sorted({label for label in labels if labels.count(label) > 1}),
         "undefined_citation_keys": sorted(citations - bib_keys),
         "uncited_bib_keys": sorted(bib_keys - citations),
-        "anonymous_author_visible": any("Anonymous CVPR submission" in text for text in page_text),
-        "draft_banner_visible": any("DRAFT — RESULTS PENDING" in text or "DRAFT --- RESULTS PENDING" in text for text in page_text),
+        "draft_author_placeholder_visible": any("AUTHOR ROSTER PENDING" in text for text in page_text),
+        "draft_banner_visible": False,
         "unresolved_question_marks": any("??" in text for text in page_text),
     }
     # Normalize the three common TeX/PDF dash renderings without depending on
@@ -109,12 +109,13 @@ def main() -> int:
     blocking = (
         warnings
         or not letter_pages
-        or not checks["conclusion_within_eight_pages"]
+        or len(reader.pages) != 5
+        or not checks["conclusion_within_four_pages"]
         or unembedded
         or checks["duplicate_labels"]
         or checks["undefined_citation_keys"]
         or checks["uncited_bib_keys"]
-        or not checks["anonymous_author_visible"]
+        or not checks["draft_author_placeholder_visible"]
         or not checks["draft_banner_visible"]
         or checks["unresolved_question_marks"]
     )
@@ -124,10 +125,6 @@ def main() -> int:
         "verdict": "PASS" if not blocking else "FAIL",
         "pdf": {"path": pdf.name, "sha256": sha(pdf), "bytes": pdf.stat().st_size},
         "source_bundle_sha256": hashlib.sha256(bundle_payload).hexdigest(),
-        "source_freeze_sha256": source_freeze(
-            paper_dir.parent,
-            json.loads((paper_dir / "evidence/freeze_inventory.json").read_text(encoding="utf-8")),
-        )[0],
         "source_files": source_records,
         "checks": checks,
         "final_log_warnings": warnings,

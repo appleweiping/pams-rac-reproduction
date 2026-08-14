@@ -1,0 +1,75 @@
+{
+  "$schema": "results_manifest.schema.json",
+  "schema_version": "1.0",
+  "document_type": "icassp_results_manifest",
+  "status": "data-pending",
+  "artifact_id": null,
+  "artifact_family": null,
+  "frozen": false,
+  "table_eligible": false,
+  "method_commit": null,
+  "dataset": {
+    "name": "MultiRep",
+    "release": null,
+    "split": null,
+    "checksum": null
+  },
+  "protocol": {
+    "track_modes": [],
+    "native_contextual_separated": true,
+    "common_track_frontend": null,
+    "evaluation_script": null,
+    "evaluation_type": null
+  },
+  "seeds": [],
+  "statistics": {
+    "mean": false,
+    "sample_standard_deviation": false,
+    "paired_video_cluster_bootstrap_95ci": false,
+    "bootstrap_unit": null
+  },
+  "hardware": null,
+  "configuration_files": [],
+  "run_logs": [],
+  "prediction_artifacts": [],
+  "source_artifacts": [],
+  "metrics": {},
+  "audits": {
+    "experiment_audit": {
+      "status": "pending",
+      "path": null,
+      "sha256": null
+    },
+    "result_to_claim": {
+      "status": "pending",
+      "path": null,
+      "sha256": null
+    },
+    "paper_claim_audit": {
+      "status": "pending",
+      "path": null,
+      "sha256": null
+    }
+  },
+  "paper_bindings": {
+    "protocol_fields": [],
+    "results": [],
+    "claims": [],
+    "abstract_result": null
+  },
+  "eligibility": {
+    "new_synchronized_multirep_family": false,
+    "method_commit_bound": false,
+    "dataset_release_bound": false,
+    "protocol_bound": false,
+    "three_or_more_seeds": false,
+    "uncertainty_complete": false,
+    "raw_artifacts_hash_bound": false,
+    "audits_pass": false
+  },
+  "blocking_reasons": [
+    "collaborator implementation and result artifact package not synchronized",
+    "no eligible MultiRep metric values are available",
+    "experiment-audit and result-to-claim have not licensed paper values"
+  ]
+}

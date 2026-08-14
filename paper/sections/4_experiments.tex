@@ -1,261 +1,186 @@
-\section{Experiments}
+\section{Planned Experiments and Analysis}
 \label{sec:experiments}
 
-\paragraph{Pre-results status.}
-This section fixes the evaluation questions, protocols, and table schemas; it
-contains no new-method measurement or empirical conclusion. Red entries are
-controlled evidence fields. Historical UCFRep dev84 diagnostics, proxy
-readouts, and runs involving an untrained random Period Head are ineligible for
-every table below.
+The protocol is planned but is neither frozen nor executed for the proposed
+multi-person system. Existing single-person development artifacts are excluded
+from every table because they neither implement the proposed method nor use the
+target benchmark. Result prose will be enabled only after a frozen collaborator
+bundle passes experiment and claim audits.
 
-\subsection{Evaluation Contract}
-\label{sec:evaluation_contract}
-\ClaimMap{C07,C10,C11,C12,C15}
+\subsection{Protocol and metrics}
+The result manifest must bind the MultiRep release, official split, video and
+annotation checksums, evaluator revision, preprocessing fingerprint, pose
+modality, supervision path, hardware, seeds, configuration, and raw logs. We
+separate three protocols: oracle tracks, tracks from one frozen common frontend,
+and each method's native pipeline. Native rows provide context but cannot form
+a matched ranking against common-track rows. Predicted-track evaluations retain
+HOTA \cite{luiten2021hota}, IDF1, and identity switches
+\cite{ristani2016idmetrics} as frontend diagnostics, separate from the counting
+metrics. Their proposed-method values remain \R{ours-hota}, \R{ours-idf1}, and
+\R{ours-idsw}, respectively, until the same frozen bundle binds them.
+For every predicted-track protocol, the manifest must also freeze tracklet
+creation, reset, re-entry, fragmentation, merge, retirement, and reconciliation
+rules, plus the assignment from predicted tracklets to ground-truth people.
+Until these semantics are source-bound, predicted-track count rows stay disabled.
 
-\paragraph{Data and integrity.}
-The primary benchmark will be the exact MultiRep release
-\Protocol{multirep.release} under its official \Protocol{multirep.split}
-protocol. The original MultiCounter paper specifies 1,157 synthetic videos,
-52,590 periodic events, and a 7:2:1 train/validation/test split, while the
-current MultiCounter+ repository reports the same size and provides a download
-without a versioned release identifier or checksums
-~\cite{tang2024multicounter,tang2026multicounterplus}. The final manifest must
-therefore bind the release identifier, download source and time,
-video/annotation/split SHA-256 digests, evaluator revision, and preprocessing
-fingerprint. A run is table-ineligible if any binding is missing or if
-incompatible artifacts are mixed. Before model comparison, a frozen dataset
-characterization report must give split-level counts of videos, ground-truth
-people, events, active-person levels, within-track tempo dispersion, detected
-accelerations/decelerations, pauses, observation gaps, and identities with
-enough cycles for every declared window length. Stratum definitions and counts
-are fixed before looking at method errors.
-
-\paragraph{Oracle and predicted tracks.}
-The oracle-track protocol supplies official person identities and spatial
-support, isolating repetition counting from detection and association. The
-predicted-track protocol uses one frozen detector--pose--tracker frontend for
-all compatible track-conditioned counters. Native joint MRAC systems retain
-their audited official pipelines and appear in a separate contextual block,
-not as if their inputs were controlled. Against ground-truth identities and
-spatial support, HOTA and its DetA, AssA, and LocA components
-~\cite{luiten2021hota} diagnose predicted-track detection, association, and
-localization quality. IDF1 and ID-switch counts~\cite{ristani2016idmetrics}
-provide complementary identity-duration and temporal-association diagnostics.
-When the same frozen tracks feed several counters, these tracking values must
-be identical and cannot be credited as counting gains.
-
-\paragraph{Evaluator-ready outputs.}
-Each counter adapter must emit the scored event tuples in
-Equation~\ref{eq:event_schema}, the raw per-track count vector, and the exact
-spatial support expected by the pinned evaluator. Oracle tracks retain official
-identity support. Predicted tracks remain separate through evaluation: the
-manifest-bound adapter must specify one deterministic matching policy and how
-unmatched, duplicated, fragmented, merged, and identity-switched tracks become
-false positives or false negatives. No post-hoc fragment joining is allowed
-unless it is a separately audited method component. Adapter source, tests, and
-per-instance outputs are required before Period-mAP or matched person-wise
-count metrics become table-eligible. Predicted-track outputs are called
-track-wise until this matching is applied.
-
-\paragraph{Metrics and uncertainty.}
-Using the frozen official evaluator, we will report Period-mAP, AP50, AP75,
-AvgMAE, and AvgOBO, together with a matched person-count error
-diagnostic after the evaluator's frozen matching step. Period-mAP under common
-predicted tracks is the confirmatory metric; the primary contrast is our method
-minus track-conditioned PAMS on identical videos and frontend outputs. A claim
-of improvement requires the lower endpoint of its paired 95\% interval to be
-above zero. Native-pipeline rows are descriptive and cannot establish
-non-inferiority or superiority under a common-input protocol.
-
-Every reproducible method uses at least three pre-registered seeds, reported
-as mean and between-seed sample standard deviation. The confirmatory interval
-uses one pre-declared paired hierarchical bootstrap: each replicate resamples
-completed seed pairs and then videos within each sampled seed, retaining every
-identity of a sampled video and recomputing Period-mAP from event records rather
-than averaging per-video AP. Its point estimate is the mean of paired
-seed-level differences. The manifest fixes the resample count, random seed,
-failed-run policy, and exact numbers of completed seeds, videos, people, and
-events. Secondary ablations are exploratory, with family-wise Holm correction
-if formal significance statements are made. Official
-single-checkpoint numbers remain explicitly marked and are excluded from
-variance and significance claims. Test annotations are not used for tuning,
-checkpoint selection, routing calibration, or early stopping.
-
-The numerical stabilizer \(\epsilon\) is fixed before evaluation in the units
-of each denominator. A sensitivity check spans representable smaller and larger
-values and reports changes in response amplitude and count metrics by valid
-support; it must expose, rather than hide, any coverage dependence introduced
-by Equations~\ref{eq:valid_mean} and~\ref{eq:normalized_ola}.
-
-\paragraph{Baselines and supervision.}
-The mandatory native baselines are MultiCounter and MultiCounter+
-~\cite{tang2024multicounter,tang2026multicounterplus}. Under the common track
-interface we adapt RepNet~\cite{dwibedi2020repnet},
-TransRAC~\cite{hu2022transrac}, PoseRAC~\cite{yao2025poserac}, and
-PAMS~\cite{gao2026pams}; DeTRC~\cite{ma2026detrc} and
-D$^2$-STX~\cite{wang2026d2stx} are candidate baselines and enter only if
-runnable public implementations are available and their output semantics
-pass the experiment audit. Tables disclose input modality, training labels,
-track source, run count, adapter code, crop/pose construction, training split,
-tuning budget, pretrained checkpoint, and output conversion. Comparisons across supervision regimes are
-accuracy--annotation trade-offs, not claims of identical training information.
-
-\subsection{Primary Questions}
-\label{sec:primary_questions}
-\ClaimMap{C03,C04,C05,C06,C12,C15}
-
-The evaluation is organized around four questions. First, how does a
-no-count-label pose counter compare on person-wise oracle-track MRAC and on
-matched predicted tracks? Second, does local routing help beyond a track-conditioned
-PAMS base when tempo changes within one identity? Third, does response-domain
-overlap-add reduce boundary errors relative to summing independently decoded
-windows? Fourth, how do tracking errors, active-person count, and upstream
-preprocessing affect robustness and efficiency? Each question has a named
-table or figure and an associated claim that remains withheld until the
-evidence audit passes. The mechanism study must also compare against running
-PAMS independently per track, sliding-window PAMS without a learned router,
-deterministic tempo bins, non-overlapping and center-crop decoding, uniform
-response averaging, and phase-aligned fusion.
+The principal counting metrics are Period-mAP, Period-AP50, Period-AP75, AvgMAE,
+and AvgOBO,
+using the release-native MultiRep definitions \cite{tang2024multicounter,
+tang2026multicounterplus}. The manifest must freeze the evaluation unit
+(persistent ground-truth person or predicted tracklet), assignment cost,
+unmatched-track rule, per-person/per-video aggregation, empty-support and
+zero-count handling, exact formulas, and evaluator hash; no metric is enabled
+until those semantics agree with the selected release.
+Every reproduced learned method requires at least three named seeds frozen before
+results are inspected; we will report the mean, sample standard deviation, and a paired video-cluster
+bootstrap 95\% confidence interval. A published checkpoint may appear as a
+contextual row, but it cannot support a variance estimate. Dataset and evaluator
+fields remain \Protocol{multirep-release} and \Protocol{evaluator-revision}.
+The frozen bundle must also contain per-person ground truth, per-person
+predictions, track identifiers, evaluator outputs, and the exact commands that
+produced each row. Checksums bind the structured source of every table cell, so
+the manuscript cannot silently mix releases, frontends, or reruns.
 
 \begin{table*}[t]
-  \centering
-  \small
-  \setlength{\tabcolsep}{3.1pt}
-  \caption{Planned MultiRep main results. Reproducible rows will show the
-  mean and sample standard deviation over pre-registered seeds; official
-  single-checkpoint rows will be marked. Protocol blocks answer different
-  questions and will not be pooled into one ranking.}
-  \label{tab:main_multirep}
-  \begin{tabular}{lllccccc}
-    \toprule
-    Method & Track protocol & Count supervision &
-    Period-mAP$\uparrow$ & AP50$\uparrow$ & AP75$\uparrow$ &
-    AvgMAE$\downarrow$ & AvgOBO$\uparrow$ \\
-    \midrule
-    \multicolumn{8}{l}{\textit{Controlled oracle tracks}}\\
-    RepNet & Oracle & \Protocol{sup.repnet} & \R{main.oracle.repnet.pmap} &
-      \R{main.oracle.repnet.ap50} & \R{main.oracle.repnet.ap75} &
-      \R{main.oracle.repnet.mae} & \R{main.oracle.repnet.obo} \\
-    TransRAC & Oracle & \Protocol{sup.transrac} &
-      \R{main.oracle.transrac.pmap} & \R{main.oracle.transrac.ap50} &
-      \R{main.oracle.transrac.ap75} & \R{main.oracle.transrac.mae} &
-      \R{main.oracle.transrac.obo} \\
-    PoseRAC & Oracle & \Protocol{sup.poserac} & \R{main.oracle.poserac.pmap} &
-      \R{main.oracle.poserac.ap50} & \R{main.oracle.poserac.ap75} &
-      \R{main.oracle.poserac.mae} & \R{main.oracle.poserac.obo} \\
-    PAMS & Oracle & \Protocol{sup.pams} & \R{main.oracle.pams.pmap} &
-      \R{main.oracle.pams.ap50} & \R{main.oracle.pams.ap75} &
-      \R{main.oracle.pams.mae} & \R{main.oracle.pams.obo} \\
-    \textbf{Ours} & Oracle & \Protocol{sup.ours} & \R{main.oracle.ours.pmap} &
-      \R{main.oracle.ours.ap50} & \R{main.oracle.ours.ap75} &
-      \R{main.oracle.ours.mae} & \R{main.oracle.ours.obo} \\
-    \midrule
-    \multicolumn{8}{l}{\textit{Controlled common predicted tracks}}\\
-    RepNet & Common predicted & \Protocol{sup.repnet} &
-      \R{main.pred.repnet.pmap} & \R{main.pred.repnet.ap50} &
-      \R{main.pred.repnet.ap75} & \R{main.pred.repnet.mae} &
-      \R{main.pred.repnet.obo} \\
-    TransRAC & Common predicted & \Protocol{sup.transrac} &
-      \R{main.pred.transrac.pmap} & \R{main.pred.transrac.ap50} &
-      \R{main.pred.transrac.ap75} & \R{main.pred.transrac.mae} &
-      \R{main.pred.transrac.obo} \\
-    PoseRAC & Common predicted & \Protocol{sup.poserac} &
-      \R{main.pred.poserac.pmap} & \R{main.pred.poserac.ap50} &
-      \R{main.pred.poserac.ap75} & \R{main.pred.poserac.mae} &
-      \R{main.pred.poserac.obo} \\
-    PAMS & Common predicted & \Protocol{sup.pams} & \R{main.pred.pams.pmap} &
-      \R{main.pred.pams.ap50} & \R{main.pred.pams.ap75} &
-      \R{main.pred.pams.mae} & \R{main.pred.pams.obo} \\
-    \textbf{Ours} & Common predicted & \Protocol{sup.ours} & \R{main.pred.ours.pmap} &
-      \R{main.pred.ours.ap50} & \R{main.pred.ours.ap75} &
-      \R{main.pred.ours.mae} & \R{main.pred.ours.obo} \\
-    \midrule
-    \multicolumn{8}{l}{\textit{Native full-pipeline context; descriptive only}}\\
-    MultiCounter & Native & \Protocol{sup.multicounter} &
-      \R{main.native.multicounter.pmap} & \R{main.native.multicounter.ap50} &
-      \R{main.native.multicounter.ap75} & \R{main.native.multicounter.mae} &
-      \R{main.native.multicounter.obo} \\
-    MultiCounter+ & Native & \Protocol{sup.multicounterplus} &
-      \R{main.native.multicounterplus.pmap} &
-      \R{main.native.multicounterplus.ap50} &
-      \R{main.native.multicounterplus.ap75} &
-      \R{main.native.multicounterplus.mae} &
-      \R{main.native.multicounterplus.obo} \\
-    \bottomrule
-  \end{tabular}
+\centering
+\caption{Planned main comparison. Native/contextual, supplied oracle-track, and
+common predicted-track blocks are not ranked across dividers. All cells are
+evidence-controlled; arrows give metric direction, not a performance claim.}
+\label{tab:main}
+\setlength{\tabcolsep}{3.3pt}
+\scriptsize
+\begin{tabular}{llccccc}
+\toprule
+Method & Protocol & Period-mAP $\uparrow$ & Period-AP50 $\uparrow$ & Period-AP75 $\uparrow$
+& AvgMAE $\downarrow$ & AvgOBO $\uparrow$ \\
+\midrule
+MultiCounter \cite{tang2024multicounter} & native/contextual
+& \pendingcell{mc-pmap} & \pendingcell{mc-ap50} & \pendingcell{mc-ap75}
+& \pendingcell{mc-mae} & \pendingcell{mc-obo} \\
+MultiCounter+ \cite{tang2026multicounterplus} & native/contextual
+& \pendingcell{mcp-pmap} & \pendingcell{mcp-ap50} & \pendingcell{mcp-ap75}
+& \pendingcell{mcp-mae} & \pendingcell{mcp-obo} \\
+\midrule
+Track-PAMS \cite{gao2026pams} & supplied oracle tracks
+& \pendingcell{otp-pmap} & \pendingcell{otp-ap50} & \pendingcell{otp-ap75}
+& \pendingcell{otp-mae} & \pendingcell{otp-obo} \\
+Track-global tempo & supplied oracle tracks
+& \pendingcell{otg-pmap} & \pendingcell{otg-ap50} & \pendingcell{otg-ap75}
+& \pendingcell{otg-mae} & \pendingcell{otg-obo} \\
+Identity-indexed local routing & supplied oracle tracks
+& \pendingcell{oours-pmap} & \pendingcell{oours-ap50} & \pendingcell{oours-ap75}
+& \pendingcell{oours-mae} & \pendingcell{oours-obo} \\
+\midrule
+Track-PAMS \cite{gao2026pams} & common predicted tracks
+& \pendingcell{tp-pmap} & \pendingcell{tp-ap50} & \pendingcell{tp-ap75}
+& \pendingcell{tp-mae} & \pendingcell{tp-obo} \\
+Track-global tempo & common predicted tracks
+& \pendingcell{tg-pmap} & \pendingcell{tg-ap50} & \pendingcell{tg-ap75}
+& \pendingcell{tg-mae} & \pendingcell{tg-obo} \\
+Identity-indexed local routing & common predicted tracks
+& \pendingcell{ours-pmap} & \pendingcell{ours-ap50} & \pendingcell{ours-ap75}
+& \pendingcell{ours-mae} & \pendingcell{ours-obo} \\
+\bottomrule
+\end{tabular}
 \end{table*}
 
-The quantitative interpretation of Table~\ref{tab:main_multirep} remains
-withheld until every displayed binding passes the empirical audits.
-
-\begin{table*}[t]
-  \centering
-  \small
-  \setlength{\tabcolsep}{3.0pt}
-  \caption{Required protocol disclosure accompanying the main table. Native
-  rows retain their official pipelines and are not pooled with common-input
-  rows. Every field is manifest-bound.}
-  \label{tab:protocol_disclosure}
-  \begin{tabular}{lllllll}
-    \toprule
-    Method & Result block & Input & Count labels & Period labels & Track source & Runs \\
-    \midrule
-    RepNet & Common & \Protocol{disc.repnet.input} & \Protocol{disc.repnet.count} &
-      \Protocol{disc.repnet.period} & \Protocol{disc.common.track} & \Protocol{disc.repnet.runs} \\
-    TransRAC & Common & \Protocol{disc.transrac.input} & \Protocol{disc.transrac.count} &
-      \Protocol{disc.transrac.period} & \Protocol{disc.common.track} & \Protocol{disc.transrac.runs} \\
-    PoseRAC & Common & \Protocol{disc.poserac.input} & \Protocol{disc.poserac.count} &
-      \Protocol{disc.poserac.period} & \Protocol{disc.common.track} & \Protocol{disc.poserac.runs} \\
-    PAMS & Common & \Protocol{disc.pams.input} & \Protocol{disc.pams.count} &
-      \Protocol{disc.pams.period} & \Protocol{disc.common.track} & \Protocol{disc.pams.runs} \\
-    \textbf{Ours} & Common & \Protocol{disc.ours.input} & \Protocol{disc.ours.count} &
-      \Protocol{disc.ours.period} & \Protocol{disc.common.track} & \Protocol{disc.ours.runs} \\
-    MultiCounter & Native context & \Protocol{disc.multicounter.input} &
-      \Protocol{disc.multicounter.count} & \Protocol{disc.multicounter.period} &
-      \Protocol{disc.multicounter.track} & \Protocol{disc.multicounter.runs} \\
-    MultiCounter+ & Native context & \Protocol{disc.multicounterplus.input} &
-      \Protocol{disc.multicounterplus.count} & \Protocol{disc.multicounterplus.period} &
-      \Protocol{disc.multicounterplus.track} & \Protocol{disc.multicounterplus.runs} \\
-    \bottomrule
-  \end{tabular}
-\end{table*}
+\subsection{Main comparison}
+Table~\ref{tab:main} separates native MultiCounter variants from matched oracle-
+and predicted-track families. Oracle tracks isolate counting; the common frozen
+frontend measures robustness to track errors. In each matched family, Track-PAMS
+tests identity/window adaptation, track-global tempo tests local versus global
+estimation, and the local router tests the full hypothesis. RepNet and TransRAC
+\cite{dwibedi2020repnet,hu2022transrac}, PoseRAC
+\cite{yao2025poserac}, dynamic-query counting \cite{ma2026detrc}, and
+dual-branch spatiotemporal counting \cite{wang2026d2stx} enter this block only
+if input, output, tracking, and evaluation parity can be demonstrated. No cell
+will be emphasized across incompatible protocols. The table will be generated
+from frozen structured results rather than manually transcribed values. A
+baseline enters the common-track block only if its temporal input and output can
+be adapted without privileged labels or method-specific tracking. When such
+parity cannot be established, the method remains contextual and its unavailable
+metrics are reported as not applicable rather than imputed.
 
 \begin{table}[t]
-  \centering
-  \small
-  \setlength{\tabcolsep}{2.7pt}
-  \caption{Planned construction-path diagnostic under oracle tracks. LT: local
-  tempo; SR: soft routing; BS: boundary stitching; TC: track-continuity
-  objective. Causal conclusions use removals from the full model and the
-  factorial controls described below, not this order-dependent path alone.}
-  \label{tab:additive_ablation}
-  \begin{tabular}{lcccccc}
-    \toprule
-    Variant & LT & SR & BS & TC & Period-mAP$\uparrow$ & AvgMAE$\downarrow$ \\
-    \midrule
-    Track-PAMS & & & & & \R{abl.base.pmap} & \R{abl.base.mae} \\
-    $+$ LT & \checkmarkcell & & & & \R{abl.lt.pmap} & \R{abl.lt.mae} \\
-    $+$ SR & \checkmarkcell & \checkmarkcell & & &
-      \R{abl.sr.pmap} & \R{abl.sr.mae} \\
-    $+$ BS & \checkmarkcell & \checkmarkcell & \checkmarkcell & &
-      \R{abl.bs.pmap} & \R{abl.bs.mae} \\
-    $+$ TC & \checkmarkcell & \checkmarkcell & \checkmarkcell &
-      \checkmarkcell & \R{abl.tc.pmap} & \R{abl.tc.mae} \\
-    \bottomrule
-  \end{tabular}
+\centering
+\caption{Planned paired mechanism ablations. The reference is
+local/ACF+FFT/soft/NOLA$\rightarrow$decode. Deltas are variant minus reference;
+positive $\Delta$MAE and negative $\Delta$OBO are worse.}
+\label{tab:ablation}
+\setlength{\tabcolsep}{2.8pt}
+\scriptsize
+\begin{tabular}{llllcc}
+\toprule
+Tempo & Evidence & Router & Decode path & $\Delta$MAE & $\Delta$OBO \\
+\midrule
+global & ACF+FFT & uniform & NOLA$\rightarrow$decode & \pendingcell{abl-global-mae} & \pendingcell{abl-global-obo} \\
+local & ACF only & soft & NOLA$\rightarrow$decode & \pendingcell{abl-acf-mae} & \pendingcell{abl-acf-obo} \\
+local & FFT only & soft & NOLA$\rightarrow$decode & \pendingcell{abl-fft-mae} & \pendingcell{abl-fft-obo} \\
+local & ACF+FFT & single & NOLA$\rightarrow$decode & \pendingcell{abl-single-mae} & \pendingcell{abl-single-obo} \\
+local & ACF+FFT & hard & NOLA$\rightarrow$decode & \pendingcell{abl-hard-mae} & \pendingcell{abl-hard-obo} \\
+local & ACF+FFT & soft & boxcar$\rightarrow$decode & \pendingcell{abl-boundary-mae} & \pendingcell{abl-boundary-obo} \\
+local & ACF+FFT & soft & decode$\rightarrow$aggregate & \pendingcell{abl-window-mae} & \pendingcell{abl-window-obo} \\
+local & ACF+FFT & soft & NOLA$\rightarrow$decode & 0 & 0 \\
+\bottomrule
+\end{tabular}
 \end{table}
 
-The ablation interpretation remains withheld until all rows share one frozen
-protocol and have the required paired records. The full mechanism study also
-removes each component one at a time, crosses local-tempo estimation, routing,
-and stitching in a small factorial design, matches single- and multi-expert
-capacity, tests experts with and without direct \(\hat p\), and reports route
-occupancy, entropy, collapse, and specialization by tempo stratum.
+\subsection{Mechanism ablation}
+Table~\ref{tab:ablation} separates local ACF and Fourier evidence, local against
+global tempo, single-expert and hard against soft routing, and boundary
+reconstruction. ``Boxcar'' is unweighted response averaging on valid overlap;
+``decode$\rightarrow$aggregate'' decodes every window and then reconciles its
+events or counts under one frozen rule. A boundary-offset control moves one event
+through all window phases. Every retained row must match parameter count, context,
+frontend, training budget, paired videos, and seeds, and must point to one commit
+and configuration. Removal rows for routing-consistency,
+track-continuity, or fallback behavior will appear only if those components
+exist in the frozen training graph. This rule prevents a writing placeholder
+from becoming a simulated ablation. Each contrast will report the paired
+video-cluster confidence interval as well as its seed aggregate, because an
+unpaired comparison could confound the component change with video difficulty
+or initialization. The primary outcome, contrast direction, bootstrap
+replicates, multiplicity policy, and failure/exclusion rules must be frozen
+before results are inspected.
 
-The appendix pre-registers router variants, expert counts, local-versus-global
-tempo, shared batched execution versus independent same-checkpoint replicas,
-boundary and continuity ablations,
-tempo/occlusion/identity-switch stress, cross-dataset transfer, and latency,
-memory, FLOPs, and throughput as the number of active identities grows. All
-plots and tables must be generated from frozen JSON, CSV, or Parquet records;
-manually transcribed values are inadmissible.
+\subsection{Nonstationary-tempo diagnostic}
+Figure~\ref{fig:tempo-diagnostic} defines the planned mechanism test. A frozen
+piecewise time-warp will change one person's pace while preserving the evaluation
+unit and paired identity. The final plot will use either a selection-rule-bound
+example or an aggregate fixed before inspection. It must record source data,
+generator hash, warp schedule, routing entropy, reconstructed response, and
+clean-to-corrupt metric change. Counts by number of people, occlusion level,
+and identity-switch severity remain secondary diagnostics. The figure can
+support a mechanism statement only after the paired artifact and its generation
+trace pass audit.
+
+\begin{figure}[b]
+\centering
+\fcolorbox{DraftRed}{DraftFill}{%
+\parbox[c][1.45cm][c]{0.92\columnwidth}{\centering
+\color{DraftRed}\bfseries DATA-PENDING DIAGNOSTIC SHELL\\[2pt]
+\normalfont\scriptsize local period $\mid$ routing probability/entropy\\
+reconstructed response $\mid$ clean-to-corrupt change}}
+\caption{Planned nonstationary-tempo diagnostic; the box contains no
+measured data. A per-person piecewise time-warp will align local period,
+routing probabilities or entropy, reconstructed response, and paired
+clean-to-corrupt changes under a frozen selection rule.}
+\label{fig:tempo-diagnostic}
+\end{figure}
+
+Separate mask-leakage controls will hold motion fixed while applying periodic
+and nonperiodic missingness, and will hold the mask fixed while changing tempo.
+They test whether period confidence or routing succeeds by reading visibility
+rather than motion. The generator, missingness schedules, minimum support, and
+all exclusion rules must be frozen before any output is inspected.
+
+The warp contract must map frames, masks, and event timestamps; freeze segment
+boundaries, interpolation, output duration and support, and tempo-severity bins;
+and pair the synthetic stress test with held-out natural nonstationarity. It
+changes tempo inside a track without changing identity or source-event count.
+Clean and warped samples therefore share an evaluation cluster, allowing paired
+changes to isolate the intended stressor.
+Occlusion and identity-switch stress tests are generated separately so that a
+tempo conclusion is not attributed to a simultaneous perception failure. Any
+representative visualization follows a frozen selection rule; otherwise, the
+paper reports an aggregate to avoid post hoc example choice.

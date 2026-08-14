@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "status": "FAIL",
+  "exit_code": 1,
+  "submission_ready": false,
+  "paper_state": "provisional/data-pending",
+  "assurance_requested": "submission",
+  "aris_commit": "e12e07c7b85ee1a4dc07e5463089aa16836af2bf",
+  "verifier_script": "tools/verify_paper_audits.sh",
+  "official_report": {
+    "path": "paper/.aris/audit-verifier-report.json",
+    "sha256": "sha256:4a08237b2146939f6076c3ab24afaba51ebb08db25af13a5e73f66ff21303418",
+    "exit_code": 1,
+    "overall_assurance": "blocked"
+  },
+  "draft_report": {
+    "path": "paper/.aris/audit-verifier-report-draft.json",
+    "sha256": "sha256:3fae0cbc947f61b20d093baa636b640898f2f929b707b4bfb20a63db305a7206",
+    "exit_code": 0,
+    "overall_assurance": "provisional"
+  },
+  "audits": {
+    "proof-checker": "OK/NOT_APPLICABLE",
+    "paper-claim-audit": "BLOCKING_VERDICT/BLOCKED",
+    "citation-audit": "OK/PASS",
+    "kill-argument": "BLOCKING_VERDICT/FAIL"
+  },
+  "blocking_reasons": [
+    "collaborator-frozen multi-person implementation is unavailable",
+    "eligible MultiRep results and raw bindings are unavailable",
+    "paper-claim audit remains data-pending",
+    "the strongest kill argument survives the current artifact",
+    "healthy cross-family review response is unavailable",
+    "complete author roster and attestations are unavailable",
+    "official ICASSP 2027 author kit and final AI-policy check are unavailable"
+  ],
+  "generated_at": "2026-08-14T23:31:00+08:00"
+}

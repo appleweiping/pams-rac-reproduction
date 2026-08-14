@@ -19,7 +19,7 @@ from typing import Any
 import jsonschema
 
 
-COUNT_METRICS = {"Period-mAP", "AP50", "AP75", "AvgMAE", "AvgOBO"}
+COUNT_METRICS = {"Period-mAP", "Period-AP50", "Period-AP75", "AvgMAE", "AvgOBO"}
 TRACK_METRICS = {"HOTA", "IDF1", "IDSW"}
 REQUIRED_COMMON = {"RepNet", "TransRAC", "PoseRAC", "PAMS", "Ours"}
 REQUIRED_NATIVE = {"MultiCounter", "MultiCounter+"}

@@ -1,88 +1,190 @@
 #!/usr/bin/env python3
-"""Verify and reproduce LaTeX bindings from an audited result manifest."""
+"""Generate ``evidence_values.tex`` only from an eligible frozen bundle.
+
+Draft mode is deliberately a no-op while evidence is pending. Submission mode
+fails closed unless the manifest, audits, and every JSON/CSV input hash pass.
+"""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
-import subprocess
-import sys
+import os
 from pathlib import Path
+from typing import Any
+
+from evidence_common import (
+    emit_report,
+    json_load,
+    resolve_inside,
+    safe_latex_scalar,
+    sha256,
+    source_value,
+    stable_rel,
+)
+from validate_results_manifest import validate_manifest
 
 
 def braced(command: str, key: str | None, value: str) -> str:
-    if key is None:
-        return f"\\{command}{{{value}}}"
-    return f"\\{command}{{{key}}}{{{value}}}"
+    return f"\\{command}{{{value}}}" if key is None else f"\\{command}{{{key}}}{{{value}}}"
 
 
-def render_payload(data: dict) -> str:
-    bindings = data.get("paper_bindings", {})
-    abstract_result = bindings.get("abstract_result", {}).get("sentence")
-    if not isinstance(abstract_result, str) or not abstract_result.strip():
-        raise ValueError("Manifest must contain exactly one non-empty abstract_result")
+def _resolved_sources(data: dict[str, Any], root: Path) -> dict[str, tuple[dict[str, Any], Path]]:
+    sources: dict[str, tuple[dict[str, Any], Path]] = {}
+    for item in data.get("source_artifacts", []):
+        sources[item["id"]] = (item, resolve_inside(root, item["path"]))
+    return sources
+
+
+def _binding_value(binding: dict[str, Any], sources: dict[str, tuple[dict[str, Any], Path]]) -> str:
+    source, path = sources[binding["source_id"]]
+    return safe_latex_scalar(source_value(path, source["format"], binding["locator"]))
+
+
+def render_payload(data: dict[str, Any], root: Path, manifest: Path) -> str:
+    sources = _resolved_sources(data, root)
+    bindings = data["paper_bindings"]
     lines = [
         "% GENERATED FILE -- DO NOT EDIT BY HAND",
-        "% exact bytes are bound by the package manifest and external delivery receipt",
-        f"% result_artifact_id: {data['artifact_id']}",
+        "% Values below were resolved from frozen JSON/CSV inputs.",
+        f"% artifact_id: {data['artifact_id']}",
+        f"% results_manifest: {stable_rel(manifest, root)} {sha256(manifest)}",
     ]
-    for binding in sorted(bindings.get("protocol_fields", []), key=lambda item: item["key"]):
-        lines.append(braced("DeclareProtocolField", binding["key"], str(binding["value"])))
-    for binding in sorted(bindings.get("results", []), key=lambda item: item["key"]):
-        lines.append(braced("DeclareResult", binding["key"], str(binding["formatted"])))
-    for binding in sorted(bindings.get("claims", []), key=lambda item: item["key"]):
-        lines.append(braced("DeclareResultClaim", binding["key"], str(binding["text"])))
-    lines.append(braced("DeclareAbstractResult", None, abstract_result.strip()))
+    for source_id in sorted(sources):
+        source, path = sources[source_id]
+        lines.append(f"% input: {source_id} {stable_rel(path, root)} {source['sha256']}")
+    command_by_group = {
+        "protocol_fields": "DeclareProtocolField",
+        "results": "DeclareResult",
+        "claims": "DeclareResultClaim",
+    }
+    for group in ("protocol_fields", "results", "claims"):
+        for binding in sorted(bindings.get(group, []), key=lambda item: item["key"]):
+            lines.append(braced(command_by_group[group], binding["key"], _binding_value(binding, sources)))
+    abstract = bindings["abstract_result"]
+    lines.append(braced("DeclareAbstractResult", None, _binding_value(abstract, sources)))
     return "\n".join(lines) + "\n"
+
+
+def _atomic_write(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + f".tmp-{os.getpid()}")
+    temporary.write_text(text, encoding="utf-8", newline="\n")
+    temporary.replace(path)
+
+
+def run(
+    manifest: Path,
+    output: Path,
+    root: Path,
+    mode: str,
+    *,
+    verify_only: bool = False,
+    receipt: Path | None = None,
+) -> tuple[dict[str, Any], int]:
+    try:
+        data = json_load(manifest)
+    except Exception as exc:
+        return {"gate": "evidence_generation", "mode": mode, "status": "FAIL", "reason": type(exc).__name__}, 1
+
+    if data.get("status") != "frozen-eligible":
+        stale = output.is_file()
+        if stale:
+            return {
+                "gate": "evidence_generation",
+                "mode": mode,
+                "status": "FAIL",
+                "reason": "generated evidence file exists while manifest is not frozen-eligible",
+            }, 1
+        if mode == "draft":
+            return {
+                "gate": "evidence_generation",
+                "mode": mode,
+                "status": "PROVISIONAL",
+                "reason": "data-pending; no evidence_values.tex generated",
+                "output_present": False,
+            }, 0
+        return {
+            "gate": "evidence_generation",
+            "mode": mode,
+            "status": "FAIL",
+            "reason": "submission requires a frozen-eligible results manifest",
+        }, 1
+
+    validation, validation_code = validate_manifest(manifest, root, "submission")
+    if validation_code:
+        return {
+            "gate": "evidence_generation",
+            "mode": mode,
+            "status": "FAIL",
+            "reason": "results eligibility validation failed",
+            "validation": validation,
+        }, 1
+    try:
+        payload = render_payload(data, root, manifest)
+    except Exception as exc:
+        return {"gate": "evidence_generation", "mode": mode, "status": "FAIL", "reason": type(exc).__name__}, 1
+
+    if verify_only:
+        if not output.is_file() or output.read_text(encoding="utf-8") != payload:
+            return {
+                "gate": "evidence_generation",
+                "mode": mode,
+                "status": "FAIL",
+                "reason": "existing evidence_values.tex does not exactly match frozen inputs",
+            }, 1
+    else:
+        _atomic_write(output, payload)
+
+    provenance = {
+        "schema_version": "1.0",
+        "artifact_id": data["artifact_id"],
+        "manifest": stable_rel(manifest, root),
+        "manifest_sha256": sha256(manifest),
+        "inputs": [
+            {"id": item["id"], "path": item["path"], "sha256": item["sha256"]}
+            for item in sorted(data["source_artifacts"], key=lambda value: value["id"])
+        ],
+        "output": stable_rel(output, root),
+        "output_sha256": "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest(),
+        "generator_sha256": sha256(Path(__file__).resolve()),
+    }
+    if receipt is not None and not verify_only:
+        _atomic_write(receipt, json.dumps(provenance, indent=2, sort_keys=True) + "\n")
+    return {
+        "gate": "evidence_generation",
+        "mode": mode,
+        "status": "PASS",
+        "verified_only": verify_only,
+        "provenance": provenance,
+    }, 0
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("manifest", type=Path)
-    parser.add_argument("output", type=Path)
-    parser.add_argument("--bundle-root", type=Path)
-    parser.add_argument("--external-receipt", type=Path, required=True)
+    paper_dir = Path(__file__).resolve().parents[1]
+    parser.add_argument("manifest", type=Path, nargs="?", default=paper_dir / "evidence/results_manifest.json")
+    parser.add_argument("output", type=Path, nargs="?", default=paper_dir / "generated/evidence_values.tex")
+    parser.add_argument("--root", type=Path)
+    parser.add_argument("--mode", choices=("draft", "submission"), default="draft")
+    parser.add_argument("--verify-only", action="store_true")
+    parser.add_argument("--receipt", type=Path)
+    parser.add_argument("--report", type=Path)
     args = parser.parse_args()
-
-    scripts_dir = Path(__file__).resolve().parent
-    bundle_root = (args.bundle_root or args.manifest.parent).resolve()
-    checks = (
-        [sys.executable, str(scripts_dir / "validate_result_manifest.py"), str(args.manifest), "--bundle-root", str(bundle_root)],
-        [
-            sys.executable,
-            str(scripts_dir / "evidence_precheck.py"),
-            str(args.manifest),
-            "--bundle-root",
-            str(bundle_root),
-            "--external-receipt",
-            str(args.external_receipt.resolve()),
-        ],
+    manifest = args.manifest.resolve()
+    output = args.output.resolve()
+    root = (args.root or manifest.parents[2]).resolve()
+    report, code = run(
+        manifest,
+        output,
+        root,
+        args.mode,
+        verify_only=args.verify_only,
+        receipt=args.receipt.resolve() if args.receipt else None,
     )
-    for command in checks:
-        completed = subprocess.run(command, check=False)
-        if completed.returncode != 0:
-            raise SystemExit(f"Refusing generation; prerequisite failed with exit {completed.returncode}: {command[1]}")
-
-    data = json.loads(args.manifest.read_text(encoding="utf-8"))
-    audit = data.get("audits", {})
-    required = ("experiment_audit", "result_to_claim", "paper_claim_audit")
-    failed = [name for name in required if audit.get(name, {}).get("verdict") != "PASS"]
-    if failed:
-        raise SystemExit("Refusing generation; audits not PASS: " + ", ".join(failed))
-
-    try:
-        payload = render_payload(data)
-    except (KeyError, TypeError, ValueError) as exc:
-        raise SystemExit(str(exc)) from exc
-
-    # A passing precheck means every package byte is already frozen.  Rewriting a
-    # missing or different output here would invalidate that freeze, so this
-    # command is deliberately a deterministic no-op verifier at submission time.
-    if not args.output.is_file():
-        raise SystemExit("Refusing generation into an audited bundle; output must already exist and be digest-bound")
-    if args.output.read_text(encoding="utf-8") != payload:
-        raise SystemExit("Refusing to mutate an audited bundle; deterministic output differs from the frozen file")
-    return 0
+    emit_report(report, args.report)
+    return code
 
 
 if __name__ == "__main__":

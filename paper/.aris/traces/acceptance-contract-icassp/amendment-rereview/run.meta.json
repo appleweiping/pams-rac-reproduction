@@ -1,0 +1,40 @@
+{
+  "task": "fresh_post_acceptance_amendment_rereview",
+  "completed_at": "2026-08-14T23:07:47.5768273+08:00",
+  "review_mode": "fresh-zero-context-read-only",
+  "model": "GPT-5 Codex (exact deployment identifier unavailable to agent)",
+  "reasoning": "Independent fail-closed adjudication restricted to the enumerated evidence; no prior acceptance/amendment review outputs or Git history were read.",
+  "same_family": true,
+  "provisional": true,
+  "verdict": "AMENDMENT_ACCEPTED:NO",
+  "inputs": [
+    {
+      "path": "PAPER_ACCEPTANCE_CONTRACT.md",
+      "sha256": "dfb202a8143a1bdc52fa5a33192c9ca67745f48246a266e8c5d6fd100b3181d3"
+    },
+    {
+      "path": "paper/sections/4_experiments.tex",
+      "sha256": "6052c816e94f7d7f50b560d397495a37863b05d240ed5e418e4b6ec4d3aa131b"
+    },
+    {
+      "path": "paper/main.pdf",
+      "sha256": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45"
+    },
+    {
+      "path": "paper/.aris/traces/citation-audit-icassp/group-a-postfix/reviewer.md",
+      "sha256": "27fcd4ffb349d410bfd4d54cd6cb2bb71333449d50a01a38d257a6c0f3b80435"
+    },
+    {
+      "path": "git diff -- PAPER_ACCEPTANCE_CONTRACT.md",
+      "sha256": "f9a707cb28d8c18158d1704625c4d21c082aba8872c775dd4b26bccd3a57da39",
+      "hash_note": "SHA-256 of the PowerShell Out-String UTF-8 representation used in this review"
+    }
+  ],
+  "constraints": {
+    "prior_review_outputs_read": false,
+    "git_history_read": false,
+    "contract_edited": false,
+    "manuscript_edited": false,
+    "pdf_edited": false
+  }
+}

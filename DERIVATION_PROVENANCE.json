@@ -1,0 +1,142 @@
+{
+  "schema_version": "1.0",
+  "artifact_id": "rac-icassp27-paper-derivation-20260814",
+  "created_at": "2026-08-14T20:38:01+08:00",
+  "target": {
+    "venue": "ICASSP 2027",
+    "track": "regular conference paper",
+    "working_title": "Identity-Indexed Local Tempo Routing for Multi-Person Repetition Counting",
+    "branch": "codex/paper-writing-icassp27",
+    "worktree": "D:/Project/rac-paper-writing-icassp27",
+    "paper_state": "provisional/data-pending",
+    "assurance": "submission"
+  },
+  "derivation": {
+    "repository_base_commit": "73cbc4bb9b581f24fbc90f2fe7421bc11e7c7454",
+    "cvpr_freeze_commit": "26e5b7176f1f7c678391163c3278b5c390d54115",
+    "cvpr_freeze_tree": "8e91783ee75f2a0fc0ed2b747b2708018e87aab9",
+    "cvpr_freeze_pdf": {
+      "path": "paper/main.pdf",
+      "sha256": "sha256:de951023634d5627f3c38cd7512da9fd7df20086781d24caf0a548b93b3d9522",
+      "role": "frozen CVPR pre-results source package; not an ICASSP submission PDF"
+    },
+    "cvpr_phase1_input_hashes": {
+      "NARRATIVE_REPORT.md": "sha256:92404f92f4e944c780634b4bc109aeaf777371afcbe044de944757119d9ee7c3",
+      "CLAIMS_EVIDENCE_MATRIX.md": "sha256:853d75f9164b23eeabfc617944eeff53cfc54f57a97fbce95e3966218eebb89f",
+      "CLAIMS_FROM_RESULTS.md": "sha256:e093d5234db55e726e2e0db7fe260b3d7cd4c46da2c8c4fd25f807c5c9377ea6",
+      "PAPER_PLAN.md": "sha256:f826cc68e84d37c50345dfb35202bc260264f2383a33dd2ba70eeb927a9c210b",
+      "IMPLEMENTATION_SYNC_REPORT_ZH.md": "sha256:c0e4e43cea93551990f9ebf6dfe16b5810ff815b41c53620a7069152a79f74d3"
+    }
+  },
+  "aris": {
+    "upstream": "https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep",
+    "branch": "main",
+    "locked_commit": "e12e07c7b85ee1a4dc07e5463089aa16836af2bf",
+    "commit_verified_locally": true,
+    "network_clean_clone": {
+      "status": "degraded",
+      "attempts": 2,
+      "reason": "Two fresh network clone attempts did not yield a usable clean worktree; the second was stopped after more than two minutes without output. No project tree or installed ARIS checkout was reset or cleaned.",
+      "fallback": "Use the locally verified e12e07c object set and project-local Codex skill links, recording all semantic review as provisional unless an independent reviewer responds."
+    },
+    "installed_manifest": ".aris/installed-skills-codex.txt",
+    "installed_packages": [
+      "skills-codex",
+      "skills-codex-claude-review"
+    ],
+    "resolved_repo_root": "C:/Users/admin/.aris/repos/auto-research-in-sleep-git",
+    "resolved_repo_worktree_clean": false,
+    "policy": "The pin is usable for the paper workflow, but the local ARIS checkout is not evidence of a clean upstream clone and must not be described as one."
+  },
+  "source_priority": [
+    "collaborator_final_code_and_frozen_results",
+    "tracked_code_and_audit_documents",
+    "committed_powerpoint_visual_references",
+    "untracked_prose_and_meeting_notes"
+  ],
+  "original_workspace": {
+    "path": "D:/Project/rac",
+    "branch": "agent/initial-reproduction",
+    "head_at_derivation": "73cbc4bb9b581f24fbc90f2fe7421bc11e7c7454",
+    "dirty_at_derivation": true,
+    "access_policy": "read-only",
+    "tracked_changes_observed": [
+      ".gitignore",
+      "pyproject.toml",
+      "scripts/server/run_pams_position_lag_velocity_fallback_predev_seed2026.sh",
+      "src/pams/diagnostics.py"
+    ],
+    "untracked_entries_observed": true,
+    "restrictions": [
+      "do_not_edit",
+      "do_not_merge_experiment_branches",
+      "do_not_score_or_access_sealed_test105",
+      "do_not_push"
+    ]
+  },
+  "evidence_boundary": {
+    "collaborator_multi_person_artifact_present": false,
+    "multirep_results_present": false,
+    "current_local_results_table_eligible": false,
+    "method_components": "SYNC-REQUIRED",
+    "submission_ready": false
+  },
+  "icassp_output": {
+    "source_root": "paper/main.tex",
+    "pdf": {
+      "path": "paper/main.pdf",
+      "sha256": "sha256:873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+      "bytes": 348367,
+      "pages": 5,
+      "technical_content_pages": 4,
+      "page_5": "references_only",
+      "visual_review": "PASS",
+      "fonts_embedded": true
+    },
+    "round_snapshots": [
+      {
+        "path": "paper/main_round0_original.pdf",
+        "sha256": "sha256:26eeb9e5b913fa8160276447e9c31b38c9fe147ef7f64666aed41144427ecd26"
+      },
+      {
+        "path": "paper/main_round1.pdf",
+        "sha256": "sha256:0e521ad303b21fbb98d7c3ea52cb2aec2c5376ea07400986bb1721b0ca3c9a17"
+      },
+      {
+        "path": "paper/main_round2.pdf",
+        "sha256": "sha256:873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45"
+      }
+    ],
+    "active_figure": {
+      "drawio_sha256": "sha256:9e02df117ced79066804549dd5c086b821b2b83832bf0f58a8d9c806b134ccbd",
+      "svg_sha256": "sha256:af769b929870c6050c643684aafadca7082f79f3117728046852d65ed31240a2",
+      "pdf_sha256": "sha256:3afa9d1261e3a54b25c8da708dd7c4e036587d6d01d0d60fc704edcd2fd8eb81",
+      "png_sha256": "sha256:29c2109915278da12ce13d859b0d53685934a00e9ebb9b68b0ab269bf6a0400d"
+    },
+    "template": {
+      "scaffold": "official ICASSP 2026 spconf kit",
+      "official_2027_kit_bound": false,
+      "submission_gate": "BLOCKED"
+    },
+    "authors": {
+      "tracked_identity_present": false,
+      "private_metadata_complete": false,
+      "submission_gate": "BLOCKED"
+    }
+  },
+  "audit_state": {
+    "experiment_audit": "FAIL/data-pending",
+    "result_to_claim": "FAIL/pivot",
+    "proof_audit": "NOT_APPLICABLE",
+    "paper_claim_audit": "BLOCKED/data-pending",
+    "citation_audit": "PASS/same-family-provisional",
+    "kill_argument": "FAIL/strongest_argument_survives_current_artifact",
+    "cross_family_review": "BLOCKED/no_cross_family_response",
+    "final_verifier": {
+      "draft": "exit_0/provisional",
+      "submission": "exit_1/blocked",
+      "report_sha256": "sha256:4a08237b2146939f6076c3ab24afaba51ebb08db25af13a5e73f66ff21303418"
+    },
+    "submission_ready": false
+  }
+}

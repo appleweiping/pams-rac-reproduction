@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "audit_id": "citation-audit-icassp/group-a-postfix",
+  "created_at": "2026-08-14T22:53:15.8941883+08:00",
+  "reviewer_family": "same-family",
+  "status": "provisional",
+  "review_mode": "fresh-zero-context",
+  "overall_verdict": "pass_with_notes",
+  "scope": {
+    "bibliography": "paper/references.bib",
+    "active_root": "paper/main.tex",
+    "keys": [
+      "levy2015live",
+      "runia2018realworld",
+      "dwibedi2020repnet",
+      "hu2022transrac",
+      "yao2025poserac",
+      "gao2026pams",
+      "tang2024multicounter",
+      "tang2026multicounterplus"
+    ]
+  },
+  "constraints_observed": {
+    "read_prior_audit_history_or_log": false,
+    "modified_active_tex": false,
+    "modified_bibliography": false,
+    "web_reverification_performed": true,
+    "primary_or_official_sources_prioritized": true
+  },
+  "input_sha256": {
+    "paper/sections/1_introduction.tex": "6823651162f59e5f5263949f2d308f594b667cb3cba0044433c39031ae04db9d",
+    "paper/sections/4_experiments.tex": "6052c816e94f7d7f50b560d397495a37863b05d240ed5e418e4b6ec4d3aa131b",
+    "paper/references.bib": "322a5d16b0078e8b3436608d4c6158b67c5c8922b0dcae94537ea456c9f6f646",
+    "paper/main.pdf": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45"
+  },
+  "expected_hash_check": {
+    "introduction": "match",
+    "experiments": "match",
+    "pdf": "match"
+  },
+  "artifact_sha256": {
+    "prompt.md": "3535df84d30b89524b781564a8d7b0ed813362ff9e9e78459de8962c87614b59",
+    "reviewer.md": "27fcd4ffb349d410bfd4d54cd6cb2bb71333449d50a01a38d257a6c0f3b80435"
+  },
+  "summary": {
+    "existence_pass": 8,
+    "metadata_pass": 8,
+    "context_pass": 6,
+    "context_pass_with_note": 2,
+    "context_fail": 0,
+    "early_work_wording": "pass",
+    "period_metric_nomenclature": "pass"
+  },
+  "per_key_verdict": {
+    "levy2015live": "pass",
+    "runia2018realworld": "pass",
+    "dwibedi2020repnet": "pass",
+    "hu2022transrac": "pass",
+    "yao2025poserac": "pass",
+    "gao2026pams": "pass_with_scope_note",
+    "tang2024multicounter": "pass",
+    "tang2026multicounterplus": "pass_with_wording_note"
+  },
+  "provisional_reasons": [
+    "Reviewer is from the same model family.",
+    "The complete MultiCounter+ metric table could not be extracted verbatim from the public IEEE abstract page; metric nomenclature was verified verbatim in the formal MultiCounter paper and checked for same-family continuity in the IEEE MultiCounter+ record."
+  ]
+}

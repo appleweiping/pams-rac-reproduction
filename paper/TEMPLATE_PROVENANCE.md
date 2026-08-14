@@ -1,23 +1,45 @@
-# Template provenance
+# ICASSP template provenance
 
-- Intended venue: CVPR 2027
-- Current status: provisional; the CVPR 2027 author kit is not yet available
-- Temporary template: official `cvpr-org/author-kit`
-- Tag: `CVPR2026-v1(latex)`
-- Commit: `12909ae437f6dbc7435069cfdb4ca44c18e6a02f`
-- Repository: <https://github.com/cvpr-org/author-kit>
-- Retrieved: 2026-08-12
+## Active draft scaffold
 
-Vendored files and SHA-256 digests:
+- Venue target: ICASSP 2027 regular paper
+- Venue state: `ICASSP2027-kit-pending`
+- Temporary scaffold: official ICASSP 2026 LaTeX kit
+- Source page: <https://cmsworkshops.com/ICASSP2026/papers/paper_kit.php>
+- Archive URL: <https://cmsworkshops.com/ICASSP2026/papers/PaperFormat/ICASSP2026_Paper_Templates.zip>
+- Archive SHA-256: `a3a2b007568d545caa8a264358831c86efb67a6ef3db2e27f2cde502e1fb29a1`
+- Retrieved: 2026-08-14
+
+Vendored draft files:
 
 | File | SHA-256 |
 |---|---|
-| `vendor/cvpr2026/cvpr.sty` | `2602473285d1a7df2a445ac89b76e1afa0acab78e056f0369d19770245190153` |
-| `vendor/cvpr2026/ieeenat_fullname.bst` | `e38e6166bd7b1e6d23a1b79dcdb55c656e4fcdbe91bdf6b50d827e6b5d1aacfc` |
-| `vendor/cvpr2026/upstream-main.tex` | `251329b8a7ea25f1ba0f5a769f652235e13bc1f43b3e8b1d892e16a005b361f0` |
-| `vendor/cvpr2026/upstream-preamble.tex` | `f666a85903f49929395951e7afb620e96d4e208334623f23135298b4d7f06228` |
-| `vendor/cvpr2026/UPSTREAM_README.md` | `d91116b58be33154d195012d7d2ef2be310d308ed23f3803aa6baf2aeb441a5e` |
+| `vendor/icassp2026/spconf.sty` | `dc5d632639040cb183f2ab62780f314845aa021be73048c8a9ec9c2072d64a86` |
+| `vendor/icassp2026/IEEEbib.bst` | `7e6ca0c8b72158d504a12bb091f817c07032a021ba41ca783cca4c2dd80d570b` |
+| `vendor/icassp2026/upstream-Template.tex` | `7a17173e83714540733cc53dad0c25f10bc6a498d7b66a7f17e37eede0a79314` |
 
-Before submission, replace the temporary kit with the official CVPR 2027
-release, record its immutable tag/commit and file digests, then rerun
-compilation, page-limit, anonymity, font, and visual checks.
+These files are used only to estimate the 4+1-page layout. A submission build
+must fail while the venue state is not `ICASSP2027-kit-verified`. The 2027 kit,
+submission portal, exact EDICS mapping, supplementary-material rule, and LLM
+policy were not yet published when this draft was prepared.
+
+## Live 2027 venue checks (2026-08-14)
+
+- Call for papers: <https://2027.ieeeicassp.org/call-for-papers/>. The full-paper
+  deadline is 2026-09-16 and the current scope includes Computer Vision plus
+  Image, Video & Multidimensional Signal Processing.
+- Publishing options:
+  <https://2027.ieeeicassp.org/publishing-and-paper-presentation-options/>.
+  A regular conference paper has up to four pages for technical content and an
+  optional fifth page containing **only references**. The draft therefore uses
+  the stricter live rule: funding/COI and ethical-compliance text must remain on
+  pages 1--4; page 5 is references-only.
+- Editorial policies:
+  <https://2027.ieeeicassp.org/about/editorial-policies/>. They currently require
+  original, non-simultaneous submission, limit each author to nine coauthored
+  conference items, and check paper length plus author names/order during
+  initial triage.
+
+These web facts do not substitute for the missing 2027 kit. Any later official
+kit or submission instructions override this scaffold and trigger a full format,
+authorship, page, policy, and evidence re-audit.

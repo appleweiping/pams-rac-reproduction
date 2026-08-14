@@ -1,0 +1,14 @@
+{
+  "workflow": "ARIS acceptance-contract negotiation",
+  "date": "2026-08-14",
+  "reviewer_family": "same-family",
+  "reviewer_ceiling": "provisional",
+  "rounds": 3,
+  "round_1_source_sha256": null,
+  "round_1_hash_note": "not computed during the review and unavailable in the transport record",
+  "round_2_source_sha256": null,
+  "round_2_hash_note": "not computed during the review and unavailable in the transport record",
+  "round_3_source_sha256": "acb53a078e97b2ae730aea85ae6cc0382ccd25618f54e8ecb7ac98dae7ee40ea",
+  "round_3_contract_accepted": true,
+  "files_edited_by_reviewer": false
+}

@@ -1,44 +1,63 @@
-% Provisional CVPR 2027 manuscript using the official CVPR 2026 author kit.
-% The 2027 template migration is an explicit acceptance-contract gate.
+% ICASSP 2027 pre-results manuscript.
+% The official ICASSP 2027 author kit is not yet available; this draft uses
+% the official ICASSP 2026 spconf package as a temporary layout scaffold.
 \pdfminorversion=7
 \pdfinfoomitdate=1
 \pdfsuppressptexinfo=15
-\documentclass[10pt,twocolumn,letterpaper]{article}
+\documentclass{article}
 
-\usepackage[review]{cvpr}
+\usepackage{vendor/icassp2026/spconf}
 \input{preamble}
 \input{math_commands}
 
-\def\paperID{DRAFT}
-\def\confName{CVPR}
-\def\confYear{2027}
+\title{Identity-Indexed Local Tempo Routing for Multi-Person Repetition Counting}
 
-\title{Count Each Person at Their Changing Pace:\
-Multi-Person Tempo-Adaptive Repetition Counting}
-
-% Double-blind submission metadata only. Real author metadata is private and
-% intentionally stored outside this repository.
-\author{Anonymous CVPR submission}
+% ICASSP uses single-anonymous review. Draft mode shows an explicit roster
+% placeholder. Submission mode receives ignored private metadata through
+% submission_wrapper.tex, after the external validator confirms completeness.
+\ifsubmission
+  \ifdefined\RACAuthorNames
+    \name{\RACAuthorNames}
+    \address{\RACAuthorAffiliations\\\RACAuthorEmails}
+  \else
+    \name{AUTHOR ROSTER PENDING}
+    \address{AFFILIATIONS PENDING}
+  \fi
+\else
+  \name{AUTHOR ROSTER PENDING}
+  \address{Affiliations pending collaborator confirmation}
+\fi
 
 \begin{document}
+\ninept
 \maketitle
+\draftbanner
 
+\begin{abstract}
 \input{sections/0_abstract}
+\end{abstract}
+
+\begin{keywords}
+repetition counting, multi-person signals, local tempo, pose trajectories,
+temporal routing
+\end{keywords}
+
 \input{sections/1_introduction}
-\input{sections/2_related_work}
 \input{sections/3_method}
 \input{sections/4_experiments}
 \input{sections/5_conclusion}
 
-% Flush all main-paper result-table shells before the references so floats do
-% not interleave with bibliography entries in this pre-results package.
-\clearpage
+% The live ICASSP 2027 rule restricts the optional fifth page to references.
+% These declarations therefore remain inside the four-page body.
+\noindent\textbf{Funding, conflicts of interest, and ethical compliance.}
+Funding and conflict-of-interest declarations are \Pending{author-declarations}.
+The final ethical-compliance statement is \Pending{ethical-compliance} and will
+be bound to the dataset licenses, participant provenance, and release terms
+before submission.
+
 {\small
-\bibliographystyle{vendor/cvpr2026/ieeenat_fullname}
+\bibliographystyle{vendor/icassp2026/IEEEbib}
 \bibliography{references}
 }
-
-\appendix
-\input{appendix/a_experiment_contract}
 
 \end{document}

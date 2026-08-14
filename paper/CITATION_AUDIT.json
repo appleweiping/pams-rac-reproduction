@@ -1,628 +1,92 @@
 {
   "audit_skill": "citation-audit",
   "verdict": "PASS",
-  "reason_code": "all_entries_keep",
-  "summary": "All 15 cited entries pass existence, final-metadata, and context checks after recorded fixes.",
-  "paper_freeze": "1376b6a388d049b12548a589e9753237bd9e62802091d822cd46cb450aa26184",
-  "source_freeze_sha256": "1376b6a388d049b12548a589e9753237bd9e62802091d822cd46cb450aa26184",
-  "source_freeze_algorithm": "sha256-path-digest-list-v1",
-  "source_freeze_file_count": 23,
+  "reason_code": "ALL_16_CURRENT_CONTEXTS_SUPPORTED",
+  "summary": "Two fresh zero-context same-family reviewers verified all 16 active citation keys against primary or official sources and the frozen manuscript/PDF. All entries exist, metadata is supportable, and every active context is supported. Scope notes for PAMS adaptation, overlap-add attribution, and MultiCounter+ identity-continuity wording remain non-blocking. Cross-family acceptance is unavailable, so this PASS is provisional.",
   "audited_input_hashes": {
-    "references.bib": "sha256:86fe2aab232ad7bea6c7ee3c2e17e4324054b2a22b17607f7a70effb3e9d7683",
-    "main.tex": "sha256:041bfa52c09d53faaa9dde6bd6a1e0fba37e2ab2009a43bdc84e607e622e787c",
-    "appendix/a_experiment_contract.tex": "sha256:25138c31c471c9b2542b8e3fbf326a38686f25eeed452edebf0e5257330f46d5",
-    "sections/1_introduction.tex": "sha256:d1f82e381a982b7c8075d4f09e86798703a4be28f713b90ced8cce801fbe6d3c",
-    "sections/2_related_work.tex": "sha256:96ab7ac0d5a65e4552aadcbff423c23de69994901f4057d9ede7b7c461ab6d31",
-    "sections/3_method.tex": "sha256:12f2b96e16e034a5c8ec3db887d70676919060e2e543180ca2c186cab9cd8b5b",
-    "sections/4_experiments.tex": "sha256:36d1eb3d9e413a1e7e970e87e3e976bc6fc04478c3276f63b955ea412db13766"
+    "main.pdf": "sha256:873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+    "main.tex": "sha256:a4fe29c47f200946c7d6f3522bd273f5895aabda2d7a959fdbf16397fe1cbe70",
+    "preamble.tex": "sha256:763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2",
+    "math_commands.tex": "sha256:e6dabb7ce789e0d78026e6bda287fe17faedb6d20c0df9b4f603cb3b6c123bee",
+    "sections/0_abstract.tex": "sha256:fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef",
+    "sections/1_introduction.tex": "sha256:6823651162f59e5f5263949f2d308f594b667cb3cba0044433c39031ae04db9d",
+    "sections/3_method.tex": "sha256:7e92c00eb4a7956b059536fd47240cefbea960aee61d4f3fdef1a7e24930c50d",
+    "sections/4_experiments.tex": "sha256:6052c816e94f7d7f50b560d397495a37863b05d240ed5e418e4b6ec4d3aa131b",
+    "sections/5_conclusion.tex": "sha256:e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c",
+    "references.bib": "sha256:322a5d16b0078e8b3436608d4c6158b67c5c8922b0dcae94537ea456c9f6f646"
   },
-  "trace_path": ".aris/traces/citation-audit/",
-  "agent_id": "multi-agent:one-fresh-reviewer-per-entry",
-  "executor_model": "codex-gpt-5.6-sol",
-  "executor_family": "openai",
+  "trace_path": ".aris/traces/citation-audit-icassp/",
+  "agent_id": "multi-agent:two-fresh-zero-context-reviewers",
   "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "xhigh",
+  "executor_model": "gpt-5.6-sol",
+  "executor_family": "openai",
   "reviewer_family": "openai",
   "review_independence": "same-family",
   "acceptance_status": "provisional",
-  "reviewer_reasoning": "xhigh",
-  "generated_at": "2026-08-11T21:06:15.152952Z",
+  "generated_at": "2026-08-14T23:10:00+08:00",
   "details": {
-    "total_entries": 15,
-    "cited_keys": [
-      "dwibedi2020repnet",
-      "gao2026pams",
-      "hu2022transrac",
-      "levy2015live",
-      "luiten2021hota",
-      "ma2026detrc",
-      "ristani2016idmetrics",
-      "runia2018realworld",
-      "sinha2024escounts",
-      "tang2024multicounter",
-      "tang2026multicounterplus",
-      "wang2026d2stx",
-      "yao2025poserac",
-      "zhang2022bytetrack",
-      "zhao2025skimfocus"
-    ],
-    "missing_entries": [],
-    "unresolved_entries": [],
-    "invalid_exact_context_entries": [],
-    "invalid_trace_entries": [],
-    "per_entry": [
+    "total_entries": 16,
+    "keep": 16,
+    "fix": 0,
+    "replace": 0,
+    "remove": 0,
+    "supported_contexts": 26,
+    "weak_contexts": 0,
+    "wrong_contexts": 0,
+    "groups": [
       {
-        "key": "dwibedi2020repnet",
-        "verdict": "KEEP",
-        "initial_verdict": "FIX",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "sections/1_introduction.tex",
-            "line": 18,
-            "context_sha256": "sha256:383fae1ce06456a5f26ba0754d8ac1ef9a8857c4165ce8e26e8d4b0063f645a8",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/2_related_work.tex",
-            "line": 10,
-            "context_sha256": "sha256:e612d078c925a6039f1353337d0ce745937ff5e0a984500d1a4723245fa6e5d5",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/4_experiments.tex",
-            "line": 93,
-            "context_sha256": "sha256:f85257bccb350d1360f630afedb60dbbe250eb7127eb135e476415cf86dae3c8",
-            "verdict": "SUPPORTS"
-          }
+        "name": "group-a-postfix",
+        "keys": [
+          "levy2015live",
+          "runia2018realworld",
+          "dwibedi2020repnet",
+          "hu2022transrac",
+          "yao2025poserac",
+          "gao2026pams",
+          "tang2024multicounter",
+          "tang2026multicounterplus"
         ],
-        "entry_path": ".aris/citation-audit/entries/dwibedi2020repnet.json",
-        "entry_sha256": "sha256:a77eaa82109cdbfe2e48de00be82a36649541dca63292abc76caa804d2d75b4d",
-        "review_trace": ".aris/traces/citation-audit/dwibedi2020repnet/reviewer.md",
-        "review_trace_sha256": "sha256:a490f3def1c706a64e5bd1db2628fd7ad99ea19e997fb201a6e9200a9cdf3b8f",
-        "exact_context_binding": true,
-        "note": "Adopted final IEEE/Crossref pagination and DOI and used the source's precise intermediate-representation wording.",
-        "confidence": 0.96,
-        "primary_urls": [
-          "https://doi.org/10.1109/CVPR42600.2020.01040",
-          "https://openaccess.thecvf.com/content_CVPR_2020/html/Dwibedi_Counting_Out_Time_Class_Agnostic_Video_Repetition_Counting_in_the_CVPR_2020_paper.html",
-          "https://api.crossref.org/works/10.1109%2FCVPR42600.2020.01040",
-          "https://dblp.org/rec/conf/cvpr/DwibediATSZ20",
-          "https://github.com/google-research/google-research/tree/master/repnet"
-        ]
+        "verdict": "PASS_WITH_NOTES",
+        "prompt_sha256": "sha256:3535df84d30b89524b781564a8d7b0ed813362ff9e9e78459de8962c87614b59",
+        "reviewer_sha256": "sha256:27fcd4ffb349d410bfd4d54cd6cb2bb71333449d50a01a38d257a6c0f3b80435",
+        "metadata_sha256": "sha256:3fe59b77d6707263b0e22cecbb6eef9a56712ffe56b8f33707561dbb42ec712c"
       },
       {
-        "key": "gao2026pams",
-        "verdict": "KEEP",
-        "initial_verdict": "FIX",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "appendix/a_experiment_contract.tex",
-            "line": 62,
-            "context_sha256": "sha256:136458327432caa019935e2b3e818f61fbc52a11a6f3b6c69bca54404123d698",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/1_introduction.tex",
-            "line": 36,
-            "context_sha256": "sha256:a1cdac1a21a419673c557eec3b5f2248716a6a7cff8c15518ffb6e6631487066",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/2_related_work.tex",
-            "line": 34,
-            "context_sha256": "sha256:0426ac52a89964d27d7c715838980245eb397a7bbfc7381b0eab379fe10d4836",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/3_method.tex",
-            "line": 243,
-            "context_sha256": "sha256:6aa1db2c22104e4fb9d105e84a08a63de4ba5ddc6f2fc2c162542a685838b4d2",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/4_experiments.tex",
-            "line": 95,
-            "context_sha256": "sha256:f85257bccb350d1360f630afedb60dbbe250eb7127eb135e476415cf86dae3c8",
-            "verdict": "SUPPORTS"
-          }
+        "name": "group-b-final",
+        "keys": [
+          "ma2026detrc",
+          "wang2026d2stx",
+          "welch1967fft",
+          "lomb1976unequal",
+          "griffin1984stft",
+          "shazeer2017moe",
+          "luiten2021hota",
+          "ristani2016idmetrics"
         ],
-        "entry_path": ".aris/citation-audit/entries/gao2026pams.json",
-        "entry_sha256": "sha256:31a7dfdc8d07590b7b73936a9f695e56a2da0c19d221ffe6aea8cba9663195f6",
-        "review_trace": ".aris/traces/citation-audit/gao2026pams/reviewer.md",
-        "review_trace_sha256": "sha256:ca6374d5720d28768289907f3404f85d77747397c7dd69b0737dcb00495dc32f",
-        "exact_context_binding": true,
-        "note": "Replaced the unsupported local-time-warp wording with the paper's uniform global speed-resampling evaluation and replaced 'period-offset positives' with the source-supported positive-pair description.",
-        "confidence": 0.98,
-        "primary_urls": [
-          "https://openaccess.thecvf.com/content/CVPR2026F/html/Gao_Count_What_Repeats_Period-Adaptive_Multi-Scale_Consistency_for_Self-Supervised_Repetitive_Action_CVPRF_2026_paper.html",
-          "https://openaccess.thecvf.com/content/CVPR2026F/papers/Gao_Count_What_Repeats_Period-Adaptive_Multi-Scale_Consistency_for_Self-Supervised_Repetitive_Action_CVPRF_2026_paper.pdf"
-        ]
-      },
-      {
-        "key": "hu2022transrac",
-        "verdict": "KEEP",
-        "initial_verdict": "FIX",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "sections/1_introduction.tex",
-            "line": 18,
-            "context_sha256": "sha256:383fae1ce06456a5f26ba0754d8ac1ef9a8857c4165ce8e26e8d4b0063f645a8",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/2_related_work.tex",
-            "line": 12,
-            "context_sha256": "sha256:e612d078c925a6039f1353337d0ce745937ff5e0a984500d1a4723245fa6e5d5",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/4_experiments.tex",
-            "line": 94,
-            "context_sha256": "sha256:f85257bccb350d1360f630afedb60dbbe250eb7127eb135e476415cf86dae3c8",
-            "verdict": "SUPPORTS"
-          }
-        ],
-        "entry_path": ".aris/citation-audit/entries/hu2022transrac.json",
-        "entry_sha256": "sha256:3680fec5a959132a21eb25cc4abee05d5d4ede5b34a60d633571501df8ba2f6f",
-        "review_trace": ".aris/traces/citation-audit/hu2022transrac/reviewer.md",
-        "review_trace_sha256": "sha256:ef54db9ca8c67853c3f1e9f04c56828f5a4b33d7b8fe1fbb8d116fc257ffd58d",
-        "exact_context_binding": true,
-        "note": "Normalized title capitalization and pagination to the IEEE version of record (18991--19000); no prose correction was required.",
-        "confidence": 0.97,
-        "primary_urls": [
-          "https://doi.org/10.1109/CVPR52688.2022.01843",
-          "https://openaccess.thecvf.com/content/CVPR2022/html/Hu_TransRAC_Encoding_Multi-Scale_Temporal_Correlation_With_Transformers_for_Repetitive_Action_CVPR_2022_paper.html"
-        ]
-      },
-      {
-        "key": "levy2015live",
-        "verdict": "KEEP",
-        "initial_verdict": "FIX",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "sections/1_introduction.tex",
-            "line": 15,
-            "context_sha256": "sha256:383fae1ce06456a5f26ba0754d8ac1ef9a8857c4165ce8e26e8d4b0063f645a8",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/2_related_work.tex",
-            "line": 6,
-            "context_sha256": "sha256:e612d078c925a6039f1353337d0ce745937ff5e0a984500d1a4723245fa6e5d5",
-            "verdict": "SUPPORTS"
-          }
-        ],
-        "entry_path": ".aris/citation-audit/entries/levy2015live.json",
-        "entry_sha256": "sha256:d1a8a655eaddb31bc3d2a196195ef8631822b3ad0909281b86d42fc603f38cab",
-        "review_trace": ".aris/traces/citation-audit/levy2015live/reviewer.md",
-        "review_trace_sha256": "sha256:36be9d256bb64926a2c1b22564e79508b6774541a83c13c2c82ae349388a24a8",
-        "exact_context_binding": true,
-        "note": "Moved the Levy citation directly after online local cycle estimation so it no longer ambiguously appears to support the separate motion-frequency/wavelet clause.",
-        "confidence": 0.98,
-        "primary_urls": [
-          "https://doi.org/10.1109/ICCV.2015.346",
-          "https://openaccess.thecvf.com/content_iccv_2015/html/Levy_Live_Repetition_Counting_ICCV_2015_paper.html",
-          "https://api.crossref.org/works/10.1109/ICCV.2015.346",
-          "https://dblp.org/rec/conf/iccv/LevyW15"
-        ]
-      },
-      {
-        "key": "luiten2021hota",
-        "verdict": "KEEP",
-        "initial_verdict": "FIX",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "sections/4_experiments.tex",
-            "line": 41,
-            "context_sha256": "sha256:867578efd94cc9870bc568fd6c44f98dca28bffb29e2e11bab323465c83f6fe5",
-            "verdict": "SUPPORTS"
-          }
-        ],
-        "entry_path": ".aris/citation-audit/entries/luiten2021hota.json",
-        "entry_sha256": "sha256:f85c634ee6d13616059a5531b994c34b6013a1bfe9329f6e59f5a99c89a4e537",
-        "review_trace": ".aris/traces/citation-audit/luiten2021hota/reviewer.md",
-        "review_trace_sha256": "sha256:0cf498dfb156102f86c1e9170e402f269b9b64c58f6f080672da852537856dad",
-        "exact_context_binding": true,
-        "note": "Completed issue and diacritic metadata and named DetA, AssA, and LocA so the diagnostic claim does not imply that aggregate HOTA alone identifies failure modes.",
-        "confidence": 0.96,
-        "primary_urls": [
-          "https://doi.org/10.1007/s11263-020-01375-2",
-          "https://link.springer.com/article/10.1007/s11263-020-01375-2",
-          "https://api.crossref.org/works/10.1007/s11263-020-01375-2"
-        ]
-      },
-      {
-        "key": "ma2026detrc",
-        "verdict": "KEEP",
-        "initial_verdict": "KEEP",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "sections/1_introduction.tex",
-            "line": 18,
-            "context_sha256": "sha256:383fae1ce06456a5f26ba0754d8ac1ef9a8857c4165ce8e26e8d4b0063f645a8",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/2_related_work.tex",
-            "line": 14,
-            "context_sha256": "sha256:e612d078c925a6039f1353337d0ce745937ff5e0a984500d1a4723245fa6e5d5",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/4_experiments.tex",
-            "line": 95,
-            "context_sha256": "sha256:f85257bccb350d1360f630afedb60dbbe250eb7127eb135e476415cf86dae3c8",
-            "verdict": "SUPPORTS"
-          }
-        ],
-        "entry_path": ".aris/citation-audit/entries/ma2026detrc.json",
-        "entry_sha256": "sha256:7e572df94974bf482b6ad5e162e3f6e892bc739837e4d7aa86c0528eec9569a6",
-        "review_trace": ".aris/traces/citation-audit/ma2026detrc/reviewer.md",
-        "review_trace_sha256": "sha256:c307d2a689e83b0c90e4412f6d91fa226562f645eaab8c5d5553446d0d701239",
-        "exact_context_binding": true,
-        "note": "Verified without change.",
-        "confidence": 0.99,
-        "primary_urls": [
-          "https://doi.org/10.1007/s11263-026-02939-4",
-          "https://link.springer.com/article/10.1007/s11263-026-02939-4",
-          "https://api.crossref.org/works/10.1007/s11263-026-02939-4",
-          "https://arxiv.org/abs/2403.01543",
-          "https://github.com/lizishi/DeTRC"
-        ]
-      },
-      {
-        "key": "ristani2016idmetrics",
-        "verdict": "KEEP",
-        "initial_verdict": "KEEP",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "sections/4_experiments.tex",
-            "line": 42,
-            "context_sha256": "sha256:867578efd94cc9870bc568fd6c44f98dca28bffb29e2e11bab323465c83f6fe5",
-            "verdict": "SUPPORTS"
-          }
-        ],
-        "entry_path": ".aris/citation-audit/entries/ristani2016idmetrics.json",
-        "entry_sha256": "sha256:b41b523385659f9852da0c94fd4ac50d67ca4690b0fa5fdb8968702cd6f27bee",
-        "review_trace": ".aris/traces/citation-audit/ristani2016idmetrics/reviewer.md",
-        "review_trace_sha256": "sha256:610de70bbec25085e80b1ffa2ef5b524988cb99d04610b6adb1464081246ceef",
-        "exact_context_binding": true,
-        "note": "The independent child reviewer returned KEEP. Publisher-complete metadata was adopted, and the combined HOTA/ID prose was sharpened without attributing invention of ID-switch counts to Ristani et al.",
-        "confidence": 0.98,
-        "primary_urls": [
-          "https://doi.org/10.1007/978-3-319-48881-3_2",
-          "https://link.springer.com/chapter/10.1007/978-3-319-48881-3_2",
-          "https://api.crossref.org/works/10.1007%2F978-3-319-48881-3_2"
-        ]
-      },
-      {
-        "key": "runia2018realworld",
-        "verdict": "KEEP",
-        "initial_verdict": "FIX",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "sections/1_introduction.tex",
-            "line": 16,
-            "context_sha256": "sha256:383fae1ce06456a5f26ba0754d8ac1ef9a8857c4165ce8e26e8d4b0063f645a8",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/2_related_work.tex",
-            "line": 8,
-            "context_sha256": "sha256:e612d078c925a6039f1353337d0ce745937ff5e0a984500d1a4723245fa6e5d5",
-            "verdict": "SUPPORTS"
-          }
-        ],
-        "entry_path": ".aris/citation-audit/entries/runia2018realworld.json",
-        "entry_sha256": "sha256:dcf09fb9eb97445cadd794d1c5a5d26f46afc70ee30de69bfb7d9e02e2de2789",
-        "review_trace": ".aris/traces/citation-audit/runia2018realworld/reviewer.md",
-        "review_trace_sha256": "sha256:79758d8935a4b700d4f287527cf1d410753e0c4f1d9b9049fb16e40e1581a0b9",
-        "exact_context_binding": true,
-        "note": "Added the canonical IEEE DOI and publisher; citing prose already entailed the motion-frequency, flow-differential, wavelet, and non-stationary claims.",
-        "confidence": 0.99,
-        "primary_urls": [
-          "https://doi.org/10.1109/CVPR.2018.00939",
-          "https://openaccess.thecvf.com/content_cvpr_2018/html/Runia_Real-World_Repetition_Estimation_CVPR_2018_paper.html",
-          "https://api.crossref.org/works/10.1109/CVPR.2018.00939",
-          "https://dblp.org/rec/conf/cvpr/RuniaSS18"
-        ]
-      },
-      {
-        "key": "sinha2024escounts",
-        "verdict": "KEEP",
-        "initial_verdict": "FIX",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "sections/1_introduction.tex",
-            "line": 20,
-            "context_sha256": "sha256:383fae1ce06456a5f26ba0754d8ac1ef9a8857c4165ce8e26e8d4b0063f645a8",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/2_related_work.tex",
-            "line": 16,
-            "context_sha256": "sha256:e612d078c925a6039f1353337d0ce745937ff5e0a984500d1a4723245fa6e5d5",
-            "verdict": "SUPPORTS"
-          }
-        ],
-        "entry_path": ".aris/citation-audit/entries/sinha2024escounts.json",
-        "entry_sha256": "sha256:52d2c14a12b411caa43556acdf405f72d3c6d96dd735a8b52499080e936b9f0b",
-        "review_trace": ".aris/traces/citation-audit/sinha2024escounts/reviewer.md",
-        "review_trace_sha256": "sha256:47b829b46c74e46f9657136d31f2a2bf0942c8008983c6db5551745cedafaad4",
-        "exact_context_binding": true,
-        "note": "Normalized to the final Springer LNCS record and separated the exemplar-conditioned, single-target-stream claim from the multiple-action-type claim.",
-        "confidence": 0.94,
-        "primary_urls": [
-          "https://doi.org/10.1007/978-981-96-0908-6_22",
-          "https://link.springer.com/chapter/10.1007/978-981-96-0908-6_22",
-          "https://openaccess.thecvf.com/content/ACCV2024/html/Sinha_Every_Shot_Counts_Using_Exemplars_for_Repetition_Counting_in_Videos_ACCV_2024_paper.html",
-          "https://api.crossref.org/works/10.1007%2F978-981-96-0908-6_22"
-        ]
-      },
-      {
-        "key": "tang2024multicounter",
-        "verdict": "KEEP",
-        "initial_verdict": "KEEP",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "appendix/a_experiment_contract.tex",
-            "line": 63,
-            "context_sha256": "sha256:136458327432caa019935e2b3e818f61fbc52a11a6f3b6c69bca54404123d698",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/1_introduction.tex",
-            "line": 24,
-            "context_sha256": "sha256:383fae1ce06456a5f26ba0754d8ac1ef9a8857c4165ce8e26e8d4b0063f645a8",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/2_related_work.tex",
-            "line": 21,
-            "context_sha256": "sha256:e612d078c925a6039f1353337d0ce745937ff5e0a984500d1a4723245fa6e5d5",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/2_related_work.tex",
-            "line": 46,
-            "context_sha256": "sha256:f1274c4eaef817dd06c3deaeb7a576948e177059ab36163e0119179bfa3ff25c",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/4_experiments.tex",
-            "line": 22,
-            "context_sha256": "sha256:fafb951b1e52fa41ab8d599e5efa1d0617a6e25dea944a89a5874b55a59af865",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/4_experiments.tex",
-            "line": 92,
-            "context_sha256": "sha256:f85257bccb350d1360f630afedb60dbbe250eb7127eb135e476415cf86dae3c8",
-            "verdict": "SUPPORTS"
-          }
-        ],
-        "entry_path": ".aris/citation-audit/entries/tang2024multicounter.json",
-        "entry_sha256": "sha256:e1e8c7819521de2d355a576da9db0d12e4b2ea4ed2765550f49dead940911f93",
-        "review_trace": ".aris/traces/citation-audit/tang2024multicounter/reviewer.md",
-        "review_trace_sha256": "sha256:d82b8ee520adcb61cb35fcc691d486b5b81710b3f4368789946d60d1d5ffb356",
-        "exact_context_binding": true,
-        "note": "Verified without change.",
-        "confidence": 0.98,
-        "primary_urls": [
-          "https://doi.org/10.3233/FAIA240494",
-          "https://arxiv.org/abs/2409.04035",
-          "https://api.crossref.org/works/10.3233/FAIA240494"
-        ]
-      },
-      {
-        "key": "tang2026multicounterplus",
-        "verdict": "KEEP",
-        "initial_verdict": "FIX",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "appendix/a_experiment_contract.tex",
-            "line": 64,
-            "context_sha256": "sha256:136458327432caa019935e2b3e818f61fbc52a11a6f3b6c69bca54404123d698",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/1_introduction.tex",
-            "line": 25,
-            "context_sha256": "sha256:383fae1ce06456a5f26ba0754d8ac1ef9a8857c4165ce8e26e8d4b0063f645a8",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/2_related_work.tex",
-            "line": 49,
-            "context_sha256": "sha256:f1274c4eaef817dd06c3deaeb7a576948e177059ab36163e0119179bfa3ff25c",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/4_experiments.tex",
-            "line": 22,
-            "context_sha256": "sha256:fafb951b1e52fa41ab8d599e5efa1d0617a6e25dea944a89a5874b55a59af865",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/4_experiments.tex",
-            "line": 92,
-            "context_sha256": "sha256:f85257bccb350d1360f630afedb60dbbe250eb7127eb135e476415cf86dae3c8",
-            "verdict": "SUPPORTS"
-          }
-        ],
-        "entry_path": ".aris/citation-audit/entries/tang2026multicounterplus.json",
-        "entry_sha256": "sha256:674a4212510d18f1818463e04ade91372040bce78f4a042a54253122912cedd4",
-        "review_trace": ".aris/traces/citation-audit/tang2026multicounterplus/reviewer.md",
-        "review_trace_sha256": "sha256:d4d6eb003c224bcae80cecfd34cb3539295384af50b92c6d544be114f7f7462c",
-        "exact_context_binding": true,
-        "note": "Replaced an unsupported claim that the paper and repository represented different dataset states with the verifiable statement that both report the same size while the repository lacks a versioned release identifier/checksums.",
-        "confidence": 0.97,
-        "primary_urls": [
-          "https://doi.org/10.1109/TCSVT.2026.3670243",
-          "https://api.crossref.org/works/10.1109/TCSVT.2026.3670243",
-          "https://github.com/yinntag/MultiCounterPlus"
-        ]
-      },
-      {
-        "key": "wang2026d2stx",
-        "verdict": "KEEP",
-        "initial_verdict": "FIX",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "sections/1_introduction.tex",
-            "line": 34,
-            "context_sha256": "sha256:a1cdac1a21a419673c557eec3b5f2248716a6a7cff8c15518ffb6e6631487066",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/2_related_work.tex",
-            "line": 31,
-            "context_sha256": "sha256:0426ac52a89964d27d7c715838980245eb397a7bbfc7381b0eab379fe10d4836",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/4_experiments.tex",
-            "line": 96,
-            "context_sha256": "sha256:f85257bccb350d1360f630afedb60dbbe250eb7127eb135e476415cf86dae3c8",
-            "verdict": "SUPPORTS"
-          }
-        ],
-        "entry_path": ".aris/citation-audit/entries/wang2026d2stx.json",
-        "entry_sha256": "sha256:5c0f6aec06f0fa90cc8c21e0a10b5689804c578c17dd7c4ecc2ee96056fbef45",
-        "review_trace": ".aris/traces/citation-audit/wang2026d2stx/reviewer.md",
-        "review_trace_sha256": "sha256:c8f03ec434391707cb86a60b4515d59ba38baf8cf8a38dc52e9b2cc52e82760f",
-        "exact_context_binding": true,
-        "note": "Canonicalized the final author's initials and made baseline inclusion conditional on a runnable public implementation rather than presupposing one. No DOI was invented because no authoritative record was found.",
-        "confidence": 0.97,
-        "primary_urls": [
-          "https://openaccess.thecvf.com/content/CVPR2026F/html/Wang_D2-STX_Decoupling_Spatial-Temporal_Cross-Attention_for_Dual-branch_Repetitive_Action_Counting_CVPRF_2026_paper.html",
-          "https://openaccess.thecvf.com/content/CVPR2026F/papers/Wang_D2-STX_Decoupling_Spatial-Temporal_Cross-Attention_for_Dual-branch_Repetitive_Action_Counting_CVPRF_2026_paper.pdf",
-          "https://github.com/ZJU-Emerging-AI-Lab/D2-STX"
-        ]
-      },
-      {
-        "key": "yao2025poserac",
-        "verdict": "KEEP",
-        "initial_verdict": "FIX",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "sections/1_introduction.tex",
-            "line": 33,
-            "context_sha256": "sha256:a1cdac1a21a419673c557eec3b5f2248716a6a7cff8c15518ffb6e6631487066",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/2_related_work.tex",
-            "line": 28,
-            "context_sha256": "sha256:0426ac52a89964d27d7c715838980245eb397a7bbfc7381b0eab379fe10d4836",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/4_experiments.tex",
-            "line": 94,
-            "context_sha256": "sha256:f85257bccb350d1360f630afedb60dbbe250eb7127eb135e476415cf86dae3c8",
-            "verdict": "SUPPORTS"
-          }
-        ],
-        "entry_path": ".aris/citation-audit/entries/yao2025poserac.json",
-        "entry_sha256": "sha256:66d24a04aaab489a4c1ad64a6cecff16e0ef6d30314f13c18802af3053fce81d",
-        "review_trace": ".aris/traces/citation-audit/yao2025poserac/reviewer.md",
-        "review_trace_sha256": "sha256:2498daad2a45a54da0caf5c50526f1e25089349e29cf377b363f4d2046730ba0",
-        "exact_context_binding": true,
-        "note": "Replaced the inaccurate phrase 'foundation-model and text representations' with the source-entailing description of pose-conditioned synthetic data and CLIP text embeddings.",
-        "confidence": 0.96,
-        "primary_urls": [
-          "https://doi.org/10.1007/978-981-96-6588-4_18",
-          "https://link.springer.com/chapter/10.1007/978-981-96-6588-4_18",
-          "https://api.crossref.org/works/10.1007/978-981-96-6588-4_18",
-          "https://dblp.org/rec/conf/iconip/YaoZ24"
-        ]
-      },
-      {
-        "key": "zhang2022bytetrack",
-        "verdict": "KEEP",
-        "initial_verdict": "FIX",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "appendix/a_experiment_contract.tex",
-            "line": 180,
-            "context_sha256": "sha256:5509ce09517236115d4a46643b81ccb1138afff5164239174576928f89a7804b",
-            "verdict": "SUPPORTS"
-          }
-        ],
-        "entry_path": ".aris/citation-audit/entries/zhang2022bytetrack.json",
-        "entry_sha256": "sha256:46d51aacade343c4437b1c226cb7c2e2b7be1d7ea7214caf825559e1ac261755",
-        "review_trace": ".aris/traces/citation-audit/zhang2022bytetrack/reviewer.md",
-        "review_trace_sha256": "sha256:0c21d4962b1bbeafce786380279a480eeaa45fe452290f3f1d42d0f777195f92",
-        "exact_context_binding": true,
-        "note": "Added the LNCS volume and normalized the title to the Springer version of record; cited contexts required no change.",
-        "confidence": 0.99,
-        "primary_urls": [
-          "https://doi.org/10.1007/978-3-031-20047-2_1",
-          "https://link.springer.com/chapter/10.1007/978-3-031-20047-2_1"
-        ]
-      },
-      {
-        "key": "zhao2025skimfocus",
-        "verdict": "KEEP",
-        "initial_verdict": "FIX",
-        "post_fix_status": "PASS",
-        "axis_failures": [],
-        "contexts": [
-          {
-            "file": "sections/1_introduction.tex",
-            "line": 21,
-            "context_sha256": "sha256:383fae1ce06456a5f26ba0754d8ac1ef9a8857c4165ce8e26e8d4b0063f645a8",
-            "verdict": "SUPPORTS"
-          },
-          {
-            "file": "sections/2_related_work.tex",
-            "line": 21,
-            "context_sha256": "sha256:e612d078c925a6039f1353337d0ce745937ff5e0a984500d1a4723245fa6e5d5",
-            "verdict": "SUPPORTS"
-          }
-        ],
-        "entry_path": ".aris/citation-audit/entries/zhao2025skimfocus.json",
-        "entry_sha256": "sha256:7511d90ff6563d9eb96e26f50972839733006809a2243eff3e03d060b4acc1a1",
-        "review_trace": ".aris/traces/citation-audit/zhao2025skimfocus/reviewer.md",
-        "review_trace_sha256": "sha256:86451d45ad0a53e3a503dd6602c2ac3258cfeea4c72a1385d8e76d78ec8d7c28",
-        "exact_context_binding": true,
-        "note": "Used the version-of-record last-author ordering, disambiguated one target action among multiple categories, and co-cited MultiCounter for the MultiRep half of the comparison. The publisher ordering conflicts with arXiv/ORCID and is explicitly documented.",
-        "confidence": 0.93,
-        "primary_urls": [
-          "https://doi.org/10.1007/s11263-025-02471-x",
-          "https://link.springer.com/article/10.1007/s11263-025-02471-x",
-          "https://api.crossref.org/works/10.1007/s11263-025-02471-x",
-          "https://dblp.org/rec/journals/ijcv/ZhaoHZYDWWLF25"
-        ]
+        "verdict": "PASS",
+        "prompt_sha256": "sha256:ebf8b16888b6679a76db959ede1bd677787455e8fac3069cd0bbea024b3f2cfa",
+        "reviewer_sha256": "sha256:ed79426735f9920773e9330b1c9c156cfe8281bf948743ae3d2f4c999d64e054",
+        "metadata_sha256": "sha256:0914755c2bc5be1a0dddb40ff607cdc7684b7d2f3c8c80d655ebd15ea7bf3f69"
       }
-    ]
+    ],
+    "per_key": {
+      "levy2015live": "KEEP",
+      "runia2018realworld": "KEEP",
+      "dwibedi2020repnet": "KEEP",
+      "hu2022transrac": "KEEP",
+      "yao2025poserac": "KEEP",
+      "gao2026pams": "KEEP_WITH_SCOPE_NOTE",
+      "tang2024multicounter": "KEEP",
+      "tang2026multicounterplus": "KEEP_WITH_WORDING_NOTE",
+      "ma2026detrc": "KEEP",
+      "wang2026d2stx": "KEEP",
+      "welch1967fft": "KEEP",
+      "lomb1976unequal": "KEEP",
+      "griffin1984stft": "KEEP",
+      "shazeer2017moe": "KEEP",
+      "luiten2021hota": "KEEP",
+      "ristani2016idmetrics": "KEEP"
+    }
   }
 }
