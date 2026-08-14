@@ -103,3 +103,44 @@ Round-2 compiled artifact:
 - Submission mode remains intentionally fail-closed for pending method/results,
   an incomplete author roster, the unavailable official 2027 kit, the absent
   cross-family response, and unresolved final scientific evidence.
+
+## Round 3 — user-requested title, author, figures, formulas, and references
+
+- Artifact: `paper/main_round3.pdf`, byte-identical to `paper/main.pdf`
+- SHA-256: `2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e`
+- Pages: 5; all technical content ends on page 4 and page 5 contains only
+  references [5]--[16]
+- Reviewers: two fresh zero-context same-family reviewers, xhigh
+- Round-1 assessment: 7/10 and PASS for the honest pre-results package
+- Round-2 assessment: 8.7/10 as a transparent pre-results package and PASS;
+  scientific submission readiness remains blocked
+
+Implemented revisions:
+
+1. Changed the title to *TempoRAC: Identity-Indexed Local Tempo Routing for
+   Multi-Person Repetition Counting*.
+2. Displayed the explicitly authorized Weiping Yan, University of Minnesota
+   Twin Cities, and `yan00944@umn.edu` fields while keeping the unconfirmed
+   collaborator roster submission-blocking.
+3. Retired the custom framework drawing and included the two complete,
+   uncropped one-slide PowerPoint canvases as full-width visual references.
+   Captions state that schematic curves are not measurements, reconcile
+   person-specific instances with shared parameters and per-track state, and
+   keep unbound losses `SYNC-REQUIRED`.
+4. Rewrote Eq. (1) as `[$\hat c_i$]_{i=1}^{N}` and added a validator that rejects
+   grammatical or ellipsis-style punctuation in all four display groups.
+5. Re-audited all 16 cited references against primary or official sources;
+   every entry is cited, no key is missing or unused, and all contexts are
+   supportable.
+6. Replaced unsupported `preregistered` wording with prospectively specified,
+   predeclared, and frozen-selection-rule language.
+7. Hardened `results_manifest.schema.json`: `table_eligible=true` now implies
+   `status=frozen-eligible` and complete dataset, protocol, statistics,
+   artifacts, metrics, audits, paper bindings, and eligibility gates. Pending
+   or excluded manifests are forced ineligible.
+
+Deterministic QA passes formula style, compilation, fonts, 4+1 layout, approved
+public-author visibility, figure provenance/visual review, forbidden-claim
+scan, and six fail-closed gate tests. Funding/COI/ethics, embedded montage
+permission, complete authorship, the official ICASSP 2027 kit, collaborator
+implementation/results, and cross-family review remain explicit blockers.

@@ -39,6 +39,7 @@ def find_tex_files(paper_dir: Path) -> list[Path]:
         paper_dir / "main.tex",
         paper_dir / "preamble.tex",
         paper_dir / "math_commands.tex",
+        paper_dir / "author_public.tex",
         paper_dir / "submission_wrapper.tex",
     ]
     roots.extend(sorted((paper_dir / "sections").glob("*.tex")))
@@ -88,16 +89,11 @@ def main() -> int:
             if pattern.search(text):
                 failures.append(f"{label}: {path.relative_to(paper_dir)}")
 
-    for path, text in contents.items():
-        if EMAIL_PATTERN.search(text):
-            failures.append(f"email address in anonymous source: {path.relative_to(paper_dir)}")
-
     main_text = contents.get(paper_dir / "main.tex", "")
-    author_declarations = re.findall(r"\\author\{([^}]*)\}", main_text, re.DOTALL)
-    if len(author_declarations) != 1 or author_declarations[0].strip() != "Anonymous CVPR submission":
-        failures.append("expected exactly one anonymous author declaration")
-    if re.search(r"\\(?:thanks|affiliation|institute)\b", combined):
-        failures.append("author-identifying LaTeX command found")
+    if "\\input{author_public}" not in main_text:
+        failures.append("missing approved single-anonymous author include")
+    if re.search(r"AUTHOR\s+ROSTER\s+PENDING|AFFILIATIONS\s+PENDING", combined, re.I):
+        failures.append("obsolete author placeholder found")
 
     evidence_path = paper_dir / "generated" / "evidence_values.tex"
     if not evidence_path.is_file():

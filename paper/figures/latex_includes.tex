@@ -1,15 +1,7 @@
-% Active ICASSP figure include. The legacy framework.* and task_comparison.*
-% assets are retained for provenance but are retired from this include file.
-\begin{figure*}[t]
-  \centering
-  \includegraphics[width=\textwidth]{figures/icassp_framework.pdf}
-  \caption{Proposed, synchronization-pending counting specification; this
-  diagram is not implementation or result evidence. Supplied pose tracks and
-  masks lie outside the counting boundary. The encoder and fast/medium/slow
-  experts share parameters across identities, whereas dashed green elements
-  carry identity-indexed state. Window-local masked ACF/FFT evidence drives
-  soft routing; responses are fused, combined by normalized overlap-add, and
-  decoded once per track. Training terms marked \texttt{SYNC-REQUIRED} remain
-  explicit placeholders until the collaborator implementation is frozen.}
-  \label{fig:icassp-framework}
-\end{figure*}
+% Active graphics exported without cropping from the two committed one-slide
+% PowerPoint sources. Captions remain in the section files so their scientific
+% status is visible beside each figure.
+\newcommand{\TaskMotivationGraphic}{%
+  \includegraphics[width=0.88\textwidth]{figures/introduction_source_full.pdf}}
+\newcommand{\TempoRACFrameworkGraphic}{%
+  \includegraphics[width=0.94\textwidth]{figures/framework_source_full.pdf}}

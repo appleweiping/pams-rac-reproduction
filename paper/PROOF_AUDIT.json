@@ -2,68 +2,69 @@
   "audit_skill": "proof-checker",
   "verdict": "NOT_APPLICABLE",
   "reason_code": "NO_FORMAL_PROOF_OBLIGATION",
-  "summary": "No theorem, lemma, proposition, corollary, proof, formal bound, convergence result, or other proof obligation is present. The four displayed equations are proposal-level definitions with implementation-sensitive semantics explicitly synchronization-gated. No blocking mathematical misstatement or unsupported formal guarantee was found; three non-blocking precision caveats are recorded for Equations (2)-(4).",
+  "reason": "The active manuscript contains no theorem, lemma, proposition, corollary, assumption, claim, or proof environment.",
+  "summary": "A fresh zero-context same-family auditor found no formal proof obligation. The four proposal-level equation groups were nevertheless checked against source and the five-page PDF. After replacing the Eq. (1) ellipsis with indexed notation, all four equation bodies and endings contain no grammatical punctuation and render without clipping.",
   "formal_proof_inventory": {
     "theorems": 0,
     "lemmas": 0,
     "propositions": 0,
     "corollaries": 0,
     "proofs": 0,
-    "proof_sketches": 0,
-    "formal_bounds_or_convergence_claims": 0
+    "formal_bounds_or_convergence_claims": 0,
+    "display_equation_groups": 4
   },
-  "blocking_issues": [],
+  "formula_style": {
+    "verdict": "PASS",
+    "equation_bodies_with_grammatical_punctuation": 0,
+    "equation_endings_with_punctuation": 0,
+    "eq1_index_notation": "[\\hat c_i]_{i=1}^{N}",
+    "source_pdf_match": true
+  },
   "formula_assessment": [
     {
       "equation": 1,
       "status": "sound_as_proposal_specification",
-      "note": "Per-identity typing and dependency are specified; source-level mask and lifecycle invariants remain explicitly unverified."
+      "note": "Tensor, binary-mask, and person-wise output notation are coherent; identity isolation remains explicitly synchronization- and test-gated."
     },
     {
       "equation": 2,
-      "status": "non_blocking_precision_gap",
-      "note": "Summation support, out-of-window indexing, domains, units, centering, and Phi are not closed definitions, but the manuscript explicitly marks them synchronization-required and makes no estimator guarantee."
+      "status": "nonblocking_sync_required_precision_gaps",
+      "note": "Summation support, domains, units, centering, period/confidence range, interpolation, and fallback remain explicitly source-bound rather than asserted as a finished estimator."
     },
     {
       "equation": 3,
-      "status": "non_blocking_wording_caveat",
-      "note": "Softmax gives simplex weights when defined, but it does not guarantee high uncertainty at tempo transitions; that behavior remains empirical."
+      "status": "algebraically_valid_under_source_bound_assumptions",
+      "note": "Finite logits and a positive routing temperature are required; pooling, broadcasting, architecture, and calibration remain synchronization-required."
     },
     {
       "equation": 4,
-      "status": "sound_with_non_blocking_precision_caveat",
-      "note": "The ordering avoids independent per-window decoding and explicitly does not guarantee one peak. The epsilon-regularized denominator is not an exact perfect-reconstruction normalization, which the manuscript does not claim."
+      "status": "sound_processing_order_with_nonblocking_precision_gaps",
+      "note": "Fusion before one decode avoids independently decoding windows but does not guarantee a unique peak; taper, coverage-mask, epsilon, and decoder semantics remain source-bound."
     }
   ],
-  "hidden_guarantee_assessment": {
-    "status": "no_blocking_misstatement",
-    "notes": [
-      "Boundary double-counting language is limited to one structural source.",
-      "Parameter-count independence is correctly limited to the fixed shared expert bank; runtime and memory claims are withheld.",
-      "Robustness, stationary-track preservation, expert specialization, confidence validity, and mechanism isolation are hypotheses or planned tests.",
-      "Auxiliary losses are explicitly a synchronization contract rather than an implemented or justified objective."
-    ]
-  },
+  "blocking_issues": [],
   "pdf_review": {
-    "expected_sha256": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
-    "hash_matches": true,
+    "sha256": "2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
     "page_count": 5,
     "pages_visually_reviewed": [1, 2, 3, 4, 5],
     "formula_rendering_defects": 0
   },
   "audited_input_hashes": {
-    "main.pdf": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
-    "main.tex": "a4fe29c47f200946c7d6f3522bd273f5895aabda2d7a959fdbf16397fe1cbe70",
+    "main.tex": "34e470772f06c281b70a8f60f82bb010e9a027cb289ebd9389005be703868175",
     "preamble.tex": "763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2",
-    "math_commands.tex": "e6dabb7ce789e0d78026e6bda287fe17faedb6d20c0df9b4f603cb3b6c123bee",
+    "math_commands.tex": "2f148f00d2542e89b78f18ea726f40e25afeef08c51357bcb642e95b9477a255",
+    "author_public.tex": "044998350a801da4758d022d231508d103b5769f5884ae3de5b626591615ac5d",
+    "figures/latex_includes.tex": "24f27f9df91002008648de01ea7bd0af5a216e9a97262ad0a05a077f8dd78421",
     "sections/0_abstract.tex": "fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef",
-    "sections/1_introduction.tex": "6823651162f59e5f5263949f2d308f594b667cb3cba0044433c39031ae04db9d",
-    "sections/3_method.tex": "7e92c00eb4a7956b059536fd47240cefbea960aee61d4f3fdef1a7e24930c50d",
-    "sections/4_experiments.tex": "6052c816e94f7d7f50b560d397495a37863b05d240ed5e418e4b6ec4d3aa131b",
-    "sections/5_conclusion.tex": "e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c"
+    "sections/1_introduction.tex": "7ce1329707dae209f745c200492253356e975448d9b32053b9f97d48bdcf3b3e",
+    "sections/3_method.tex": "c4ab8008065bb8781e402921878f5b99c7fb841acdef24c6129b7d93c988dc84",
+    "sections/4_tables.tex": "9982f60311a96265c8140b7c2614349bb2ae4f407b8666756b0f2c91ab89513a",
+    "sections/4_experiments.tex": "cd6508a60e3e9cac767ccfcec53e019a52525f58cebc2b1559819139abe0ecb5",
+    "sections/5_conclusion.tex": "e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c",
+    "main.pdf": "2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e"
   },
-  "trace_path": ".aris/traces/proof-audit-icassp/final",
-  "agent_id": "/root/icassp_proof_audit",
+  "agent_id": "/root/user_revision_proof_audit",
+  "trace_path": ".aris/traces/proof-audit-icassp/user-revision-final/",
   "reviewer_model": "gpt-5.6-sol",
   "reviewer_reasoning": "xhigh",
   "executor_model": "gpt-5.6-sol",
@@ -71,5 +72,6 @@
   "reviewer_family": "openai",
   "review_independence": "same-family",
   "acceptance_status": "provisional",
-  "generated_at": "2026-08-14T22:43:31+08:00"
+  "generated_at": "2026-08-15T01:25:00+08:00",
+  "post_review_rebind": "Only non-formula experiment-status wording changed; method/equation source is byte-identical, formula-style validator passes, and all five final pages were re-rendered and inspected."
 }

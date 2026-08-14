@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check private author completion without emitting private values."""
+"""Check public single-anonymous identity and private roster completion."""
 
 from __future__ import annotations
 
@@ -17,6 +17,11 @@ REQUIRED_DEFINITIONS = (
     "RACAuthorNames",
     "RACAuthorAffiliations",
     "RACAuthorEmails",
+)
+PUBLIC_DEFINITIONS = (
+    "RACKnownAuthorNames",
+    "RACKnownAuthorAffiliations",
+    "RACKnownAuthorEmails",
 )
 REQUIRED_ATTESTATIONS = (
     "roster_matches_submission_system",
@@ -77,7 +82,7 @@ def _privacy_leaks(root: Path, private_values: list[str]) -> list[str]:
 
 
 def _draft_pdf_leaks(paper_dir: Path, private_values: list[str]) -> list[str]:
-    """Check tracked/internal draft PDFs, never the single-blind submission PDF."""
+    """Check draft PDFs for unapproved private values."""
     from pypdf import PdfReader
 
     needles = [value.casefold() for value in private_values if len(value.strip()) >= 6]
@@ -95,12 +100,48 @@ def _draft_pdf_leaks(paper_dir: Path, private_values: list[str]) -> list[str]:
     return leaks
 
 
+def _draft_pdf_contains(paper_dir: Path, public_values: list[str]) -> bool:
+    """Require all explicitly approved public fields in the current draft."""
+    from pypdf import PdfReader
+
+    path = paper_dir / "main.pdf"
+    if not path.is_file():
+        return False
+    reader = PdfReader(str(path), strict=True)
+    payload = "\n".join(page.extract_text() or "" for page in reader.pages).casefold()
+    return all(value.strip().casefold() in payload for value in public_values if value.strip())
+
+
 def validate(paper_dir: Path, mode: str) -> tuple[dict[str, Any], int]:
     root = paper_dir.parent.resolve()
+    public_path = paper_dir / "author_public.tex"
     path = paper_dir / "private/author_metadata.tex"
     attestation_path = paper_dir / "private/author_attestations.json"
     checks: list[dict[str, Any]] = []
     blockers: list[str] = []
+    public_definitions: dict[str, str] = {}
+    if public_path.is_file():
+        try:
+            public_definitions = _definitions(public_path.read_text(encoding="utf-8", errors="strict"))
+        except Exception as exc:
+            add_check(checks, "public_metadata_parse", False, type(exc).__name__)
+            return finish_report(gate="author_metadata", mode=mode, checks=checks, structural_failure=True)
+    public_values = [public_definitions.get(name, "") for name in PUBLIC_DEFINITIONS]
+    public_complete = all(public_values)
+    public_no_placeholders = all(
+        value and not re.search(r"PENDING|TBD|UNKNOWN|VERIFY|\[|\]", value, re.IGNORECASE)
+        for value in public_values
+    )
+    public_email_shape = bool(
+        re.fullmatch(r"[^\s@{}]+@[^\s@{}]+\.[^\s@{}]+", public_definitions.get("RACKnownAuthorEmails", ""))
+    )
+    public_ok = public_complete and public_no_placeholders and public_email_shape
+    add_check(
+        checks,
+        "approved_public_author_fields",
+        public_ok,
+        "approved name, affiliation, and email are present" if public_ok else "approved public author fields are incomplete",
+    )
     definitions: dict[str, str] = {}
     if path.is_file():
         try:
@@ -139,24 +180,36 @@ def validate(paper_dir: Path, mode: str) -> tuple[dict[str, Any], int]:
     leaks: list[str] = []
     privacy_error = None
     pdf_leaks: list[str] = []
+    try:
+        public_visible = _draft_pdf_contains(paper_dir, public_values)
+    except Exception as exc:
+        public_visible = False
+        privacy_error = type(exc).__name__
     if definitions:
         try:
-            # Check exact private fields and individual e-mail addresses; never
-            # serialize the values themselves into this report.
+            # The user explicitly authorized public_values. Scan only still-
+            # private collaborator fragments and never emit those values.
+            approved = {value.casefold() for value in public_values if value.strip()}
             fragments = [
                 item.strip()
                 for value in values
                 for item in re.split(r"[,;]|\\and|\band\b", value, flags=re.IGNORECASE)
                 if item.strip()
+                and not re.search(r"PENDING|TBD|UNKNOWN|VERIFY|\[|\]", item, re.IGNORECASE)
+                and item.strip().casefold() not in approved
             ]
-            private_values = values + fragments + re.findall(r"[^\s,;{}]+@[^\s,;{}]+", definitions.get("RACAuthorEmails", ""))
+            private_values = fragments + [
+                item for item in re.findall(r"[^\s,;{}]+@[^\s,;{}]+", definitions.get("RACAuthorEmails", ""))
+                if item.casefold() not in approved
+            ]
             leaks = _privacy_leaks(root, private_values)
             pdf_leaks = _draft_pdf_leaks(paper_dir, private_values)
         except Exception as exc:
             privacy_error = type(exc).__name__
-    privacy_ok = not leaks and not pdf_leaks and privacy_error is None
-    add_check(checks, "tracked_tree_privacy", not leaks and privacy_error is None, f"leak_files={len(leaks)}" if privacy_error is None else privacy_error)
-    add_check(checks, "draft_pdf_privacy", not pdf_leaks and privacy_error is None, f"leak_pdfs={len(pdf_leaks)}" if privacy_error is None else privacy_error)
+    privacy_ok = public_ok and public_visible and not leaks and not pdf_leaks and privacy_error is None
+    add_check(checks, "public_author_visible_in_draft", public_visible, "all approved fields visible" if public_visible else "approved fields missing from draft PDF")
+    add_check(checks, "unapproved_tracked_identity_absent", not leaks and privacy_error is None, f"leak_files={len(leaks)}" if privacy_error is None else privacy_error)
+    add_check(checks, "unapproved_pdf_identity_absent", not pdf_leaks and privacy_error is None, f"leak_pdfs={len(pdf_leaks)}" if privacy_error is None else privacy_error)
 
     report, code = finish_report(
         gate="author_metadata",
@@ -165,12 +218,13 @@ def validate(paper_dir: Path, mode: str) -> tuple[dict[str, Any], int]:
         blockers=blockers,
         structural_failure=not privacy_ok,
     )
-    report["privacy"] = {
+    report["identity_policy"] = {
+        "approved_public_fields_emitted": True,
         "private_values_emitted": False,
-        "tracked_leak_count": len(leaks),
-        "tracked_leak_paths": leaks,
-        "draft_pdf_leak_count": len(pdf_leaks),
-        "draft_pdf_leak_paths": pdf_leaks,
+        "unapproved_tracked_leak_count": len(leaks),
+        "unapproved_tracked_leak_paths": leaks,
+        "unapproved_draft_pdf_leak_count": len(pdf_leaks),
+        "unapproved_draft_pdf_leak_paths": pdf_leaks,
     }
     return report, code
 

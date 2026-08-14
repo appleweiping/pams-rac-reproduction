@@ -14,14 +14,14 @@ reconciliation belong to the \SyncRequired{track lifecycle contract}.
 
 \begin{figure*}[t]
   \centering
-  \includegraphics[width=0.97\textwidth]{figures/icassp_framework.pdf}
-  \caption{Proposed signal path, not an implementation or result claim.
-  Supplied pose tracks and masks retain identity-indexed state while sharing
-  encoder and expert parameters. Each window yields local periodic evidence,
-  soft routing mixes continuous expert responses, normalized overlap-add
-  reconstructs one track response, and one decoder returns each supplied track's
-  count. Red synchronization markers identify interfaces that must be replaced
-  by source-bound definitions.}
+  \TempoRACFrameworkGraphic
+  \caption{Conceptual framework reproduced in full from the project's editable
+  framework deck. In the manuscript, $M_i$ denotes an identity-indexed counter
+  instance with shared learned parameters and separate state, not a separately
+  parameterized model. The training strip lists candidate objectives: tempo
+  routing and track-continuity terms remain \texttt{SYNC-REQUIRED} until they
+  are bound to frozen code. PAMS-TCC is attributed to PAMS
+  \cite{gao2026pams}. The diagram is not implementation or result evidence.}
   \label{fig:framework}
 \end{figure*}
 
@@ -33,16 +33,17 @@ Overlapping supports \(\cW_{i\ell}\) select local windows. A shared encoder
 remains a person-wise count vector:
 \begin{equation}
 \begin{aligned}
- \bX_i &\in \Rset^{T_i\times J\times C},\quad
- m_i\in\{0,1\}^{T_i},\quad
- \widehat{\bc}=[\hat c_1,\ldots,\hat c_N]^{\mathsf T} \\
+ \bX_i &\in \Rset^{T_i\times J\times C}\qquad
+ m_i\in\Bset^{T_i}\qquad
+ \widehat{\bc}=[\hat c_i]_{i=1}^{N} \\
  \bz_{i\ell}(t) &=
- \cE_\theta\!\left(\bX_i[\cW_{i\ell}],m_i[\cW_{i\ell}]\right)_t,
+ \cE_\theta\!\left(\bX_i[\cW_{i\ell}]\mid m_i[\cW_{i\ell}]\right)_t
  \quad t\in\cW_{i\ell}
 \end{aligned}
 \label{eq:representation}
 \end{equation}
-\noindent The shared $\theta$ does not mix identity state. Window geometry, pose
+\noindent Here $\Bset$ denotes the binary alphabet. The shared $\theta$ does
+not mix identity state. Window geometry, pose
 normalization, padding, short tracks, and buffer lifecycle are
 \SyncRequired{track tensor and lifecycle contract}. Masks accompany every
 transformation, and windows never cross identity timelines. A scene total
@@ -70,8 +71,8 @@ score, then map both to a period estimate and confidence:
  e^{-\mathrm{j}\omega t}\right|^2}
  {\max_{\omega'}\left|\sum_t q_{i\ell}(t)[s_{i\ell}(t)-\bar s_{i\ell}]
  e^{-\mathrm{j}\omega' t}\right|^2+\epsilon} \\
- (\hat p_{i\ell},\gamma_{i\ell}) &=
- \Phi\!\left(\{A_{i\ell}(\tau)\}_{\tau\in\cT},
+ \begin{bmatrix}\hat p_{i\ell}\\\gamma_{i\ell}\end{bmatrix} &=
+ \Phi\!\left(\{A_{i\ell}(\tau)\}_{\tau\in\cT}\mathbin\Vert
               \{F_{i\ell}(\omega)\}_{\omega\in\Omega}\right)
 \end{aligned}
 \label{eq:period}
@@ -94,13 +95,12 @@ and confidence, and returns simplex weights. Each expert emits a continuous
 local response rather than an independently rounded count:
 \begin{equation}
 \begin{aligned}
- \bg_{i\ell} &=
- \softmax\!\left(
- \rho_\psi(\bz_{i\ell},\hat p_{i\ell},\gamma_{i\ell})/\tau_{\mathrm r}
- \right),\quad
- g_{i\ell k}\geq0,\quad \sum_{k\in\cK}g_{i\ell k}=1 \\
+ \bu_{i\ell} &=
+ \rho_\psi([\bz_{i\ell}\mathbin\Vert\hat p_{i\ell}\mathbin\Vert\gamma_{i\ell}]) \\
+ \bg_{i\ell} &= \softmax(\bu_{i\ell}/\tau_{\mathrm r}) \\
+ g_{i\ell k}&\geq0\qquad \sum_{k\in\cK}g_{i\ell k}=1 \\
  \br^{(k)}_{i\ell} &=
- \cH^{(k)}_{\phi_k}(\bz_{i\ell}),\quad k\in\cK
+ \cH^{(k)}_{\phi_k}(\bz_{i\ell})\qquad k\in\cK
 \end{aligned}
 \label{eq:routing}
 \end{equation}
@@ -122,11 +122,11 @@ track response $R_i$, after which one decoder extracts events:
  \widetilde{r}_{i\ell}(t) &=
  \sum_{k\in\cK}g_{i\ell k}r^{(k)}_{i\ell}(t) \\
  R_i(t) &=
- \frac{\sum_{\ell:t\in\cW_{i\ell}}
+ \frac{\sum_{\substack{\ell\\t\in\cW_{i\ell}}}
  a_{i\ell}(t)q_{i\ell}(t)\widetilde{r}_{i\ell}(t)}
- {\sum_{\ell:t\in\cW_{i\ell}}
+ {\sum_{\substack{\ell\\t\in\cW_{i\ell}}}
  a_{i\ell}(t)q_{i\ell}(t)+\epsilon} \\
- \widehat{\cE}_i &= \cD(R_i,m_i),\quad
+ \widehat{\cE}_i &= \cD(R_i\mid m_i)\qquad
  \hat c_i=|\widehat{\cE}_i|
 \end{aligned}
 \label{eq:reconstruction}

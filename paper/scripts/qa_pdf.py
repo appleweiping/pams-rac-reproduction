@@ -27,11 +27,15 @@ def sha(path: Path) -> str:
 def source_files(paper_dir: Path) -> list[Path]:
     paths = [
         paper_dir / "main.tex", paper_dir / "preamble.tex",
-        paper_dir / "math_commands.tex", paper_dir / "references.bib",
+        paper_dir / "math_commands.tex", paper_dir / "author_public.tex",
+        paper_dir / "references.bib",
     ]
     for directory in ("sections", "generated"):
         paths.extend(sorted((paper_dir / directory).glob("*.tex")))
-    paths.append(paper_dir / "figures/icassp_framework.pdf")
+    paths.extend([
+        paper_dir / "figures/introduction_source_full.pdf",
+        paper_dir / "figures/framework_source_full.pdf",
+    ])
     return [path for path in paths if path.is_file()]
 
 
@@ -96,7 +100,14 @@ def main() -> int:
         "duplicate_labels": sorted({label for label in labels if labels.count(label) > 1}),
         "undefined_citation_keys": sorted(citations - bib_keys),
         "uncited_bib_keys": sorted(bib_keys - citations),
-        "draft_author_placeholder_visible": any("AUTHOR ROSTER PENDING" in text for text in page_text),
+        "approved_author_fields_visible": all(
+            value in "\n".join(page_text)
+            for value in (
+                "Weiping Yan",
+                "University of Minnesota Twin Cities",
+                "yan00944@umn.edu",
+            )
+        ),
         "draft_banner_visible": False,
         "unresolved_question_marks": any("??" in text for text in page_text),
     }
@@ -115,7 +126,7 @@ def main() -> int:
         or checks["duplicate_labels"]
         or checks["undefined_citation_keys"]
         or checks["uncited_bib_keys"]
-        or not checks["draft_author_placeholder_visible"]
+        or not checks["approved_author_fields_visible"]
         or not checks["draft_banner_visible"]
         or checks["unresolved_question_marks"]
     )

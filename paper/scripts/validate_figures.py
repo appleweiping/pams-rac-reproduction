@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate editable/vector figure triplets, captions, and visual-review binding."""
+"""Validate the two exact PPT-sourced manuscript figures and their captions."""
 
 from __future__ import annotations
 
@@ -8,107 +8,45 @@ import hashlib
 import json
 import re
 import subprocess
-import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 
-
-FIGURES = {
-    "task_comparison": {
-        "caption_source": "sections/1_introduction.tex",
-        "caption_require": ("Target task and output", "problem illustration", "not result evidence"),
-    },
-    "framework": {
-        "caption_source": "sections/3_method.tex",
-        "caption_require": ("Provisional method contract", "synchronization", "frozen training code"),
-    },
-}
+from pypdf import PdfReader
 
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def add(checks: list[dict], check_id: str, status: str, detail: object = None) -> None:
-    record: dict[str, object] = {"id": check_id, "status": status}
+def add(checks: list[dict], check_id: str, ok: bool, detail: object = None) -> None:
+    record: dict[str, object] = {"id": check_id, "status": "PASS" if ok else "FAIL"}
     if detail is not None:
         record["detail"] = detail
     checks.append(record)
 
 
-def drawio_diagnostics(path: Path) -> tuple[list[str], list[str]]:
-    errors: list[str] = []
-    warnings: list[str] = []
-    try:
-        root = ET.parse(path).getroot()
-    except ET.ParseError as exc:
-        return [f"xml:{exc}"], []
-    if root.tag != "mxfile":
-        errors.append("root is not mxfile")
-    diagrams = root.findall("diagram")
-    if len(diagrams) != 1:
-        errors.append(f"expected one diagram; found {len(diagrams)}")
-    models = root.findall(".//mxGraphModel")
-    if len(models) != 1:
-        errors.append(f"expected one mxGraphModel; found {len(models)}")
-    cells = root.findall(".//mxCell")
-    ids = [cell.get("id") for cell in cells]
-    if any(item is None or item == "" for item in ids):
-        errors.append("mxCell without id")
-    if len(ids) != len(set(ids)):
-        errors.append("duplicate mxCell id")
-    id_set = {item for item in ids if item}
-    for cell in cells:
-        parent = cell.get("parent")
-        if parent and parent not in id_set:
-            errors.append(f"missing parent for cell {cell.get('id')}")
-        if cell.get("edge") == "1":
-            source, target = cell.get("source"), cell.get("target")
-            if source and source not in id_set:
-                errors.append(f"missing edge source for {cell.get('id')}")
-            if target and target not in id_set:
-                errors.append(f"missing edge target for {cell.get('id')}")
-        if cell.get("vertex") == "1":
-            geometry = cell.find("mxGeometry")
-            if geometry is None:
-                errors.append(f"vertex {cell.get('id')} has no geometry")
-            else:
-                try:
-                    width = float(geometry.get("width", "0"))
-                    height = float(geometry.get("height", "0"))
-                    if width <= 0 or height <= 0:
-                        errors.append(f"vertex {cell.get('id')} has non-positive geometry")
-                except ValueError:
-                    errors.append(f"vertex {cell.get('id')} has invalid geometry")
-    return sorted(set(errors)), sorted(set(warnings))
+def slide_count(path: Path) -> int:
+    with zipfile.ZipFile(path) as archive:
+        return sum(
+            1 for name in archive.namelist()
+            if re.fullmatch(r"ppt/slides/slide\d+\.xml", name)
+        )
 
 
-def svg_diagnostics(path: Path) -> tuple[list[str], list[str]]:
-    errors: list[str] = []
-    warnings: list[str] = []
-    try:
-        root = ET.parse(path).getroot()
-    except ET.ParseError as exc:
-        return [f"xml:{exc}"], []
-    if not root.tag.endswith("svg"):
-        errors.append("root is not svg")
-    if not root.get("viewBox"):
-        errors.append("missing viewBox")
-    if not root.get("width") or not root.get("height"):
-        errors.append("missing width/height")
-    return errors, warnings
+def embedded_fonts(path: Path) -> tuple[bool, list[str]]:
+    output = subprocess.check_output(["pdffonts", str(path)], text=True, errors="replace")
+    rows = [line for line in output.splitlines()[2:] if line.strip()]
+    bad = []
+    for row in rows:
+        fields = row.split()
+        if len(fields) < 6 or fields[-5].lower() != "yes":
+            bad.append(row)
+    return bool(rows) and not bad, bad
 
 
-def pdf_is_vector(path: Path) -> tuple[bool, str]:
-    try:
-        output = subprocess.check_output(["pdfimages", "-list", str(path)], text=True, errors="replace")
-    except Exception as exc:
-        return False, f"pdfimages:{type(exc).__name__}"
-    image_rows = [line for line in output.splitlines()[2:] if line.strip()]
-    return not image_rows, f"embedded_raster_count={len(image_rows)}"
-
-
-def caption_block(text: str, label: str) -> str:
-    match = re.search(r"\\caption\{(.*?)\}\s*\\label\{" + re.escape(label) + r"\}", text, re.DOTALL)
+def caption(text: str, label: str) -> str:
+    pattern = r"\\caption\{(.*?)\}\s*\\label\{" + re.escape(label) + r"\}"
+    match = re.search(pattern, text, re.DOTALL)
     return " ".join(match.group(1).split()) if match else ""
 
 
@@ -119,92 +57,93 @@ def main() -> int:
     parser.add_argument("--visual-review", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+
     paper_dir = args.paper_dir.resolve()
     root = paper_dir.parent
-    visual_path = args.visual_review.resolve() if args.visual_review else paper_dir / ".aris/figure-visual-review.json"
+    manifest_path = paper_dir / "figures/figure_manifest.json"
     checks: list[dict] = []
-    figure_hashes: dict[str, dict[str, str]] = {}
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        manifest = {}
+        add(checks, "manifest_parse", False, type(exc).__name__)
+    else:
+        add(checks, "manifest_parse", manifest.get("schema_version") == "2.0")
 
-    for name, spec in FIGURES.items():
-        paths = {suffix: paper_dir / "figures" / f"{name}.{suffix}" for suffix in ("drawio", "svg", "pdf")}
-        complete = all(path.is_file() for path in paths.values())
-        add(checks, f"triplet_present:{name}", "PASS" if complete else "FAIL")
-        if not complete:
+    main_tex = (paper_dir / "main.tex").read_text(encoding="utf-8", errors="replace")
+    includes = (paper_dir / "figures/latex_includes.tex").read_text(encoding="utf-8", errors="replace")
+    section_text = "\n".join(
+        path.read_text(encoding="utf-8", errors="replace")
+        for path in sorted((paper_dir / "sections").glob("*.tex"))
+    )
+    add(checks, "active_include_loaded", "\\input{figures/latex_includes}" in main_tex)
+
+    records = manifest.get("active_figures", []) if isinstance(manifest, dict) else []
+    add(checks, "exactly_two_active_figures", len(records) == 2, len(records))
+    bound_hashes: dict[str, dict[str, str]] = {}
+    for record in records:
+        figure_id = record.get("id", "unknown")
+        source_spec = record.get("source", {})
+        output_spec = record.get("output", {})
+        source = root / source_spec.get("file", "")
+        output = root / output_spec.get("file", "")
+        present = source.is_file() and output.is_file()
+        add(checks, f"files_present:{figure_id}", present)
+        if not present:
             continue
-        figure_hashes[name] = {suffix: sha256(path) for suffix, path in paths.items()}
-        drawio_errors, drawio_warnings = drawio_diagnostics(paths["drawio"])
-        svg_errors, svg_warnings = svg_diagnostics(paths["svg"])
-        vector, vector_detail = pdf_is_vector(paths["pdf"])
-        add(checks, f"drawio_xml_errors:{name}", "PASS" if not drawio_errors else "FAIL", drawio_errors)
-        add(checks, f"drawio_xml_warnings:{name}", "PASS" if not drawio_warnings else "FAIL", drawio_warnings)
-        add(checks, f"svg_xml_errors:{name}", "PASS" if not svg_errors else "FAIL", svg_errors)
-        add(checks, f"svg_xml_warnings:{name}", "PASS" if not svg_warnings else "FAIL", svg_warnings)
-        add(checks, f"vector_pdf:{name}", "PASS" if vector else "FAIL", vector_detail)
-        source = (paper_dir / spec["caption_source"]).read_text(encoding="utf-8", errors="replace")
-        caption = caption_block(source, f"fig:{name}")
-        missing_caption_terms = [term for term in spec["caption_require"] if term.casefold() not in caption.casefold()]
-        add(checks, f"conceptual_caption:{name}", "PASS" if caption and not missing_caption_terms else "FAIL", missing_caption_terms)
+        source_hash = sha256(source)
+        output_hash = sha256(output)
+        bound_hashes[figure_id] = {"source": source_hash, "output": output_hash}
+        add(checks, f"source_hash:{figure_id}", source_hash == source_spec.get("sha256"), source_hash)
+        add(checks, f"output_hash:{figure_id}", output_hash == output_spec.get("sha256"), output_hash)
+        add(checks, f"single_source_slide:{figure_id}", slide_count(source) == 1)
 
-    narrative = (root / "NARRATIVE_REPORT.md").read_text(encoding="utf-8", errors="replace")
-    method_contract = (paper_dir / "evidence/method_contract.yaml").read_text(encoding="utf-8", errors="replace")
-    ppt_names = (
-        "Multi-Person-Tempo-Adaptive-Counting-Introduction-Rounded-TNR.pptx",
-        "Multi-Person-Tempo-Adaptive-Counting-Framework-Rounded-TNR.pptx",
-    )
-    classification_ok = (
-        all(name in narrative and name in method_contract for name in ppt_names)
-        and "visual_reference_only" in narrative
-        and bool(re.search(r"source_class:\s*committed_ppt.*?authority:\s*visual_reference_only", method_contract, re.S))
-        and "conceptual_only" not in narrative
-    )
-    add(checks, "ppt_visual_reference_only", "PASS" if classification_ok else "FAIL")
+        reader = PdfReader(str(output), strict=True)
+        one_page = len(reader.pages) == 1
+        add(checks, f"single_output_page:{figure_id}", one_page)
+        if one_page:
+            page = reader.pages[0]
+            size = [round(float(page.mediabox.width)), round(float(page.mediabox.height))]
+            add(checks, f"full_16x9_canvas:{figure_id}", size == [720, 405], size)
+        fonts_ok, bad_fonts = embedded_fonts(output)
+        add(checks, f"fonts_embedded:{figure_id}", fonts_ok, bad_fonts)
+        add(checks, f"editable_source:{figure_id}", source_spec.get("editable") is True)
+        add(checks, f"visual_reference_only:{figure_id}", source_spec.get("authority") == "visual_reference_only")
 
-    visual_review: dict = {}
+        expected_file = output_spec.get("file", "").split("paper/", 1)[-1]
+        add(checks, f"included_graphic:{figure_id}", expected_file in includes)
+        cap = caption(section_text, figure_id)
+        missing = [term for term in record.get("caption_contract", []) if term.casefold() not in cap.casefold()]
+        add(checks, f"caption_contract:{figure_id}", bool(cap) and not missing, missing)
+        media = str(record.get("media_provenance", ""))
+        media_ok = "SYNC-REQUIRED" in media if args.mode == "draft" else "SYNC-REQUIRED" not in media
+        add(checks, f"media_provenance:{figure_id}", media_ok, media)
+
+    visual_path = args.visual_review.resolve() if args.visual_review else paper_dir / ".aris/figure-visual-review-user-revision.json"
     if visual_path.is_file():
         try:
-            visual_review = json.loads(visual_path.read_text(encoding="utf-8"))
+            visual = json.loads(visual_path.read_text(encoding="utf-8"))
         except Exception as exc:
-            add(checks, "visual_review_parse", "FAIL", type(exc).__name__)
+            add(checks, "visual_review_parse", False, type(exc).__name__)
         else:
-            add(checks, "visual_review_parse", "PASS")
-            add(checks, "standalone_visual_review", "PASS" if visual_review.get("standalone_review", {}).get("verdict") == "PASS" else "FAIL")
-            bound = visual_review.get("figure_hashes", {})
-            add(checks, "visual_review_figure_digest_binding", "PASS" if bound == figure_hashes else "FAIL")
-            page_review = visual_review.get("pdf_page_review", {})
-            pdf = paper_dir / "main.pdf"
-            render_records = page_review.get("renders", [])
-            render_ok = bool(render_records)
-            for record in render_records:
-                render = root / record.get("path", "")
-                render_ok = render_ok and render.is_file() and sha256(render) == record.get("sha256")
-            pdf_ok = pdf.is_file() and page_review.get("pdf_sha256") == sha256(pdf)
-            page_pass = page_review.get("verdict") == "PASS" and render_ok and pdf_ok
-            add(checks, "pdf_page_visual_review_digest_binding", "PASS" if page_pass else "BLOCKED", {
-                "review_verdict": page_review.get("verdict"), "render_count": len(render_records), "pdf_bound": pdf_ok,
-            })
+            add(checks, "visual_review_verdict", visual.get("verdict") == "PASS")
+            add(checks, "visual_review_figure_binding", visual.get("figure_hashes") == bound_hashes)
     else:
-        add(checks, "visual_review_present", "BLOCKED")
+        add(checks, "visual_review_present", False)
 
-    statuses = {item["status"] for item in checks}
-    if "FAIL" in statuses:
-        verdict = "FAIL"
-    elif "BLOCKED" in statuses:
-        verdict = "PROVISIONAL" if args.mode == "draft" else "BLOCKED"
-    else:
-        verdict = "PASS"
+    failures = [item for item in checks if item["status"] == "FAIL"]
     report = {
-        "schema_version": 1,
+        "schema_version": "2.0",
         "mode": args.mode,
-        "verdict": verdict,
-        "figure_hashes": figure_hashes,
-        "visual_review_artifact": visual_path.relative_to(root).as_posix() if root in visual_path.parents else str(visual_path),
+        "verdict": "PASS" if not failures else "FAIL",
+        "figure_hashes": bound_hashes,
         "checks": checks,
     }
-    output = args.output or paper_dir / ".aris/figure-validation.json"
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    print(f"FIGURE_VALIDATION={verdict}; checks={len(checks)}")
-    return 0 if verdict in {"PASS", "PROVISIONAL"} else (2 if verdict == "BLOCKED" else 1)
+    output_path = args.output or paper_dir / ".aris/figure-validation-user-revision.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    print(f"FIGURE_VALIDATION={report['verdict']}; checks={len(checks)}")
+    return 0 if not failures else 1
 
 
 if __name__ == "__main__":

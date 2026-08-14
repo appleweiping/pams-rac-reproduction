@@ -1,7 +1,7 @@
 # ICASSP 2027 pre-results paper package
 
 This directory contains the evidence-gated regular-paper draft
-**Identity-Indexed Local Tempo Routing for Multi-Person Repetition Counting**.
+**TempoRAC: Identity-Indexed Local Tempo Routing for Multi-Person Repetition Counting**.
 It targets four pages of technical content plus an optional fifth page that
 contains references only. The official ICASSP 2027 author kit is not yet
 available, so the tracked ICASSP 2026 `spconf` files are a temporary scaffold;
@@ -14,11 +14,17 @@ The deliverable is `provisional/data-pending`. Draft mode prints
 marks unsynchronized method interfaces as `SYNC-REQUIRED`. The manuscript
 contains no proposed-method number or comparative performance conclusion.
 Current single-person development artifacts are ineligible for its tables.
+Figures 1 and 2 are full-canvas PDF exports of the two committed one-slide
+PowerPoint sources; the former custom framework graphic is retired from the
+active manuscript. Their captions keep all unimplemented mechanisms
+proposal-level. All four display-equation groups contain no punctuation, and
+the 16 cited references are real, metadata-checked, and used in the text.
 
-The paper is single-anonymous rather than author-blind. Tracked source shows
-`AUTHOR ROSTER PENDING`; names, affiliations, and emails remain in the ignored
-`private/author_metadata.tex`. The submission validator must reject an
-incomplete roster or order.
+The paper is single-anonymous rather than author-blind. The tracked draft shows
+the explicitly approved Weiping Yan, University of Minnesota Twin Cities, and
+`yan00944@umn.edu` fields from `author_public.tex`. Unconfirmed collaborator
+details remain in the ignored `private/author_metadata.tex`; the submission
+validator still rejects an incomplete roster, order, or attestation set.
 
 ## Build modes
 

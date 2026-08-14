@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Redacted, PDF-bound anonymity scan for submission sources and binaries."""
+"""Redacted, PDF-bound single-anonymous identity and privacy scan."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ TEXT_SUFFIXES = {
 }
 EMAIL = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.I)
 SOURCE_AUTHOR_FILES = {
-    "paper/main.tex", "paper/submission_wrapper.tex",
+    "paper/main.tex", "paper/author_public.tex", "paper/submission_wrapper.tex",
 }
 
 
@@ -84,6 +84,19 @@ def infer_pdf(root: Path, pdf_text: Path) -> Path:
     return root / "paper/main.pdf"
 
 
+def approved_public_values(root: Path) -> list[str]:
+    path = root / "paper/author_public.tex"
+    if not path.is_file():
+        return []
+    text = path.read_text(encoding="utf-8", errors="strict")
+    values = []
+    for name in ("RACKnownAuthorNames", "RACKnownAuthorAffiliations", "RACKnownAuthorEmails"):
+        match = re.search(r"\\def\\" + name + r"\{([^{}]+)\}", text)
+        if match:
+            values.append(match.group(1).strip())
+    return values
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, required=True)
@@ -98,10 +111,19 @@ def main() -> int:
     pdf = args.pdf.resolve() if args.pdf else infer_pdf(root, pdf_text).resolve()
     if root == secret_file or root in secret_file.parents:
         raise SystemExit("Secret list must remain outside the repository")
+    approved = approved_public_values(root)
+    approved_folded = {value.casefold() for value in approved}
+    approved_emails = {
+        value.casefold()
+        for value in approved
+        if EMAIL.fullmatch(value.strip())
+    }
     secrets = [
         line.strip().casefold()
         for line in secret_file.read_text(encoding="utf-8").splitlines()
-        if line.strip() and not line.lstrip().startswith("#")
+        if line.strip()
+        and not line.lstrip().startswith("#")
+        and line.strip().casefold() not in approved_folded
     ]
     if not secrets:
         raise SystemExit("Private secret list is empty")
@@ -119,14 +141,17 @@ def main() -> int:
         data = path.read_text(encoding="utf-8", errors="replace")
         folded = data.casefold()
         secret_hits = sum(folded.count(secret) for secret in secrets)
-        email_hits = len(EMAIL.findall(data))
+        email_hits = sum(
+            email.casefold() not in approved_emails
+            for email in EMAIL.findall(data)
+        )
         record = {"file": label, "sha256": sha256(path)}
         scope_digest_lines.append(f"{label}\t{record['sha256']}")
         if submission_facing(label):
             submission_hashes.append(record)
         else:
             advisory_email_hits += email_hits
-        if secret_hits or (submission_facing(label) and email_hits):
+        if submission_facing(label) and (secret_hits or email_hits):
             findings.append({
                 **record,
                 "surface": "text",
@@ -134,7 +159,15 @@ def main() -> int:
                 "email_pattern_hit_count": email_hits,
             })
 
-    freeze = json.loads((root / "paper/evidence/freeze_inventory.json").read_text(encoding="utf-8"))
+    freeze_path = root / "paper/evidence/freeze_inventory.json"
+    freeze = json.loads(freeze_path.read_text(encoding="utf-8")) if freeze_path.is_file() else {
+        "anonymity_release_globs": [
+            "paper/main.pdf",
+            "paper/main_round*.pdf",
+            "paper/figures/framework_source_full.pdf",
+            "paper/figures/introduction_source_full.pdf",
+        ]
+    }
     release_binaries: list[Path] = []
     for pattern in freeze.get("anonymity_release_globs", []):
         release_binaries.extend(path for path in root.glob(pattern) if path.is_file())
@@ -152,8 +185,8 @@ def main() -> int:
         secret_binary = private_hits_bytes(raw, secrets)
         secret_meta = sum(meta.casefold().count(secret) for secret in secrets)
         secret_content = sum(content_text.casefold().count(secret) for secret in secrets)
-        email_meta = len(EMAIL.findall(meta))
-        email_content = len(EMAIL.findall(content_text))
+        email_meta = sum(email.casefold() not in approved_emails for email in EMAIL.findall(meta))
+        email_content = sum(email.casefold() not in approved_emails for email in EMAIL.findall(content_text))
         record = {
             "file": label,
             "sha256": hashlib.sha256(raw).hexdigest(),
@@ -196,7 +229,7 @@ def main() -> int:
         extracted = supplied.decode("utf-8", errors="replace")
         folded = extracted.casefold()
         secret_hits = sum(folded.count(secret) for secret in secrets)
-        email_hits = len(EMAIL.findall(extracted))
+        email_hits = sum(email.casefold() not in approved_emails for email in EMAIL.findall(extracted))
         if secret_hits or email_hits:
             findings.append({
                 "file": "main.pdf:extracted-text",
@@ -206,23 +239,14 @@ def main() -> int:
                 "email_pattern_hit_count": email_hits,
             })
 
-    author_sources: list[tuple[str, str]] = []
-    for rel in SOURCE_AUTHOR_FILES:
-        path = root / rel
-        if path.is_file():
-            author_sources.append((rel, path.read_text(encoding="utf-8", errors="replace")))
-    declarations: list[tuple[str, str]] = []
-    for rel, text in author_sources:
-        declarations.extend((rel, body.strip()) for body in re.findall(r"\\author\{([^}]*)\}", text, re.DOTALL))
-    exact_source_author = len(declarations) == 1 and declarations[0][1] == "Anonymous CVPR submission"
-    visible_author_count = len(re.findall(r"Anonymous\s+CVPR\s+submission", extracted, re.I))
-    exact_pdf_author = visible_author_count == 1
-    if not exact_source_author or not exact_pdf_author:
+    public_source_complete = len(approved) == 3
+    public_pdf_visible = public_source_complete and all(value.casefold() in extracted.casefold() for value in approved)
+    if not public_source_complete or not public_pdf_visible:
         findings.append({
-            "file": "anonymous-author-declaration",
+            "file": "single-anonymous-author-declaration",
             "surface": "author_contract",
-            "source_declaration_count": len(declarations),
-            "pdf_visible_declaration_count": visible_author_count,
+            "approved_public_field_count": len(approved),
+            "approved_public_fields_visible": public_pdf_visible,
             "private_secret_hit_count": 0,
             "email_pattern_hit_count": 0,
         })
@@ -230,13 +254,12 @@ def main() -> int:
     report = {
         "schema_version": 2,
         "verdict": "PASS" if not findings else "FAIL",
-        "scope": "submission-facing worktree text, release-selected logs/binary metadata, and text re-extracted from the exact PDF; reachable Git history remains a separate pre-push gate",
+        "scope": "single-anonymous submission-facing worktree text, release-selected binary metadata, and text re-extracted from the exact PDF; approved public author fields are allowlisted and reachable Git history remains a separate pre-push gate",
         "secret_values_redacted": True,
-        "anonymous_author_contract": {
-            "source_declaration_count": len(declarations),
-            "source_exactly_anonymous": exact_source_author,
-            "pdf_visible_declaration_count": visible_author_count,
-            "pdf_exactly_one_anonymous_declaration": exact_pdf_author,
+        "single_anonymous_author_contract": {
+            "approved_public_field_count": len(approved),
+            "source_complete": public_source_complete,
+            "pdf_all_approved_fields_visible": public_pdf_visible,
         },
         "pdf_binding": pdf_binding,
         "scanned_file_count": len(scope_digest_lines),

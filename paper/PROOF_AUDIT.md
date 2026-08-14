@@ -1,20 +1,33 @@
-# Proof audit
+# Proof and formula audit — final user revision
 
-## Verdict
+**Verdict:** `NOT_APPLICABLE`
+**Reason:** the active manuscript contains no theorem, lemma, proposition,
+corollary, assumption, claim, proof, formal bound, or convergence result.
 
-`NOT_APPLICABLE` — reason code `NO_FORMAL_PROOF_OBLIGATION`.
+A fresh zero-context same-family auditor nevertheless inspected the complete
+active TeX graph and every page of `paper/main.pdf` at SHA-256
+`2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e`.
 
-The audited five-page manuscript has no theorem, lemma, proposition, corollary, proof, proof sketch, convergence result, optimality claim, formal bound, or other proof-bearing statement. The four numbered equations define a proposal-level signal path; implementation-sensitive semantics are explicitly marked `SYNC-REQUIRED`, and empirical claims are withheld. No proof-related blocker or unsupported formal guarantee was found.
+## Formula-style result
 
-Audited PDF SHA-256: `873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45` (required hash matched). Pages 1–5 were freshly rendered and visually reviewed; all equations were legible and unobscured.
+- Exactly four displayed equation groups are present.
+- Eq. (1) now writes the count vector as `[$\hat c_i$]_{i=1}^{N}`; the earlier
+  rendered ellipsis was removed.
+- All four equation bodies contain no grammatical punctuation.
+- All four equation endings contain no punctuation.
+- The source and PDF renderings agree; no equation is clipped or overlaps text.
 
-## Formula and guarantee findings
+## Nonblocking mathematical boundaries
 
-- **Equation (1):** a per-identity typing/dependency specification. It does not prove implementation invariants; the manuscript correctly leaves mask propagation, window geometry, and lifecycle behavior source-pending and test-gated.
-- **Equation (2):** no recovery, bias, consistency, or confidence-calibration guarantee is claimed. Its support, out-of-window indexing, units/domains, centering choice, and `Phi` remain open and are explicitly synchronization-gated. This is a non-blocking precision gap, not a hidden theorem.
-- **Equation (3):** the simplex constraint follows from a defined softmax, subject to a defined nonzero temperature. The sentence that soft weights "retain uncertainty" at tempo transitions is not guaranteed by softmax and should be read as a capability/hypothesis; the planned collapse controls make the empirical status clear.
-- **Equation (4):** reconstruct-before-decode structurally avoids independent per-window decoding, and the text expressly denies any one-peak guarantee. Because of the added `epsilon`, the displayed overlap-add is not an exact constant-preserving/perfect-reconstruction normalization; the paper does not claim that stronger property.
+The displays are proposal-level interfaces, not claimed theorems. The period
+support/domains and confidence map, router tensor semantics and temperature,
+and overlap-add coverage/decoder behavior remain explicitly `SYNC-REQUIRED`.
+The paper does not claim a unique reconstructed peak, exact perfect
+reconstruction, calibrated routing, or verified robustness.
 
-Other potentially guarantee-like statements are adequately scoped: parameter count, not runtime or memory, is independent of track count for the fixed shared expert bank; robustness and stationary-track behavior are hypotheses; auxiliary losses are only a synchronization contract; and the planned time-warp diagnostic remains artifact- and protocol-gated.
+Submission readiness remains blocked by implementation and result evidence;
+that scientific blocker is separate from formal proof applicability.
 
-The detailed reviewer trace is at `paper/.aris/traces/proof-audit-icassp/final/reviewer.md`. Review independence is `same-family`, so acceptance status is `provisional`.
+The final rebuild changes only non-formula experiment-status wording. The
+method source is byte-identical, the punctuation validator still passes all four
+display groups, and all five final pages were re-rendered and visually checked.

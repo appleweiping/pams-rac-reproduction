@@ -1,91 +1,80 @@
 {
-  "schema_version": "1.0",
-  "generated_at": "2026-08-14T22:25:48+08:00",
-  "figure_id": "fig:icassp-framework",
+  "schema_version": "2.0",
+  "generated_at": "2026-08-15T00:08:40+08:00",
   "venue_target": "ICASSP 2027 regular paper",
-  "role": "compact two-column method specification",
-  "empirical": false,
-  "data_pending": true,
-  "implementation_status": "SYNC-REQUIRED",
-  "evidence_statement": "The figure is a proposed method contract, not implementation or result evidence.",
-  "active_include": {
-    "file": "latex_includes.tex",
-    "sha256": "e00f4b18d27c03dec0128416851b867974e9a5609b45bf416361e069607ff454",
-    "graphic": "icassp_framework.pdf"
-  },
-  "sources": [
+  "evidence_policy": "The committed PPTX files are editable visual references, not implementation or result evidence.",
+  "active_figures": [
     {
-      "file": "icassp_framework.drawio",
-      "kind": "editable draw.io XML",
-      "sha256": "9e02df117ced79066804549dd5c086b821b2b83832bf0f58a8d9c806b134ccbd"
+      "id": "fig:task-motivation",
+      "role": "task motivation and output distinction",
+      "empirical": false,
+      "source": {
+        "file": "recommend paper/Multi-Person-Tempo-Adaptive-Counting-Introduction-Rounded-TNR.pptx",
+        "sha256": "29c01239515b9e0a9870ba840de6c087b32a1d46c5687c13c9c88dfdb4383e17",
+        "slide": 1,
+        "editable": true,
+        "authority": "visual_reference_only"
+      },
+      "output": {
+        "file": "paper/figures/introduction_source_full.pdf",
+        "sha256": "216aabb2af9e022e487fbfe5022635d98c998f32a5e7e043289daa8d04ae0cd3",
+        "page_size_pt": [720, 405],
+        "full_canvas": true,
+        "cropped": false,
+        "fonts_embedded": true
+      },
+      "caption_contract": [
+        "reproduced in full",
+        "naive scene-level adaptation",
+        "schematic",
+        "not measurements"
+      ],
+      "media_provenance": "SYNC-REQUIRED: confirm the origin and publication permission of the embedded people montage before submission"
     },
     {
-      "file": "render_icassp_framework.py",
-      "kind": "deterministic fallback renderer",
-      "sha256": "26ecfe2093f13956edd624b5baf22b37b05b96a41cb696f4bfb07de44440e83b"
+      "id": "fig:framework",
+      "role": "conceptual method overview",
+      "empirical": false,
+      "source": {
+        "file": "recommend paper/Multi-Person-Tempo-Adaptive-Counting-Framework-Rounded-TNR.pptx",
+        "sha256": "dfa86571aa8348eda8fa22a456d49e67179e4effd95b1b3b46b3a3dce69b4593",
+        "slide": 1,
+        "editable": true,
+        "authority": "visual_reference_only"
+      },
+      "output": {
+        "file": "paper/figures/framework_source_full.pdf",
+        "sha256": "920c47ea13d050c8a2265467d9232db23872022b9ba27204bc98d624f403e7fe",
+        "page_size_pt": [720, 405],
+        "full_canvas": true,
+        "cropped": false,
+        "fonts_embedded": true
+      },
+      "caption_contract": [
+        "reproduced in full",
+        "shared learned parameters",
+        "SYNC-REQUIRED",
+        "PAMS-TCC",
+        "not implementation or result evidence"
+      ],
+      "scientific_reconciliation": "M_i denotes a per-identity instance with shared learned parameters and separate state; candidate routing and continuity objectives remain source-unbound",
+      "media_provenance": "SYNC-REQUIRED: confirm the origin and publication permission of the embedded people montage before submission"
     }
   ],
-  "outputs": [
-    {
-      "file": "icassp_framework.svg",
-      "format": "SVG",
-      "vector": true,
-      "text_as_text": true,
-      "sha256": "af769b929870c6050c643684aafadca7082f79f3117728046852d65ed31240a2"
-    },
-    {
-      "file": "icassp_framework.pdf",
-      "format": "PDF",
-      "vector": true,
-      "fonts_embedded": true,
-      "sha256": "3afa9d1261e3a54b25c8da708dd7c4e036587d6d01d0d60fc704edcd2fd8eb81"
-    },
-    {
-      "file": "icassp_framework.png",
-      "format": "PNG",
-      "clean_preview": true,
-      "dimensions_px": [2000, 740],
-      "sha256": "29c2109915278da12ce13d859b0d53685934a00e9ebb9b68b0ab269bf6a0400d"
-    }
-  ],
-  "render": {
-    "drawio_desktop_cli": "unavailable",
-    "fallback_reason": "No drawio, draw.io, or standard Windows draw.io executable was installed.",
-    "svg_pdf_backend": "ReportLab 4.4.9 plus deterministic SVG writer",
-    "png_backend": "Poppler pdftoppm 26.05.0",
-    "embedded_xml_png": {
-      "produced": false,
-      "reason": "Optional artifact omitted because the draw.io CLI was unavailable; the editable .drawio source is present."
-    }
+  "export": {
+    "backend": "Microsoft PowerPoint for Microsoft 365 SaveAs PDF",
+    "source_slides": 2,
+    "output_pages": 2,
+    "vector_text_and_shapes": true,
+    "intentional_raster_subassets": "one embedded people montage per slide",
+    "visual_inspection": "PASS"
   },
-  "qa": {
-    "drawio_validator": {
-      "errors": 0,
-      "warnings": 0,
-      "score": 0
-    },
-    "visual_inspection": "PASS",
-    "clipped_labels": 0,
-    "edge_shape_crossings": 0,
-    "quantitative_values": 0,
-    "minimum_label_source_units": 32,
-    "no_internal_title": true,
-    "colorblind_and_grayscale_cues": "Color is paired with solid/dashed/dotted borders, texture, and explicit labels.",
-    "pdf_fonts": [
-      "TimesNewRomanPS-BoldMT (embedded subset)",
-      "TimesNewRomanPSMT (embedded subset)"
-    ]
-  },
-  "retired_from_active_include": [
-    "framework.drawio",
-    "framework.svg",
-    "framework.pdf",
-    "framework.png",
-    "framework.drawio.png",
-    "task_comparison.drawio",
-    "task_comparison.svg",
-    "task_comparison.pdf",
-    "task_comparison.png",
-    "task_comparison.drawio.png"
+  "retired_from_active_manuscript": [
+    "paper/figures/icassp_framework.drawio",
+    "paper/figures/icassp_framework.svg",
+    "paper/figures/icassp_framework.pdf",
+    "paper/figures/icassp_framework.png",
+    "paper/figures/framework.*",
+    "paper/figures/task_comparison.*"
   ]
 }

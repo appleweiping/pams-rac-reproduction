@@ -47,3 +47,18 @@
 | 2026-08-14 23:32 | /paper-plan | PAPER_PLAN_20260814_233200.md | paper | Final ICASSP 4+1-page plan snapshot |
 | 2026-08-14 23:32 | /paper-writing | IMPLEMENTATION_SYNC_REPORT_ZH_20260814_233200.md | paper | Final Chinese implementation and delivery-status snapshot |
 | 2026-08-14 23:32 | /paper-plan | PAPER_ACCEPTANCE_CONTRACT_20260814_233200.md | contract | Final accepted contract snapshot after the metric-name amendment |
+| 2026-08-15 01:28 | /paper-write | paper/main.tex; paper/author_public.tex | paper | TempoRAC title and explicitly authorized Weiping Yan / UMN Twin Cities / email draft author block |
+| 2026-08-15 01:28 | /paper-figure | paper/figures/{introduction_source_full,framework_source_full}.pdf | figure | Complete uncropped one-slide PowerPoint canvases; visual-reference-only captions and source hashes |
+| 2026-08-15 01:28 | /paper-write | paper/sections/3_method.tex; paper/scripts/validate_formula_style.py | paper | Four punctuation-free display groups; Eq. (1) uses indexed count-vector notation |
+| 2026-08-15 01:28 | /paper-write | paper/references.bib | paper | Sixteen real, active, primary/official-source-verified references; no missing or unused key |
+| 2026-08-15 01:28 | /paper-compile | paper/main_round3.pdf; paper/main.pdf | paper | Final five-page pre-results revision, SHA-256 `29763440...2731e`; page 5 references only |
+| 2026-08-15 01:28 | /auto-paper-improvement-loop | paper/.aris/traces/paper-improvement/user-revision-round{1,2}/ | trace | Two fresh zero-context same-family reviews; pre-results PASS, submission evidence still blocked |
+| 2026-08-15 01:28 | /paper-writing | paper/evidence/results_manifest.schema.json | evidence | Bidirectional fail-closed table eligibility and complete frozen-evidence constraints |
+| 2026-08-15 01:30 | /citation-audit | paper/CITATION_AUDIT.{md,json} | audit | Final exact-hash 16-entry metadata/context PASS under same-family provisional ceiling |
+| 2026-08-15 01:30 | /proof-checker | paper/PROOF_AUDIT.{md,json} | audit | `NOT_APPLICABLE`; all four punctuation-free formula groups re-bound to final PDF |
+| 2026-08-15 01:30 | /paper-claim-audit | paper/PAPER_CLAIM_AUDIT.{md,json} | audit | `BLOCKED/data-pending`; 58 controlled result slots, zero enabled empirical outcomes |
+| 2026-08-15 01:30 | /kill-argument | paper/KILL_ARGUMENT.{md,json}; paper/.aris/traces/kill-argument-icassp/user-revision-final/ | audit | Final attack/defense: integrity fixes pass, scientific kill survives missing method/results |
+| 2026-08-15 01:30 | /paper-compile | paper/.aris/{build-qa,pdf-4plus1,author-metadata,figure-validation,formula-style,claim-scan}-user-revision*.json | validation | Draft QA PASS/provisional; submission controls remain fail-closed |
+| 2026-08-15 01:30 | Claude review overlay | paper/.aris/reviewer-health.json | audit | Live probe job `c723c415d212485c911bc066b674a673` returned no JSON; cross-family review remains BLOCKED |
+| 2026-08-15 01:30 | /paper-writing | `*_20260815_013000.md` canonical-document snapshots | paper | Byte-identical snapshots of narrative, claims matrices/results, plan, contract, and Chinese synchronization report |
+| 2026-08-15 01:39 | /paper-writing | paper/.aris/audit-verifier-report-{draft,submission}.json; readiness-user-revision-*.json; final-verifier.json | audit | Pinned ARIS draft exit 0/provisional; submission exit 1/blocked on intentional scientific and venue inputs |

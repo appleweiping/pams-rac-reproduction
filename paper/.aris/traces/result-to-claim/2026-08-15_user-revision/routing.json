@@ -1,0 +1,8 @@
+{
+  "route": "pivot",
+  "verdict": "FAIL",
+  "reason_code": "NO_MULTI_PERSON_REAL_GT_EVIDENCE",
+  "submission_licensed_claim_count": 0,
+  "paper_pdf_sha256": "2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
+  "result_schema_sha256": "9d5c07450cbda32be8223237cb2d764d896d0c9ec28e4c9f23ad7cad3d67e662"
+}

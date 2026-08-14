@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-14T20:35:49+08:00",
+  "generated_at": "2026-08-15T00:44:00+08:00",
   "backend": "claude-review",
   "overlay_installed": true,
   "cross_family_review_obtained": false,
@@ -18,6 +18,13 @@
       "tools": "default",
       "status": "failed",
       "error": "Claude CLI did not return JSON output"
+    },
+    {
+      "job_id": "c723c415d212485c911bc066b674a673",
+      "tools": "disabled",
+      "status": "failed",
+      "error": "Claude CLI did not return JSON output",
+      "scope": "user-requested final revision health re-probe"
     }
   ],
   "submission_ceiling": "provisional"

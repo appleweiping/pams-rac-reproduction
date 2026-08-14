@@ -1,0 +1,56 @@
+{
+  "blockers": [
+    "complete author roster, affiliations, and emails are not confirmed",
+    "private author and venue attestations are incomplete"
+  ],
+  "checks": [
+    {
+      "detail": "approved name, affiliation, and email are present",
+      "id": "approved_public_author_fields",
+      "status": "PASS"
+    },
+    {
+      "detail": "all required definitions are present",
+      "id": "required_private_definitions",
+      "status": "PASS"
+    },
+    {
+      "detail": "private metadata remains incomplete",
+      "id": "metadata_complete",
+      "status": "BLOCKED"
+    },
+    {
+      "detail": "attestations missing or incomplete",
+      "id": "author_attestations",
+      "status": "BLOCKED"
+    },
+    {
+      "detail": "all approved fields visible",
+      "id": "public_author_visible_in_draft",
+      "status": "PASS"
+    },
+    {
+      "detail": "leak_files=0",
+      "id": "unapproved_tracked_identity_absent",
+      "status": "PASS"
+    },
+    {
+      "detail": "leak_pdfs=0",
+      "id": "unapproved_pdf_identity_absent",
+      "status": "PASS"
+    }
+  ],
+  "gate": "author_metadata",
+  "identity_policy": {
+    "approved_public_fields_emitted": true,
+    "private_values_emitted": false,
+    "unapproved_draft_pdf_leak_count": 0,
+    "unapproved_draft_pdf_leak_paths": [],
+    "unapproved_tracked_leak_count": 0,
+    "unapproved_tracked_leak_paths": []
+  },
+  "mode": "draft",
+  "schema_version": "1.0",
+  "status": "PROVISIONAL",
+  "submission_ready": false
+}

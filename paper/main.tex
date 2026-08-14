@@ -9,23 +9,25 @@
 \usepackage{vendor/icassp2026/spconf}
 \input{preamble}
 \input{math_commands}
+\input{author_public}
+\input{figures/latex_includes}
 
-\title{Identity-Indexed Local Tempo Routing for Multi-Person Repetition Counting}
+\title{TempoRAC: Identity-Indexed Local Tempo Routing for Multi-Person Repetition Counting}
 
-% ICASSP uses single-anonymous review. Draft mode shows an explicit roster
-% placeholder. Submission mode receives ignored private metadata through
-% submission_wrapper.tex, after the external validator confirms completeness.
+% ICASSP uses single-anonymous review. The draft shows the author identity
+% explicitly approved by the user. Submission mode still receives the complete,
+% assented roster through ignored private metadata after external validation.
 \ifsubmission
   \ifdefined\RACAuthorNames
     \name{\RACAuthorNames}
     \address{\RACAuthorAffiliations\\\RACAuthorEmails}
   \else
-    \name{AUTHOR ROSTER PENDING}
-    \address{AFFILIATIONS PENDING}
+    \name{\RACKnownAuthorNames}
+    \address{\RACKnownAuthorAffiliations\\\RACKnownAuthorEmails}
   \fi
 \else
-  \name{AUTHOR ROSTER PENDING}
-  \address{Affiliations pending collaborator confirmation}
+  \name{\RACKnownAuthorNames}
+  \address{\RACKnownAuthorAffiliations\\\RACKnownAuthorEmails}
 \fi
 
 \begin{document}
@@ -44,6 +46,7 @@ temporal routing
 
 \input{sections/1_introduction}
 \input{sections/3_method}
+\input{sections/4_tables}
 \input{sections/4_experiments}
 \input{sections/5_conclusion}
 

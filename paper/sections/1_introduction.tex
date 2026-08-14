@@ -12,6 +12,17 @@ occlusion creates irregular missing intervals.
 The primary claim is conditional on supplied persistent identity tracks;
 predicted-track experiments separately measure departures from that assumption.
 
+\begin{figure*}[t]
+  \centering
+  \TaskMotivationGraphic
+  \caption{Task motivation reproduced in full from the project's editable
+  introduction deck. The drawing contrasts a mixed scene response with the
+  desired person-wise responses under asynchronous motion and changing pace.
+  Panel (b) is a naive scene-level adaptation rather than an attributed prior
+  method. All curves and counts are schematic and are not measurements.}
+  \label{fig:task-motivation}
+\end{figure*}
+
 Early work addressed live and real-world repetition counting
 \cite{levy2015live,runia2018realworld}; later temporal similarity and correlation
 models include RepNet and TransRAC
@@ -19,8 +30,8 @@ models include RepNet and TransRAC
 \cite{yao2025poserac}, while PAMS learns period-adaptive multi-scale consistency
 from pose sequences without count labels in its counting objective
 \cite{gao2026pams}. MultiCounter establishes multi-person counting in
-untrimmed video \cite{tang2024multicounter}; MultiCounter+ further addresses
-identity continuity and long-versus-short repetition regimes
+untrimmed video \cite{tang2024multicounter}; MultiCounter+ further models
+spatiotemporal consistency and long-versus-short repetition regimes
 \cite{tang2026multicounterplus}. These advances cover multi-person outputs,
 pose-driven counting, low-label objectives, and broad period adaptation. They
 do not, however, resolve the narrower signal problem considered here: routing
@@ -30,7 +41,7 @@ decoding. Recent counters also explore dynamic queries and decoupled
 spatiotemporal attention \cite{ma2026detrc,wang2026d2stx}; those architectural
 directions are complementary to the identity-local temporal scale selection
 studied here. Windowed spectral estimation, frequency analysis under irregular
-sampling, overlap-add reconstruction, and learned expert routing are established
+sampling, short-time transform reconstruction, and learned expert routing are established
 ideas \cite{welch1967fft,lomb1976unequal,griffin1984stft,shazeer2017moe}; no one
 of them is claimed as novel here. Our narrower, result-free hypothesis is that
 identity-local tempo routing plus reconstruct-before-decode is more robust to
@@ -51,15 +62,14 @@ trajectory. Mask-aware local estimation also exposes missing observations
 instead of conflating invalid frames with stationary motion. These distinctions
 drive both the reconstruction invariant and the planned diagnostic.
 
-Our signal path follows a processing order. A shared encoder represents overlapping
-masked windows. Local autocorrelation and Fourier evidence estimate period and
-confidence for each identity-window pair. A soft router mixes fast, medium,
-and slow shared response experts; normalized overlap-add then reconstructs one
-continuous response per identity, and one trajectory-level decoder processes it
-once. Figure~\ref{fig:framework} shows this specification and its perception
-boundary. The local worktree does not yet contain the multi-person
-implementation, so router, expert, reconstruction, and decoder details remain
-proposal-level interfaces rather than measured components.
+Our signal path follows a fixed order. A shared encoder represents overlapping
+masked windows; local autocorrelation and Fourier evidence estimate period and
+confidence; a soft router mixes fast, medium, and slow shared response experts;
+normalized overlap-add reconstructs one response per identity; and one
+trajectory-level decoder processes it once. Figure~\ref{fig:framework} shows
+the conceptual specification. The local worktree does not yet contain this
+multi-person implementation, so the router, experts, reconstruction, decoder,
+and auxiliary objectives remain synchronization-required interfaces.
 
 The pre-results manuscript makes three falsifiable contributions:
 \begin{itemize}

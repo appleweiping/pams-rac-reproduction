@@ -1,0 +1,152 @@
+{
+  "schema_version": "2.0",
+  "mode": "draft",
+  "verdict": "PASS",
+  "figure_hashes": {
+    "fig:task-motivation": {
+      "source": "29c01239515b9e0a9870ba840de6c087b32a1d46c5687c13c9c88dfdb4383e17",
+      "output": "216aabb2af9e022e487fbfe5022635d98c998f32a5e7e043289daa8d04ae0cd3"
+    },
+    "fig:framework": {
+      "source": "dfa86571aa8348eda8fa22a456d49e67179e4effd95b1b3b46b3a3dce69b4593",
+      "output": "920c47ea13d050c8a2265467d9232db23872022b9ba27204bc98d624f403e7fe"
+    }
+  },
+  "checks": [
+    {
+      "id": "manifest_parse",
+      "status": "PASS"
+    },
+    {
+      "id": "active_include_loaded",
+      "status": "PASS"
+    },
+    {
+      "id": "exactly_two_active_figures",
+      "status": "PASS",
+      "detail": 2
+    },
+    {
+      "id": "files_present:fig:task-motivation",
+      "status": "PASS"
+    },
+    {
+      "id": "source_hash:fig:task-motivation",
+      "status": "PASS",
+      "detail": "29c01239515b9e0a9870ba840de6c087b32a1d46c5687c13c9c88dfdb4383e17"
+    },
+    {
+      "id": "output_hash:fig:task-motivation",
+      "status": "PASS",
+      "detail": "216aabb2af9e022e487fbfe5022635d98c998f32a5e7e043289daa8d04ae0cd3"
+    },
+    {
+      "id": "single_source_slide:fig:task-motivation",
+      "status": "PASS"
+    },
+    {
+      "id": "single_output_page:fig:task-motivation",
+      "status": "PASS"
+    },
+    {
+      "id": "full_16x9_canvas:fig:task-motivation",
+      "status": "PASS",
+      "detail": [
+        720,
+        405
+      ]
+    },
+    {
+      "id": "fonts_embedded:fig:task-motivation",
+      "status": "PASS",
+      "detail": []
+    },
+    {
+      "id": "editable_source:fig:task-motivation",
+      "status": "PASS"
+    },
+    {
+      "id": "visual_reference_only:fig:task-motivation",
+      "status": "PASS"
+    },
+    {
+      "id": "included_graphic:fig:task-motivation",
+      "status": "PASS"
+    },
+    {
+      "id": "caption_contract:fig:task-motivation",
+      "status": "PASS",
+      "detail": []
+    },
+    {
+      "id": "media_provenance:fig:task-motivation",
+      "status": "PASS",
+      "detail": "SYNC-REQUIRED: confirm the origin and publication permission of the embedded people montage before submission"
+    },
+    {
+      "id": "files_present:fig:framework",
+      "status": "PASS"
+    },
+    {
+      "id": "source_hash:fig:framework",
+      "status": "PASS",
+      "detail": "dfa86571aa8348eda8fa22a456d49e67179e4effd95b1b3b46b3a3dce69b4593"
+    },
+    {
+      "id": "output_hash:fig:framework",
+      "status": "PASS",
+      "detail": "920c47ea13d050c8a2265467d9232db23872022b9ba27204bc98d624f403e7fe"
+    },
+    {
+      "id": "single_source_slide:fig:framework",
+      "status": "PASS"
+    },
+    {
+      "id": "single_output_page:fig:framework",
+      "status": "PASS"
+    },
+    {
+      "id": "full_16x9_canvas:fig:framework",
+      "status": "PASS",
+      "detail": [
+        720,
+        405
+      ]
+    },
+    {
+      "id": "fonts_embedded:fig:framework",
+      "status": "PASS",
+      "detail": []
+    },
+    {
+      "id": "editable_source:fig:framework",
+      "status": "PASS"
+    },
+    {
+      "id": "visual_reference_only:fig:framework",
+      "status": "PASS"
+    },
+    {
+      "id": "included_graphic:fig:framework",
+      "status": "PASS"
+    },
+    {
+      "id": "caption_contract:fig:framework",
+      "status": "PASS",
+      "detail": []
+    },
+    {
+      "id": "media_provenance:fig:framework",
+      "status": "PASS",
+      "detail": "SYNC-REQUIRED: confirm the origin and publication permission of the embedded people montage before submission"
+    },
+    {
+      "id": "visual_review_verdict",
+      "status": "PASS"
+    },
+    {
+      "id": "visual_review_figure_binding",
+      "status": "PASS"
+    }
+  ]
+}

@@ -51,8 +51,8 @@ AGENTS.md
 .aris/tools/
 tmp/
 
-# Single-anonymous ICASSP author metadata remains local until the full
-# collaborator list and exact order are confirmed.
+# Unconfirmed collaborator metadata remains local. The explicitly authorized
+# Weiping Yan identity is tracked in paper/author_public.tex.
 paper/private/
 
 # The paper package intentionally versions its compiled and vector PDFs.
@@ -68,6 +68,7 @@ paper/*.out
 paper/*.synctex.gz
 paper/compile.log
 paper/rendered/
+paper/.aris/render-user-final/
 
 # Editors and operating systems
 .idea/

@@ -4,45 +4,53 @@
   "reason_code": "data_pending",
   "summary": "The current PDF is an explicitly marked pre-results draft with no synchronized multi-person implementation, no frozen eligible MultiRep artifact, no raw result bindings, and no generated evidence file. All empirical result and protocol slots remain visibly pending. No unsupported performance claim is enabled.",
   "audited_input_hashes": {
-    "main.pdf": "sha256:873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
-    "main.tex": "sha256:a4fe29c47f200946c7d6f3522bd273f5895aabda2d7a959fdbf16397fe1cbe70",
+    "main.pdf": "sha256:2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
+    "main.tex": "sha256:34e470772f06c281b70a8f60f82bb010e9a027cb289ebd9389005be703868175",
     "preamble.tex": "sha256:763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2",
-    "math_commands.tex": "sha256:e6dabb7ce789e0d78026e6bda287fe17faedb6d20c0df9b4f603cb3b6c123bee",
+    "math_commands.tex": "sha256:2f148f00d2542e89b78f18ea726f40e25afeef08c51357bcb642e95b9477a255",
+    "author_public.tex": "sha256:044998350a801da4758d022d231508d103b5769f5884ae3de5b626591615ac5d",
+    "figures/latex_includes.tex": "sha256:24f27f9df91002008648de01ea7bd0af5a216e9a97262ad0a05a077f8dd78421",
     "sections/0_abstract.tex": "sha256:fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef",
-    "sections/1_introduction.tex": "sha256:6823651162f59e5f5263949f2d308f594b667cb3cba0044433c39031ae04db9d",
-    "sections/3_method.tex": "sha256:7e92c00eb4a7956b059536fd47240cefbea960aee61d4f3fdef1a7e24930c50d",
-    "sections/4_experiments.tex": "sha256:6052c816e94f7d7f50b560d397495a37863b05d240ed5e418e4b6ec4d3aa131b",
+    "sections/1_introduction.tex": "sha256:7ce1329707dae209f745c200492253356e975448d9b32053b9f97d48bdcf3b3e",
+    "sections/3_method.tex": "sha256:c4ab8008065bb8781e402921878f5b99c7fb841acdef24c6129b7d93c988dc84",
+    "sections/4_tables.tex": "sha256:9982f60311a96265c8140b7c2614349bb2ae4f407b8666756b0f2c91ab89513a",
+    "sections/4_experiments.tex": "sha256:cd6508a60e3e9cac767ccfcec53e019a52525f58cebc2b1559819139abe0ecb5",
     "sections/5_conclusion.tex": "sha256:e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c",
-    "figures/icassp_framework.pdf": "sha256:3afa9d1261e3a54b25c8da708dd7c4e036587d6d01d0d60fc704edcd2fd8eb81",
-    "references.bib": "sha256:322a5d16b0078e8b3436608d4c6158b67c5c8922b0dcae94537ea456c9f6f646",
+    "figures/introduction_source_full.pdf": "sha256:216aabb2af9e022e487fbfe5022635d98c998f32a5e7e043289daa8d04ae0cd3",
+    "figures/framework_source_full.pdf": "sha256:920c47ea13d050c8a2265467d9232db23872022b9ba27204bc98d624f403e7fe",
+    "figures/figure_manifest.json": "sha256:26150301e048ab46d702de213966321661cd438982b187afc7bd15abcdb569bc",
+    "references.bib": "sha256:c84cb6df17ac4133f7c3115e1aa4dcad82e9e850f1ebdc5e6979cbc1cfd917b3",
     "evidence/results_manifest.json": "sha256:4df513a3f4427950d23267965192253446e6ee2b6968907855e0bae1a6a53159",
-    "evidence/method_manifest.yaml": "sha256:07823bb5bb11509e79556f87c9bbb19c9ce4f0ff1fdea1b5cb832e89ae8cd289",
-    "evidence/claim_evidence.csv": "sha256:cf693693b1f52729a677e611071416199cd53bb12d8d5575d8c99d7b46930156",
+    "evidence/results_manifest.schema.json": "sha256:9d5c07450cbda32be8223237cb2d764d896d0c9ec28e4c9f23ad7cad3d67e662",
+    "evidence/method_manifest.yaml": "sha256:514d25ceb51d97930f02a14c70d96962ff7acdcb28c712fa80c1f03a9ea1d579",
+    "evidence/claim_evidence.csv": "sha256:b321e8320102b046b5ac35d720d5144862c4028855a726c45af564a01bead08a",
     "generated/README.md": "sha256:2b1948df3bd63a9a3e46c1e19fc01d3fd584c104f5f78518816bc9da3a399805",
-    "../CLAIMS_FROM_RESULTS.md": "sha256:6b42c58bb309de4e18d822083664678ceb2d413b9b78ae492b030712fb379eae",
-    "../RESULT_TO_CLAIM.json": "sha256:2e5b533e8fb4738a0d610d34d037ede9be420e2e982496f5ef90835a49d085da"
+    "../CLAIMS_FROM_RESULTS.md": "sha256:a9480a6208917e03890c67d7fd7bba2841fadf27ca3f0fba4d948f6c5cf9d1ef",
+    "../RESULT_TO_CLAIM.json": "sha256:5fa04e6ac29905a20ad870060b9e87b16ef9096e1c0b1bc88e7eaca45fe4f6f4"
   },
   "active_tex_dependency_closure": [
     "paper/main.tex",
     "paper/preamble.tex",
     "paper/math_commands.tex",
+    "paper/author_public.tex",
+    "paper/figures/latex_includes.tex",
     "paper/sections/0_abstract.tex",
     "paper/sections/1_introduction.tex",
     "paper/sections/3_method.tex",
+    "paper/sections/4_tables.tex",
     "paper/sections/4_experiments.tex",
     "paper/sections/5_conclusion.tex"
   ],
   "inactive_tex_excluded_from_claim_scope": [
     "paper/submission_wrapper.tex",
-    "paper/appendix/a_experiment_contract.tex",
-    "paper/figures/latex_includes.tex"
+    "paper/appendix/a_experiment_contract.tex"
   ],
   "numeric_claim_count": 2,
   "unbound_numeric_claim_count": 0,
   "numeric_claim_scope": "Concrete numbers occupying result-table cells. Formula constants, dimensions, equation and citation numbering, metric names, planned protocol constants, layout values, and bibliography metadata are excluded.",
   "numeric_claims": [
     {
-      "location": "paper/sections/4_experiments.tex:123",
+      "location": "paper/sections/4_tables.tex:39",
       "value": 0,
       "metric": "delta_MAE",
       "kind": "definitional_reference_delta",
@@ -50,7 +58,7 @@
       "empirical_performance_claim": false
     },
     {
-      "location": "paper/sections/4_experiments.tex:123",
+      "location": "paper/sections/4_tables.tex:39",
       "value": 0,
       "metric": "delta_OBO",
       "kind": "definitional_reference_delta",
@@ -191,7 +199,7 @@
       "id": "PC11",
       "locations": ["introduction", "method", "experiments"],
       "class": "citation_dependent_background",
-      "adjudication": "citation_audit_pending",
+      "adjudication": "citation_audit_pass_same_family_provisional",
       "submission_licensed": false
     }
   ],
@@ -202,10 +210,14 @@
     "pending_result_fallbacks_visible": true,
     "sync_required_markers_visible": true,
     "data_pending_diagnostic_visible": true,
-    "no_results_disclosure_visible": true
+    "no_results_disclosure_visible": true,
+    "approved_public_author_visible": true,
+    "full_source_figures_visible": true,
+    "page_five_references_only": true,
+    "equation_punctuation_free": true
   },
-  "trace_path": ".aris/traces/paper-claim-audit-icassp/final/",
-  "agent_id": "/root/icassp_paper_claim_audit",
+  "trace_path": ".aris/traces/paper-claim-audit-icassp/user-revision-final/",
+  "agent_id": "/root/user_revision_claim_audit",
   "reviewer_model": "gpt-5.6-sol",
   "reviewer_reasoning": "xhigh",
   "executor_model": "gpt-5.6-sol",
@@ -218,5 +230,5 @@
   "same_family": true,
   "provisional": true,
   "same_family_provisional": "same-family/provisional",
-  "generated_at": "2026-08-14T22:43:34+08:00"
+  "generated_at": "2026-08-15T01:25:00+08:00"
 }

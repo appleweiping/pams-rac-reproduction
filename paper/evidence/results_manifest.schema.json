@@ -159,6 +159,19 @@
   },
   "allOf": [
     {
+      "if": {"properties": {"table_eligible": {"const": true}}, "required": ["table_eligible"]},
+      "then": {
+        "properties": {
+          "status": {"const": "frozen-eligible"},
+          "frozen": {"const": true}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"enum": ["data-pending", "excluded"]}}, "required": ["status"]},
+      "then": {"properties": {"table_eligible": {"const": false}}}
+    },
+    {
       "if": {"properties": {"status": {"const": "frozen-eligible"}}, "required": ["status"]},
       "then": {
         "properties": {
@@ -167,8 +180,63 @@
           "frozen": {"const": true},
           "table_eligible": {"const": true},
           "method_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "dataset": {
+            "properties": {
+              "release": {"type": "string", "minLength": 1},
+              "split": {"type": "string", "minLength": 1},
+              "checksum": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+            }
+          },
+          "protocol": {
+            "properties": {
+              "track_modes": {"minItems": 1},
+              "common_track_frontend": {"type": "string", "minLength": 1},
+              "evaluation_script": {"type": "string", "minLength": 1},
+              "evaluation_type": {"const": "real_gt"}
+            }
+          },
           "seeds": {"minItems": 3},
+          "statistics": {
+            "properties": {
+              "mean": {"const": true},
+              "sample_standard_deviation": {"const": true},
+              "paired_video_cluster_bootstrap_95ci": {"const": true},
+              "bootstrap_unit": {"type": "string", "minLength": 1}
+            }
+          },
+          "hardware": {"type": "object", "minProperties": 1},
+          "configuration_files": {"minItems": 1},
+          "run_logs": {"minItems": 1},
+          "prediction_artifacts": {"minItems": 1},
           "source_artifacts": {"minItems": 1},
+          "metrics": {"minProperties": 1},
+          "audits": {
+            "properties": {
+              "experiment_audit": {"properties": {"status": {"const": "PASS"}, "path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}},
+              "result_to_claim": {"properties": {"status": {"const": "PASS"}, "path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}},
+              "paper_claim_audit": {"properties": {"status": {"const": "PASS"}, "path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}}
+            }
+          },
+          "paper_bindings": {
+            "properties": {
+              "protocol_fields": {"minItems": 1},
+              "results": {"minItems": 1},
+              "claims": {"minItems": 1},
+              "abstract_result": {"$ref": "#/$defs/sourceLocator"}
+            }
+          },
+          "eligibility": {
+            "properties": {
+              "new_synchronized_multirep_family": {"const": true},
+              "method_commit_bound": {"const": true},
+              "dataset_release_bound": {"const": true},
+              "protocol_bound": {"const": true},
+              "three_or_more_seeds": {"const": true},
+              "uncertainty_complete": {"const": true},
+              "raw_artifacts_hash_bound": {"const": true},
+              "audits_pass": {"const": true}
+            }
+          },
           "blocking_reasons": {"maxItems": 0}
         }
       }

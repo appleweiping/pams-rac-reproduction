@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "document_type": "icassp_method_manifest",
-  "paper_title": "Identity-Indexed Local Tempo Routing for Multi-Person Repetition Counting",
+  "paper_title": "TempoRAC: Identity-Indexed Local Tempo Routing for Multi-Person Repetition Counting",
   "status": "SYNC-REQUIRED",
   "submission_eligible": false,
   "evidence_policy": {
@@ -10,6 +10,22 @@
     "current_checkout_is_proposed_method_evidence": false,
     "unbound_components_must_remain_visible_in_draft": true
   },
+  "visual_reference_figures": [
+    {
+      "source": "recommend paper/Multi-Person-Tempo-Adaptive-Counting-Introduction-Rounded-TNR.pptx",
+      "sha256": "sha256:29c01239515b9e0a9870ba840de6c087b32a1d46c5687c13c9c88dfdb4383e17",
+      "authority": "visual_reference_only",
+      "implementation_binding": false
+    },
+    {
+      "source": "recommend paper/Multi-Person-Tempo-Adaptive-Counting-Framework-Rounded-TNR.pptx",
+      "sha256": "sha256:dfa86571aa8348eda8fa22a456d49e67179e4effd95b1b3b46b3a3dce69b4593",
+      "authority": "visual_reference_only",
+      "implementation_binding": false,
+      "notation_reconciliation": "M_i is interpreted as a shared-parameter identity-indexed instance with separate state",
+      "candidate_training_terms": "SYNC-REQUIRED"
+    }
+  ],
   "tracked_implementation_truth": {
     "checkout_commit": "73cbc4bb9b581f24fbc90f2fe7421bc11e7c7454",
     "classification": "single_person_dominant_pose_counter",

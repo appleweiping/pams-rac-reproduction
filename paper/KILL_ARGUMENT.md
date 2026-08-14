@@ -1,23 +1,47 @@
-# Kill-Argument Audit — ICASSP 2027 Pre-results Draft
+---
+audit_skill: kill-argument
+verdict: FAIL
+reason_code: CORE_METHOD_AND_EVIDENCE_UNAVAILABLE
+review_independence: fresh_zero_context_same_family
+acceptance_status: provisional
+agent_id: /root/user_revision_kill_defense
+generated_at: 2026-08-15T01:29:00+08:00
+---
 
-**Verdict: FAIL — strongest kill argument survives (same-family / provisional).**
+# Final kill-argument adjudication
 
-The attack and defense were performed by separate fresh zero-context `gpt-5.6-sol` agents at `ultra` reasoning against the same frozen five-page PDF and exact source/evidence hashes. Both reviewers inspected all five PDF pages. The attack recommends strong rejection; the defense concludes that the artifact is defensible and useful as an honest pre-results package, but agrees that it is not scientifically acceptable for submission now.
+**KILL SURVIVES for a scientific submission today.** The exact audited PDF is
+`2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e`.
+The package is defensible and useful as a transparent pre-results scaffold, but
+it must not be represented as a validated method paper.
 
-## Fatal findings
+## Decisive findings
 
-| ID | Defense ruling | Reason |
-|---|---|---|
-| P1.1 | `still_unresolved` | The proposed multi-person router/expert/reconstruction method has no frozen implementation commit, source anchors, or tests. |
-| P1.2 | `still_unresolved` | No eligible MultiRep result, prediction, protocol binding, seed set, or uncertainty artifact exists. |
-| P1.3 | `still_unresolved` | The four-equation narrative deliberately leaves decision-bearing estimator, router, expert, loss, fallback, and decoder interfaces synchronized only by future collaborator evidence. |
+- **P1 — fatal:** no empirical outcome or eligible MultiRep artifact exists
+- **P2 — fatal:** no synchronized multi-person implementation or collaborator
+  commit exists
+- **P3 — fatal reproducibility objection:** important tensor, lifecycle,
+  estimator, router/expert, decoder, loss, and gradient interfaces remain
+  source-unbound
+- **P4 — high/potentially fatal:** the narrow combination is articulated, but
+  its distinction and consequence versus PAMS, MultiCounter, and
+  MultiCounter+ are not established by a frozen method and matched results
+- **P5 — high for predicted tracks:** fragmentation, re-entry, switches,
+  retirement, and tracklet-to-person/count reconciliation remain undefined
+- **P6 — major:** declarations, embedded-media permission, complete authorship,
+  and the official ICASSP 2027 kit remain pending
 
-The defense ruled 2 of 17 findings answered, 10 partially answered, and 5 still unresolved. P3.2 also remains unresolved because the planned mechanism ablations cannot identify a mechanism until the underlying executable system and controls exist.
+## Findings resolved during the defense
 
-## What passes
+The unsupported `preregistered` wording was replaced by prospective/predeclared
+language. The results schema now fails closed in both directions: pending or
+excluded manifests cannot be table-eligible, and frozen-eligible manifests must
+bind complete data, protocol, statistics, artifacts, metrics, passing audits,
+paper values, and eligibility flags. The Eq. (1) punctuation objection was an
+inverted label; the user required punctuation-free displays and all four groups
+pass that rule.
 
-- Evidence integrity: the draft visibly withholds results and never fabricates a method or number.
-- Visual integrity: all five pages are legible; technical content ends on page 4 and page 5 contains references only.
-- Scope discipline: the paper avoids prohibited novelty/SOTA claims and marks source-sensitive interfaces `SYNC-REQUIRED`.
+These fixes strengthen integrity but do not create scientific evidence. P1 and
+P2 independently sustain rejection, with P3--P5 reinforcing them.
 
-The full attack, independent defense, prompts, metadata, and hashes are archived under `.aris/traces/kill-argument-icassp/final/`. This audit is intentionally blocking and applies only to the current frozen pre-results artifact; it must be rerun after synchronized code and eligible results arrive.
+`KILL_DEFENSE_VERDICT: KILL_SURVIVES`
