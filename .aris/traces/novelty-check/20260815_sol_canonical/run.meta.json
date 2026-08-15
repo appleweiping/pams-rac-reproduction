@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_sol_canonical",
+  "skill": "novelty-check",
+  "purpose": "canonical ARIS novelty audit for three selected MRAC candidates",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_family": "openai",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "completed_at": "2026-08-15T12:48:10+08:00",
+  "input_hashes": [
+    {
+      "path": "RESEARCH_BRIEF.md",
+      "sha256": "f5b9d75fc2415a03ba250279edf1e47af978341b7b9d7eef892f2d43a56b7c37"
+    },
+    {
+      "path": "idea-stage/IDEA_REPORT.md",
+      "sha256": "f7a03eb51f6ac429131fc0bde8f0d3bb6a684703a233bee3181a0836708113c3"
+    },
+    {
+      "path": "idea-stage/CANDIDATE_UNION.json",
+      "sha256": "4f3a85cc8773e63e0156acdd82befc9bad252f51980804ee418c49218132f22f"
+    },
+    {
+      "path": "EXPERIMENT_AUDIT.md",
+      "sha256": "2ac7fe4a1a8208287394a2ac4c1771aa0faf30e14319bef8144e509f876f0820"
+    },
+    {
+      "path": "SERVER_METHOD_INVENTORY.md",
+      "sha256": "0cda0704f64434296049d18c35e97fd267a0a7168300152e97b142d6ecc363a6"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": ".aris/traces/novelty-check/20260815_sol_canonical/001-novelty-jury.request.json",
+      "sha256": "433b24c5e30bc556fdce96ec6a4fc80dc8643f9bdaf97de3d9f6c731b582d6aa",
+      "format": "json",
+      "validated": true
+    },
+    {
+      "path": ".aris/traces/novelty-check/20260815_sol_canonical/001-novelty-jury.response.md",
+      "sha256": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5",
+      "format": "json-in-md",
+      "validated": true
+    },
+    {
+      "path": "idea-stage/NOVELTY_CHECK.json",
+      "sha256": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5",
+      "format": "json",
+      "validated": true
+    }
+  ],
+  "validation": {
+    "canonical_json_valid": true,
+    "request_json_valid": true,
+    "response_json_valid": true,
+    "events_jsonl_valid": true,
+    "canonical_event_count": 1,
+    "events_jsonl_sha256_after_append": "f5e071b9c4a043e71c2adac59230a8432f01cd6e4c738cbb9ffeebb28cd3a2bd",
+    "response_byte_identical_to_canonical": true,
+    "input_hashes_recorded": true,
+    "input_hashes_verified": true,
+    "artifact_hashes_verified": true,
+    "primary_source_only_policy_applied": true,
+    "twcrac_full_text_unresolved_caveat_recorded": true,
+    "missing_results_not_used_as_novelty_evidence": true,
+    "v46_v62_v63_excluded_as_novelty_evidence": true
+  },
+  "overall_verdict": "PROVISIONAL_ADVANCE_ONE_KILL_ORIENTED_PILOT_NO_NOVELTY_CLEARANCE",
+  "status": "complete"
+}

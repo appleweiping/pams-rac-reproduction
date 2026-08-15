@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_round1_sol",
+  "step_id": "001-review",
+  "task": "Round 1 canonical ARIS research-refine review of the full WARP-PHASE proposal",
+  "requested_at": "2026-08-15T13:28:48.6400160+08:00",
+  "reviewer_requirements": {
+    "model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "continuity_required": true,
+    "verdict_enum": [
+      "READY",
+      "REVISE",
+      "RETHINK"
+    ],
+    "ready_rule": "overall >= 9, no drift, focused contribution, and no blocking issue"
+  },
+  "rubric": [
+    {"dimension": "Problem Fidelity", "weight": 0.15},
+    {"dimension": "Method Specificity", "weight": 0.25},
+    {"dimension": "Contribution Quality", "weight": 0.25},
+    {"dimension": "Frontier Leverage", "weight": 0.15},
+    {"dimension": "Feasibility", "weight": 0.10},
+    {"dimension": "Validation Focus", "weight": 0.05},
+    {"dimension": "Venue Readiness", "weight": 0.05}
+  ],
+  "required_review_focus": [
+    "discrete warp mathematics",
+    "phase identifiability",
+    "partial-cache protocol",
+    "comparator budget",
+    "implementability",
+    "executable 5 percent AND confidence-interval endpoint",
+    "no forced frontier component",
+    "no invented results"
+  ],
+  "raw_inputs": [
+    {"path": "refine-logs/round-0-initial-proposal.md", "sha256": "b6de5c2fcc5f6999e774c630a501a8136850fb7d61adae974b11561c9bce6d51"},
+    {"path": "refine-logs/REFINE_STATE.json", "sha256": "0b56ccc08c067f24c23f5a478e2fc878928bc4c4733bcf6cbffff763cf38cf99"},
+    {"path": "idea-stage/NOVELTY_CHECK.json", "sha256": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5"},
+    {"path": "idea-stage/RESEARCH_REVIEW.json", "sha256": "fbc2462303c3ddcb4b23ef4cbf4f81b01a863ff433c6a58dec3f8cd99790caa3"},
+    {"path": "PILOT_DATA_SCHEMA_AUDIT.md", "sha256": "7058981e8eb37622c09f5808a4b1329bc7cd133f474101723f15e5e4273eab25"},
+    {"path": "EXPERIMENT_AUDIT.md", "sha256": "2ac7fe4a1a8208287394a2ac4c1771aa0faf30e14319bef8144e509f876f0820"},
+    {"path": "SERVER_METHOD_INVENTORY.md", "sha256": "0cda0704f64434296049d18c35e97fd267a0a7168300152e97b142d6ecc363a6"}
+  ],
+  "required_outputs": [
+    "seven 1-10 scores and weighted composite",
+    "CALIBRATION anchored or none",
+    "mandatory GAP paragraph",
+    "concrete weakness, method-level fix, and priority for every dimension below 7",
+    "simplification opportunities",
+    "modernization opportunities",
+    "drift warning",
+    "READY, REVISE, or RETHINK verdict",
+    "input SHA-256 ledger",
+    "raw review byte-identical to canonical round review"
+  ]
+}

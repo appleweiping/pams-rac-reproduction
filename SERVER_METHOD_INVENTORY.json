@@ -1,0 +1,28 @@
+{
+  "date": "2026-08-15",
+  "mode": "read_only_bounded_inventory",
+  "verdict": "NO_CANONICAL_IMPLEMENTATION",
+  "pams_distinct_heads": 61,
+  "head_counts": {
+    "fast_medium_slow_consensus": 61,
+    "single_expert_readout": 15,
+    "pseudotrack_continuity": 13,
+    "windowed_pams_tcc": 1,
+    "identity_indexed_router": 0,
+    "routing_consistency": 0,
+    "normalized_overlap_add": 0,
+    "complete_requested_stack": 0
+  },
+  "canonical_branch_found": false,
+  "sealed_reports_opened": false,
+  "eligible_result_bundle_found": false,
+  "decision": "implement_missing_integration_on_clean_branch",
+  "audited_primitives": [
+    {"ref": "ee200", "path": "src/pams/consensus.py", "sha256": "55491a9a7cc786f6df7611de9f6d356efa5ce5eb6477f6f6782fff811bfbc3b5"},
+    {"ref": "ee200", "path": "src/pams/single_expert_readout.py", "sha256": "9fde3d70522a3dc7f0e0b0fdd5dcdcbf1146886ea83de8ed022af6f90e9d97af"},
+    {"ref": "e101", "path": "src/pams/losses.py", "sha256": "8f558321720f87e66ed14fba657a3f8e938b0c0954e63cc002d873eb87e80972"},
+    {"ref": "b567", "path": "src/pams/keypoint_single_source.py", "sha256": "0abaded5127de09a70e131f5b771a2a67f8890d1984c5ea23d63bddc5098e20a"},
+    {"ref": "ee200", "path": "src/pams/coherent_ridge_selected_identity_bridge.py", "sha256": "34b2f4487fcda6c8363e8ff116975f13d307b769bee3f81f1eb155c093c969a2"},
+    {"ref": "Count-main", "path": "mocount/window_fusion.py", "sha256": "cf043c5ccf7080662056580de845217bcd48882dde085854543313c7688a56a5"}
+  ]
+}

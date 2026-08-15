@@ -1,0 +1,12 @@
+{
+  "call_number": 1,
+  "purpose": "server-v46-v63-integrity-audit",
+  "timestamp": "2026-08-15T11:45:00+08:00",
+  "agent_id": "/root/experiment_audit_v46_v63",
+  "model": "gpt-5.6-sol",
+  "reviewer_family": "openai",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "status": "ok",
+  "verdict": "FAIL"
+}

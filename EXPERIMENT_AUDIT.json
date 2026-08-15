@@ -1,65 +1,49 @@
 {
   "audit_skill": "experiment-audit",
-  "venue": "ICASSP 2027",
-  "generated_at": "2026-08-14T21:00:56.8906401+08:00",
   "verdict": "FAIL",
+  "reason_code": "noncanonical_implementation_and_compromised_evaluation",
+  "summary": "v63 is code-only, v46 does not implement TempoRAC, and both completed v46 evaluation populations have material selection, GT-assistance, leakage, evaluator, and scope defects.",
+  "audited_input_hashes": {
+    "v46/code/run_mpcounter_v44.py": "sha256:ec6b8ee58dd163b86be49f3e7a3461b449c65000184ad498b367e085e71261c6",
+    "v46/code/mpcounter_full_system_v46.py": "sha256:8941a8519a8ecc98a0a39384a27cbdafd9e31a59c787e535448190dd6745dc9f",
+    "v46/code/train_mpcounter_spectral_v46.py": "sha256:9ce0f22b301c8a23ee403e93a6a4387fb82f181bae45619dc18e5ef3e9555ee2",
+    "v46/full_system/test_summary_v46.json": "sha256:307beb634a4075ff5e769373d8c9d48fcca885dfbc4e389738c9cec52391722c",
+    "v46/official_complete/test_summary_v46.json": "sha256:17868b5d8793819e5024f3f376f40dcadeddb2faf1cbbf58519b273ad20f35f2",
+    "v46/converted_unseen_test/conversion_manifest_v45.json": "sha256:217beaca14ea124790cf50a04af99139d5d457773b0c04057e4d9781bc5e4813",
+    "v46/data-manifests/real_disjoint_manifest.json": "sha256:bb9accf2669f1bd3a868352dca51c1516f5e54920d88527ef311d8b273f4255a",
+    "v46/data-manifests/official_complete_manifest.json": "sha256:468c568616131fa3a40da21822baac8e769074ada4ffbcecd3203a8d757e2c0b",
+    "v63/train_poserac_channel_classifier_v63.py": "sha256:9989d776ff78bf9bee55cda0164b1fbf5fb9e469a6894925639c31bfe443bcb1",
+    "paper/evidence/results_manifest.json": "sha256:4df513a3f4427950d23267965192253446e6ee2b6968907855e0bae1a6a53159",
+    "paper/evidence/method_manifest.yaml": "sha256:514d25ceb51d97930f02a14c70d96962ff7acdcb28c712fa80c1f03a9ea1d579"
+  },
+  "trace_path": ".aris/traces/experiment-audit/20260815_server_v46_v63/",
+  "agent_id": "/root/experiment_audit_v46_v63",
+  "verdict_id": "/root/experiment_audit_v46_v63",
+  "executor_model": "codex-gpt-5.6-sol",
+  "executor_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_family": "openai",
+  "reviewer_reasoning": "ultra",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "generated_at": "2026-08-15T03:45:00Z",
+  "date": "2026-08-15",
+  "auditor": "gpt-5.6-sol-ultra",
   "overall_verdict": "fail",
   "integrity_status": "fail",
-  "reason_code": "NO_MULTI_PERSON_REAL_GT_EVIDENCE",
-  "summary": "Formal UCFRep dev84 metrics use official real ground truth and recompute correctly, but no MultiRep result bundle or tracked multi-person router/overlap-add implementation exists; no local artifact is eligible for the ICASSP main table.",
-  "evidence_freeze": "26e5b7176f1f7c678391163c3278b5c390d54115",
-  "review_independence": "same-family/provisional",
-  "acceptance_status": "provisional",
-  "agent_id": "/root/icassp_experiment_audit",
-  "verdict_id": "exp-audit-20260814T210056+0800",
   "checks": {
-    "gt_provenance": {"status": "warn", "details": "Formal dev84 uses digest-bound official UCFRep targets; the core evaluator and some historical artifacts have weaker provenance."},
-    "score_normalization": {"status": "pass", "details": "NMAE uses target denominators; no reported metric self-normalizes by predictions."},
-    "result_existence": {"status": "warn", "details": "All 17 saved evaluations recompute and 47 focused tests pass, but no MultiRep result-manifest instance exists."},
-    "dead_metrics": {"status": "pass", "details": "All five implemented count metrics are called and emitted."},
-    "scope": {"status": "warn", "details": "Evidence is single-person UCFRep dev84; no MultiRep or test105 result exists."},
-    "evaluation_type": {"status": "fail", "details": "No real-GT evaluation exists for the proposed multi-person system."}
-  },
-  "sealed_test105": {
-    "scored": false,
-    "predictions_exist": false,
-    "evaluation_exists": false,
-    "metrics_exist": false,
-    "historical_full_manifest_deserialized": true,
-    "safe_wording": "unscored, not historically untouched"
-  },
-  "main_table_eligibility": {
-    "eligible_local_artifact_count": 0,
-    "multirep_result_bundle_exists": false,
-    "proposed_method_result_exists": false,
-    "eligible": false
-  },
-  "implementation": {
-    "multi_person_person_axis": false,
-    "persistent_identity_state": false,
-    "window_local_soft_router": false,
-    "response_level_expert_fusion": false,
-    "normalized_overlap_add": false,
-    "one_decoder_per_identity": false,
-    "tracked_system": "single-person PAMS reproduction with deterministic hard expert voting"
+    "gt_provenance": {"status": "fail", "details": "GT-assisted object association, label-informed 71-video selection, canonical-source overlap, and partial prior test exposure."},
+    "score_normalization": {"status": "warn", "details": "Reported count denominator is GT-derived, but naming and calibration selection are optimistic; unused period scores self-normalize per track."},
+    "result_existence": {"status": "fail", "details": "v46 summaries exist and recompute, but training dependencies/search artifacts are incomplete and v63 has no run bundle."},
+    "dead_code": {"status": "fail", "details": "Period metrics, bootstrap, and source-hash verification are not executed by the audited v46 test path."},
+    "scope": {"status": "fail", "details": "No independent three-seed runs, uncertainty, matched baselines, TempoRAC ablations, tracking analysis, or non-stationary diagnostic."},
+    "eval_type": "mixed_real_gt_oracle_assisted_compromised_and_synthetic_proxy"
   },
   "claims": [
-    {"id": "R1", "impact": "unsupported"},
-    {"id": "R2", "impact": "needs_qualifier"},
-    {"id": "R3", "impact": "unsupported"},
-    {"id": "R4", "impact": "unsupported"},
-    {"id": "R5", "impact": "unsupported"},
-    {"id": "R6", "impact": "unsupported_for_icassp_table"}
-  ],
-  "audited_input_hashes": {
-    "src/pams/evaluation.py": "sha256:5a0f25f3892a05472014ea402c5baa4b9d2c7d383844c488b8709bdfddb63141",
-    "src/pams/metrics.py": "sha256:7fdfcd540f3cbe19e3f66d076096f093b9e1b4a817e71bb44bc0373a268adc62",
-    "src/pams/training.py": "sha256:dc02986346d581ac20bf4cccdfedc77d9185dd09985285b02210a398aa7d05f2",
-    "src/pams/pose.py": "sha256:e79e9d628685b8703e4dbe68adbe8721e55efb9665b64550c2239d397b9f5c80",
-    "src/pams/types.py": "sha256:78c2ad53e98856425492a1711faa62fc2bb7764767dc48a22f7c4d5e043a3e31",
-    "results/README.md": "sha256:0aeacbb1596448ecc7c8532ee0704f8e0dd0253753c7f2d707896829cbf7535f",
-    "results/dev-negative/summary.json": "sha256:2051ca2712a5e54a6516ceba341ea7db8c1555c27bec54ec386f68f69ae60b9f",
-    "configs/protocols/ucfrep_526.yaml": "sha256:6343cc67b36f33f4303e7d4204d3dbd34a0d35396e148e30450740aa9fe5ef65"
-  }
+    {"id": "canonical_temporac_implementation", "impact": "unsupported"},
+    {"id": "official_multirep_performance", "impact": "unsupported"},
+    {"id": "predicted_track_performance", "impact": "unsupported"},
+    {"id": "period_metrics", "impact": "unsupported"},
+    {"id": "historical_v46_diagnostic", "impact": "needs_qualifier"}
+  ]
 }
-

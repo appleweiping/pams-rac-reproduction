@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_round3_sol",
+  "step_id": "001-review",
+  "task": "Round 3 same-reviewer re-evaluation of the full WARP-PHASE Round-2 refinement",
+  "requested_at": "2026-08-15T14:19:49.4766526+08:00",
+  "reviewer_requirements": {
+    "model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "same_agent_continuation": true,
+    "verdict_enum": ["READY", "REVISE", "RETHINK"],
+    "ready_rule": "overall >= 9 and no blocking issue"
+  },
+  "rubric": [
+    {"dimension": "Problem Fidelity", "weight": 0.15},
+    {"dimension": "Method Specificity", "weight": 0.25},
+    {"dimension": "Contribution Quality", "weight": 0.25},
+    {"dimension": "Frontier Leverage", "weight": 0.15},
+    {"dimension": "Feasibility", "weight": 0.10},
+    {"dimension": "Validation Focus", "weight": 0.05},
+    {"dimension": "Venue Readiness", "weight": 0.05}
+  ],
+  "required_action_checks": [
+    "orientation removed symmetrically",
+    "pseudo-cycle language and frozen evaluator-only 0.5x 1x 2x no-correction gate",
+    "GRU once per physical collapsed sequence with cached states",
+    "normalized video-first AvgMAE and positive-count fixture",
+    "all-nine-component Gate-0 assertion",
+    "59-job and 552-GPU-hour ledger with trained K4 controls",
+    "three visible validation blocks",
+    "truthful TWCRAC K8 status"
+  ],
+  "raw_inputs": [
+    {"path": "refine-logs/round-2-refinement.md", "sha256": "2694a4eaa518bf216f21ffa77fddd54141267eaa1dd5520073583bbae995953e"},
+    {"path": "refine-logs/REFINE_STATE.json", "sha256": "998f42bbf6029f4fd21150f811af45bc3707a5da103ab5ed7a5248a18a68de3a"},
+    {"path": "refine-logs/score-history.md", "sha256": "1498d08771dcbac713dba4694c3eea600ae8a35420b473ed30d1c8b4d311576e"},
+    {"path": "refine-logs/round-2-review.md", "sha256": "8aaf103283285c3c7a80ca96640350bdeca0d6d98f056b500648adeb55c26664"}
+  ],
+  "required_outputs": [
+    "same seven scores and weights",
+    "weighted composite",
+    "anchor and drift assessment",
+    "prior-action closure audit",
+    "focus, simplicity, and frontier appropriateness",
+    "remaining action items",
+    "CALIBRATION and GAP",
+    "READY, REVISE, or RETHINK",
+    "no invented results",
+    "input SHA-256 ledger",
+    "raw review byte-identical to canonical round review"
+  ]
+}

@@ -11,6 +11,8 @@ data/splits/*
 artifacts/
 checkpoints/
 runs/
+!.aris/runs/
+!.aris/runs/*.json
 outputs/
 *.pt
 *.pth

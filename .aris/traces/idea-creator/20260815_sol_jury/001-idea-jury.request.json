@@ -1,0 +1,57 @@
+{
+  "task": "Evaluate and rank all 17 idea candidates for an ICASSP 2027 multi-person repetition-counting project under the supplied evidence and server constraints, then select exactly three bounded pilots.",
+  "purpose": "Provide a fresh adversarial idea-creator jury decision without treating server v46, v62, or v63 as candidate evidence.",
+  "model": "gpt-5.6-sol",
+  "effort": "ultra",
+  "inputs": [
+    {
+      "path": "RESEARCH_BRIEF.md",
+      "sha256": "f5b9d75fc2415a03ba250279edf1e47af978341b7b9d7eef892f2d43a56b7c37"
+    },
+    {
+      "path": "idea-stage/IDEA_REPORT.md",
+      "sha256": "bdd545cfc40703ee3c5ecdf33738078bb6efe1c00183587a19f90d16672d34ba"
+    },
+    {
+      "path": "idea-stage/CANDIDATE_UNION.json",
+      "sha256": "4f3a85cc8773e63e0156acdd82befc9bad252f51980804ee418c49218132f22f"
+    },
+    {
+      "path": "EXPERIMENT_AUDIT.md",
+      "sha256": "2ac7fe4a1a8208287394a2ac4c1771aa0faf30e14319bef8144e509f876f0820"
+    },
+    {
+      "path": "SERVER_METHOD_INVENTORY.md",
+      "sha256": "0cda0704f64434296049d18c35e97fd267a0a7168300152e97b142d6ecc363a6"
+    }
+  ],
+  "output_schema_fields": {
+    "reviewer_model": "string",
+    "review_independence": "string",
+    "acceptance_status": "string",
+    "ranked_candidates": [
+      "rank",
+      "dedup_key",
+      "scientific_novelty",
+      "protocol_defensibility",
+      "implementation_feasibility",
+      "icassp_fit",
+      "overall_10",
+      "primary_strength",
+      "kill_risk"
+    ],
+    "selected_pilots": [
+      "role",
+      "dedup_key",
+      "minimal_build",
+      "required_data",
+      "preregistered_success",
+      "preregistered_failure"
+    ],
+    "synthesis_decision": "object",
+    "strongest_objections": "array",
+    "top_venue_assessment": "object",
+    "immediate_next_actions": "array",
+    "verdict": "object"
+  }
+}
