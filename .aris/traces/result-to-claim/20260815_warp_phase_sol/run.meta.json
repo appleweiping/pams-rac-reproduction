@@ -1,0 +1,98 @@
+{
+  "schema_version": "aris.result_to_claim.run_meta.v1",
+  "run_id": "20260815_warp_phase_sol",
+  "verdict_id": "WARP-PHASE-R2C-20260815-SOL-001",
+  "date": "2026-08-15",
+  "candidate": "warp_phase_pilot_v1",
+  "route": "pivot",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "ultra",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "confidence": "low",
+  "confidence_reason": "The exact bound experiment-integrity audit has overall verdict FAIL.",
+  "verdict": {
+    "overall_disposition": "STOP_K5_PREVENT_POSITIVE_CLAIMS_AND_PIVOT",
+    "WARP-C1": "no",
+    "WARP-C2": "partial",
+    "WARP-C3": "no",
+    "WARP-C4": "no"
+  },
+  "current_status_reread": {
+    "tracker_sha256": "2b23dc7399e2624dca0adc54102a366d6d668516f0463bafa90972a06b72dabe",
+    "pipeline_summary_sha256": "111972fc1b6a3e6cffdd1600f5772071510346207e9a65409ff319ed3e9e3caa",
+    "finding": "Both current files explicitly record Gate 2 FAIL, zero eligible efficacy results, no training/server launch authorization, and pivot."
+  },
+  "audit_bindings": {
+    "integrity_audit_id": "20260815_warp_phase_sol",
+    "integrity_audit_verdict": "FAIL",
+    "integrity_audit_md_sha256": "770ea5d9c86fce3a88a1f859434edeec893eec2d1b326cf95ec33a6112ac8e7c",
+    "integrity_audit_json_sha256": "457d09da6b4c7c7a9e7734e21bc3564f2d2a66dc610cc549fc70203b7fdfd7ed",
+    "code_review_verdict": "FAIL",
+    "code_review_md_sha256": "4d45ec10bfd4b65dc187b7ce137203c1031c7a628e9375e3a20a99626bac47d5",
+    "code_review_json_sha256": "0a528564f639ad32d79934fc5a2e6bff546faf3cd4df048f982a18b591cfbb64",
+    "code_review_canonical_file_map_sha256": "ad2b85e0d538c538bed408076ca71f56e98f0b4546d3da1921925a0a88c67ddd",
+    "code_review_hash_manifest_sha256": "acdea079c506f3b4bfee83dd9526f81c2b2f624446a8c26ad3792f20ccd654d5"
+  },
+  "audited_input_sha256": {
+    ".aris/claims.json": "7f5cdfdf409cde494a65787a836fab9b0321a7dec6e5a09afb0fc89e11bd848e",
+    ".aris/evidence_precheck.json": "73820bb7117d82f46816a4a5d610f364b52e45a8e3c0833003860041ad5a8c99",
+    "idea-stage/docs/research_contract.md": "4b93a9dd2d32a11a83123923d831597bbfb98b84669dec9ab9c19440c5d76bb0",
+    "refine-logs/FINAL_PROPOSAL.md": "e8ff129b3a67ac07be0e5ff1af09555bb26f000e7cde9315b13493733cda6418",
+    "refine-logs/EXPERIMENT_PLAN.md": "020626027a73939f3fd4dfa479e6592699d19f652da592682b90d9235724ce5c",
+    "refine-logs/EXPERIMENT_TRACKER.md": "2b23dc7399e2624dca0adc54102a366d6d668516f0463bafa90972a06b72dabe",
+    "refine-logs/PIPELINE_SUMMARY.md": "111972fc1b6a3e6cffdd1600f5772071510346207e9a65409ff319ed3e9e3caa",
+    "configs/experiments/warp_phase_pilot_v1.yaml": "e59fb34599eaece41545c237b18871b5a206046e53fb1246795f9dcb3d681063",
+    "data/warp_phase_pilot_v1/audit/gate0/gate0-local-inputs.receipt.json": "2c5d3a6574d946c22e96604a8d88c44b933a423f55e33660f171b29dc4cbf7fd",
+    "data/warp_phase_pilot_v1/audit/gate1/gate1-v2-unit-v1.receipt.json": "160d21b2bcdc0be9850646a1e187e18eff2a4ed78700490cc58251ff641d469a",
+    "data/warp_phase_pilot_v1/audit/gate1/selector_unit_fixture_pack_audit.md": "e26a315c6142b58c93298b7280a37db7a158bcd36c74248d49df2e5cc02d0e6e",
+    "data/warp_phase_pilot_v1/audit/gate1/selector_unit_fixture_pack_audit.json": "0d1c837d272dbecabf954f59edd12482e335f1fc4a18b6cdf324f6dfb6406cf8",
+    "data/warp_phase_pilot_v1/audit/gate2/gate2-stochastic-v2.receipt.json": "609b2c57853d4dea661957eac810e7936611cac9d037ca9bca2eafe7ebceec03",
+    "data/warp_phase_pilot_v1/audit/gate3/gate3-cpu-sanity.receipt.json": "157c506f6573d4ddb1cd2e3c080534cda00fd869eb07597cd0d0da37c942e54e",
+    "EXPERIMENT_AUDIT_WARP_PHASE.md": "770ea5d9c86fce3a88a1f859434edeec893eec2d1b326cf95ec33a6112ac8e7c",
+    "EXPERIMENT_AUDIT_WARP_PHASE.json": "457d09da6b4c7c7a9e7734e21bc3564f2d2a66dc610cc549fc70203b7fdfd7ed",
+    "refine-logs/EXPERIMENT_CODE_REVIEW_ROUND2.md": "4d45ec10bfd4b65dc187b7ce137203c1031c7a628e9375e3a20a99626bac47d5",
+    "refine-logs/EXPERIMENT_CODE_REVIEW_ROUND2.json": "0a528564f639ad32d79934fc5a2e6bff546faf3cd4df048f982a18b591cfbb64"
+  },
+  "created_output_sha256": {
+    "CLAIMS_FROM_RESULTS_WARP_PHASE.md": "f2786fc8adc1a688a1973dfc78e5526b0efd0ad961220cf662713baa83731b3b",
+    "CLAIMS_FROM_RESULTS_WARP_PHASE.json": "82b3cd6b687d7a4aee8ef3b9c5c6e8159c2a1ee68d75bf94b85bc7430676bb85",
+    "findings.md": "c4a42e6be0d68e2efea307c126551a5f78b54232c423c5fb699626f6cbf461bc",
+    ".aris/traces/result-to-claim/20260815_warp_phase_sol/request.json": "ed101b21d99b51e29b83623dc829aedfc17077a60736175e0123e309d1d88cd6",
+    ".aris/traces/result-to-claim/20260815_warp_phase_sol/response.md": "f9fbca770c0c7a0f927d6e797e8f3acaee22078c69d061dd8a2e21892bd53e3e",
+    ".aris/traces/result-to-claim/20260815_warp_phase_sol/routing.json": "1637d141c47fe88e87ec18f515f0c51fb0005af6107b34dd29da08a4d3c3f809"
+  },
+  "validation": {
+    "claims_json_parse": "PASS",
+    "request_json_parse": "PASS",
+    "routing_json_parse": "PASS",
+    "claim_count": 4,
+    "claim_supported_enum_values": [
+      "no",
+      "partial",
+      "no",
+      "no"
+    ],
+    "all_claim_confidence_low": true,
+    "route_enum_valid": true,
+    "findings_section_present": true,
+    "input_hashes_reverified_before_write": true
+  },
+  "scope": {
+    "server_accessed": false,
+    "test_sealed_heldout_accessed": false,
+    "training_or_evaluation_run": false,
+    "source_tests_receipts_paper_manifest_git_modified": false,
+    "prior_result_to_claim_reviews_or_traces_read": false,
+    "prior_experiment_audits_read": false,
+    "files_written": [
+      "CLAIMS_FROM_RESULTS_WARP_PHASE.md",
+      "CLAIMS_FROM_RESULTS_WARP_PHASE.json",
+      "findings.md dated WARP-PHASE section",
+      ".aris/traces/result-to-claim/20260815_warp_phase_sol/request.json",
+      ".aris/traces/result-to-claim/20260815_warp_phase_sol/response.md",
+      ".aris/traces/result-to-claim/20260815_warp_phase_sol/routing.json",
+      ".aris/traces/result-to-claim/20260815_warp_phase_sol/run.meta.json"
+    ]
+  }
+}

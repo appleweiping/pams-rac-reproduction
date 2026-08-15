@@ -1,0 +1,135 @@
+{
+  "schema": "aris.compute.output-budget.v1",
+  "snapshot_at": "2026-08-15T16:45:00+08:00",
+  "state": "BLOCKED_PENDING_FRESH_RECEIPT",
+  "fail_closed": true,
+  "units": {
+    "byte": "integer",
+    "gib_bytes": 1073741824
+  },
+  "preflight_observation": {
+    "available_gib_rounded": 171,
+    "mount_used_percent": 96,
+    "inode_used_percent": 14,
+    "exact_available_bytes_authoritative": false,
+    "fresh_exact_receipt_required": true
+  },
+  "hard_limits": {
+    "max_total_output_bytes": 103079215104,
+    "max_total_output_gib": 96,
+    "min_remaining_free_bytes": 68719476736,
+    "min_remaining_free_gib": 64,
+    "campaign_start_min_free_bytes": 171798691840,
+    "campaign_start_min_free_gib": 160,
+    "max_inode_used_percent": 85,
+    "receipt_max_age_seconds": 300
+  },
+  "classes": {
+    "gate0_pack": {
+      "max_count": 1,
+      "max_bytes_per_job": 12884901888,
+      "max_gib_per_job": 12
+    },
+    "gate1_fixture": {
+      "max_count": 1,
+      "max_bytes_per_job": 2147483648,
+      "max_gib_per_job": 2
+    },
+    "gate2_selector": {
+      "max_count": 1,
+      "max_bytes_per_job": 2147483648,
+      "max_gib_per_job": 2
+    },
+    "gate3_cpu_smoke": {
+      "max_count": 1,
+      "max_bytes_per_job": 268435456,
+      "max_gib_per_job": 0.25
+    },
+    "sanity_training": {
+      "max_count": 3,
+      "max_bytes_per_job": 268435456,
+      "max_gib_per_job": 0.25
+    },
+    "tuning_training": {
+      "max_count": 14,
+      "max_bytes_per_job": 536870912,
+      "max_gib_per_job": 0.5
+    },
+    "full_training": {
+      "max_count": 42,
+      "max_bytes_per_job": 1610612736,
+      "max_gib_per_job": 1.5
+    },
+    "evaluator_only_audit": {
+      "max_count": 3,
+      "max_bytes_per_job": 536870912,
+      "max_gib_per_job": 0.5
+    },
+    "campaign_shared": {
+      "max_count": 1,
+      "max_bytes_per_job": 4294967296,
+      "max_gib_per_job": 4
+    }
+  },
+  "budget_proof": {
+    "training_job_count": 59,
+    "training_worst_case_bytes": 75967234048,
+    "training_worst_case_gib": 70.75,
+    "all_scoped_worst_case_bytes": 99321118720,
+    "all_scoped_worst_case_gib": 92.5,
+    "unallocated_headroom_bytes": 3758096384,
+    "unallocated_headroom_gib": 3.5,
+    "hard_cap_plus_min_free_bytes": 171798691840,
+    "hard_cap_plus_min_free_gib": 160,
+    "margin_if_exact_free_is_at_least_171_gib_bytes": 11811160064,
+    "margin_if_exact_free_is_at_least_171_gib_gib": 11
+  },
+  "accounting": {
+    "scope": "all files allocated by the pilot including temporary files, logs, checkpoints, predictions, traces, receipts, failed jobs, and canceled jobs",
+    "failed_or_canceled_jobs_count_against_limits": true,
+    "replacement_requires_protocol_revision": true,
+    "reservations_are_charged_at_class_cap_until_reconciled": true,
+    "reconciliation_uses_exact_allocated_bytes": true
+  },
+  "required_prelaunch_receipt_fields": [
+    "receipt_schema",
+    "observed_at",
+    "run_id",
+    "job_class",
+    "isolated_run_directory_id",
+    "isolated_run_directory_new_and_empty",
+    "same_output_mount",
+    "current_free_bytes",
+    "inode_used_percent",
+    "active_reserved_bytes",
+    "total_output_bytes_to_date",
+    "requested_cap_bytes",
+    "environment_lock_sha256",
+    "budget_sha256",
+    "dependency_receipt_sha256"
+  ],
+  "deny_launch_if_any": [
+    "receipt_missing_or_older_than_receipt_max_age_seconds",
+    "receipt_field_missing_empty_or_unhashable",
+    "environment_lock_sha256_missing_or_not_equal_to_frozen_lock",
+    "budget_sha256_not_equal_to_this_frozen_budget",
+    "dependency_receipt_missing_or_failed",
+    "isolated_run_directory_is_not_new_empty_and_unique",
+    "output_target_is_not_on_the_measured_mount",
+    "job_class_unknown_or_max_count_exceeded",
+    "requested_cap_bytes_exceeds_class_max_bytes_per_job",
+    "total_output_bytes_to_date_plus_active_reserved_bytes_plus_requested_cap_bytes_exceeds_max_total_output_bytes",
+    "current_free_bytes_minus_active_reserved_bytes_minus_requested_cap_bytes_is_less_than_min_remaining_free_bytes",
+    "first_campaign_receipt_current_free_bytes_is_less_than_campaign_start_min_free_bytes",
+    "inode_used_percent_exceeds_max_inode_used_percent",
+    "any_prior_output_or_receipt_integrity_breach"
+  ],
+  "runtime_enforcement": {
+    "stop_job_before_next_write_if_run_directory_bytes_exceed_class_cap": true,
+    "stop_all_new_launches_if_global_cap_or_min_free_guard_is_breached": true,
+    "delete_or_overwrite_to_manufacture_headroom": false,
+    "current_launch_authorization_count": 0,
+    "first_sanity_max_parallel_after_all_gates": 1,
+    "later_max_parallel_after_sanity_and_monitor_pass": 2
+  }
+}

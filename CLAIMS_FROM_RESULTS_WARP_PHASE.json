@@ -1,0 +1,255 @@
+{
+  "schema_version": "aris.result_to_claim.v1",
+  "verdict_id": "WARP-PHASE-R2C-20260815-SOL-001",
+  "date": "2026-08-15",
+  "candidate": "warp_phase_pilot_v1",
+  "route": "pivot",
+  "acceptance_status": "provisional",
+  "review_independence": "same-family",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "ultra",
+  "overall_disposition": "STOP_K5_PREVENT_POSITIVE_CLAIMS_AND_PIVOT",
+  "positive_claims_authorized": false,
+  "training_authorized": false,
+  "server_launch_authorized": false,
+  "confidence_policy": {
+    "level": "low",
+    "reason": "The exact current experiment-integrity audit has overall_verdict=FAIL. Per instruction, that failure caps every claim-level confidence at low even where negative facts are directly receipt-bound."
+  },
+  "integrity_audit_binding": {
+    "audit_id": "20260815_warp_phase_sol",
+    "overall_verdict": "FAIL",
+    "acceptance_status": "provisional",
+    "positive_claims_authorized": false,
+    "markdown_sha256": "770ea5d9c86fce3a88a1f859434edeec893eec2d1b326cf95ec33a6112ac8e7c",
+    "json_sha256": "457d09da6b4c7c7a9e7734e21bc3564f2d2a66dc610cc549fc70203b7fdfd7ed",
+    "impact": "The audit failure blocks positive selector, phase-mass, efficacy, novelty, and launch claims. The current tracker/pipeline correction removes the audit's stale current-status mismatch, but it does not repair missing ground-truth provenance, the uninvoked evaluator/result path, or the separate code-review failures."
+  },
+  "code_review_binding": {
+    "verdict": "FAIL",
+    "acceptance_status": "provisional",
+    "claims_authorized": false,
+    "markdown_sha256": "4d45ec10bfd4b65dc187b7ce137203c1031c7a628e9375e3a20a99626bac47d5",
+    "json_sha256": "0a528564f639ad32d79934fc5a2e6bff546faf3cd4df048f982a18b591cfbb64",
+    "canonical_audited_file_map_sha256": "ad2b85e0d538c538bed408076ca71f56e98f0b4546d3da1921925a0a88c67ddd",
+    "audited_hash_manifest_sha256": "acdea079c506f3b4bfee83dd9526f81c2b2f624446a8c26ad3792f20ccd654d5"
+  },
+  "status_reconciliation": {
+    "integrity_audit_bound_tracker_sha256": "2b30a873f3d0777eaf71bfd8e686efb1dedbf06a65da60a57bfe25c353ffef58",
+    "current_reviewed_tracker_sha256": "2b23dc7399e2624dca0adc54102a366d6d668516f0463bafa90972a06b72dabe",
+    "integrity_audit_bound_pipeline_summary_sha256": "217f61a5246af206262817200e5ce17c63760669fafa8cabcbc6ecdf803a10f7",
+    "current_reviewed_pipeline_summary_sha256": "111972fc1b6a3e6cffdd1600f5772071510346207e9a65409ff319ed3e9e3caa",
+    "current_state": "Both corrected current documents explicitly record Gate 2 FAIL at 246/55/144/50/66, zero eligible efficacy results, no training/server authorization, and a scientific pivot.",
+    "effect_on_audit": "The older status-suppression finding is not repeated as a current fact. The immutable integrity-audit verdict remains FAIL because independent fatal and blocking dimensions remain."
+  },
+  "frozen_gate_state": {
+    "gate0": {
+      "status": "BLOCKED",
+      "authorizes": [],
+      "receipt_sha256": "2c5d3a6574d946c22e96604a8d88c44b933a423f55e33660f171b29dc4cbf7fd"
+    },
+    "gate1": {
+      "status": "BLOCKED",
+      "authorizes": [],
+      "receipt_sha256": "160d21b2bcdc0be9850646a1e187e18eff2a4ed78700490cc58251ff641d469a"
+    },
+    "gate2": {
+      "status": "FAIL",
+      "authorizes": [],
+      "receipt_sha256": "609b2c57853d4dea661957eac810e7936611cac9d037ca9bca2eafe7ebceec03",
+      "k_rule": "K5",
+      "observed": {
+        "agreement": 246,
+        "half_overall": 55,
+        "double_overall": 144,
+        "half_symmetric": 50,
+        "double_symmetric": 66
+      },
+      "required": {
+        "agreement_minimum": 950,
+        "half_overall_maximum": 20,
+        "double_overall_maximum": 20,
+        "half_symmetric_maximum": 12,
+        "double_symmetric_maximum": 12
+      },
+      "all_five_thresholds_pass": false,
+      "classification": "synthetic engineering selector-stability failure, not efficacy"
+    },
+    "gate3_cpu": {
+      "status": "BLOCKED",
+      "authorizes": [],
+      "receipt_sha256": "157c506f6573d4ddb1cd2e3c080534cda00fd869eb07597cd0d0da37c942e54e",
+      "identity_isolation": true,
+      "contractual_order_satisfied": false,
+      "classification": "non-authorizing CPU engineering smoke"
+    }
+  },
+  "claims": [
+    {
+      "id": "WARP-C1",
+      "claim": "The signed local warp-integral objective improves the frozen supplied-track tempo-drift endpoint under the preregistered rule",
+      "source_asserted_value": "FAIL",
+      "claim_supported": "no",
+      "what_results_support": [
+        "No eligible result supports endpoint improvement.",
+        "The selector-unit audit supports only the integrity of exact Gate-1 input bytes, not efficacy.",
+        "The Gate-3 CPU smoke supports only limited implementation behavior, not the supplied-track endpoint."
+      ],
+      "what_results_dont_support": [
+        "Gate 2 fails all five frozen selector thresholds and authorizes nothing.",
+        "Gate 0 and Gate 1 are BLOCKED; Gate 3 is BLOCKED and was run without prerequisite PASS receipts.",
+        "No training, predictions, evaluator output, R, absolute D, or nine-component confidence interval exists.",
+        "The integrity audit and Round-2 code review both have verdict FAIL."
+      ],
+      "missing_evidence": [
+        "Three fixed-seed matched treatment/control Stage-A results.",
+        "Receipt equality for the paired arms.",
+        "R>=0.05.",
+        "Paired all-nine-component absolute-effect 95% CI lower endpoint greater than zero."
+      ],
+      "suggested_claim_revision": "WARP-PHASE produced no eligible efficacy result. The frozen candidate failed the preregistered K5 selector-stability gate before training, so no supplied-track tempo-drift improvement claim is licensed.",
+      "next_experiments_needed": [
+        "None within this stopped candidate.",
+        "Pivot to a scientifically distinct, newly preregistered candidate with its own clean gates and independent evidence chain.",
+        "Do not tune thresholds, replace fixtures, correct harmonics, retry this gate, or train locally/remotely."
+      ],
+      "confidence": "low",
+      "confidence_basis": "Integrity audit FAIL; no efficacy result exists."
+    },
+    {
+      "id": "WARP-C2",
+      "claim": "Identity-private state isolates untouched identities under one-person intervention",
+      "source_asserted_value": "true",
+      "claim_supported": "partial",
+      "what_results_support": [
+        "The Gate-3 CPU receipt records identity_isolation=true.",
+        "The Round-2 code review reports that the identity-private traversal primitive passes isolated tests."
+      ],
+      "what_results_dont_support": [
+        "Gate 3 is BLOCKED and was executed without prerequisite Gate-0/1/2 PASS receipts.",
+        "Prediction schema and tiny-GPU receipts are missing.",
+        "No reached V3 result, frozen backbone, private/shared-scene/shuffled-key comparison, untouched-byte receipt, real-data response, or component interval exists.",
+        "The diagnostic cannot rescue WARP-C1."
+      ],
+      "missing_evidence": [
+        "A reached preregistered V3 diagnostic after the primary route survives.",
+        "Eligible real supplied tracks and a frozen backbone/predictions.",
+        "Byte-identical untouched tensors and clocks.",
+        "Private/shared-scene/shuffled-key results with component intervals."
+      ],
+      "suggested_claim_revision": "A non-authorizing CPU sanity diagnostic passed an implementation-level identity-isolation check; no eligible real-data V3 result supports a scientific identity-isolation claim.",
+      "next_experiments_needed": [
+        "None within WARP-PHASE because K5 stopped the candidate.",
+        "Only if a scientifically distinct future candidate independently survives its prerequisite and primary gates should its preregistered isolation diagnostic be run."
+      ],
+      "confidence": "low",
+      "confidence_basis": "Integrity audit FAIL; the only positive observation is blocked, out of contractual order, implementation-only, and same-family.",
+      "positive_verdict_ceiling": "provisional"
+    },
+    {
+      "id": "WARP-C3",
+      "claim": "This candidate has eligible efficacy results",
+      "source_asserted_value": "zero eligible efficacy results",
+      "claim_supported": "no",
+      "what_results_support": [
+        "No evidence supports the positive claim.",
+        "The corrected current tracker, pipeline summary, config, integrity audit, and code review all state zero eligible efficacy results."
+      ],
+      "what_results_dont_support": [
+        "No training, predictions, real-data evaluator invocation, AvgMAE, AvgOBO, Period-AP experiment output, bootstrap result, harmonic gate, or K4 result exists.",
+        "Synthetic Gate-2 counts and Gate-3 CPU checks are engineering evidence only."
+      ],
+      "missing_evidence": [
+        "Every result-bearing efficacy artifact is absent.",
+        "The K5 stop makes it inadmissible to fill that gap for this candidate."
+      ],
+      "suggested_claim_revision": "This candidate has zero eligible efficacy results; it stopped at a terminal synthetic selector-stability failure before training or evaluation.",
+      "next_experiments_needed": [
+        "None within this candidate.",
+        "Preserve the zero-result record and pivot under a new scientific protocol rather than backfilling an efficacy result."
+      ],
+      "confidence": "low",
+      "confidence_basis": "Integrity audit FAIL, despite consistent zero-result records."
+    },
+    {
+      "id": "WARP-C4",
+      "claim": "This candidate is authorized for training or server launch",
+      "source_asserted_value": "No training run is currently authorized",
+      "claim_supported": "no",
+      "what_results_support": [
+        "No evidence supports authorization."
+      ],
+      "what_results_dont_support": [
+        "The config sets training_authorized=false.",
+        "Every gate receipt has an empty authorizes list.",
+        "Gate 2 is FAIL; Gates 0, 1, and 3 are BLOCKED.",
+        "The integrity and code reviews deny training, evaluation, result production, and launch.",
+        "K8 remains BLOCKED/NOT PASSED."
+      ],
+      "missing_evidence": [
+        "No authorization receipt exists.",
+        "The missing prerequisites cannot be supplemented after the frozen K5 stop for this candidate."
+      ],
+      "suggested_claim_revision": "WARP-PHASE is not authorized for local or server training, evaluation, or launch and is closed for scientific pivot.",
+      "next_experiments_needed": [
+        "None.",
+        "Do not send this candidate to a server or attempt local training.",
+        "Any future candidate needs new explicit protocol and launch authority after its own gates."
+      ],
+      "confidence": "low",
+      "confidence_basis": "Integrity audit FAIL; all exact authorization surfaces are non-authorizing."
+    }
+  ],
+  "routing": {
+    "selected": "pivot",
+    "confirm": {
+      "selected": false,
+      "reason": "There is no positive efficacy result to confirm."
+    },
+    "supplement": {
+      "selected": false,
+      "reason": "The missing efficacy evidence follows a terminal frozen K5 failure, not a narrow missing analysis that may be added to this candidate."
+    },
+    "pivot": {
+      "selected": true,
+      "reason": "The frozen K5 stop rule terminates WARP-PHASE and the corrected current authority documents explicitly require a scientific pivot."
+    },
+    "forbidden_current_candidate_actions": [
+      "threshold tuning",
+      "fixture replacement",
+      "harmonic correction",
+      "Gate-2 retry",
+      "real-track evaluation",
+      "local or server training",
+      "server launch"
+    ]
+  },
+  "audited_input_sha256": {
+    ".aris/claims.json": "7f5cdfdf409cde494a65787a836fab9b0321a7dec6e5a09afb0fc89e11bd848e",
+    ".aris/evidence_precheck.json": "73820bb7117d82f46816a4a5d610f364b52e45a8e3c0833003860041ad5a8c99",
+    "idea-stage/docs/research_contract.md": "4b93a9dd2d32a11a83123923d831597bbfb98b84669dec9ab9c19440c5d76bb0",
+    "refine-logs/FINAL_PROPOSAL.md": "e8ff129b3a67ac07be0e5ff1af09555bb26f000e7cde9315b13493733cda6418",
+    "refine-logs/EXPERIMENT_PLAN.md": "020626027a73939f3fd4dfa479e6592699d19f652da592682b90d9235724ce5c",
+    "refine-logs/EXPERIMENT_TRACKER.md": "2b23dc7399e2624dca0adc54102a366d6d668516f0463bafa90972a06b72dabe",
+    "refine-logs/PIPELINE_SUMMARY.md": "111972fc1b6a3e6cffdd1600f5772071510346207e9a65409ff319ed3e9e3caa",
+    "configs/experiments/warp_phase_pilot_v1.yaml": "e59fb34599eaece41545c237b18871b5a206046e53fb1246795f9dcb3d681063",
+    "data/warp_phase_pilot_v1/audit/gate0/gate0-local-inputs.receipt.json": "2c5d3a6574d946c22e96604a8d88c44b933a423f55e33660f171b29dc4cbf7fd",
+    "data/warp_phase_pilot_v1/audit/gate1/gate1-v2-unit-v1.receipt.json": "160d21b2bcdc0be9850646a1e187e18eff2a4ed78700490cc58251ff641d469a",
+    "data/warp_phase_pilot_v1/audit/gate1/selector_unit_fixture_pack_audit.md": "e26a315c6142b58c93298b7280a37db7a158bcd36c74248d49df2e5cc02d0e6e",
+    "data/warp_phase_pilot_v1/audit/gate1/selector_unit_fixture_pack_audit.json": "0d1c837d272dbecabf954f59edd12482e335f1fc4a18b6cdf324f6dfb6406cf8",
+    "data/warp_phase_pilot_v1/audit/gate2/gate2-stochastic-v2.receipt.json": "609b2c57853d4dea661957eac810e7936611cac9d037ca9bca2eafe7ebceec03",
+    "data/warp_phase_pilot_v1/audit/gate3/gate3-cpu-sanity.receipt.json": "157c506f6573d4ddb1cd2e3c080534cda00fd869eb07597cd0d0da37c942e54e",
+    "EXPERIMENT_AUDIT_WARP_PHASE.md": "770ea5d9c86fce3a88a1f859434edeec893eec2d1b326cf95ec33a6112ac8e7c",
+    "EXPERIMENT_AUDIT_WARP_PHASE.json": "457d09da6b4c7c7a9e7734e21bc3564f2d2a66dc610cc549fc70203b7fdfd7ed",
+    "refine-logs/EXPERIMENT_CODE_REVIEW_ROUND2.md": "4d45ec10bfd4b65dc187b7ce137203c1031c7a628e9375e3a20a99626bac47d5",
+    "refine-logs/EXPERIMENT_CODE_REVIEW_ROUND2.json": "0a528564f639ad32d79934fc5a2e6bff546faf3cd4df048f982a18b591cfbb64"
+  },
+  "scope": {
+    "server_accessed": false,
+    "test_sealed_heldout_accessed": false,
+    "training_or_evaluation_run": false,
+    "source_tests_receipts_paper_manifest_git_modified": false,
+    "prior_result_to_claim_reviews_or_traces_read": false,
+    "prior_experiment_audits_read": false
+  }
+}

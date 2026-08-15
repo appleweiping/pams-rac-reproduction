@@ -1,0 +1,95 @@
+{
+  "schema": "warp_phase_experiment_audit_trace_summary.v1",
+  "audit_date": "2026-08-15",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "ultra",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "commands": [
+    {
+      "command": "$env:PYTHONDONTWRITEBYTECODE='1'; python .aris/traces/experiment-audit/20260815_warp_phase_sol/independent_checks.py",
+      "exit_code": 0
+    },
+    {
+      "command": "$env:PYTHONDONTWRITEBYTECODE='1'; python -c <recompute gate3_cpu_sanity_receipt and print canonical fields>",
+      "exit_code": 0
+    }
+  ],
+  "access_attestation": {
+    "network_or_server_access": false,
+    "real_data_opened": false,
+    "test_data_opened": false,
+    "sealed_data_opened": false,
+    "heldout_data_opened": false,
+    "prior_experiment_audit_files_opened": false,
+    "synthetic_gate2_pack_opened": true
+  },
+  "gate_receipts": {
+    "gate0": {
+      "status": "BLOCKED",
+      "authorizes_count": 0
+    },
+    "gate1": {
+      "status": "BLOCKED",
+      "authorizes_count": 0
+    },
+    "gate2": {
+      "status": "FAIL",
+      "authorizes_count": 0
+    },
+    "gate3_cpu": {
+      "status": "BLOCKED",
+      "authorizes_count": 0,
+      "recomputed_receipt_fields_match": true,
+      "cpu_diagnostic_sha256": "052c156cea23437a251856739d24122b1899fae054ab4c294ff63440d9c691ff"
+    }
+  },
+  "gate2_synthetic_recomputation": {
+    "canonical_fixture_receipt_sha256": "191a1689197f7e9a3eb965ee0dc0e52fa58e9d8485c097c9e601162fad24cd19",
+    "fixture_pack_sha256": "c6dbe56df7b4f7d427ce1f51d5d818ad0e46dcfbf6e1550e0d77116435760196",
+    "fixture_pack_sha256_recomputed": true,
+    "member_count": 23,
+    "member_hash_mismatch_count": 0,
+    "canonical_failure_count": 240,
+    "counts": {
+      "canonical_weak_agreement": 246,
+      "half_overall": 55,
+      "double_overall": 144,
+      "half_symmetric": 50,
+      "double_symmetric": 66
+    },
+    "thresholds_all_pass": false
+  },
+  "evaluator_in_memory_smoke": {
+    "normalized_video_first_mae": {
+      "control": 0.45,
+      "treatment": 0.1625
+    },
+    "bootstrap": {
+      "draws": 10000,
+      "control_mean": 0.20000000000000004,
+      "treatment_mean": 0.10000000000000002,
+      "absolute_effect": 0.10000000000000002,
+      "relative_improvement": 0.5,
+      "ci_lower": 0.09999999999999999,
+      "ci_upper": 0.10000000000000002,
+      "passed": true
+    },
+    "period_map": 100.0,
+    "ap50": 100.0,
+    "ap75": 100.0,
+    "period_scale": "[0,100]",
+    "period_median": 11.0,
+    "harmonic_gate_passed": true,
+    "k4_passed": true,
+    "nonfinite_harmonic_behavior": "raises_EvaluationError"
+  },
+  "call_path_scan": {
+    "roots": [
+      "src/pams",
+      "scripts/experiments"
+    ],
+    "static_imports_of_pams_warp_phase_evaluator_outside_module": [],
+    "literal_module_references_outside_module": []
+  }
+}

@@ -47,6 +47,7 @@ from pams.data import (
 from pams.metrics import compute_count_metrics
 from pams.reproducibility import durable_mkdir, fsync_directory
 from pams.synthetic import SyntheticSpec, generate_synthetic_sample, synthetic_stress_suite
+from pams.warp_phase.cli import app as warp_phase_app
 
 app = typer.Typer(
     name="pams",
@@ -194,6 +195,7 @@ app.add_typer(local_frequency_app, name="local-frequency")
 app.add_typer(teacher_period_app, name="teacher-period")
 app.add_typer(position_acf_app, name="position-acf")
 app.add_typer(stress_app, name="stress")
+app.add_typer(warp_phase_app, name="warp-phase")
 
 
 def _emit(payload: Any) -> None:

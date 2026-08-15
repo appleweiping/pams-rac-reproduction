@@ -132,6 +132,129 @@ def test_root_help_has_only_frozen_command_groups() -> None:
         assert command in result.stdout
 
 
+def test_warp_phase_group_is_attached_and_non_authorizing() -> None:
+    help_result = runner.invoke(app, ["warp-phase", "--help"])
+    assert help_result.exit_code == 0, help_result.output
+    assert "static-preflight" in _plain_text(help_result.stdout)
+
+    result = runner.invoke(app, ["warp-phase", "static-preflight"])
+    assert result.exit_code == 0, result.output
+    payload = _json_output(result.stdout)
+    assert payload["status"] == "PASS_NON_AUTHORIZING"
+    assert payload["authorizes"] == []
+
+
+def test_warp_phase_gate1_exposes_separate_selector_unit_fixture_inputs() -> None:
+    result = runner.invoke(app, ["warp-phase", "gate1", "--help"])
+    assert result.exit_code == 0, result.output
+    plain = _plain_text(result.stdout)
+    assert "--selector-unit-fixture-root" in plain
+    assert "--selector-unit-pack-receipt" in plain
+
+
+@pytest.mark.parametrize(
+    ("command", "gate_function", "arguments", "status"),
+    [
+        (
+            "gate0",
+            "gate0_pack_receipt",
+            (
+                "--repository-root",
+                "{tmp}",
+                "--train-source",
+                "{tmp}/train.pkl",
+                "--val-source",
+                "{tmp}/val.pkl",
+                "--run-root",
+                "{tmp}/run",
+            ),
+            "BLOCKED",
+        ),
+        (
+            "gate1",
+            "gate1_fixture_receipt",
+            ("--repository-root", "{tmp}"),
+            "FAIL",
+        ),
+        ("gate2", "gate2_selector_receipt", (), "BLOCKED"),
+        ("gate3-cpu", "gate3_cpu_sanity_receipt", (), "BLOCKED"),
+    ],
+)
+def test_warp_phase_gate_receipts_exit_nonzero_after_persistence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    command: str,
+    gate_function: str,
+    arguments: tuple[str, ...],
+    status: str,
+) -> None:
+    from pams.warp_phase import gates
+    from pams.warp_phase.gates import GateReceipt
+
+    frozen = GateReceipt(
+        gate=command.upper(),
+        status=status,
+        checks={"fixture": False},
+        bindings={},
+        blockers=("fixture_blocker",),
+        authorizes=(),
+    )
+    monkeypatch.setattr(gates, gate_function, lambda *_args, **_kwargs: frozen)
+    receipt = tmp_path / f"{command}.json"
+    rendered = tuple(value.replace("{tmp}", str(tmp_path)) for value in arguments)
+
+    result = runner.invoke(
+        app,
+        ["warp-phase", command, *rendered, "--receipt", str(receipt)],
+    )
+
+    assert result.exit_code == 1, result.output
+    assert _json_output(result.stdout)["status"] == status
+    assert json.loads(receipt.read_text(encoding="utf-8"))["status"] == status
+
+
+def test_warp_phase_blocked_train_receipt_exits_nonzero_after_persistence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pams.warp_phase import gates, training
+    from pams.warp_phase.training import TrainingCommandReceipt
+
+    monkeypatch.setattr(gates, "verify_training_environment_lock", lambda *_args: "a" * 64)
+    monkeypatch.setattr(gates, "verify_output_space_receipt", lambda *_args: "b" * 64)
+    blocked = TrainingCommandReceipt(
+        status="BLOCKED",
+        checks={"training_authorized": False},
+        bindings={},
+        blockers=("training_authorized_false",),
+        authorizes=(),
+    )
+    monkeypatch.setattr(training, "training_command_preflight", lambda **_kwargs: blocked)
+    receipt = tmp_path / "train-receipt.json"
+
+    result = runner.invoke(
+        app,
+        [
+            "warp-phase",
+            "train",
+            "--features-root",
+            str(tmp_path / "features"),
+            "--output-root",
+            str(tmp_path / "output"),
+            "--environment-lock",
+            str(tmp_path / "environment.json"),
+            "--output-space-receipt",
+            str(tmp_path / "output-space.json"),
+            "--receipt",
+            str(receipt),
+        ],
+    )
+
+    assert result.exit_code == 1, result.output
+    assert _json_output(result.stdout)["status"] == "BLOCKED"
+    assert json.loads(receipt.read_text(encoding="utf-8"))["status"] == "BLOCKED"
+
+
 def test_config_validate_outputs_fingerprint() -> None:
     result = runner.invoke(
         app,

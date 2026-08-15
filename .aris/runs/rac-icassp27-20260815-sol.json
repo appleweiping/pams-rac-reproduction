@@ -6,7 +6,7 @@
     "provisional_advances": true
   },
   "created": "2026-08-15T03:40:44Z",
-  "updated": "2026-08-15T08:37:39Z",
+  "updated": "2026-08-15T12:09:14Z",
   "gates": {},
   "phases": [
     {
@@ -24,8 +24,8 @@
     },
     {
       "phase": "experiment-bridge",
-      "status": "running",
-      "artifact": "refine-logs/EXPERIMENT_PLAN.md",
+      "status": "failed",
+      "artifact": "CLAIMS_FROM_RESULTS_WARP_PHASE.json",
       "verdict_id": null,
       "reviewer": null,
       "reviewer_family": null,
@@ -33,7 +33,7 @@
       "acceptance_status": null,
       "executor_model": "codex-gpt-5.6-sol",
       "executor_family": "openai",
-      "updated": "2026-08-15T08:37:24Z"
+      "updated": "2026-08-15T12:09:14Z"
     },
     {
       "phase": "auto-review-loop",

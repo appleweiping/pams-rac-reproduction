@@ -1,0 +1,39 @@
+{
+  "results": [
+    {
+      "claim": "The signed local warp-integral objective improves the frozen supplied-track tempo-drift endpoint under the preregistered rule",
+      "detail": "'FAIL' found in data/warp_phase_pilot_v1/audit/gate2/gate2-stochastic-v2.receipt.json",
+      "id": "WARP-C1",
+      "source": "data/warp_phase_pilot_v1/audit/gate2/gate2-stochastic-v2.receipt.json",
+      "status": "verified",
+      "value": "FAIL"
+    },
+    {
+      "claim": "Identity-private state isolates untouched identities under one-person intervention",
+      "detail": "'true' found in data/warp_phase_pilot_v1/audit/gate3/gate3-cpu-sanity.receipt.json",
+      "id": "WARP-C2",
+      "source": "data/warp_phase_pilot_v1/audit/gate3/gate3-cpu-sanity.receipt.json",
+      "status": "verified",
+      "value": "true"
+    },
+    {
+      "claim": "This candidate has eligible efficacy results",
+      "detail": "'zero eligible efficacy results' found in refine-logs/PIPELINE_SUMMARY.md",
+      "id": "WARP-C3",
+      "source": "refine-logs/PIPELINE_SUMMARY.md",
+      "status": "verified",
+      "value": "zero eligible efficacy results"
+    },
+    {
+      "claim": "This candidate is authorized for training or server launch",
+      "detail": "'No training run is currently authorized' found in refine-logs/PIPELINE_SUMMARY.md",
+      "id": "WARP-C4",
+      "source": "refine-logs/PIPELINE_SUMMARY.md",
+      "status": "verified",
+      "value": "No training run is currently authorized"
+    }
+  ],
+  "summary": {
+    "verified": 4
+  }
+}
