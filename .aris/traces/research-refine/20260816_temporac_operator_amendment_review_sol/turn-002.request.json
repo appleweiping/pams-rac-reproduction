@@ -1,0 +1,74 @@
+{
+  "acceptance_status": "provisional",
+  "binding_check_history": [
+    {
+      "amendment_json_sha256": "2b6b89bd93fb13578b7541fec4883b523e8687adf8d5674190dd411718f7e35c",
+      "amendment_markdown_sha256": "4143f2947c0ccfa51946f3aec1ae553fb7e872298587e16c3f1ffc81f704476c",
+      "result": "superseded_before_final_review_binding",
+      "stage": "round_1_blocker_revision"
+    },
+    {
+      "amendment_json_sha256": "cf193b9679f7caf35a7b1458f52b489e4bf9293a0557984a203fe620d07746f3",
+      "amendment_markdown_sha256": "899d6f071c89f898bf3825adfb30a326904f9bc7fe44d44351da8a5d0d9ccb14",
+      "result": "rejected_stale_internal_markdown_binding",
+      "stage": "hashio_rebinding"
+    },
+    {
+      "amendment_json_sha256": "d524556f292ec17a155cdcd962cf8a88bea26f32b810ffb7bd8e45744f1c54fc",
+      "amendment_markdown_sha256": "899d6f071c89f898bf3825adfb30a326904f9bc7fe44d44351da8a5d0d9ccb14",
+      "result": "final_all_bindings_verified",
+      "stage": "final_round_2_input"
+    }
+  ],
+  "call_number": 2,
+  "executor_family": "openai",
+  "files_referenced": [
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.md",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.json",
+    "refine-logs/temporac/FINAL_PROPOSAL.md",
+    "refine-logs/FINAL_PROPOSAL.md",
+    "refine-logs/EXPERIMENT_PLAN.md",
+    "refine-logs/EXPERIMENT_TRACKER.md",
+    "src/pams/temporac/contract.py",
+    "src/pams/temporac/hashio.py",
+    "src/pams/temporac/fixtures.py",
+    "tests/temporac/test_gates_fixtures.py"
+  ],
+  "final_input_sha256": {
+    "refine-logs/EXPERIMENT_PLAN.md": "3fd1986871b32674d74b395fbfc9720712d9fba0c8583c24c1d5bddb87086eb6",
+    "refine-logs/EXPERIMENT_TRACKER.md": "c7e2f32c3c81b66884abb13760a671ecc7cdd314fd6c994a4ed4c46cb754a63b",
+    "refine-logs/FINAL_PROPOSAL.md": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c",
+    "refine-logs/temporac/FINAL_PROPOSAL.md": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.json": "d524556f292ec17a155cdcd962cf8a88bea26f32b810ffb7bd8e45744f1c54fc",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.md": "899d6f071c89f898bf3825adfb30a326904f9bc7fe44d44351da8a5d0d9ccb14",
+    "src/pams/temporac/contract.py": "b71255a35cce1701d2741064064b53ba819b742873a348f1852f147149e36467",
+    "src/pams/temporac/fixtures.py": "a8d10df7c8e3cbcb5684198192d3a553921da0f6aa92f03e54448ee182671406",
+    "src/pams/temporac/hashio.py": "2d81e415b45e3d1b612f998b6a8386a967dfdfcfaac31bc914b2c95cbaeeab3a",
+    "tests/temporac/test_gates_fixtures.py": "4c33a46d6dfe4119c3a82e1d8df5602d12bc1fd469664805be1a67be75ad6443"
+  },
+  "model": "gpt-5.6-sol",
+  "prompt": "Amendment 002 has been revised after the same reviewer's Round 1 REVISE. Fully reread the final amendment/JSON, both proposals, plan/tracker, fixtures/hashio/test, independently recompute capped b=255, lookup and inventory witnesses, plateau/flat behavior, e32 actual bytes, row witnesses, hashes, and bindings, and return Round 2 ACCEPT or REVISE. Persist faithful Round 1 and Round 2 review artifacts and exactly two review_trace events. Response files must be byte-identical to their canonical review Markdown. Use gpt-5.6-sol/openai/openai/same-family/provisional and grant zero authority. Write only the authorized review and trace files.",
+  "purpose": "temporac-operator-amendment-002-round-2-review",
+  "recorded_at": "2026-08-16T07:02:48.8650283+08:00",
+  "review_independence": "same-family",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "tool": "codex",
+  "turn": 2,
+  "verdict": "ACCEPT",
+  "authority": {
+    "canonical_edit": false,
+    "claims": false,
+    "data_access": false,
+    "gate_pass": false,
+    "git": false,
+    "implementation": false,
+    "manifest": false,
+    "paper_promotion": false,
+    "results": false,
+    "s0": false,
+    "server": false,
+    "test_execution": false,
+    "training": false
+  }
+}

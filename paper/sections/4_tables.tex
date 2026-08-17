@@ -1,0 +1,51 @@
+% Encounter the paired table float before the experiments text so that the
+% two panels can occupy the top of technical page four rather than page five.
+\begin{table*}[!t]
+\centering
+\begin{minipage}[t]{0.625\textwidth}
+\centering
+\caption{Protocol-separated main comparison. Arrows indicate metric direction;
+pending cells contain no measurement.}
+\label{tab:main}
+\setlength{\tabcolsep}{1.35pt}
+\tiny
+\begin{tabular}{llccccc}
+\toprule
+Method & Protocol & P-mAP $\uparrow$ & AP50 $\uparrow$ & AP75 $\uparrow$ & MAE $\downarrow$ & OBO $\uparrow$ \\
+\midrule
+MultiCounter \cite{tang2024multicounter} & native & \pendingcell{mc-pmap} & \pendingcell{mc-ap50} & \pendingcell{mc-ap75} & \pendingcell{mc-mae} & \pendingcell{mc-obo} \\
+MultiCounter+ \cite{tang2026multicounterplus} & native & \pendingcell{mcp-pmap} & \pendingcell{mcp-ap50} & \pendingcell{mcp-ap75} & \pendingcell{mcp-mae} & \pendingcell{mcp-obo} \\
+\midrule
+Track-PAMS \cite{gao2026pams} & oracle & \pendingcell{otp-pmap} & \pendingcell{otp-ap50} & \pendingcell{otp-ap75} & \pendingcell{otp-mae} & \pendingcell{otp-obo} \\
+Global tempo & oracle & \pendingcell{otg-pmap} & \pendingcell{otg-ap50} & \pendingcell{otg-ap75} & \pendingcell{otg-mae} & \pendingcell{otg-obo} \\
+TempoRAC & oracle & \pendingcell{oours-pmap} & \pendingcell{oours-ap50} & \pendingcell{oours-ap75} & \pendingcell{oours-mae} & \pendingcell{oours-obo} \\
+\midrule
+Track-PAMS \cite{gao2026pams} & common track & \pendingcell{tp-pmap} & \pendingcell{tp-ap50} & \pendingcell{tp-ap75} & \pendingcell{tp-mae} & \pendingcell{tp-obo} \\
+Global tempo & common track & \pendingcell{tg-pmap} & \pendingcell{tg-ap50} & \pendingcell{tg-ap75} & \pendingcell{tg-mae} & \pendingcell{tg-obo} \\
+TempoRAC & common track & \pendingcell{ours-pmap} & \pendingcell{ours-ap50} & \pendingcell{ours-ap75} & \pendingcell{ours-mae} & \pendingcell{ours-obo} \\
+\bottomrule
+\end{tabular}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.355\textwidth}
+\centering
+\caption{Paired mechanism ablations. Deltas are variant minus the soft-routing
+NOLA reference.}
+\label{tab:ablation}
+\setlength{\tabcolsep}{1.25pt}
+\tiny
+\begin{tabular}{llllcc}
+\toprule
+Tempo & Cue & Route & Merge & $\Delta$MAE & $\Delta$OBO \\
+\midrule
+global & A+F & uniform & NOLA & \pendingcell{abl-global-mae} & \pendingcell{abl-global-obo} \\
+local & ACF & soft & NOLA & \pendingcell{abl-acf-mae} & \pendingcell{abl-acf-obo} \\
+local & FFT & soft & NOLA & \pendingcell{abl-fft-mae} & \pendingcell{abl-fft-obo} \\
+local & A+F & single & NOLA & \pendingcell{abl-single-mae} & \pendingcell{abl-single-obo} \\
+local & A+F & hard & NOLA & \pendingcell{abl-hard-mae} & \pendingcell{abl-hard-obo} \\
+local & A+F & soft & boxcar & \pendingcell{abl-boundary-mae} & \pendingcell{abl-boundary-obo} \\
+local & A+F & soft & window & \pendingcell{abl-window-mae} & \pendingcell{abl-window-obo} \\
+local & A+F & soft & NOLA & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\end{table*}

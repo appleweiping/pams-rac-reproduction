@@ -1,0 +1,111 @@
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{xspace}
+\usepackage{url}
+\usepackage[breaklinks=true,colorlinks=false,hidelinks]{hyperref}
+
+\definecolor{DraftRed}{HTML}{A50F15}
+\definecolor{DraftFill}{HTML}{FEE5D9}
+\definecolor{MethodBlue}{HTML}{0072B2}
+\definecolor{MethodOrange}{HTML}{E69F00}
+\definecolor{MethodGreen}{HTML}{009E73}
+
+\newif\ifsubmission
+\ifdefined\RACsubmission
+  \submissiontrue
+\else
+  \submissionfalse
+\fi
+
+\newcommand{\draftbanner}{%
+  \ifsubmission\else
+    \begin{center}
+      \fcolorbox{DraftRed}{DraftFill}{%
+        \parbox{0.90\columnwidth}{\centering\bfseries\color{DraftRed}
+        DRAFT -- RESULTS PENDING}}
+    \end{center}
+  \fi}
+
+\makeatletter
+\newcommand{\DeclareResult}[2]{%
+  \expandafter\gdef\csname rac@result@#1\endcsname{#2}}
+\newcommand{\DeclareProtocolField}[2]{%
+  \expandafter\gdef\csname rac@protocol@#1\endcsname{#2}}
+\newcommand{\DeclareResultClaim}[2]{%
+  \expandafter\gdef\csname rac@claim@#1\endcsname{#2}}
+\newcommand{\DeclareAbstractResult}[1]{\gdef\rac@abstractresult{#1}}
+
+\newcommand{\R}[1]{%
+  \@ifundefined{rac@result@#1}{%
+    \ifsubmission
+      \PackageError{rac-paper}{Missing audited result `#1'}%
+        {Generate evidence_values.tex from an eligible frozen result manifest.}%
+    \else
+      \textcolor{DraftRed}{\scriptsize\textsc{pending}}%
+    \fi
+  }{\csname rac@result@#1\endcsname}}
+
+\newcommand{\Protocol}[1]{%
+  \@ifundefined{rac@protocol@#1}{%
+    \ifsubmission
+      \PackageError{rac-paper}{Missing verified protocol field `#1'}%
+        {Bind the field to the frozen artifact manifest.}%
+    \else
+      \textcolor{DraftRed}{\textsc{pending}}%
+    \fi
+  }{\csname rac@protocol@#1\endcsname}}
+
+\newcommand{\C}[1]{%
+  \@ifundefined{rac@claim@#1}{%
+    \ifsubmission
+      \PackageError{rac-paper}{Missing audited result claim `#1'}%
+        {Run result-to-claim and paper-claim audits before enabling the claim.}%
+    \else
+      \textcolor{DraftRed}{\textsc{result-dependent statement withheld}}%
+    \fi
+  }{\csname rac@claim@#1\endcsname}}
+
+\newcommand{\ControlledAbstractResult}{%
+  \@ifundefined{rac@abstractresult}{%
+    \ifsubmission
+      \PackageError{rac-paper}{Missing audited abstract result sentence}%
+        {Declare one evidence-bound sentence in generated/evidence_values.tex.}%
+    \else
+      \textcolor{DraftRed}{Experimental evidence is pending synchronization
+      with the collaborator's frozen implementation and audited MultiRep runs.}%
+    \fi
+  }{\rac@abstractresult}}
+\makeatother
+
+\newcommand{\Pending}[1]{%
+  \ifsubmission
+    \PackageError{rac-paper}{Unresolved pending field `#1'}%
+      {Resolve the field through the evidence and submission validators.}%
+  \else
+    \textcolor{DraftRed}{\textsc{pending}}%
+  \fi}
+
+\newcommand{\SyncRequired}[1]{%
+  \ifsubmission
+    \PackageError{rac-paper}{SYNC-REQUIRED interface `#1'}%
+      {Bind the prose and equations to the collaborator's frozen source.}%
+  \else
+    \textcolor{DraftRed}{\textsc{sync-required}: #1}%
+  \fi}
+
+\InputIfFileExists{generated/evidence_values.tex}{}{}
+
+\newcommand{\method}{the proposed routing specification\xspace}
+\newcommand{\ClaimMap}[1]{}
+\newcommand{\pendingcell}[1]{\R{#1}}
+
+\setlength{\abovecaptionskip}{3pt}
+\setlength{\belowcaptionskip}{-3pt}
+\setlength{\textfloatsep}{7pt plus 1pt minus 2pt}
+\setlength{\floatsep}{5pt plus 1pt minus 1pt}

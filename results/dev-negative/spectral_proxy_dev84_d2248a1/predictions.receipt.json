@@ -1,0 +1,20 @@
+{
+  "artifact_type": "spectral_proxy_prediction_receipt",
+  "created_at_utc": "2026-07-29T20:33:01Z",
+  "dev_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+  "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+  "identity_receipt_sha256": "16fef8581a03a7746df0a3fc2d98c133803edd679e63f3c21eff856179370a7f",
+  "label_firewall": {
+    "gt_count_or_action_oracle_used": false,
+    "prediction_inputs_contain_count_or_action": false,
+    "prediction_process_loaded_dev_targets": false,
+    "prediction_process_loaded_test_targets": false,
+    "prediction_process_loaded_train_targets": false
+  },
+  "pose_cache_snapshot_sha256": "2e14cb39a4112f7ee1d10b759d166bb472f41e317e55e773776394331690256c",
+  "prediction_code_sha256": "59eddf43d696ed9994fec5a08421dbbba828f98b249fa253d2986ebca28c94e2",
+  "predictions_sha256": "7efeec8c44e36786cd95b8f005357ad5a596f8a508c8290ee4b74f8a1dcf7261",
+  "sample_count": 84,
+  "schema_version": 1,
+  "source_git_sha": "d2248a17c0ec25c4b0a3d3db8104a713dff9aad0"
+}

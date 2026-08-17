@@ -1,0 +1,453 @@
+{
+  "schema_version": "temporac.research_refine_review.v5",
+  "skill": "research-refine",
+  "review_round": 5,
+  "max_round": true,
+  "review_date": "2026-08-16",
+  "proposal_under_review": "refine-logs/temporac/round-4-refinement.md",
+  "proposal_sha256": "ff2f4db61ce7be419b9bc440579a7f18cf0400180de054fde4b3e3c92fae0c90",
+  "proposal_bytes": 81746,
+  "proposal_lines": 1457,
+  "reviewer": {
+    "agent_id": "/root/temporac_refine_reviewer",
+    "reviewer_model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "reasoning_effort": "xhigh",
+    "continuation_of_prior_rounds_same_agent": true
+  },
+  "calibration": {
+    "status": "none",
+    "statement": "No curated known-good/known-bad local research-refine proposals were supplied; scoring uses the stated top-venue method-first rubric."
+  },
+  "input_version_resolution": {
+    "authoritative_final_sha256": "ff2f4db61ce7be419b9bc440579a7f18cf0400180de054fde4b3e3c92fae0c90",
+    "superseded_before_verdict_freeze": [
+      "56200d1092266d3c9a6c456cfed13400b989de5ce2c6df1cee868f145fbad9b5",
+      "8dd68b20d2a619063b42baa1015fdb3204193b17d62a93814e9078cf6d5f47a2"
+    ],
+    "final_file_reread_start_to_eof": true,
+    "judgment_bound_only_to_authoritative_final_sha256": true
+  },
+  "anchor": {
+    "status": "FULL_SECTION_VERBATIM_PRESERVED_TWICE",
+    "immutable_field_count": 5,
+    "drift_guard_paragraph_present_in_both": true,
+    "revised_occurrences": 2,
+    "both_revised_sections_ordinally_match_round_0": true,
+    "section_body_extraction": "Text after the ## Problem Anchor heading through immediately before the next level-2 heading, with trailing whitespace removed.",
+    "section_body_sha256": "44dce8546f499acdede797055625657579685c0b75dc64c26d3f51003e956b71",
+    "substantive_drift": false,
+    "graph_matches_original_temporac": true,
+    "graph": [
+      "externally supplied person-indexed pose tracks",
+      "identity-private preprocessing, causal context, NOLA state, and decoding",
+      "one encoder shared across identities",
+      "three shared matched slow/medium/fast causal response branches",
+      "one detached cue-only irregular-clock NUDFT router with identity-local run reference",
+      "probability-level soft response fusion",
+      "exact positive NOLA reconstruction",
+      "one threshold-0.5 connected-component decoder invocation per identity"
+    ],
+    "forbidden_replacements_absent": [
+      "WARP-PHASE selector or objective",
+      "scene-level counter",
+      "single-person task substitution",
+      "per-person model copies",
+      "learned router",
+      "ACF fusion",
+      "PAMS-TCC initialization",
+      "GRU alternative",
+      "integral decoder",
+      "independent window decode",
+      "backup pivot"
+    ]
+  },
+  "scores": [
+    {
+      "dimension": "Problem Fidelity",
+      "weight": 0.15,
+      "score": 9.9,
+      "weighted_contribution": 1.485
+    },
+    {
+      "dimension": "Method Specificity",
+      "weight": 0.25,
+      "score": 9.2,
+      "weighted_contribution": 2.3
+    },
+    {
+      "dimension": "Contribution Quality",
+      "weight": 0.25,
+      "score": 8.8,
+      "weighted_contribution": 2.2
+    },
+    {
+      "dimension": "Frontier Leverage",
+      "weight": 0.15,
+      "score": 9.1,
+      "weighted_contribution": 1.365
+    },
+    {
+      "dimension": "Feasibility",
+      "weight": 0.1,
+      "score": 8.8,
+      "weighted_contribution": 0.88
+    },
+    {
+      "dimension": "Validation Focus",
+      "weight": 0.05,
+      "score": 9.4,
+      "weighted_contribution": 0.47
+    },
+    {
+      "dimension": "Venue Readiness",
+      "weight": 0.05,
+      "score": 8.5,
+      "weighted_contribution": 0.425
+    }
+  ],
+  "weighted_composite": {
+    "exact": 9.125,
+    "displayed": 9.125,
+    "calculation": "9.9*0.15 + 9.2*0.25 + 8.8*0.25 + 9.1*0.15 + 8.8*0.10 + 9.4*0.05 + 8.5*0.05 = 9.125",
+    "ready_threshold": 9.0
+  },
+  "gap": {
+    "signed_from_ready_threshold": 0.125,
+    "statement": "The proposal is 0.125 points above READY. There is no substantive drift and no blocking issue; residual uncertainty is empirical gate passage and separate novelty/execution authorization."
+  },
+  "dominant_claim": {
+    "status": "FOCUSED",
+    "claim": "Identity-indexed window-local relative-tempo routing improves supplied-track counting under deterministic within-track drift relative to the strongest frozen matched nonlocal/control comparator while retaining clean performance.",
+    "supporting_mechanism_only": "Three-by-three diagonal slow/medium/fast expert specialization on heldout resamplers.",
+    "paper_visible_evidence_block_count": 3,
+    "paper_visible_evidence_blocks": [
+      "natural local versus strongest nonlocal/control drift result plus paired unwarped/clean retention",
+      "heldout three-by-three expert specialization matrix and G_diag",
+      "certificate coverage, analytic/certified/resampler pulse equality, and decoder boundary errors/margins"
+    ],
+    "audit_evidence_not_contributions": [
+      "topology and primitive-unit kills",
+      "identity isolation and shortcut attacks",
+      "operator inventories and NOLA fixtures",
+      "data firewall, receipt hashes, runtime, and resource logs"
+    ]
+  },
+  "degree_one_teacher": {
+    "ruling": "SUFFICIENT_EXECUTABLE_FAIL_CLOSED_PREREQUISITE",
+    "clock_blind_two_sided_direction_complete": true,
+    "pose_landmark_canonicalized": true,
+    "no_bypass_decoder": true,
+    "teacher_loss_f11_complete": true,
+    "teacher_uses_evaluator_labels": false,
+    "x0_landmarks": 11,
+    "x0_complete_traversals": 10,
+    "x0_analytic_certified_pulse_equality_required": true,
+    "topology_attack_bank_finite_and_hashed": true,
+    "natural_start_pulse_delta_phi_strictly_positive": true,
+    "natural_start_pulse_chi_strictly_positive": true,
+    "per_traversal_degree_one_certified": true,
+    "human_primitive_unit_bridge": "K7 requires exactly one frozen teacher pulse start per raw evaluator interval, none outside the interval union, and equality to interval-list length and count_gt; one mismatch kills globally.",
+    "integral_decoder_replacement_permitted": false
+  },
+  "x0_generator_and_certificate": {
+    "status": "COHERENT_AND_EXECUTABLE",
+    "source_orbits": 40,
+    "splits": {
+      "train": 24,
+      "tune": 8,
+      "heldout": 8
+    },
+    "stationary_schedule": "S_stat[n mod 7] with S_stat=(5,8,16,32,64,127,128)",
+    "drift_blocks": [
+      "SMF",
+      "SFM",
+      "MSF",
+      "MFS",
+      "FSM",
+      "FMS"
+    ],
+    "traversals_per_block": 10,
+    "direct_offset_count": 32,
+    "heldout_base_views": 112,
+    "all_offset_views_per_response_seed": 3584,
+    "query_range": "[-8,344]",
+    "knot_bank": "[-39,375]",
+    "formula_identifiers_exact_sequence": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+  },
+  "one_final_peak_pass": {
+    "ruling": "DEFENSIBLE_AS_WRITTEN_NO_INTEGRAL_REPLACEMENT",
+    "decoder": "One threshold-0.5 connected-component call per identity after exact positive NOLA and float32 quantization.",
+    "supports": [
+      "binary one-edge target with exact seam ownership",
+      "complete balanced BCE with positive and negative margin terms",
+      "positive pulse chi and constructive W+",
+      "differentiable exact positive NOLA",
+      "deterministic operator and trained all-offset split/merge gates",
+      "analytic/certified/resampler pulse and count equality",
+      "K7 per-evaluator-interval one-pulse and no-extra kill"
+    ],
+    "failure_action": "Reject TempoRAC; do not substitute integral mass, NMS, period fitting, or independent window sums."
+  },
+  "cue_only_routing_and_matched_experts": {
+    "ruling": "CAUSALLY_SUPPORTS_ORIGINAL_ROUTING_CLAIM",
+    "cue_excluded_from_encoder_and_experts": true,
+    "cue_and_gates_detached": true,
+    "same_response_interventions": [
+      "local",
+      "global",
+      "uniform",
+      "blocked",
+      "shuffled"
+    ],
+    "blocked_uniform_byte_equality_required": true,
+    "matched_expert_shapes_and_parameter_counts": true,
+    "capacity_control_separately_trained_and_matched": true,
+    "identity_isolation_counterfactual_present": true,
+    "pose_shuffle_exactly_frozen": true,
+    "specialization_role": "supporting mechanism check only"
+  },
+  "v44_and_firewall": {
+    "status": "COHERENT_ACYCLIC_AND_FAIL_CLOSED",
+    "source_population": {
+      "train_identities": 268,
+      "development_identities": 134,
+      "train_components": 18,
+      "development_components": 9
+    },
+    "g0_floors": {
+      "train_identities": 215,
+      "development_identities": 108,
+      "train_components": 15,
+      "development_components": 8
+    },
+    "p_min": 5,
+    "supported_gap": "1 <= delta_q < 5",
+    "whole_identity_failure": true,
+    "manifest_feature_receipt_field": "feature_receipt_sha256_or_null",
+    "target_count_root_rows_frozen": true,
+    "clean_drift_prediction_condition_explicit": true,
+    "natural_map_max_gap": 4.96,
+    "g5a_before_vault": true,
+    "capability_invocation_count": 1,
+    "capability_consumption": "one non-resumable evaluator process runs G5b then K7",
+    "k7_receipt_binds_g5a_g5b_metric_payload": true,
+    "label_leakage_path_in_proposal": false
+  },
+  "natural_pilot": {
+    "ruling": "GENUINELY_FALSIFIABLE",
+    "population_complete_including_stubs": true,
+    "prediction_artifact_count": 9648,
+    "video_grouping": "opaque_key_hex equality class; people within video, videos equally, seeds equally",
+    "bootstrap": "10,000 component draws preserving video weights and all paired arm/seed/condition values",
+    "strongest_comparator_reselected_per_drift_draw": true,
+    "drift_selected_comparator_reused_for_clean": true,
+    "primitive_unit_kill": "exactly one pulse start per raw interval, no start outside their union, count equality",
+    "drift_rule": "M_route/E_N,drift >= 0.05 and lower bound M_route > 0",
+    "clean_rule": "D_clean point <= 0.01 and paired upper bound <= 0.02, plus ratio rule",
+    "single_final_decision": true
+  },
+  "gate_executability": [
+    {
+      "gate": "S0",
+      "status": "EXECUTABLE_PRE_DATA_BYTE_COMMITMENT"
+    },
+    {
+      "gate": "G0/K0",
+      "status": "ACYCLIC_AND_EXECUTABLE_AFTER_SEPARATE_PACKER_AUTHORIZATION"
+    },
+    {
+      "gate": "G1/K1",
+      "status": "EXECUTABLE_TEACHER_TOPOLOGY_AND_COVERAGE_GATE"
+    },
+    {
+      "gate": "G2/K2",
+      "status": "EXECUTABLE_CAUSAL_NOLA_ISOLATION_AND_TARGET_GATE"
+    },
+    {
+      "gate": "G3/K3/K4",
+      "status": "EXECUTABLE_FIXED_JOB_ROUTING_AND_SPECIALIZATION_GATE"
+    },
+    {
+      "gate": "G4/K5/K6",
+      "status": "EXECUTABLE_OPERATOR_OFFSET_AND_RESAMPLER_GATE"
+    },
+    {
+      "gate": "G5a/CAPABILITY/G5b/K7",
+      "status": "ACYCLIC_SINGLE_USE_FAIL_CLOSED_EVALUATOR_GATE"
+    }
+  ],
+  "interfaces_and_numerics": {
+    "status": "IMPLEMENTATION_READY_AT_PROPOSAL_CONTRACT_LEVEL",
+    "feature_archive": "exact seven-member per-identity NPZ with detached receipt",
+    "target_archive_and_receipt": "exact members, identity tuple, source kind, teacher binding, and CERTIFIED-only rule",
+    "prediction_archive": "population-wide clean/drift artifact including abstention stubs",
+    "abstention_reasons": "unique ascending uint16 vector with fixed numeric table",
+    "decode_quantization": "response is float32 before fixed decoding",
+    "runtime": "exact Linux/Python/NumPy/SciPy/PyTorch/CUDA/cuDNN/driver/GPU class",
+    "determinism": "fixed float32/float64 roles, no AMP/TF32, deterministic kernels, one process/GPU, zero workers",
+    "training_horizons": "teacher 20000 steps; every response job 10000 steps",
+    "checkpoint_and_lr": "fixed cadence, tune-only selection, F22 schedule",
+    "rng": "domain-separated PCG64 and Torch generators with frozen cycles and receipts",
+    "receipt_preimages": "canonical JSON and length-prefixed SHA-256 rules fixed"
+  },
+  "staged_compute_and_validation": {
+    "gpu_budget_a6000_hours_max": 100,
+    "teacher_jobs": 3,
+    "response_jobs": 24,
+    "response_job_breakdown": {
+      "canonical": 3,
+      "capacity_control": 3,
+      "shortcut": 18
+    },
+    "teacher_a6000_hours": 18,
+    "response_a6000_hours": 60,
+    "heldout_inference_a6000_hours": 3,
+    "natural_prediction_a6000_hours": 12,
+    "total_allocated_a6000_hours": 93,
+    "unallocated_a6000_hours": 7,
+    "maximum_concurrency": 2,
+    "outer_budget_status": "WITHIN_CONSTRAINT",
+    "stage_order_minimality": "PASS_EARLY_CERTIFICATION_AND_SYNTHETIC_KILLS_PRECEDE_LATER_COST",
+    "paper_visible_evidence_block_count": 3,
+    "route_or_job_expansion_recommended": false
+  },
+  "blocking_issues": [],
+  "dimensions_below_7": [],
+  "simplification_opportunities": [
+    "Keep temporac.execution.v4 as the sole normative contract and materialize its fixture/receipt tables as generated appendix artifacts rather than paper claims.",
+    "Keep exactly three paper-visible evidence blocks and 24 response jobs; do not promote audit fixtures into contributions.",
+    "Present the causal chain compactly as cue-only routing intervention to matched response fusion to positive NOLA to one fixed decode."
+  ],
+  "modernization_opportunities": {
+    "status": "NONE",
+    "reason": "Foundation models, learned routing, distillation, reinforcement learning, or search would not improve mechanism identifiability and would add component sprawl."
+  },
+  "drift": {
+    "warning": "NONE",
+    "anchor_fields_preserved": true,
+    "drift_guard_preserved_in_both_copies": true,
+    "entire_problem_anchor_section_verbatim_twice": true,
+    "graph_preserved": true,
+    "substantive_drift_detected": false,
+    "future_drift_triggers": [
+      "replace fixed local three-expert routing with WARP-PHASE or a global selector",
+      "use evaluator count, period, density, or boundaries in training, target generation, checkpointing, or reruns",
+      "add a learned router or per-person model copy",
+      "allow cross-identity state",
+      "decode windows independently",
+      "replace the fixed component decoder with integral mass after failure",
+      "add a backup pivot or fourth paper-visible claim"
+    ]
+  },
+  "remaining_action_items": [
+    {
+      "rank": 1,
+      "priority": "CRITICAL",
+      "category": "POST_REFINEMENT_EXECUTION",
+      "action": "Commit S0 environment, source, fixture, code/config, interface, job, and RNG bytes before any data access; mismatch fails."
+    },
+    {
+      "rank": 2,
+      "priority": "CRITICAL",
+      "category": "SEPARATE_AUTHORIZATION",
+      "action": "Create a fresh TempoRAC experiment plan and server/resource preflight for the 93-hour ledger; do not inherit WARP-PHASE authority."
+    },
+    {
+      "rank": 3,
+      "priority": "CRITICAL",
+      "category": "EXECUTION_DISCIPLINE",
+      "action": "Execute F23 in order, keep the vault sealed through G5a, consume one capability in the single G5b-to-K7 process, and do not filter, retune, resume, or pivot after failure."
+    },
+    {
+      "rank": 4,
+      "priority": "IMPORTANT",
+      "category": "SEPARATE_VENUE_CLEARANCE",
+      "action": "Resolve novelty/TWCRAC, title/acronym, and four-page presentation independently before any paper claim."
+    }
+  ],
+  "authorization": {
+    "method_refinement_verdict": "READY",
+    "additional_refinement_round": "NOT_PROPOSED_ROUND_5_IS_FINAL",
+    "fresh_experiment_plan_and_preflight": "REQUIRED_NEXT_NOT_PERFORMED",
+    "novelty_clearance": "NOT_GRANTED",
+    "closest_prior_twcrac_resolution": "UNRESOLVED",
+    "title_or_acronym_freeze": "NOT_AUTHORIZED",
+    "implementation_or_test_execution": "NOT_AUTHORIZED_BY_THIS_REVIEW",
+    "server_or_data_bearing_training": "NOT_AUTHORIZED",
+    "test_sealed_heldout_historical_result_access": "NOT_AUTHORIZED",
+    "positive_performance_claims": "NOT_AUTHORIZED",
+    "paper_drafting_editing_submission_public_claim": "NOT_AUTHORIZED"
+  },
+  "verdict": {
+    "code": "READY",
+    "ready_rule_satisfied": true,
+    "weighted_score_at_least_9": true,
+    "no_substantive_drift": true,
+    "no_blocking_issue": true,
+    "max_round_final": true,
+    "rationale": "The final contract preserves both full anchors and the exact TempoRAC graph, closes the teacher, pulse/decoder, causal-routing, interface, unit, firewall, gate-order, and metric contracts, and remains within 93 A6000-hours. Remaining risk is empirical and separately authorized rather than a missing method definition."
+  },
+  "input_resolution": {
+    "requested_missing_path": "idea-stage/RESEARCH_REVIEW.md",
+    "status": "MISSING",
+    "available_canonical_legacy_substitute": "idea-stage/RESEARCH_REVIEW.json",
+    "missing_input_is_blocker": false
+  },
+  "input_sha256": {
+    ".agents/skills/research-refine/SKILL.md": "bb489173329fec7a6551c74c319e2103d83f722ea11fc11462a7c4ccacd00b09",
+    ".agents/skills/shared-references/review-tracing.md": "4f4936984391da87464b8e8bf6f7c984f3f186e8fdc42890d0ac999b5e2024dc",
+    ".agents/skills/shared-references/taste-calibration.md": "ab5880c4989e2d05ab58212d46e4bd4e215b1cee87b430e7d94d31bc431b947d",
+    "refine-logs/temporac/round-4-refinement.md": "ff2f4db61ce7be419b9bc440579a7f18cf0400180de054fde4b3e3c92fae0c90",
+    "refine-logs/temporac/round-0-initial-proposal.md": "654fbbc0038a7c74ffd73295ccb5a0bca533ccbee3b527b2c7804b528abe6fb2",
+    "refine-logs/temporac/PHASE_ORIGIN_AUDIT.md": "83909c6b34757fc6d15502ff202c6e50d26c69b1d5763c4322857b160c242b1c",
+    "idea-stage/TEMPORAC_CANONICAL_REVIEW_BRIEF.md": "63b84447a6af9c4228bd5f93787b7cab0da4e9e96ac7258d7217e14ce915ba08",
+    "idea-stage/TEMPORAC_RESEARCH_REVIEW.md": "ebfbb5cb5ff3963daf70156082bfeefc3832aa4932d3699aa40f7cb2b52012a9",
+    "PILOT_DATA_SCHEMA_AUDIT.md": "7058981e8eb37622c09f5808a4b1329bc7cd133f474101723f15e5e4273eab25",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.md": "49edcfe25c302c2b55b8e65bc18e1cb7febe25cc8b76698d631fa24150d4b0b5",
+    "refine-logs/temporac/round-4-review.md": "0ce87089296daf423452430f1782efef1b0276b64d1419706cc29276bf52dfdb",
+    "refine-logs/temporac/round-4-review.json": "129bd83763229486d9a7302ca52191ab49b118d681bf0f869d8172de17c60843"
+  },
+  "independent_math_audit": {
+    "proposal_sha256": "ff2f4db61ce7be419b9bc440579a7f18cf0400180de054fde4b3e3c92fae0c90",
+    "full_lines_read": 1457,
+    "six_prior_math_blockers_closed": true,
+    "remaining_fatal_equation_domain_index_contradiction": false,
+    "files_modified": false
+  },
+  "raw_review_binding": {
+    "trace_response_path": ".aris/traces/research-refine/20260816_temporac_round5_sol/001-round-5-review.response.md",
+    "trace_response_sha256": "701b7406339d86932a2bfe2047e577a066e738238e8addae48b7ed813ac114d4",
+    "canonical_markdown_path": "refine-logs/temporac/round-5-review.md",
+    "canonical_markdown_sha256": "b183cd49f96b2243d8b67187119e6af468c87fa7ad4edb5ebc5727250b104c67",
+    "canonical_contains_complete_raw_review_verbatim": true
+  },
+  "trace_binding": {
+    "run_meta_path": ".aris/traces/research-refine/20260816_temporac_round5_sol/run.meta.json",
+    "run_meta_sha256": "51a68e226a629b849e22e55034e510b0aae6185bb9decb09261a1cd5c1d0ec59",
+    "request_path": ".aris/traces/research-refine/20260816_temporac_round5_sol/001-round-5-review.request.json",
+    "request_sha256": "a35f4c9673e946b0860e1d67897a6120c45cfe6e3efcfe3dd51e494433cd23e5"
+  },
+  "output_status": {
+    "canonical_markdown": "WRITTEN_AND_VALIDATED",
+    "structured_json": "WRITTEN_AND_VALIDATED",
+    "trace": "FULL_TRACE_WRITTEN_AND_VALIDATED",
+    "review_trace_event": "APPENDED_EXACTLY_ONCE_AND_VALIDATED",
+    "utf8_no_bom": "VALIDATED",
+    "raw_response_binding": "VALIDATED",
+    "input_rehash": "VERIFIED_AT_FINALIZATION",
+    "output_scope": "VERIFIED_ALLOWED_PATHS_PLUS_REQUIRED_TRACE_EVENT_ONLY",
+    "manifest_modified": false,
+    "refine_state_modified": false,
+    "score_history_modified": false,
+    "proposal_modified": false,
+    "code_or_tests_modified": false,
+    "implementation_started": false,
+    "data_modified": false,
+    "server_accessed": false,
+    "paper_modified": false,
+    "git_command_or_index_modified": false
+  }
+}

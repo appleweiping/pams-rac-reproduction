@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0",
+  "round": 4,
+  "artifact_reviewed": "refine-logs/round-3-refinement.md",
+  "reviewer": {
+    "agent_id": "/root/research_refine_reviewer",
+    "model": "gpt-5.6-sol",
+    "family": "openai",
+    "independence": "same-family",
+    "acceptance_status": "provisional",
+    "same_agent_continuation": true
+  },
+  "evidence_status": "proposal-only; zero eligible method results",
+  "calibration": "none",
+  "scores": {
+    "problem_fidelity": 9.9,
+    "method_specificity": 8.2,
+    "contribution_quality": 8.0,
+    "frontier_leverage": 9.2,
+    "feasibility": 8.0,
+    "validation_focus": 8.0,
+    "venue_readiness": 7.4
+  },
+  "weights": {
+    "problem_fidelity": 0.15,
+    "method_specificity": 0.25,
+    "contribution_quality": 0.25,
+    "frontier_leverage": 0.15,
+    "feasibility": 0.10,
+    "validation_focus": 0.05,
+    "venue_readiness": 0.05
+  },
+  "weighted_composite_10": 8.485,
+  "reported_overall_score_10": 8.5,
+  "verdict": "REVISE",
+  "anchor": {
+    "status": "verbatim preserved",
+    "text_sha256": "619148c765175167da093d9b054bd2b43fae0e5e97d981fb9748ef57f4d7dba7"
+  },
+  "drift_warning": "NONE",
+  "local_spec_status": "MULTIPLE_MINIMAL_INTERFACE_FREEZES_REQUIRED",
+  "external_k8_status": "BLOCKED_NOT_PASSED_BLOCKED",
+  "round3_action_closure": {
+    "fresh_full_identity_optimizer": "CLOSED",
+    "schema_bound_scalar_period": "CLOSED",
+    "exact_k4_input_contracts": "PARTIAL",
+    "stage_d_control_flow": "CLOSED",
+    "truthful_twcrac_receipt": "CLOSED_AS_RECEIPT_EXTERNALLY_BLOCKING"
+  },
+  "supplemental_interface_audit": {
+    "missing_joint_root_scale": "OPEN_BLOCKING",
+    "retained_clock_span_to_fft256": "OPEN_BLOCKING",
+    "fft_bin_normalization_endpoint_maxima": "OPEN_BLOCKING",
+    "nested_views_selection_and_decoder_g": "OPEN_BLOCKING",
+    "fixture_1000_exact_distribution": "OPEN_BLOCKING",
+    "warped_pose_confidence_mask_interpolation": "OPEN_BLOCKING",
+    "k4_fixed_vectors_and_primary_clock_code": "PARTIAL_BLOCKING"
+  },
+  "preserved_checks": {
+    "unique_oriented_integral": "CLOSED",
+    "phase_and_fundamental_claim_boundary": "CLOSED_PROSPECTIVELY",
+    "strict_positive_interval_nola": "CLOSED",
+    "population_and_duplicate_clock_protocol": "CLOSED_AS_PRECONDITION",
+    "primary_5_percent_and_ci_endpoint": "CLOSED_EXECUTABLE",
+    "bootstrap": "B10000_ALL_NINE_COMPONENTS_CLOSED",
+    "budget": "59_JOBS_552_GPU_HOURS_CLOSED",
+    "learner_count": "ONE_BASE_LEARNER",
+    "visible_validation_blocks": 3
+  },
+  "blocking_items": [
+    {
+      "scope": "local",
+      "priority": "critical",
+      "issue": "Selector preprocessing, FFT numerics, selection binding, g_j, fixture generator, warp tensor interpolation, and K4 code/decision contracts are not uniquely frozen.",
+      "minimal_fix": "Freeze the listed numerical and tensor interfaces inside the existing route; add no jobs, models, baselines, endpoints, or visible blocks."
+    },
+    {
+      "scope": "external",
+      "priority": "critical_for_claim_freeze",
+      "issue": "TWCRAC complete primary-source method unavailable.",
+      "minimal_fix": "Obtain the complete primary source and rerun independent residual-equivalence adjudication; do not pass K8 from abstract-only evidence."
+    }
+  ],
+  "twcrac": {
+    "receipt_sha256": "5a1e7b8c1048a8884690f2d234d413064d473ead1eb1deca69ab734ca2e5ed1e",
+    "verdict": "BLOCKED",
+    "k8_decision": "NOT_PASSED_BLOCKED",
+    "claim_freeze": "BLOCKED",
+    "novelty_clearance": false,
+    "full_text_pages_covered": 0
+  },
+  "input_sha256": {
+    "refine-logs/round-3-refinement.md": "327d6db30aeedbb8bb30122227c9d081660cf4145b71c68db12114db7c879f17",
+    "refine-logs/REFINE_STATE.json": "39152e46b06ab46b8d35e31110696692ec5b94fefafe708e38c4a5da8f277658",
+    "refine-logs/score-history.md": "9b88843b885ffbd47ec8c69f3fbda537406d0b7113746717f94dece9c74a33f9",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.md": "49edcfe25c302c2b55b8e65bc18e1cb7febe25cc8b76698d631fa24150d4b0b5",
+    "idea-stage/TWCRAC_ADJUDICATION.json": "5a1e7b8c1048a8884690f2d234d413064d473ead1eb1deca69ab734ca2e5ed1e",
+    "refine-logs/round-3-review.md": "85ffbd8aaa84dbe65963f68027c9f916a9b7ca8b8b9911ff93b161174d4db2f2"
+  },
+  "canonical_markdown": {
+    "path": "refine-logs/round-4-review.md",
+    "sha256": "c1d44bbe3dd5467b02c4d29bf7bba2849b5bcf64a705c8276f0882a072a2e7a1",
+    "trace_response_path": ".aris/traces/research-refine/20260815_round4_sol/001-review.response.md",
+    "trace_response_byte_identical": true
+  }
+}
+

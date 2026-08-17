@@ -1,0 +1,124 @@
+{
+  "blockers": [
+    "PENDING, SYNC-REQUIRED, [VERIFY], TBD, or TODO remains in submission prose",
+    "claim ledger has unlicensed submission-facing claims",
+    "evidence macros are used but generated/evidence_values.tex is absent"
+  ],
+  "checks": [
+    {
+      "detail": "8 active TeX files",
+      "id": "active_source_graph",
+      "status": "PASS"
+    },
+    {
+      "detail": "0 unallowlisted hits",
+      "id": "forbidden_claims",
+      "status": "PASS"
+    },
+    {
+      "detail": "7 hits",
+      "id": "placeholders",
+      "status": "BLOCKED"
+    },
+    {
+      "detail": "0 suspect tables",
+      "id": "empty_tables",
+      "status": "PASS"
+    },
+    {
+      "detail": "evidence macros are used but generated/evidence_values.tex is absent",
+      "id": "evidence_macro_bindings",
+      "status": "BLOCKED"
+    },
+    {
+      "detail": "exactly 16 claims",
+      "id": "claim_ledger_schema",
+      "status": "PASS"
+    },
+    {
+      "detail": "mapped=0, unlicensed_core=11",
+      "id": "claim_mapping",
+      "status": "BLOCKED"
+    }
+  ],
+  "claim_mapping": {
+    "mapped_ids": [],
+    "unknown_ids": [],
+    "unlicensed_ids": [
+      "AC01",
+      "AC02",
+      "AC03",
+      "AC04",
+      "AC05",
+      "AC06",
+      "AC07",
+      "AC08",
+      "AC09",
+      "AC10",
+      "AC13"
+    ]
+  },
+  "gate": "submission_prose",
+  "mode": "draft",
+  "schema_version": "1.0",
+  "sources": [
+    "main.tex",
+    "math_commands.tex",
+    "preamble.tex",
+    "sections/0_abstract.tex",
+    "sections/1_introduction.tex",
+    "sections/3_method.tex",
+    "sections/4_experiments.tex",
+    "sections/5_conclusion.tex"
+  ],
+  "status": "PROVISIONAL",
+  "submission_ready": false,
+  "violations": {
+    "empty_tables": 0,
+    "forbidden": [],
+    "placeholders": [
+      {
+        "context": "\\name{AUTHOR ROSTER PENDING}",
+        "line": 23,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\address{AFFILIATIONS PENDING}",
+        "line": 24,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\name{AUTHOR ROSTER PENDING}",
+        "line": 27,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\address{Affiliations pending collaborator confirmation}",
+        "line": 28,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "Funding and conflict-of-interest declarations are \\Pending{author-declarations}.",
+        "line": 53,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "The final ethical-compliance statement is \\Pending{ethical-compliance} and will",
+        "line": 54,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\color{DraftRed}\\bfseries DATA-PENDING DIAGNOSTIC SHELL\\\\[2pt]",
+        "line": 161,
+        "source": "sections/4_experiments.tex",
+        "token": "PENDING"
+      }
+    ]
+  }
+}

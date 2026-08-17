@@ -1,0 +1,19 @@
+{
+  "artifact_type": "local_frequency_dev_evaluation_receipt",
+  "config_fingerprint": "65272c8a9d969d27b1a5248670ac98645eecaabd070661b9ad83f217d74ed8ea",
+  "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+  "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+  "evaluation_bytes": 47125,
+  "evaluation_file": "evaluation.json",
+  "evaluation_sha256": "b6add8af9c229cd467be6bba282f267d0d70651a1a39b46ba1443016689add97",
+  "method_key": "pams-local-frequency-synthetic-v1",
+  "prediction_code_sha256": "a034fdbaef3a431f73c14b7385e00d95e631eaad4330a1055ebbe4de1487ff51",
+  "prediction_receipt_sha256": "a94d1b047cea35e7c1265b296a227bb58edbbe2f0bae27a09cc78251a9845dff",
+  "prediction_sha256": "415fd94928ec34dc17b11c4b9aa1ffcd34cac778453be077fe06beeea40c3056",
+  "prediction_source_git_sha": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "protocol": "ucfrep_526",
+  "schema_version": 1,
+  "scoring_code_sha256": "a034fdbaef3a431f73c14b7385e00d95e631eaad4330a1055ebbe4de1487ff51",
+  "scoring_source_git_sha": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "split": "dev"
+}

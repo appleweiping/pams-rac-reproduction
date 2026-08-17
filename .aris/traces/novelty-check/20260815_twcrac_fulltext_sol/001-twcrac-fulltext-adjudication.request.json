@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_twcrac_fulltext_sol",
+  "task": "Adjudicate TWCRAC against the exact residual warp-phase claim using complete primary-source full text only.",
+  "reviewer_requirements": {
+    "reviewer_model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "independence": "same-family",
+    "acceptance_status": "provisional",
+    "fresh_zero_context": true,
+    "sources": "official SSRN PDF or author primary copy only"
+  },
+  "workspace": "D:/Project/rac-aris-fullrun-icassp27",
+  "inputs": [
+    {
+      "path": "idea-stage/NOVELTY_CHECK.json",
+      "sha256": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5"
+    },
+    {
+      "path": "refine-logs/round-1-refinement.md",
+      "sha256": "6840a8e8cec3d8fa6d7c371e14a37a3ad3fdd1be120902bf67f911a247a47b75"
+    }
+  ],
+  "target": {
+    "title": "TWCRAC: Leveraging Temporal Cycle Consistency and Dynamic Thresholding for Robust Repetitive Action Counting",
+    "ssrn_abstract_id": "6630216",
+    "official_record_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6630216"
+  },
+  "mandatory_checks": [
+    "complete method, loss, training, and evaluation coverage",
+    "explicit local time-warp derivative or integral law",
+    "signed phase increments",
+    "phase-flow or warp equivariance",
+    "per-identity state",
+    "supervision",
+    "local-window TCC and dynamic thresholding",
+    "exact comparison to the residual claim only"
+  ],
+  "allowed_verdicts": [
+    "EQUIVALENT",
+    "OVERLAP_BUT_DISTINCT",
+    "DISTINCT",
+    "BLOCKED"
+  ],
+  "fail_closed_rule": "If complete allowed primary-source full text cannot be reliably obtained, return BLOCKED and do not infer absence.",
+  "trace_requirement": "The response must be byte-identical to idea-stage/TWCRAC_ADJUDICATION.json.",
+  "allowed_writes": [
+    "idea-stage/TWCRAC_ADJUDICATION.json",
+    ".aris/traces/novelty-check/20260815_twcrac_fulltext_sol/001-twcrac-fulltext-adjudication.response.md",
+    ".aris/traces/novelty-check/20260815_twcrac_fulltext_sol/001-twcrac-fulltext-adjudication.request.json",
+    ".aris/traces/novelty-check/20260815_twcrac_fulltext_sol/001-twcrac-fulltext-adjudication.meta.json",
+    ".aris/traces/novelty-check/20260815_twcrac_fulltext_sol/run.meta.json",
+    "one appended event in .aris/meta/events.jsonl"
+  ]
+}

@@ -1,0 +1,244 @@
+{
+  "blockers": [
+    "PENDING, SYNC-REQUIRED, [VERIFY], TBD, or TODO remains in submission prose",
+    "claim ledger has unlicensed submission-facing claims",
+    "evidence macros are used but generated/evidence_values.tex is absent"
+  ],
+  "checks": [
+    {
+      "detail": "8 active TeX files",
+      "id": "active_source_graph",
+      "status": "PASS"
+    },
+    {
+      "detail": "0 unallowlisted hits",
+      "id": "forbidden_claims",
+      "status": "PASS"
+    },
+    {
+      "detail": "27 hits",
+      "id": "placeholders",
+      "status": "BLOCKED"
+    },
+    {
+      "detail": "0 suspect tables",
+      "id": "empty_tables",
+      "status": "PASS"
+    },
+    {
+      "detail": "evidence macros are used but generated/evidence_values.tex is absent",
+      "id": "evidence_macro_bindings",
+      "status": "BLOCKED"
+    },
+    {
+      "detail": "exactly 16 claims",
+      "id": "claim_ledger_schema",
+      "status": "PASS"
+    },
+    {
+      "detail": "mapped=0, unlicensed_core=11",
+      "id": "claim_mapping",
+      "status": "BLOCKED"
+    }
+  ],
+  "claim_mapping": {
+    "mapped_ids": [],
+    "unknown_ids": [],
+    "unlicensed_ids": [
+      "AC01",
+      "AC02",
+      "AC03",
+      "AC04",
+      "AC05",
+      "AC06",
+      "AC07",
+      "AC08",
+      "AC09",
+      "AC10",
+      "AC13"
+    ]
+  },
+  "gate": "submission_prose",
+  "mode": "draft",
+  "schema_version": "1.0",
+  "sources": [
+    "main.tex",
+    "math_commands.tex",
+    "preamble.tex",
+    "sections/0_abstract.tex",
+    "sections/1_introduction.tex",
+    "sections/3_method.tex",
+    "sections/4_experiments.tex",
+    "sections/5_conclusion.tex"
+  ],
+  "status": "PROVISIONAL",
+  "submission_ready": false,
+  "violations": {
+    "empty_tables": 0,
+    "forbidden": [],
+    "placeholders": [
+      {
+        "context": "\\name{AUTHOR ROSTER PENDING}",
+        "line": 23,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\address{AFFILIATIONS PENDING}",
+        "line": 24,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\name{AUTHOR ROSTER PENDING}",
+        "line": 27,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\address{Affiliations pending collaborator confirmation}",
+        "line": 28,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "Funding and conflict-of-interest declarations are \\Pending{author-declarations}.",
+        "line": 53,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "The final ethical-compliance statement is \\Pending{ethical-compliance} and will",
+        "line": 54,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\color{DraftRed}\\bfseries DATA-PENDING DIAGNOSTIC SHELL\\\\[2pt]",
+        "line": 117,
+        "source": "sections/4_experiments.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "AUTHOR ROSTER PENDING",
+        "line": 4,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Affiliations pending collaborator confirmation",
+        "line": 6,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "DRAFT – RESULTS PENDING decoupled spatiotemporal attention [9, 10]; those architectural direc-",
+        "line": 9,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "mental evidence is pending synchronization with the collaborator’s resents overlapping masked windows. Local autocorrelation and",
+        "line": 28,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "PROPOSED • SYNC-REQUIRED",
+        "line": 148,
+        "source": "PDF_BODY",
+        "token": "SYNC-REQUIRED"
+      },
+      {
+        "context": "[SYNC-REQUIRED] [SYNC-REQUIRED]",
+        "line": 173,
+        "source": "PDF_BODY",
+        "token": "SYNC-REQUIRED"
+      },
+      {
+        "context": "values remain PENDING, PENDING, and PENDING, respectively, until the Each contrast will report the paired video-cluster confidence interval",
+        "line": 214,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "fields remain PENDING and PENDING. The frozen bundle must also Figure 2 defines the mechanism test. A preregistered piecewise time-",
+        "line": 222,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "MultiCounter [7] native/contextual PENDING PENDING PENDING PENDING PENDING",
+        "line": 231,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "MultiCounter+ [8] native/contextual PENDING PENDING PENDING PENDING PENDING",
+        "line": 232,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Track-PAMS [6] common predicted tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 234,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Track-global tempo common predicted tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 235,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Identity-indexed local routing common predicted tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 236,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "global uniform normalized OLA PENDING PENDING",
+        "line": 247,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local hard normalized OLA PENDING PENDING ceedings of the IEEE International Conference on Computer",
+        "line": 248,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local soft direct averaging PENDING PENDING Vision (ICCV), December 2015, pp. 3020–3028.",
+        "line": 249,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local soft normalized OLA PENDING PENDING",
+        "line": 250,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "DATA-PENDING DIAGNOSTIC SHELL in Proceedings of the IEEE Conference on Computer Vision and",
+        "line": 253,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "and conflict-of-interest declarations are PENDING. The final ethical- [10] Xiaoai Wang, Hang Wang, Yan Liu, Huan Hu, and Bruce X.B.",
+        "line": 296,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "compliance statement is PENDING and will be bound to the dataset Yu, “D2 -STX: Decoupling spatial-temporal cross-attention",
+        "line": 297,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      }
+    ]
+  }
+}

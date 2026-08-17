@@ -1,0 +1,13 @@
+# These three ARIS evidence snapshots are kept byte-identical to their fresh
+# reviewer bindings; each intentionally retains one terminal blank line.
+EXPERIMENT_AUDIT.json whitespace=-blank-at-eof
+EXPERIMENT_AUDIT.md whitespace=-blank-at-eof
+RESULT_TO_CLAIM.json whitespace=-blank-at-eof
+
+# Preserve timestamped reviewer snapshots, ARIS machine outputs, and vendored
+# venue files byte-for-byte. Their upstream/trace hashes take precedence over
+# whitespace normalization, including CRLF and Markdown hard-break spacing.
+*_20*.md whitespace=-blank-at-eol,-blank-at-eof
+*_20*.json whitespace=-blank-at-eol,-blank-at-eof
+paper/.aris/** whitespace=-blank-at-eol,-blank-at-eof
+paper/vendor/** whitespace=-blank-at-eol,-blank-at-eof

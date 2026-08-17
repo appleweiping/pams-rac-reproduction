@@ -1,0 +1,66 @@
+% ICASSP 2027 pre-results manuscript.
+% The official ICASSP 2027 author kit is not yet available; this draft uses
+% the official ICASSP 2026 spconf package as a temporary layout scaffold.
+\pdfminorversion=7
+\pdfinfoomitdate=1
+\pdfsuppressptexinfo=15
+\documentclass{article}
+
+\usepackage{vendor/icassp2026/spconf}
+\input{preamble}
+\input{math_commands}
+\input{author_public}
+\input{figures/latex_includes}
+
+\title{TempoRAC: Identity-Indexed Local Tempo Routing for Multi-Person Repetition Counting}
+
+% ICASSP uses single-anonymous review. The draft shows the author identity
+% explicitly approved by the user. Submission mode still receives the complete,
+% assented roster through ignored private metadata after external validation.
+\ifsubmission
+  \ifdefined\RACAuthorNames
+    \name{\RACAuthorNames}
+    \address{\RACAuthorAffiliations\\\RACAuthorEmails}
+  \else
+    \name{\RACKnownAuthorNames}
+    \address{\RACKnownAuthorAffiliations\\\RACKnownAuthorEmails}
+  \fi
+\else
+  \name{\RACKnownAuthorNames}
+  \address{\RACKnownAuthorAffiliations\\\RACKnownAuthorEmails}
+\fi
+
+\begin{document}
+\ninept
+\maketitle
+\draftbanner
+
+\begin{abstract}
+\input{sections/0_abstract}
+\end{abstract}
+
+\begin{keywords}
+repetition counting, multi-person signals, local tempo, pose trajectories,
+temporal routing
+\end{keywords}
+
+\input{sections/1_introduction}
+\input{sections/3_method}
+\input{sections/4_tables}
+\input{sections/4_experiments}
+\input{sections/5_conclusion}
+
+% The live ICASSP 2027 rule restricts the optional fifth page to references.
+% These declarations therefore remain inside the four-page body.
+\noindent\textbf{Funding, conflicts of interest, and ethical compliance.}
+Funding and conflict-of-interest declarations are \Pending{author-declarations}.
+The final ethical-compliance statement is \Pending{ethical-compliance} and will
+be bound to the dataset licenses, participant provenance, and release terms
+before submission.
+
+{\small
+\bibliographystyle{vendor/icassp2026/IEEEbib}
+\bibliography{references}
+}
+
+\end{document}

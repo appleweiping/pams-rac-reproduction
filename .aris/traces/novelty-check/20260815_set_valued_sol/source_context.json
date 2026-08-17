@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_set_valued_sol",
+  "source_policy": "primary_or_official_only",
+  "sources": [
+    {"id": "S01", "url": "https://journals.sagepub.com/doi/pdf/10.3233/FAIA240494", "sections": "abstract, related work, task definition, method/outputs", "context": "Supervised MRAC with per-instance point count."},
+    {"id": "S02", "url": "https://ieeexplore.ieee.org/document/11421441/", "sections": "official publisher record and disclosed method boundary", "context": "MRAC, identity consistency and long-short-period awareness; no set output disclosed."},
+    {"id": "S03", "url": "https://openaccess.thecvf.com/content/CVPR2026F/html/Gao_Count_What_Repeats_Period-Adaptive_Multi-Scale_Consistency_for_Self-Supervised_Repetitive_Action_CVPRF_2026_paper.html", "sections": "abstract, introduction/related work, PAMS-TCC method, consensus inference", "context": "Self-supervised pose periodic learning and point counting."},
+    {"id": "S04", "url": "https://kimbabmoowoo.github.io/publication/Journal/sstrac-2025.pdf", "sections": "abstract, related work, full model, density-map target, dataset selection, occlusion experiment", "context": "Pretrained pose repair plus supervised density-map point count."},
+    {"id": "S05", "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10692053/", "sections": "method and missing-frame robustness", "context": "Nearest-frame interpolation and point-count MAE under missing frames."},
+    {"id": "S06", "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7611043/", "sections": "counting methods, interval loss, post-training calibration, results", "context": "Predictive count intervals trained and evaluated against real counts."},
+    {"id": "S07", "url": "https://proceedings.mlr.press/v238/xu24b/xu24b.pdf", "sections": "related work and Sections 3.1-3.4", "context": "Labeled stochastic density maps produce object-count uncertainty."},
+    {"id": "S08", "url": "https://proceedings.mlr.press/v202/zaffran23a/zaffran23a.pdf", "sections": "related work, CP-MDA-Exact and CP-MDA-Nested", "context": "Missing-covariate prediction intervals with response-labeled calibration."},
+    {"id": "S09", "url": "https://arxiv.org/pdf/2405.15641", "sections": "hardness, included-mask partial order, interval-length isotonicity, CP-MDA-Nested-star", "context": "Closest general mechanism; informative validity and monotonicity are assumption-dependent."},
+    {"id": "S10", "url": "https://openreview.net/pdf?id=FiQAQSTXZn", "sections": "related context and preimpute-mask-then-correct method", "context": "AISTATS 2026 mask-conditional coverage with calibration/correction."},
+    {"id": "S11", "url": "https://proceedings.mlr.press/v267/zhang25g.html", "sections": "abstract and method overview", "context": "Conformal pose-shape uncertainty with supervised pose losses and calibration."},
+    {"id": "S12", "url": "https://arxiv.org/abs/2601.04192", "sections": "abstract and method scope", "context": "Future-event count prediction intervals outside RAC."},
+    {"id": "S13", "url": "https://arxiv.org/abs/2608.07183", "sections": "abstract, related work, method, calibration and limitations", "context": "Recent unreviewed missing-modality conformal sets; labeled mask groups required."},
+    {"id": "S14", "url": "https://arxiv.org/abs/2602.16061", "sections": "abstract and sharp-set formulation", "context": "Formal partial identification requires constraints, validity and sharpness."},
+    {"id": "S15", "url": "https://dl.acm.org/doi/10.1145/3588432.3591500", "sections": "current project primary-source ledger boundary", "context": "Unsupervised local motion phase is occupied."},
+    {"id": "S16", "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6630216", "sections": "abstract only", "context": "TWCRAC absence not inferred; local TCC/statistics/dynamic thresholds remain non-contributions."}
+  ],
+  "method_read_fail_closed_notes": [
+    "MultiCounter+ was bounded primarily from the official publisher record; no absence inference was drawn beyond disclosed scope.",
+    "TWCRAC full text remained unavailable from the prior adjudication; it was not used to license novelty.",
+    "The August 2026 MCCF source is an author preprint, not peer-reviewed, and was used only to narrow generic missing-input coverage language."
+  ]
+}

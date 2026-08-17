@@ -1,0 +1,110 @@
+{
+  "acceptance_status": "provisional",
+  "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE",
+  "artifact_type": "temporac_method_contract_amendment",
+  "authoritative": false,
+  "authorizes": [],
+  "bindings": {
+    "amendment_markdown": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE.md",
+      "sha256": "ca44173bd2bc2be3fa5eaf9dc362d88d981603d28328bf365efc68567f1ae5bb"
+    },
+    "canonical_documents": {
+      "idea-stage/docs/research_contract.md": "b04e5bf5606ad8be1bcc8000098835ab525ba054c1f33d565ad72093e7c47eca",
+      "refine-logs/EXPERIMENT_PLAN.md": "3fd1986871b32674d74b395fbfc9720712d9fba0c8583c24c1d5bddb87086eb6",
+      "refine-logs/EXPERIMENT_TRACKER.md": "c7e2f32c3c81b66884abb13760a671ecc7cdd314fd6c994a4ed4c46cb754a63b",
+      "refine-logs/FINAL_PROPOSAL.md": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c",
+      "refine-logs/temporac/FINAL_PROPOSAL.md": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c"
+    },
+    "implementation_probe": {
+      "src/pams/temporac/x0.py": "1690abb9bc6b6da4a25a4467162c8ddc111fe0a3c8cf33e7f70f0faa8e84f6f4",
+      "tests/temporac/test_x0.py": "a2e13ad508777d76a0e31075b4ea7dcff843e6f4168096736b98f008ade48620"
+    }
+  },
+  "claims_authorized": false,
+  "contradiction": {
+    "all_34_coordinate_rms_d2_to_d8": [
+      0.0293056911,
+      0.0256926117,
+      0.0213514017,
+      0.018152744,
+      0.0157589844,
+      0.0138966078,
+      0.0124074026
+    ],
+    "frozen_threshold_strictly_above": 0.05,
+    "moving_16_coordinate_interpretation_passes": false,
+    "raw_unnormalized_w_interpretation_allowed": false,
+    "result": "ALL_40_SOURCES_ALL_64_ATTEMPTS_MUST_FAIL_ORIGINAL_F8"
+  },
+  "date": "2026-08-16",
+  "evidence": {
+    "analytic_coordinate_excursion_bound": 0.7708333334,
+    "candidate_attempts_checked": 2560,
+    "candidate_attempts_passing": 2560,
+    "coordinate_max": 0.95,
+    "coordinate_min": -1.0615805372092377,
+    "geometry_arc_max": 4.317988354684301,
+    "geometry_arc_min": 4.088598312896032,
+    "landmark_high_components": 1,
+    "landmark_strict_maxima": 1,
+    "landmark_strict_minima": 1,
+    "minimum_collision_rms": 0.014291548761875736,
+    "minimum_reversal_rms": 0.01973191444620664,
+    "pose_scale": 0.65,
+    "retained_attempt_for_all_sources": 0,
+    "retained_sources": 40,
+    "separation_rms_d2_to_d8": [
+      0.1221070461,
+      0.1070525486,
+      0.0889641736,
+      0.0756364334,
+      0.0656624349,
+      0.0579025323,
+      0.0516975107
+    ],
+    "source_count": 40,
+    "tangent_max": 3.423471224691923,
+    "tangent_min": 1.3603495231756633
+  },
+  "fresh_review_required": true,
+  "method_changes": false,
+  "normative_delta": {
+    "binary64_evaluation_order": "compute the existing fundamental then h=2,3,4 in-place bracket; multiply the complete displacement once by np.float64(25.0/6.0); repeat the same outer multiplication rule for the complete tangent",
+    "explicit_amplitudes": {
+      "fundamental": "0.5",
+      "paired_harmonic_h": "0.125/h"
+    },
+    "rms_coordinate_count": 34,
+    "rms_domain": "complete binary64 4096 x 34 COCO17 x,y difference array",
+    "rms_phase_grid": "r/4096 for r=0,...,4095",
+    "rms_reduction_order": "C-contiguous pose and shifted; difference; np.square; np.mean(dtype=np.float64) over all 4096*34 elements; Python float; math.sqrt",
+    "reversal_reduction_order": "preserve literal C-order flatten, reversed-grid indexing, np.fft.rfft, conjugate product, np.fft.irfft, energy, nonnegative clamp, minimum",
+    "scale": "25/6",
+    "scope": "F8 periodic displacement and immediate RMS-domain clarification only"
+  },
+  "preserved": {
+    "claims_and_evidence_ceiling": true,
+    "data_and_protocol": true,
+    "f9_through_f23": true,
+    "gates_and_receipts": true,
+    "jobs": 27,
+    "landmarks_phase_pulses_masks_ownership": true,
+    "max_concurrency": 2,
+    "resource_budget_a6000_hours": 93,
+    "thresholds": true,
+    "training_and_evaluation_graph": true
+  },
+  "review_independence": "same-family",
+  "scope": {
+    "accessed_evaluator_data": false,
+    "accessed_label_data": false,
+    "accessed_natural_data": false,
+    "code_changes_authorized": false,
+    "kind": "numerical_executability_correction_only",
+    "paper_promotion_authorized": false,
+    "server_accessed": false,
+    "training_authorized": false
+  },
+  "status": "PROPOSED_PENDING_FRESH_REVIEW"
+}

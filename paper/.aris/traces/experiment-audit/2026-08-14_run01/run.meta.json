@@ -1,0 +1,11 @@
+{
+  "skill": "experiment-audit",
+  "agent_id": "/root/icassp_experiment_audit",
+  "review_independence": "same-family/provisional",
+  "started_from_head": "26e5b7176f1f7c678391163c3278b5c390d54115",
+  "generated_at": "2026-08-14T21:00:56.8906401+08:00",
+  "verdict": "FAIL",
+  "reason_code": "NO_MULTI_PERSON_REAL_GT_EVIDENCE",
+  "files_edited_by_reviewer": 0,
+  "focused_tests": {"passed": 47, "failed": 0}
+}

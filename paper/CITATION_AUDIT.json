@@ -1,0 +1,97 @@
+{
+  "audit_skill": "citation-audit",
+  "verdict": "PASS",
+  "reason_code": "ALL_16_FINAL_CONTEXTS_SUPPORTED",
+  "summary": "A fresh zero-context same-family citation reviewer rebound all 16 active citation keys to the exact final manuscript and PDF after the user revision. All entries exist, official metadata is supportable, every active context is supported, and there are no missing, unused, duplicate-key, or duplicate-DOI entries. Cross-family acceptance is unavailable, so this PASS is provisional.",
+  "audited_input_hashes": {
+    "main.pdf": "sha256:2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
+    "main.tex": "sha256:34e470772f06c281b70a8f60f82bb010e9a027cb289ebd9389005be703868175",
+    "preamble.tex": "sha256:763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2",
+    "math_commands.tex": "sha256:2f148f00d2542e89b78f18ea726f40e25afeef08c51357bcb642e95b9477a255",
+    "sections/0_abstract.tex": "sha256:fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef",
+    "sections/1_introduction.tex": "sha256:7ce1329707dae209f745c200492253356e975448d9b32053b9f97d48bdcf3b3e",
+    "sections/3_method.tex": "sha256:c4ab8008065bb8781e402921878f5b99c7fb841acdef24c6129b7d93c988dc84",
+    "sections/4_tables.tex": "sha256:9982f60311a96265c8140b7c2614349bb2ae4f407b8666756b0f2c91ab89513a",
+    "sections/4_experiments.tex": "sha256:cd6508a60e3e9cac767ccfcec53e019a52525f58cebc2b1559819139abe0ecb5",
+    "sections/5_conclusion.tex": "sha256:e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c",
+    "references.bib": "sha256:c84cb6df17ac4133f7c3115e1aa4dcad82e9e850f1ebdc5e6979cbc1cfd917b3"
+  },
+  "trace_path": ".aris/traces/citation-audit-icassp/user-revision-final/",
+  "agent_id": "/root/user_revision_citation_audit",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "xhigh",
+  "executor_model": "gpt-5.6-sol",
+  "executor_family": "openai",
+  "reviewer_family": "openai",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "generated_at": "2026-08-15T01:30:00+08:00",
+  "details": {
+    "total_entries": 16,
+    "keep": 16,
+    "fix": 0,
+    "replace": 0,
+    "remove": 0,
+    "supported_contexts": 26,
+    "weak_contexts": 0,
+    "wrong_contexts": 0,
+    "missing_keys": 0,
+    "unused_entries": 0,
+    "duplicate_keys": 0,
+    "duplicate_dois": 0,
+    "groups": [
+      {
+        "name": "group-a-postfix",
+        "keys": [
+          "levy2015live",
+          "runia2018realworld",
+          "dwibedi2020repnet",
+          "hu2022transrac",
+          "yao2025poserac",
+          "gao2026pams",
+          "tang2024multicounter",
+          "tang2026multicounterplus"
+        ],
+        "verdict": "PASS_WITH_NOTES",
+        "prompt_sha256": "sha256:3535df84d30b89524b781564a8d7b0ed813362ff9e9e78459de8962c87614b59",
+        "reviewer_sha256": "sha256:27fcd4ffb349d410bfd4d54cd6cb2bb71333449d50a01a38d257a6c0f3b80435",
+        "metadata_sha256": "sha256:3fe59b77d6707263b0e22cecbb6eef9a56712ffe56b8f33707561dbb42ec712c"
+      },
+      {
+        "name": "group-b-final",
+        "keys": [
+          "ma2026detrc",
+          "wang2026d2stx",
+          "welch1967fft",
+          "lomb1976unequal",
+          "griffin1984stft",
+          "shazeer2017moe",
+          "luiten2021hota",
+          "ristani2016idmetrics"
+        ],
+        "verdict": "PASS",
+        "prompt_sha256": "sha256:ebf8b16888b6679a76db959ede1bd677787455e8fac3069cd0bbea024b3f2cfa",
+        "reviewer_sha256": "sha256:ed79426735f9920773e9330b1c9c156cfe8281bf948743ae3d2f4c999d64e054",
+        "metadata_sha256": "sha256:0914755c2bc5be1a0dddb40ff607cdc7684b7d2f3c8c80d655ebd15ea7bf3f69"
+      }
+    ],
+    "per_key": {
+      "levy2015live": "KEEP",
+      "runia2018realworld": "KEEP",
+      "dwibedi2020repnet": "KEEP",
+      "hu2022transrac": "KEEP",
+      "yao2025poserac": "KEEP",
+      "gao2026pams": "KEEP_WITH_SCOPE_NOTE",
+      "tang2024multicounter": "KEEP",
+      "tang2026multicounterplus": "KEEP_WITH_WORDING_NOTE",
+      "ma2026detrc": "KEEP",
+      "wang2026d2stx": "KEEP",
+      "welch1967fft": "KEEP",
+      "lomb1976unequal": "KEEP",
+      "griffin1984stft": "KEEP",
+      "shazeer2017moe": "KEEP",
+      "luiten2021hota": "KEEP",
+      "ristani2016idmetrics": "KEEP"
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "verifier_version": "2",
+  "paper_dir": "D:/Project/rac-paper-writing-icassp27/paper",
+  "assurance": "draft",
+  "generated_at": "2026-08-14T17:39:50Z",
+  "any_problem": false,
+  "submission_blocking": false,
+  "overall_assurance": "provisional",
+  "audits": [
+    {
+      "audit": "proof-checker",
+      "status": "OK",
+      "verdict": "NOT_APPLICABLE",
+      "stale": false,
+      "review_independence": "same-family",
+      "issues": []
+    },
+    {
+      "audit": "paper-claim-audit",
+      "status": "BLOCKING_VERDICT",
+      "verdict": "BLOCKED",
+      "stale": false,
+      "review_independence": "same-family",
+      "issues": []
+    },
+    {
+      "audit": "citation-audit",
+      "status": "OK",
+      "verdict": "PASS",
+      "stale": false,
+      "review_independence": "same-family",
+      "issues": []
+    },
+    {
+      "audit": "kill-argument",
+      "status": "BLOCKING_VERDICT",
+      "verdict": "FAIL",
+      "stale": false,
+      "review_independence": "same-family",
+      "issues": []
+    }
+  ]
+}

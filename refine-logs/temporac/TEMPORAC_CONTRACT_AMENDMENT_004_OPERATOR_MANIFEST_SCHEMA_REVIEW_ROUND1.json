@@ -1,0 +1,157 @@
+{
+  "acceptance_status": "provisional",
+  "agent_id": "/root/temporac_operator_manifest_amendment_review",
+  "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA",
+  "artifact_type": "temporac_contract_amendment_review",
+  "authoritative": false,
+  "authorizes": [],
+  "blocking_issue_count": 5,
+  "date": "2026-08-16",
+  "executor_family": "openai",
+  "fresh_zero_context": true,
+  "input_rehash_status": "verified_after_final_git_false_patch",
+  "review_independence": "same-family",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "round": 1,
+  "status": "REVISE_SAME_FAMILY_PROVISIONAL_ZERO_AUTHORITY",
+  "verdict": "REVISE",
+  "final_amendment_bindings": {
+    "markdown": {
+      "bytes": 11540,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA.md",
+      "sha256": "4d2d0c88c5bec31c725b856a6ba20bd21dc68410d493fd8fb0d2130d5822f58c"
+    },
+    "structured": {
+      "bytes": 9500,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA.json",
+      "sha256": "bc3391d0d282c896e305bd20bba96640da7f633f31e6ecc47ee866d7a6464637"
+    }
+  },
+  "output_binding": {
+    "markdown": {
+      "bytes": 15851,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA_REVIEW_ROUND1.md",
+      "sha256": "573b49150b4f7ca6f15ec656d0375131c3d8a14214da075ad4d138e4edd71dfd"
+    }
+  },
+  "input_bindings": [
+    {"bytes":79366,"path":"refine-logs/temporac/FINAL_PROPOSAL.md","sha256":"3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"},
+    {"bytes":10622,"path":"refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.md","sha256":"899d6f071c89f898bf3825adfb30a326904f9bc7fe44d44351da8a5d0d9ccb14"},
+    {"bytes":8963,"path":"refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.json","sha256":"d524556f292ec17a155cdcd962cf8a88bea26f32b810ffb7bd8e45744f1c54fc"},
+    {"bytes":7160,"path":"refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND1.md","sha256":"5e60841696333234213fa36675f11311d294e76adfd1b68d8ab74198a409f253"},
+    {"bytes":5871,"path":"refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND1.json","sha256":"41468e0c7a163040cefb035936a35025ad3910da96488e1582c02b83a15c5f65"},
+    {"bytes":11229,"path":"refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.md","sha256":"a86da733f3ae048b867ec8b2366a9f0262ca2b390ef08687ca7d710654e8301f"},
+    {"bytes":9363,"path":"refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.json","sha256":"3730d96eff1d3815499602eaf183774af032c514a588d4e92fe8a1cccf053e64"},
+    {"bytes":11540,"path":"refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA.md","sha256":"4d2d0c88c5bec31c725b856a6ba20bd21dc68410d493fd8fb0d2130d5822f58c"},
+    {"bytes":9500,"path":"refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA.json","sha256":"bc3391d0d282c896e305bd20bba96640da7f633f31e6ecc47ee866d7a6464637"},
+    {"bytes":9079,"path":"src/pams/temporac/contract.py","sha256":"5ab8fb62dc558ba78e95fc07e52c1f1a1afbff5b1c5003834079eea6143d745f"},
+    {"bytes":36365,"path":"src/pams/temporac/fixtures.py","sha256":"979b8cee4fed117f5471cf399794f615c60eae52dbba2c946109ff836206b464"},
+    {"bytes":19289,"path":"src/pams/temporac/cue.py","sha256":"702784bef27db94c1dc027d036a64d7461ae618613baec5e68061254f98569c7"},
+    {"bytes":14395,"path":"src/pams/temporac/nola.py","sha256":"ad6a13203f09c13a37a854333d4458ca8ce5a03bb186c0946f014a4e8cb9a637"},
+    {"bytes":8843,"path":"src/pams/temporac/decode.py","sha256":"766cd6ca4b9e133041bd602f50fde840ec7caadd376bd6851799583d44f31f5e"},
+    {"bytes":17717,"path":"scripts/experiments/generate_temporac_operator_manifest_v4.py","sha256":"ffc5b83025375b2c68376f093becb63905504e15be45237e965991c6f762f8c7"},
+    {"bytes":12749,"path":"tests/temporac/test_operator_manifest.py","sha256":"a055247946580679d54204850bfe588a102a37d342da31e06eddba85c45f9dfe"},
+    {"bytes":5973,"path":"tests/temporac/test_gates_fixtures.py","sha256":"941856b6111cff8697f105bc30dc679069f73206bab3f9c2b930236675e13173"},
+    {"bytes":1301,"path":"data/temporac_p00_v4/operator_candidate_20260816/candidate_schema.json","sha256":"9f4b2ced821e667f950c1f56bbf9adbdc14b2c387c1932953048caf3f747a8cd"},
+    {"bytes":458,"path":"data/temporac_p00_v4/operator_candidate_20260816/environment_lock.json","sha256":"709db0943752965524b507dd6340554a8d7d218be125317af0fc8b7748a5a947"},
+    {"bytes":3908,"path":"data/temporac_p00_v4/operator_candidate_20260816/replay_witness.json","sha256":"36f60f41ac111a7b05e5f4846464cc774e09bb9faa44feed10be5a4f35418653"},
+    {"bytes":15039512,"path":"data/temporac_p00_v4/operator_candidate_20260816/temporac.operator-manifest.candidate-v1.json","sha256":"1f39378d6f7a970b1f183558ed145bd97107f2aeda41902f4736e6778930e1bb"},
+    {"bytes":1729,"path":"data/temporac_p00_v4/operator_candidate_20260816/candidate_receipt.json","sha256":"2e457e01166c6151e4edc688e8fd6f981d1278231fcd8c2bc000179f7a825102"}
+  ],
+  "independent_candidate_replay": {
+    "aggregate_match": true,
+    "canonical_bytes_equal": true,
+    "duplicate_keys": 0,
+    "manifest_bytes": 15039512,
+    "manifest_sha256": "1f39378d6f7a970b1f183558ed145bd97107f2aeda41902f4736e6778930e1bb",
+    "row_mismatches": 0,
+    "row_schema_key_count": 23,
+    "rows": 10368,
+    "runtime_is_diagnostic_not_locked": true,
+    "runtime_numpy": "1.26.4",
+    "runtime_python": "3.12.13",
+    "type_or_domain_errors": 0,
+    "unique_key_count": 10368,
+    "witnesses": {
+      "actual_b255_edges": 8945,
+      "actual_b255_rows": 5665,
+      "edge0_digest_inventory_sha256": "ba797f6ae59cbbb40f19a61199afaaa1ac5b2c001a3c9fc34f1dba8f79cf78e4",
+      "flat_amplitude_one_plateaus": 6912,
+      "flat_amplitude_one_rows": 2304,
+      "inactive_lookup_sha256": "afa6eff0d744acfdf9cf78adc43aa8daf01633f3345d7567d642a7782885040d",
+      "key_inventory_sha256": "18dfdafe237b77565de36bab6d4642efb314ec1cbbd76e852938ed5c4d424a55",
+      "semantic_rows_sha256": "0fe8b2619a3f33cc4a83485053888c04c567b015eea65f81bf6cd9ec715ee4f2"
+    },
+    "aggregate_roots": {
+      "association": {"bytes":93312,"sha256":"856710a129ad0e85fa46e2adb287b964163e0cd49d12f302ccfd8b63948712e6"},
+      "expected_components": {"bytes":248832,"sha256":"6c6e6240e577c16a4a58150102f4dfe3af2d28a914e8ceefce6e25a673411481"},
+      "decoder_masks": {"bytes":2345760,"sha256":"6cf03b8331b9c7f9021ae778dac8931e8c8cb3c5375cc0e2018de02cc77eb37a"},
+      "edge_masks": {"bytes":2345760,"sha256":"6cf03b8331b9c7f9021ae778dac8931e8c8cb3c5375cc0e2018de02cc77eb37a"},
+      "nola_responses": {"bytes":9383040,"sha256":"72a958eb3224e4585b7ef7cec9f1729c5c6c68ca8412a6f196cc28eb4fb9c5c2"},
+      "responses": {"bytes":9383040,"sha256":"72a958eb3224e4585b7ef7cec9f1729c5c6c68ca8412a6f196cc28eb4fb9c5c2"},
+      "target_masks": {"bytes":2345760,"sha256":"6cf03b8331b9c7f9021ae778dac8931e8c8cb3c5375cc0e2018de02cc77eb37a"},
+      "truth_masks": {"bytes":2345760,"sha256":"45266d339f54a2a59f977a770d3f1bb71c9319b798b08d8b1b04de7aece8de21"},
+      "truth_plateaus": {"bytes":248832,"sha256":"6c6e6240e577c16a4a58150102f4dfe3af2d28a914e8ceefce6e25a673411481"}
+    }
+  },
+  "blocking_findings": [
+    {
+      "id": "R1-B1",
+      "finding": "Amendment 004 freezes four experiment blocks as a non-change while the bound proposal freezes exactly three paper-visible evidence blocks and forbids a fourth.",
+      "required_fix": "Use the proposal's exact three-block paper-visible ceiling or explicitly define and bind a separate non-paper-visible inventory without changing that ceiling."
+    },
+    {
+      "id": "R1-B2",
+      "finding": "The 14 raw per-array hash preimages freeze dtype and C-order but not exact shapes or axis semantics; raw bytes cannot distinguish shape aliases.",
+      "required_fix": "Freeze every shape formula and axis owner, including truth-major association orientation, vectors, interval tables, masks, runs, and windows, and validate shape before hashing."
+    },
+    {
+      "id": "R1-B3",
+      "finding": "operator_manifest_schema.json and replay_witness.json have no closed byte-unique schemas; may contain and at least permit multiple conforming artifacts.",
+      "required_fix": "Close exact keys, types, aggregate names, byte counts, row-witness order, duplicate-key/BOM rejection, and forbid extra canonical fields."
+    },
+    {
+      "id": "R1-B4",
+      "finding": "The receipt leaves bindings, members, blocker order, and P2/S0 values open and does not define an exact executed-dependency closure; reviewed imports expose omitted hashio.py, types.py, gates.py, package __init__.py, and conditional cue dependencies.",
+      "required_fix": "Freeze exact receipt sub-schemas and values and bind a closed enumerated executed-file/dependency manifest while retaining an external receipt digest and no self hash."
+    },
+    {
+      "id": "R1-B5",
+      "finding": "The runtime lock uses a bare Docker digest without a pullable repository/platform child/config binding or a frozen NumPy installation artifact and closed invocation policy.",
+      "required_fix": "Freeze a pullable OCI reference and linux/amd64 child/config digests, a purpose-built environment or exact wheel/install hash, and read-only offline import/mount/environment rules."
+    }
+  ],
+  "adversarial_disposition": {
+    "aggregate_preimage": "preimage clear; envelope blocked",
+    "candidate_receipt_self_hash": "correctly absent",
+    "executed_dependency_binding": "blocked",
+    "exclusive_create": "substantively fail-closed; require receipt-last completion rule",
+    "json_main_manifest": "substantially closed",
+    "manifest_hash_circularity": "none found",
+    "per_array_dtype_endianness_order": "closed",
+    "per_array_shape_axes": "blocked",
+    "row_order_keys_types": "historical candidate passes",
+    "runtime_lock": "blocked"
+  },
+  "authority_ceiling": {
+    "P2": false,
+    "S0": false,
+    "amendment_edit": false,
+    "candidate_promotion": false,
+    "claims": false,
+    "data": false,
+    "gate": false,
+    "git": false,
+    "implementation": false,
+    "launch": false,
+    "paper": false,
+    "regeneration": false,
+    "release": false,
+    "result": false,
+    "server": false,
+    "test_change": false,
+    "training": false
+  },
+  "next_action": "Revise Amendment 004 only, then continue the same reviewer for Round 2; no regeneration before provisional normative acceptance."
+}

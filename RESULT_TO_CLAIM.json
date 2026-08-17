@@ -1,0 +1,42 @@
+{
+  "audit_skill": "result-to-claim",
+  "verdict": "FAIL",
+  "reason_code": "NO_MULTI_PERSON_REAL_GT_EVIDENCE",
+  "route": "pivot",
+  "summary": "No synchronized multi-person implementation or eligible MultiRep artifact exists; write only a method/protocol scaffold with visibly pending empirical controls.",
+  "integrity_status": "fail",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "ultra",
+  "agent_id": "/root/user_revision_result_to_claim",
+  "generated_at": "2026-08-15T01:25:00+08:00",
+  "trace_path": "paper/.aris/traces/result-to-claim/2026-08-15_user-revision/",
+  "audited_input_hashes": {
+    "EXPERIMENT_AUDIT.json": "sha256:2a2aaba57f5b24c2955635ef3770b442d34a7c6f1b647495fb102c582da6f8d7",
+    "EXPERIMENT_AUDIT.md": "sha256:146900f9d62c5b9267e98b07f151c3640b3d796a944c721e5f88c72c34803c79",
+    "CLAIMS_EVIDENCE_MATRIX.md": "sha256:f3eb7ee5364ce529d265ff5d2dea8e7cbbce7ef3c87c3a229185dee3146ef567",
+    "paper/evidence/results_manifest.json": "sha256:4df513a3f4427950d23267965192253446e6ee2b6968907855e0bae1a6a53159",
+    "paper/evidence/method_manifest.yaml": "sha256:514d25ceb51d97930f02a14c70d96962ff7acdcb28c712fa80c1f03a9ea1d579",
+    "paper/evidence/claim_evidence.csv": "sha256:b321e8320102b046b5ac35d720d5144862c4028855a726c45af564a01bead08a",
+    "paper/main.tex": "sha256:34e470772f06c281b70a8f60f82bb010e9a027cb289ebd9389005be703868175",
+    "paper/sections/3_method.tex": "sha256:c4ab8008065bb8781e402921878f5b99c7fb841acdef24c6129b7d93c988dc84",
+    "paper/sections/4_experiments.tex": "sha256:cd6508a60e3e9cac767ccfcec53e019a52525f58cebc2b1559819139abe0ecb5",
+    "paper/evidence/results_manifest.schema.json": "sha256:9d5c07450cbda32be8223237cb2d764d896d0c9ec28e4c9f23ad7cad3d67e662",
+    "paper/references.bib": "sha256:c84cb6df17ac4133f7c3115e1aa4dcad82e9e850f1ebdc5e6979cbc1cfd917b3",
+    "paper/main.pdf": "sha256:2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e"
+  },
+  "post_review_hardening": {
+    "preregistration_wording": "replaced with prospectively specified/predeclared wording",
+    "frozen_eligible_schema": "now requires dataset, protocol, statistics, artifacts, metrics, audits, paper bindings, and every eligibility flag",
+    "verdict_changed": false
+  },
+  "claims": [
+    {"id": "R1", "claim_supported": "no", "confidence": "low", "revision": "We propose an identity-indexed local-tempo counter; its implementation remains synchronization-pending."},
+    {"id": "R2", "claim_supported": "partial", "confidence": "low", "revision": "The intended counting objective is designed not to use person-wise count or period annotations; this remains unaudited, and pose/tracking supervision must be disclosed."},
+    {"id": "R3", "claim_supported": "no", "confidence": "low", "revision": "MultiRep effectiveness and competitiveness remain to be evaluated under the preregistered protocol."},
+    {"id": "R4", "claim_supported": "no", "confidence": "low", "revision": "Quantitative ICASSP results are pending."},
+    {"id": "R5", "claim_supported": "no", "confidence": "low", "revision": "We preregister ablations and a piecewise time-warp diagnostic to test routing, reconstruction, and any implemented continuity mechanism."},
+    {"id": "R6", "claim_supported": "no", "confidence": "low", "revision": "Existing local UCFRep dev84, proxy, and smoke outputs are diagnostic only and are excluded from ICASSP result tables."}
+  ]
+}

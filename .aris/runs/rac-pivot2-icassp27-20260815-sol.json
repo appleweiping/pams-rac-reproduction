@@ -1,0 +1,78 @@
+{
+  "run_id": "rac-pivot2-icassp27-20260815-sol",
+  "executor_model": "codex-gpt-5.6-sol",
+  "executor_family": "openai",
+  "policy": {
+    "provisional_advances": true
+  },
+  "created": "2026-08-15T12:48:20Z",
+  "updated": "2026-08-15T13:37:17Z",
+  "gates": {},
+  "phases": [
+    {
+      "phase": "research-lit",
+      "status": "accepted",
+      "artifact": "idea-stage/PIVOT_LITERATURE_LANDSCAPE.json",
+      "verdict_id": "sha256:eb5890a471cb0646584f4636c0621b66bc94b7cf6095614b9fc233711da8846f",
+      "reviewer": "deterministic",
+      "reviewer_family": "deterministic",
+      "review_independence": "deterministic",
+      "acceptance_status": "accepted",
+      "executor_model": "codex-gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T13:37:15Z"
+    },
+    {
+      "phase": "idea-creator",
+      "status": "provisional",
+      "artifact": "idea-stage/PIVOT_IDEA_JURY.json",
+      "verdict_id": "sha256:cac5b3f1a6fc5cb6c11fac2d7c3af80a6d4ad6fc1e958720528bbbf07b4bb3ba",
+      "reviewer": "gpt-5.6-sol",
+      "reviewer_family": "openai",
+      "review_independence": "same-family",
+      "acceptance_status": "provisional",
+      "executor_model": "codex-gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T13:37:15Z"
+    },
+    {
+      "phase": "novelty-check",
+      "status": "provisional",
+      "artifact": "idea-stage/PIVOT_NOVELTY_ADJUDICATION.json",
+      "verdict_id": "sha256:a8d89868dfb662f5bba767400f8fcfc52dc66383a910fd48e885c3431bd35be1",
+      "reviewer": "gpt-5.6-sol",
+      "reviewer_family": "openai",
+      "review_independence": "same-family",
+      "acceptance_status": "provisional",
+      "executor_model": "codex-gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T13:37:16Z"
+    },
+    {
+      "phase": "research-review",
+      "status": "skipped",
+      "artifact": null,
+      "verdict_id": null,
+      "reviewer": null,
+      "reviewer_family": null,
+      "review_independence": null,
+      "acceptance_status": null,
+      "executor_model": "codex-gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T13:37:16Z"
+    },
+    {
+      "phase": "research-refine-pipeline",
+      "status": "skipped",
+      "artifact": null,
+      "verdict_id": null,
+      "reviewer": null,
+      "reviewer_family": null,
+      "review_independence": null,
+      "acceptance_status": null,
+      "executor_model": "codex-gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T13:37:17Z"
+    }
+  ]
+}

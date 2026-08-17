@@ -1,0 +1,87 @@
+{
+  "acceptance_status": "provisional",
+  "artifact_type": "temporac_canonicalization_review",
+  "authoritative": false,
+  "authorizes": [],
+  "blocking_issue_count": 2,
+  "canonical_markdown": {
+    "path": "refine-logs/temporac/TEMPORAC_CANONICALIZATION_REVIEW_20260816_074150_ROUND1.md",
+    "sha256": "e94382b434bb560fa59238ab1763381569f5b24a7cae0a6e7a5f7f59dcba42ec"
+  },
+  "canonicalization_timestamp": "20260816_074150",
+  "date": "2026-08-16",
+  "executor_family": "openai",
+  "fresh_zero_context": true,
+  "index_audit": {
+    "binding_count": 22,
+    "binding_failure_count": 2,
+    "path": "refine-logs/temporac/TEMPORAC_CANONICALIZATION_INDEX_20260816_074150.json",
+    "review_artifact_presence_consistent": false,
+    "self_hash_absent": true,
+    "sha256": "790e889c5ce3b82a2335faa03d42479b90249fd3b8bfac8292c62eb2b9d87cd1"
+  },
+  "blocking_findings": [
+    {
+      "id": "R1-B1",
+      "finding": "prior_proposal.paths names the two mutable fixed proposal aliases while declaring the old 562325... digest; both paths currently hash to 3b265...",
+      "required_correction": "Bind the immutable old timestamped proposal snapshots that actually hash to 562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c."
+    },
+    {
+      "id": "R1-B2",
+      "finding": "p05m_blocker.review_artifact_present is false although the Round 2 Markdown and JSON review artifacts exist.",
+      "required_correction": "Bind the existing Round 2 review artifacts and mark review-artifact presence true while retaining REVISE, BLOCKED, and no fresh ACCEPT receipt."
+    }
+  ],
+  "content_audit": {
+    "accepted_delta_scope_exact": true,
+    "f8_outer_scale_order_rms_fft": true,
+    "f9_through_f23_byte_equal": true,
+    "f9_through_f23_blocks_sha256": "ec84a22b575f45007dab7b5d7d654d16e1b0b1ee3c043a372bfbfae02b473dfb",
+    "operator_key_preimage_cap_plateau_flat_witness": true,
+    "problem_anchor_byte_equal": true,
+    "problem_anchor_sha256": "79275ded0f062908343bb665801b30efef3ec8e0db90c166b9cc2253951f102a",
+    "scientific_or_mathematical_blockers": 0
+  },
+  "byte_identity": {
+    "canonical_proposal_four_way": true,
+    "experiment_plan_fixed_timestamped": true,
+    "experiment_tracker_fixed_timestamped": true,
+    "research_contract_fixed_timestamped": true
+  },
+  "frozen_inventory": {
+    "allocated_a6000_hours": 93,
+    "baseline_families": 3,
+    "experiment_blocks": 4,
+    "primary_claims": 1,
+    "training_jobs": 27
+  },
+  "p05m": {
+    "execution_status": "BLOCKED",
+    "fresh_accept_receipt_present": false,
+    "review_disposition": "REVISE",
+    "review_round": 2
+  },
+  "review_independence": "same-family",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "round": 1,
+  "status": "REVISE_SAME_FAMILY_PROVISIONAL_ZERO_AUTHORITY",
+  "verdict": "REVISE",
+  "authority": {
+    "canonical_edit": false,
+    "claims": false,
+    "data_access": false,
+    "evaluator_capability": false,
+    "gate_pass": false,
+    "git": false,
+    "implementation": false,
+    "launch": false,
+    "paper_promotion": false,
+    "p3_preflight": false,
+    "results": false,
+    "s0": false,
+    "server": false,
+    "test_execution": false,
+    "training": false
+  }
+}

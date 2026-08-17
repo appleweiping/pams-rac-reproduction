@@ -1,0 +1,29 @@
+{
+  "artifact_type": "pams_local_frequency_v2_dev_prediction_receipt",
+  "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+  "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+  "dev_pose_cache_set_sha256": "681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1",
+  "label_firewall": {
+    "gt_count_or_action_oracle_used": false,
+    "prediction_loaded_action_labels": false,
+    "prediction_loaded_count_labels": false,
+    "prediction_loaded_dev_targets": false,
+    "prediction_loaded_test_identity": false,
+    "prediction_loaded_test_pose": false,
+    "prediction_loaded_test_targets": false
+  },
+  "method_id": "pams-local-frequency-v2-target-free-selected-v1",
+  "prediction_bytes": 44239,
+  "prediction_file": "predictions.json",
+  "prediction_sha256": "99ed1c9c8c4ce0a4d7971901e35ec0e0de7c340ea5989ce75fb834ae82b2a912",
+  "protocol": "ucfrep_526",
+  "record_total": 84,
+  "runner_source_sha256": "f3c531d9ee33909b98a3307ddcab45bd1a58aced133eb249f9936aefc11f9577",
+  "schema_version": 1,
+  "selected_candidate": "xyz.trim0.norm.c1.mean.scale_min",
+  "selected_parameters_sha256": "b73a19cdfa9ebf1a64be3fb69aefe144b017ad21ec195897f7b29d2030ea6084",
+  "selector_artifact_sha256": "0bcad7d0fe270f1e71db465bd2e0f4ac861dfc1167b60283603d4624786e18db",
+  "selector_source_sha256": "52d9cc2dc026773e7fb45fcc8328edc28779823215c5cd2a1649e263ce0dd8e1",
+  "split": "dev",
+  "test105_evaluation_authorized": false
+}

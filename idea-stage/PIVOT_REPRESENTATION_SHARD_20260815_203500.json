@@ -1,0 +1,203 @@
+{
+  "shard_id": "representation",
+  "fresh_context": false,
+  "context_reuse_reason": "agent_thread_limit",
+  "persistence_exact_to_response": false,
+  "persistence_note": "prior response bytes unavailable after compaction; candidate semantics reconstructed by originating shard",
+  "candidates": [
+    {
+      "payload": {
+        "title": "Masked Multi-Horizon Pose-Delta Prediction",
+        "plain_method_steps": [
+          "Normalize each supplied person track into hip-centered, scale-normalized pose coordinates while retaining fixed visibility masks and sampled-frame timing only.",
+          "Mask contiguous joint-time blocks and encode the remaining pose sequence with a track-local temporal encoder.",
+          "Predict signed pose deltas at several fixed past and future horizons, using confidence-weighted reconstruction without count, period, density, or boundary targets.",
+          "Freeze the encoder and expose the same representation to a fixed-capacity downstream RAC readout for every comparator.",
+          "Run preregistered objective, shortcut, collapse, and cross-identity isolation checks before any efficacy experiment."
+        ],
+        "core_hypothesis": "Multi-horizon signed motion prediction can make repetition-relevant dynamics linearly accessible without committing to a hard period selector or supplying learner-side count/period labels.",
+        "cheap_kill_gate": "On checksum-frozen, source-disjoint, feature/label-isolated train/val splits, stop if masked-delta error does not beat constant-pose, linear-interpolation, and constant-velocity baselines; if clock-only, mask-pattern, or temporal-shuffle probes retain more than 20% of the full objective gain; if embedding effective rank falls below the preregistered floor; or if perturbing one non-target identity changes an untouched target embedding beyond the fixed numerical tolerance.",
+        "expected_contribution": "A bounded label-free pose representation objective that tests whether multi-scale signed dynamics, rather than explicit period selection, are sufficient for supplied-track multi-person RAC.",
+        "risk": "The objective may reward generic smooth-motion forecasting, and fixed horizons may miss very long or strongly nonstationary repetitions.",
+        "estimated_gpu_hours": "8-14",
+        "closest_prior_boundary": [
+          "MultiCounter+ already owns supplied-track multi-person RAC, per-person outputs, temporal consistency, and long/short-period awareness; the proposed novelty is only the label-free representation objective.",
+          "PAMS already owns self-supervised skeleton periodic learning and period-adaptive multi-scale consistency; this candidate uses fixed prediction horizons and no inference-time period consensus.",
+          "DeepPhase already owns unsupervised local phase manifolds and reconstruction; this candidate predicts signed kinematic deltas without an explicit phase manifold.",
+          "Motion Feature Learning/TSSM already uses temporal self-similarity reconstruction; no TSSM reconstruction or similarity matrix is claimed here.",
+          "RepNet already uses synthetic resampling, TSSM, and per-frame period/periodicity prediction; none of those targets are used.",
+          "TWCRAC already covers pose, local windows, temporal cycle consistency, and nonstationary motion; this candidate is limited to masked multi-horizon delta prediction and requires a mechanism-matched comparison."
+        ]
+      },
+      "dedup_key": "masked-multihorizon-pose-delta"
+    },
+    {
+      "payload": {
+        "title": "Cross-View Kinematic Residual Denoising",
+        "plain_method_steps": [
+          "Derive two deterministic views of each supplied track: normalized joint coordinates and a kinematic view of bones, angles, velocities, and accelerations.",
+          "Corrupt complementary joint-time regions independently in the two views without changing sampled-frame timing.",
+          "Use one shared track-local encoder to reconstruct only cross-view kinematic residuals that are unavailable from the same corrupted view.",
+          "Exclude count, period, density, boundary, person-count, and cross-track targets from learner inputs and losses.",
+          "Freeze the representation and run the full preregistered kill suite before downstream RAC evaluation."
+        ],
+        "core_hypothesis": "Cross-view residual denoising can emphasize articulated cyclic dynamics while making direct coordinate copying and visibility-pattern shortcuts measurably unhelpful.",
+        "cheap_kill_gate": "On checksum-frozen, source-disjoint, feature/label-isolated train/val splits, stop if cross-view residual error does not beat direct masked-coordinate, static-pose, and per-joint interpolation baselines; if static-shape, visibility-mask, or clock-only probes recover more than 20% of the full gain; if variance/effective-rank collapse crosses the preregistered bound; or if corrupting another identity changes the byte-identical target representation beyond tolerance.",
+        "expected_contribution": "A representation-level test of whether complementary skeletal parameterizations provide repetition-sensitive supervision without period labels or a self-similarity selector.",
+        "risk": "Coordinate and kinematic views are algebraically coupled, so the task may remain too easy unless corruption removes direct reconstruction paths.",
+        "estimated_gpu_hours": "10-16",
+        "closest_prior_boundary": [
+          "MultiCounter+ owns the multi-person supplied-track task setting; this candidate changes only track-local pretraining.",
+          "PAMS owns self-supervised skeleton periodic learning and period-adaptive consistency; this objective is cross-view residual denoising with no period estimate.",
+          "DeepPhase owns unsupervised phase-oriented reconstruction; no phase variable or local phase manifold is imposed.",
+          "Motion Feature Learning/TSSM owns motion-feature and temporal-similarity reconstruction territory; the candidate reconstructs kinematic residuals rather than a TSSM.",
+          "RepNet owns TSSM and period/periodicity prediction with synthetic resampling; those mechanisms are excluded.",
+          "TWCRAC overlaps on pose and local temporal modeling; novelty remains bounded to complementary-view corruption and residual prediction."
+        ]
+      },
+      "dedup_key": "crossview-kinematic-residual-denoising"
+    },
+    {
+      "payload": {
+        "title": "Track-Exclusive Overlap Bootstrap Consistency",
+        "plain_method_steps": [
+          "Sample two overlapping temporal crops from the same supplied identity track using only source indices and fixed augmentations.",
+          "Encode one crop with a student and the other with an exponential-moving-average teacher, aligning only their shared physical frames.",
+          "Predict teacher embeddings for the overlap while giving the two branches different boundary context and pose masking.",
+          "Keep queues, normalization statistics, and teacher updates private to the track during each training item so no co-actor metadata enters the objective.",
+          "Freeze the encoder and audit objective gain, shortcut predictability, collapse, and identity isolation on the frozen split manifest."
+        ],
+        "core_hypothesis": "Agreement on shared motion under differing temporal context can learn stable repetition-relevant state without identifying a discrete cycle or exposing period/count labels.",
+        "cheap_kill_gate": "On checksum-frozen, source-disjoint, feature/label-isolated train/val splits, stop if overlap prediction does not beat identity-copy, recency, and untrained-teacher baselines; if crop offset, absolute clock, track length, or padding probes explain more than 20% of the gain; if teacher/student variance or effective rank violates the frozen collapse bounds; or if swapping every non-target track changes the untouched target embedding beyond tolerance.",
+        "expected_contribution": "A track-exclusive self-distillation objective for temporal state stability whose usefulness can be falsified before any full RAC training.",
+        "risk": "Bootstrap consistency can converge to low-information features, and overlap alignment may favor pose identity over motion structure.",
+        "estimated_gpu_hours": "10-18",
+        "closest_prior_boundary": [
+          "MultiCounter+ already uses per-person tracks and temporal consistency; the candidate claims only a particular label-free overlap-bootstrap representation objective.",
+          "PAMS owns self-supervised periodic skeleton consistency and inference consensus; no period-adaptive scale or consensus is used.",
+          "DeepPhase owns local phase-manifold learning; overlap agreement does not define phase coordinates.",
+          "Motion Feature Learning/TSSM owns temporal self-similarity reconstruction; this candidate aligns embeddings only on identical physical frames.",
+          "RepNet owns TSSM, resampling, and explicit periodicity/period outputs; all are absent.",
+          "TWCRAC owns intra-video temporal cycle consistency and local windows; the distinction is exact-frame overlap bootstrap consistency, which needs mechanism-matched adjudication."
+        ]
+      },
+      "dedup_key": "track-exclusive-overlap-bootstrap"
+    },
+    {
+      "payload": {
+        "title": "Motion-Arrow Factorized Representation",
+        "plain_method_steps": [
+          "Create forward and time-reversed versions of each normalized supplied track with identical visibility and timing metadata.",
+          "Encode each sequence into a reversal-invariant motion-content subspace and a signed motion-arrow subspace.",
+          "Train content agreement across reversal while predicting local velocity direction only from the arrow subspace.",
+          "Penalize cross-covariance between the two subspaces and never infer a period, cycle boundary, count, or density target.",
+          "Freeze both subspaces and apply reversal, clock, collapse, and per-identity intervention checks before downstream use."
+        ],
+        "core_hypothesis": "Separating what motion recurs from which temporal direction it follows can yield a more useful RAC representation than a brittle hard period decision.",
+        "cheap_kill_gate": "On checksum-frozen, source-disjoint, feature/label-isolated train/val splits, stop if content agreement and arrow prediction do not beat pooled-pose and local-velocity baselines; if absolute clock, padding edge, or reversal-token probes recover more than 20% of the gain; if either subspace collapses or the two fail the preregistered independence bound; or if reversing one person changes any byte-identical non-target person's representation beyond tolerance.",
+        "expected_contribution": "A bounded factorization objective that explicitly tests direction/content disentanglement for pose repetition without period supervision.",
+        "risk": "Time reversal may create physically implausible sequences, and subspace separation may not correspond to repetition structure.",
+        "estimated_gpu_hours": "8-14",
+        "closest_prior_boundary": [
+          "MultiCounter+ defines the multi-person RAC setting and identity-specific outputs; this proposal remains a per-track representation intervention.",
+          "PAMS already uses tempo perturbation and multi-scale consistency; reversal factorization is not presented as period adaptation.",
+          "DeepPhase owns unsupervised phase manifolds; the proposed two-subspace representation has no circular phase constraint.",
+          "Motion Feature Learning/TSSM owns temporal motion-feature reconstruction; the objective instead factorizes reversal behavior.",
+          "RepNet owns synthetic temporal resampling and explicit period/periodicity prediction; reversal is the only temporal intervention here and supplies no period label.",
+          "TWCRAC covers nonstationary pose cycles and temporal consistency; the narrowly claimed boundary is direction/content factorization."
+        ]
+      },
+      "dedup_key": "motion-arrow-factorization"
+    },
+    {
+      "payload": {
+        "title": "Predictive-Surprise Repetition Representation",
+        "plain_method_steps": [
+          "Encode each supplied identity track causally from normalized pose, visibility, and sampled-frame gaps only.",
+          "Predict a distribution over the next signed pose delta and retain calibrated negative log likelihood as a local surprise channel.",
+          "Aggregate latent state and surprise over fixed short windows without peaks, autocorrelation, FFT, or period selection.",
+          "Train only the next-delta likelihood and calibration objectives, with no count, period, density, or boundary annotations.",
+          "Freeze the representation and test whether any gain survives nonperiodic controls and all isolation checks."
+        ],
+        "core_hypothesis": "Repeated motion may be represented through recurring patterns of predictability and surprise even when no explicit cycle length is selected.",
+        "cheap_kill_gate": "On checksum-frozen, source-disjoint, feature/label-isolated train/val splits, stop if held-out next-delta likelihood and calibration do not beat last-pose, constant-velocity, and unconditional-motion baselines; if monotonic-motion, shuffled-window, clock-only, or confidence-only controls retain more than 20% of the representation gain; if latent or surprise channels collapse; or if changing a non-target identity alters the untouched target output beyond tolerance.",
+        "expected_contribution": "A label-free probabilistic motion representation that replaces hard recurrence selection with calibrated local predictive structure.",
+        "risk": "Surprise may primarily encode occlusion, abrupt camera effects, or tracking noise rather than repetition.",
+        "estimated_gpu_hours": "10-18",
+        "closest_prior_boundary": [
+          "MultiCounter+ owns supplied-track per-person RAC and temporal modeling; only the predictive-surprise pretext is proposed.",
+          "PAMS owns periodic self-supervision and internal tempo perturbation; this candidate uses causal likelihood without tempo-derived consistency.",
+          "DeepPhase owns reconstruction-based local phase structure; predictive uncertainty is not claimed as phase estimation.",
+          "Motion Feature Learning/TSSM owns motion-feature and similarity reconstruction; no temporal similarity matrix is formed.",
+          "RepNet owns per-frame period and periodicity prediction; the surprise channel is not trained against either label.",
+          "TWCRAC covers local temporal statistics and dynamic behavior; surprise must be compared directly and claimed only as a representation objective."
+        ]
+      },
+      "dedup_key": "predictive-surprise-pose-recurrence"
+    },
+    {
+      "payload": {
+        "title": "Identity-Private Soft Loop-Closure Memory",
+        "plain_method_steps": [
+          "Maintain a separate bounded memory bank for each supplied identity track, containing only that track's normalized pose embeddings and source indices.",
+          "For each current frame, compute a dense soft distribution over eligible earlier states after a fixed exclusion radius.",
+          "Reconstruct the current kinematic residual from the soft memory mixture while regularizing occupancy entropy and memory utilization.",
+          "Never take an argmax, locate a peak, estimate a period, harmonic-correct a candidate, or share memory across identities.",
+          "Freeze the encoder and memory rule, then audit reconstruction, shortcuts, collapse, and byte-level identity isolation."
+        ],
+        "core_hypothesis": "A differentiable distribution over earlier matching states can encode recurrence evidence without reproducing the terminally failed hard selector.",
+        "cheap_kill_gate": "On checksum-frozen, source-disjoint, feature/label-isolated train/val splits, stop if residual reconstruction does not beat fixed-recency, uniform-memory, and kernel-smoothing baselines; if absolute clock, memory age, track length, or confidence probes explain more than 20% of the gain; if memory occupancy or embedding effective rank crosses preregistered collapse bounds; or if byte-changing another identity's memory changes the untouched target output at all beyond the fixed numerical tolerance.",
+        "expected_contribution": "A strictly soft, identity-private recurrence representation with explicit evidence that it is neither a hidden hard period selector nor a shared-state shortcut.",
+        "risk": "The memory may collapse to recency or generic pose similarity, and dense matching may be computationally expensive for long tracks.",
+        "estimated_gpu_hours": "12-20",
+        "closest_prior_boundary": [
+          "MultiCounter+ owns identity-specific multi-person RAC; the proposed distinction is byte-isolated per-track soft recurrence memory.",
+          "PAMS owns inference-time configuration consensus and period-adaptive consistency; this memory never emits or selects a period.",
+          "DeepPhase owns local phase manifolds and reconstruction; soft loop closure is not claimed as phase discovery.",
+          "Motion Feature Learning/TSSM owns temporal self-similarity reconstruction; pairwise similarity is an operator here, not a standalone novelty claim.",
+          "RepNet owns TSSM and explicit periodicity estimation; no TSSM head, resampling supervision, or hard periodic output is used.",
+          "TWCRAC owns time-window cycles and temporal cycle consistency; the candidate boundary is identity-private dense soft memory with no cycle decision."
+        ]
+      },
+      "dedup_key": "identity-private-soft-loop-closure"
+    },
+    {
+      "payload": {
+        "title": "Cross-Person Nuisance-Rejected Track Encoding",
+        "plain_method_steps": [
+          "Choose one supplied target identity and keep its pose bytes, visibility, and sampled-frame indices identical across two constructed views.",
+          "Independently swap, drop, reorder, or tempo-perturb only the non-target tracks while preserving the target input exactly.",
+          "Train the target encoder for counterfactual embedding invariance together with a target-local masked signed-delta objective.",
+          "Adversarially suppress recoverability of person count and co-actor summary cues from the target embedding without exposing RAC labels.",
+          "Freeze the model and verify target objective utility, nuisance rejection, noncollapse, and strict identity isolation on source-disjoint data."
+        ],
+        "core_hypothesis": "Explicit counterfactual invariance to co-actor changes can prevent multi-person context leakage while preserving target-local dynamics useful for per-person RAC.",
+        "cheap_kill_gate": "On checksum-frozen, source-disjoint, feature/label-isolated train/val splits, stop if the target-local masked-delta objective does not beat static and constant-velocity baselines; if person-count, co-actor-motion, clock, or augmentation-signature probes exceed preregistered chance-plus-margin bounds; if target embeddings collapse under the invariance loss; or if any permitted non-target intervention changes the byte-identical target representation beyond tolerance.",
+        "expected_contribution": "A representation-level identity-isolation mechanism and falsifiable audit for supplied-track multi-person RAC, coupled to a label-free target-local motion objective.",
+        "risk": "Aggressive nuisance rejection may discard genuinely useful interaction context, while imperfect track independence could make the intervention unrealistic.",
+        "estimated_gpu_hours": "12-22",
+        "closest_prior_boundary": [
+          "MultiCounter+ owns multi-person identity-aware RAC; this candidate focuses narrowly on counterfactual removal of co-actor leakage from each target representation.",
+          "PAMS owns self-supervised skeleton periodic learning; the auxiliary target objective is masked delta prediction rather than period-adaptive consistency.",
+          "DeepPhase owns unsupervised phase manifolds; no phase topology is imposed.",
+          "Motion Feature Learning/TSSM owns motion-feature and similarity reconstruction; neither is the claimed contribution.",
+          "RepNet owns resampling, TSSM, and period/periodicity heads; the non-target tempo perturbation is solely a nuisance intervention and never labels the target.",
+          "TWCRAC overlaps on pose, local temporal reasoning, and multi-person RAC context; novelty is bounded to counterfactual co-actor invariance plus an explicit isolation gate."
+        ]
+      },
+      "dedup_key": "crossperson-nuisance-rejected-track-encoding"
+    }
+  ],
+  "failure_memory": [
+    "WARP-PHASE is terminally killed at immutable Gate2 by exact observed counts agreement=246, half_overall=55, double_overall=144, symmetric_half=50, and symmetric_double=66; the K5 stop is final.",
+    "Do not repair, retune, threshold-adjust, harmonic-correct, rerun, or reuse the failed hard selector, and do not replace its frozen stochastic fixture population.",
+    "Any future candidate requires a newly preregistered checksum-frozen, source-disjoint, feature/label-physically-separated train/val protocol before training.",
+    "The admissible supervision claim is only that the learner receives no per-person count, period, density, or boundary labels; any externally supplied tracks or other supervision must be disclosed exactly.",
+    "MultiCounter and MultiCounter+ already define the multi-person RAC setting, per-person identity outputs, temporal consistency, and long/short-period awareness.",
+    "PAMS already covers self-supervised skeleton periodic learning, period-adaptive multi-scale consistency, inference configuration consensus, and internal tempo perturbation.",
+    "DeepPhase covers unsupervised local phase manifolds and reconstruction; Motion Feature Learning covers temporal motion features/TSSM reconstruction; RepNet covers TSSM, synthetic resampling, and per-frame period/periodicity prediction.",
+    "TWCRAC's accessible boundary includes time-window cycles, intra-video temporal cycle consistency, pose, local statistics, dynamic thresholds, and nonstationary motion; full overlap remains unresolved and requires mechanism-matched checking.",
+    "TSSM, masking, local windows, private memory, pose normalization, and standard consistency losses are established operators rather than standalone contributions.",
+    "This shard makes no ranking, acceptance, or rejection decision; all seven entries are bounded hypotheses whose objective, shortcut, collapse, and identity-isolation gates must be passed on frozen train/val before efficacy claims."
+  ]
+}

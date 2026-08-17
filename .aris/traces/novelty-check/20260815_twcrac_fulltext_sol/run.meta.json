@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_twcrac_fulltext_sol",
+  "skill": "novelty-check",
+  "purpose": "TWCRAC primary-full-text K8 adjudication",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_family": "openai",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "completed_at": "2026-08-15T14:13:46.0381213+08:00",
+  "input_hashes": [
+    {
+      "path": "idea-stage/NOVELTY_CHECK.json",
+      "sha256": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5"
+    },
+    {
+      "path": "refine-logs/round-1-refinement.md",
+      "sha256": "6840a8e8cec3d8fa6d7c371e14a37a3ad3fdd1be120902bf67f911a247a47b75"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": ".aris/traces/novelty-check/20260815_twcrac_fulltext_sol/001-twcrac-fulltext-adjudication.request.json",
+      "sha256": "977083a2c4d37fede450f7c52d052364838e9903123453741822c9e52c410a9b",
+      "format": "json",
+      "validated": true
+    },
+    {
+      "path": ".aris/traces/novelty-check/20260815_twcrac_fulltext_sol/001-twcrac-fulltext-adjudication.response.md",
+      "sha256": "5a1e7b8c1048a8884690f2d234d413064d473ead1eb1deca69ab734ca2e5ed1e",
+      "format": "json-in-md",
+      "validated": true
+    },
+    {
+      "path": ".aris/traces/novelty-check/20260815_twcrac_fulltext_sol/001-twcrac-fulltext-adjudication.meta.json",
+      "sha256": "1f8a6774060b2ba3cb3d274ec53819eb7e2a36dcee53a52b5bb0f09ae05b7be8",
+      "format": "json",
+      "validated": true
+    },
+    {
+      "path": "idea-stage/TWCRAC_ADJUDICATION.json",
+      "sha256": "5a1e7b8c1048a8884690f2d234d413064d473ead1eb1deca69ab734ca2e5ed1e",
+      "format": "json",
+      "validated": true
+    }
+  ],
+  "validation": {
+    "canonical_json_valid": true,
+    "request_json_valid": true,
+    "response_json_valid": true,
+    "meta_json_valid": true,
+    "events_jsonl_valid": true,
+    "canonical_event_count": 1,
+    "events_jsonl_sha256_after_append": "f5c06c21dfaebd8954245f18de989843b40de15db11fb71a62134d955fd7b13e",
+    "response_byte_identical_to_canonical": true,
+    "input_hashes_verified": true,
+    "artifact_hashes_verified": true,
+    "primary_source_only_policy_applied": true,
+    "full_text_obtained": false,
+    "downloaded_document_sha256_available": false,
+    "verified_page_count_available": false,
+    "abstract_only_not_used_for_absence_inference": true,
+    "k8_passed": false
+  },
+  "overall_verdict": "BLOCKED",
+  "k8_decision": "NOT_PASSED_BLOCKED",
+  "status": "blocked"
+}

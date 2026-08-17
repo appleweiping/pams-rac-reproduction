@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-15T00:44:00+08:00",
+  "backend": "claude-review",
+  "overlay_installed": true,
+  "cross_family_review_obtained": false,
+  "status": "BLOCKED",
+  "reason": "claude_cli_did_not_return_json",
+  "probes": [
+    {
+      "job_id": "7820198e61a24797981b0cbc4ab32c8e",
+      "tools": "disabled",
+      "status": "failed",
+      "error": "Claude CLI did not return JSON output"
+    },
+    {
+      "job_id": "ba16b060bd0448ceb0a9bc152460235d",
+      "tools": "default",
+      "status": "failed",
+      "error": "Claude CLI did not return JSON output"
+    },
+    {
+      "job_id": "c723c415d212485c911bc066b674a673",
+      "tools": "disabled",
+      "status": "failed",
+      "error": "Claude CLI did not return JSON output",
+      "scope": "user-requested final revision health re-probe"
+    }
+  ],
+  "submission_ceiling": "provisional"
+}

@@ -1,0 +1,11 @@
+schema_version: 1
+key: escounts
+paper_name: Every Shot Counts (ESCounts)
+status: blocked_unimplemented
+implementation: clean_room_pending
+protocol: ucfrep_526_fair
+modality: videomae_tokens
+eligible_for_comparison: false
+reason: Clean-room model and checkpoint parity have not been validated.
+sources:
+  - https://github.com/sinhasaptarshi/EveryShotCounts

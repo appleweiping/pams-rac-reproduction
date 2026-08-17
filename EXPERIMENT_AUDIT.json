@@ -1,0 +1,49 @@
+{
+  "audit_skill": "experiment-audit",
+  "verdict": "FAIL",
+  "reason_code": "noncanonical_implementation_and_compromised_evaluation",
+  "summary": "v63 is code-only, v46 does not implement TempoRAC, and both completed v46 evaluation populations have material selection, GT-assistance, leakage, evaluator, and scope defects.",
+  "audited_input_hashes": {
+    "v46/code/run_mpcounter_v44.py": "sha256:ec6b8ee58dd163b86be49f3e7a3461b449c65000184ad498b367e085e71261c6",
+    "v46/code/mpcounter_full_system_v46.py": "sha256:8941a8519a8ecc98a0a39384a27cbdafd9e31a59c787e535448190dd6745dc9f",
+    "v46/code/train_mpcounter_spectral_v46.py": "sha256:9ce0f22b301c8a23ee403e93a6a4387fb82f181bae45619dc18e5ef3e9555ee2",
+    "v46/full_system/test_summary_v46.json": "sha256:307beb634a4075ff5e769373d8c9d48fcca885dfbc4e389738c9cec52391722c",
+    "v46/official_complete/test_summary_v46.json": "sha256:17868b5d8793819e5024f3f376f40dcadeddb2faf1cbbf58519b273ad20f35f2",
+    "v46/converted_unseen_test/conversion_manifest_v45.json": "sha256:217beaca14ea124790cf50a04af99139d5d457773b0c04057e4d9781bc5e4813",
+    "v46/data-manifests/real_disjoint_manifest.json": "sha256:bb9accf2669f1bd3a868352dca51c1516f5e54920d88527ef311d8b273f4255a",
+    "v46/data-manifests/official_complete_manifest.json": "sha256:468c568616131fa3a40da21822baac8e769074ada4ffbcecd3203a8d757e2c0b",
+    "v63/train_poserac_channel_classifier_v63.py": "sha256:9989d776ff78bf9bee55cda0164b1fbf5fb9e469a6894925639c31bfe443bcb1",
+    "paper/evidence/results_manifest.json": "sha256:4df513a3f4427950d23267965192253446e6ee2b6968907855e0bae1a6a53159",
+    "paper/evidence/method_manifest.yaml": "sha256:514d25ceb51d97930f02a14c70d96962ff7acdcb28c712fa80c1f03a9ea1d579"
+  },
+  "trace_path": ".aris/traces/experiment-audit/20260815_server_v46_v63/",
+  "agent_id": "/root/experiment_audit_v46_v63",
+  "verdict_id": "/root/experiment_audit_v46_v63",
+  "executor_model": "codex-gpt-5.6-sol",
+  "executor_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_family": "openai",
+  "reviewer_reasoning": "ultra",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "generated_at": "2026-08-15T03:45:00Z",
+  "date": "2026-08-15",
+  "auditor": "gpt-5.6-sol-ultra",
+  "overall_verdict": "fail",
+  "integrity_status": "fail",
+  "checks": {
+    "gt_provenance": {"status": "fail", "details": "GT-assisted object association, label-informed 71-video selection, canonical-source overlap, and partial prior test exposure."},
+    "score_normalization": {"status": "warn", "details": "Reported count denominator is GT-derived, but naming and calibration selection are optimistic; unused period scores self-normalize per track."},
+    "result_existence": {"status": "fail", "details": "v46 summaries exist and recompute, but training dependencies/search artifacts are incomplete and v63 has no run bundle."},
+    "dead_code": {"status": "fail", "details": "Period metrics, bootstrap, and source-hash verification are not executed by the audited v46 test path."},
+    "scope": {"status": "fail", "details": "No independent three-seed runs, uncertainty, matched baselines, TempoRAC ablations, tracking analysis, or non-stationary diagnostic."},
+    "eval_type": "mixed_real_gt_oracle_assisted_compromised_and_synthetic_proxy"
+  },
+  "claims": [
+    {"id": "canonical_temporac_implementation", "impact": "unsupported"},
+    {"id": "official_multirep_performance", "impact": "unsupported"},
+    {"id": "predicted_track_performance", "impact": "unsupported"},
+    {"id": "period_metrics", "impact": "unsupported"},
+    {"id": "historical_v46_diagnostic", "impact": "needs_qualifier"}
+  ]
+}

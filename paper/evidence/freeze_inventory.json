@@ -1,0 +1,69 @@
+{
+  "schema_version": "2.0",
+  "base_commit": "26e5b7176f1f7c678391163c3278b5c390d54115",
+  "external_delivery_receipt": "D:/Project/rac-paper-writing-icassp27-delivery-receipt.json",
+  "delivery_receipt_required_fields": [
+    "schema_version",
+    "delivery_commit",
+    "clean_status",
+    "package_manifest",
+    "package_manifest_sha256",
+    "source_freeze_sha256",
+    "created_at"
+  ],
+  "delivery_receipt_schema_version": "1.0",
+  "package_manifest": "MANIFEST.sha256",
+  "package_manifest_excludes": [
+    "MANIFEST.sha256"
+  ],
+  "manifest_scope_roots": [
+    "paper",
+    "NARRATIVE_REPORT.md",
+    "CLAIMS_EVIDENCE_MATRIX.md",
+    "CLAIMS_FROM_RESULTS.md",
+    "PAPER_PLAN.md",
+    "PAPER_ACCEPTANCE_CONTRACT.md",
+    "PAPER_IMPROVEMENT_LOG.md",
+    "IMPLEMENTATION_SYNC_REPORT_ZH.md",
+    "RESULT_TO_CLAIM.json",
+    "DERIVATION_PROVENANCE.json",
+    "MANIFEST.md"
+  ],
+  "source_freeze_roots": [
+    "NARRATIVE_REPORT.md",
+    "CLAIMS_EVIDENCE_MATRIX.md",
+    "CLAIMS_FROM_RESULTS.md",
+    "PAPER_PLAN.md",
+    "PAPER_ACCEPTANCE_CONTRACT.md",
+    "PAPER_IMPROVEMENT_LOG.md",
+    "IMPLEMENTATION_SYNC_REPORT_ZH.md",
+    "RESULT_TO_CLAIM.json",
+    "DERIVATION_PROVENANCE.json",
+    "paper/main.tex",
+    "paper/preamble.tex",
+    "paper/math_commands.tex",
+    "paper/author_public.tex",
+    "paper/sections",
+    "paper/figures/latex_includes.tex",
+    "paper/references.bib",
+    "paper/evidence",
+    "paper/scripts",
+    "paper/vendor"
+  ],
+  "source_freeze_excludes": [
+    "paper/generated/evidence_values.tex",
+    "paper/private/*"
+  ],
+  "required_consistent_freeze_documents": [
+    "DERIVATION_PROVENANCE.json",
+    "NARRATIVE_REPORT.md",
+    "PAPER_ACCEPTANCE_CONTRACT.md",
+    "IMPLEMENTATION_SYNC_REPORT_ZH.md"
+  ],
+  "anonymity_release_globs": [
+    "paper/main.pdf",
+    "paper/figures/*.pdf"
+  ],
+  "clean_tree_required_after_delivery_commit": true,
+  "current_status": "provisional/data-pending"
+}

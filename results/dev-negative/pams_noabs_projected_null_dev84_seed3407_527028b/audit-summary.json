@@ -1,0 +1,256 @@
+{
+  "schema_version": 1,
+  "artifact_type": "pams_noabspe_projected_null_dev84_public_audit_summary_v12",
+  "method_id": "pams-noabspe-projected-null-multiexpert-v12",
+  "status": "partial_reproduction",
+  "classification": "exploratory-derived predev-bound dev candidate",
+  "disclosed_by_pams_authors": false,
+  "diagnostic_only": true,
+  "eligible_for_paper_table": false,
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "training_seed": 3407,
+  "record_total": 84,
+  "source_git": {
+    "dev_runner": "527028b6ce157a07db70af8085f5729ce6799bcd",
+    "encoder_checkpoint": "0f5268c8496bb708fe07388e063b04ae7ddef5b3"
+  },
+  "frozen_inputs": {
+    "checkpoint_sha256": "a5f08e8585cc0666eea265d9c38617d8845f3af0a4cf4fce92b1ef956e62b76d",
+    "config_sha256": "8295b51171da07138fb0c93cb14b25e52bde0964fb15fbb74868941b7ac07af3",
+    "config_fingerprint": "e64029a8c1ae1bf258a71eabe03fd35cd9cd3f18bdf0c7e4ae17657cf9c6a13e",
+    "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "dev_pose_cache_set_sha256": "681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "null_distribution_sha256": "884ccb0c4e88f152dce7ceae52568a4ffdafc1a1230c0fdb0b9f88d012779f54"
+  },
+  "predev": {
+    "artifact_sha256": "3eb154cb98c9f44b9ea06d616b711099d17e16ef3bc94955311efd4c8cbe8d08",
+    "source_sha256": "78a843f35799194f0fba88bf00add9d4c00a764da68fd2f82553f8ce808a3f98",
+    "thresholds_frozen_before_seed3407_training": true,
+    "overall_pass": true,
+    "criteria_passed": 6,
+    "criteria_total": 6,
+    "dev84_prediction_authorized": true,
+    "dev84_scoring_authorized": false,
+    "test105_evaluation_authorized": false,
+    "criteria": {
+      "frame_index_r2": {
+        "operator": "<=",
+        "threshold": 0.1,
+        "value": -0.10773345997247241,
+        "pass": true
+      },
+      "zero_pose_period_confidence": {
+        "operator": "<=",
+        "threshold": 0.1,
+        "value": 0.0,
+        "pass": true
+      },
+      "random_pose_period_confidence": {
+        "operator": "<=",
+        "threshold": 0.1,
+        "value": 0.0,
+        "pass": true
+      },
+      "training_period_top_bin_share": {
+        "operator": "<=",
+        "threshold": 0.25,
+        "value": 0.09375,
+        "pass": true
+      },
+      "position_invariance_median_cosine": {
+        "operator": ">=",
+        "threshold": 0.95,
+        "value": 1.0,
+        "pass": true
+      },
+      "synthetic_period_median_relative_error": {
+        "operator": "<=",
+        "threshold": 0.1,
+        "value": 0.0,
+        "pass": true
+      }
+    }
+  },
+  "synthetic_projected_stream_stress": {
+    "classification": "target-free deterministic synthetic diagnostic",
+    "source_sha256": "64f51db8f79df6ac2c00d36edbc1193a3143f35fec403fc088d05401ecf7dc4b",
+    "counts_inclusive": [
+      2,
+      40
+    ],
+    "samples_per_scenario": 39,
+    "planned_thresholds": {
+      "nmae_at_most": 0.05,
+      "obo_at_least": 0.95
+    },
+    "planned_scenarios_passed": 6,
+    "planned_scenarios_total": 6,
+    "planned_overall_pass": true,
+    "scenarios": {
+      "clean": {
+        "nmae": 0.028534163095530706,
+        "obo": 1.0,
+        "exact": 0.3076923076923077,
+        "maximum_absolute_error": 1,
+        "planned": true,
+        "pass": true
+      },
+      "accelerate_0.5_to_2.0": {
+        "nmae": 0.029914529914529912,
+        "obo": 0.9743589743589743,
+        "exact": 0.9230769230769231,
+        "maximum_absolute_error": 2,
+        "planned": true,
+        "pass": true
+      },
+      "oscillating_speed_0.5_to_2.0": {
+        "nmae": 0.011861150286740237,
+        "obo": 1.0,
+        "exact": 0.6153846153846154,
+        "maximum_absolute_error": 1,
+        "planned": true,
+        "pass": true
+      },
+      "pause_20_percent": {
+        "nmae": 0.01941331208375329,
+        "obo": 0.9743589743589743,
+        "exact": 0.46153846153846156,
+        "maximum_absolute_error": 2,
+        "planned": true,
+        "pass": true
+      },
+      "noise_sigma_0.08": {
+        "nmae": 0.030670915232282835,
+        "obo": 1.0,
+        "exact": 0.28205128205128205,
+        "maximum_absolute_error": 1,
+        "planned": true,
+        "pass": true
+      },
+      "joint_occlusion_20_percent_time_10_of_33_joints": {
+        "nmae": 0.028534163095530706,
+        "obo": 1.0,
+        "exact": 0.3076923076923077,
+        "maximum_absolute_error": 1,
+        "planned": true,
+        "pass": true
+      },
+      "full_frame_invalid_gap": {
+        "nmae": 0.2578248795524859,
+        "obo": 0.10256410256410256,
+        "exact": 0.0,
+        "maximum_absolute_error": 10,
+        "planned": false,
+        "pass": false,
+        "interpretation": "The frozen counter does not impute repetitions inside a contiguous 20-percent interval with every frame invalid."
+      }
+    },
+    "label_firewall": {
+      "dataset_or_video_input_used": false,
+      "count_or_action_label_input_used": false,
+      "development_or_test_input_used": false
+    }
+  },
+  "dev_metrics": {
+    "rounding": "round prediction before error calculation",
+    "nmae": 0.6288051468008364,
+    "obo": 0.38095238095238093,
+    "mae": 3.5,
+    "rmse": 5.282495802626056,
+    "exact": 0.20238095238095238,
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 2026,
+    "confidence_level": 0.95,
+    "confidence_intervals": {
+      "nmae": {
+        "low": 0.4822428267744616,
+        "high": 0.8150131155191961
+      },
+      "obo": {
+        "low": 0.27380952380952384,
+        "high": 0.4880952380952381
+      },
+      "mae": {
+        "low": 2.7142857142857144,
+        "high": 4.380952380952381
+      },
+      "rmse": {
+        "low": 3.933941128349256,
+        "high": 6.665498408084957
+      },
+      "exact": {
+        "low": 0.11904761904761904,
+        "high": 0.2857142857142857
+      }
+    }
+  },
+  "acceptance_gate": {
+    "required_nmae_at_most": 0.228,
+    "required_obo_at_least": 0.666,
+    "nmae_pass": false,
+    "obo_pass": false,
+    "joint_pass": false,
+    "verified_reproduction": false
+  },
+  "prediction_diagnostics": {
+    "confidence_zero_total": 65,
+    "confidence_positive_total": 19,
+    "valid_frames_zero_total": 6,
+    "valid_frames_zero_video_ids": [
+      "v_Biking_g16_c02",
+      "v_BreastStroke_g01_c01",
+      "v_BreastStroke_g12_c02",
+      "v_PlayingViolin_g08_c04",
+      "v_Rowing_g01_c03",
+      "v_Rowing_g14_c07"
+    ]
+  },
+  "independent_recomputation": {
+    "performed": true,
+    "prediction_record_total": 84,
+    "evaluation_record_total": 84,
+    "prediction_video_ids_unique": true,
+    "evaluation_video_ids_unique": true,
+    "prediction_and_evaluation_order_equal": true,
+    "prediction_identity_set_matches_frozen_dev84_split": true,
+    "evaluation_identity_set_matches_frozen_dev84_split": true,
+    "recomputed_metrics_exactly_match_evaluation": true
+  },
+  "label_and_mount_firewall": {
+    "prediction": {
+      "network": "none",
+      "dev_targets_mounted": false,
+      "test_identity_mounted": false,
+      "test_pose_mounted": false,
+      "test_targets_mounted": false
+    },
+    "scoring": {
+      "network": "none",
+      "checkpoint_mounted": false,
+      "dev_pose_mounted": false,
+      "dev_targets_mounted": true,
+      "test_identity_mounted": false,
+      "test_pose_mounted": false,
+      "test_targets_mounted": false
+    },
+    "test105_accessed": false
+  },
+  "artifact_chain": {
+    "predictions_sha256": "61624471a5be5671d53459a4e2d3a16f0dc76e0760ea131b8b12294aa94b1f58",
+    "prediction_receipt_sha256": "1ce629d749b7264ad5f36e78bf87f8c6415a9fe0813b5ba4a3ed19e07f940a79",
+    "evaluation_sha256": "8d97f681a8e9293b7432f35426ce5f1b4db251729b54cf12ac81fa5a8f38584d",
+    "evaluation_receipt_sha256": "65210495509b4e084e1c1d1125d0f32f2419c174c5e1bf523efe31a8b3d94643",
+    "run_status_sha256": "5f176e12280634b4bf8134434eb8302344a429949f4f48a5ded943c89eb37150"
+  },
+  "publication_safety": {
+    "original_artifacts_byte_identical": true,
+    "server_address_present": false,
+    "username_present": false,
+    "private_key_marker_present": false,
+    "ssh_path_present": false,
+    "host_filesystem_path_present": false
+  }
+}

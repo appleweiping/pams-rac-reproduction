@@ -1,0 +1,220 @@
+{
+  "schema": "temporac.experiment_plan_review.v1",
+  "review_date": "2026-08-16",
+  "review_mode": "fresh_zero_context",
+  "reviewer": {
+    "model": "gpt-5.6-sol",
+    "family": "openai",
+    "independence": "same-family",
+    "acceptance_status": "provisional"
+  },
+  "decision_boundary": {
+    "question": "Are the current experiment plan and tracker immediately suitable for experiment-bridge to release P00-IMPLEMENT?",
+    "method_reopened": false,
+    "implementation_authorized": false,
+    "server_authorized": false,
+    "data_access_authorized": false,
+    "launch_authorized": false,
+    "evaluator_capability_authorized": false,
+    "paper_or_git_authorized": false
+  },
+  "verdict": {
+    "code": "FAIL",
+    "status": "BLOCKING_FIXES_REQUIRED",
+    "p00_release_ready": false,
+    "blocking_issue_count": 2,
+    "rationale": "The method graph, inventory, resources, order, firewall, authority boundary, and zero-result status are correct, but the plan/tracker omit mandatory pilot-scope labeling for implementation artifacts and a required pre-decision evaluator metric fixture/receipt dependency."
+  },
+  "recomputed_inventory": {
+    "primary_claims": 1,
+    "supporting_mechanism_checks": 1,
+    "experiment_blocks": 4,
+    "paper_visible_blocks_declared": 3,
+    "baseline_families": 3,
+    "training_jobs": {
+      "total": 27,
+      "teacher": 3,
+      "canonical_response": 3,
+      "capacity_control_response": 3,
+      "shortcut_response": 18
+    },
+    "seeds": [
+      20260815,
+      20260816,
+      20260817
+    ],
+    "gpu_hours_a6000": {
+      "teacher": 18,
+      "response": 60,
+      "fixed_synthetic_inference": 3,
+      "natural_prediction": 12,
+      "allocated": 93,
+      "unallocated_locked_margin": 7,
+      "hard_ceiling": 100,
+      "formula": "3*6 + 24*2.5 + 3*1 + 3*4 = 93"
+    },
+    "cuda_peak_gib_per_training_job": 24,
+    "disk_gib": {
+      "s0_and_fixtures": 4,
+      "feature_vault_audit": 8,
+      "targets": 8,
+      "teacher_checkpoints_logs": 6,
+      "response_checkpoints_logs": 20,
+      "predictions_receipts": 12,
+      "g5_evaluator_receipts": 2,
+      "staging_temp": 4,
+      "total": 64,
+      "formula": "4+8+8+6+20+12+2+4 = 64"
+    },
+    "maximum_concurrency": 2,
+    "proposal_copies_byte_identical": true,
+    "plan_fixed_and_timestamped_copy_byte_identical": true,
+    "tracker_fixed_and_timestamped_copy_byte_identical": true
+  },
+  "criteria": [
+    {
+      "id": "problem_graph_fidelity",
+      "status": "PASS",
+      "finding": "Externally supplied person-indexed tracks, identity-private state, one shared encoder, three matched slow/medium/fast branches, detached cue-only local routing, probability fusion, exact positive NOLA, and one fixed connected-component decode per identity are preserved."
+    },
+    {
+      "id": "claim_block_family_limits",
+      "status": "PASS",
+      "finding": "1 primary claim, 4 blocks, and 3 baseline families satisfy the 2/5/3 maxima."
+    },
+    {
+      "id": "job_compute_memory_disk",
+      "status": "PASS",
+      "finding": "Exactly 27 jobs, 93 A6000-hours, 24 GiB per-job CUDA cap, and 64 GiB scoped disk recompute from the detailed tables."
+    },
+    {
+      "id": "order",
+      "status": "PASS",
+      "finding": "P0 -> P1 -> P2 -> P3 -> S0 precedes the complete F23 order through G5a, capability grant, G5b, and K7."
+    },
+    {
+      "id": "label_data_firewall",
+      "status": "PASS",
+      "finding": "Feature/vault physical separation, privileged-key rejection, evaluator isolation, immutable roots, one-use capability, and no-rerun behavior are present."
+    },
+    {
+      "id": "natural_splits",
+      "status": "PASS",
+      "finding": "Only frozen v44 train and val are permitted; test, sealed, official-complete, historical-result, and contaminated paths are denied."
+    },
+    {
+      "id": "server_launch_authority",
+      "status": "PASS",
+      "finding": "Launch authorization remains zero and the current WARP-PHASE server preflight is explicitly non-inheritable."
+    },
+    {
+      "id": "receipt_gate_executability",
+      "status": "FAIL",
+      "finding": "The final metric formula exists, but no pre-decision desensitized AvgMAE/AvgOBO/video-first/bootstrap implementation fixture or required receipt dependency is present."
+    },
+    {
+      "id": "tracker_completeness",
+      "status": "FAIL",
+      "finding": "Jobs, gates, dependencies, resources, and blocked states are complete, but mandatory pilot-scope labels/main-paper ineligibility and the evaluator metric fixture row/receipt are absent."
+    },
+    {
+      "id": "warp_drift",
+      "status": "PASS",
+      "finding": "WARP-PHASE appears only in isolation, deny, and non-inheritance clauses; no WARP method object or authority is reused."
+    },
+    {
+      "id": "fabricated_results",
+      "status": "PASS",
+      "finding": "All execution states remain blocked or next-without-authority, consumed compute is zero, and no metric or positive result is claimed."
+    },
+    {
+      "id": "pyproject_runtime_relation",
+      "status": "PASS_WITH_REQUIRED_FUTURE_LOCK",
+      "finding": "The broad current package constraints allow the target versions but are not an exact runtime lock; P3/S0 correctly require a separate fresh lock."
+    }
+  ],
+  "blocking_fixes": [
+    {
+      "id": "B1_PILOT_SCOPE_LABELS",
+      "scope": "plan_and_tracker_implementation_contract",
+      "evidence": {
+        "pilot_audit_verdict": "CONDITIONAL_PILOT_ONLY",
+        "canonical_protocol_name": "GT-bbox-assisted AlphaPose supplied-track pilot",
+        "required_labels": [
+          "partial-cache",
+          "GT-bbox-assisted",
+          "supplied-track"
+        ],
+        "paper_main_result_eligible": false,
+        "current_plan_partial_cache_label_count": 0,
+        "current_tracker_partial_cache_label_count": 0,
+        "current_plan_gt_bbox_assisted_label_count": 0,
+        "current_tracker_gt_bbox_assisted_label_count": 0
+      },
+      "required_change": [
+        "Add the canonical protocol name and all mandatory scope labels to the plan header, natural-data block, artifact policy, tracker header, NATP rows, and final-decision notes.",
+        "Carry labels only in permitted surrounding manifests, paths, notes, and reports; do not add unknown keys to closed receipt schemas.",
+        "Mark the current v44 run controlled-pilot-only and prevent paper-main-result promotion on the partial cache.",
+        "Add an explicit tracker dependency/stop state for paper promotion without changing the frozen current dataset, jobs, or resource ledger."
+      ],
+      "method_redesign_required": false,
+      "job_or_gpu_change_required": false
+    },
+    {
+      "id": "B2_EVALUATOR_METRIC_FIXTURE",
+      "scope": "p00_p2_gate_executability",
+      "evidence": {
+        "data_audit_requirement": "Implement and test an equation-faithful AvgMAE and AvgOBO scorer with people averaged within video before videos.",
+        "period_addendum_requirement": "The evaluator wrapper and normalized count fixture must pass before any decision-bearing run.",
+        "current_plan_named_fixture_count": 0,
+        "current_tracker_named_fixture_count": 0
+      },
+      "required_change": [
+        "Add a finite desensitized P2 scorer fixture covering positive integer counts, zero-estimate stubs, per-person NAE/OBO, people-within-video averaging, equal-video and ordered-seed averaging, component bootstrap multiplicity, per-draw comparator reselection, and paired clean arm reuse.",
+        "Add malformed, duplicate, empty, nonfinite, and type attack cases with global fail-closed expected outputs.",
+        "Bind evaluator implementation bytes and expected fixture outputs into a P2 receipt, S0, G5a evaluator-code binding, and the K7 input dependency.",
+        "Add the fixture row, receipt, dependency, stop code, and blocked status to the tracker."
+      ],
+      "real_evaluator_labels_in_fixture_allowed": false,
+      "method_redesign_required": false,
+      "training_job_change_required": false,
+      "gpu_change_required": false
+    }
+  ],
+  "input_hashes": {
+    ".agents/skills/experiment-plan/SKILL.md": "61812df053fd8717cccb248fcabec3863f930eaedba03463bc059294dcc3863a",
+    "shared-references/output-versioning.md": "73a4269b537be728b0ecc35789f11fa6d1fafa6d0430d07ad2738f064b1e4da3",
+    "shared-references/output-manifest.md": "28e29bc8e53c52afe4eeeb590df8893282a3bbced08e105e154ad228b6cd1922",
+    "shared-references/output-language.md": "7b326400dca5130ce4beedf72fc2010680afe96eb56a6ab21210d323adc9a52e",
+    "refine-logs/FINAL_PROPOSAL.md": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c",
+    "refine-logs/temporac/FINAL_PROPOSAL.md": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c",
+    "refine-logs/EXPERIMENT_PLAN.md": "cd84c486f86ed41f2a714322d21fe94619c97db1f679cd0ffc3e0437d551329b",
+    "refine-logs/EXPERIMENT_TRACKER.md": "37b650e5bd1e79b0333aa5f460ea0145c55a63ff428fa8b86ac2b71773cea4f2",
+    "refine-logs/temporac/round-5-review.json": "6a32c0ecab12d29dcc5d2d27cc2110165f3b919126a314ec3f54b4c77ace4768",
+    "PILOT_DATA_SCHEMA_AUDIT.md": "7058981e8eb37622c09f5808a4b1329bc7cd133f474101723f15e5e4273eab25",
+    "PILOT_DATA_SCHEMA_AUDIT.json": "ba1c376127d0304d7ee76f902c56dd753c351b71fc11655c45451b98fa0481b8",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.md": "49edcfe25c302c2b55b8e65bc18e1cb7febe25cc8b76698d631fa24150d4b0b5",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.json": "2c95af393fa73f3c581a327f9ee8a5e8a5a5c69c03a9fe6349d3b6531c48e914",
+    "refine-logs/SERVER_PREFLIGHT.md": "f3b254fe2ce7bf7f61fbc6bf3f416ef7e86f8230d1f484259b668ed23c66444b",
+    "pyproject.toml": "14b3b35bbfa57fc982e24ef2f999df288893c0f0d12a53a9f82120babefead38"
+  },
+  "output_binding": {
+    "markdown_path": "refine-logs/EXPERIMENT_PLAN_REVIEW.md",
+    "markdown_sha256": "1b1707c0792cfc6861bdb87ce8c95fb8ce00a44bb86375f25463bb1ecf2ceb01",
+    "trace_request_path": ".aris/traces/experiment-plan/20260816_temporac_plan_review_sol/001-plan-review.request.json",
+    "trace_request_sha256": "4fd71a348c6cb2b59af0611f0cb48aa40e366395ef69b61e7828d9d28d3df1fa",
+    "trace_response_path": ".aris/traces/experiment-plan/20260816_temporac_plan_review_sol/001-plan-review.response.md",
+    "trace_response_sha256": "1b1707c0792cfc6861bdb87ce8c95fb8ce00a44bb86375f25463bb1ecf2ceb01",
+    "trace_response_byte_identical_to_markdown": true
+  },
+  "output_scope_attestation": {
+    "plan_modified": false,
+    "tracker_modified": false,
+    "proposal_modified": false,
+    "code_or_data_modified": false,
+    "paper_modified": false,
+    "server_accessed": false,
+    "git_operated": false,
+    "manifest_modified": false
+  }
+}

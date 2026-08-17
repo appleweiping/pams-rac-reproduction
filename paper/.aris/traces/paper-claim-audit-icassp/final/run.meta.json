@@ -1,0 +1,17 @@
+{
+  "run_id": "paper-claim-audit-icassp/final",
+  "audit_skill": "paper-claim-audit",
+  "agent_id": "/root/icassp_paper_claim_audit",
+  "model": "gpt-5.6-sol",
+  "reasoning": "xhigh",
+  "fresh_zero_context": true,
+  "reused_prior_claim_audit": false,
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "verdict": "BLOCKED",
+  "reason_code": "data_pending",
+  "target_pdf": "paper/main.pdf",
+  "target_pdf_sha256": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+  "trace_path": "paper/.aris/traces/paper-claim-audit-icassp/final/",
+  "generated_at": "2026-08-14T22:43:34+08:00"
+}

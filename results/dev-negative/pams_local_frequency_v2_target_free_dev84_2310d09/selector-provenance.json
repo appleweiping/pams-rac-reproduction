@@ -1,0 +1,37 @@
+{
+  "artifact_type": "pams_local_frequency_v2_selector_provenance",
+  "committed_dependency_sha256": {
+    "scripts/server/run_local_frequency_v2_target_free_selector.py": "52d9cc2dc026773e7fb45fcc8328edc28779823215c5cd2a1649e263ce0dd8e1",
+    "src/pams/data.py": "93dc27fb8bae9c7d2c0d185e883a8608d4ad0550344e7b01802925e11a612cc0",
+    "src/pams/stress.py": "24f5dfbef6bd620172a58b29f41e1d9f086d49c57e4d57b3a6d59d7224d2f3b1",
+    "src/pams/synthetic.py": "53c3bd75fdccb699a7900f85722bdfc2e91c49e5d2c435c1ca55ea6d84a74059",
+    "src/pams/types.py": "78c2ad53e98856425492a1711faa62fc2bb7764767dc48a22f7c4d5e043a3e31",
+    "tests/test_local_frequency_v2_target_free_selector.py": "8f2c6ea13e3f10ad0624933d829369150c8a3456576e8a16dc262ecf9d178070"
+  },
+  "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+  "container_exit_code": 0,
+  "container_finished_at": "2026-07-30T23:27:23.538523261Z",
+  "container_image_id": "sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005",
+  "container_started_at": "2026-07-30T23:25:20.815885655Z",
+  "determinism_byte_identical": true,
+  "determinism_replay_sha256": "0bcad7d0fe270f1e71db465bd2e0f4ac861dfc1167b60283603d4624786e18db",
+  "git_sha": "8e3f33bb9e68ccaf19fe46773888c013d2de3951",
+  "git_status_clean": true,
+  "git_tree_sha": "e83bb8308663fcf79633d9e16cfadd0f2d4284eb",
+  "hardware_artifact_sha256": {
+    "gpus.csv": "87d13c100d7014cf67294a515a4f423ba98f084329f59bb0d0eda855ec513880",
+    "lscpu.json": "01b7aa15dd7c93ffc87752d777cdadfcd6b21f263fe00de91f3d460330c5fbcc",
+    "uname.txt": "592e57dc7dc47795850e8a5976865404425177f712588936c7f09edd1c68b368"
+  },
+  "label_firewall": {
+    "development_inputs_mounted": false,
+    "development_targets_mounted": false,
+    "network": "none",
+    "test105_inputs_mounted": false,
+    "test105_targets_mounted": false
+  },
+  "schema_version": 1,
+  "selected_pose_cache_set_sha256": "2bbbb55abf3af0e7916fc431e9bb9ef320472078f2feca2d4b7b39d60a61183f",
+  "selector_sha256": "0bcad7d0fe270f1e71db465bd2e0f4ac861dfc1167b60283603d4624786e18db",
+  "source_bundle_sha256": "4a6c5021dd49799e663d3026912127066ac99a224eab54340f2250fc254a7775"
+}

@@ -1,0 +1,21 @@
+{
+  "call_number": 1,
+  "purpose": "phase-origin-audit",
+  "timestamp": "2026-08-15T22:45:57.0038521+08:00",
+  "tool": "spawn_agent",
+  "model": "gpt-5.6-sol",
+  "reasoning_effort": "inherited",
+  "files_referenced": [
+    "refine-logs/temporac/round-0-initial-proposal.md",
+    "refine-logs/temporac/round-1-review.md",
+    "idea-stage/TEMPORAC_CANONICAL_REVIEW_BRIEF.md",
+    "idea-stage/TEMPORAC_RESEARCH_REVIEW.md"
+  ],
+  "input_sha256": {
+    "refine-logs/temporac/round-0-initial-proposal.md": "654fbbc0038a7c74ffd73295ccb5a0bca533ccbee3b527b2c7804b528abe6fb2",
+    "refine-logs/temporac/round-1-review.md": "09d7397e819052be4f20c99ddbc75c77fc5b5665448c008cc1ca6a1edc539bd7",
+    "idea-stage/TEMPORAC_CANONICAL_REVIEW_BRIEF.md": "63b84447a6af9c4228bd5f93787b7cab0da4e9e96ac7258d7217e14ce915ba08",
+    "idea-stage/TEMPORAC_RESEARCH_REVIEW.md": "ebfbb5cb5ff3963daf70156082bfeefc3832aa4932d3699aa40f7cb2b52012a9"
+  },
+  "prompt": "Perform a fresh read-only mathematical audit in D:\\Project\\rac-aris-fullrun-icassp27. Read `refine-logs/temporac/round-0-initial-proposal.md`, `refine-logs/temporac/round-1-review.md`, `idea-stage/TEMPORAC_CANONICAL_REVIEW_BRIEF.md`, and `idea-stage/TEMPORAC_RESEARCH_REVIEW.md`. Do not read or modify the in-progress Round-1 refinement. Focus only on the global phase-origin and final one-peak-per-primitive-cycle problem. Assess a proposed repair: after a memoryless degree-one S1 teacher, compute a deterministic canonical origin from a fixed, frozen projection of clock-blind masked delay state; use a high-concentration weighted circular mean of the corresponding teacher phase vectors; rotate phase by that origin; then create half-open integer-crossing pulses and run one threshold-0.5 connected-component decoder after NOLA. Determine whether this removes phase-rotation gauge, remains invariant under monotone resampling/warping and repeated cycles, and what exact failure/abstention criteria are necessary. Explicitly analyze finite clips, partial cycles, repeated maxima, symmetric or self-intersecting pose orbits, missing data/gaps, time reversal, pauses, duplicate source clocks, and whether any human repetition convention remains unidentifiable. Return: (1) theorem/assumption statement, (2) exact algorithm with numerically stable formulas, (3) deterministic synthetic tests and thresholds, (4) counterexamples/kill conditions, and (5) whether the one-final-peak contract remains scientifically defensible. Do not design an integral-decoder replacement, do not access server/test/sealed/heldout/results, and do not write any files."
+}

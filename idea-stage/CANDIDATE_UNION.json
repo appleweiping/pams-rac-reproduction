@@ -1,0 +1,1055 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-08-15T04:09:25.272Z",
+  "merge_policy": {
+    "mode": "mechanical_exact_dedup_key",
+    "exact_dedup_only": true,
+    "near_duplicate_merge": false,
+    "ordering": "source_shards_in_declared_order_then_candidate_order",
+    "conflict_policy": "When identical dedup_key values occur, emit one candidate entry containing every complete source object in variants and record the key in duplicate_keys; no semantic quality judgment is applied."
+  },
+  "source_shards": [
+    {
+      "path": "idea-stage/shards/lens-signal.json",
+      "sha256": "8abad5312c95206e33af95319148a4537da7314dff2883528b1643b7f12ba11d",
+      "candidate_count": 6
+    },
+    {
+      "path": "idea-stage/shards/lens-ssl.json",
+      "sha256": "78254a71c011649f4f088675085d722997aab06cc22376a27ef3cbe79bf39a81",
+      "candidate_count": 5
+    },
+    {
+      "path": "idea-stage/shards/lens-tracking.json",
+      "sha256": "1a5ff37eb7a192545f43efa33381755cdb438a439e894bf3bece20488999ac4d",
+      "candidate_count": 6
+    }
+  ],
+  "candidate_count_raw": 17,
+  "candidate_count_after_exact_dedup": 17,
+  "duplicate_keys": [],
+  "candidates": [
+    {
+      "dedup_key": "masked_chirplet_ola",
+      "name": "Mask-Normalized Chirplet Routing and Synthesis",
+      "build_steps": [
+        "Represent each identity track as timestamped joint angles, bone vectors, and confidence-weighted motion channels; retain an explicit observation mask rather than interpolating missing joints.",
+        "Split tracks into 128-frame windows with 75% overlap and apply a shared complex chirplet bank spanning log-period and within-window chirp-rate bins.",
+        "Normalize every complex convolution by the mask-window energy, and discard coefficients whose effective support falls below a fixed threshold.",
+        "Derive local tempo posterior, chirp slope, spectral concentration, and phase from the coefficients; use these quantities to route each window among shared learned response experts while keeping recurrent state private to the identity.",
+        "Train without per-person count or period targets using temporal-resampling equivariance, masked pose reconstruction, cross-augmentation phase consistency, overlap phase consistency, and expert-load regularization.",
+        "Synthesize one periodicity response per identity with squared-window normalized overlap-add; decode once using phase-supported peaks inside a half-open valid-support interval, with reflected context used only for feature computation and never counted."
+      ],
+      "hypothesis": "A chirplet representation that models local frequency slope will preserve cycle evidence during within-track acceleration and deceleration better than track-global spectral features or stationary local Fourier bins, while mask normalization and phase-consistent synthesis will prevent missing poses and window seams from becoming false cycles.",
+      "minimum_leakage_free_pilot": {
+        "data": "Freeze a checksummed MultiRep release and canonical-source mapping; split by source video so no person crop, augmentation, or neighboring segment crosses train, development, and test partitions. Use supplied/oracle tracks to isolate counting, and disclose all external pose supervision.",
+        "comparisons": [
+          "Track-global tempo model",
+          "Local stationary STFT with uniform routing",
+          "Same chirplet model with hard routing",
+          "Same model without phase consistency",
+          "Window-count summation instead of response synthesis"
+        ],
+        "diagnostics": [
+          "Piecewise linear and piecewise quadratic time warps applied only after splitting",
+          "Random joint dropout, contiguous frame gaps, and timestamp jitter",
+          "Plots of local period, chirp-rate posterior, routing entropy, phase, synthesized response, and clean-to-corrupt degradation"
+        ],
+        "evaluation": "Three seeds; Period-mAP, AP50, AP75, AvgMAE, AvgOBO; paired video-cluster bootstrap 95% confidence intervals."
+      },
+      "declared_success_failure_thresholds": {
+        "success": [
+          "At least 2.0 absolute Period-mAP points and 8% relative AvgMAE improvement over track-global tempo on the frozen piecewise-warp diagnostic.",
+          "At least 30% lower clean-to-warp degradation than stationary local STFT.",
+          "Median overlap phase discontinuity at most 0.25 rad and seam-adjacent false-peak rate below 3%.",
+          "Paired bootstrap 95% confidence interval excludes zero for the primary AvgMAE difference."
+        ],
+        "failure": [
+          "Less than 1.0 absolute Period-mAP improvement and less than 3% relative AvgMAE improvement over track-global tempo.",
+          "Masked corruption causes more than 15% additional AvgMAE at 20% missing frames.",
+          "Removing chirp-rate bins changes AvgMAE by less than 1%, indicating that the nonstationary component is unused.",
+          "More than 5% of decoded peaks occur within one decoder suppression radius of an overlap seam."
+        ]
+      },
+      "contribution_type": [
+        "signal-processing method",
+        "identity-indexed response reconstruction",
+        "nonstationary-tempo diagnostic"
+      ],
+      "risk": "Chirplet slope may follow camera or limb-specific motion rather than repetition tempo; self-supervised phase losses can admit harmonics or phase-reversed solutions.",
+      "engineer_gpu_effort": {
+        "engineering": "High: custom complex masked convolution, stable chirplet parameterization, synthesis tests, and seam instrumentation; approximately 4-6 engineer-weeks.",
+        "gpu": "Moderate: 3 seeds plus ablations on 2-4 GPUs; expected 300-600 GPU-hours after pose extraction."
+      },
+      "unavailable_inputs": [
+        "A leakage-free checksummed MultiRep release and canonical-source split",
+        "Verified supplied-track annotations aligned to pose timestamps",
+        "Frozen evaluation code for Period-mAP and count metrics",
+        "Raw videos or pose detections for the chosen release if they are not locally licensed"
+      ],
+      "closest_priors": [
+        "Runia et al. 2018 nonstationary temporal wavelet filtering",
+        "RepNet per-frame period and periodicity prediction",
+        "PAMS period-adaptive skeleton counting and speed-variation tests",
+        "TWCRAC local time-window cycle modeling",
+        "Crochiere weighted overlap-add"
+      ],
+      "why_it_matters": "It tests whether explicitly estimating tempo slope inside each person's trajectory, rather than selecting a scale from a stationary spectrum, improves counting under acceleration, deceleration, and partial observation.",
+      "source_shard": "idea-stage/shards/lens-signal.json"
+    },
+    {
+      "dedup_key": "irregular_lomb_phase",
+      "name": "Irregular-Time Lomb Phase Counting",
+      "build_steps": [
+        "Keep original timestamps and confidence masks for every pose channel; do not fill dropped frames before tempo estimation.",
+        "In each overlapping identity window, fit confidence-weighted sine and cosine bases on a log-frequency grid using generalized Lomb-Scargle least squares; obtain complex coefficients and their covariance from the weighted normal equations.",
+        "Pool joint-wise spectra with learned reliability weights and infer a local frequency posterior, periodicity probability, phase, and phase variance.",
+        "Feed the complex coefficients and uncertainty to shared tempo-conditioned response experts, with identity-private hidden state carried only across windows from the same track.",
+        "Train with masked-sample prediction, invariance to synthetic frame dropping, known timestamp-jitter consistency, and overlap agreement of complex phase and periodicity response.",
+        "Reconstruct response values only over observed support using uncertainty-weighted normalized overlap-add; during long gaps, propagate a phase distribution but suppress integer-cycle commitments unless posterior variance stays below a preregistered bound."
+      ],
+      "hypothesis": "Direct irregular-time estimation will be more stable than interpolation followed by STFT when pose tracks contain dropped frames, variable frame intervals, or short occlusions, and phase covariance will identify intervals where count decisions should be deferred.",
+      "minimum_leakage_free_pilot": {
+        "data": "Use a frozen source-video-disjoint MultiRep split with supplied tracks. Generate all missing-frame and timestamp-jitter variants online from each already-assigned split, recording corruption seeds and never selecting corruption parameters on test.",
+        "comparisons": [
+          "Linear interpolation plus STFT",
+          "Forward-fill plus STFT",
+          "Mask-channel neural encoder without irregular-time spectral estimation",
+          "Lomb model without covariance-aware decoding"
+        ],
+        "diagnostics": [
+          "Independent random frame loss at 10%, 20%, and 40%",
+          "Contiguous gaps of 0.25, 0.5, and 1.0 estimated local cycles",
+          "Timestamp jitter at 5% and 15% of median frame interval",
+          "Error stratified by effective observations per cycle"
+        ],
+        "evaluation": "Three seeds; standard MRAC metrics plus gap-local false-cycle rate, phase calibration, and paired video-cluster bootstrap intervals."
+      },
+      "declared_success_failure_thresholds": {
+        "success": [
+          "At 20% frame loss, relative AvgMAE degradation is at least 35% smaller than interpolation plus STFT.",
+          "For gaps up to 0.5 local cycles, gap-local false-cycle rate is below 5%.",
+          "Phase-error 90% intervals cover 85%-95% of held-out synthetic phase perturbations.",
+          "Clean-data AvgMAE is no more than 3% worse than the strongest regular-sampling comparison."
+        ],
+        "failure": [
+          "At 20% frame loss, AvgMAE differs by less than 3% from interpolation plus STFT.",
+          "The model commits more than 0.15 expected cycles per fully unobserved 0.5-cycle gap.",
+          "Covariance is uncalibrated, with 90% phase intervals covering below 75% or above 99%.",
+          "Weighted least-squares failures or ill-conditioning affect more than 1% of evaluated windows."
+        ]
+      },
+      "contribution_type": [
+        "masked irregular-sampling estimator",
+        "uncertainty-aware decoder",
+        "robustness protocol"
+      ],
+      "risk": "Lomb-Scargle assumes locally sinusoidal channels and can lock onto limb harmonics; per-window matrix solves may be numerically unstable under structured occlusion.",
+      "engineer_gpu_effort": {
+        "engineering": "Medium-high: batched differentiable weighted solves, covariance propagation, and gap-aware decoding; approximately 3-5 engineer-weeks.",
+        "gpu": "Low-moderate: spectral solves add compute but require no large backbone; approximately 200-400 GPU-hours for three seeds and corruptions."
+      },
+      "unavailable_inputs": [
+        "Exact frame timestamps for MultiRep videos",
+        "Pose confidence or joint-visibility values rather than only interpolated coordinates",
+        "Leakage-free MultiRep provenance and split checksum",
+        "Ground-truth timing needed solely to validate synthetic phase uncertainty, if no cycle-boundary subset exists"
+      ],
+      "closest_priors": [
+        "Classical generalized Lomb-Scargle irregular-sampling analysis",
+        "SSTRAC skeleton repair under missing poses",
+        "HTRM-Net interruption and local-context modeling",
+        "RepNet time-varying period prediction",
+        "PAMS skeleton-based period adaptation"
+      ],
+      "why_it_matters": "Real multi-person tracks are rarely uniformly sampled after occlusion and filtering; treating timestamps and missingness as part of the signal model may separate true tempo changes from tracker-induced sampling artifacts.",
+      "source_shard": "idea-stage/shards/lens-signal.json"
+    },
+    {
+      "dedup_key": "identity_oscillator_filter",
+      "name": "Identity-Private Switching Oscillator Filter",
+      "build_steps": [
+        "Encode each observed pose into a complex motion likelihood and a periodic-versus-background likelihood, preserving timestamp deltas and joint masks.",
+        "For each identity, maintain a posterior over phase, angular frequency, frequency derivative, periodicity state, and uncertainty; advance it with the actual timestamp delta.",
+        "Implement a shared bank of slow, medium, fast, accelerating, decelerating, and pause dynamics, and mix their transition kernels using a window-local soft gate.",
+        "Update each identity posterior with a differentiable extended Kalman or sigma-point filter; missing observations trigger prediction-only steps and explicit variance growth.",
+        "Train the observation encoder and shared dynamics with masked pose prediction, resampling-equivariant phase increments, forward-backward smoothing consistency, and cross-window state consistency, without per-person count or period targets.",
+        "Decode a count from posterior mass crossing successive integer phase boundaries while periodicity is active; use half-open track boundaries, require hysteresis around state transitions, and report expected count plus a credible interval."
+      ],
+      "hypothesis": "A continuous identity-private phase state with shared switching tempo dynamics will bridge adjacent windows and short occlusions more reliably than independently decoded window responses, especially when people accelerate, pause, and resume at different rates.",
+      "minimum_leakage_free_pilot": {
+        "data": "Freeze source-video-disjoint MultiRep train/development/test sets and run first with supplied tracks. Tune transition noise and credible-interval thresholds only on development; apply preregistered piecewise warps and gaps to test after the checkpoint is frozen.",
+        "comparisons": [
+          "Track-global period head",
+          "Independent local-window tempo without carried state",
+          "Single-dynamics oscillator",
+          "Switching oscillator without uncertainty",
+          "Response-peak decoder using the same encoder"
+        ],
+        "diagnostics": [
+          "Acceleration-deceleration-pause-resume warps",
+          "Occlusions from 0.25 to 1.5 cycles",
+          "Identity-state reset at artificial track fragments",
+          "Phase, frequency, mode probabilities, variance, and integer-crossing plots"
+        ],
+        "evaluation": "Three seeds; MRAC metrics, count-interval calibration, post-gap phase error, and paired clustered confidence intervals."
+      },
+      "declared_success_failure_thresholds": {
+        "success": [
+          "At least 10% relative AvgMAE improvement over independent local windows on acceleration-pause-resume clips.",
+          "Post-gap median phase error below 0.35 rad for gaps no longer than 0.5 local cycles.",
+          "Nominal 90% count intervals achieve 85%-95% empirical video-level coverage with mean width at most 2.0 counts.",
+          "Pause segments produce fewer than 0.05 false counts per second."
+        ],
+        "failure": [
+          "Switching dynamics improve AvgMAE by less than 3% over a single-dynamics oscillator.",
+          "More than 10% of pause segments accumulate at least one false cycle.",
+          "Posterior frequency collapses to a tempo extreme in more than 5% of tracks.",
+          "Uncertainty intervals miss coverage by more than 15 percentage points or have mean width above 3.5 counts."
+        ]
+      },
+      "contribution_type": [
+        "probabilistic state-space method",
+        "identity-conditioned temporal state",
+        "uncertainty-calibrated phase decoder"
+      ],
+      "risk": "Self-supervised oscillator learning can converge to half- or double-frequency modes, and filtering assumptions may be violated by nonperiodic pose changes or tracker switches.",
+      "engineer_gpu_effort": {
+        "engineering": "High: differentiable filtering, stable circular-state updates, switching transitions, and calibration; approximately 5-7 engineer-weeks.",
+        "gpu": "Moderate: sequential filtering limits throughput; approximately 400-800 GPU-hours for three seeds and ablations."
+      },
+      "unavailable_inputs": [
+        "Leakage-free MultiRep split and checksums",
+        "Reliable timestamps and per-joint masks",
+        "A development-only cycle-timing subset for diagnosing phase without using it as a counting target",
+        "Predicted-track artifacts with ID-switch metadata for later robustness evaluation"
+      ],
+      "closest_priors": [
+        "Classical phase-locked loops and switching oscillator state-space models",
+        "RepNet per-frame period and periodicity",
+        "MultiCounter and MultiCounter+ identity-aware MRAC",
+        "PAMS period-adaptive skeleton representation",
+        "DeTRC dynamic action queries"
+      ],
+      "why_it_matters": "Counting is fundamentally phase accumulation. Maintaining an explicit private phase clock per identity offers a measurable way to distinguish genuine tempo drift, pauses, and missing observations from window-boundary artifacts.",
+      "source_shard": "idea-stage/shards/lens-signal.json"
+    },
+    {
+      "dedup_key": "overlap_phase_sync_graph",
+      "name": "Overlap-Graph Phase Synchronization",
+      "build_steps": [
+        "Let any shared local-window backbone predict a complex unit phasor, periodicity amplitude, response, and confidence for each identity window.",
+        "For every pair of overlapping windows on the same track, estimate a relative phase offset from confidence-weighted masked samples and record its circular uncertainty.",
+        "Construct a per-track overlap graph and solve a weighted U(1) phase-synchronization problem for one offset per window, fixing only a single arbitrary gauge.",
+        "Reject or downweight inconsistent overlap edges using cycle-consistency residuals, without connecting different identities.",
+        "Rotate window outputs by the solved offsets and synthesize one response through normalized overlap-add using only valid observed support.",
+        "Decode peaks or integer phase crossings once on the fused track; assign exact seam crossings with half-open intervals and suppress boundary peaks lacking support on both sides."
+      ],
+      "hypothesis": "Explicitly solving the otherwise arbitrary phase gauge of local windows will reduce duplicate and missed repetitions at overlaps, especially when tempo changes near a window boundary or masks make adjacent window estimates disagree.",
+      "minimum_leakage_free_pilot": {
+        "data": "Use a frozen source-video-disjoint MultiRep split and supplied tracks. This module is trained or tuned only on train/development outputs from one fixed local-window backbone; test window predictions are generated once from the frozen checkpoint.",
+        "comparisons": [
+          "Window-count summation",
+          "Normalized overlap-add without phase alignment",
+          "Sequential pairwise phase alignment",
+          "Global graph synchronization without uncertainty weighting",
+          "Graph synchronization with cross-identity edges as a negative control"
+        ],
+        "diagnostics": [
+          "Shift window grids by 0, 0.25, 0.5, and 0.75 hop sizes",
+          "Place synthetic tempo changes and missing segments at overlap centers and seams",
+          "Report circular edge residuals, graph connectivity, seam-adjacent peak errors, and count variance across grid shifts"
+        ],
+        "evaluation": "Three backbone seeds; standard MRAC metrics plus seam false-positive/false-negative rates and grid-shift count variance."
+      },
+      "declared_success_failure_thresholds": {
+        "success": [
+          "At least 40% reduction in seam-adjacent duplicate or missed peaks relative to unaligned normalized overlap-add.",
+          "Count standard deviation across the four window-grid shifts below 0.15 per track and at least 30% lower than the unaligned method.",
+          "At least 5% relative AvgMAE improvement over window-count summation.",
+          "Median high-confidence overlap residual below 0.20 rad."
+        ],
+        "failure": [
+          "Seam-error reduction below 10%.",
+          "Global synchronization changes more than 2% of counts on constant-tempo, fully observed control tracks.",
+          "Graph disconnection or low effective overlap affects more than 10% of tracks.",
+          "Aligned reconstruction worsens AvgMAE by more than 2% relative to unaligned normalized overlap-add."
+        ]
+      },
+      "contribution_type": [
+        "phase-reconstruction module",
+        "boundary-safe decoding method",
+        "window-grid invariance diagnostic"
+      ],
+      "risk": "If local phasors are not identifiable or overlap is too sparse, synchronization cannot recover a consistent phase; harmonic disagreements can create apparently consistent but wrong offsets.",
+      "engineer_gpu_effort": {
+        "engineering": "Medium: circular estimators, sparse graph solve, and seam-focused tests; approximately 2-4 engineer-weeks.",
+        "gpu": "Low: mostly post-processing and light differentiable training; approximately 100-250 GPU-hours including backbone reruns."
+      },
+      "unavailable_inputs": [
+        "Window-level complex response outputs from an implemented local-tempo backbone",
+        "Leakage-free MultiRep split and supplied tracks",
+        "Cycle-boundary annotations for seam diagnostics if not available; otherwise synthetic seam placement must be used",
+        "Exact valid-support masks after pose preprocessing"
+      ],
+      "closest_priors": [
+        "Crochiere weighted overlap-add",
+        "Griffin-Lim short-time reconstruction",
+        "Rethinking Temporal Self-Similarity action-start response decoding",
+        "TWCRAC local-window cycle modeling",
+        "General angular synchronization methods"
+      ],
+      "why_it_matters": "A local model can predict the right tempo yet still count incorrectly because each window chooses an arbitrary phase origin. Phase synchronization isolates and directly tests that reconstruction failure mode.",
+      "source_shard": "idea-stage/shards/lens-signal.json"
+    },
+    {
+      "dedup_key": "masked_multitaper_uncertainty",
+      "name": "Mask-Adaptive Multitaper Tempo Posterior",
+      "build_steps": [
+        "Construct three to five DPSS tapers per local window and re-orthogonalize them under the actual confidence mask so missing samples do not silently destroy the taper geometry.",
+        "Compute complex spectra for pose-motion channels under every taper and aggregate them into a log-tempo posterior; retain cross-taper dispersion as estimator uncertainty.",
+        "Use posterior band mass and uncertainty to softly route windows to shared tempo-specialized response experts, while each identity retains its own temporal state.",
+        "Train with masked reconstruction, temporal-resampling consistency, agreement between independent taper subsets, and entropy regularization that prevents routing solely from uncertainty.",
+        "Fuse expert responses with taper-variance-weighted normalized overlap-add and estimate count uncertainty by propagating taper subsets or posterior samples through the decoder.",
+        "At boundaries, evaluate only peaks whose complete decoder neighborhood intersects valid support; use asymmetric normalization near track ends and a fixed half-open convention."
+      ],
+      "hypothesis": "Multitaper spectral estimation will reduce frequency leakage and harmonic instability in short pose windows, while cross-taper dispersion supplies a practical uncertainty signal for routing and count calibration.",
+      "minimum_leakage_free_pilot": {
+        "data": "Freeze a source-video-disjoint MultiRep split with supplied tracks. Select taper count, time-bandwidth product, and calibration mapping on development only; evaluate all seeds on the same untouched test predictions.",
+        "comparisons": [
+          "Single Hann-window STFT",
+          "Untapered local Fourier transform",
+          "Multitaper without mask re-orthogonalization",
+          "Multitaper without uncertainty-aware routing",
+          "Uniform expert averaging"
+        ],
+        "diagnostics": [
+          "Tempo near frequency-bin boundaries",
+          "Short windows containing 1.5-4 cycles",
+          "Joint dropout and edge-truncated actions",
+          "Reliability diagrams for frequency and count uncertainty"
+        ],
+        "evaluation": "Three seeds; standard MRAC metrics, expected calibration error, interval coverage, spectral concentration, and boundary-specific count error."
+      },
+      "declared_success_failure_thresholds": {
+        "success": [
+          "At least 20% reduction in local-period median absolute error on bin-boundary synthetic warps relative to Hann STFT.",
+          "At least 5% relative AvgMAE and 1.5 absolute Period-mAP improvement over single-taper routing.",
+          "Count uncertainty expected calibration error below 0.08 and 90% interval coverage between 85% and 95%.",
+          "Track-edge count error at least 25% lower than symmetric zero-padded decoding."
+        ],
+        "failure": [
+          "Multitaper improves local-period error by less than 5%.",
+          "Cross-taper variance has Spearman correlation below 0.2 with absolute count error.",
+          "Mask re-orthogonalization becomes numerically unstable in more than 1% of windows.",
+          "Inference cost exceeds 2.5 times the single-taper model without meeting the AvgMAE threshold."
+        ]
+      },
+      "contribution_type": [
+        "spectral estimator",
+        "routing uncertainty mechanism",
+        "calibrated count reconstruction"
+      ],
+      "risk": "Taper dispersion measures estimator variability rather than model misspecification; short repetition windows may not contain enough cycles for the theoretical leakage advantage to appear.",
+      "engineer_gpu_effort": {
+        "engineering": "Medium-high: batched masked taper construction, uncertainty propagation, and calibration; approximately 3-5 engineer-weeks.",
+        "gpu": "Moderate-high because each taper multiplies spectral and expert evaluations; approximately 400-750 GPU-hours."
+      },
+      "unavailable_inputs": [
+        "Leakage-free MultiRep release, checksums, and source grouping",
+        "Pose confidences and timestamps",
+        "A protocol-sanctioned development subset for calibration",
+        "Compute profile of the eventual shared encoder and experts"
+      ],
+      "closest_priors": [
+        "Classical Thomson multitaper spectral estimation",
+        "Runia et al. 2018 temporal frequency analysis",
+        "TransRAC multi-scale temporal correlation",
+        "PAMS period-adaptive consensus",
+        "Crochiere weighted overlap-add"
+      ],
+      "why_it_matters": "Short local windows create spectral leakage exactly where rapid tempo adaptation is needed. Multitaper estimates can make routing less sensitive to arbitrary window placement and attach testable uncertainty to the resulting count.",
+      "source_shard": "idea-stage/shards/lens-signal.json"
+    },
+    {
+      "dedup_key": "variational_monotone_phase_clock",
+      "name": "Variational Monotone Phase Clock with Pose Reconstruction",
+      "build_steps": [
+        "From each masked local pose window, produce a coarse log-frequency likelihood using a shared time-frequency encoder.",
+        "Represent instantaneous log-frequency as a cubic spline over physical time and integrate its softplus-transformed value to obtain a monotone phase clock; include a periodicity gate so background and pauses do not accumulate phase.",
+        "Fit the phase clock by minimizing confidence-weighted reconstruction of pose-motion channels with a small harmonic basis in phase coordinates, plus curvature regularization, overlap phase consistency, and known time-warp equivariance.",
+        "Infer a Laplace or low-rank Gaussian approximation around spline coefficients to obtain frequency and phase uncertainty.",
+        "Route phase-normalized window features to shared response experts, align their clocks in overlaps, and reconstruct one identity response using uncertainty-weighted normalized overlap-add.",
+        "Decode integer phase crossings only where periodicity support is active and phase variance is below threshold; treat the left boundary as closed and right boundary as open, and report unresolved boundary mass as count uncertainty."
+      ],
+      "hypothesis": "Estimating a smooth monotone phase coordinate from masked pose reconstruction will convert acceleration and deceleration into approximately stationary phase-domain patterns, allowing shared experts to model repetition shape without confusing tempo drift with action appearance.",
+      "minimum_leakage_free_pilot": {
+        "data": "Use a frozen, checksummed, source-video-disjoint MultiRep split with supplied tracks. Fit all spline, regularization, and uncertainty hyperparameters on development only; apply preregistered piecewise warps to untouched test tracks.",
+        "comparisons": [
+          "Track-global constant-frequency phase",
+          "Piecewise-constant local period",
+          "Unconstrained per-frame phase increments",
+          "Monotone phase clock without pose reconstruction",
+          "Phase clock without uncertainty-gated decoding"
+        ],
+        "diagnostics": [
+          "Linear, quadratic, and abrupt piecewise tempo changes",
+          "Pause-resume segments",
+          "Harmonic limb motions with different amplitudes",
+          "Plots of reconstructed pose signal, instantaneous period, phase uncertainty, periodicity gate, and integer crossings"
+        ],
+        "evaluation": "Three seeds; MRAC metrics, phase monotonicity violations, reconstruction error, crossing stability, and paired video-cluster bootstrap confidence intervals."
+      },
+      "declared_success_failure_thresholds": {
+        "success": [
+          "At least 10% relative AvgMAE improvement over track-global constant-frequency phase on piecewise warps.",
+          "At least 25% lower count degradation under quadratic acceleration than piecewise-constant local period.",
+          "Fewer than 0.1% negative phase increments outside declared pauses.",
+          "Integer-crossing count changes on fewer than 5% of tracks when the window grid is shifted by half a hop."
+        ],
+        "failure": [
+          "Pose reconstruction improves while AvgMAE changes by less than 3%, indicating that the learned clock is not count-relevant.",
+          "More than 10% of periodic tracks lock to half or double frequency on harmonic diagnostics.",
+          "Uncertainty-gated decoding leaves more than 0.5 expected unresolved cycles per track on average.",
+          "Spline optimization fails to converge or produces invalid values in more than 1% of windows."
+        ]
+      },
+      "contribution_type": [
+        "variational time-warp model",
+        "phase-domain reconstruction",
+        "boundary-aware probabilistic decoder"
+      ],
+      "risk": "Pose reconstruction may favor the strongest limb harmonic rather than the semantic repetition cycle; strict monotonicity can mishandle reversals, irregular subactions, and long pauses.",
+      "engineer_gpu_effort": {
+        "engineering": "High: differentiable spline integration, harmonic reconstruction, posterior approximation, and robust crossing logic; approximately 5-7 engineer-weeks.",
+        "gpu": "Moderate-high due to iterative or amortized variational inference; approximately 500-900 GPU-hours."
+      },
+      "unavailable_inputs": [
+        "Leakage-free MultiRep release and canonical-source metadata",
+        "Pose channels with confidence masks and physical timestamps",
+        "Development-only timing diagnostics for identifying harmonic locking",
+        "A verified response decoder and metric implementation"
+      ],
+      "closest_priors": [
+        "Dynamic time warping and continuous phase estimation",
+        "RepNet per-frame period prediction",
+        "Runia et al. 2018 nonstationary repetition analysis",
+        "PAMS period-adaptive skeleton counting",
+        "TWCRAC local periodicity modeling"
+      ],
+      "why_it_matters": "A phase coordinate provides a direct bridge between nonstationary signal analysis and integer counting: it exposes when tempo estimates are smooth, uncertain, harmonically wrong, or unsafe to decode at track boundaries.",
+      "source_shard": "idea-stage/shards/lens-signal.json"
+    },
+    {
+      "dedup_key": "warp-equivariant-private-phase-flow",
+      "build_steps": [
+        "Normalize each externally estimated per-person pose track by root position and body scale while retaining visibility masks and timestamps.",
+        "Create two views of each track using independently sampled monotone piecewise time warps, temporal crops, joint masking, coordinate noise, and occasional reversal; retain only the known augmentation correspondence and warp derivative.",
+        "Use a shared pose encoder followed by an identity-private recurrent state that emits a unit-circle phase state, a periodicity confidence, and a signed local phase increment for each window.",
+        "Train corresponding source-time locations to have consistent phase, require phase increments to transform according to the known synthetic warp derivative and reverse sign under reversal, and reconstruct masked joint velocities from phase plus a capacity-limited residual.",
+        "Add variance, covariance, and temporal-dispersion regularizers; randomize crop origins and omit absolute frame indices so constant phase and absolute-time coding cannot satisfy all losses.",
+        "Reconstruct window responses with normalized overlap-add and integrate positive phase advance once per identity to produce a count."
+      ],
+      "hypothesis": "Equivariance to known synthetic time changes can teach a track-local phase-flow representation that follows within-person acceleration and deceleration without optimizing against per-person counts or periods.",
+      "minimum_leakage_free_pilot": {
+        "protocol": "Freeze a checksum-verified MultiRep train/validation split. Train one seed on train poses only; no count or period fields may enter the dataloader. Fix all hyperparameters before a single validation evaluation. Validation count labels are evaluator-only.",
+        "cheap_scope": "Use 25 percent of training tracks, 64-frame windows, one shared encoder, and one identity-private GRU. Compare with the same encoder using track-global autocorrelation and with an identical model lacking phase-equivariance losses.",
+        "diagnostics": [
+          "Synthetic unseen piecewise-warp phase error",
+          "Phase and response variance",
+          "Representation effective rank",
+          "Validation AvgMAE and Period-mAP",
+          "Clean-to-piecewise-warp degradation"
+        ]
+      },
+      "objective_success_failure_thresholds": {
+        "success": [
+          "Median correspondence phase error is at most 0.15 cycles on unseen warp schedules.",
+          "Phase-feature effective rank is at least 8 and median temporal phase variance exceeds 0.05.",
+          "Against track-global autocorrelation, validation AvgMAE improves by at least 5 percent relative or Period-mAP improves by at least 2 absolute points.",
+          "Piecewise-warp AvgMAE degradation is no more than 10 percent relative to clean validation."
+        ],
+        "failure": [
+          "Phase or response standard deviation falls below 0.02 on more than 20 percent of active tracks.",
+          "Removing pose input while retaining timestamps preserves more than 80 percent of the downstream score, indicating a time-code shortcut.",
+          "The method misses both downstream improvement thresholds or exceeds 20 percent clean-to-warp degradation."
+        ]
+      },
+      "contribution_type": "Self-supervised objective plus identity-conditioned local response model.",
+      "risk": "Phase is not identifiable from arbitrary motion, and synthetic-warp equivariance may learn augmentation mechanics rather than natural repetition. The reconstruction residual must be tightly capacity-controlled.",
+      "effort": "Medium: requires a differentiable warp pipeline, circular-state losses, overlap-add decoding, and targeted collapse diagnostics.",
+      "unavailable_inputs": [
+        "A frozen leakage-free MultiRep release, split manifest, and checksums",
+        "Authorized raw per-person pose tracks with visibility and timestamps",
+        "Evaluation-only per-person count and period annotations",
+        "Verified predicted-track outputs and HOTA, IDF1, and ID-switch metadata"
+      ],
+      "closest_priors": [
+        "PAMS: self-supervised pose representations and period-adaptive counting, but its reported consensus mechanism and global speed tests define a nearby boundary.",
+        "RepNet: time-varying period and periodicity outputs trained with synthetic repetition targets.",
+        "Runia et al.: local analysis of non-stationary repetition.",
+        "Weighted overlap-add literature: the reconstruction operator is established signal processing and is not treated as an independent contribution."
+      ],
+      "why_it_matters": "It directly tests whether local phase advance learned from augmentation equivariance can replace per-person count and period supervision while retaining a separate state for each tracked person. Detector, pose-estimator, and tracker supervision remains external and must be disclosed.",
+      "source_shard": "idea-stage/shards/lens-ssl.json"
+    },
+    {
+      "dedup_key": "masked-geometric-tssm-ridge-completion",
+      "build_steps": [
+        "For every per-person pose window, compute several fixed geometric views such as root-relative joints, bone angles, pairwise joint distances, and joint velocities.",
+        "Construct an off-diagonal temporal self-similarity matrix from one randomly chosen geometric view, then mask contiguous rows, columns, local bands, and random blocks.",
+        "Give a shared encoder a different augmented geometric view and train tempo-specialized heads to complete the masked self-similarity structure; exclude the trivial diagonal from the loss.",
+        "Distill only agreement shared across geometric views so that a head cannot copy coordinate noise or one handcrafted feature family.",
+        "Decode periodic ridges into a window-local response and confidence, then use normalized overlap-add followed by one per-identity response decoder.",
+        "Apply response-variance, prediction-covariance, and expert-load gates; train with shuffled-time and monotonic-motion negatives so constant or broadly smooth matrices are penalized."
+      ],
+      "hypothesis": "Completing missing long-range pose self-similarity structure forces the encoder to represent repeated motion and local tempo without requiring a target count, target period, or cycle boundary.",
+      "minimum_leakage_free_pilot": {
+        "protocol": "Train on the frozen training partition using only poses and track IDs. Select no parameters from test data. Permit one fixed validation pass with count labels hidden behind the evaluator.",
+        "cheap_scope": "Use 32- and 64-frame windows, three geometric views, two completion heads, and a deterministic ridge decoder. Compare against raw geometric autocorrelation and an unmasked autoencoder.",
+        "diagnostics": [
+          "Masked off-diagonal similarity correlation",
+          "Spectral peak stability across geometric views",
+          "Prediction variance and effective rank",
+          "Validation AvgMAE and Period-mAP",
+          "Performance after frame-order shuffling"
+        ]
+      },
+      "objective_success_failure_thresholds": {
+        "success": [
+          "Masked off-diagonal Pearson correlation exceeds the no-temporal-context baseline by at least 0.10.",
+          "Dominant-frequency disagreement across geometric views is at most 15 percent on periodic validation tracks.",
+          "Response standard deviation exceeds 0.03 on at least 90 percent of active tracks and completed-matrix effective rank is at least 6.",
+          "Validation AvgMAE improves by at least 5 percent relative or Period-mAP by at least 2 absolute points over fixed geometric autocorrelation."
+        ],
+        "failure": [
+          "A constant, row-mean, or interpolation baseline reaches within 2 percent of the masked completion loss.",
+          "Frame-order shuffling retains more than 70 percent of Period-mAP.",
+          "The response collapses below the variance or rank gates, or neither downstream threshold is met."
+        ]
+      },
+      "contribution_type": "Label-free pretext task and local response reconstruction.",
+      "risk": "The model may reproduce low-level smoothness instead of periodic structure, and fixed pose geometry can inherit estimator artifacts. Aggressive masking and shuffled-time controls are essential.",
+      "effort": "Low to medium: the pilot uses deterministic pseudo-target construction and a small completion network.",
+      "unavailable_inputs": [
+        "Checksum-frozen leakage-free train and validation assignments",
+        "Pose confidence and missing-joint masks from the authorized estimator",
+        "Evaluation-only per-person counts and period intervals",
+        "Protocol-matched common-track baseline predictions"
+      ],
+      "closest_priors": [
+        "RepNet and Rethinking Temporal Self-Similarity: temporal self-similarity bottlenecks and response decoding.",
+        "JTSPS-Net: joint-wise temporal self-similarity and multi-scale skeleton processing.",
+        "PAMS: self-supervised pose consistency across temporal scales.",
+        "TransRAC: multi-scale temporal correlation with supervised density targets."
+      ],
+      "why_it_matters": "This is a cheap way to test whether the useful supervision already exists in the internal geometry of each pose track. It uses externally supervised pose and tracking outputs, which must be disclosed even though the counting loss reads no per-person count or period targets.",
+      "source_shard": "idea-stage/shards/lens-ssl.json"
+    },
+    {
+      "dedup_key": "artifact-controlled-synthetic-tempo-routing",
+      "build_steps": [
+        "Sample pose windows from individual tracks and generate piecewise acceleration, deceleration, pause, and restart transformations with several independently implemented resamplers.",
+        "Train a shared bank of local response experts to reconstruct source-time joint-velocity features while a soft gate predicts the known local log-warp derivative, not a natural period label.",
+        "Condition only the recurrent state on track identity; share encoder, experts, and gate parameters across people.",
+        "Randomize interpolation kernels, antialiasing, frame jitter, crop boundaries, and coordinate noise so routing cannot depend on a single resampling artifact.",
+        "Use entropy scheduling, minimum-load constraints, and pairwise expert-output diversity; require an expert to improve reconstruction on its assigned tempo region over a shared-head control.",
+        "At inference, route natural windows without synthetic labels, overlap-add their responses per track, and decode once per identity."
+      ],
+      "hypothesis": "Learning to undo controlled local time distortions can produce tempo-sensitive soft routing that transfers to natural within-track pace changes while avoiding per-person count and period supervision.",
+      "minimum_leakage_free_pilot": {
+        "protocol": "Fit all networks on frozen training tracks with synthetic warp derivatives generated online. Hold out both source tracks and resampling implementations for validation. Count annotations remain evaluator-only.",
+        "cheap_scope": "Use three experts, two interpolation engines for training, a third unseen engine for artifact testing, and one predeclared piecewise-warp family. Compare soft routing with uniform routing, hard routing, and one shared head.",
+        "diagnostics": [
+          "Local log-warp error on an unseen resampler",
+          "Expert load and expert-output diversity",
+          "Assigned-region reconstruction gain",
+          "Validation AvgMAE and Period-mAP",
+          "Routing entropy around true synthetic tempo transitions"
+        ]
+      },
+      "objective_success_failure_thresholds": {
+        "success": [
+          "Median absolute local log-warp error is at most 0.15 on the unseen resampler.",
+          "Every expert receives at least 10 percent of active windows and each expert has at least one tempo tercile where it lowers reconstruction error by 5 percent over the shared head.",
+          "The unseen-resampler warp-error increase is no more than 10 percent relative.",
+          "Soft routing improves validation AvgMAE by at least 5 percent relative or Period-mAP by at least 2 absolute points over uniform routing."
+        ],
+        "failure": [
+          "A classifier using interpolation residuals but no pose dynamics predicts warp bins within 10 points of the full model.",
+          "Any expert receives less than 5 percent of active windows, or pairwise expert outputs have cosine similarity above 0.98 for all tempo terciles.",
+          "Routing transfers poorly to the unseen resampler or misses both downstream improvement thresholds."
+        ]
+      },
+      "contribution_type": "Self-supervised tempo curriculum and learned local expert routing.",
+      "risk": "Synthetic tempo labels can create interpolation shortcuts and need not match natural biomechanics. Expert specialization may reflect action or person identity rather than tempo.",
+      "effort": "Medium: model changes are modest, but the multi-engine resampling control and specialization audit are mandatory.",
+      "unavailable_inputs": [
+        "Frozen leakage-free MultiRep split and canonical-source overlap audit",
+        "Authorized training pose tracks long enough for piecewise warps",
+        "Natural tempo-change metadata for analysis only",
+        "Evaluation-only per-person targets and common-track baselines"
+      ],
+      "closest_priors": [
+        "PAMS: period-adaptive self-supervised pose counting and speed-variation experiments.",
+        "Generic sparse mixture-of-experts: trainable routing, shared experts, and load balancing.",
+        "MultiCounter+: long-short period awareness.",
+        "TWCRAC: local windows, cycle consistency, and dynamic tempo form a high-overlap conceptual boundary."
+      ],
+      "why_it_matters": "It isolates whether a learned gate actually responds to local tempo rather than merely adding capacity. The method still relies on externally supervised detector, pose-estimator, and tracker outputs and should be described accordingly.",
+      "source_shard": "idea-stage/shards/lens-ssl.json"
+    },
+    {
+      "dedup_key": "masked-oscillator-residual-bottleneck",
+      "build_steps": [
+        "Convert each per-person pose track into root-relative joint position, velocity, and acceleration streams with explicit missing-joint masks.",
+        "Mask contiguous temporal spans and ask a bank of damped complex oscillators at learned frequencies to reconstruct the missing velocity stream.",
+        "Provide a separate low-capacity aperiodic residual predictor and define periodicity confidence as the held-out reconstruction gain of oscillator plus residual over residual alone.",
+        "Route each local window softly to oscillator experts, reconstruct a phase-advance response, and combine overlapping windows per identity.",
+        "Limit residual rank and receptive field so it cannot absorb the periodic component; randomize window length and crop origin to prevent absolute-position solutions.",
+        "Apply frequency-separation, active-dimension variance, and expert-load regularizers, and include monotonic and shuffled-motion negatives for which oscillator gain should be small."
+      ],
+      "hypothesis": "A capacity-controlled oscillator bottleneck can make predictable cyclic structure, rather than generic pose reconstruction, the useful self-supervised signal for local counting.",
+      "minimum_leakage_free_pilot": {
+        "protocol": "Use only training-track poses for optimization. Predeclare oscillator count, residual rank, and all thresholds. Run one seed on a small training subset, followed by one evaluator-only validation pass.",
+        "cheap_scope": "Use four oscillator frequencies, a rank-4 residual, 64-frame windows, and deterministic response integration. Compare against the residual-only model, unconstrained masked autoencoding, and fixed Fourier filters.",
+        "diagnostics": [
+          "Masked-span velocity error",
+          "Oscillator reconstruction gain on periodic versus shuffled tracks",
+          "Frequency occupancy and separation",
+          "Response variance",
+          "Validation AvgMAE and Period-mAP"
+        ]
+      },
+      "objective_success_failure_thresholds": {
+        "success": [
+          "Oscillator plus residual lowers masked-span error by at least 15 percent relative to residual-only on periodic validation tracks.",
+          "Median oscillator gain on shuffled or monotonic negatives is less than one third of its gain on periodic tracks.",
+          "At least three oscillator experts receive 10 percent or more of active windows, and occupied center frequencies differ by at least 20 percent.",
+          "Validation AvgMAE improves by at least 5 percent relative or Period-mAP by at least 2 absolute points over fixed Fourier filters."
+        ],
+        "failure": [
+          "An unconstrained residual reproduces the full model within 2 percent, showing the oscillator bottleneck is unused.",
+          "Oscillator gain remains high after temporal shuffling or collapses to zero on more than 20 percent of active periodic tracks.",
+          "All occupied frequencies converge within 10 percent, or neither downstream threshold is met."
+        ]
+      },
+      "contribution_type": "Periodic inductive bias for self-supervised masked pose modeling.",
+      "risk": "Human repetitions are not sinusoidal, short tracks may not identify a frequency, and the residual bottleneck can be either too weak for realistic motion or strong enough to bypass the oscillator.",
+      "effort": "Medium: requires a stable complex-oscillator layer and careful capacity-matched baselines, but no learned pseudo-label generator.",
+      "unavailable_inputs": [
+        "Leakage-free train and validation track manifests",
+        "Reliable timestamps and pose visibility masks",
+        "Evaluation-only count and period annotations",
+        "A protocol-matched fixed-filter baseline implementation"
+      ],
+      "closest_priors": [
+        "Classical Fourier and wavelet approaches to non-stationary repetition.",
+        "RepNet: periodicity and per-frame period prediction.",
+        "HTRM-Net: local context under non-uniform periods and interruptions.",
+        "TransRAC: learned multi-scale temporal correlation."
+      ],
+      "why_it_matters": "It provides an explicit noncollapse test: a periodic branch must add predictive information beyond generic motion modeling. Training consumes externally estimated and tracked poses, so external detector, pose-estimator, and tracker supervision must be reported.",
+      "source_shard": "idea-stage/shards/lens-ssl.json"
+    },
+    {
+      "dedup_key": "fragmentation-equivariant-stateful-response",
+      "build_steps": [
+        "Start from a label-free local-response learner such as masked geometric self-similarity completion, trained only on each pose track.",
+        "Generate two views of the same training track: an uninterrupted view and a corrupted view with artificial fragmentation, dropped frames, re-entry gaps, duplicate boundary frames, and tracklet renumbering.",
+        "Run a shared encoder with identity-private state on both views and align only timestamps known to correspond through the corruption transform.",
+        "Require aligned local responses, routing probabilities, and recovered private states to agree after a learned gap-transition operator; also require the final integrated prediction from the corrupted view to match the uninterrupted model prediction.",
+        "Stop-gradient one branch and retain the base masked-prediction loss so the pair cannot minimize consistency by producing zero response everywhere.",
+        "At inference, use tracker association metadata when available, but report supplied-track and predicted-track settings separately and retain HOTA, IDF1, and ID-switch diagnostics."
+      ],
+      "hypothesis": "Consistency between uninterrupted and synthetically fragmented views can teach identity-private state to preserve local counting evidence across realistic track failures without any target count or period.",
+      "minimum_leakage_free_pilot": {
+        "protocol": "Train on the checksum-frozen training split with synthetic corruptions only. Predeclare corruption distributions from training-track statistics, not validation outcomes. Evaluate once on clean validation tracks, synthetic corruptions, and separately supplied versus predicted tracks.",
+        "cheap_scope": "Use one base response model, one single-layer gap-transition GRU, and three corruption severities. Compare stateless reconstruction, state reset at every fragment, and state carried without the consistency loss.",
+        "diagnostics": [
+          "Aligned-response normalized L1 error",
+          "Prediction drift between clean and fragmented views",
+          "Response variance and base pretext loss",
+          "AvgMAE degradation by corruption severity",
+          "Count-error change versus ID switches on predicted tracks"
+        ]
+      },
+      "objective_success_failure_thresholds": {
+        "success": [
+          "Aligned-response normalized L1 error is at most 0.10 at medium corruption.",
+          "Median absolute clean-to-fragmented prediction drift is at most 0.25 repetitions without using ground-truth counts in the consistency loss.",
+          "The base response standard deviation remains above 0.03 on at least 90 percent of active tracks.",
+          "At medium corruption, AvgMAE degradation is at least 25 percent smaller than state reset, while clean AvgMAE worsens by no more than 2 percent."
+        ],
+        "failure": [
+          "Prediction drift is low only because response variance or base-pretext performance collapses.",
+          "The method cannot beat simple state carry by at least 10 percent in fragmented-view drift.",
+          "Clean AvgMAE worsens by more than 5 percent or robustness gains disappear on predicted tracks."
+        ]
+      },
+      "contribution_type": "Self-supervised robustness objective for identity-private state and per-track response reconstruction.",
+      "risk": "Synthetic fragmentation may not match tracker failures, gap-state matching can incorrectly bridge genuine action changes, and corrupted-view consistency can reinforce an inaccurate teacher prediction.",
+      "effort": "Low to medium after a base label-free response model exists; the principal work is corruption generation and predicted-track evaluation.",
+      "unavailable_inputs": [
+        "Frozen leakage-free MultiRep split",
+        "Matched supplied and predicted pose-track releases",
+        "Tracker confidence, association, HOTA, IDF1, and ID-switch records",
+        "Evaluation-only per-person counts and periods",
+        "Empirical tracker-failure distributions from authorized training data"
+      ],
+      "closest_priors": [
+        "MultiCounter+: spatial-temporal consistency and identity-aware MRAC.",
+        "Tracking consistency and re-identification literature.",
+        "Weighted overlap-add: established boundary reconstruction machinery.",
+        "Self-distillation and augmentation-consistency objectives."
+      ],
+      "why_it_matters": "It connects the label-free counting representation to a specifically multi-person failure mode: fragmented identity trajectories. It does not remove external supervision from the detector, pose estimator, or tracker, and those dependencies must be disclosed.",
+      "source_shard": "idea-stage/shards/lens-ssl.json"
+    },
+    {
+      "dedup_key": "identity-private-state-isolation",
+      "name": "Identity-Private Tempo State Isolation",
+      "build_steps": [
+        "Batch all visible pose tracks through one shared pose encoder and one shared bank of tempo-response experts.",
+        "Allocate a separate recurrent state, routing history, overlap-add buffer, and decoder accumulator for each active track ID; prohibit cross-track state attention.",
+        "Train the counting path with masked-pose reconstruction, temporal augmentation consistency, and response-consistency losses only; use no per-person count or period labels.",
+        "Add a cross-person tempo-swap stress test in which one person's speed changes while all other trajectories remain fixed.",
+        "Emit one count and confidence value per finalized identity; compute scene total only by summing the emitted vector for diagnostics."
+      ],
+      "hypothesis": "Strictly isolating temporal state by identity will prevent a fast or abruptly changing person from perturbing another person's local-tempo routing, improving per-person count stability in asynchronous scenes while retaining shared model parameters.",
+      "minimum_leakage_free_pilot": {
+        "data": "Freeze a source-disjoint MultiRep train/dev split and checksums; do not access the official test population.",
+        "protocol": "Use supplied tracks first so identity assignment is fixed. Train three independent seeds without per-person count or period labels. Compare identity-private state against stateless windows and a shared scene-state control under clean data and single-person piecewise time warps.",
+        "measurements": [
+          "Period-mAP",
+          "AP50",
+          "AP75",
+          "AvgMAE",
+          "AvgOBO",
+          "per-person prediction change on untouched identities after another identity is warped",
+          "sample standard deviation",
+          "paired source-cluster bootstrap 95% CI"
+        ]
+      },
+      "success_failure_thresholds": {
+        "success": [
+          "At least 8% relative AvgMAE reduction versus shared scene-state on the piecewise-warp dev set.",
+          "At least 3 percentage-point AvgOBO improvement with bootstrap CI excluding zero for the paired difference.",
+          "Median absolute count change for untouched identities is at most 0.25 when another identity alone is time-warped."
+        ],
+        "failure": [
+          "AvgMAE is more than 3% worse than the stateless-window control on clean supplied tracks.",
+          "Untouched identities change by more than 0.5 count on median during the cross-person tempo-swap test.",
+          "Routing histories remain indistinguishable across identities despite different imposed tempo profiles."
+        ]
+      },
+      "contribution_type": "model architecture and interference diagnostic",
+      "risk": {
+        "level": "medium",
+        "description": "Private state may merely store track length or confidence instead of useful tempo context; the tempo-swap control and state-reset ablations are required to expose this."
+      },
+      "effort": "medium",
+      "unavailable_inputs": [
+        "A frozen leakage-free MultiRep release and source-disjoint split",
+        "Canonical supplied-track files with stable person identifiers",
+        "An implemented label-free response-training objective",
+        "Official Period-mAP evaluator and paired source-cluster bootstrap"
+      ],
+      "closest_priors": [
+        "MultiCounter and MultiCounter+ for identity-indexed MRAC outputs and consistency",
+        "PAMS for pose-driven self-supervised period adaptation",
+        "Generic recurrent tracking systems with per-track memory",
+        "Mixture-of-Experts for shared expert weights and learned routing"
+      ],
+      "why_it_matters": "It directly tests whether identity-indexed state is functionally necessary for asynchronous multi-person counting, rather than treating per-person output as a final formatting step.",
+      "source_shard": "idea-stage/shards/lens-tracking.json"
+    },
+    {
+      "dedup_key": "dual-track-protocol-count-gap",
+      "name": "Supplied-versus-Predicted Track Protocol Pair",
+      "build_steps": [
+        "Define two frozen inference contracts: supplied tracks with dataset identity IDs, and predicted tracks produced without GT boxes or GT object IDs.",
+        "Use the identical pose encoder, tempo experts, response reconstruction, and decoder in both contracts; only the track source may differ.",
+        "Store frame-level track assignments, confidence, HOTA, IDF1, ID switches, per-person count vectors, and the matching used exclusively for evaluation.",
+        "Add a deterministic synthetic-corruption ladder to supplied tracks with independent detection drops, fragmentation, re-entry gaps, and ID switches.",
+        "Report count degradation as a function of tracking degradation rather than mixing both protocols into one headline number."
+      ],
+      "hypothesis": "A paired protocol will isolate counting-model error from identity-association error and reveal which tracking failures dominate per-person count degradation without changing the no-count-label training objective.",
+      "minimum_leakage_free_pilot": {
+        "data": "Use one checksum-frozen source-disjoint dev split; generate corruption seeds from stored manifests and keep all corruption parameters independent of count or period annotations.",
+        "protocol": "Run three model seeds under clean supplied tracks, corrupted supplied tracks, and one frozen predicted tracker. Match predictions to GT identities only inside the evaluator.",
+        "measurements": [
+          "Period-mAP",
+          "AP50",
+          "AP75",
+          "AvgMAE",
+          "AvgOBO",
+          "HOTA",
+          "IDF1",
+          "ID switches per person-minute",
+          "unmatched-person precision and recall",
+          "clean-to-corrupt degradation curves"
+        ]
+      },
+      "success_failure_thresholds": {
+        "success": [
+          "Every published count result is unambiguously tagged as supplied-track or predicted-track.",
+          "Synthetic corruption severity produces a monotone increase in median per-person count error in at least 80% of adjacent severity steps.",
+          "The protocol attributes at least 80% of predicted-track count failures to one of missed detections, fragmentation, re-entry mismatch, ID switch, or counting-on-correct-track categories."
+        ],
+        "failure": [
+          "Any predicted-track run consumes GT boxes or GT object identities.",
+          "Protocol matching changes model outputs rather than operating only in evaluation.",
+          "More than 20% of count failures remain unclassified because required track artifacts were not saved."
+        ]
+      },
+      "contribution_type": "evaluation protocol and evidence infrastructure",
+      "risk": {
+        "level": "low-to-medium",
+        "description": "The protocol can become bookkeeping-heavy and may expose that tracking, rather than tempo modeling, is the dominant bottleneck."
+      },
+      "effort": "medium",
+      "unavailable_inputs": [
+        "An authorized leakage-free MultiRep dev release",
+        "A frozen external detector, pose estimator, and tracker with disclosed supervision",
+        "Official or faithfully reproduced HOTA and IDF1 evaluation",
+        "Complete frame-level tracking and prediction artifacts"
+      ],
+      "closest_priors": [
+        "MultiCounter and MultiCounter+ evaluation protocols",
+        "HOTA and IDF1 multi-object tracking evaluation",
+        "Track-PAMS-style common-track comparison",
+        "Robustness evaluation using synthetic detection and association corruption"
+      ],
+      "why_it_matters": "It prevents oracle-like GT-assisted tracks from being presented as a deployable multi-person system and makes the cost of identity errors visible in the actual per-person count output.",
+      "source_shard": "idea-stage/shards/lens-tracking.json"
+    },
+    {
+      "dedup_key": "pose-phase-reentry-cache",
+      "name": "Pose-and-Phase Re-entry State Cache",
+      "build_steps": [
+        "When a track disappears, store a bounded dormant-state record containing its last pose embedding, motion direction, local response phase, uncertainty, and accumulated count mass.",
+        "When a new tracklet appears, score re-entry candidates using pose geometry, temporal gap, motion extrapolation, and phase compatibility; do not use GT identity at inference.",
+        "Reactivate the best state only when confidence and margin thresholds pass; otherwise begin a new identity state.",
+        "Train association scoring from natural or synthetic tracklet splits and temporal augmentations without per-person count or period labels; disclose any external tracker supervision.",
+        "Finalize the output vector after a configurable re-entry horizon, retaining aliases so a recovered person receives one count entry rather than one entry per fragment."
+      ],
+      "hypothesis": "Caching identity-private phase and response state across temporary disappearance will recover count continuity after fragmentation while reducing duplicate person outputs and double counting.",
+      "minimum_leakage_free_pilot": {
+        "data": "Create a source-disjoint supplied-track dev diagnostic by masking contiguous pose intervals and replacing post-gap track IDs; generate masks without consulting count or period labels.",
+        "protocol": "Compare no cache, pose-only re-identification, and pose-plus-phase cache over gap lengths of 0.25, 0.5, 1, and 2 estimated cycles; evaluate both isolated gaps and crowded simultaneous re-entry.",
+        "measurements": [
+          "AvgMAE",
+          "AvgOBO",
+          "person-cardinality F1",
+          "fragment merge precision and recall",
+          "count error added by each gap",
+          "latency and cache memory"
+        ]
+      },
+      "success_failure_thresholds": {
+        "success": [
+          "Recover at least 40% of the fragmentation-induced AvgMAE increase relative to the no-cache system.",
+          "Achieve at least 95% precision for automatic fragment merges on the pilot.",
+          "Improve person-cardinality F1 by at least 5 percentage points without reducing clean-track AvgOBO by more than 1 point."
+        ],
+        "failure": [
+          "False merges exceed 5% or cause more aggregate error than the recovered missed merges.",
+          "Re-entry benefit disappears when phase features are removed, indicating the cache is only a generic pose re-identification module.",
+          "Dormant-state retention causes unbounded memory growth or requires GT identity at inference."
+        ]
+      },
+      "contribution_type": "tracking-aware state mechanism",
+      "risk": {
+        "level": "high",
+        "description": "Similar-looking people performing synchronized actions may make phase and pose insufficient for safe re-entry; conservative abstention may limit recall."
+      },
+      "effort": "medium-to-high",
+      "unavailable_inputs": [
+        "Frame-level pose tracks with timestamps and confidence",
+        "Crowded re-entry examples or a defensible synthetic gap generator",
+        "Stable output matching and person-cardinality evaluation",
+        "A frozen policy for maximum dormant-state lifetime"
+      ],
+      "closest_priors": [
+        "Tracklet re-identification and dormant-track memory in multi-object tracking",
+        "MultiCounter+ spatial-temporal consistency",
+        "HTRM-Net interruption robustness",
+        "Phase-continuity tracking in periodic signal processing"
+      ],
+      "why_it_matters": "Fragmentation otherwise converts one real person into multiple count entries or resets progress, violating the primary requirement that the system return one count per person.",
+      "source_shard": "idea-stage/shards/lens-tracking.json"
+    },
+    {
+      "dedup_key": "ambiguous-switch-state-hypotheses",
+      "name": "ID-Switch-Resilient State Hypothesis Bank",
+      "build_steps": [
+        "Detect ambiguous associations from tracker confidence, crossing geometry, and sudden pose-state discontinuity.",
+        "At an ambiguity, fork only the affected identities' private states into a small set of assignment hypotheses instead of immediately committing to one ID swap.",
+        "Advance each hypothesis through the same shared encoder and tempo experts, scoring it with pose continuity, motion plausibility, response-phase continuity, and augmentation-consistency energy.",
+        "Prune to a fixed beam and merge equivalent hypotheses; never average state between different candidate identities.",
+        "Finalize per-person counts from the highest-confidence identity history and expose ambiguity confidence alongside the count vector."
+      ],
+      "hypothesis": "Delayed association commitment will preserve per-person count attribution through short crossings and tracker ID switches better than hard propagation, without using per-person count or period labels.",
+      "minimum_leakage_free_pilot": {
+        "data": "On a frozen source-disjoint dev set, inject deterministic pairwise ID swaps of 0.5, 1, and 2 seconds at track crossings; injection must not consult counts or periods.",
+        "protocol": "Compare hard tracker IDs, state reset on discontinuity, and a beam of two or four hypotheses across three independent model seeds.",
+        "measurements": [
+          "AvgMAE",
+          "AvgOBO",
+          "IDF1",
+          "ID switches",
+          "count-vector permutation error before and after evaluator matching",
+          "beam survival of the correct synthetic identity assignment",
+          "runtime and memory"
+        ]
+      },
+      "success_failure_thresholds": {
+        "success": [
+          "At one injected switch per person-minute, count AvgMAE increases by no more than 25% relative to clean tracks.",
+          "The hypothesis bank reduces switch-induced AvgMAE by at least 20% relative to hard ID propagation.",
+          "Beam size four stays below 1.8 times the latency and 1.5 times the peak memory of hard propagation on the pilot batch size."
+        ],
+        "failure": [
+          "The method improves scene-total count but not identity-matched per-person AvgMAE.",
+          "Correct-assignment beam survival is below 70% for one-second swaps.",
+          "The method silently merges two people into a single output or relies on GT identity to select a hypothesis."
+        ]
+      },
+      "contribution_type": "robust inference and uncertainty handling",
+      "risk": {
+        "level": "high",
+        "description": "Hypothesis branching can become combinatorial in dense scenes; bounded beams may discard the correct identity history during long or multi-way crossings."
+      },
+      "effort": "high",
+      "unavailable_inputs": [
+        "Track association logits or reconstructable ambiguity scores",
+        "Crossing-heavy evaluation clips",
+        "A deterministic ID-switch injector",
+        "Per-frame latency and memory instrumentation"
+      ],
+      "closest_priors": [
+        "Multiple-hypothesis tracking",
+        "Beam search for data association",
+        "MultiCounter+ identity consistency",
+        "Identity-conditioned recurrent memory"
+      ],
+      "why_it_matters": "An ID switch can leave the scene-total count unchanged while exchanging or corrupting individual counts, so robustness must be assessed at the count-vector level.",
+      "source_shard": "idea-stage/shards/lens-tracking.json"
+    },
+    {
+      "dedup_key": "ragged-shared-expert-scaling",
+      "name": "Ragged Shared-Compute Multi-Person Runtime",
+      "build_steps": [
+        "Represent all active track windows as one ragged batch with explicit identity indices and masks.",
+        "Run the pose encoder and tempo-specialized expert weights once per batched tensor operation while gathering and scattering only compact identity-private states.",
+        "Cache overlapping-window pose features and reuse them during normalized overlap-add reconstruction; invalidate cache entries only when their source frames change.",
+        "Keep parameter count independent of the number of people while allowing state and response-buffer memory to grow explicitly with active identities.",
+        "Return an ordered list of per-person count, confidence, and track identifier records; measure scene total only as a derived diagnostic."
+      ],
+      "hypothesis": "Ragged batching and overlap reuse will make multi-person inference substantially cheaper than invoking a complete single-person counter independently for every track while preserving identity-private outputs exactly.",
+      "minimum_leakage_free_pilot": {
+        "data": "Use checksum-frozen pose tensors or synthetic tiled copies of leakage-free dev tracks; no labels are needed for the scaling measurements.",
+        "protocol": "Benchmark 1, 2, 4, 8, 16, and 32 concurrent identities at fixed clip length and window schedule. Compare independent model invocation, ordinary padded batching, and ragged shared execution on the same hardware and commit.",
+        "measurements": [
+          "throughput in person-frames per second",
+          "end-to-end latency",
+          "peak accelerator memory",
+          "parameter count",
+          "cache hit rate",
+          "numerical difference in per-person response and count",
+          "scaling fit with confidence intervals"
+        ]
+      },
+      "success_failure_thresholds": {
+        "success": [
+          "At 16 active identities, latency is at most 55% of independent per-person invocation while all count outputs differ by no more than 0.01 before rounding.",
+          "Peak memory at 16 identities is at least 30% lower than padded batching for a workload with variable track lengths.",
+          "Model parameter count is invariant with person count, and all person-dependent state allocations are documented as O(P) rather than described as constant-time."
+        ],
+        "failure": [
+          "Shared execution changes any rounded per-person count relative to the reference implementation.",
+          "Cache reuse crosses identity boundaries or serves features from stale frames.",
+          "Batching gains disappear below eight people while adding more than 20% latency at one or two people."
+        ]
+      },
+      "contribution_type": "systems implementation and scaling analysis",
+      "risk": {
+        "level": "medium",
+        "description": "Most encoder work may remain inherently per-person because inputs are pose trajectories, limiting gains to batching efficiency and window-cache reuse."
+      },
+      "effort": "medium",
+      "unavailable_inputs": [
+        "Canonical method implementation",
+        "Representative crowded-scene track-length distributions",
+        "Pinned hardware and software environment",
+        "Profiler traces and deterministic numerical-equivalence tests"
+      ],
+      "closest_priors": [
+        "Batched multi-object tracking inference",
+        "Sparse and ragged sequence processing",
+        "Mixture-of-Experts with shared parameters",
+        "Weighted overlap-add caching"
+      ],
+      "why_it_matters": "A multi-person counter needs evidence that shared components actually reduce duplicated computation and that scaling claims do not hide identity-state memory or sacrifice per-person output fidelity.",
+      "source_shard": "idea-stage/shards/lens-tracking.json"
+    },
+    {
+      "dedup_key": "mass-conserving-person-count-ledger",
+      "name": "Mass-Conserving Per-Person Count Ledger",
+      "build_steps": [
+        "Decode each identity's reconstructed response into continuous count increments before any rounding.",
+        "Record increments in an identity ledger indexed by frame interval and track lineage, so overlapping windows cannot contribute the same response mass twice.",
+        "On high-confidence fragment re-entry, transfer the dormant ledger to the restored identity; on ambiguous association, hold increments in an unassigned escrow entry until resolution.",
+        "Apply rounding only once when an identity is finalized, and expose unresolved or unmatched ledger entries rather than folding them into another person.",
+        "Return the vector of finalized per-person counts with confidence and provenance; derive the scene total from that vector and verify conservation against the ledger."
+      ],
+      "hypothesis": "A response-mass ledger with one final decode per identity will reduce boundary double counting, fragmentation duplication, and hidden reassignment errors while guaranteeing an auditable per-person output.",
+      "minimum_leakage_free_pilot": {
+        "data": "Use the frozen source-disjoint dev split with supplied tracks plus label-independent synthetic fragmentation, overlap duplication, and late re-entry.",
+        "protocol": "Compare window-count summation, overlap-add followed by per-track decode, and overlap-add plus the lineage ledger; training remains unchanged and uses no per-person count or period labels.",
+        "measurements": [
+          "AvgMAE",
+          "AvgOBO",
+          "Period-mAP",
+          "person-cardinality F1",
+          "difference between scene diagnostic and sum of emitted person counts",
+          "duplicate response mass",
+          "unresolved ledger mass"
+        ]
+      },
+      "success_failure_thresholds": {
+        "success": [
+          "Conservation error between derived scene total and the sum of emitted per-person counts is exactly zero after finalization.",
+          "Boundary or fragment duplication contributes less than 1% of total decoded response mass.",
+          "AvgMAE under synthetic fragmentation improves by at least 10% relative to per-window count summation without degrading clean supplied-track AvgMAE by more than 2%."
+        ],
+        "failure": [
+          "The ledger uses GT identity to transfer count mass at inference.",
+          "More than 5% of response mass remains unresolved at the declared finalization horizon.",
+          "The ledger improves only scene-total error while identity-matched per-person error is unchanged or worse."
+        ]
+      },
+      "contribution_type": "output representation and accounting invariant",
+      "risk": {
+        "level": "medium",
+        "description": "Incorrect lineage decisions can make bookkeeping confidently wrong; escrow and unresolved-output reporting must remain visible rather than forcing assignments."
+      },
+      "effort": "medium",
+      "unavailable_inputs": [
+        "A canonical frame-level response representation",
+        "A frozen identity finalization and re-entry horizon",
+        "Track-lineage metadata in saved predictions",
+        "Official unmatched-person handling in the evaluator"
+      ],
+      "closest_priors": [
+        "Normalized weighted overlap-add reconstruction",
+        "Density-response integration in TransRAC and related RAC methods",
+        "Tracklet lineage graphs in multi-object tracking",
+        "Conservation-style ledgers in streaming aggregation"
+      ],
+      "why_it_matters": "The scientific target is a vector of per-person counts, so the system needs an explicit invariant preventing overlap, fragments, and late identity decisions from creating or deleting count mass.",
+      "source_shard": "idea-stage/shards/lens-tracking.json"
+    }
+  ]
+}

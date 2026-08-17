@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "task": "acceptance-contract-icassp-amendment-final",
+  "reviewer_agent": "/root/icassp_contract_amendment_final",
+  "reviewed_at": "2026-08-14T23:14:00+08:00",
+  "review_mode": "fresh-zero-context-read-only",
+  "venue": "ICASSP 2027 regular",
+  "baseline": {
+    "path": "D:\\Project\\rac-paper-writing-icassp27\\PAPER_ACCEPTANCE_CONTRACT_20260814_210927.md",
+    "sha256": "0bb799c33e1c1a4d3c9a9da76c019e0c3d463b2c98c6dc81b174fd6abb279ba8",
+    "bytes": 9848,
+    "status": "accepted",
+    "assurance": "submission",
+    "submission_ceiling": "provisional/data-pending",
+    "assertions": "AC01-AC16"
+  },
+  "current_contract": {
+    "path": "D:\\Project\\rac-paper-writing-icassp27\\PAPER_ACCEPTANCE_CONTRACT.md",
+    "sha256": "09f35eb7dd2c07fd9b8211763c1fbc797098972785e5eaf5e5ed063ef4a8c44d",
+    "bytes": 10371
+  },
+  "additional_inputs": [
+    {
+      "path": "D:\\Project\\rac-paper-writing-icassp27\\paper\\sections\\4_experiments.tex",
+      "sha256": "6052c816e94f7d7f50b560d397495a37863b05d240ed5e418e4b6ec4d3aa131b",
+      "bytes": 10852
+    },
+    {
+      "path": "D:\\Project\\rac-paper-writing-icassp27\\paper\\main.pdf",
+      "sha256": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+      "bytes": 348367
+    },
+    {
+      "path": "D:\\Project\\rac-paper-writing-icassp27\\paper\\.aris\\traces\\citation-audit-icassp\\group-a-postfix\\reviewer.md",
+      "sha256": "27fcd4ffb349d410bfd4d54cd6cb2bb71333449d50a01a38d257a6c0f3b80435",
+      "bytes": 12501
+    }
+  ],
+  "semantic_diff": {
+    "authorized_metadata_fields_added": [
+      "amended_at",
+      "amendment_scope",
+      "amendment_review_status"
+    ],
+    "authorized_amendment_note_added": true,
+    "authorized_ac06_replacements": [
+      "AP50 -> Period-AP50",
+      "AP75 -> Period-AP75"
+    ],
+    "format_only_changes": [
+      "Removed Markdown trailing-space hard breaks from AC01-AC04 Check lines"
+    ],
+    "canonical_baseline_lines": 208,
+    "canonical_current_lines": 208,
+    "canonical_residual_diff_lines": 0,
+    "gate_weakening_detected": false
+  },
+  "metric_verification": {
+    "source": {
+      "Period-mAP": 2,
+      "Period-AP50": 2,
+      "Period-AP75": 2,
+      "bare_AP50": 0,
+      "bare_AP75": 0
+    },
+    "pdf": {
+      "Period-mAP": 2,
+      "Period-AP50": 2,
+      "Period-AP75": 2,
+      "bare_AP50": 0,
+      "bare_AP75": 0,
+      "extracted_pages": [3, 4]
+    },
+    "citation_audit_nomenclature_verdict": "PASS",
+    "source_and_pdf_hashes_match_citation_audit": true
+  },
+  "mutations": {
+    "contract": false,
+    "baseline": false,
+    "manuscript_source": false,
+    "pdf": false,
+    "written_trace_files": [
+      "prompt.md",
+      "reviewer.md",
+      "run.meta.json"
+    ]
+  },
+  "verdict": "AMENDMENT_ACCEPTED:YES"
+}

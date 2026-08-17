@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_round5_sol",
+  "step_id": "001-review",
+  "task": "Round 5 MAX_ROUNDS same-reviewer re-evaluation of the full WARP-PHASE Round-4 refinement",
+  "requested_at": "2026-08-15T15:44:12.6664121+08:00",
+  "reviewer_requirements": {
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "xhigh",
+    "reviewer_family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "same_agent_continuation": true,
+    "max_rounds_final": true,
+    "verdict_enum": ["READY", "REVISE", "RETHINK"],
+    "ready_rule": "overall >= 9 and no blocking issue"
+  },
+  "rubric": [
+    {"dimension": "Problem Fidelity", "weight": 0.15},
+    {"dimension": "Method Specificity", "weight": 0.25},
+    {"dimension": "Contribution Quality", "weight": 0.25},
+    {"dimension": "Frontier Leverage", "weight": 0.15},
+    {"dimension": "Feasibility", "weight": 0.10},
+    {"dimension": "Validation Focus", "weight": 0.05},
+    {"dimension": "Venue Readiness", "weight": 0.05}
+  ],
+  "required_interface_checks": [
+    "COCO17 root and scale",
+    "FFT256 source-clock grid",
+    "FFT and ACF bins, maxima, endpoints, and ties",
+    "canonical view and decoder g_j",
+    "exact 1000-fixture generator",
+    "warp pose, confidence, and mask interpolation",
+    "K4 vectors, primary exposure, and decision ratios",
+    "desensitized packer schema precondition"
+  ],
+  "supplemental_feasibility_check": "NumPy 2.4.6 proposal mandate versus supported project and server lock at NumPy 1.26.4",
+  "raw_inputs": [
+    {"path": "refine-logs/round-4-refinement.md", "sha256": "2031d5c84b8c6c329dd0e43e5b8a09210ed9a3e8b17b47578f2f878a4c2b4e0f"},
+    {"path": "refine-logs/round-4-review.md", "sha256": "c1d44bbe3dd5467b02c4d29bf7bba2849b5bcf64a705c8276f0882a072a2e7a1"},
+    {"path": "refine-logs/round-4-review.json", "sha256": "d62ec17f33d7f76091a20ebeaaaa23c0a402b5c028487ad1277311b4dc6363ad"},
+    {"path": "refine-logs/REFINE_STATE.json", "sha256": "54521958169008256110c90f11d8dad68389895920688550a474f8ad1c4727c6"},
+    {"path": "refine-logs/score-history.md", "sha256": "bfdebeda8851c2ca08f4e7ed7601f38ccb70b0c7fc16fcf09ee0c3ca835b5f1d"},
+    {"path": "PILOT_PERIOD_SCHEMA_ADDENDUM.md", "sha256": "49edcfe25c302c2b55b8e65bc18e1cb7febe25cc8b76698d631fa24150d4b0b5"},
+    {"path": "idea-stage/TWCRAC_ADJUDICATION.json", "sha256": "5a1e7b8c1048a8884690f2d234d413064d473ead1eb1deca69ab734ca2e5ed1e"},
+    {"path": "pyproject.toml", "sha256": "14b3b35bbfa57fc982e24ef2f999df288893c0f0d12a53a9f82120babefead38"},
+    {"path": "uv.lock", "sha256": "5a964f1cd841948eae09ef253098b0b16eb5d2e6bd660e2d3496b389c4dc72a7"},
+    {"path": "docker/server/requirements.txt", "sha256": "2337391c20fae1533b6e30d042f668a5542db28f0a29a71d5cb86b74517bfc53"},
+    {"path": ".venv/pyvenv.cfg", "sha256": "598ae04c323c0a6ec8b1e17e5c99677d255cd37a8a82e746bc954e3113bfe2b7"}
+  ],
+  "constraints": {
+    "no_experiment_route_expansion": true,
+    "no_baseline_expansion": true,
+    "no_invented_results": true,
+    "no_final_proposal_or_report": true,
+    "twcrac_without_complete_primary_source": "must remain BLOCKED and NOT_PASSED"
+  },
+  "required_outputs": [
+    "same seven scores and weights",
+    "weighted composite",
+    "anchor and drift assessment",
+    "per-interface closure audit",
+    "LOCAL_SPEC_CLOSED or exact remaining blockers",
+    "external K8 status",
+    "focus, simplicity, frontier appropriateness, and final risks",
+    "CALIBRATION and GAP",
+    "MAX_ROUNDS final READY, REVISE, or RETHINK verdict",
+    "input SHA-256 ledger",
+    "raw review byte-identical to canonical round review"
+  ]
+}
+

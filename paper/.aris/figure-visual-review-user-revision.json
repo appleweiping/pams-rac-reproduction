@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "reviewed_at": "2026-08-15T01:25:00+08:00",
+  "verdict": "PASS",
+  "pdf": {
+    "path": "paper/main.pdf",
+    "sha256": "2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
+    "pages": 5,
+    "render_dpi": 144
+  },
+  "figure_hashes": {
+    "fig:task-motivation": {
+      "source": "29c01239515b9e0a9870ba840de6c087b32a1d46c5687c13c9c88dfdb4383e17",
+      "output": "216aabb2af9e022e487fbfe5022635d98c998f32a5e7e043289daa8d04ae0cd3"
+    },
+    "fig:framework": {
+      "source": "dfa86571aa8348eda8fa22a456d49e67179e4effd95b1b3b46b3a3dce69b4593",
+      "output": "920c47ea13d050c8a2265467d9232db23872022b9ba27204bc98d624f403e7fe"
+    }
+  },
+  "page_renders": [
+    {"page": 1, "sha256": "cbb10bb5c4d9696bfa6d2827cac2404e490c5a5b09157a7488703685e5d4cb9d"},
+    {"page": 2, "sha256": "808ba094c8fbc55eba5360f9197e36a03e6741d811439b856a110db182392bc8"},
+    {"page": 3, "sha256": "a0d1ce0f740366888eed61fbcee207b59c966ace30e08c9a168c1b774e4f6455"},
+    {"page": 4, "sha256": "d400c03aeb347acea235cea7e3be882a2b3f86342d6fb677ceb437874ef48c1d"},
+    {"page": 5, "sha256": "06cf6a8611eebb6900f8422312156f12392544f0e3c00df93e73c75eec25dd32"}
+  ],
+  "checks": {
+    "all_pages_inspected": true,
+    "full_ppt_slides_visible": true,
+    "figure_labels_legible": true,
+    "captions_match_figures": true,
+    "tables_legible": true,
+    "no_clipping_or_overlap": true,
+    "page_5_references_only_by_visual_review": true
+  },
+  "notes": "Both one-slide PowerPoint sources are reproduced on their complete 16:9 canvases. The captions distinguish conceptual content from implementation and result evidence. The two compact tables are readable at the rendered review scale. All pages were re-rendered after replacing the Eq. (1) ellipsis with punctuation-free indexed notation and replacing unsupported preregistration wording with prospectively specified language."
+}

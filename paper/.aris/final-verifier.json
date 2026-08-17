@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "status": "FAIL",
+  "exit_code": 1,
+  "submission_ready": false,
+  "paper_state": "provisional/data-pending",
+  "assurance_requested": "submission",
+  "aris_commit": "e12e07c7b85ee1a4dc07e5463089aa16836af2bf",
+  "verifier_script": "tools/verify_paper_audits.sh",
+  "official_report": {
+    "path": "paper/.aris/audit-verifier-report.json",
+    "sha256": "sha256:dabaa9b6740b145eb5baae5998a3907c97e424fa1680d416361c4d0a6d0cd318",
+    "exit_code": 1,
+    "overall_assurance": "blocked"
+  },
+  "draft_report": {
+    "path": "paper/.aris/audit-verifier-report-draft.json",
+    "sha256": "sha256:0b6ae5ccc4beb1cd0549991c0444d300d5e56673eb81c5a9d060d1b676d04d6b",
+    "exit_code": 0,
+    "overall_assurance": "provisional"
+  },
+  "audits": {
+    "proof-checker": "OK/NOT_APPLICABLE",
+    "paper-claim-audit": "BLOCKING_VERDICT/BLOCKED",
+    "citation-audit": "OK/PASS",
+    "kill-argument": "BLOCKING_VERDICT/FAIL"
+  },
+  "final_pdf": {
+    "path": "paper/main.pdf",
+    "sha256": "sha256:2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e"
+  },
+  "readiness_reports": {
+    "draft": "sha256:b154ee4ed84c65651a5c68f8acf4992bb34a7a5877d77e861d9104ddd5dee0c4",
+    "submission": "sha256:de7bbc1e3e5090fdf795ae0ea6fa0cdd96ec3b9db94507e87d653a10b9324c48"
+  },
+  "blocking_reasons": [
+    "collaborator-frozen multi-person implementation is unavailable",
+    "eligible MultiRep results and raw bindings are unavailable",
+    "paper-claim audit remains data-pending",
+    "the strongest kill argument survives the current artifact",
+    "healthy cross-family review response is unavailable",
+    "complete author roster and attestations are unavailable",
+    "official ICASSP 2027 author kit and final AI-policy check are unavailable"
+  ],
+  "generated_at": "2026-08-15T01:39:04+08:00"
+}

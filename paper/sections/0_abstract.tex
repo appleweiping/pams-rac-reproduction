@@ -1,0 +1,14 @@
+Multi-person repetition counting estimates a count for each supplied persistent
+identity track rather than only a scene total. The task is difficult when people move
+asynchronously, individual pace changes within a trajectory, and missing poses
+turn each trajectory into a masked nonstationary signal. We propose an
+identity-indexed signal-processing specification that receives supplied pose
+tracks and targets counting without person-wise count or period labels, while
+acknowledging external supervision in the pose and tracking frontends.
+Overlapping windows share an encoder and fast, medium, and slow response
+experts; masked autocorrelation and Fourier evidence yield local period cues
+and confidence. Soft routing mixes expert responses, and normalized overlap-add
+reconstructs one response and decodes it once per identity. This design
+separates per-track state from shared parameters and avoids independently
+counting every overlapping window, removing one structural source of boundary
+double-counting. \ControlledAbstractResult

@@ -1,0 +1,77 @@
+{
+  "audit_skill": "kill-argument",
+  "verdict": "FAIL",
+  "reason_code": "CORE_METHOD_AND_EVIDENCE_UNAVAILABLE",
+  "summary": "The strongest kill survives the exact final artifact. The package is an honest, visually polished, fail-closed pre-results scaffold, but it is not scientifically submit-ready because no synchronized multi-person implementation or eligible MultiRep evidence exists and critical algorithm interfaces remain source-unbound.",
+  "audited_input_hashes": {
+    "main.pdf": "sha256:2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
+    "main.tex": "sha256:34e470772f06c281b70a8f60f82bb010e9a027cb289ebd9389005be703868175",
+    "preamble.tex": "sha256:763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2",
+    "math_commands.tex": "sha256:2f148f00d2542e89b78f18ea726f40e25afeef08c51357bcb642e95b9477a255",
+    "author_public.tex": "sha256:044998350a801da4758d022d231508d103b5769f5884ae3de5b626591615ac5d",
+    "figures/latex_includes.tex": "sha256:24f27f9df91002008648de01ea7bd0af5a216e9a97262ad0a05a077f8dd78421",
+    "sections/0_abstract.tex": "sha256:fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef",
+    "sections/1_introduction.tex": "sha256:7ce1329707dae209f745c200492253356e975448d9b32053b9f97d48bdcf3b3e",
+    "sections/3_method.tex": "sha256:c4ab8008065bb8781e402921878f5b99c7fb841acdef24c6129b7d93c988dc84",
+    "sections/4_tables.tex": "sha256:9982f60311a96265c8140b7c2614349bb2ae4f407b8666756b0f2c91ab89513a",
+    "sections/4_experiments.tex": "sha256:cd6508a60e3e9cac767ccfcec53e019a52525f58cebc2b1559819139abe0ecb5",
+    "sections/5_conclusion.tex": "sha256:e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c",
+    "references.bib": "sha256:c84cb6df17ac4133f7c3115e1aa4dcad82e9e850f1ebdc5e6979cbc1cfd917b3",
+    "figures/introduction_source_full.pdf": "sha256:216aabb2af9e022e487fbfe5022635d98c998f32a5e7e043289daa8d04ae0cd3",
+    "figures/framework_source_full.pdf": "sha256:920c47ea13d050c8a2265467d9232db23872022b9ba27204bc98d624f403e7fe",
+    "evidence/method_manifest.yaml": "sha256:514d25ceb51d97930f02a14c70d96962ff7acdcb28c712fa80c1f03a9ea1d579",
+    "evidence/results_manifest.json": "sha256:4df513a3f4427950d23267965192253446e6ee2b6968907855e0bae1a6a53159",
+    "evidence/results_manifest.schema.json": "sha256:9d5c07450cbda32be8223237cb2d764d896d0c9ec28e4c9f23ad7cad3d67e662",
+    "../RESULT_TO_CLAIM.json": "sha256:5fa04e6ac29905a20ad870060b9e87b16ef9096e1c0b1bc88e7eaca45fe4f6f4",
+    "PAPER_CLAIM_AUDIT.json": "sha256:20b690e0cdbaa0e8bd745984f7cf419dd34a993038c1322963f4ca429c4c6f1e",
+    "CITATION_AUDIT.json": "sha256:b3e64bd5ff2f7ef34da0718c81f692f76ec8e4c6b620134eb55c7627dd4304f8",
+    ".aris/traces/kill-argument-icassp/user-revision-final/attack.md": "sha256:3583e66d48416c8b37363c0d493992d54abf013be48bfc179d25ad699b549a4c",
+    ".aris/traces/kill-argument-icassp/user-revision-final/attack.meta.json": "sha256:3bbd436b7c61bc48dd3d4402229bf7514b03b63b029d872ebe4d21a7e45da69e",
+    ".aris/traces/kill-argument-icassp/user-revision-final/attack_prompt.md": "sha256:59d460ea85dbb22338fe8df4b8794c3cdf53bb853e964836b2c4a5990703d05a",
+    ".aris/traces/kill-argument-icassp/user-revision-final/defense.md": "sha256:bbcd62b84b9b44f25a364573ae8d438ce1d6c042d046177621a3d0c269c0c6a1",
+    ".aris/traces/kill-argument-icassp/user-revision-final/defense.meta.json": "sha256:fc452b6be6c6babb3d73c10665e23dd227ad0206a75749c61c36c2d8bc5588fa",
+    ".aris/traces/kill-argument-icassp/user-revision-final/defense_prompt.md": "sha256:c4f9ddefe0478c0df3254c67fda9eaee30de6a18a66ffa68e30ebfe1fa6d7f09"
+  },
+  "trace_path": ".aris/traces/kill-argument-icassp/user-revision-final/",
+  "agent_id": "/root/user_revision_kill_defense",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "ultra",
+  "executor_model": "gpt-5.6-sol",
+  "executor_family": "openai",
+  "reviewer_family": "openai",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "generated_at": "2026-08-15T01:29:00+08:00",
+  "details": {
+    "attack_verdict": "KILL_STRONG_REJECT",
+    "defense_verdict": "KILL_SURVIVES",
+    "pre_results_package": "defensible_and_useful",
+    "evidence_integrity": "PASS",
+    "visual_integrity": "PASS",
+    "submission_ready": false,
+    "scientifically_acceptable_now": false,
+    "strongest_kill_argument_survives": true,
+    "fatal_findings": [
+      {"id": "P1", "status": "unresolved", "label": "no empirical outcomes or eligible MultiRep evidence"},
+      {"id": "P2", "status": "unresolved", "label": "synchronized proposed implementation absent"},
+      {"id": "P3", "status": "partial", "label": "algorithm not reproducible from source-bound interfaces"}
+    ],
+    "high_findings": [
+      {"id": "P4", "status": "partial", "label": "narrow novelty not established empirically"},
+      {"id": "P5", "status": "partial", "label": "predicted-track lifecycle unresolved"}
+    ],
+    "resolved_findings": [
+      "unsupported preregistration wording",
+      "pending/excluded table-eligibility loophole",
+      "incomplete frozen-eligible schema loophole",
+      "Eq. (1) indexing and punctuation false positive"
+    ],
+    "remaining_submission_blockers": [
+      "funding, conflicts, and ethics declarations",
+      "embedded people-montage origin and permission",
+      "complete collaborator roster and assent",
+      "official ICASSP 2027 kit",
+      "healthy cross-family review"
+    ]
+  }
+}

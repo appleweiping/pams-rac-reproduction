@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "artifact_type": "pams_sshead_longest_contiguous_track_v8_dev84_result",
+  "status": "partial_reproduction",
+  "classification": "inferred-sshead-negative-development-result",
+  "protocol": {
+    "dataset": "UCFRep",
+    "train_unlabeled": 337,
+    "development": 84,
+    "sealed_test": 105,
+    "seed": 2026,
+    "test105_evaluated": false
+  },
+  "development_metrics": {
+    "sample_count": 84,
+    "nmae": 0.643123262319691,
+    "mae": 4.226190476190476,
+    "rmse": 6.073949056656398,
+    "obo": 0.2976190476190476,
+    "exact": 0.15476190476190477,
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 2026,
+    "confidence_intervals": {
+      "nmae": {
+        "level": 0.95,
+        "low": 0.5634624572682608,
+        "high": 0.720873135214653
+      },
+      "mae": {
+        "level": 0.95,
+        "low": 3.357142857142857,
+        "high": 5.238095238095238
+      },
+      "rmse": {
+        "level": 0.95,
+        "low": 4.548645790746545,
+        "high": 7.840694362184468
+      },
+      "obo": {
+        "level": 0.95,
+        "low": 0.20238095238095238,
+        "high": 0.39285714285714285
+      },
+      "exact": {
+        "level": 0.95,
+        "low": 0.08333333333333333,
+        "high": 0.23809523809523808
+      }
+    },
+    "per_video": "see evaluation.json"
+  },
+  "frozen_extension_gate": {
+    "decision": "do-not-extend",
+    "authorized": false,
+    "authorized_seeds": [],
+    "absolute_thresholds": {
+      "nmae_lte": 0.6,
+      "obo_gte": 0.3
+    },
+    "conditions": {
+      "nmae_lte_0_60": false,
+      "obo_gte_0_30": false,
+      "nmae_strictly_better_than_v7_seed2026": true,
+      "obo_strictly_better_than_v7_seed2026": true
+    },
+    "test105_evaluation_authorized": false
+  },
+  "matched_v7_seed2026": {
+    "metrics": {
+      "nmae": 0.7357284358361944,
+      "mae": 4.428571428571429,
+      "rmse": 5.794085654478071,
+      "obo": 0.19047619047619047,
+      "exact": 0.10714285714285714
+    },
+    "absolute_error_video_comparison": {
+      "v8_better": 40,
+      "tied": 25,
+      "v8_worse": 19
+    },
+    "paired_v8_minus_v7": {
+      "nmae": {
+        "difference": -0.09260517351650344,
+        "confidence_interval_95": {
+          "low": -0.1780011158051491,
+          "high": -0.008187151831702266
+        },
+        "samples": 10000,
+        "seed": 2026
+      },
+      "mae": {
+        "difference": -0.20238095238095255,
+        "confidence_interval_95": {
+          "low": -0.8214285714285712,
+          "high": 0.5833333333333339
+        },
+        "samples": 10000,
+        "seed": 2026
+      },
+      "rmse": {
+        "difference": 0.27986340217832684,
+        "confidence_interval_95": {
+          "low": -1.0086599324355336,
+          "high": 2.062680282494868
+        },
+        "samples": 10000,
+        "seed": 2026
+      },
+      "obo": {
+        "difference": 0.10714285714285715,
+        "confidence_interval_95": {
+          "low": 0.035714285714285726,
+          "high": 0.1785714285714286
+        },
+        "samples": 10000,
+        "seed": 2026
+      },
+      "exact": {
+        "difference": 0.04761904761904763,
+        "confidence_interval_95": {
+          "low": -0.035714285714285726,
+          "high": 0.14285714285714285
+        },
+        "samples": 10000,
+        "seed": 2026
+      }
+    }
+  },
+  "pose_cache_comparison": {
+    "sample_count": 421,
+    "labels_or_targets_accessed": false,
+    "source_videos_accessed": false,
+    "test105_accessed": false,
+    "v2": {
+      "pose_fingerprint": "8ecb6c1384e1d6a088762322ed90bb6aa631683318e0ab7ed21c19541e5f6656",
+      "cache_set_sha256": "d248852c787204c4ce93c905629fdd5e7bd1bb640dd273f30811e4489e5e43dc",
+      "all_invalid_count": 13,
+      "valid_frame_rate_mean": 0.773604513064133
+    },
+    "v3": {
+      "pose_fingerprint": "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116",
+      "cache_set_sha256": "bdf9a89773a22c2e8f1e9cd1e9e07d6a18dc0ba3d98d87cb54480e54f61f18b8",
+      "all_invalid_count": 22,
+      "valid_frame_rate_mean": 0.9477434679334917,
+      "selected_source_frames_mean": 126.34916864608076,
+      "extremely_short_count": 16,
+      "single_frame_converted_to_all_invalid_count": 9
+    },
+    "full_report": "pose-cache-comparison.json"
+  },
+  "training": {
+    "encoder": {
+      "epochs": 150,
+      "started_at": "2026-07-30T02:55:21.506180+00:00",
+      "finished_at": "2026-07-30T03:02:25.919950+00:00",
+      "final_loss": 2.3743955850601197,
+      "final_cross_cluster_shortfall": 0
+    },
+    "sshead": {
+      "epochs": 30,
+      "started_at": "2026-07-30T03:02:36.110791+00:00",
+      "finished_at": "2026-07-30T03:04:15.143258+00:00",
+      "final_loss": 0.7435983338058879,
+      "final_stream_std_mean": 0.01104927530273165,
+      "final_zero_grad_steps": 0
+    }
+  },
+  "source": {
+    "git_sha": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+    "container_image_id": "sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005",
+    "environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "config_file_sha256": "eb4072a195608757cd2542855b33fb000c987f96c94b83a1e448ab78f97e9374",
+    "config_fingerprint": "eaf9e2ce6047c4a13c13daaef10af1ae288542ad94ff9fb513d19e225912adf2",
+    "pose_fingerprint": "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116",
+    "source_export_receipt_sha256": "f7d2398d3d4ad6e284a58aa296586b0ad043368df2cdd4f85e2bff15d1f2f383",
+    "pose_run_artifact_manifest_sha256": "28f6c058ea7c230fbc5e14498f734cec6370f8aee7609596d85a460699b23498",
+    "training_run_artifact_manifest_sha256": "ddd11aaa03a9b73148c21f39b4367fcbcb11ebc82481fefa1bdd63273fb29877",
+    "pose_comparison_artifact_manifest_sha256": "788a687961bb7f57914a0a8c57ce63a2638b76d2b3d8addfe57d96f4aa242258",
+    "build_artifact_manifest_sha256": "2c2c2c2459664d416505d917997fb8865dd0cd25274835ead13cee530cee76e3"
+  },
+  "access_control": {
+    "encoder_dev_targets_mounted": false,
+    "sshead_dev_targets_mounted": false,
+    "dev_prediction_targets_mounted": false,
+    "dev_targets_first_opened_by_separate_cpu_scorer": true,
+    "test_videos_mounted": false,
+    "test_pose_mounted": false,
+    "test_targets_mounted": false,
+    "test_evaluation_authorized": false
+  },
+  "weights": {
+    "release_tag": "v0.4-v8-partial",
+    "encoder": {
+      "file": "pams-v8-seed2026-encoder.pt",
+      "sha256": "6817fe468d76c3fa2182dd831695d6fe3d6da208a2b7f8dfa90cffa6872e8053",
+      "bytes": 161407502
+    },
+    "sshead": {
+      "file": "pams-v8-seed2026-sshead.pt",
+      "sha256": "a277fccfc12bc67d8fcf5a0da865f0fde86186b996e20c4ba6b4355c50e7b09a",
+      "bytes": 59911803
+    }
+  },
+  "core_artifact_sha256": {
+    "evaluation.json": "a9d6e5970bab06752021fd29e2a692ece7aaf57c82b7d1d048d6022413648c44",
+    "evaluation.receipt.json": "ed5c0cf73a6a240c0bf7dcc46ca1291c7f50144679836233be1693376558a67a",
+    "predictions.json": "e7fccd1ee7bb3916f2b0e6b544e8ddcb5355e2de2500042a2c1a74104439520c",
+    "prediction.receipt.json": "079d1765491fd73e9a4a4740f423af35e78abd81e21ae3cc4f68ce5514ca55e1",
+    "encoder.completed.json": "f4815e1961ba883c23ef479ddcdef44aea5cad8a50d54e17b8e6a4cccc613f3d",
+    "sshead.completed.json": "e257df83afdf88c82e8596ff2aa48edfda8d5907e5685f9b99310f276add38ee",
+    "pose-cache-comparison.json": "ab338749dc9f826236aff1af8ab33800b890f491b07c867e9d45bff04d8bf2d6"
+  },
+  "notes": [
+    "PAMS-SSHead is an inferred independent completion because the paper does not disclose a Period Head loss or gradient path.",
+    "The seed-2026 result improved over matched v7 but failed both frozen absolute extension thresholds; seeds 42 and 3407 were therefore not authorized.",
+    "One preliminary pose-comparison wrapper attempt exited after an NVIDIA stdout banner made the JSON stream unparsable; the retained retry used an explicit Python entrypoint and passed without changing experiment state.",
+    "The image build completed from cache; two post-build receipt commands had quoting errors before the immutable image JSON and labels were independently validated. See build-receipt-recovery.txt."
+  ]
+}

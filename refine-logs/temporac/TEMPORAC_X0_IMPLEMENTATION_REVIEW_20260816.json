@@ -1,0 +1,116 @@
+{
+  "acceptance_status": "provisional",
+  "artifact_type": "temporac_x0_implementation_candidate_review",
+  "authoritative": false,
+  "authorizes": [],
+  "authority": {
+    "claims_authorized": false,
+    "git_authorized": false,
+    "launch": 0,
+    "p2": 0,
+    "paper_authorized": false,
+    "s0": 0,
+    "server_authorized": false,
+    "training_authorized": false
+  },
+  "blocking_issue_count": 0,
+  "candidate_only": true,
+  "candidate_status": "CANDIDATE_REVIEW_PASS_ZERO_AUTHORITY",
+  "date": "2026-08-16",
+  "executor_family": "openai",
+  "executor_model": "gpt-5.6-sol",
+  "findings": [],
+  "fresh_zero_context": true,
+  "input_hashes": {
+    "amendment_001_json": "b1fb03f5cd5021ff6397f74b9b6a8cd074d0ed5fd2e72746fc40df44266a41cc",
+    "amendment_001_markdown": "ca44173bd2bc2be3fa5eaf9dc362d88d981603d28328bf365efc68567f1ae5bb",
+    "amendment_001_review_json": "8f38d6be24832a03ec8042062c80d5e6a2afbabcb8a78485ec21137b46581844",
+    "amendment_001_review_markdown": "ad14875c91faa184f156f86e9d559a9bb8927db8a2309dc4fbd963074e1a3a58",
+    "contract_py": "5ab8fb62dc558ba78e95fc07e52c1f1a1afbff5b1c5003834079eea6143d745f",
+    "generator_py": "5a58f4ad3a4d178122c6121347c657bf9f3ad5916d52e23b5647ea2fd2bab0a2",
+    "proposal_primary": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+    "proposal_temporac": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+    "test_x0_manifest_py": "074bb8df9dce5d1ea9e987499dac0d8824e1803a5f4bdc32495bd957e8c4c6a3",
+    "test_x0_py": "90206f53c7fffeabe9bcb3d6374fd60d3c51c69a7d1137df0cba797b583d1ef8",
+    "x0_py": "5f4585425a83bf63779265db9004d210c5c2875a579ebc9a6c51297eb647c7a2"
+  },
+  "integrity": {
+    "evaluation_type": "simulation_only",
+    "ground_truth_issue": false,
+    "phantom_result_issue": false,
+    "score_normalization_issue": false
+  },
+  "numerical_contract": {
+    "all_2560_production_guards_pass": true,
+    "f9_plus_drift": false,
+    "f9_plus_normalized_instruction_sha256": "21a1c6a635c63db3b25828077eb22b61b88231fec960083414299067ceed8157",
+    "literal_reversal_fft": true,
+    "outer_displacement_multiply_once": true,
+    "outer_tangent_multiply_once": true,
+    "reduction_4096x34_exact": true
+  },
+  "outputs": {
+    "markdown_path": "refine-logs/temporac/TEMPORAC_X0_IMPLEMENTATION_REVIEW_20260816.md",
+    "markdown_sha256": "25990dcf9cf9a257fa0ae151ba190882d6c6d110fca3b7bdd5a8e4594f6997df",
+    "trace_path": ".aris/traces/experiment-bridge/20260816_temporac_x0_impl_review_sol/"
+  },
+  "reproduction": {
+    "candidate_members": {
+      "attempt_replay.json": {
+        "bytes": 691831,
+        "exact_replay": true,
+        "sha256": "000ae695570c51b51604e53f1189aaa2e6250152965242ff77f22d947a906f9b"
+      },
+      "candidate_receipt.json": {
+        "bytes": 1341,
+        "exact_replay": true,
+        "sha256": "d56b14e4bd0371bd10ec6366a3ccfc724c934dcb8f8bac08cc242fe19102c4f4"
+      },
+      "environment_lock.json": {
+        "bytes": 659,
+        "exact_replay": true,
+        "sha256": "2ff61ad14a1e004aab2cac31ff28a7c9ffa8b054ab10054d23b1d7230b9f5d87"
+      },
+      "replay_witness.json": {
+        "bytes": 1016,
+        "exact_replay": true,
+        "sha256": "a55a6db52a2cd43882a1859d58b6ebe0b05e7b915f166b698ce1ee53808df547"
+      },
+      "temporac.x0-manifest.v4.json": {
+        "bytes": 18228,
+        "exact_replay": true,
+        "sha256": "5800a71af220700ed285c29273d87ac73877296242e1d7ca2e6cb9d2c4780b25"
+      }
+    },
+    "docker_image": "python:3.12.4",
+    "locked_runtime": {
+      "architecture": "x86_64",
+      "numpy": "2.1.0",
+      "platform": "Linux",
+      "python": "CPython 3.12.4",
+      "scipy": "1.14.1"
+    },
+    "manifest_rows": 40,
+    "non_overwrite_exit_code": 2,
+    "non_overwrite_preserved_bytes": true,
+    "replay_attempts": 2560,
+    "temp_directory": "D:/Temp/temporac_x0_impl_review_20260816_fc70cbe39889438b8970476f34cf8c55"
+  },
+  "review_independence": "same-family",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "schema": "temporac.x0-implementation-review.v1",
+  "tests": {
+    "full_pytest": {
+      "passed": 1131,
+      "skipped": 7,
+      "status": "PASS",
+      "warnings": 1
+    },
+    "mypy_implementation": "PASS_3_FILES",
+    "mypy_temporac": "PASS_24_FILES",
+    "pinned_targeted": "PASS_6",
+    "ruff": "PASS"
+  },
+  "verdict": "PASS"
+}

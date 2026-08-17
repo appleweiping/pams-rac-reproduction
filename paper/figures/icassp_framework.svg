@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="7in" height="2.5900in" viewBox="0 0 2000 740" role="img" aria-label="Proposed identity-indexed local tempo routing specification">
+<defs>
+<marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 12 6 L 0 12 z" fill="#25313C"/></marker>
+<marker id="arrow-green" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 12 6 L 0 12 z" fill="#228833"/></marker>
+<marker id="arrow-purple" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 12 6 L 0 12 z" fill="#AA3377"/></marker>
+<pattern id="fastPattern" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="#FFF6D5"/><path d="M0 12 L12 0 M4 16 L16 4" stroke="#CC9900" stroke-width="2"/></pattern>
+<pattern id="midPattern" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#EAF1F8"/><path d="M0 6 H12" stroke="#4477AA" stroke-width="2"/></pattern>
+<pattern id="slowPattern" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#EAF6ED"/><circle cx="4" cy="4" r="1.8" fill="#228833"/></pattern>
+</defs>
+<rect x="0" y="0" width="2000" height="740" fill="white"/>
+<rect x="1440" y="14" width="520" height="50" rx="10" fill="#F2F2F2" stroke="#747474" stroke-width="2.5"/>
+<text x="1700" y="48" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#A63D40" text-anchor="middle">
+<tspan x="1700" dy="0">PROPOSED  •  SYNC-REQUIRED</tspan>
+</text>
+<polyline points="324,258 372,258" fill="none" stroke="#25313C" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<polyline points="628,258 682,258" fill="none" stroke="#25313C" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<polyline points="918,258 972,258" fill="none" stroke="#25313C" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<polyline points="1240,258 1288,258" fill="none" stroke="#25313C" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<polyline points="1612,300 1612,426 1245,426 1245,476" fill="none" stroke="#25313C" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<polyline points="1370,542 1390,542" fill="none" stroke="#25313C" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<polyline points="1625,542 1650,542" fill="none" stroke="#25313C" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<polyline points="1810,542 1815,542" fill="none" stroke="#25313C" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow)"/>
+<polyline points="322,441 346,441 346,632 1730,632 1730,612" fill="none" stroke="#228833" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="13 9" marker-end="url(#arrow-green)"/>
+<text x="1005" y="626" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#228833" text-anchor="middle">
+<tspan x="1005" dy="0">identity i  •  state sᵢ preserved</tspan>
+</text>
+<rect x="40" y="96" width="284" height="372" rx="20" fill="#FFFFFF" stroke="#747474" stroke-width="3" stroke-dasharray="13 9"/>
+<text x="182" y="122" font-family="Times New Roman, Times, serif" font-size="34" font-weight="700" fill="#5B6570" text-anchor="middle">
+<tspan x="182" dy="0">SUPPLIED</tspan>
+<tspan x="182" dy="34.0">TRACKS</tspan>
+</text>
+<rect x="70" y="200" width="224" height="50" rx="10" fill="#F2F2F2" stroke="#747474" stroke-width="2"/>
+<text x="122" y="235" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="122" dy="0">X₁, m₁</tspan>
+</text>
+<polyline points="158,224.0433838179084 170,219.8254078614564 182,217.36402228316837 194,217.26186011643233 206,219.54393422269533 218,223.65151327062736 230,228.57891865246717 242,233.1197496814699 254,236.1622525547171 266,236.96151645784062" fill="none" stroke="#5B6570" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="70" y="270" width="224" height="50" rx="10" fill="#F2F2F2" stroke="#747474" stroke-width="2"/>
+<text x="122" y="305" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="122" dy="0">X₂, m₂</tspan>
+</text>
+<polyline points="158,288.7691912098849 170,287.05401220888825 182,287.7739578976066 194,290.75276046245807 206,295.2611051461957 218,300.1951919362227 230,304.34698430404796 242,306.69997867920677 254,306.6780799751126 266,304.2866497582717" fill="none" stroke="#5B6570" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="70" y="340" width="224" height="50" rx="10" fill="#F2F2F2" stroke="#747474" stroke-width="2"/>
+<text x="122" y="375" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="122" dy="0">Xₙ, mₙ</tspan>
+</text>
+<polyline points="158,361.0804578368164 170,357.94107938122244 182,357.0196406340069 194,358.541741936788 206,362.1347198055061 218,366.91888794841515 230,371.72291515043383 242,375.370608006202 254,376.9688840868918 266,376.1264296661234" fill="none" stroke="#5B6570" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="182" y="425" font-family="Times New Roman, Times, serif" font-size="32" font-weight="400" fill="#5B6570" text-anchor="middle">
+<tspan x="182" dy="0">EXTERNAL</tspan>
+<tspan x="182" dy="32.0">SUPERVISION</tspan>
+</text>
+<rect x="372" y="126" width="256" height="264" rx="20" fill="#EAF1F8" stroke="#4477AA" stroke-width="4"/>
+<rect x="392" y="145" width="216" height="42" rx="8" fill="#4477AA" stroke="#4477AA" stroke-width="1"/>
+<text x="500" y="176" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#FFFFFF" text-anchor="middle">
+<tspan x="500" dy="0">SHARED  θ</tspan>
+</text>
+<text x="500" y="226" font-family="Times New Roman, Times, serif" font-size="36" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="500" dy="0">MASKED</tspan>
+<tspan x="500" dy="42.5">ENCODER Eθ</tspan>
+</text>
+<rect x="410" y="310" width="180" height="52" rx="8" fill="#EAF6ED" stroke="#228833" stroke-width="3" stroke-dasharray="10 7"/>
+<text x="500" y="346" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#228833" text-anchor="middle">
+<tspan x="500" dy="0">STATE sᵢ</tspan>
+</text>
+<rect x="682" y="126" width="236" height="264" rx="20" fill="#E5F5F8" stroke="#2288AA" stroke-width="4"/>
+<text x="800" y="156" font-family="Times New Roman, Times, serif" font-size="36" font-weight="700" fill="#2288AA" text-anchor="middle">
+<tspan x="800" dy="0">OVERLAP</tspan>
+<tspan x="800" dy="42.5">W(i,ℓ)</tspan>
+</text>
+<rect x="702" y="232" width="52" height="72" rx="6" fill="#FFFFFF" stroke="#2288AA" stroke-width="2.5"/>
+<text x="728" y="278" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#2288AA" text-anchor="middle">
+<tspan x="728" dy="0">ℓ=1</tspan>
+</text>
+<rect x="774" y="232" width="52" height="72" rx="6" fill="#FFFFFF" stroke="#2288AA" stroke-width="2.5"/>
+<text x="800" y="278" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#2288AA" text-anchor="middle">
+<tspan x="800" dy="0">ℓ=2</tspan>
+</text>
+<rect x="846" y="232" width="52" height="72" rx="6" fill="#FFFFFF" stroke="#2288AA" stroke-width="2.5"/>
+<text x="872" y="278" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#2288AA" text-anchor="middle">
+<tspan x="872" dy="0">ℓ=L</tspan>
+</text>
+<text x="800" y="350" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="800" dy="0">PER TRACK</tspan>
+</text>
+<rect x="972" y="126" width="268" height="264" rx="20" fill="#FFF6D5" stroke="#CC9900" stroke-width="4"/>
+<text x="1106" y="156" font-family="Times New Roman, Times, serif" font-size="36" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="1106" dy="0">MASKED</tspan>
+<tspan x="1106" dy="42.5">ACF + FFT</tspan>
+</text>
+<text x="1106" y="250" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="1106" dy="0">p̂(i,ℓ) • γ(i,ℓ)</tspan>
+</text>
+<polyline points="1010,315 1044,290 1080,329 1116,270 1152,310 1196,284" fill="none" stroke="#CC9900" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="1106" y="365" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#5B6570" text-anchor="middle">
+<tspan x="1106" dy="0">LOCAL TEMPO</tspan>
+</text>
+<rect x="1288" y="88" width="324" height="320" rx="22" fill="#FFFFFF" stroke="#AA3377" stroke-width="4"/>
+<rect x="1310" y="106" width="280" height="42" rx="8" fill="#AA3377" stroke="#AA3377" stroke-width="1"/>
+<text x="1450" y="138" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#FFFFFF" text-anchor="middle">
+<tspan x="1450" dy="0">SHARED  H(k)</tspan>
+</text>
+<circle cx="1350" cy="226" r="48" fill="#F8EAF2" stroke="#AA3377" stroke-width="3"/>
+<text x="1350" y="218" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#6F1D4E" text-anchor="middle">
+<tspan x="1350" dy="0">SOFT</tspan>
+</text>
+<text x="1350" y="250" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#6F1D4E" text-anchor="middle">
+<tspan x="1350" dy="0">gᵢℓₖ</tspan>
+</text>
+<rect x="1412" y="150" width="160" height="54" rx="9" fill="url(#fastPattern)" stroke="#CC9900" stroke-width="3"/>
+<text x="1492" y="188" font-family="Times New Roman, Times, serif" font-size="34" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="1492" dy="0">FAST</tspan>
+</text>
+<polyline points="1392,226 1402,177 1412,177" fill="none" stroke="#AA3377" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-purple)"/>
+<rect x="1412" y="215" width="160" height="54" rx="9" fill="url(#midPattern)" stroke="#4477AA" stroke-width="3" stroke-dasharray="12 5"/>
+<text x="1492" y="253" font-family="Times New Roman, Times, serif" font-size="34" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="1492" dy="0">MEDIUM</tspan>
+</text>
+<polyline points="1392,226 1402,242 1412,242" fill="none" stroke="#AA3377" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-purple)"/>
+<rect x="1412" y="280" width="160" height="54" rx="9" fill="url(#slowPattern)" stroke="#228833" stroke-width="3" stroke-dasharray="3 5"/>
+<text x="1492" y="318" font-family="Times New Roman, Times, serif" font-size="34" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="1492" dy="0">SLOW</tspan>
+</text>
+<polyline points="1392,226 1402,307 1412,307" fill="none" stroke="#AA3377" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#arrow-purple)"/>
+<text x="1450" y="390" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#5B6570" text-anchor="middle">
+<tspan x="1450" dy="0">ALL TRACKS</tspan>
+</text>
+<rect x="1120" y="476" width="250" height="132" rx="18" fill="#F8EAF2" stroke="#AA3377" stroke-width="4"/>
+<text x="1245" y="520" font-family="Times New Roman, Times, serif" font-size="36" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="1245" dy="0">FUSION</tspan>
+</text>
+<text x="1245" y="570" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#6F1D4E" text-anchor="middle">
+<tspan x="1245" dy="0">Σₖ gᵢℓₖ · rᵏᵢℓ</tspan>
+</text>
+<rect x="1390" y="476" width="235" height="132" rx="18" fill="#FFF6D5" stroke="#CC9900" stroke-width="4"/>
+<text x="1507.5" y="510" font-family="Times New Roman, Times, serif" font-size="36" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="1507.5" dy="0">NOLA</tspan>
+</text>
+<text x="1507.5" y="554" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#5B6570" text-anchor="middle">
+<tspan x="1507.5" dy="0">RESPONSE</tspan>
+</text>
+<text x="1507.5" y="594" font-family="Times New Roman, Times, serif" font-size="36" font-weight="700" fill="#5B6570" text-anchor="middle">
+<tspan x="1507.5" dy="0">Rᵢ(t)</tspan>
+</text>
+<rect x="1650" y="476" width="160" height="132" rx="18" fill="#EAF6ED" stroke="#228833" stroke-width="4" stroke-dasharray="11 7"/>
+<text x="1730" y="505" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#228833" text-anchor="middle">
+<tspan x="1730" dy="0">DECODE</tspan>
+<tspan x="1730" dy="32.0">ONCE</tspan>
+<tspan x="1730" dy="32.0">ĉᵢ</tspan>
+</text>
+<rect x="1815" y="468" width="180" height="152" rx="40" fill="#FFFFFF" stroke="#25313C" stroke-width="3.5"/>
+<text x="1905" y="498" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="1905" dy="0">TRACK</tspan>
+<tspan x="1905" dy="32.0">COUNTS</tspan>
+</text>
+<text x="1905" y="570" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="1905" dy="0">ĉ = [ĉᵢ]</tspan>
+</text>
+<text x="1905" y="606" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="1905" dy="0">i = 1 … N</tspan>
+</text>
+<rect x="340" y="642" width="1628" height="86" rx="13" fill="#F2F2F2" stroke="#747474" stroke-width="2.5"/>
+<text x="370" y="668" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#5B6570" text-anchor="start">
+<tspan x="370" dy="0">TRAINING</tspan>
+<tspan x="370" dy="32.0">CONTRACT</tspan>
+</text>
+<rect x="635" y="650" width="310" height="70" rx="9" fill="#FFFFFF" stroke="#25313C" stroke-width="2.5"/>
+<text x="790" y="676" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="790" dy="0">PAMS-TCC</tspan>
+<tspan x="790" dy="32.0">START</tspan>
+</text>
+<rect x="975" y="650" width="889" height="70" rx="9" fill="#FFF6D5" stroke="#CC9900" stroke-width="2.5" stroke-dasharray="10 7"/>
+<text x="1419.5" y="676" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#25313C" text-anchor="middle">
+<tspan x="1419.5" dy="0">λᵣ Lroute + λₜ Ltrack</tspan>
+</text>
+<text x="1419.5" y="708" font-family="Times New Roman, Times, serif" font-size="32" font-weight="700" fill="#A63D40" text-anchor="middle">
+<tspan x="1419.5" dy="0">SYNC-REQUIRED  •  DELETE IF ABSENT</tspan>
+</text>
+</svg>

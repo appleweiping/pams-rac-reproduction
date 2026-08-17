@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_round4_sol",
+  "step_id": "001-review",
+  "task": "Round 4 same-reviewer re-evaluation of the full WARP-PHASE Round-3 refinement",
+  "requested_at": "2026-08-15T15:03:15.9475329+08:00",
+  "reviewer_requirements": {
+    "model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "same_agent_continuation": true,
+    "verdict_enum": ["READY", "REVISE", "RETHINK"],
+    "ready_rule": "overall >= 9 and no blocking issue"
+  },
+  "rubric": [
+    {"dimension": "Problem Fidelity", "weight": 0.15},
+    {"dimension": "Method Specificity", "weight": 0.25},
+    {"dimension": "Contribution Quality", "weight": 0.25},
+    {"dimension": "Frontier Leverage", "weight": 0.15},
+    {"dimension": "Feasibility", "weight": 0.10},
+    {"dimension": "Validation Focus", "weight": 0.05},
+    {"dimension": "Venue Readiness", "weight": 0.05}
+  ],
+  "required_action_checks": [
+    "fresh full-identity optimizer and track-draw arithmetic",
+    "raw source-frame interval period schema and scalar evaluator period",
+    "exact clock/no-pose and mask-only K4 input contracts",
+    "Stage D runs after A-C survive K1/K3/K4 and adjudicates K2",
+    "truthful TWCRAC BLOCKED and K8 NOT_PASSED status",
+    "unique oriented integral and phase/fundamental identifiability",
+    "strictly positive interval NOLA",
+    "exact B=10000 all-nine-component bootstrap",
+    "59-job and 552-GPU-hour staged ledger",
+    "one base learner and three visible validation blocks"
+  ],
+  "raw_inputs": [
+    {"path": "refine-logs/round-3-refinement.md", "sha256": "327d6db30aeedbb8bb30122227c9d081660cf4145b71c68db12114db7c879f17"},
+    {"path": "refine-logs/REFINE_STATE.json", "sha256": "39152e46b06ab46b8d35e31110696692ec5b94fefafe708e38c4a5da8f277658"},
+    {"path": "refine-logs/score-history.md", "sha256": "9b88843b885ffbd47ec8c69f3fbda537406d0b7113746717f94dece9c74a33f9"},
+    {"path": "PILOT_PERIOD_SCHEMA_ADDENDUM.md", "sha256": "49edcfe25c302c2b55b8e65bc18e1cb7febe25cc8b76698d631fa24150d4b0b5"},
+    {"path": "idea-stage/TWCRAC_ADJUDICATION.json", "sha256": "5a1e7b8c1048a8884690f2d234d413064d473ead1eb1deca69ab734ca2e5ed1e"},
+    {"path": "refine-logs/round-3-review.md", "sha256": "85ffbd8aaa84dbe65963f68027c9f916a9b7ca8b8b9911ff93b161174d4db2f2"}
+  ],
+  "constraints": {
+    "no_experiment_route_expansion": true,
+    "no_baseline_expansion": true,
+    "no_invented_results": true,
+    "twcrac_without_full_text": "must remain BLOCKED and NOT_PASSED"
+  },
+  "supplemental_read_only_implementation_checks": [
+    "missing-joint hip/shoulder root and scale fallback",
+    "64/128 retained-clock windows spanning more than 256 source units",
+    "FFT bin interpolation, normalization, and local-maximum endpoints",
+    "nested views to one track selection and decoder g_j",
+    "exact distributions or frozen bytes for 1000 synthetic fixtures",
+    "warped pose, confidence, and mask interpolation",
+    "K4 fixed sign-vector construction and primary-arm q/L fixed-code exposure"
+  ],
+  "required_outputs": [
+    "same seven scores and weights",
+    "weighted composite",
+    "anchor and drift assessment",
+    "Round-3 action closure audit",
+    "local-spec versus external-K8 distinction",
+    "focus, simplicity, and frontier appropriateness",
+    "remaining minimal action items",
+    "CALIBRATION and GAP",
+    "READY, REVISE, or RETHINK",
+    "input SHA-256 ledger",
+    "raw review byte-identical to canonical round review"
+  ]
+}

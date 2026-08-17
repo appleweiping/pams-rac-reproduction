@@ -1,0 +1,382 @@
+{
+  "blockers": [
+    "PENDING, SYNC-REQUIRED, [VERIFY], TBD, or TODO remains in submission prose",
+    "claim ledger has unlicensed submission-facing claims",
+    "complete author roster, affiliations, and emails are not confirmed",
+    "evidence macros are used but generated/evidence_values.tex is absent",
+    "experiment_audit is missing, invalid, or blocking",
+    "final ARIS verifier PASS/exit 0 is absent",
+    "healthy substantive cross-family review is absent",
+    "kill_argument is missing, invalid, or blocking",
+    "method manifest contains unsynchronized proposed components",
+    "official ICASSP 2027 kit is not installed and byte-verified",
+    "paper_claim_audit is missing, invalid, or blocking",
+    "private author and venue attestations are incomplete",
+    "results manifest is not frozen-eligible"
+  ],
+  "failed_gates": [],
+  "gate": "icassp_submission_readiness",
+  "gates": {
+    "assurance": {
+      "blockers": [
+        "experiment_audit is missing, invalid, or blocking",
+        "final ARIS verifier PASS/exit 0 is absent",
+        "healthy substantive cross-family review is absent",
+        "kill_argument is missing, invalid, or blocking",
+        "paper_claim_audit is missing, invalid, or blocking"
+      ],
+      "checks": {
+        "assurance_submission": true,
+        "audits": {
+          "citation_audit": "PASS",
+          "experiment_audit": "FAIL",
+          "kill_argument": "FAIL",
+          "paper_claim_audit": "BLOCKED",
+          "proof_audit": "NOT_APPLICABLE"
+        },
+        "cross_family_review": false,
+        "final_verifier": false
+      },
+      "gate": "aris_assurance",
+      "mode": "draft",
+      "schema_version": "1.0",
+      "status": "PROVISIONAL",
+      "submission_ready": false
+    },
+    "authors": {
+      "blockers": [
+        "complete author roster, affiliations, and emails are not confirmed",
+        "private author and venue attestations are incomplete"
+      ],
+      "checks": [
+        {
+          "detail": "all required definitions are present",
+          "id": "required_private_definitions",
+          "status": "PASS"
+        },
+        {
+          "detail": "private metadata remains incomplete",
+          "id": "metadata_complete",
+          "status": "BLOCKED"
+        },
+        {
+          "detail": "attestations missing or incomplete",
+          "id": "author_attestations",
+          "status": "BLOCKED"
+        },
+        {
+          "detail": "leak_files=0",
+          "id": "tracked_tree_privacy",
+          "status": "PASS"
+        },
+        {
+          "detail": "leak_pdfs=0",
+          "id": "draft_pdf_privacy",
+          "status": "PASS"
+        }
+      ],
+      "gate": "author_metadata",
+      "mode": "draft",
+      "privacy": {
+        "draft_pdf_leak_count": 0,
+        "draft_pdf_leak_paths": [],
+        "private_values_emitted": false,
+        "tracked_leak_count": 0,
+        "tracked_leak_paths": []
+      },
+      "schema_version": "1.0",
+      "status": "PROVISIONAL",
+      "submission_ready": false
+    },
+    "generated": {
+      "gate": "evidence_generation",
+      "mode": "draft",
+      "output_present": false,
+      "reason": "data-pending; no evidence_values.tex generated",
+      "status": "PROVISIONAL"
+    },
+    "method": {
+      "blockers": [
+        "method manifest contains unsynchronized proposed components"
+      ],
+      "checks": [
+        {
+          "detail": "expected schema 1.0",
+          "id": "schema_version",
+          "status": "PASS"
+        },
+        {
+          "detail": "expected ICASSP method manifest",
+          "id": "document_type",
+          "status": "PASS"
+        },
+        {
+          "detail": "tracked checkout remains classified as single-person/scalar",
+          "id": "tracked_truth_not_inflated",
+          "status": "PASS"
+        },
+        {
+          "detail": "required proposed component inventory is exact",
+          "id": "component_inventory",
+          "status": "PASS"
+        },
+        {
+          "detail": "all supervision scopes are enumerated",
+          "id": "supervision_scope_inventory",
+          "status": "PASS"
+        },
+        {
+          "detail": "not yet bound",
+          "id": "implementation_commit",
+          "status": "BLOCKED"
+        }
+      ],
+      "gate": "method_manifest",
+      "mode": "draft",
+      "schema_version": "1.0",
+      "status": "PROVISIONAL",
+      "submission_ready": false
+    },
+    "pdf": {
+      "blockers": [],
+      "checks": [
+        {
+          "detail": "pages=5",
+          "id": "page_count",
+          "status": "PASS"
+        },
+        {
+          "detail": "References heading found",
+          "id": "references_heading",
+          "status": "PASS"
+        },
+        {
+          "detail": "page 5 contains references only",
+          "id": "page5_restriction",
+          "status": "PASS"
+        }
+      ],
+      "gate": "pdf_4plus1",
+      "live_rule_source": "https://2027.ieeeicassp.org/publishing-and-paper-presentation-options/",
+      "mode": "draft",
+      "page5": {
+        "caption_count": 0,
+        "declaration_heading_count": 0,
+        "image_count": 0,
+        "non_page_number_text_before_references": false,
+        "policy": "references-only",
+        "present": true,
+        "reference_continuation": true,
+        "reference_entry_labels": [
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "reference_heading": false,
+        "significant_drawing_count": 0,
+        "technical_heading_count": 0
+      },
+      "page_count": 5,
+      "schema_version": "1.0",
+      "status": "PASS",
+      "submission_ready": false
+    },
+    "prose": {
+      "blockers": [
+        "PENDING, SYNC-REQUIRED, [VERIFY], TBD, or TODO remains in submission prose",
+        "claim ledger has unlicensed submission-facing claims",
+        "evidence macros are used but generated/evidence_values.tex is absent"
+      ],
+      "checks": [
+        {
+          "detail": "8 active TeX files",
+          "id": "active_source_graph",
+          "status": "PASS"
+        },
+        {
+          "detail": "0 unallowlisted hits",
+          "id": "forbidden_claims",
+          "status": "PASS"
+        },
+        {
+          "detail": "7 hits",
+          "id": "placeholders",
+          "status": "BLOCKED"
+        },
+        {
+          "detail": "0 suspect tables",
+          "id": "empty_tables",
+          "status": "PASS"
+        },
+        {
+          "detail": "evidence macros are used but generated/evidence_values.tex is absent",
+          "id": "evidence_macro_bindings",
+          "status": "BLOCKED"
+        },
+        {
+          "detail": "exactly 16 claims",
+          "id": "claim_ledger_schema",
+          "status": "PASS"
+        },
+        {
+          "detail": "mapped=0, unlicensed_core=11",
+          "id": "claim_mapping",
+          "status": "BLOCKED"
+        }
+      ],
+      "claim_mapping": {
+        "mapped_ids": [],
+        "unknown_ids": [],
+        "unlicensed_ids": [
+          "AC01",
+          "AC02",
+          "AC03",
+          "AC04",
+          "AC05",
+          "AC06",
+          "AC07",
+          "AC08",
+          "AC09",
+          "AC10",
+          "AC13"
+        ]
+      },
+      "gate": "submission_prose",
+      "mode": "draft",
+      "schema_version": "1.0",
+      "sources": [
+        "main.tex",
+        "math_commands.tex",
+        "preamble.tex",
+        "sections/0_abstract.tex",
+        "sections/1_introduction.tex",
+        "sections/3_method.tex",
+        "sections/4_experiments.tex",
+        "sections/5_conclusion.tex"
+      ],
+      "status": "PROVISIONAL",
+      "submission_ready": false,
+      "violations": {
+        "empty_tables": 0,
+        "forbidden": [],
+        "placeholders": [
+          {
+            "context": "\\name{AUTHOR ROSTER PENDING}",
+            "line": 23,
+            "source": "main.tex",
+            "token": "PENDING"
+          },
+          {
+            "context": "\\address{AFFILIATIONS PENDING}",
+            "line": 24,
+            "source": "main.tex",
+            "token": "PENDING"
+          },
+          {
+            "context": "\\name{AUTHOR ROSTER PENDING}",
+            "line": 27,
+            "source": "main.tex",
+            "token": "PENDING"
+          },
+          {
+            "context": "\\address{Affiliations pending collaborator confirmation}",
+            "line": 28,
+            "source": "main.tex",
+            "token": "PENDING"
+          },
+          {
+            "context": "Funding and conflict-of-interest declarations are \\Pending{author-declarations}.",
+            "line": 53,
+            "source": "main.tex",
+            "token": "PENDING"
+          },
+          {
+            "context": "The final ethical-compliance statement is \\Pending{ethical-compliance} and will",
+            "line": 54,
+            "source": "main.tex",
+            "token": "PENDING"
+          },
+          {
+            "context": "\\color{DraftRed}\\bfseries DATA-PENDING DIAGNOSTIC SHELL\\\\[2pt]",
+            "line": 161,
+            "source": "sections/4_experiments.tex",
+            "token": "PENDING"
+          }
+        ]
+      }
+    },
+    "results": {
+      "blockers": [
+        "results manifest is not frozen-eligible"
+      ],
+      "checks": [
+        {
+          "detail": "schema valid",
+          "id": "json_schema",
+          "status": "PASS"
+        },
+        {
+          "detail": "state=data-pending",
+          "id": "result_state",
+          "status": "BLOCKED"
+        }
+      ],
+      "gate": "results_manifest",
+      "manifest_sha256": "sha256:4df513a3f4427950d23267965192253446e6ee2b6968907855e0bae1a6a53159",
+      "mode": "draft",
+      "schema_version": "1.0",
+      "status": "PROVISIONAL",
+      "submission_ready": false
+    },
+    "venue": {
+      "blockers": [
+        "official ICASSP 2027 kit is not installed and byte-verified"
+      ],
+      "checks": [
+        {
+          "detail": "official ICASSP 2027 sources recorded",
+          "id": "official_urls",
+          "status": "PASS"
+        },
+        {
+          "detail": "live 2027 page 5 references-only rule recorded",
+          "id": "live_page_rule",
+          "status": "PASS"
+        },
+        {
+          "detail": "official 2026 scaffold files match recorded hashes",
+          "id": "draft_scaffold_hashes",
+          "status": "PASS"
+        },
+        {
+          "detail": "official 2027 kit manifest is missing",
+          "id": "official_2027_kit",
+          "status": "BLOCKED"
+        }
+      ],
+      "effective_page5_policy": "references-only",
+      "gate": "venue_kit",
+      "mode": "draft",
+      "official_sources": [
+        "https://2027.ieeeicassp.org/call-for-papers/",
+        "https://2027.ieeeicassp.org/publishing-and-paper-presentation-options/",
+        "https://2027.ieeeicassp.org/about/editorial-policies/"
+      ],
+      "schema_version": "1.0",
+      "status": "PROVISIONAL",
+      "submission_ready": false
+    }
+  },
+  "mode": "draft",
+  "schema_version": "1.0",
+  "status": "PROVISIONAL",
+  "submission_ready": false
+}

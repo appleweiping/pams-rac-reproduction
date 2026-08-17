@@ -1,0 +1,91 @@
+{
+  "run_id": "rac-temporac-restoration-icassp27-20260815-sol",
+  "executor_model": "codex-gpt-5.6-sol",
+  "executor_family": "openai",
+  "policy": {
+    "provisional_advances": true
+  },
+  "created": "2026-08-15T13:52:43Z",
+  "updated": "2026-08-15T19:47:07Z",
+  "gates": {},
+  "phases": [
+    {
+      "phase": "research-review",
+      "status": "provisional",
+      "artifact": "idea-stage/TEMPORAC_RESEARCH_REVIEW.json",
+      "verdict_id": "sha256:27cb7a828cefa4a1110f2ba70875a1654c4435d79cafdec40f83691f695a7864",
+      "reviewer": "gpt-5.6-sol",
+      "reviewer_family": "openai",
+      "review_independence": "same-family",
+      "acceptance_status": "provisional",
+      "executor_model": "codex-gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T13:56:50Z"
+    },
+    {
+      "phase": "research-refine-pipeline",
+      "status": "provisional",
+      "artifact": "refine-logs/temporac/FINAL_PROPOSAL.md",
+      "verdict_id": "sha256:6a32c0ecab12d29dcc5d2d27cc2110165f3b919126a314ec3f54b4c77ace4768",
+      "reviewer": "gpt-5.6-sol",
+      "reviewer_family": "openai",
+      "review_independence": "same-family",
+      "acceptance_status": "provisional",
+      "executor_model": "codex-gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T19:47:07Z"
+    },
+    {
+      "phase": "experiment-bridge",
+      "status": "pending",
+      "artifact": null,
+      "verdict_id": null,
+      "reviewer": null,
+      "reviewer_family": null,
+      "review_independence": null,
+      "acceptance_status": null,
+      "executor_model": "codex-gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T13:52:43Z"
+    },
+    {
+      "phase": "auto-review-loop",
+      "status": "pending",
+      "artifact": null,
+      "verdict_id": null,
+      "reviewer": null,
+      "reviewer_family": null,
+      "review_independence": null,
+      "acceptance_status": null,
+      "executor_model": "codex-gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T13:52:43Z"
+    },
+    {
+      "phase": "summary",
+      "status": "pending",
+      "artifact": null,
+      "verdict_id": null,
+      "reviewer": null,
+      "reviewer_family": null,
+      "review_independence": null,
+      "acceptance_status": null,
+      "executor_model": "codex-gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T13:52:43Z"
+    },
+    {
+      "phase": "paper-writing",
+      "status": "pending",
+      "artifact": null,
+      "verdict_id": null,
+      "reviewer": null,
+      "reviewer_family": null,
+      "review_independence": null,
+      "acceptance_status": null,
+      "executor_model": "codex-gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T13:52:43Z"
+    }
+  ]
+}

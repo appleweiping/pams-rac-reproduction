@@ -1,0 +1,377 @@
+{
+  "acceptance_status": "provisional",
+  "active_effective_contract": {
+    "bytes": 665,
+    "prospective_round7_digest_assigned": false,
+    "prospective_round7_status": "REJECTED_UNASSIGNED",
+    "schema": "temporac.effective-contract-index.v4",
+    "sha256": "c203f4aab00879acf041b90829f0124d0b1de231294f191b03f3166f728e3d5c",
+    "status": "ROUND6_REMAINS_ACTIVE"
+  },
+  "authoritative": false,
+  "authority": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P2-METRIC": 0,
+    "P3": 0,
+    "S0": 0,
+    "capability": 0,
+    "data": 0,
+    "evaluator": 0,
+    "gate": 0,
+    "git": 0,
+    "gpu": 0,
+    "heldout": 0,
+    "launch": 0,
+    "paper_claim": 0,
+    "result": 0,
+    "sealed": 0,
+    "server": 0,
+    "test": 0,
+    "training": 0
+  },
+  "authorizes": [],
+  "binding_verification": {
+    "all_declared_bindings_match": true,
+    "all_lineage_records_match_at_initial_snapshot": true,
+    "current_runtime_bootstrap_binding_count": 4,
+    "current_source_binding_count": 24,
+    "current_test_binding_count": 19,
+    "declared_binding_count": 70,
+    "final_mismatch_count": 0,
+    "initial_rehash_all_match": true,
+    "lineage_record_count": 37,
+    "planning_and_review_binding_count": 23,
+    "terminal_expected_lineage_output_mutation_count": 1,
+    "terminal_immutable_lineage_match_count": 36,
+    "terminal_lineage_output_mutation": {
+      "expected_opening_sha256": "7a860dc5a9be3878aab060e541430a5731237fc1b2e9b75d7798100a0a3a1da2",
+      "path": ".aris/traces/research-refine/20260816_temporac_certificate_amendment005_review_sol/run.meta.json",
+      "reason": "authorized turn-007 continuation append"
+    },
+    "terminal_rehash_all_match": true,
+    "terminal_unexpected_lineage_mismatch_count": 0,
+    "timestamped_and_fixed_aliases_byte_identical": true
+  },
+  "blocking_issue_count": 6,
+  "blocking_issues": [
+    {
+      "affected_intended_closures": [
+        "R7-B1",
+        "R7-B2"
+      ],
+      "evidence": [
+        "current JSON line 1312 fixes FIONREAD queued bytes to zero at entry",
+        "current JSON line 7866 requires every later fresh operational FIONREAD row to equal the launch row",
+        "current JSON lines 6705-6715 and 4908 require direct FD6 frame emission before later readbacks",
+        "current JSON line 6994 requires twin stage bytes to differ only by zeroed launch digest"
+      ],
+      "id": "A005-R7-B1",
+      "minimal_fix": "Freeze one deterministic transport rule: either constrain queued_bytes only at physical entry and exclude actual later values from launch/twin equality, buffer all early frames until the final FD readback, or add a fully specified controller acknowledgement channel/state machine. Add adversarial slow/fast reader and twin scheduling tests.",
+      "severity": "BLOCKER",
+      "summary": "FD6 post-write FIONREAD equality is scheduler-dependent and has no acknowledgement barrier."
+    },
+    {
+      "affected_intended_closures": [
+        "R7-B3"
+      ],
+      "evidence": [
+        "current JSON lines 6340-6341 permit validated EEXIST for content-addressed objects and exact prelaunch wrappers",
+        "current JSON line 6360 always creates a deterministic temp and renameat2(RENAME_NOREPLACE) but defines no EEXIST cleanup branch",
+        "current JSON lines 6355 and 6359 make attempts nonretryable and reject unresolvable residual files"
+      ],
+      "id": "A005-R7-B2",
+      "minimal_fix": "Define a locked durable-state lattice and every crash prefix; validate an existing final before or after rename, unlink and prove absence of the exact temp after accepted EEXIST, fsync the directory, and define idempotent stale-temp recovery or an explicit global fail-stop/redeployment rule. Add crash injection at every durability boundary.",
+      "severity": "BLOCKER",
+      "summary": "Durable publication has no executable EEXIST temp-cleanup or crash-recovery state machine."
+    },
+    {
+      "affected_intended_closures": [
+        "R7-B5"
+      ],
+      "evidence": [
+        "current JSON line 6533 assigns temporac.stage-input-index.v4 to all 57 descriptors",
+        "current JSON lines 6568-6571 require decoded invocation bytes to parse as that schema",
+        "the exact token has no bound definition of closed keys, rows, order, owner-role mapping, preimage or multiplicity"
+      ],
+      "id": "A005-R7-B3",
+      "minimal_fix": "Define the complete canonical stage-input-index schema and exhaustive owner-specific role/content/order/multiplicity mapping with owner and handler bound in the preimage, including G5A/G5B/K7; or use a closed 57-row table of exact owner-specific schemas. Add cross-owner and missing/extra/reorder tests.",
+      "severity": "BLOCKER",
+      "summary": "The common 57-owner dispatch input-index schema is undefined and permits cross-owner substitution."
+    },
+    {
+      "affected_intended_closures": [
+        "R7-B7"
+      ],
+      "evidence": [
+        "current JSON lines 4470-4481 place code_authority_sha256 in the actual raw exec projection",
+        "current JSON lines 7124-7151 define an eleven-key discovery row with no executable-code digest",
+        "current JSON lines 7154-7170 add only trusted_row_sha256",
+        "current JSON lines 5260-5272 and 5295-5308 omit code authority from the trusted-generated origin"
+      ],
+      "id": "A005-R7-B4",
+      "minimal_fix": "Carry exec_code_authority_sha256 or the exact adjacent exec-argument digest through discovery output, trusted row/preimage, origin, twin equality and full consumption. Require the immediately adjacent exec source authority to equal the generated source hash and add mode/flags/optimization/unrelated-code substitution tests.",
+      "severity": "BLOCKER",
+      "summary": "Trusted generated source binds source bytes but not the executable code object consumed by exec."
+    },
+    {
+      "affected_intended_closures": [
+        "R7-B8",
+        "R7-B9"
+      ],
+      "evidence": [
+        "current JSON line 4814 captures mapping sets only before and after Py_InitializeFromConfig or one top-level PyImport call",
+        "current JSON line 4901 asserts zero unaccounted mappings from boundary deltas and a terminal snapshot",
+        "CPython 3.12.13 exposes ctypes.dlopen audit but not arbitrary native dlopen/dlmopen/dlclose transitions",
+        "native dlopen/dlmopen can run code and dlclose can unload before the after snapshot"
+      ],
+      "id": "A005-R7-B5",
+      "minimal_fix": "Bind a pre-execution native loader/executable-map transition stream covering dlopen, dlmopen, dlclose, executable mmap/mprotect and munmap with exact ELF/provider bijection, or statically prove all reachable ELFs cannot invoke those paths and impose binding-now/no-unload policy. Boundary snapshots alone are insufficient.",
+      "severity": "BLOCKER",
+      "summary": "Before/after snapshots cannot detect transient native executable mappings within a boundary."
+    },
+    {
+      "affected_intended_closures": [
+        "R7-B9"
+      ],
+      "evidence": [
+        "current JSON lines 4451-4590 define only compile, ctypes-dlopen, exec and import argument projections",
+        "current JSON lines 4656-4673 require a schema-named row for every ignored-nonexecutive event",
+        "current JSON lines 5313-5322 require raw args to be the event-specific closed typed projection",
+        "no BASE-bound registry defines projections for retained open, os.listdir, mmap and other initialization/import/finalization events"
+      ],
+      "id": "A005-R7-B6",
+      "minimal_fix": "Bind a complete argument-projection registry or literal projection definitions for every allowed mapped/ignored event with exact event/name/arity/stage/action-to-schema bijection, closed keys, Python type discriminants, canonical values and unsupported-type failure. Add cross-schema/type/stage and missing/extra tests.",
+      "severity": "BLOCKER",
+      "summary": "The raw-audit catalog may name undefined argument-projection schemas."
+    }
+  ],
+  "byte_validation": {
+    "archived_round6_pair_unchanged": true,
+    "current_json_appendix_byte_identical": true,
+    "current_json_bom": false,
+    "current_json_cr_count": 0,
+    "current_json_duplicate_keys": [],
+    "current_json_keys_recursively_sorted": true,
+    "current_json_nonfinite_or_negative_zero": [],
+    "current_json_terminal_lf_count": 1,
+    "current_json_utf8_strict": true,
+    "current_markdown_bom": false,
+    "current_markdown_cr_count": 0,
+    "current_markdown_terminal_lf_count": 1,
+    "current_markdown_utf8_strict": true,
+    "fixed_and_timestamped_pairs_byte_identical": true
+  },
+  "closure_assessment": {
+    "R7-B1": {
+      "blocking_issue_ids": [
+        "A005-R7-B1"
+      ],
+      "status": "OPEN"
+    },
+    "R7-B2": {
+      "blocking_issue_ids": [
+        "A005-R7-B1"
+      ],
+      "status": "OPEN"
+    },
+    "R7-B3": {
+      "blocking_issue_ids": [
+        "A005-R7-B2"
+      ],
+      "status": "OPEN"
+    },
+    "R7-B4": {
+      "blocking_issue_ids": [],
+      "positive": "BASE has 19 unique roles; FINAL has 24 and begins with byte-identical BASE19. Ledger carriers, exclusions and topological order are coherent.",
+      "status": "CLOSED"
+    },
+    "R7-B5": {
+      "blocking_issue_ids": [
+        "A005-R7-B3"
+      ],
+      "status": "OPEN"
+    },
+    "R7-B6": {
+      "blocking_issue_ids": [],
+      "positive": "Historical science remains typed CPython 3.12.4 while the provenance verifier is separately typed stock CPython 3.12.13 and cannot relabel historical artifacts.",
+      "status": "CLOSED"
+    },
+    "R7-B7": {
+      "blocking_issue_ids": [
+        "A005-R7-B4"
+      ],
+      "status": "OPEN"
+    },
+    "R7-B8": {
+      "blocking_issue_ids": [
+        "A005-R7-B5"
+      ],
+      "positive": "CPython/Hatchling pins, twin build recipe, generated-exec evidence, depfiles, wheel/native install and ELF/provider association are otherwise structurally coherent.",
+      "status": "OPEN"
+    },
+    "R7-B9": {
+      "blocking_issue_ids": [
+        "A005-R7-B5",
+        "A005-R7-B6"
+      ],
+      "positive": "The normalized token universe is 16 unique values, the origin union is 13 unique kinds, and failure framing is 45 unique stages; those counts and typed maps are coherent.",
+      "status": "OPEN"
+    },
+    "RECEIPT_DAG": {
+      "blocking_issue_ids": [],
+      "positive": "The current pre-G5a projection remains exactly 54 unique owners and 106 backward direct edges, including ordered K1 G0/G1, exact14 NATP/K6 and X0I/K3/K4.",
+      "status": "NO_REGRESSION"
+    },
+    "ROUND6_SCIENCE_AND_INTERFACE": {
+      "blocking_issue_ids": [],
+      "positive": "Checkpoint/tune/score, CPU replay, K1/Cdev/population, prediction/target/K7, capability order, data firewall and F4 MappingProxy semantics are unchanged.",
+      "status": "NO_REGRESSION"
+    },
+    "SCIENCE_JOBS_DATA_CLAIMS": {
+      "blocking_issue_ids": [],
+      "positive": "Algorithm, 27 jobs, 93-hour plan/100-hour ceiling, data scope, thresholds, metrics, paper-visible blocks and claims are unchanged.",
+      "status": "NO_REGRESSION"
+    }
+  },
+  "current_implementation": {
+    "code_or_tests_modified_by_reviewer": false,
+    "current_source_implements_round7_runtime": false,
+    "gate_bearing_tests_executed": false,
+    "implementation_acceptance": false,
+    "mechanical_review_checks_only": true,
+    "runtime_bootstrap_and_source_file_count_read": 28,
+    "test_file_count_read": 19
+  },
+  "date": "2026-08-17",
+  "independence_verified": false,
+  "mechanical_verification": {
+    "active_effective_contract_acyclic": true,
+    "active_effective_contract_rederived": true,
+    "base_role_count": 19,
+    "base_roles_unique": true,
+    "dispatch_owner_count": 57,
+    "dispatch_owners_unique": true,
+    "dispatch_prefix_equals_receipt_roster": true,
+    "dispatch_suffix": [
+      "G5A-COMMIT",
+      "G5B-JOIN",
+      "K7-FINAL"
+    ],
+    "failure_stage_count": 45,
+    "failure_stages_unique": true,
+    "final_role_count": 24,
+    "final_roles_begin_with_exact_base": true,
+    "final_roles_unique": true,
+    "normalized_event_token_count": 16,
+    "normalized_event_tokens_unique": true,
+    "origin_kind_count": 13,
+    "origin_kinds_unique": true,
+    "pre_g5a_dag_acyclic": true,
+    "pre_g5a_direct_edge_count": 106,
+    "pre_g5a_owner_count": 54,
+    "prospective_round7_index_acyclic_recipe": true,
+    "prospective_round7_index_constructed": false,
+    "pyconfig_field_count": 64,
+    "pypreconfig_field_count": 10
+  },
+  "native_build_verification": {
+    "cpython_3_12_13_archive_bytes": 20801708,
+    "cpython_3_12_13_archive_sha256": "c08bc65a81971c1dd5783182826503369466c7e67374d1646519adf05207b684",
+    "future_builds_executed": false,
+    "hatchling_1_27_0_wheel_sha256": "d3a2f3567c4f926ea39849cdf924c7e99e6686c9c8e288ae1037c8fa2a5d937b",
+    "no_additional_hatchling_wheel_elf_provider_blocker": true,
+    "source_date_epoch": 315532800,
+    "static_structure_status": "CLEAN_EXCEPT_A005-R7-B2_AND_A005-R7-B5"
+  },
+  "non_expansion": {
+    "algorithm_changed": false,
+    "claims_changed": false,
+    "data_accessed": false,
+    "data_scope_changed": false,
+    "experiments_run": false,
+    "git_modified": false,
+    "jobs_changed": false,
+    "manifest_modified": false,
+    "paper_modified": false,
+    "proposal_plan_tracker_modified": false,
+    "resource_budget_changed": false,
+    "server_accessed": false,
+    "source_or_tests_modified": false,
+    "thresholds_changed": false,
+    "training_started": false
+  },
+  "purpose": "temporac-certificate-amendment-005-round7-normative-review",
+  "review_round": 7,
+  "reviewed_inputs": {
+    "archived_accepted_round6_json": {
+      "bytes": 261196,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_215500.json",
+      "sha256": "638efc8708f74c8514247f4f4c5e2311595e90edc6744c9b371886f0789af164"
+    },
+    "archived_accepted_round6_markdown": {
+      "bytes": 312728,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_215500.md",
+      "sha256": "2eaa3cfb746804fdc5890fec4c252c877a031a4abedef7b9ef6eeac0a4839395"
+    },
+    "canonical_proposal": {
+      "bytes": 79366,
+      "path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+      "sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"
+    },
+    "current_fixed_alias_json": {
+      "bytes": 582615,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.json",
+      "sha256": "31c6ad83f61214b1f49b83321116bbe53ec8eb2fb5c463afd552e0ace418de17"
+    },
+    "current_fixed_alias_markdown": {
+      "bytes": 629249,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.md",
+      "sha256": "217ad51f4ea02f511777a63f0158f8f2864f4a786e201fa06cadbb5872ece751"
+    },
+    "current_timestamped_json": {
+      "bytes": 582615,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_215501.json",
+      "sha256": "31c6ad83f61214b1f49b83321116bbe53ec8eb2fb5c463afd552e0ace418de17"
+    },
+    "current_timestamped_markdown": {
+      "bytes": 629249,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_215501.md",
+      "sha256": "217ad51f4ea02f511777a63f0158f8f2864f4a786e201fa06cadbb5872ece751"
+    },
+    "experiment_plan": {
+      "bytes": 34198,
+      "path": "refine-logs/EXPERIMENT_PLAN.md",
+      "sha256": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e"
+    },
+    "experiment_tracker": {
+      "bytes": 22360,
+      "path": "refine-logs/EXPERIMENT_TRACKER.md",
+      "sha256": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b"
+    },
+    "round6_review_json": {
+      "bytes": 10036,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND6.json",
+      "sha256": "fcf8a9d4949f6b456f18bfb4591c512b6628c6ec7eb5a055873a995992f46ad6"
+    },
+    "round6_review_markdown": {
+      "bytes": 15666,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND6.md",
+      "sha256": "4a3199c3ac18e3fd2a5bb7ecf6d66e10bc4a5cebb82363803c47867234b70e67"
+    }
+  },
+  "reviewer": {
+    "acceptance_status": "provisional",
+    "agent_id": "/root/temporac_certificate_amendment005_review",
+    "executor_family": "openai",
+    "family_relation": "same",
+    "fresh_reread": true,
+    "independence": "same-family",
+    "model": "gpt-5.6-sol",
+    "same_reviewer_continuation": true,
+    "tier": "ultra"
+  },
+  "schema": "temporac.contract-amendment-review.v1",
+  "verdict": "REVISE"
+}

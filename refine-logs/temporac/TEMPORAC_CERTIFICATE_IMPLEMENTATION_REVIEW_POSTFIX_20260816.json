@@ -1,0 +1,245 @@
+{
+  "acceptance_status": "provisional",
+  "agent_id": "/root/temporac_certificate_impl_review_postfix",
+  "audit_skill": "experiment-audit",
+  "audited_input_hashes": {
+    "refine-logs/EXPERIMENT_PLAN.md": "sha256:4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e",
+    "refine-logs/temporac/FINAL_PROPOSAL.md": "sha256:3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+    "src/pams/temporac/certify.py": "sha256:a9a85390cbf26b51f4ee265393f9d0226988561c2776b7971508e87506501c98",
+    "src/pams/temporac/contract.py": "sha256:5ab8fb62dc558ba78e95fc07e52c1f1a1afbff5b1c5003834079eea6143d745f",
+    "src/pams/temporac/evaluator.py": "sha256:81037186896309b093cd184b6e63542653f5a7e1ab063b78a9e63558369a47d2",
+    "src/pams/temporac/hashio.py": "sha256:df872dc5709cc8814b5d11f87d4de8cc0351459cf5cdf04e19afd0a2baf2b13c",
+    "src/pams/temporac/objective.py": "sha256:09a77231a48a869cbc83e0aa1aa2502f86f4abbcbab8c84f2b2c5abbd729ac87",
+    "src/pams/temporac/receipts.py": "sha256:ed1a993a832b5cb471a56ec6c9df39f5f6873efb88a33c223f4a4d741e946f15",
+    "src/pams/temporac/teacher.py": "sha256:30575fa64875aa6b77de157cf6af348b3b7900851a1c1742993842eea7928b30",
+    "src/pams/temporac/trusted_packer.py": "sha256:40d6e3d5be1b26b7ba0f0f7aadf8da7496c95c4e829face5c7e9faaee2cdf94e",
+    "src/pams/temporac/types.py": "sha256:32cd9450e836d97d4311d59ad504c987ff47970a134ac1f860d96951caea8228",
+    "src/pams/temporac/x0.py": "sha256:5f4585425a83bf63779265db9004d210c5c2875a579ebc9a6c51297eb647c7a2",
+    "tests/temporac/test_certificate_artifact.py": "sha256:42ace7d4481972f8c6ebb52e86c63380479bf5bdd43308412b737b794e4b396f",
+    "tests/temporac/test_certificate_tau.py": "sha256:f7e2f25ab93226568910b856167e441037213ba3dd937d6915587037b7c6a94b",
+    "tests/temporac/test_contract_hashio.py": "sha256:421498d9af9cb9f3147b620cf611df34e50b27592854ab94ae81186fe298b90f",
+    "tests/temporac/test_metrics_evaluator.py": "sha256:2e11bf4b80bf60c24e1f6f310c69ea2387f6952f06f357620bb06a9de6a2c179",
+    "tests/temporac/test_teacher_certificate.py": "sha256:2ee9848bd85755cc8456cfbaeebeac6d0fbbcf65e74c3f4f984f57d0a0bb9a1d"
+  },
+  "audited_input_manifest_sha256": "sha256:f60c7dd1c475929831711568807e9c3f98be76d33e4f75a2419f80045415b90f",
+  "auditor": "gpt-5.6-sol",
+  "checks": {
+    "abstain_zero_artifact": {
+      "evidence": [
+        "src/pams/temporac/certify.py:159",
+        "src/pams/temporac/types.py:295",
+        "src/pams/temporac/receipts.py:534"
+      ],
+      "status": "pass"
+    },
+    "builder_identity_teacher_override": {
+      "details": "The builder has no override parameters and reads the frozen provenance object; the upstream adapters remain defective.",
+      "evidence": [
+        "src/pams/temporac/receipts.py:529",
+        "src/pams/temporac/receipts.py:536",
+        "src/pams/temporac/receipts.py:548"
+      ],
+      "status": "pass"
+    },
+    "certified_npz_closed_receipt": {
+      "evidence": [
+        "src/pams/temporac/contract.py:137",
+        "src/pams/temporac/contract.py:200",
+        "src/pams/temporac/types.py:356",
+        "src/pams/temporac/receipts.py:541"
+      ],
+      "status": "pass"
+    },
+    "deep_immutability": {
+      "details": "Owning NumPy arrays can have writeability re-enabled; a shifted certified pulse was built and loaded.",
+      "evidence": [
+        "src/pams/temporac/types.py:71",
+        "src/pams/temporac/types.py:80",
+        "src/pams/temporac/types.py:252",
+        "src/pams/temporac/receipts.py:539",
+        "src/pams/temporac/hashio.py:530"
+      ],
+      "status": "fail"
+    },
+    "exclusive_nonoverwrite": {
+      "evidence": [
+        "src/pams/temporac/hashio.py:301",
+        "src/pams/temporac/hashio.py:306",
+        "src/pams/temporac/hashio.py:311"
+      ],
+      "status": "pass"
+    },
+    "f4_mask": {
+      "evidence": [
+        "src/pams/temporac/certify.py:311",
+        "src/pams/temporac/certify.py:315",
+        "src/pams/temporac/certify.py:321"
+      ],
+      "status": "pass"
+    },
+    "joint_loader": {
+      "details": "Artifact/receipt/hash binding passes, but returned arrays share the deep-immutability failure.",
+      "evidence": [
+        "src/pams/temporac/receipts.py:459",
+        "src/pams/temporac/receipts.py:474",
+        "src/pams/temporac/receipts.py:480",
+        "src/pams/temporac/receipts.py:482"
+      ],
+      "status": "warn"
+    },
+    "k7_certificate_bridge": {
+      "details": "The evaluator has no certified pulse/source-clock input and cannot perform the primitive-unit check.",
+      "evidence": [
+        "refine-logs/temporac/FINAL_PROPOSAL.md:1384",
+        "src/pams/temporac/evaluator.py:239",
+        "src/pams/temporac/evaluator.py:281",
+        "src/pams/temporac/evaluator.py:295"
+      ],
+      "status": "fail"
+    },
+    "label_firewall": {
+      "details": "No evaluator label reaches teacher, objective, certificate, target artifact, or checkpoint-selection interfaces in the reviewed scope.",
+      "status": "pass"
+    },
+    "natural_adapter": {
+      "details": "An independently assembled track can be bound to arbitrary FeatureRecord identity and teacher digest.",
+      "evidence": [
+        "src/pams/temporac/certify.py:735",
+        "src/pams/temporac/certify.py:749",
+        "src/pams/temporac/hashio.py:661",
+        "tests/temporac/test_certificate_artifact.py:90"
+      ],
+      "status": "fail"
+    },
+    "no_legacy_warp_imports": {
+      "details": "Zero case-insensitive matches in the ten reviewed source files.",
+      "status": "pass"
+    },
+    "phase_class_union": {
+      "evidence": [
+        "src/pams/temporac/certify.py:277",
+        "tests/temporac/test_certificate_tau.py:115"
+      ],
+      "status": "pass"
+    },
+    "right_ownership": {
+      "evidence": [
+        "src/pams/temporac/certify.py:380",
+        "src/pams/temporac/certify.py:390",
+        "src/pams/temporac/certify.py:430"
+      ],
+      "status": "pass"
+    },
+    "tau_ledger": {
+      "evidence": [
+        "src/pams/temporac/certify.py:650",
+        "src/pams/temporac/certify.py:658",
+        "src/pams/temporac/certify.py:670"
+      ],
+      "status": "pass"
+    },
+    "x0_adapter": {
+      "details": "Duck-typed noncanonical arrays and an unauthorized train/sinc/offset tuple are accepted and provenance-bound.",
+      "evidence": [
+        "src/pams/temporac/x0.py:523",
+        "src/pams/temporac/certify.py:676",
+        "src/pams/temporac/certify.py:689",
+        "tests/temporac/test_certificate_artifact.py:222"
+      ],
+      "status": "fail"
+    }
+  },
+  "date": "2026-08-16",
+  "evaluation_type": "simulation_only",
+  "executor_family": "openai",
+  "executor_model": "gpt-5.6-sol",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "Certified and loaded NumPy arrays are not deeply immutable."
+    },
+    {
+      "id": "F2",
+      "severity": "blocking",
+      "summary": "X0 adapter accepts noncanonical content and unused inventory combinations."
+    },
+    {
+      "id": "F3",
+      "severity": "blocking",
+      "summary": "Natural track content and teacher output are not bound to feature identity/selected teacher."
+    },
+    {
+      "id": "F4",
+      "severity": "blocking",
+      "summary": "K7 evaluator does not consume certificate pulse/source-clock evidence."
+    }
+  ],
+  "gate_ceiling": {
+    "accepted_semantic_clearance": false,
+    "data_authority": 0,
+    "evaluator_capability_authority": 0,
+    "launch_authorization": 0,
+    "p0_certificate_integration": "revise",
+    "p1_p2_p3_s0_or_downstream_advanced": false,
+    "paper_promotion": "blocked",
+    "server_authority": 0,
+    "training_authority": 0
+  },
+  "generated_at": "2026-08-16T09:16:58.256+08:00",
+  "integrity_status": "fail",
+  "overall_verdict": "revise",
+  "probe_outputs": {
+    "canonical_x0_u0003_block0_linear_offset0": {
+      "artifact_bytes": 5931,
+      "artifact_sha256": "sha256:efe9d111001fefea45dc55e22f3111ba80fdddc32d6d8ad30dba6b2321f56a16",
+      "event_count": 10,
+      "receipt_bytes": 1472,
+      "receipt_sha256": "sha256:7f9390a7bb8b073d30cdfec02ceaa2515e93c3df00a2817f39523931d22d5a16",
+      "status": "CERTIFIED"
+    },
+    "post_certification_shifted_pulse": {
+      "artifact_sha256": "sha256:8db7e6f86228c96c211b880d56409e4331bc9356e26553d93220d5358bac1c11",
+      "incorrectly_accepted": true
+    }
+  },
+  "reason_codes": [
+    "certified_payload_not_deeply_immutable",
+    "x0_adapter_not_canonical_source_bound",
+    "natural_adapter_not_feature_teacher_bound",
+    "k7_certificate_primitive_bridge_absent"
+  ],
+  "review_independence": "same-family",
+  "review_type": "temporac_certificate_implementation_postfix",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "summary": "Core artifact encoding checks pass, but four scientific provenance/integration blockers require revision before any gate can pass.",
+  "tool_results": {
+    "full_pytest": {
+      "command_scope": "tests/temporac",
+      "passed": 109,
+      "platform_skips": 1,
+      "seconds": 140.17,
+      "status": "pass"
+    },
+    "mypy": {
+      "files": 15,
+      "status": "pass",
+      "version": "1.20.2"
+    },
+    "ruff": {
+      "files": 15,
+      "status": "pass",
+      "version": "0.16.3"
+    },
+    "targeted_pytest": {
+      "passed": 46,
+      "platform_skips": 1,
+      "seconds": 55.31,
+      "status": "pass"
+    }
+  },
+  "trace_path": ".aris/traces/experiment-audit/20260816_temporac_certificate_impl_review_postfix_sol/",
+  "verdict": "REVISE",
+  "verdict_id": "/root/temporac_certificate_impl_review_postfix"
+}

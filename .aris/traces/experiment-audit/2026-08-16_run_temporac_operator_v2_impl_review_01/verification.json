@@ -1,0 +1,88 @@
+{
+  "schema": "temporac.operator-implementation-review-verification.v1",
+  "generated_at": "2026-08-16T06:30:11.770Z",
+  "run_id": "2026-08-16_run_temporac_operator_v2_impl_review_01",
+  "verdict": "PASS",
+  "candidate_disposition": "ACCEPTED_AS_IMMUTABLE_P2_INPUT_ONLY",
+  "trace_artifacts": {
+    "run.meta.json": {
+      "bytes": 1042,
+      "sha256": "81aae5c694430b9a8e5b3845a065b33384c4d0716f4c5d20c97e5921ed4b9c18"
+    },
+    "001-operator-v2-implementation-review.request.json": {
+      "bytes": 4545,
+      "sha256": "6722a1921d11fed90f53159ea3f372d906bb4e81caebd75d32c4b7860d4bacb0"
+    },
+    "001-operator-v2-implementation-review.response.md": {
+      "bytes": 15244,
+      "sha256": "73c660079377683b2066e4e04e8b6400f3568e1b7473069303908f773d0caad1"
+    },
+    "001-operator-v2-implementation-review.meta.json": {
+      "bytes": 999,
+      "sha256": "4aeaf6ecb2e856eae93c7c0ad2f916846feff9e43ef679bf716b3244d3230ed1"
+    }
+  },
+  "review_artifacts": {
+    "refine-logs/temporac/TEMPORAC_OPERATOR_IMPLEMENTATION_REVIEW_V2_20260816.md": {
+      "bytes": 15244,
+      "sha256": "73c660079377683b2066e4e04e8b6400f3568e1b7473069303908f773d0caad1"
+    },
+    "refine-logs/temporac/TEMPORAC_OPERATOR_IMPLEMENTATION_REVIEW_V2_20260816.json": {
+      "bytes": 14108,
+      "sha256": "25792a855e15769ec778276b5066052d15796eea18cad5d44a16f741cb8bd35f"
+    }
+  },
+  "response_matches_review_md": {
+    "byte_identical": true,
+    "bytes": 15244,
+    "sha256": "73c660079377683b2066e4e04e8b6400f3568e1b7473069303908f773d0caad1"
+  },
+  "final_input_rehash": {
+    "normative_binding_count": 13,
+    "normative_binding_mismatches": 0,
+    "second_canonical_proposal_matches": true,
+    "unique_project_file_count": 15,
+    "project_file_mismatches": 0,
+    "candidate_file_count": 5,
+    "candidate_hash_mismatches": 0,
+    "candidate_all_read_only": true,
+    "candidate_receipt_sha256": "d53fcc1138754eee90a255952606cd054aa04c72cb3f97d66bf4464d5de672cb",
+    "source_snapshot_sha256": "ded975e31ced2cf1c7d69fb217610125f65d419f641a8e0832d115ec7a4870c0"
+  },
+  "independent_inventory": {
+    "manifest_rows": 10368,
+    "row_mismatches": 0,
+    "normative_root_mismatches": 0,
+    "aggregate_root_mismatches": 0
+  },
+  "pinned_replay": {
+    "generation_exit_code": 0,
+    "regenerated_member_count": 5,
+    "byte_identical_member_count": 5,
+    "overwrite_retry_exit_code": 2,
+    "overwrite_retry_unchanged": true
+  },
+  "checks": {
+    "duplicate_key_reject_json_parse": "pass",
+    "scoped_pytest": "13 passed",
+    "full_relevant_pytest": "115 passed, 1 skipped",
+    "ruff": "pass",
+    "mypy": "pass"
+  },
+  "prohibited_old_review_content_read": false,
+  "author_contact": false,
+  "external_scratch_cleanup": "retained_non_authoritative_host_policy_rejected_recursive_cleanup",
+  "authority": {
+    "candidate_only": true,
+    "P2": false,
+    "P3": false,
+    "S0": false,
+    "gate": false,
+    "launch": false,
+    "server": false,
+    "data": false,
+    "training": false,
+    "git": false,
+    "paper_claim": false
+  }
+}

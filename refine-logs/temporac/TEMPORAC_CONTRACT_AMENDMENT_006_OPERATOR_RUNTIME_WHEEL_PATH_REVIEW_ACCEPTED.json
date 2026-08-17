@@ -1,0 +1,358 @@
+{
+  "acceptance_status": "provisional",
+  "agent_id": "/root/temporac_operator_runtime_amendment006_review/fresh_ultra_review",
+  "allowed_next_actions": [
+    {
+      "action": "bounded_implementation_update",
+      "actor": "separate_implementer",
+      "allowed_paths": [
+        "scripts/experiments/generate_temporac_operator_manifest_v4.py",
+        "tests/temporac/test_gates_fixtures.py",
+        "tests/temporac/test_operator_manifest.py"
+      ],
+      "condition": "after_this_provisional_normative_acceptance",
+      "other_paths_allowed": false
+    },
+    {
+      "action": "generate_one_candidate",
+      "condition": "only_after_the_bounded_three_file_update",
+      "directory_rule": "new_designated_directory_must_be_absent_and_must_not_be_overwritten"
+    },
+    {
+      "action": "fresh_pinned_runtime_implementation_review",
+      "condition": "only_after_candidate_generation",
+      "fresh_reviewer_required": true
+    }
+  ],
+  "amendment_bindings": {
+    "json": {
+      "bytes": 21582,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH.json",
+      "sha256": "e443453b93c96dfda4c6daf68332c0f667429cbf2a036e16e0e6c43c89d9fa61"
+    },
+    "markdown": {
+      "bytes": 16965,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH.md",
+      "sha256": "9b1e3a9c36c360e8d9011145d120f7cff8e6922f4620c60445d8194809070517"
+    },
+    "timestamped_alias_identity": {
+      "json_byte_identical": true,
+      "json_path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH_20260816_123444.json",
+      "markdown_byte_identical": true,
+      "markdown_path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH_20260816_123444.md"
+    }
+  },
+  "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH",
+  "artifact_type": "temporac_contract_amendment_review",
+  "authoritative": false,
+  "authority_ceiling": {
+    "P2": false,
+    "P3": false,
+    "S0": false,
+    "candidate_generation_bounded_next_step_only": true,
+    "claim": false,
+    "data": false,
+    "evaluator_capability": false,
+    "gate": false,
+    "git": false,
+    "implementation_three_file_bounded_next_step_only": true,
+    "launch": false,
+    "paper": false,
+    "release": false,
+    "result": false,
+    "server": false,
+    "training": false
+  },
+  "authorizes": [
+    "subsequent_separate_implementer_update_of_exactly_three_authorized_files_only",
+    "subsequent_one_candidate_generation_into_a_new_absent_directory_only",
+    "subsequent_fresh_pinned_runtime_implementation_review_only"
+  ],
+  "blockers": [],
+  "blocking_issue_count": 0,
+  "date": "2026-08-16",
+  "deterministic_checks": {
+    "candidate_creation_and_exclusive_write": {
+      "candidate_created_in_review": false,
+      "corrected_probe_candidate_absent_after": true,
+      "corrected_probe_candidate_absent_before": true,
+      "generator_fifth_step_executed": false,
+      "generator_fifth_step_included": false,
+      "implementation_currently_pre_amendment": true,
+      "implementation_output_directory_nonoverwrite_guard": true,
+      "implementation_receipt_last": true,
+      "implementation_write_flags": [
+        "O_EXCL",
+        "O_NOFOLLOW_when_available"
+      ],
+      "old_probe_candidate_absent_after": true,
+      "old_probe_candidate_absent_before": true
+    },
+    "candidate_provenance_v3": {
+      "accepted_review_paths_feasible_without_self_lock": true,
+      "accepted_review_self_hash_present": false,
+      "acyclic_future_review_dag": true,
+      "binding_key_count": 17,
+      "contract_read_order_matches_binding_key_order": true,
+      "contract_read_path_count": 12,
+      "future_accepted_review_hash_injectable": true,
+      "generation_import_execute_path_count": 9,
+      "generation_snapshot_path_count": 28,
+      "generation_snapshot_paths_unique": true,
+      "historical_runtime_literal_path_count": 24,
+      "receipt_self_hash_present": false,
+      "receipt_top_level_key_count": 9,
+      "review_snapshot_components": {
+        "candidate_members": 5,
+        "contract_reads_including_proposal": 13,
+        "project_files": 15,
+        "total_unique_records": 33
+      },
+      "v3_override_explicitly_supersedes_historical_24": true
+    },
+    "corrected_install_probe": {
+      "candidate_absent_after_each": true,
+      "candidate_absent_before_each": true,
+      "container_repetitions": 2,
+      "direct_execution_not_historical_witness": true,
+      "exit_codes": [
+        0,
+        0
+      ],
+      "generator_executed": false,
+      "image_index_digest": "sha256:e8be0ea148390d08bc077840cf87ac6a538d80b0ea1e8752b3e3982987cd0a53",
+      "network": "none",
+      "numpy_init": {
+        "bytes": 22007,
+        "sha256": "39c42db027548f958e096e8babe3fa0e3e773d24aa39eb6363fc0e3abbec34b1"
+      },
+      "numpy_version": "2.1.0",
+      "platform": "linux/amd64",
+      "python_executable": {
+        "bytes": 18208,
+        "sha256": "9a6988f011f466ae829f7945c54000a564e14a1a594cfb7079c02eda9b87620f"
+      },
+      "read_only_root": true,
+      "tmpfs": "/tmp:rw,exec,nosuid,nodev,size=512m",
+      "wheel_mount_read_only": true
+    },
+    "image_and_wheel": {
+      "image_config": {
+        "bytes": 7096,
+        "evidence_classification": "unchanged_reviewer_owned_byte_evidence_in_hash_bound_round1_trace",
+        "sha256": "c7ed3a18aaaa5a8b439cf84138ebcfe1e82e64d091781f3384ca38827824aefc"
+      },
+      "image_index": {
+        "bytes": 9719,
+        "evidence_classification": "fresh_local_docker_descriptor",
+        "sha256": "e8be0ea148390d08bc077840cf87ac6a538d80b0ea1e8752b3e3982987cd0a53"
+      },
+      "linux_amd64_child": {
+        "bytes": 2516,
+        "evidence_classification": "fresh_pull_never_platform_selection_descriptor",
+        "sha256": "0c7cf9e198201da2e838fcb61c07717dfc96adb3d1200599f54dea0af1d153bf"
+      },
+      "wheel": {
+        "bytes": 16040181,
+        "regular_non_symlink": true,
+        "sha256": "24003ba8ff22ea29a8c306e61d316ac74111cebf942afbf692df65509a05f111"
+      }
+    },
+    "installed_record_contract": {
+      "authoritative_preimage": "importlib.metadata.distribution(\"numpy\").read_text(\"RECORD\").encode(\"utf-8\")",
+      "authoritative_preimage_matches_current_generator_algorithm": true,
+      "authoritative_value": {
+        "bytes": 100089,
+        "reproduced_in_two_fresh_installs": true,
+        "sha256": "76ae0d49a0d236c7d045e8394d649e1252a6ef2219ef2dac33f72ac01ea76cca"
+      },
+      "diagnostic_direct_url_json": {
+        "authoritative": false,
+        "bytes": 286,
+        "sha256": "3c36ea74fe65236c1dcd3bc80373860762a80217f52a6c41a7a390805ce27e98"
+      },
+      "diagnostic_raw_record": {
+        "authoritative": false,
+        "bytes": 101316,
+        "crlf_count": 1227,
+        "sha256": "b30c47e53bf16be292c392247bad8948f3fb2407ecd54fde388f74be007426e0"
+      },
+      "verifier_algorithm_changed": false
+    },
+    "old_path_probe": {
+      "candidate_absent_after": true,
+      "candidate_absent_before": true,
+      "exit_code": 1,
+      "fresh_round2_execution": true,
+      "full_script_generator_unreachable_under_sh_ceu": true,
+      "generator_executed": false,
+      "stderr": {
+        "bytes": 48,
+        "sha256": "9218fcf778490e9a23c6865cbbdf10c000cd690375b16b4e4e5848d0b45371a4",
+        "utf8_escaped": "ERROR: numpy.whl is not a valid wheel filename.\\n"
+      },
+      "stdout": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "steps_completed_before_failure": 3
+    },
+    "runtime_canonicalization": {
+      "accepted_amendment_004_bootstrap": {
+        "bytes": 409,
+        "sha256": "66fdf1cd03616759948e326e1714a997848c45f40d005240a4ebe170240bf323"
+      },
+      "accepted_amendment_004_runtime": {
+        "bytes": 3732,
+        "sha256": "8008df73cc9a807ac5e5262aebc170ae6e01c82b07658575f6207ec7cb0a14fd"
+      },
+      "canonical_rule": "UTF-8 ensure_ascii=false allow_nan=false sorted keys compact separators plus exactly one LF",
+      "corrected_bootstrap": {
+        "bytes": 592,
+        "sha256": "c830092276818bcacf4a08eb8818481fe47b7d8f608229cac1fc672ad2947602"
+      },
+      "rejected_amendment_006_round1_runtime": {
+        "bytes": 3976,
+        "sha256": "71fdf4bfe78b59aada9f2e207002eae3fcd10345ed1f47ee9969557d6649f5da"
+      },
+      "revised_amendment_006_runtime": {
+        "bytes": 3976,
+        "sha256": "47c2227b74b627a03bf9b5e4930dd02484caaae5a695ae5c0129f04781115cd8"
+      }
+    },
+    "runtime_delta": {
+      "corrected_path_occurrences_revised": 4,
+      "dependent_runtime_digest_json_paths": [
+        "/candidate_provenance_override/candidate_receipt/members/environment_lock.json",
+        "/candidate_provenance_override/candidate_receipt/runtime_lock_sha256",
+        "/corrected_runtime_commitment/sha256"
+      ],
+      "mount_argv_bootstrap_consistent": true,
+      "old_path_occurrences_accepted_a004": 4,
+      "old_path_occurrences_revised": 0,
+      "relative_to_accepted_amendment_004_leaf_paths": [
+        "/container_policy/bootstrap_script_sha256",
+        "/container_policy/bootstrap_steps/0",
+        "/container_policy/bootstrap_steps/1",
+        "/container_policy/bootstrap_steps/3",
+        "/container_policy/docker_argv_template/13",
+        "/numpy/record_sha256"
+      ],
+      "relative_to_accepted_amendment_004_leaf_count": 6,
+      "relative_to_rejected_amendment_006_round1_leaf_count": 1,
+      "relative_to_rejected_amendment_006_round1_leaf_paths": [
+        "/numpy/record_sha256"
+      ]
+    },
+    "science_and_contract_scope": {
+      "algorithm_changed": false,
+      "allocated_a6000_hours": 93,
+      "claims_changed": false,
+      "decoder_changed": false,
+      "fixture_population_changed": false,
+      "jobs": 27,
+      "manifest_row_count": 10368,
+      "manifest_row_order_changed": false,
+      "manifest_schema_changed": false,
+      "nola_changed": false,
+      "paper_visible_evidence_blocks": 3,
+      "primary_claims": 1,
+      "seeds": [
+        20260815,
+        20260816,
+        20260817
+      ],
+      "thresholds_changed": false
+    },
+    "source_snapshot_framing": {
+      "global_ascii_path_order": true,
+      "path_and_payload_lengths": "uint64_be",
+      "preimage_tag": "temporac.operator-generation-snapshot.v1",
+      "raw_file_bytes": true,
+      "tag_nul_separator": true
+    }
+  },
+  "executor_family": "openai",
+  "format_validation": {
+    "canonical_markdown_byte_identical_to_trace_response": true,
+    "duplicate_key_rejecting_output_json_parse": true,
+    "every_produced_file_exactly_one_terminal_lf": true,
+    "every_produced_file_utf8_no_bom": true,
+    "review_files_contain_self_hash": false
+  },
+  "fresh_context": true,
+  "generated_at": "2026-08-16T05:10:00Z",
+  "input_binding_verification": {
+    "count": 21,
+    "end_rehash_matches_start": true,
+    "records": [
+      {"bytes": 30984, "path": ".agents/skills/research-refine/SKILL.md", "sha256": "bb489173329fec7a6551c74c319e2103d83f722ea11fc11462a7c4ccacd00b09"},
+      {"bytes": 4828, "path": ".agents/skills/shared-references/output-versioning.md", "sha256": "de8e7ac23069de6c5d0c482d4cef117dd5a543e00b57e2dc6c62560a457290c5"},
+      {"bytes": 1753, "path": ".agents/skills/shared-references/output-manifest.md", "sha256": "e767083e0ef97a7adf7a4e8a574090067a59c0655d5aca422a3747cd32b6afde"},
+      {"bytes": 2215, "path": ".agents/skills/shared-references/output-language.md", "sha256": "0f1447579bd7a2195fd4a074be70ae6345b5c368f1a70d327e89748bf5a378f9"},
+      {"bytes": 4435, "path": ".agents/skills/shared-references/review-tracing.md", "sha256": "4f4936984391da87464b8e8bf6f7c984f3f186e8fdc42890d0ac999b5e2024dc"},
+      {"bytes": 79366, "path": "refine-logs/temporac/FINAL_PROPOSAL.md", "sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"},
+      {"bytes": 10622, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.md", "sha256": "899d6f071c89f898bf3825adfb30a326904f9bc7fe44d44351da8a5d0d9ccb14"},
+      {"bytes": 8963, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.json", "sha256": "d524556f292ec17a155cdcd962cf8a88bea26f32b810ffb7bd8e45744f1c54fc"},
+      {"bytes": 11229, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.md", "sha256": "a86da733f3ae048b867ec8b2366a9f0262ca2b390ef08687ca7d710654e8301f"},
+      {"bytes": 9363, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.json", "sha256": "3730d96eff1d3815499602eaf183774af032c514a588d4e92fe8a1cccf053e64"},
+      {"bytes": 35619, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA.md", "sha256": "ece0025f4844dc04f838b5ec7f629a7fb3b10bd92e6f0bb3d5fe941cbcc83c82"},
+      {"bytes": 37403, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA.json", "sha256": "61ce255e3f618041f3b54e19ab0c5d95f3817bafe68ac4b1e6db36d26e3083f4"},
+      {"bytes": 15851, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA_REVIEW_ROUND1.md", "sha256": "573b49150b4f7ca6f15ec656d0375131c3d8a14214da075ad4d138e4edd71dfd"},
+      {"bytes": 10555, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA_REVIEW_ROUND1.json", "sha256": "918ac01d43e193b9204edff7cb5f5e7d148fa12b180157dea2192a2af76eb482"},
+      {"bytes": 15404, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA_REVIEW_ROUND2.md", "sha256": "6c45d2bc333c8b89915c3e3b881b893bf26203085bab010a28ad55158f9468a7"},
+      {"bytes": 14557, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA_REVIEW_ROUND2.json", "sha256": "f62135f6ac502b4ca9ccfda8534201c12a60a2853ae4a298bf088c7a24bbd50f"},
+      {"bytes": 16333, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH_REVIEW_ROUND1.md", "sha256": "45c557b2827cf21885d116cc9baab4f02548054821ed1ba209aa4e2ec1c75cb6"},
+      {"bytes": 35832, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH_REVIEW_ROUND1.json", "sha256": "9cf30558d1bf18ef198d4ff5e6def253af3f8bd001faabb736b3aaf47a3c83a6"},
+      {"bytes": 30081, "path": "scripts/experiments/generate_temporac_operator_manifest_v4.py", "sha256": "286108c9b222f786ff1db25ddb6bc81a53acf318337a77c252f77092d5dd1e4e"},
+      {"bytes": 6695, "path": "tests/temporac/test_gates_fixtures.py", "sha256": "69690aba7eb366471a28bb7406fd1411964d271ecd250834151243bb8a7c299f"},
+      {"bytes": 21494, "path": "tests/temporac/test_operator_manifest.py", "sha256": "627e58cbb65be96de7d17cd56e8c12c179c2d1c3e11612f0aea5cf79eecdb5de"}
+    ],
+    "start_matches_declared": true
+  },
+  "json_input_validation": {
+    "duplicate_key_rejection_enabled": true,
+    "parsed_json_file_count": 15,
+    "passed": true
+  },
+  "model": "gpt-5.6-sol",
+  "output_contract": {
+    "canonical_markdown_path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH_REVIEW_ACCEPTED.md",
+    "canonical_structured_path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH_REVIEW_ACCEPTED.json",
+    "negative_round2_alias_created": false,
+    "response_path": ".aris/traces/research-refine/20260816_temporac_operator_runtime_amendment006_review_sol/002-amendment-006-round2-normative-review.response.md",
+    "review_output_self_hashes_forbidden": true,
+    "trace_response_byte_identical_to_canonical_markdown": true
+  },
+  "reasoning_effort": "ultra",
+  "review_independence": "same-family",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "round": 2,
+  "status": "ACCEPT_SAME_FAMILY_PROVISIONAL_BOUNDED_IMPLEMENTATION_CANDIDATE_AND_FRESH_REVIEW_ONLY",
+  "supplemental_inputs": [
+    {"bytes": 664, "path": "AGENTS.md", "sha256": "35eaf270a8f50c943577a7d00c4d5a78a22a02874489709db6ada5c850aa2251"},
+    {"bytes": 1809, "path": ".agents/skills/shared-references/reviewer-independence.md", "sha256": "d66262e74d5f69b1614007bf744b9f2220aeb35d1f36ec66196dfe32b0438530"},
+    {"bytes": 5490, "path": ".agents/skills/shared-references/reviewer-routing.md", "sha256": "e1fc0841b342b64130aa1c8fc99b337b1ef9e994697f17a518ebf1bbca664c66"},
+    {"bytes": 5797, "path": ".agents/skills/shared-references/assurance-contract.md", "sha256": "1df4ab0f26a81b7b904fb7ba066e485a7c12cfe0333ec49017f097e922a59aed"},
+    {"bytes": 5293, "path": ".agents/skills/shared-references/output-composition.md", "sha256": "79a72c7ea02102c460ae3ad55853c21a4054b9df93f377c29dd34555e6d3c3a7"},
+    {"bytes": 14146, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH_20260816_113951.md", "sha256": "33240e87560ffd249190a1a85be513a33699755247e37b30795cfa530085cecf"},
+    {"bytes": 18955, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH_20260816_113951.json", "sha256": "8bc3aa1c16a124ca221faa12f5eb471f8bf05b59032320091abbcf85b5a67d01"},
+    {"bytes": 16965, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH_20260816_123444.md", "sha256": "9b1e3a9c36c360e8d9011145d120f7cff8e6922f4620c60445d8194809070517"},
+    {"bytes": 21582, "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH_20260816_123444.json", "sha256": "e443453b93c96dfda4c6daf68332c0f667429cbf2a036e16e0e6c43c89d9fa61"},
+    {"bytes": 1341, "path": "data/temporac_p00_v4/x0_candidate_20260816/candidate_receipt.json", "sha256": "d56b14e4bd0371bd10ec6366a3ccfc724c934dcb8f8bac08cc242fe19102c4f4"},
+    {"bytes": 1729, "path": "data/temporac_p00_v4/operator_candidate_20260816/candidate_receipt.json", "sha256": "2e457e01166c6151e4edc688e8fd6f981d1278231fcd8c2bc000179f7a825102"},
+    {"bytes": 11674, "path": ".aris/traces/research-refine/20260816_temporac_operator_runtime_amendment006_review_sol/001-amendment-006-normative-review.request.json", "sha256": "95948086e6507e8b393ae6d02594aa8a001c2e50d143ab69d63234eadd5e41cb"},
+    {"bytes": 16333, "path": ".aris/traces/research-refine/20260816_temporac_operator_runtime_amendment006_review_sol/001-amendment-006-normative-review.response.md", "sha256": "45c557b2827cf21885d116cc9baab4f02548054821ed1ba209aa4e2ec1c75cb6"},
+    {"bytes": 891, "path": ".aris/traces/research-refine/20260816_temporac_operator_runtime_amendment006_review_sol/001-amendment-006-normative-review.meta.json", "sha256": "e33ecb97380a2c68af5a92af6fbad10017037797ddc77cdc335ed4841d59f8bf"},
+    {"bytes": 687, "path": ".aris/traces/research-refine/20260816_temporac_operator_runtime_amendment006_review_sol/run.meta.json", "sha256": "ab397e7a0e570088ff28123fbd83cbd4756896f8067143afa6feaab4906d48d4", "state": "consumed_pre_continuation_version"},
+    {"bytes": 6678, "path": ".aris/traces/research-refine/20260816_temporac_operator_runtime_amendment006_review_sol/verification.json", "sha256": "eb2349a8b9aea57db897058a76412edcca7bb901b93bf7936836217d1c74b7a4"},
+    {"bytes": 9719, "path": "oci://docker.io/library/python/index@sha256:e8be0ea148390d08bc077840cf87ac6a538d80b0ea1e8752b3e3982987cd0a53", "sha256": "e8be0ea148390d08bc077840cf87ac6a538d80b0ea1e8752b3e3982987cd0a53"},
+    {"bytes": 2516, "path": "oci://docker.io/library/python/linux-amd64-manifest@sha256:0c7cf9e198201da2e838fcb61c07717dfc96adb3d1200599f54dea0af1d153bf", "sha256": "0c7cf9e198201da2e838fcb61c07717dfc96adb3d1200599f54dea0af1d153bf"},
+    {"bytes": 7096, "path": "oci://docker.io/library/python/config@sha256:c7ed3a18aaaa5a8b439cf84138ebcfe1e82e64d091781f3384ca38827824aefc", "sha256": "c7ed3a18aaaa5a8b439cf84138ebcfe1e82e64d091781f3384ca38827824aefc"},
+    {"bytes": 16040181, "path": "C:/Users/admin/AppData/Local/Temp/temporac-amendment004-v2-a83f4b1c/wheel/numpy.whl", "sha256": "24003ba8ff22ea29a8c306e61d316ac74111cebf942afbf692df65509a05f111"},
+    {"bytes": 18208, "path": "container:///usr/local/bin/python3.12", "sha256": "9a6988f011f466ae829f7945c54000a564e14a1a594cfb7079c02eda9b87620f"}
+  ],
+  "trace_path": ".aris/traces/research-refine/20260816_temporac_operator_runtime_amendment006_review_sol/",
+  "verdict": "ACCEPT"
+}

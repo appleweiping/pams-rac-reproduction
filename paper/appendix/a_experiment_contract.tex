@@ -1,0 +1,215 @@
+\section{Extended Experimental Contract}
+\label{app:experiment_contract}
+
+This appendix records analyses that are required for the final evidence bundle
+but may move between main paper and supplementary material after results and
+the official CVPR 2027 format are frozen.
+
+\subsection{Artifact Manifest}
+\ClaimMap{C10,C11,C12,C15}
+
+Every table-eligible run must provide: model commit; evaluator commit;
+configuration and preprocessing fingerprints; seed; hardware and software
+environment; MultiRep release, source, download time, split, and checksums;
+per-video and per-identity ground truth and predictions; oracle/predicted-track
+status; logs; and generated-table provenance. An artifact lacking any required
+field is retained for diagnosis but cannot support a paper claim. UCFRep's
+sealed test partition remains untouched until the method, checkpoints, and
+analysis code are frozen.
+
+\begin{table*}[t]
+  \centering
+  \scriptsize
+  \setlength{\tabcolsep}{1.7pt}
+  \caption{Required characterization of the frozen MultiRep split before
+  hypothesis testing. Every tempo or corruption stratum must also report its
+  exact number of videos, people, and events.}
+  \label{tab:dataset_characterization}
+  \begin{tabular}{lcccccccc}
+    \toprule
+    Split & Videos & People & Events & Active IDs & Tempo-change &
+    Pauses & Gaps & Window-eligible \\
+    \midrule
+    Train & \Protocol{data.train.videos} & \Protocol{data.train.people} &
+      \Protocol{data.train.events} & \Protocol{data.train.active_ids} &
+      \Protocol{data.train.tempo_tracks} & \Protocol{data.train.pauses} &
+      \Protocol{data.train.gaps} & \Protocol{data.train.window_eligible} \\
+    Validation & \Protocol{data.val.videos} & \Protocol{data.val.people} &
+      \Protocol{data.val.events} & \Protocol{data.val.active_ids} &
+      \Protocol{data.val.tempo_tracks} & \Protocol{data.val.pauses} &
+      \Protocol{data.val.gaps} & \Protocol{data.val.window_eligible} \\
+    Test & \Protocol{data.test.videos} & \Protocol{data.test.people} &
+      \Protocol{data.test.events} & \Protocol{data.test.active_ids} &
+      \Protocol{data.test.tempo_tracks} & \Protocol{data.test.pauses} &
+      \Protocol{data.test.gaps} & \Protocol{data.test.window_eligible} \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{2.5pt}
+  \caption{Scope matrix for the three closest method families and this
+  pre-results specification. ``Intended'' and ``provisional'' entries are not
+  implementation or performance claims.}
+  \label{tab:prior_scope}
+  \begin{tabular}{p{0.13\textwidth}p{0.12\textwidth}p{0.14\textwidth}
+    p{0.18\textwidth}p{0.14\textwidth}p{0.18\textwidth}}
+    \toprule
+    Method & Counting input & Output scope & Counting supervision & Tempo unit & Identity mechanism \\
+    \midrule
+    PAMS~\cite{gao2026pams} & Pose stream & Single stream & Self-supervised representation & Period-adaptive scales & None \\
+    MultiCounter~\cite{tang2024multicounter} & RGB video & Person/events & Supervised MRAC & Per-person intervals & Joint association \\
+    MultiCounter+~\cite{tang2026multicounterplus} & RGB video & Person/events & Supervised MRAC & Long/short-aware & Dynamic Siamese query \\
+    Ours (specification) & Supplied pose tracks & Oracle person / predicted track & Intended no person count/period & Window-local routing & Supplied track index \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\subsection{Mechanism Ablations}
+\ClaimMap{C03,C04,C05,C06,C12}
+
+The mechanism study compares one global tempo per track against window-local
+tempo; uniform, hard, and soft routing; one, two, three, and five experts;
+PAMS independently applied to each track; and sliding-window PAMS with
+deterministic tempo bins. Boundary alternatives include non-overlapping
+windows, center-crop decoding, uniform response averaging, phase-aligned
+fusion, normalized overlap-add, and integer-window summation as a diagnostic
+failure mode. Training is compared with and without the synchronized
+within-track continuity term. An oracle router based on ground-truth periods
+may serve as an upper-bound diagnostic only when the required annotation
+exists, and must never be grouped with deployable methods. Arbitrary
+person-indexed parameter sets are excluded because identities do not persist
+across videos; efficiency instead compares shared batched execution with
+independent replicas of the same frozen checkpoint.
+
+\begin{table*}[t]
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{3pt}
+  \caption{Planned mechanism analysis. Parameter counts expose the cost of
+  expert count and weight sharing.}
+  \label{tab:mechanisms}
+  \begin{tabular}{llcccc}
+    \toprule
+    Factor & Setting & Period-mAP$\uparrow$ & AvgMAE$\downarrow$ &
+    AvgOBO$\uparrow$ & Params (M)$\downarrow$ \\
+    \midrule
+    Tempo scope & Track-global & \R{mech.tempo.global.pmap} &
+      \R{mech.tempo.global.mae} & \R{mech.tempo.global.obo} &
+      \R{mech.tempo.global.params} \\
+    & Window-local & \R{mech.tempo.local.pmap} &
+      \R{mech.tempo.local.mae} & \R{mech.tempo.local.obo} &
+      \R{mech.tempo.local.params} \\
+    Router & Uniform & \R{mech.router.uniform.pmap} &
+      \R{mech.router.uniform.mae} & \R{mech.router.uniform.obo} &
+      \R{mech.router.uniform.params} \\
+    & Hard & \R{mech.router.hard.pmap} & \R{mech.router.hard.mae} &
+      \R{mech.router.hard.obo} & \R{mech.router.hard.params} \\
+    & Soft & \R{mech.router.soft.pmap} & \R{mech.router.soft.mae} &
+      \R{mech.router.soft.obo} & \R{mech.router.soft.params} \\
+    Boundary & Center crop & \R{mech.boundary.crop.pmap} &
+      \R{mech.boundary.crop.mae} & \R{mech.boundary.crop.obo} &
+      \R{mech.boundary.crop.params} \\
+    & Response average & \R{mech.boundary.average.pmap} &
+      \R{mech.boundary.average.mae} & \R{mech.boundary.average.obo} &
+      \R{mech.boundary.average.params} \\
+    & Normalized overlap-add & \R{mech.boundary.ola.pmap} &
+      \R{mech.boundary.ola.mae} & \R{mech.boundary.ola.obo} &
+      \R{mech.boundary.ola.params} \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\subsection{Robustness and Tracking Diagnostics}
+\ClaimMap{C02,C05,C12,C15}
+
+Natural tempo variation will be stratified by within-track cycle-duration
+dispersion. Deterministic count-preserving piecewise time warps, contiguous
+masking, and injected identity switches will measure degradation from each
+clean input using identical corruptions across methods. Perturbations are
+separated by pipeline level. Pre-tracking video corruptions rerun the frozen
+frontend and may change HOTA, IDF1, and IDSW; post-track pose/mask corruptions
+hold tracks fixed, so tracking metrics must remain unchanged. The protocol
+must record whether an identity switch changes only the track identifier or
+also the pose content. Results will be stratified by active-person count,
+asynchronous starts and stops, pauses, occlusion, and track fragmentation.
+
+\begin{table*}[t]
+  \centering
+  \small
+  \caption{Planned robustness report. Parenthesized values will be paired
+  changes from the corresponding clean input with video-cluster bootstrap
+  intervals.}
+  \label{tab:robustness}
+  \begin{tabular}{llllcccc}
+    \toprule
+    Condition & Level & Severity & Stratum \(n\) & Period-mAP$\uparrow$ & AvgMAE$\downarrow$ &
+    AvgOBO$\uparrow$ & IDF1$\uparrow$ \\
+    \midrule
+    Clean & -- & -- & \Protocol{robust.clean_n} & \R{robust.clean.pmap} & \R{robust.clean.mae} &
+      \R{robust.clean.obo} & \R{robust.clean.idf1} \\
+    Natural tempo change & Data stratum & Low/medium/high & \Protocol{robust.tempo_n} & \R{robust.tempo.pmap} &
+      \R{robust.tempo.mae} & \R{robust.tempo.obo} & \R{robust.tempo.idf1} \\
+    Piecewise time warp & Post-track & \Protocol{robust.warp_levels} & \Protocol{robust.warp_n} & \R{robust.warp.pmap} &
+      \R{robust.warp.mae} & \R{robust.warp.obo} & \Protocol{robust.fixed_idf1} \\
+    Contiguous occlusion & Pre-track & \Protocol{robust.occlusion_levels} &
+      \Protocol{robust.occlusion_n} & \R{robust.occlusion.pmap} & \R{robust.occlusion.mae} &
+      \R{robust.occlusion.obo} & \R{robust.occlusion.idf1} \\
+    Injected ID switches & Post-track & \Protocol{robust.switch_levels} &
+      \Protocol{robust.switch_n} & \R{robust.switch.pmap} & \R{robust.switch.mae} &
+      \R{robust.switch.obo} & \R{robust.switch.idf1} \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\subsection{Generalization and Efficiency}
+\ClaimMap{C12,C15}
+
+If protocol-compatible, a model trained on MultiRep will be evaluated without
+target-domain adaptation on the official RepCount and UCFRep single-person
+protocols. Dataset-native normalized MAE and OBO will retain their original
+names rather than being relabeled as MultiRep AvgMAE/AvgOBO. Such transfer can
+support representation generalization only, not MRAC identity robustness.
+Efficiency will
+separate detector/pose/tracker preprocessing from counting latency and report
+parameters, FLOPs, peak memory, latency, counting-only throughput, and
+full-pipeline throughput as active identities increase. Shared batched
+execution and independent same-checkpoint replicas are timed separately. If
+ByteTrack~\cite{zhang2022bytetrack} is selected as the
+common tracker, its exact code and checkpoint revision will be frozen in the
+manifest; this mention does not pre-select the frontend.
+
+\begin{table*}[t]
+  \centering
+  \small
+  \caption{Planned efficiency report under one frozen hardware and timing
+  protocol. The final generator expands every method into one row for each
+  integer active-ID level from one through the frozen dataset maximum; the
+  current Active IDs cell marks that pending grid rather than one aggregate
+  measurement.}
+  \label{tab:efficiency}
+  \begin{tabular}{@{}lccccccc@{}}
+    \toprule
+    Method & Active IDs & Params (M)$\downarrow$ & GFLOPs$\downarrow$ & Peak GB$\downarrow$ &
+    Preprocess ms/frame$\downarrow$ & Count ms/frame$\downarrow$ & Pipeline FPS$\uparrow$ \\
+    \midrule
+    MultiCounter & \Protocol{eff.identity_levels} & \R{eff.multicounter.params} & \R{eff.multicounter.flops} &
+      \R{eff.multicounter.vram} & \R{eff.multicounter.pre} &
+      \R{eff.multicounter.model} & \R{eff.multicounter.fps} \\
+    MultiCounter+ & \Protocol{eff.identity_levels} & \R{eff.multicounterplus.params} &
+      \R{eff.multicounterplus.flops} & \R{eff.multicounterplus.vram} &
+      \R{eff.multicounterplus.pre} & \R{eff.multicounterplus.model} &
+      \R{eff.multicounterplus.fps} \\
+    \textbf{Ours} & \Protocol{eff.identity_levels} & \R{eff.ours.params} & \R{eff.ours.flops} &
+      \R{eff.ours.vram} & \R{eff.ours.pre} & \R{eff.ours.model} &
+      \R{eff.ours.fps} \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+Qualitative figures must be generated directly from frozen per-frame artifacts
+and include persistent identity colors, valid masks, local period estimates,
+routing weights, fused responses, and ground-truth/predicted boundaries. At
+least one failure case is mandatory; curves may not be manually redrawn.

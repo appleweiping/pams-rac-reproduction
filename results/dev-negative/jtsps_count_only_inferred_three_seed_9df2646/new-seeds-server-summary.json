@@ -1,0 +1,55 @@
+{
+  "claim_scope": "new-seeds-only; combine with frozen seed2026 separately",
+  "cublas_workspace_config": ":4096:8",
+  "dev_targets_reachable_during_training_or_prediction": false,
+  "method": "jtsps-count-only",
+  "new_seed_mean": {
+    "mae": 2.9523809523809526,
+    "nmae": 0.48031261636557204,
+    "obo": 0.41666666666666663,
+    "raw_mae": 2.9983382125695544,
+    "raw_nmae": 0.4907213315112181,
+    "raw_rmse": 4.769528659925495,
+    "rmse": 4.76335771693056
+  },
+  "new_seed_sample_sd": {
+    "mae": 0.033671751485073884,
+    "nmae": 0.0028799831398406313,
+    "obo": 0.016835875742536824,
+    "raw_mae": 0.0649751370838035,
+    "raw_nmae": 0.017488912827350517,
+    "raw_rmse": 0.1285193052102423,
+    "rmse": 0.04241346565099624
+  },
+  "protocol": "ucfrep_526_train337_dev84",
+  "schema_version": 1,
+  "seeds": [
+    {
+      "evaluation_path": "seed-42/score/evaluation.json",
+      "evaluation_sha256": "1ef34521978dad1861905cea1166388e5f37acf8a25781c775a89cc537b7417c",
+      "mae": 2.9761904761904763,
+      "nmae": 0.4782761607576878,
+      "obo": 0.40476190476190477,
+      "raw_mae": 3.0442825726100375,
+      "raw_nmae": 0.47835480265541813,
+      "raw_rmse": 4.860405532153041,
+      "rmse": 4.793348566106003,
+      "seed": 42
+    },
+    {
+      "evaluation_path": "seed-3407/score/evaluation.json",
+      "evaluation_sha256": "3c74408dcb32859f8b06df28c60a18e030072da17b738f79ce2e6af06a8ffa7d",
+      "mae": 2.9285714285714284,
+      "nmae": 0.4823490719734563,
+      "obo": 0.42857142857142855,
+      "raw_mae": 2.9523938525290716,
+      "raw_nmae": 0.503087860367018,
+      "raw_rmse": 4.678651787697949,
+      "rmse": 4.733366867755119,
+      "seed": 3407
+    }
+  ],
+  "source_git": "9df2646df90cb65e60b5da06616cbc47427ba3e9",
+  "status": "inferred-clean-room-not-source-parity",
+  "test105_access": false
+}

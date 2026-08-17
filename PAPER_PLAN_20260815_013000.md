@@ -1,0 +1,283 @@
+---
+plan_version: 2
+created_at: 2026-08-14T20:38:01+08:00
+venue: ICASSP 2027
+track: regular conference paper
+assurance: submission
+paper_state: provisional/data-pending
+result_to_claim_route: pivot
+technical_page_limit: 4
+reference_page: 5
+reference_page_allowed_content: references only
+template_state: ICASSP2027-author-kit-pending
+review_mode: single-anonymous
+author_roster_state: one-author-public/complete-roster-incomplete
+evidence_freeze: 26e5b7176f1f7c678391163c3278b5c390d54115
+---
+
+# ICASSP 2027 Paper Plan
+
+## Core Story and Claim Ceiling
+
+**Working title:** *TempoRAC: Identity-Indexed Local Tempo Routing for Multi-Person
+Repetition Counting*
+
+**One-sentence story.** Given supplied identity-indexed pose tracks, the paper
+proposes to treat each track as a masked non-stationary signal, estimate local
+periodic evidence, softly route overlapping windows through shared tempo experts,
+reconstruct one continuous response per identity, and decode each track once.
+
+The paper's narrow claim axis is identity indexing × window-local tempo routing ×
+response reconstruction under an intended counting objective without person-wise
+count or period labels. It does not claim the first multi-person, person-wise,
+asynchronous, variable-speed, pose-based, self-supervised, or end-to-end counter.
+MultiCounter, MultiCounter+, and PAMS establish material prior coverage and must
+be acknowledged early.
+
+`CLAIMS_FROM_RESULTS.md` controls the empirical ceiling. Its route is `pivot`
+because no synchronized multi-person code or MultiRep result is present. The
+first delivery is a full pre-results manuscript with `DRAFT — RESULTS PENDING`.
+All proposed components are `SYNC-REQUIRED`; all performance language is
+withheld; current UCFRep artifacts remain `table_eligible=false`.
+
+## Fixed Length and Page Contract
+
+The target is approximately 2,360 words of technical prose, inside a hard four-
+page technical limit. The optional fifth page is restricted to references only;
+funding/COI and ethical-compliance text must fit within pages 1--4.
+
+| Material | Word target | Page target | Non-negotiable content |
+|---|---:|---:|---|
+| Title, author block, abstract, index terms | abstract 140–160 | page 1, ~0.35 page | TempoRAC title; approved Weiping Yan/UMN/email fields; one controlled result placeholder; no citations in abstract |
+| 1. Introduction (related work integrated) | ~500 | page 1, ~0.65 page | Application, early/recent progress, exact gap, method overview, three falsifiable contributions |
+| 2. Method | ~900 | pages 2–3, ~1.55 pages | Four equation groups only; complete PPT framework figure; explicit perception and synchronization boundaries |
+| 3. Experiments and Analysis | ~550 | pages 3–4, ~1.05 pages | Protocol, metrics, side-by-side main/ablation tables, prospectively specified piecewise-warp diagnostic, evidence status |
+| 4. Conclusion | 100–120 | page 4, ~0.20 page | Scope, limitations, closure work; no unsupported result conclusion |
+| Funding/COI/ethics | as required | pages 1--4 | Exact author-supplied declarations; no guessed content |
+| References | as required | page 5 only | No technical prose, equation, figure, table, appendix, result interpretation, or new method content |
+
+There is no appendix in the regular submission. If technical content cannot fit
+within pages 1–4, it is cut from the paper rather than moved to page 5.
+
+## Claims–Evidence Backbone
+
+The authoritative row-level ledger is `CLAIMS_EVIDENCE_MATRIX.md`.
+
+| Contribution group | Claim IDs | Current wording | Required eventual evidence |
+|---|---|---|---|
+| Problem formulation | C02–C03 | “We study/formulate” | Collaborator input/output schema plus dataset/stress-protocol coverage |
+| Proposed mechanism | C05–C08 | “We propose”; visibly synchronization-pending | Source anchors and executable module tests at one clean collaborator commit |
+| Evaluation contract | C11–C14 | “We prospectively specify/evaluate once synchronized” | Frozen MultiRep families, paired analyses, generated outputs, and passing empirical audits |
+
+No pre-results contribution bullet is an empirical contribution. After result
+synchronization, the contribution list may change only after the claim ledger
+and acceptance contract are re-reviewed.
+
+## Section-by-Section Writing Plan
+
+### Abstract — 140–160 words
+
+Use exactly five moves in one paragraph:
+
+1. define multi-person repetition counting and its person-wise applications;
+2. identify asynchronous people and within-track tempo drift as masked
+   non-stationary signal challenges;
+3. state the supplied-track boundary and the intended no-person-wise-count/period
+   supervision qualifier;
+4. summarize local ACF/FFT evidence, soft routing, shared response experts,
+   normalized overlap-add, and one track-level decoder;
+5. invoke exactly one controlled empirical sentence.
+
+Draft mode renders the fifth move as a conspicuous pending sentence. Submission
+mode fails unless that sentence resolves to eligible manifest keys. No citation,
+primacy claim, SOTA wording, or fabricated number is permitted.
+
+### 1. Introduction — approximately 500 words, Related Work integrated
+
+Use five substantial paragraphs rather than short fragments:
+
+1. **Application and task.** Explain why a scene total is insufficient for
+   rehabilitation, exercise, training, or workplace monitoring; define the
+   desired person-wise vector.
+2. **Progress and prior boundary.** Synthesize early single-instance periodicity
+   methods, learned RGB counters, pose/low-label approaches, then MultiCounter,
+   MultiCounter+, and PAMS. State what each family already covers; do not list
+   papers without comparison.
+3. **Precise gap.** Isolate supplied identity-indexed pose tracks, no person-wise
+   count/period labels in the intended counting objective, and period changes
+   inside a track. Distinguish this from global clip speed or long/short regime
+   selection.
+4. **Method overview.** Follow the causal order: masked track encoding → local
+   period evidence → soft expert routing → response fusion → normalized
+   reconstruction → one decoder. Disclose that multi-person implementation is
+   pending in the pre-results build.
+5. **Contributions.** Give exactly three falsifiable bullets mapped to C02–C03,
+   C05–C08, and C11–C14. Before synchronization, each uses formulation/proposal/
+   evaluation-contract language, not achieved performance language.
+
+Figure 1 is referenced at the end of paragraph 4 and appears at the top of page
+2. No standalone Related Work section is created.
+
+### 2. Method — approximately 900 words and four equation groups
+
+Open with a single overview paragraph defining the perception boundary: the
+counter receives identity-indexed tracks and masks; oracle/common/native tracking
+protocols are evaluated separately.
+
+#### 2.1 Identity-indexed masked representation — Equation Group 1
+
+- Define \(X_i\in\mathbb{R}^{T_i\times J\times C}\), \(m_i\), and
+  \(\hat{\mathbf c}\); the scene sum is diagnostic only.
+- Define overlapping windows and the shared encoder at the minimum notation
+  needed by later equations.
+- State shared learned parameters and per-identity masks/state.
+- Mark tensor layout, window length/stride, padding, short tracks, and identity
+  lifecycle `SYNC-REQUIRED` until source-bound.
+
+#### 2.2 Local masked ACF/FFT evidence — Equation Group 2
+
+- Combine mask-normalized non-circular autocorrelation, bounded spectral score,
+  local period \(\hat p_{i\ell}\), and confidence \(\gamma_{i\ell}\) in one
+  aligned equation group.
+- Explain why the estimate varies by window and therefore models within-track
+  non-stationarity.
+- Do not freeze the signal source, lag bounds, units, interpolation, or fallback
+  until the collaborator implementation arrives.
+
+#### 2.3 Soft tempo routing and shared experts — Equation Group 3
+
+- Define simplex routing weights over fast/medium/slow shared experts.
+- State that experts emit continuous local responses, not rounded window counts.
+- A fallback distribution may appear only as a visible synchronization placeholder.
+- Keep router parameterization, temperature, gradient path, expert structure,
+  and specialization claim source-bound.
+
+#### 2.4 Response reconstruction and track decoding — Equation Group 4
+
+- In one aligned group, define routed response fusion, mask/taper-normalized
+  overlap-add, and \(\hat c_i=|\mathcal D(R_i,m_i)|\).
+- Explain the invariant: mix responses before reconstruction and decode once;
+  never sum independently rounded overlapping-window counts.
+- Keep taper, denominator, invalid gaps, event confidence, peak parameters, and
+  decoder semantics synchronization-pending.
+
+Close the method with one compact training paragraph. It may show
+\(\mathcal L_{\mathrm{PAMS\text{-}TCC}}+\lambda_r\mathcal L_{\mathrm{route}}+
+\lambda_t\mathcal L_{\mathrm{track}}\) only as an unresolved interface. PAMS-TCC
+is the documented starting component; the existence, definitions, supervision,
+weights, and gradients of the other terms are `SYNC-REQUIRED` and absent terms
+must be deleted. Display equations have no trailing punctuation, and explanatory
+paragraphs start flush left.
+
+### 3. Experiments and Analysis — approximately 700 words
+
+Use four dense subsections.
+
+#### 3.1 Protocol and metrics
+
+- Bind the exact MultiRep release, split, hashes, evaluator, preprocessing,
+  modality, supervision, seeds, hardware, and run logs.
+- Separate `oracle_tracks`, `common_predicted_tracks`, and `native_pipeline`.
+- Report Period-mAP, Period-AP50, Period-AP75, AvgMAE, and AvgOBO; retain HOTA, IDF1, and IDSW
+  as frontend diagnostics for predicted tracks.
+- Reproduced learned methods require at least three seeds, mean, sample SD, and
+  paired video-cluster bootstrap 95% CI. One official checkpoint cannot support
+  a variance claim.
+
+#### 3.2 Main comparison — Table 1
+
+- First block: native/contextual MultiCounter and MultiCounter+ with their own
+  protocol labels; these numbers are not mixed into a matched ranking.
+- Second block: supplied oracle-track Track-PAMS, track-global tempo, and the
+  proposed method, isolating counting from tracking errors.
+- Third block: the same three methods under one frozen common predicted-track
+  frontend; include others only after output and protocol parity are proven.
+- Never bold a “best” value across incompatible blocks.
+- Pre-results cells are visibly pending and fail submission mode.
+
+#### 3.3 Mechanism ablation — Table 2
+
+Specify prospectively local versus global tempo, uniform versus hard versus soft routing,
+no expert routing, boxcar fusion, decode-each-window then aggregate, NOLA then
+one trajectory decode, and removal of every auxiliary loss that actually exists
+in the synchronized code. Bind every row to one exact commit/config and use
+paired same-seed comparisons. Delete conceptual rows for absent modules rather
+than simulating them.
+
+#### 3.4 Non-stationary tempo diagnostic — generated after results
+
+Use a prospectively specified per-person piecewise time-warp. For one representative,
+selection-rule-bound example or an aggregate diagnostic, align local period,
+routing probabilities/entropy, reconstructed counting response, and clean-to-
+corrupt change. The figure supports a mechanism claim only after its selection
+rule, source data, generator, and paired result pass audit.
+
+Every result paragraph answers one question, states the evidence scope, and
+avoids causal language not licensed by Table 2 or the future result-bound diagnostic.
+
+### 4. Conclusion — 100–120 words
+
+Restate the problem, the proposed four-stage signal path, and the intended
+supervision boundary without copying the Introduction. The pre-results version
+explicitly identifies missing collaborator synchronization, absent eligible
+MultiRep evidence, and dependence on supplied pose/tracks. It ends with the
+concrete closure path: bind code, quantify oracle/common-track behavior and
+piecewise tempo changes, then rerun empirical and citation audits. No performance
+claim appears until results pass.
+
+### Page 5 — References Only
+
+- Use IEEE numeric citations and only cited, primary-source-verified entries.
+- Keep exact author-supplied funding/COI and Compliance with Ethical Standards
+  text on pages 1--4.
+- Do not place method details, limitations, dataset protocol, result explanation,
+  figures, tables, equations, captions, footnotes carrying technical content, or
+  supplemental material on this page.
+
+## Figure and Table Plan
+
+| ID | Placement | Content | Data/evidence source | Current state |
+|---|---|---|---|---|
+| Figure 1 | page 2 top, full two-column canvas | Task motivation: multi-person asynchronous/changing-pace signals versus a schematic scene-level count and desired person-wise outputs | Complete committed Introduction PPT, exact full-canvas PDF export, source/output hashes | `visual_reference_only`; embedded-media permission `SYNC-REQUIRED` |
+| Figure 2 | page 3 top, full two-column canvas | Conceptual tracking-to-counting framework with local tempo routing and candidate training strip; caption reconciles $M_i$ with shared parameters and keeps unbound losses provisional | Complete committed Framework PPT, exact full-canvas PDF export, source/output hashes | `visual_reference_only`; method and media permission `SYNC-REQUIRED` |
+| Table 1 | page 4 top-left | Native/contextual and common-track result blocks with protocol and core count metrics | Frozen `results_manifest.json` and generated TeX | `data-pending` |
+| Table 2 | page 4 top-right | Local/global, routing modes, boundary alternatives, and real auxiliary-loss removals | Frozen ablation CSV/JSON and exact variant manifests | `data-pending` |
+| Future diagnostic | generated after eligible results | Piecewise time-warp: local period, routing distribution/entropy, response, and clean-to-corrupt count behavior | Frozen per-instance diagnostic file and deterministic generator | absent by design; `data-pending` |
+
+The earlier reconstructed Draw.io figures, long protocol tables, extended
+robustness, cross-data, scaling plots, and appendix are excluded from the
+regular ICASSP PDF.
+
+## Citation Plan
+
+- **Introduction:** early periodic motion/counting, RepNet/TransRAC family,
+  pose/low-label counting, MultiCounter, MultiCounter+, and PAMS.
+- **Method:** cite PAMS only for the documented starting objective/period-adaptive
+  foundation; cite tracking only where the supplied-track boundary is discussed.
+- **Experiments:** cite MultiRep/task sources, each reported or reproduced
+  baseline, and canonical HOTA/ID metric papers.
+- Discover candidates with Google Scholar/cited-by search, but verify BibTeX and
+  claim context through DBLP, CrossRef, CVF, IEEE, Springer, or an official author
+  publication page. Prefer final published versions.
+- Existing CVPR citation-audit artifacts are historical inputs, not inherited
+  ICASSP approval. Rerun a fresh citation audit after compression.
+
+## Build and ARIS Acceptance Order
+
+1. Create a provisional IEEE/ICASSP scaffold, expose only the explicitly
+   approved Weiping Yan fields, and keep the incomplete collaborator roster local.
+2. Draft all sections with controlled evidence macros, the two complete
+   PPT-sourced figures, and paired table shells; compile with a visible
+   results-pending banner.
+3. Negotiate the 16-item ICASSP acceptance contract with a fresh reviewer.
+4. Run two fresh zero-context review/fix/recompile rounds and preserve round0/1/2 PDFs.
+5. Emit proof (`NOT_APPLICABLE` if appropriate), claim, citation, kill-argument,
+   page-layout, font, privacy, and final verifier artifacts.
+6. Replace the scaffold with the official ICASSP 2027 kit and rerun every format,
+   author, citation, page-5-content, and visual check.
+
+Submission mode fails on `PENDING`, `SYNC-REQUIRED`, `[VERIFY]`, empty evidence
+cells, uncontrolled numbers, missing authors, missing official template, content
+spill to page 5, stale/blocking audits, or an unhealthy required cross-family
+review. Until all gates close, the only valid readiness statement is
+`provisional/data-pending`.

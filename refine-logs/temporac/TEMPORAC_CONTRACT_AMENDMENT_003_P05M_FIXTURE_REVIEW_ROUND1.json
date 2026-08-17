@@ -1,0 +1,168 @@
+{
+  "acceptance_status": "provisional",
+  "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE",
+  "artifact_type": "temporac_contract_amendment_review",
+  "authoritative": false,
+  "authorizes": [],
+  "blocking_issue_count": 3,
+  "date": "2026-08-16",
+  "executor_family": "openai",
+  "fresh_zero_context": true,
+  "historical_record": true,
+  "input_rehash_status": "verified_during_original_round_superseded_at_persistence",
+  "bindings": {
+    "amendment_json": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.json",
+      "sha256": "2b0f6bb8e34b3ad271b60508ab9a08971ed86639b25075c72beb18c3364416c8",
+      "state": "superseded_round_1_bytes"
+    },
+    "amendment_markdown": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.md",
+      "sha256": "15520072a9e716f148659991cda00aa01d35e070f312ecccb560c687709b7366",
+      "state": "superseded_round_1_bytes"
+    },
+    "canonical_review_markdown": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_REVIEW_ROUND1.md",
+      "sha256": "ca83e5277dfcd9319d331ef5fbb986fb0e37746c27181fb7f31cfb82088b42e4"
+    },
+    "proposal_temporac": {
+      "path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+      "sha256": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c",
+      "state": "round_1_reviewed_snapshot"
+    },
+    "experiment_plan": {
+      "path": "refine-logs/EXPERIMENT_PLAN.md",
+      "sha256": "3fd1986871b32674d74b395fbfc9720712d9fba0c8583c24c1d5bddb87086eb6",
+      "state": "round_1_reviewed_snapshot"
+    },
+    "experiment_tracker": {
+      "path": "refine-logs/EXPERIMENT_TRACKER.md",
+      "sha256": "c7e2f32c3c81b66884abb13760a671ecc7cdd314fd6c994a4ed4c46cb754a63b",
+      "state": "round_1_reviewed_snapshot"
+    },
+    "metrics": {
+      "path": "src/pams/temporac/metrics.py",
+      "sha256": "1dadf08e89330bed2ab773afda05bffcb3fe2252b0d3e23c0bcc18c2c3b049dd"
+    },
+    "evaluator": {
+      "path": "src/pams/temporac/evaluator.py",
+      "sha256": "81037186896309b093cd184b6e63542653f5a7e1ab063b78a9e63558369a47d2"
+    },
+    "contract": {
+      "path": "src/pams/temporac/contract.py",
+      "sha256": "b71255a35cce1701d2741064064b53ba819b742873a348f1852f147149e36467"
+    },
+    "types": {
+      "path": "src/pams/temporac/types.py",
+      "sha256": "4d2ba91a19b9eddf529d91a366d29072dedcdc5977ba5daf7a1720484259181b"
+    },
+    "hashio": {
+      "path": "src/pams/temporac/hashio.py",
+      "sha256": "2d81e415b45e3d1b612f998b6a8386a967dfdfcfaac31bc914b2c95cbaeeab3a",
+      "state": "final_stable_round_1_snapshot"
+    },
+    "receipts": {
+      "path": "src/pams/temporac/receipts.py",
+      "sha256": "0ac800d96f536a41a67775bc8e8e778fe14c312c02f642f7cde78d210244016d",
+      "state": "final_stable_round_1_snapshot"
+    },
+    "trusted_packer": {
+      "path": "src/pams/temporac/trusted_packer.py",
+      "sha256": "40d6e3d5be1b26b7ba0f0f7aadf8da7496c95c4e829face5c7e9faaee2cdf94e"
+    },
+    "gates": {
+      "path": "src/pams/temporac/gates.py",
+      "sha256": "b6c9d7432443d7ad36738a81700746709fd571d475514aa6f1bbcd39be744b4a"
+    },
+    "fixtures": {
+      "path": "src/pams/temporac/fixtures.py",
+      "sha256": "a8d10df7c8e3cbcb5684198192d3a553921da0f6aa92f03e54448ee182671406"
+    }
+  },
+  "formatter_drift": {
+    "intermediate_nonbinding": {
+      "hashio_sha256": "f6f8e4e6f891c510c561b507d6826bae3cddb12ee9c34d4bade584f98e7fb0bf",
+      "receipts_sha256": "5f30581bdf31be4f98a891f9631f0ef7eda9ddcd58c2893f064ab277c3d879bd"
+    },
+    "round_1_final_binding": {
+      "hashio_sha256": "2d81e415b45e3d1b612f998b6a8386a967dfdfcfaac31bc914b2c95cbaeeab3a",
+      "receipts_sha256": "0ac800d96f536a41a67775bc8e8e778fe14c312c02f642f7cde78d210244016d"
+    }
+  },
+  "independent_fixture_replay": {
+    "attack_count": 17,
+    "attack_expected_sha256": "2e62a7b830f453e0505cdeabb766f8a46c0ab2523321d3b1f933bf7fd2cc5f30",
+    "clean_draws_raw_f64le_sha256": "91d1fa29d36ad2e4e41733141d841a756c986b3670617f651315026a7157bdae",
+    "comparator_draw_counts": {
+      "capacity-control": 2300,
+      "global": 3567,
+      "uniform": 4133
+    },
+    "component_order_sha256": "8583d714619e7b1bddc755bac95b91a801a8c97951e382fbfd7f875a70f066f2",
+    "draw_pair_root_sha256": "49b83785c436d2abd5cbcda617d142922f27ee21a4e17a39f730135add15cf3e",
+    "fixture_input_sha256": "1264779925401d8efeecddefbe7245eca892543e923ec7c19ade08286fa062c9",
+    "materialized_rows_sha256": "759b344fbc7db6ea78b041c84e23ff0fc59733985775be18f6d5c235e8408dbf",
+    "normal_expected_sha256": "50f8376d0ee1e245a8521c7831d6d23635ac8cc74694ceeef1f028c8c48e6622",
+    "reference_source_sha256": "b23bf344a10f84a583c38e2326efd5ca70d4c4462fbf76715cd32b9afd20922f",
+    "rng_indices_raw_i8le_sha256": "bcfccfc96c2781162e3c973dea8f88478b1912553acc730aa52772947ed8aef1",
+    "route_draws_raw_f64le_sha256": "8a325a51517a7a7669f4f8d4bdfa4d103204383b5d769e19cad409aba5f9e132",
+    "row_count": 288
+  },
+  "production_counterexample": {
+    "clean_draws_raw_f64le_sha256": "79afebeb7a9b2bd3ba23b45432483eebc6846cd34c3d7c0cced6c37cf19b26b9",
+    "comparator_draw_counts": {
+      "capacity-control": 2219,
+      "global": 3636,
+      "uniform": 4145
+    },
+    "inner_pass_receipt_sha256": "a850b50bd40780eee86e0476b9ba03f774ca1ba59b5445f03c0a5f671f55eb27",
+    "route_draws_raw_f64le_sha256": "9d13330237fed79f53a93db19edee3d7a66049333f269936afa325712ee507cd"
+  },
+  "blocking_findings": [
+    {
+      "id": "R1-B1",
+      "finding": "Historical implementation hashes self-lock P2 and make a corrected fresh implementation impossible to admit."
+    },
+    {
+      "id": "R1-B2",
+      "finding": "The two-file evaluator bundle dd2a724d4a91088bbd7c2eaf8c71cebd67497502ce618b00982cbf2c5010047e is not a transitive executable dependency closure."
+    },
+    {
+      "id": "R1-B3",
+      "finding": "The six-key receipt self-issues PASS without execution, and K7 consumes the one-use capability before validating its bindings."
+    }
+  ],
+  "preservation": {
+    "claims": 1,
+    "experiment_blocks": 4,
+    "training_jobs": 27,
+    "allocated_a6000_hours": 93,
+    "seeds": [20260815, 20260816, 20260817],
+    "thresholds_changed": false,
+    "data_scope_changed": false,
+    "f23_order_changed": false
+  },
+  "authority_ceiling": {
+    "canonical_edit_authorized": false,
+    "claims_authorized": false,
+    "data_access_authorized": false,
+    "evaluator_capability_authorized": false,
+    "gate_pass_authorized": false,
+    "git_authorized": false,
+    "implementation_authorized": false,
+    "manifest_authorized": false,
+    "paper_promotion_authorized": false,
+    "result_authorized": false,
+    "s0_authorized": false,
+    "server_access_authorized": false,
+    "test_execution_authorized": false,
+    "training_authorized": false
+  },
+  "model": "gpt-5.6-sol",
+  "review_independence": "same-family",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "round": 1,
+  "status": "REVISE_SAME_FAMILY_PROVISIONAL_ZERO_AUTHORITY",
+  "verdict": "REVISE"
+}

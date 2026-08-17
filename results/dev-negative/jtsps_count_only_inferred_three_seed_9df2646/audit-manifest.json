@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "artifact_type": "jtsps_count_only_three_seed_strict_dev_audit",
+  "status": "complete_negative_inferred_clean_room_not_source_parity",
+  "method_id": "jtsps-count-only-inferred",
+  "protocol": "ucfrep_526_train337_dev84",
+  "seeds": [
+    42,
+    2026,
+    3407
+  ],
+  "source": {
+    "git_sha": "9df2646df90cb65e60b5da06616cbc47427ba3e9",
+    "git_tree": "3e22657ff22ea127b8596dd090cff48906293939",
+    "clean_checkout": true,
+    "runner_sha256": "1fc9311d037b9dc333f81941589955345c0ad480a1aea2fe9b3791fa4d10af31",
+    "model_scaffold_sha256": "0e9a43faf794f32332685256a0f6d550cc0aba136ba8027b1ff55c4e82754a1a"
+  },
+  "input_bindings": {
+    "train_inputs_sha256": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207",
+    "train_count_targets_sha256": "73999befa45bb55861acfbf8a6b34f04f4a9b34c1e46fa15bc51a88ed6bcfb1e",
+    "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "pose_fingerprint": "8ecb6c1384e1d6a088762322ed90bb6aa631683318e0ab7ed21c19541e5f6656"
+  },
+  "new_seed_execution": {
+    "server_run_root": "/media/lenovo/data2/pams-rac/runs/baselines/jtsps-count-only-inferred-three-seed-expansion-9df2646-20260729T222000Z-v2",
+    "container_image_id": "sha256:022103f69a42ef3e88ee43ddcfbd706dabfdeec6247c257d1d01fda2c0ea2f91",
+    "launcher_sha256": "c0c36e87cf56f9c6d43292b7d3f5afcfc10352e06784de05d9dac4e2d39b0b0c",
+    "hardware": "2 x NVIDIA RTX A6000, 49140 MiB each",
+    "seed_gpu_assignment": {
+      "42": 0,
+      "3407": 1
+    },
+    "pose_view": {
+      "copied_files": 421,
+      "train_files": 337,
+      "dev_files": 84,
+      "test_files": 0,
+      "membership_sha256": "a3e0f7365b01f66216437dd22b98b25742befba675183ae644448ccdbb669c43",
+      "inventory_sha256": "434572c2f6a7651d9eb3584ae453bfe34beba3579edf80cd9be0bf373b4932d7"
+    },
+    "container_audit": {
+      "all_four_exit_codes": 0,
+      "all_four_network_modes": "none",
+      "all_four_root_filesystems_read_only": true,
+      "all_four_users": "1000:1000",
+      "all_four_capabilities_dropped": "ALL",
+      "all_four_no_new_privileges": true,
+      "train_mounts_exactly_verified": [
+        "source-view:ro",
+        "train.inputs.json:ro",
+        "train.count-targets.jtsps.json:ro",
+        "dev.inputs.json:ro",
+        "pose-view-train337-dev84:ro",
+        "seed-output:rw"
+      ],
+      "train_dev_targets_mounted": false,
+      "train_test_identity_or_targets_mounted": false,
+      "score_mounts_exactly_verified": [
+        "source-view:ro",
+        "frozen-predictions.json:ro",
+        "dev.targets.json:ro",
+        "score-output:rw"
+      ],
+      "score_gpu_access": false,
+      "cublas_workspace_config": ":4096:8"
+    },
+    "sealed_test105_access": false
+  },
+  "seed_2026_runtime_caveat": {
+    "same_source_git": true,
+    "same_model_and_training_protocol": true,
+    "same_input_hashes": true,
+    "same_container_image_id": true,
+    "cublas_workspace_config_recorded": false,
+    "interpretation": "The original seed-2026 run predates explicit CUBLAS_WORKSPACE_CONFIG recording. This provenance difference is disclosed; no seed was rerun or selected after seeing the new results."
+  },
+  "artifact_bindings": {
+    "new-seeds-server-summary.json": "a605894ad80dfde2388054317926802d70acf8a6d53f5018488fed9fa3f5075e",
+    "seed-42.checkpoint.pt_server_only": "02a9a2da1cac193634eddfc794908540924ac92d7f346a8e505b55f42d1d3ece",
+    "seed-42.predictions.json": "38f554a7de6dc291fc2f7e19cbc9eaf07c1b5de9fc346040dc72e7ef2656e673",
+    "seed-42.run.json": "492d609eeefe0c9a52f91184a4f49a4e6ab736136c876201190b4c4cd10b0b24",
+    "seed-42.evaluation.json": "1ef34521978dad1861905cea1166388e5f37acf8a25781c775a89cc537b7417c",
+    "seed-2026.checkpoint.pt_server_only": "eb61916b528cde0f12de4c15cccb59d9c2758eeb10a2d31b122ac0c1c486b183",
+    "seed-2026.predictions.json": "2f21829cdd64477ddf8792d2c222e20e24ae48399f4b4b3d208c9d76f0cd4848",
+    "seed-2026.run.json": "8cc3708873be7dcbcffeb192ee2b7949374b04cf75691826a935df4a0a62ba00",
+    "seed-2026.evaluation.json": "0578d5d1d1243ae79ad1fc8bbbc68af6e8841f92b8a863f4e85d4bef8a933c00",
+    "seed-3407.checkpoint.pt_server_only": "27865448ab7b6a79abcdbb2dfcd5fb8952b71ff8ebe85f47a15e1ebea0f8d62c",
+    "seed-3407.predictions.json": "33de2319f3be44c5dc8f44ad33dadba7c8a7d34a300b9773693acb43b40bbcc5",
+    "seed-3407.run.json": "fedc91e94366de8245066d4fd5675915e3d3b3d5e5a3aff2686d4a9dec92576f",
+    "seed-3407.evaluation.json": "3c74408dcb32859f8b06df28c60a18e030072da17b738f79ce2e6af06a8ffa7d",
+    "three-seed-aggregate.json": "e03845e8d08ff30d66bdab3c94d004c234eaa827ed33e12af9d6d652a4e1f86f",
+    "aggregate_script_sha256": "e6cbc56d75e142bb58fae7f052a0615815718ee4bfb129d39733a9d9edcab424"
+  },
+  "failed_preflight_attempt": {
+    "server_run_root": "/media/lenovo/data2/pams-rac/runs/baselines/jtsps-count-only-inferred-three-seed-expansion-9df2646-20260729T222000Z-v1",
+    "failure": "The host Python 3.8 interpreter rejected a list[str] annotation in the pose-copy preflight.",
+    "training_started": false,
+    "dev_predictions_created": false,
+    "dev_targets_read": false,
+    "dev_attempt_ledgers_created": false,
+    "test105_access": false,
+    "disposition": "Preserved on the server as a failed preflight; no files were overwritten or deleted."
+  },
+  "observed_failure_mode": {
+    "zero_predictions_per_seed": 5,
+    "zero_prediction_cause": "all-invalid pose caches retained under the dataset-wide masking policy",
+    "rounded_four_predictions": {
+      "42": 60,
+      "2026": 46,
+      "3407": 52
+    },
+    "interpretation": "The count distribution is under-dispersed and strongly concentrated near four, consistent with the poor NMAE and OBO."
+  },
+  "claim_boundary": {
+    "real_trained_runs": true,
+    "development_only": true,
+    "source_protocol_uniquely_verifiable": false,
+    "source_parity": false,
+    "eligible_for_original_paper_table": false,
+    "eligible_for_verified_pams_reproduction_claim": false,
+    "test105_status": "sealed and untouched",
+    "conclusion": "This three-seed result closes a baseline stability gap. It is negative evidence and does not validate PAMS."
+  }
+}

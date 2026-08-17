@@ -1,0 +1,328 @@
+{
+  "schema_version": "aris.experiment_audit.v1",
+  "audit_id": "20260815_warp_phase_sol",
+  "audit_date": "2026-08-15",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "ultra",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "overall_verdict": "FAIL",
+  "positive_claims_authorized": false,
+  "training_authorized": false,
+  "aris_may_continue": true,
+  "required_claim_disposition": "PREVENT_POSITIVE_CLAIMS",
+  "decision": "The current protocol has no eligible efficacy result. Gate 2 is a receipt-bound synthetic engineering failure, all gate receipts authorize nothing, local ground-truth provenance is not established, and the result/evaluator path is not integrated. The authoritative tracker understates the Gate-2 FAIL as BLOCKED/not run; therefore experiment integrity fails until records are reconciled and any future route is explicitly revised.",
+  "scope": {
+    "network_or_server_access": false,
+    "real_data_opened": false,
+    "test_data_opened": false,
+    "sealed_data_opened": false,
+    "heldout_data_opened": false,
+    "prior_experiment_audit_files_opened": false,
+    "synthetic_gate2_pack_opened_for_independent_recomputation": true,
+    "code_tests_opened": false,
+    "code_or_receipts_modified": false,
+    "git_modified": false
+  },
+  "gate_receipts": {
+    "gate0": {
+      "status": "BLOCKED",
+      "authorizes": [],
+      "sha256": "2c5d3a6574d946c22e96604a8d88c44b933a423f55e33660f171b29dc4cbf7fd"
+    },
+    "gate1": {
+      "status": "BLOCKED",
+      "authorizes": [],
+      "sha256": "160d21b2bcdc0be9850646a1e187e18eff2a4ed78700490cc58251ff641d469a"
+    },
+    "gate2": {
+      "status": "FAIL",
+      "authorizes": [],
+      "sha256": "609b2c57853d4dea661957eac810e7936611cac9d037ca9bca2eafe7ebceec03",
+      "counts": {
+        "canonical_weak_agreement": 246,
+        "canonical_weak_agreement_required_minimum": 950,
+        "half_overall": 55,
+        "half_overall_allowed_maximum": 20,
+        "double_overall": 144,
+        "double_overall_allowed_maximum": 20,
+        "half_symmetric": 50,
+        "half_symmetric_allowed_maximum": 12,
+        "double_symmetric": 66,
+        "double_symmetric_allowed_maximum": 12
+      },
+      "independently_recomputed": true
+    },
+    "gate3_cpu": {
+      "status": "BLOCKED",
+      "authorizes": [],
+      "sha256": "157c506f6573d4ddb1cd2e3c080534cda00fd869eb07597cd0d0da37c942e54e",
+      "current_code_recomputation_matches": true,
+      "cpu_diagnostic_sha256": "052c156cea23437a251856739d24122b1899fae054ab4c294ff63440d9c691ff"
+    }
+  },
+  "audit_dimensions": {
+    "A_ground_truth_provenance": {
+      "verdict": "FAIL",
+      "summary": "The config hashes agree with the historical train/validation provenance reports, but both local source files are absent and Gate 0 records no typed adapter, feature/vault split, eligibility manifest, or isolation receipt. No current local GT provenance chain exists for evaluation."
+    },
+    "B_score_normalization": {
+      "verdict": "PASS",
+      "scope": "IMPLEMENTATION_ONLY",
+      "summary": "The isolated count scorer performs person-within-video normalized absolute error followed by an unweighted video mean, uses continuous unclipped predictions, applies half-even rounding only to AvgOBO, performs the frozen paired nine-component bootstrap, and reports Period AP on [0,100]. In-memory fixtures reproduced the declared values. These metrics were not used on experiment data."
+    },
+    "C_result_file_and_number_existence": {
+      "verdict": "WARN",
+      "summary": "The Gate-2 numbers and pack hashes exist and independently reproduce, and the Gate-3 CPU receipt reproduces. No narrative/result-claim file, prediction result, or eligible efficacy score exists. The tracker fails to record the extant Gate-2 FAIL."
+    },
+    "D_dead_code_and_metric_invocation": {
+      "verdict": "FAIL",
+      "summary": "No static import or literal reference to pams.warp_phase.evaluator exists outside evaluator.py under src/pams or scripts/experiments. The CLI exposes gates and a blocked training preflight, not evaluation. Gate 1 itself records the evaluator witness schema as missing."
+    },
+    "E_actual_scope_vs_language": {
+      "verdict": "FAIL",
+      "summary": "The scientific claim files correctly say prospective, partial-cache, GT-bbox-assisted, supplied-track, and zero results, but current-status documents are stale: Gate 2 is shown as BLOCKED/not run although its receipt is FAIL. The proposal also describes unit fixtures inside the 1,000 pack while the implementation uses a separate unit pack."
+    },
+    "F_evaluation_classification": {
+      "verdict": "WARN",
+      "summary": "The only quantitative failure is synthetic selector-gate evidence, not model efficacy or real-data evaluation. It is nevertheless a frozen K5-style protocol failure and prevents phase-mass or performance claims. Gate-1 pack checks and Gate-3 CPU checks are engineering evidence only."
+    }
+  },
+  "findings": [
+    {
+      "id": "F-01",
+      "severity": "critical",
+      "verdict": "FAIL",
+      "title": "The authoritative status records suppress an extant Gate-2 FAIL",
+      "evidence": [
+        {
+          "path": "data/warp_phase_pilot_v1/audit/gate2/gate2-stochastic-v2.receipt.json",
+          "line": 1,
+          "detail": "status=FAIL; all five fixture threshold checks are false; authorizes is empty"
+        },
+        {
+          "path": "src/pams/warp_phase/gates.py",
+          "line": 1837,
+          "detail": "computed fixture checks are copied into the receipt"
+        },
+        {
+          "path": "src/pams/warp_phase/gates.py",
+          "line": 1892,
+          "detail": "any violated fixture threshold sets terminal_failure=True"
+        },
+        {
+          "path": "src/pams/warp_phase/gates.py",
+          "line": 1910,
+          "detail": "terminal failure is serialized as status FAIL"
+        },
+        {
+          "path": "refine-logs/EXPERIMENT_TRACKER.md",
+          "line": 15,
+          "detail": "G2-SELECTOR-CPU is still recorded as BLOCKED"
+        },
+        {
+          "path": "refine-logs/EXPERIMENT_TRACKER.md",
+          "line": 79,
+          "detail": "Gate 2 is still presented as a future launch"
+        },
+        {
+          "path": "refine-logs/PIPELINE_SUMMARY.md",
+          "line": 18,
+          "detail": "the pipeline says Gates 0-2 have not run"
+        }
+      ],
+      "consequence": "A positive selector, phase-mass, training, efficacy, or novelty claim is forbidden. The Gate-2 failure may not be relabeled as pending or merely blocked."
+    },
+    {
+      "id": "F-02",
+      "severity": "high",
+      "verdict": "FAIL",
+      "title": "Ground-truth provenance and physical label isolation are not locally established",
+      "evidence": [
+        {
+          "path": "configs/experiments/warp_phase_pilot_v1.yaml",
+          "line": 8,
+          "detail": "the declared train/val source paths and hashes are proposal inputs"
+        },
+        {
+          "path": "PILOT_DATA_SCHEMA_AUDIT.md",
+          "line": 122,
+          "detail": "the source pickle co-locates inputs and privileged targets and requires a physical split"
+        },
+        {
+          "path": "data/warp_phase_pilot_v1/audit/gate0/gate0-local-inputs.receipt.json",
+          "line": 1,
+          "detail": "both sources fail with FileNotFoundError; adapter, pack/vault audit, component manifest, and import-isolation receipt are absent"
+        },
+        {
+          "path": "src/pams/warp_phase/gates.py",
+          "line": 727,
+          "detail": "Gate 0 always appends the missing adapter/vault/manifest/isolation blockers"
+        }
+      ],
+      "consequence": "No learner or evaluator may consume the label-mixed pickles, and no real-data result can be accepted."
+    },
+    {
+      "id": "F-03",
+      "severity": "high",
+      "verdict": "FAIL",
+      "title": "The result-producing evaluator path is uninvoked and incomplete",
+      "evidence": [
+        {
+          "path": "src/pams/warp_phase/evaluator.py",
+          "line": 111,
+          "detail": "the count scorer exists only as an isolated function"
+        },
+        {
+          "path": "src/pams/warp_phase/evaluator.py",
+          "line": 338,
+          "detail": "the supplied-track Period AP adapter exists only as an isolated function"
+        },
+        {
+          "path": "src/pams/warp_phase/cli.py",
+          "line": 200,
+          "detail": "the only post-gate command is a training interface documented as blocked"
+        },
+        {
+          "path": "data/warp_phase_pilot_v1/audit/gate1/gate1-v2-unit-v1.receipt.json",
+          "line": 1,
+          "detail": "complete_numerical_witness_set is false and evaluator witness schema is missing"
+        },
+        {
+          "path": "data/warp_phase_pilot_v1/audit/gate3/gate3-cpu-sanity.receipt.json",
+          "line": 1,
+          "detail": "prediction_schema and tiny_gpu_jobs are false"
+        }
+      ],
+      "consequence": "No experimental AvgMAE, AvgOBO, Period AP, bootstrap endpoint, harmonic gate, or K4 result exists. In-memory audit smoke values are not experiment results."
+    },
+    {
+      "id": "F-04",
+      "severity": "medium",
+      "verdict": "WARN",
+      "title": "Earlier fixture adjudications do not bind the current gate implementation",
+      "evidence": [
+        {
+          "path": "data/warp_phase_pilot_v1/audit/gate1/fixture_candidate_v2_audit.json",
+          "line": 22,
+          "detail": "the audit binds gates.py at 52d573a0..."
+        },
+        {
+          "path": "data/warp_phase_pilot_v1/audit/gate1/fixture_candidate_v2_repair_adjudication.json",
+          "line": 34,
+          "detail": "the repair calls 52d573a0... the current gates hash"
+        },
+        {
+          "path": "data/warp_phase_pilot_v1/audit/gate1/selector-unit-fixtures-v1/selector-unit-fixtures-v1.receipt.json",
+          "line": 1,
+          "detail": "the later unit receipt binds the actual current gates hash 3a91e776..."
+        }
+      ],
+      "observed_current_gates_sha256": "3a91e77692ac54e1e85fd56d8f3bff2b3a3c517095554d30b92e9055e1426dfa",
+      "consequence": "The canonical synthetic pack remains byte-bound, but the earlier repair adjudication cannot serve as current gate-code review evidence."
+    },
+    {
+      "id": "F-05",
+      "severity": "medium",
+      "verdict": "WARN",
+      "title": "Non-finite harmonic classification disagrees with the period addendum",
+      "evidence": [
+        {
+          "path": "PILOT_PERIOD_SCHEMA_ADDENDUM.json",
+          "line": 143,
+          "detail": "nonfinite_class is specified as off-grid"
+        },
+        {
+          "path": "src/pams/warp_phase/evaluator.py",
+          "line": 453,
+          "detail": "non-finite selector periods raise EvaluationError"
+        },
+        {
+          "path": "src/pams/warp_phase/evaluator.py",
+          "line": 455,
+          "detail": "non-finite evaluator periods raise EvaluationError"
+        }
+      ],
+      "consequence": "The evaluator contract must choose global failure or off-grid classification before it can be frozen; no result is currently affected because the evaluator is uninvoked."
+    }
+  ],
+  "integrity_checks": {
+    "test_sealed_heldout_access": "NOT_OBSERVED",
+    "real_label_leakage": "NOT_OBSERVED_BECAUSE_NO_TRAINING_OR_REAL_EVALUATION_OCCURRED",
+    "label_isolation_risk": "OPEN_FATAL_PRECONDITION",
+    "proxy_vs_real_confusion": "SYNTHETIC_GATE2_IS_ENGINEERING_ONLY_AND_NOT_EFFICACY",
+    "phantom_training": false,
+    "phantom_eligible_results": false,
+    "outcome_selection_detected": false,
+    "failure_receipt_misrepresented": true,
+    "positive_claim_language_present": false,
+    "server_readiness": "NOT_READY_LAUNCH_AUTHORIZATION_ZERO"
+  },
+  "independent_recomputation": {
+    "canonical_fixture_receipt_sha256": "191a1689197f7e9a3eb965ee0dc0e52fa58e9d8485c097c9e601162fad24cd19",
+    "fixture_pack_sha256": "c6dbe56df7b4f7d427ce1f51d5d818ad0e46dcfbf6e1550e0d77116435760196",
+    "fixture_member_count": 23,
+    "fixture_member_hash_mismatch_count": 0,
+    "canonical_failure_count": 240,
+    "gate2_counts_exactly_match_receipt": true,
+    "evaluator_static_imports_outside_module": [],
+    "in_memory_normalization_fixture": {
+      "control_normalized_video_first_mae": 0.45,
+      "treatment_normalized_video_first_mae": 0.1625,
+      "period_map": 100.0,
+      "period_scale": "[0,100]",
+      "note": "audit smoke only; not an experiment result"
+    }
+  },
+  "missing_optional_claim_files": [
+    "refine-logs/NARRATIVE_REPORT.md",
+    "refine-logs/CLAIMS_FROM_RESULTS.md"
+  ],
+  "absent_local_execution_artifacts": [
+    "data/counting_multirep_skeleton_pose_expanded_v44_len320/train.pkl",
+    "data/counting_multirep_skeleton_pose_expanded_v44_len320/val.pkl",
+    "data/warp_phase_pilot_v1/features",
+    "data/warp_phase_pilot_v1/vault",
+    "data/warp_phase_pilot_v1/results"
+  ],
+  "input_sha256": {
+    ".aris/compute/output-budget.json": "86e8c76e1cc0f59e6c8931a7060021ecf4dc6feb03ac9a0ab6ab3c425aa3e226",
+    ".aris/compute/provider-env.json": "ca7e25e8e84d01fd5a71b4d0f33b7338742edc566b5ad5dca8e54c18b7545e1d",
+    "PILOT_DATA_SCHEMA_AUDIT.json": "ba1c376127d0304d7ee76f902c56dd753c351b71fc11655c45451b98fa0481b8",
+    "PILOT_DATA_SCHEMA_AUDIT.md": "7058981e8eb37622c09f5808a4b1329bc7cd133f474101723f15e5e4273eab25",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.json": "2c95af393fa73f3c581a327f9ee8a5e8a5c69c03a9fe6349d3b6531c48e914",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.md": "49edcfe25c302c2b55b8e65bc18e1cb7febe25cc8b76698d631fa24150d4b0b5",
+    "configs/experiments/warp_phase_pilot_v1.yaml": "e59fb34599eaece41545c237b18871b5a206046e53fb1246795f9dcb3d681063",
+    "data/warp_phase_pilot_v1/audit/gate0/gate0-local-inputs.receipt.json": "2c5d3a6574d946c22e96604a8d88c44b933a423f55e33660f171b29dc4cbf7fd",
+    "data/warp_phase_pilot_v1/audit/gate1/candidate-20260815-sol-v2/canonical_fixture_pack.receipt.json": "191a1689197f7e9a3eb965ee0dc0e52fa58e9d8485c097c9e601162fad24cd19",
+    "data/warp_phase_pilot_v1/audit/gate1/fixture_candidate_v2_audit.json": "82860755e577ffd41e8a4cd7c6ca7c008f444dbd695b6200981655c0609de8a0",
+    "data/warp_phase_pilot_v1/audit/gate1/fixture_candidate_v2_audit.md": "8450fe176da370e46a549ea20d9770f171fe345a1be57c84fb6c0a881c3420af",
+    "data/warp_phase_pilot_v1/audit/gate1/fixture_candidate_v2_repair_adjudication.json": "70a583b84abe13b7e861c95017137bd21155fbecd8a6723eb2461e3c7187e44d",
+    "data/warp_phase_pilot_v1/audit/gate1/fixture_candidate_v2_repair_adjudication.md": "e3f68a33ae0db52274d41941858b695625853e5babd0fda5932a9107b5401a95",
+    "data/warp_phase_pilot_v1/audit/gate1/gate1-v2-unit-v1.receipt.json": "160d21b2bcdc0be9850646a1e187e18eff2a4ed78700490cc58251ff641d469a",
+    "data/warp_phase_pilot_v1/audit/gate1/selector-unit-fixtures-v1/selector-unit-fixtures-v1.receipt.json": "913e8946ee27392ab374a26887a5a9d8169e69afd951b98319019f3eb1cf2f5f",
+    "data/warp_phase_pilot_v1/audit/gate1/selector_unit_fixture_pack_audit.json": "0d1c837d272dbecabf954f59edd12482e335f1fc4a18b6cdf324f6dfb6406cf8",
+    "data/warp_phase_pilot_v1/audit/gate1/selector_unit_fixture_pack_audit.md": "e26a315c6142b58c93298b7280a37db7a158bcd36c74248d49df2e5cc02d0e6e",
+    "data/warp_phase_pilot_v1/audit/gate2/gate2-stochastic-v2.receipt.json": "609b2c57853d4dea661957eac810e7936611cac9d037ca9bca2eafe7ebceec03",
+    "data/warp_phase_pilot_v1/audit/gate3/gate3-cpu-sanity.receipt.json": "157c506f6573d4ddb1cd2e3c080534cda00fd869eb07597cd0d0da37c942e54e",
+    "idea-stage/docs/research_contract.md": "4b93a9dd2d32a11a83123923d831597bbfb98b84669dec9ab9c19440c5d76bb0",
+    "pyproject.toml": "14b3b35bbfa57fc982e24ef2f999df288893c0f0d12a53a9f82120babefead38",
+    "refine-logs/EXPERIMENT_TRACKER.md": "2b30a873f3d0777eaf71bfd8e686efb1dedbf06a65da60a57bfe25c353ffef58",
+    "refine-logs/FINAL_PROPOSAL.md": "e8ff129b3a67ac07be0e5ff1af09555bb26f000e7cde9315b13493733cda6418",
+    "refine-logs/PIPELINE_SUMMARY.md": "217f61a5246af206262817200e5ce17c63760669fafa8cabcbc6ecdf803a10f7",
+    "refine-logs/SERVER_PREFLIGHT.md": "f3b254fe2ce7bf7f61fbc6bf3f416ef7e86f8230d1f484259b668ed23c66444b",
+    "scripts/experiments/generate_warp_phase_fixture_pack.py": "7af1dac0ce246979d608b3db8e9fcaef9fe18dbfe2a5ecc803616e30919bb4ce",
+    "scripts/experiments/generate_warp_phase_selector_unit_fixtures.py": "2ae32f4133903691a757557425980eb553b3de4d749b4eca9a8f76719b41847f",
+    "src/pams/warp_phase/cli.py": "c6b8e344493b100cfe0e396b64f2e390e39b35e843ebdaccfe97dfa2514c2a72",
+    "src/pams/warp_phase/evaluator.py": "82f6e46e58f15e21e020e031e8bdffd24e884816ca8be0740d440c447e20f38c",
+    "src/pams/warp_phase/gates.py": "3a91e77692ac54e1e85fd56d8f3bff2b3a3c517095554d30b92e9055e1426dfa",
+    "src/pams/warp_phase/selector.py": "73b31b7d6c58a67efa8542df754971a58926d783258c9776269ec06765dafa0e"
+  },
+  "auxiliary_input_sha256": {
+    "src/pams/cli.py": "e8fe3e2b48b78e4e122329df333137e74948991ce9600ec8cbaad26b99d30425"
+  },
+  "trace": {
+    ".aris/traces/experiment-audit/20260815_warp_phase_sol/independent_checks.py": "1e5c51037bb1e3f1435259f0853ce4a1b9f1a4ddf96f7ef7b825555ab659692e",
+    ".aris/traces/experiment-audit/20260815_warp_phase_sol/trace_summary.json": "edbd52d5202653d4668d6a4ad8db8942baa2f8d228b5cc8cd56528654826d010"
+  }
+}

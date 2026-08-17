@@ -1,0 +1,57 @@
+{
+  "schema_version": "aris.review_trace.run_meta.v1",
+  "skill": "novelty-check",
+  "run_id": "20260815_pivot_adjudication_sol",
+  "started_at": "2026-08-15T21:30:00+08:00",
+  "executor": "codex",
+  "executor_model": "gpt-5.6-sol",
+  "executor_reasoning": "ultra",
+  "executor_family": "openai",
+  "fresh_context": false,
+  "nonfresh_reason": "agent_thread_lifetime_limit",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "project_dir": "D:/Project/rac-aris-fullrun-icassp27",
+  "task_scope": "pivot2 novelty adjudication only",
+  "backup_pivot_only": true,
+  "route_scope": "BACKUP_ONLY",
+  "canonical_paper_anchor_label": "original TempoRAC anchor",
+  "canonical_paper_anchor": "identity-indexed window-local tempo routing",
+  "canonical_paper_anchor_replacement_authorized": false,
+  "paper_title_method_or_implementation_mainline_change_authorized": false,
+  "call_count": 1,
+  "review_route": "continuation_in_process_reviewer",
+  "fresh_agent_verification_performed": false,
+  "fresh_agent_verification_skip_reason": "The bounded task explicitly required continuation metadata because of agent_thread_lifetime_limit.",
+  "external_search_performed": false,
+  "evidence_frozen": true,
+  "event_append_performed": false,
+  "event_append_skip_reason": "The bounded task prohibited edits outside the adjudication outputs and trace; no event-log mutation was authorized.",
+  "research_review_launched": false,
+  "manifest_modified": false,
+  "idea_report_modified": false,
+  "verdict": "ADVANCE_ONE_TO_RESEARCH_REVIEW_PROVISIONAL",
+  "selected_count": 1,
+  "selected": [
+    "set-valued-counting-pose-missingness"
+  ],
+  "call_artifacts": {
+    "request": {
+      "path": "001-pivot-adjudication.request.json",
+      "sha256": "00595670f4b31faacec79c4e8936f39a84457d86ba879263bf8a2d36aba0b16f"
+    },
+    "response": {
+      "path": "001-pivot-adjudication.response.md",
+      "sha256": "ff8caeee5d51ca1bb33e7811238ed32b4509eac12e74049de920c84bdfa945be"
+    },
+    "meta": {
+      "path": "001-pivot-adjudication.meta.json"
+    }
+  },
+  "primary_outputs": {
+    "idea-stage/PIVOT_NOVELTY_ADJUDICATION_20260815_213000.json": "a8d89868dfb662f5bba767400f8fcfc52dc66383a910fd48e885c3431bd35be1",
+    "idea-stage/PIVOT_NOVELTY_ADJUDICATION.json": "a8d89868dfb662f5bba767400f8fcfc52dc66383a910fd48e885c3431bd35be1",
+    "idea-stage/PIVOT_NOVELTY_ADJUDICATION_20260815_213000.md": "4bccec001d42525e4c4bbd2adb2ee02cd64f1c72864af7daa25d412a757cac80",
+    "idea-stage/PIVOT_NOVELTY_ADJUDICATION.md": "4bccec001d42525e4c4bbd2adb2ee02cd64f1c72864af7daa25d412a757cac80"
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "artifact_type": "pams_teacher_period_direct_inferred_dev_negative_summary",
+  "classification": "posthoc_inferred_dev_only_diagnostic",
+  "method_key": "pams-teacher-period-direct-inferred-v1",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "sample_count": 84,
+  "seed": 2026,
+  "status": "partial_reproduction",
+  "paper_table_eligible": false,
+  "algorithm": "forward_with_pre_pe -> estimate_period_from_projected_pose -> confidence/valid guard -> half_up((valid_frames-1)/period)",
+  "formal_metrics": {
+    "nmae": 2.8601196735895007,
+    "mae": 13.30952380952381,
+    "rmse": 19.871012627874375,
+    "obo": 0.16666666666666666,
+    "exact": 0.08333333333333333,
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 2026,
+    "confidence_level": 0.95,
+    "confidence_intervals": {
+      "nmae": {
+        "low": 2.107281280555218,
+        "high": 3.7010357293027396
+      },
+      "mae": {
+        "low": 10.25,
+        "high": 16.512202380952377
+      },
+      "rmse": {
+        "low": 15.936611786213934,
+        "high": 23.426271112095552
+      },
+      "obo": {
+        "low": 0.09523809523809523,
+        "high": 0.25
+      },
+      "exact": {
+        "low": 0.03571428571428571,
+        "high": 0.14285714285714285
+      }
+    }
+  },
+  "predev_gate": {
+    "status": "passed",
+    "dev_inputs_mounted": false,
+    "targets_mounted": false,
+    "test_inputs_mounted": false,
+    "train337_records": 337,
+    "train_positive_confidence_records": 321,
+    "train_zero_confidence_records": 16,
+    "train_period_4_fraction": 0.006230529595015576,
+    "train_period_128_fraction": 0.09034267912772585,
+    "train_rounded_period_mode_fraction": 0.09034267912772585,
+    "synthetic_count_2_40_exact_fraction": 1.0,
+    "synthetic_count_2_40_obo_fraction": 1.0,
+    "synthetic_stress_exact_fraction": 0.8333333333333334,
+    "synthetic_stress_obo_fraction": 1.0,
+    "failed_predecessor": {
+      "exit_code": 1,
+      "failed_before_inference": true,
+      "reason": "checkpoint contained bound provenance and the caller had not supplied expected_provenance",
+      "recovered_without_algorithm_change": true
+    }
+  },
+  "formal_equivalence": {
+    "record_total": 84,
+    "all_prediction_fields_exact": true,
+    "all_metrics_exact": true,
+    "field_mismatch_total": 0,
+    "inference_rerun_for_recovery": false,
+    "scoring_rerun_for_recovery": false
+  },
+  "failure_analysis": {
+    "overcount_records": 60,
+    "undercount_records": 17,
+    "exact_records": 7,
+    "overcount_absolute_error": 1056,
+    "total_absolute_error": 1118,
+    "overcount_absolute_error_fraction": 0.9445438282647585,
+    "overcount_normalized_error_fraction": 0.954247704739787,
+    "dominant_mechanism": "harmonic_or_high_frequency_aliasing",
+    "overcount_near_integer_harmonic": {
+      "records": 38,
+      "denominator": 60,
+      "definition": "nearest integer k in [2,7] to raw_count/target, with abs(ratio-k)/k <= 0.20",
+      "counts_by_k": {
+        "2": 9,
+        "3": 7,
+        "4": 8,
+        "5": 4,
+        "6": 6,
+        "7": 4
+      }
+    },
+    "undercount_near_reciprocal_harmonic": {
+      "records": 5,
+      "denominator": 17,
+      "definition": "raw_count > 0 and nearest 1/k for k in [2,7], with relative deviation <= 0.10",
+      "counts_by_k": {
+        "2": 4,
+        "6": 1
+      }
+    },
+    "all_invalid_records": 6,
+    "all_invalid_absolute_error_fraction": 0.0259391771019678,
+    "nmae_excluding_all_invalid": 3.003205802327155,
+    "confidence_vs_normalized_error_spearman": -0.4477901509036198,
+    "rounded_predictions_changed_by_off_by_one_or_rounding_alternatives": 0,
+    "do_not_use_as_teacher": true
+  },
+  "context_only_dev84_diagnostics": {
+    "pams_sshead_v8": {
+      "nmae": 0.643123262319691,
+      "obo": 0.2976190476190476,
+      "evaluation_sha256": "a9d6e5970bab06752021fd29e2a692ece7aaf57c82b7d1d048d6022413648c44"
+    },
+    "synthetic_frozen_local_frequency": {
+      "nmae": 0.5290583435903633,
+      "obo": 0.3333333333333333,
+      "paper_table_eligible": false,
+      "evaluation_sha256": "b6add8af9c229cd467be6bba282f267d0d70651a1a39b46ba1443016689add97"
+    },
+    "teacher_minus_local_frequency": {
+      "absolute_error_better_tie_worse": [
+        17,
+        19,
+        48
+      ],
+      "absolute_error_sum_delta": 822,
+      "nmae_delta": 2.3310613299991374,
+      "nmae_delta_95ci": [
+        1.5710391641091304,
+        3.1721900147750666
+      ],
+      "obo_delta": -0.16666666666666666,
+      "obo_delta_95ci": [
+        -0.2619047619047619,
+        -0.07142857142857142
+      ]
+    }
+  },
+  "authorization": {
+    "test105": false,
+    "seeds_42_3407": false,
+    "paper_table": false
+  }
+}

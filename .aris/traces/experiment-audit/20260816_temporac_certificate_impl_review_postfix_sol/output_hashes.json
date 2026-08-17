@@ -1,0 +1,35 @@
+{
+  "algorithm": "sha256",
+  "canonical_output": {
+    "bytes": 17371,
+    "path": "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_20260816.md",
+    "sha256": "9e288a34c3340eabc10a20447afddc2c2d908c03d1f562b592a20a21a45f2988"
+  },
+  "structured_output": {
+    "bytes": 9556,
+    "path": "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_20260816.json",
+    "sha256": "e7644bf713be84157a736fcd8f80741eae119b76f25d6e2ff7bb321438b81a5b"
+  },
+  "trace_components": [
+    {
+      "bytes": 378,
+      "path": ".aris/traces/experiment-audit/20260816_temporac_certificate_impl_review_postfix_sol/run.meta.json",
+      "sha256": "4d67f5a9811fc243f2e072b9531c98bfb934632bf1bd611d727a97c32e308beb"
+    },
+    {
+      "bytes": 3396,
+      "path": ".aris/traces/experiment-audit/20260816_temporac_certificate_impl_review_postfix_sol/001-certificate-implementation-postfix-review.request.json",
+      "sha256": "d04540585ad7aaa3e32e81c705e396a2332fb317e307a605dca0976f3048ad1e"
+    },
+    {
+      "bytes": 2571,
+      "path": ".aris/traces/experiment-audit/20260816_temporac_certificate_impl_review_postfix_sol/001-certificate-implementation-postfix-review.response.md",
+      "sha256": "ebf12b1596eb1f7b36726fc1e4d281222c4c88d77ffc0198530433add9c007aa"
+    },
+    {
+      "bytes": 369,
+      "path": ".aris/traces/experiment-audit/20260816_temporac_certificate_impl_review_postfix_sol/001-certificate-implementation-postfix-review.meta.json",
+      "sha256": "c367b45a1d885acbf539575d4b93be9932270e6f4ffc33b0f8108fa0bb439038"
+    }
+  ]
+}

@@ -1,0 +1,234 @@
+{
+  "acceptance_status": "provisional",
+  "amendment_accepted": true,
+  "artifact_type": "warp_phase_experiment_execution_contract_amendment_review",
+  "authoritative": false,
+  "authorizes": [],
+  "bindings": {
+    "amendment": {
+      "refine-logs/EXPERIMENT_EXECUTION_CONTRACT_AMENDMENT_001.json": "d5227f04af4452c2224d3a6b0a8342a7a02aa18edf6b5452e9e06290636bc1c9",
+      "refine-logs/EXPERIMENT_EXECUTION_CONTRACT_AMENDMENT_001.md": "25fe82bbcad386b42e4c5a95a762d1f84e4c926796655f02ba5d2ab8ae7dc484"
+    },
+    "amendment_bound_candidate_metadata": {
+      "data/warp_phase_pilot_v1/audit/gate1/candidate-20260815-sol/candidate_receipt.json": "f5e03b431f47f2ae0c1e52f40955fbcb70b97642e52969178ffcfa3140f6c5ce",
+      "data/warp_phase_pilot_v1/audit/gate1/candidate-20260815-sol/pack/metadata.json": "9a9db9422ef920fff7d39ac8ea0541ae0d81280282a6b09d95205419f337f6f8",
+      "data/warp_phase_pilot_v1/audit/gate1/fixture_candidate_audit.json": "5e7df8b6f4033b4162fc359cf67628fa00921276428fc1aaad49d92ff3d8e305",
+      "data/warp_phase_pilot_v1/audit/gate1/fixture_candidate_audit.md": "5ee2d4181619705760a7e3e02c69c42c96ea864fac7a2b34e56d30c68d6209f2",
+      "data/warp_phase_pilot_v1/audit/gate1/fixture_environment.lock.json": "5b1d1bd864cb87a16fc97843515d0d6cd8063be5ad1adfb857ea4da42bd2e27b",
+      "data/warp_phase_pilot_v1/audit/gate1/fixture_environment.receipt.json": "88ff454646c72aaf4a8e991f0773ae5bee2f28ea657a5401c1048d88adc46705"
+    },
+    "canonical_documents": {
+      "refine-logs/EXPERIMENT_EXECUTION_CONTRACT.md": "70f80912e4b9693fae9e859eb12f90cc754b7d523b59af766879518770d69b2e",
+      "refine-logs/EXPERIMENT_PLAN.md": "020626027a73939f3fd4dfa479e6592699d19f652da592682b90d9235724ce5c",
+      "refine-logs/FINAL_PROPOSAL.md": "e8ff129b3a67ac07be0e5ff1af09555bb26f000e7cde9315b13493733cda6418",
+      "refine-logs/round-4-refinement.md": "2031d5c84b8c6c329dd0e43e5b8a09210ed9a3e8b17b47578f2f878a4c2b4e0f"
+    },
+    "code_review": {
+      "refine-logs/EXPERIMENT_CODE_REVIEW.json": "f86bd6790eeab85a26ebe5d5d86fc2afd36fa4cebe37bab9ecf0a8e44a159f74",
+      "refine-logs/EXPERIMENT_CODE_REVIEW.md": "90f63c438ea0d43a49ec513b0ffa15fb083b5228257861e26e630ef360b5f9b3"
+    },
+    "finalized_relevant_source": {
+      "scripts/experiments/generate_warp_phase_fixture_pack.py": "7af1dac0ce246979d608b3db8e9fcaef9fe18dbfe2a5ecc803616e30919bb4ce",
+      "src/pams/warp_phase/gates.py": "52d573a0fa98233627cb6344de075887431b1cbe0659b48756fd48085f7429cd",
+      "src/pams/warp_phase/selector.py": "73b31b7d6c58a67efa8542df754971a58926d783258c9776269ec06765dafa0e",
+      "tests/test_warp_phase_gates.py": "e623777e26aabbfb56164695c980d015e0394a0cfa0490e1544032373d6f550e",
+      "tests/test_warp_phase_selector.py": "2649006bf953e0dfa2190bf63d37420f502aec9c78f0f80a7b0989957bc2d893"
+    },
+    "review_markdown": {
+      "path": "refine-logs/EXPERIMENT_EXECUTION_CONTRACT_AMENDMENT_001_REVIEW.md",
+      "sha256": "a1fcd938fcb849cc820275ffb54d4b233314accbd7d1a21aa2ce3742e2dafa9c"
+    }
+  },
+  "candidate_v1": {
+    "candidate_receipt_sha256": "f5e03b431f47f2ae0c1e52f40955fbcb70b97642e52969178ffcfa3140f6c5ce",
+    "canonical_failure_rows": 240,
+    "diagnostic_defect_preserved_as_failure_evidence": true,
+    "disposition": "REJECTED_NON_FREEZABLE",
+    "freeze_authorized": false,
+    "gate1_status": "NOT_EVALUATED",
+    "gate2_observed": {
+      "canonical_weak_agreement": 246,
+      "double_overall": 144,
+      "double_symmetric": 66,
+      "half_overall": 55,
+      "half_symmetric": 50
+    },
+    "gate2_status": "FAIL",
+    "member_hashes_verified": 23,
+    "metadata_sha256": "9a9db9422ef920fff7d39ac8ea0541ae0d81280282a6b09d95205419f337f6f8",
+    "pack_sha256": "b2c791f9aac1d86c0849fa74b00b4e605fe21120f9d188f4ec0b304d7052f173",
+    "preserve_bytes_untouched": true,
+    "training_authorized": false
+  },
+  "claims_authorized": false,
+  "concurrent_candidate_v2_boundary": {
+    "amendment_authority_used_to_create_or_freeze": false,
+    "canonical_freeze_receipt_sha256": "191a1689197f7e9a3eb965ee0dc0e52fa58e9d8485c097c9e601162fad24cd19",
+    "fixture_pack_verification": "PASS",
+    "gate2_observed": {
+      "canonical_weak_agreement": 246,
+      "double_overall": 144,
+      "double_symmetric": 66,
+      "half_overall": 55,
+      "half_symmetric": 50
+    },
+    "gate2_status": "FAIL",
+    "generator_source_sha256": "7af1dac0ce246979d608b3db8e9fcaef9fe18dbfe2a5ecc803616e30919bb4ce",
+    "pack_sha256": "c6dbe56df7b4f7d427ce1f51d5d818ad0e46dcfbf6e1550e0d77116435760196",
+    "ten_case_recomputation": "PASS",
+    "training_authorized": false
+  },
+  "constructor_probes": {
+    "environments": [
+      {
+        "numpy": "2.4.6",
+        "python": "CPython 3.12.13",
+        "role": "normative_fixture"
+      },
+      {
+        "numpy": "1.26.4",
+        "python": "CPython 3.12.13",
+        "role": "consumption"
+      }
+    ],
+    "fixtures": {
+      "lower_endpoint_p4": {
+        "all_fft_masks_valid": true,
+        "all_normalized_joint_masks_valid": true,
+        "delta_decimal": 0.24705882352941178,
+        "delta_exact": "21/85",
+        "fft_endpoints": [0.0, 63.0],
+        "k_at_source_period_decimal": 15.811764705882354,
+        "k_at_source_period_exact": "1344/85",
+        "neighbor_score": 0.0005560660114877089,
+        "p_max": 31,
+        "required_one_sided_inequality": "S(4)>=S(5)",
+        "scale": 2.0,
+        "selected_period": 4,
+        "source_score": 0.6345727420272262,
+        "span": 63
+      },
+      "offbin_delta1_p20": {
+        "adjacent_bins": [12, 13],
+        "all_fft_masks_valid": true,
+        "all_normalized_joint_masks_valid": true,
+        "delta_decimal": 1.0,
+        "delta_exact": "1",
+        "fft_endpoints": [0.0, 255.0],
+        "fft_x_byte_exact_float64_arange_256": true,
+        "k_at_source_period_decimal": 12.8,
+        "k_at_source_period_exact": "64/5",
+        "p_max": 127,
+        "scale": 2.0,
+        "score_p19": 0.5809198920484148,
+        "score_p20": 0.6594133070408238,
+        "score_p21": 0.5743810869954495,
+        "selected_period": 20,
+        "span": 255
+      },
+      "upper_endpoint_span126_p63": {
+        "all_fft_masks_valid": true,
+        "all_normalized_joint_masks_valid": true,
+        "delta_decimal": 0.49411764705882355,
+        "delta_exact": "42/85",
+        "fft_endpoints": [0.0, 126.0],
+        "k_at_source_period_decimal": 2.007843137254902,
+        "k_at_source_period_exact": "512/255",
+        "neighbor_score": 0.6691573037802108,
+        "p_max": 63,
+        "required_one_sided_inequality": "S(63)>=S(62)",
+        "scale": 2.0,
+        "selected_period": 63,
+        "source_score": 0.675905398984302,
+        "span": 126
+      }
+    },
+    "gate2_membership": false,
+    "label_or_evaluator_data_used": false,
+    "rng_calls": 0,
+    "selected_periods_exact": [20, 4, 63]
+  },
+  "date": "2026-08-15",
+  "failed_diagnostic_semantics": {
+    "current_selector_no_decision_preserves_diagnostics": true,
+    "failure_sentinel": -1,
+    "hard_failures_require_stage_and_reason_metadata": true,
+    "invalid_or_uncomputed_fill": 0.0,
+    "no_fallback_created": true,
+    "other_decision_failure_encodings_forbidden": true,
+    "sentinel_allowed_only_in_signed_selected_period_arrays": true
+  },
+  "hash_validation": {
+    "all_amendment_bound_hashes_match": true,
+    "amendment_bound_hash_count": 15,
+    "candidate_pack_aggregate_recomputed": true,
+    "historical_candidate_sources_misrepresented_as_current": false,
+    "mixed_or_stale_live_source_bindings": false
+  },
+  "normative_effect": {
+    "active_at_same_family_provisional_specification_layer": true,
+    "candidate_v1_disposition": "REJECTED_NON_FREEZABLE",
+    "diagnostic_serialization_clarified": true,
+    "method_changed": false,
+    "replaced_semantics": "the three deterministic Gate-1 selector witnesses are separate from the stochastic 1,000-pack",
+    "scope": "placement, construction, serialization, and testing of three deterministic Gate-1 selector unit fixtures only",
+    "sole_decision_failure_sentinel": -1
+  },
+  "population_and_protocol_preservation": {
+    "claims_unchanged": true,
+    "fixture_count": 1000,
+    "gate2_thresholds": {
+      "agreement_minimum": 950,
+      "double_overall_maximum": 20,
+      "double_symmetric_maximum": 12,
+      "half_overall_maximum": 20,
+      "half_symmetric_maximum": 12,
+      "relative_tolerance_inclusive": 0.1
+    },
+    "jobs_budget_unchanged": true,
+    "max_gpu_hours": 552,
+    "max_training_jobs": 59,
+    "rng_draw_order_unchanged": true,
+    "rng_seed": 20270815,
+    "three_visible_validation_blocks_unchanged": true,
+    "unit_fixtures_enter_gate2": false
+  },
+  "review_independence": "same-family",
+  "schema_validation": {
+    "all_float_arrays_finite": true,
+    "all_npy_c_order": true,
+    "all_npy_non_object": true,
+    "all_npy_version": "2.0",
+    "all_proposed_dtype_shape_pairs_validated": true,
+    "aggregate_member_count_excluding_receipt": 65,
+    "candidate_period_exact_4_through_128": true,
+    "future_artifact_created": false,
+    "future_root_member_count_including_receipt": 66,
+    "per_fixture_npy_member_count": 21
+  },
+  "scope": {
+    "accessed_evaluator_labels": false,
+    "accessed_real_data": false,
+    "accessed_server": false,
+    "candidate_modified": false,
+    "code_modified": false,
+    "git_modified": false,
+    "manifest_modified": false,
+    "ran_evaluation": false,
+    "ran_prediction": false,
+    "ran_training": false,
+    "training_authorized": false
+  },
+  "schema_version": "1.0",
+  "status": "ACCEPT_SAME_FAMILY_PROVISIONAL",
+  "tests": {
+    "command_scope": [
+      "tests/test_warp_phase_selector.py",
+      "tests/test_warp_phase_gates.py"
+    ],
+    "passed": 18,
+    "status": "PASS"
+  },
+  "training_authorized": false,
+  "verdict": "ACCEPT"
+}

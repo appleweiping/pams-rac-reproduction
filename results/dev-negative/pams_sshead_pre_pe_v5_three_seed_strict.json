@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "status": "failed_inferred_repair",
+  "evidence_class": "strict_firewall_development_only_negative_result",
+  "eligible_for_paper_table": false,
+  "protocol": "ucfrep_526",
+  "split": "development",
+  "sample_count_per_seed": 84,
+  "seeds": [
+    42,
+    2026,
+    3407
+  ],
+  "source_revision": "39d0d7f1144ed510f7a7a29696e27402a5a1da35",
+  "method": {
+    "name": "PAMS-SSHead-PrePE-v5",
+    "classification": "independently inferred repair, not author disclosed",
+    "change_from_projected_period_v3": "The Period Head consumes the 512-D projected pose before positional encoding during both training and inference.",
+    "nonseed_fingerprint": "6d63db9d1f008b4dbeeaa18c45114f65f4837492361ffad9964f1335f137a2ce"
+  },
+  "training_scope": {
+    "unlabeled_train_videos": 337,
+    "development_videos_used_for_training": 0,
+    "count_or_action_loaded_during_training": false,
+    "encoder_epochs": 150,
+    "sshead_epochs": 30
+  },
+  "label_firewall": {
+    "train_inputs_sha256": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207",
+    "train_commitment_sha256": "ce39b1c9038bb1506354de010e46a23053b307b852222332f13df3f79d799044",
+    "development_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "development_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "test_identity_inputs_sha256": "9eb2a057246b77fc7a1121ba4c9d27bf55177ad2fcd5dbb87237396a4a6015ca",
+    "test_identity_commitment_sha256": "232d3db7ce09018716594a1f1b332eec47b37410a8d3068e662b026ee2dc9c66",
+    "test105_targets_accessed": false
+  },
+  "runs": [
+    {
+      "seed": 42,
+      "config_fingerprint": "fd5c5464c4b3f9c63c4d74bf208931f51c92bec460cc0b92e417ed76120024c5",
+      "nmae": 0.7402923573644017,
+      "obo": 0.2619047619047619,
+      "mae": 4.392857142857143,
+      "rmse": 6.073949056656398,
+      "exact": 0.11904761904761904,
+      "zero_count_predictions": 29,
+      "maximum_period_predictions": 27,
+      "encoder_checkpoint_sha256": "f72d3596982ee94147c014bcadd7a7940c4aa9685f7312ca6452bcbe2c0887c8",
+      "encoder_progress_sha256": "d2a07a1944f2e3b1c6876b4c946311b430164167b6564c8a9eb7b4c22991bdc2",
+      "encoder_receipt_sha256": "0b1c89836d32f304c0dfc65418e197b3952996478f875a45bdbc8cad200cd2ea",
+      "sshead_checkpoint_sha256": "4613d5f37f4b94cb46381896c8d50a382e289f4fde8ead91ffb777ec0047cc12",
+      "sshead_progress_sha256": "a4f52bbd3a33f358241dcc6b93ed59bf87e8567eec1f50177400b918934f008d",
+      "sshead_receipt_sha256": "fce297c8038d99ca85f7b454954745e9727159e4e10bb50a57a479b662de019b",
+      "evaluation_sha256": "a6a626eabdd4fa572dbf1f65db647b439bc71ab331b07370d25eee4e55a3fab8",
+      "evaluation_receipt_sha256": "3124ada47f026c9d275e4f829322a228f290ce4e2ff696943ca649d1e930e20e"
+    },
+    {
+      "seed": 2026,
+      "config_fingerprint": "779689adf027a6f829fea0f37b64b10b525e2dafa2844c797202097f68493c0a",
+      "nmae": 0.6731202107279693,
+      "obo": 0.25,
+      "mae": 4.285714285714286,
+      "rmse": 5.742489919554973,
+      "exact": 0.15476190476190477,
+      "zero_count_predictions": 32,
+      "maximum_period_predictions": 28,
+      "encoder_checkpoint_sha256": "280f0406431328537453493390d83ef434d4ad105b1267f0b7dd7711c347538d",
+      "encoder_progress_sha256": "12f9509d21fc36facc798b5e47548eb34fa71bd55cad7216863e310f1dde3e91",
+      "encoder_receipt_sha256": "4c3f8f3a976137e63a351675998b375fe7e3c8da21d30f2e04533e22c94e04fa",
+      "sshead_checkpoint_sha256": "8d17e2938a9ebd47b84c07b2591c82fd96a88a10c82251173dc966ce9c95029c",
+      "sshead_progress_sha256": "08a14c2037a3a66723db569e0866120a09a6307c61833a1351391b0ca4aae2fd",
+      "sshead_receipt_sha256": "83a14c0eb0bf40b9bdd6082ecfe86996680645b64798383dfa9a1b968042b1a8",
+      "evaluation_sha256": "5d50b85e0f9767cf810bf725e6656749fb0abd162c252677d1039a7eeae734c1",
+      "evaluation_receipt_sha256": "4448dbef21a23e31f79138828523739fbf5377e932771e4bd4e543b3b16c1a8b"
+    },
+    {
+      "seed": 3407,
+      "config_fingerprint": "3ab586b5fcc364cbbfc94bc96b51578f9b4b1ca9a463039de92a36fb012018e4",
+      "nmae": 0.7071638524994436,
+      "obo": 0.23809523809523808,
+      "mae": 4.380952380952381,
+      "rmse": 5.7404164441598615,
+      "exact": 0.07142857142857142,
+      "zero_count_predictions": 22,
+      "maximum_period_predictions": 29,
+      "encoder_checkpoint_sha256": "4b5be35fdfa98614615b3b606c7b183b1643b3a6b2b91c77fafda46978b1dc3f",
+      "encoder_progress_sha256": "d819ebffce06a3f49e36bbbad7339bb9e3c0e383cab7c06cb530e52dbbf0bf45",
+      "encoder_receipt_sha256": "9d05c71ce0d3bda16ac734a9b4e76a512dd3fb4f17901ff015a87467b78083f8",
+      "sshead_checkpoint_sha256": "a92b07df47b1df79bfd59795abdd45a82e5d3021c07b239b1f7ab67d068ad4dd",
+      "sshead_progress_sha256": "2b567b307fa17f1949f4aee4570e1e84a535d97619debc253c418517f3d54176",
+      "sshead_receipt_sha256": "8e37232b94d970b0748d918ddf3a80ea635d02809c42bc55532beeb8b1c8b7c2",
+      "evaluation_sha256": "08a82de6a1bd4b213149b92adfc3817507ef893b6533870019d3a046a9b78d65",
+      "evaluation_receipt_sha256": "a02eb48581cf1fe1f81c0534850c43d279835fa837538cea102a59aa787445ff"
+    }
+  ],
+  "aggregate": {
+    "nmae_mean": 0.7068588068639382,
+    "nmae_sample_standard_deviation": 0.03358711226894027,
+    "obo_mean": 0.25,
+    "obo_sample_standard_deviation": 0.011904761904761918,
+    "mae_mean": 4.353174603174604,
+    "mae_sample_standard_deviation": 0.05872479597995563,
+    "rmse_mean": 5.852285140123744,
+    "rmse_sample_standard_deviation": 0.1919693823100444,
+    "exact_mean": 0.11507936507936507,
+    "exact_sample_standard_deviation": 0.041808149812907695,
+    "seeds_meeting_both_acceptance_thresholds": 0
+  },
+  "acceptance": {
+    "required_nmae_maximum": 0.228,
+    "required_obo_minimum": 0.666,
+    "required_individual_seeds_passing": 2,
+    "passed": false
+  },
+  "conclusion": "Removing positional encoding from the Period Head input prevents the prior high-frequency positional-template multiplier, but all three seeds remain dominated by zero counts and maximum-period predictions. The repair is stable and materially better than the catastrophic inferred full SSHead, but it is not a successful reproduction."
+}
