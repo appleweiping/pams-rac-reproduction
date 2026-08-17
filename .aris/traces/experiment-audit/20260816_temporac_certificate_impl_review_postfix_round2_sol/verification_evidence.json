@@ -1,0 +1,65 @@
+{
+  "environment": {
+    "mypy": "1.20.2",
+    "numpy": "1.26.4",
+    "pytest": "8.4.2",
+    "python": "3.12.13",
+    "ruff": "0.16.3",
+    "scipy": "1.17.1",
+    "torch": "2.13.0+cpu"
+  },
+  "probe": {
+    "arbitrary_teacher_digest_relabel": {
+      "accepted": true,
+      "same_chi": true,
+      "same_phase": true,
+      "same_pulse": true,
+      "same_reconstruction": true,
+      "teacher_1": "1111111111111111111111111111111111111111111111111111111111111111",
+      "teacher_2": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "bytes_backed_immutability": {
+      "certificate_pulse": true,
+      "feature_motion": true,
+      "loaded_pulse": true,
+      "teacher_phase": true,
+      "x0_phase": true
+    },
+    "dataclasses_replace_target_rejected": true,
+    "k7_population_subset": {
+      "accepted": true,
+      "contract_prediction_artifacts": 9648,
+      "g5b_join_cardinality": 402,
+      "joined_population_identities": 402,
+      "k7_status": "PASS",
+      "provided_certified_targets": 1,
+      "provided_prediction_artifacts": 192,
+      "provided_prediction_identities": 8
+    },
+    "natural_target_input_swap": {
+      "accepted": true,
+      "feature_a_pulse_count": 8,
+      "feature_b_pulse_count": 4,
+      "identity": [
+        "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        0
+      ],
+      "pulse_ledgers_differ": true,
+      "swapped_pulse_count": 4
+    },
+    "split_merge_count_cancellation_rejected": true,
+    "trusted_source_flag_reenabled": true,
+    "x0_binding": {
+      "duck_rejected": true,
+      "noncanonical_content_rejected": true
+    }
+  },
+  "tool_results": {
+    "full_mypy": "FAIL: 1 error in tests/temporac/test_x0.py:146; 43 files checked",
+    "full_pytest": "115 passed, 1 skipped in 180.77s",
+    "independent_probe": "PASS (probe completed and reproduced findings)",
+    "ruff": "PASS: All checks passed",
+    "source_mypy": "PASS: no issues in 24 source files",
+    "targeted_pytest": "62 passed, 1 skipped in 79.56s"
+  }
+}

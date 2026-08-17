@@ -1,0 +1,227 @@
+{
+  "schema": "temporac.experiment_plan_review_round2.v1",
+  "review_date": "2026-08-16",
+  "review_mode": "round_2_resolution_audit",
+  "continuation_of": {
+    "markdown": "refine-logs/EXPERIMENT_PLAN_REVIEW.md",
+    "markdown_sha256": "1b1707c0792cfc6861bdb87ce8c95fb8ce00a44bb86375f25463bb1ecf2ceb01",
+    "json": "refine-logs/EXPERIMENT_PLAN_REVIEW.json",
+    "json_sha256": "1e1ff5872bf00144cc2260d78cb6fd860894a0b889ebc9d7a77cf19d847d166c",
+    "round_1_verdict": "FAIL",
+    "round_1_blocking_issue_count": 2
+  },
+  "reviewer": {
+    "model": "gpt-5.6-sol",
+    "family": "openai",
+    "independence": "same-family",
+    "acceptance_status": "provisional"
+  },
+  "decision_boundary": {
+    "question": "Are the updated plan and tracker suitable for experiment-bridge P00 implementation planning?",
+    "method_reopened": false,
+    "p00_plan_release_suitable": true,
+    "implementation_authorized_by_review": false,
+    "server_or_data_launch_authorized": false,
+    "evaluator_capability_authorized": false,
+    "paper_promotion_authorized": false,
+    "git_authorized": false
+  },
+  "verdict": {
+    "code": "PASS",
+    "status": "ROUND_1_BLOCKERS_RESOLVED",
+    "p00_release_ready_under_plan": true,
+    "remaining_plan_blocking_issue_count": 0,
+    "rationale": "The two Round-1 implementation-contract omissions are closed across both plan and tracker, and all compactness, inventory, resource, order, firewall, authority, and zero-result invariants remain unchanged."
+  },
+  "blocker_resolution": [
+    {
+      "id": "B1_PILOT_SCOPE_LABELS",
+      "status": "RESOLVED",
+      "verified": {
+        "canonical_protocol_name": "GT-bbox-assisted AlphaPose supplied-track pilot",
+        "required_labels": [
+          "partial-cache",
+          "GT-bbox-assisted",
+          "supplied-track"
+        ],
+        "population": {
+          "train_videos": 110,
+          "validation_videos": 51,
+          "train_tracks": 268,
+          "validation_tracks": 134
+        },
+        "plan_header": true,
+        "plan_natural_data_clause": true,
+        "plan_artifact_scope_policy": true,
+        "plan_appendix_only_scope": true,
+        "tracker_header": true,
+        "tracker_natp_rows": 3,
+        "tracker_k7_boundary": true,
+        "tracker_stop_scope": true,
+        "tracker_paper_promotion_gate": "BLOCKED_PARTIAL_CACHE_APPENDIX_ONLY",
+        "k7_pass_unlocks_main_paper": false,
+        "closed_receipt_unknown_keys_added": false
+      },
+      "job_or_resource_change": false,
+      "method_change": false
+    },
+    {
+      "id": "B2_EVALUATOR_METRIC_FIXTURE",
+      "status": "RESOLVED",
+      "verified": {
+        "plan_stage": "P2-METRIC",
+        "tracker_run_id": "P05M-COUNT-METRIC",
+        "training_job": false,
+        "gpu_hours": 0,
+        "real_evaluator_labels_or_source_identities": false,
+        "normal_cases": [
+          "positive integer ground truth",
+          "stub estimate equals zero",
+          "per-person NAE",
+          "per-person OBO",
+          "people within video",
+          "equal videos",
+          "ordered seeds",
+          "component bootstrap multiplicity",
+          "per-draw strongest-comparator reselection",
+          "paired clean uses the drift-selected arm"
+        ],
+        "attack_cases": [
+          "malformed",
+          "duplicate",
+          "empty",
+          "nonfinite",
+          "type"
+        ],
+        "attacks_fail_globally": true,
+        "second_implementation_recompute_required": true,
+        "surrounding_receipt": "temporac.count-metric-fixture-receipt.v1",
+        "receipt_binds": [
+          "exact evaluator implementation bytes SHA-256",
+          "fixture input hash",
+          "expected-output hash",
+          "attack expected-global-fail hash"
+        ],
+        "dependency_chain": [
+          "P2/P05M",
+          "P3",
+          "S0",
+          "G5a evaluator_code_sha256 equality",
+          "K7 pre-start verification"
+        ],
+        "missing_or_mismatched_receipt_refuses_k7_start": true,
+        "closed_g5a_schema_extended": false
+      },
+      "job_or_resource_change": false,
+      "method_change": false
+    }
+  ],
+  "recomputed_inventory": {
+    "primary_claims": 1,
+    "experiment_blocks": 4,
+    "baseline_families": 3,
+    "training_jobs": {
+      "total": 27,
+      "teacher": 3,
+      "canonical_response": 3,
+      "capacity_control_response": 3,
+      "shortcut_response": 18
+    },
+    "seeds": [
+      20260815,
+      20260816,
+      20260817
+    ],
+    "gpu_hours_a6000": {
+      "teacher": 18,
+      "response": 60,
+      "fixed_synthetic_inference": 3,
+      "natural_prediction": 12,
+      "allocated": 93,
+      "formula": "3*6 + 24*2.5 + 3*1 + 3*4 = 93",
+      "unallocated_locked_margin": 7,
+      "hard_ceiling": 100
+    },
+    "cuda_peak_gib_per_training_job": 24,
+    "disk_gib": {
+      "total": 64,
+      "formula": "4+8+8+6+20+12+2+4 = 64"
+    },
+    "maximum_concurrency": 2,
+    "exact_order_present": true,
+    "p05m_is_training_job": false,
+    "executed_pass_rows": 0,
+    "consumed_gpu_hours": 0,
+    "plan_fixed_timestamped_byte_identical": true,
+    "tracker_fixed_timestamped_byte_identical": true
+  },
+  "unchanged_checks": [
+    {
+      "id": "problem_graph_fidelity",
+      "status": "PASS"
+    },
+    {
+      "id": "claim_block_family_limits",
+      "status": "PASS"
+    },
+    {
+      "id": "job_compute_memory_disk",
+      "status": "PASS"
+    },
+    {
+      "id": "p0_p3_s0_f23_order",
+      "status": "PASS"
+    },
+    {
+      "id": "label_data_firewall",
+      "status": "PASS"
+    },
+    {
+      "id": "train_validation_only",
+      "status": "PASS"
+    },
+    {
+      "id": "zero_server_launch_authority",
+      "status": "PASS"
+    },
+    {
+      "id": "tracker_completeness",
+      "status": "PASS"
+    },
+    {
+      "id": "no_warp_drift",
+      "status": "PASS"
+    },
+    {
+      "id": "no_fabricated_result",
+      "status": "PASS"
+    }
+  ],
+  "input_hashes": {
+    ".agents/skills/experiment-plan/SKILL.md": "61812df053fd8717cccb248fcabec3863f930eaedba03463bc059294dcc3863a",
+    "refine-logs/FINAL_PROPOSAL.md": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c",
+    "refine-logs/EXPERIMENT_PLAN.md": "3fd1986871b32674d74b395fbfc9720712d9fba0c8583c24c1d5bddb87086eb6",
+    "refine-logs/EXPERIMENT_TRACKER.md": "c7e2f32c3c81b66884abb13760a671ecc7cdd314fd6c994a4ed4c46cb754a63b",
+    "refine-logs/EXPERIMENT_PLAN_REVIEW.md": "1b1707c0792cfc6861bdb87ce8c95fb8ce00a44bb86375f25463bb1ecf2ceb01",
+    "refine-logs/EXPERIMENT_PLAN_REVIEW.json": "1e1ff5872bf00144cc2260d78cb6fd860894a0b889ebc9d7a77cf19d847d166c"
+  },
+  "output_binding": {
+    "markdown_path": "refine-logs/EXPERIMENT_PLAN_REVIEW_ROUND2.md",
+    "markdown_sha256": "1f4eb3f42427dfdbaefc74512f96f17b09c3f91930b982e954c0fb8d755e3d8d",
+    "trace_request_path": ".aris/traces/experiment-plan/20260816_temporac_plan_review_sol/002-round-2-resolution-review.request.json",
+    "trace_request_sha256": "fc2cf257c066b3e90df9db1fa4036d75672c4949b8152298674cd0084343c0ca",
+    "trace_response_path": ".aris/traces/experiment-plan/20260816_temporac_plan_review_sol/002-round-2-resolution-review.response.md",
+    "trace_response_sha256": "1f4eb3f42427dfdbaefc74512f96f17b09c3f91930b982e954c0fb8d755e3d8d",
+    "trace_response_byte_identical_to_markdown": true
+  },
+  "output_scope_attestation": {
+    "plan_modified": false,
+    "tracker_modified": false,
+    "proposal_modified": false,
+    "code_or_data_modified": false,
+    "paper_modified": false,
+    "server_accessed": false,
+    "git_operated": false,
+    "manifest_modified": false
+  }
+}

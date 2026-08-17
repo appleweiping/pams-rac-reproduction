@@ -1,0 +1,525 @@
+{
+  "schema_version": "temporac.research_refine_review.v4",
+  "skill": "research-refine",
+  "review_round": 4,
+  "review_date": "2026-08-16",
+  "proposal_under_review": "refine-logs/temporac/round-3-refinement.md",
+  "reviewer": {
+    "agent_id": "/root/temporac_refine_reviewer",
+    "reviewer_model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "reasoning_effort": "xhigh",
+    "continuation_of_prior_rounds_same_agent": true
+  },
+  "calibration": {
+    "status": "none",
+    "statement": "No curated known-good/known-bad local research-refine proposals were supplied; scoring uses the stated top-venue method-first rubric."
+  },
+  "anchor": {
+    "status": "FULL_SECTION_VERBATIM_PRESERVED",
+    "immutable_field_count": 5,
+    "drift_guard_paragraph_present": true,
+    "revised_occurrences": 2,
+    "both_revised_sections_ordinally_match_round_0": true,
+    "section_body_extraction": "Text after the ## Problem Anchor heading through immediately before the next level-2 heading, with trailing whitespace removed.",
+    "section_body_sha256": "44dce8546f499acdede797055625657579685c0b75dc64c26d3f51003e956b71",
+    "substantive_drift": false,
+    "graph_matches_original_temporac": true,
+    "graph": [
+      "externally supplied person-indexed pose tracks",
+      "identity-private preprocessing, causal context, NOLA state, and decoding",
+      "one encoder shared across identities",
+      "three shared matched slow/medium/fast causal response branches",
+      "one detached cue-only irregular-clock NUDFT router with an identity-local run reference",
+      "probability-level soft response fusion",
+      "exact positive NOLA reconstruction",
+      "one threshold-0.5 connected-component decoder invocation per identity"
+    ],
+    "forbidden_replacements_absent": [
+      "WARP-PHASE selector or objective",
+      "scene-level counter",
+      "single-person task substitution",
+      "per-person model copies",
+      "learned router",
+      "ACF fusion",
+      "PAMS-TCC initialization",
+      "GRU alternative",
+      "integral decision decoder",
+      "independent window decode",
+      "backup pivot"
+    ]
+  },
+  "scores": [
+    {
+      "dimension": "Problem Fidelity",
+      "weight": 0.15,
+      "score": 9.7,
+      "weighted_contribution": 1.455
+    },
+    {
+      "dimension": "Method Specificity",
+      "weight": 0.25,
+      "score": 6.8,
+      "weighted_contribution": 1.7
+    },
+    {
+      "dimension": "Contribution Quality",
+      "weight": 0.25,
+      "score": 8.6,
+      "weighted_contribution": 2.15
+    },
+    {
+      "dimension": "Frontier Leverage",
+      "weight": 0.15,
+      "score": 8.7,
+      "weighted_contribution": 1.305
+    },
+    {
+      "dimension": "Feasibility",
+      "weight": 0.1,
+      "score": 6.3,
+      "weighted_contribution": 0.63
+    },
+    {
+      "dimension": "Validation Focus",
+      "weight": 0.05,
+      "score": 6.8,
+      "weighted_contribution": 0.34
+    },
+    {
+      "dimension": "Venue Readiness",
+      "weight": 0.05,
+      "score": 6.8,
+      "weighted_contribution": 0.34
+    }
+  ],
+  "weighted_composite": {
+    "exact": 7.92,
+    "displayed": 7.92,
+    "calculation": "9.7*0.15 + 6.8*0.25 + 8.6*0.25 + 8.7*0.15 + 6.3*0.10 + 6.8*0.05 + 6.8*0.05 = 7.920",
+    "ready_threshold": 9.0
+  },
+  "gap": {
+    "exact_to_ready_threshold": 1.08,
+    "statement": "The proposal is 1.080 points below READY. Earlier acquisition, static-moment, ownership, gradient, control, reset, source-domain, gate-order, finite-population, and nominal compute defects are repaired, but X0 cannot instantiate its own certified all-offset bank, natural evaluation does not falsify the teacher's human unit, identity isolation lacks a counterfactual fixture, and the loader/training runtime remains non-unique."
+  },
+  "round_3_resolution": [
+    {
+      "issue": "fixed-320 v44 clock versus q_gap=1",
+      "status": "RESOLVED_FOR_UNWARPED_ACQUISITION",
+      "evidence": "The proposal now uses 1 <= delta-q < P_min=5, whole-identity failure, exact L<=1277 arithmetic, and unconditional split-specific floors."
+    },
+    {
+      "issue": "false subdivision-invariant static second moment",
+      "status": "RESOLVED",
+      "evidence": "F4 uses lambda*(A^2+A*B+B^2)/3."
+    },
+    {
+      "issue": "fractional landmark and edge ownership",
+      "status": "RESOLVED",
+      "evidence": "One half-open rule controls traversal, seam, pulse, chi, pullback, and serialization."
+    },
+    {
+      "issue": "fused response detached through NOLA",
+      "status": "RESOLVED",
+      "evidence": "Autograd remains connected through sigmoid responses, fusion numerator, NOLA numerator, and exact division; G2 binds a fused-only receipt."
+    },
+    {
+      "issue": "capacity control used v instead of v*chi",
+      "status": "RESOLVED",
+      "evidence": "Canonical and capacity-control losses use the same v*chi measure, with only pi omitted for the control."
+    },
+    {
+      "issue": "run reset and post-gap leakage",
+      "status": "RESOLVED",
+      "evidence": "All contexts and accumulators reset per maximal valid run, with a byte-isolation fixture."
+    },
+    {
+      "issue": "G4 required spacing 4 and 129 from certified trained outputs",
+      "status": "RESOLVED",
+      "evidence": "Spacings 4 and 129 are operator-only; trained outputs use the seven realizable 5-128 strata."
+    },
+    {
+      "issue": "G5/K7 circularity",
+      "status": "RESOLVED",
+      "evidence": "G5 is artifact and vault-opening verification only; K7 is subsequent and scientific."
+    },
+    {
+      "issue": "finite X0 population and hard compute ledger",
+      "status": "PARTLY_RESOLVED",
+      "remainder": "The population, partitions, and 93-hour arithmetic exist, but its phase/landmark/offset geometry and job completion rule are inconsistent."
+    }
+  ],
+  "dominant_claim": {
+    "status": "FOCUSED",
+    "claim": "Identity-indexed window-local relative-tempo routing improves supplied-track counting under deterministic within-track drift relative to the strongest frozen matched nonlocal comparator while retaining clean performance.",
+    "supporting_mechanism_only": "Three-by-three diagonal slow/medium/fast expert specialization on heldout resamplers",
+    "paper_visible_evidence_block_count": 3,
+    "paper_visible_evidence_blocks": [
+      "natural local versus strongest nonlocal drift result plus clean retention",
+      "heldout three-by-three expert specialization matrix",
+      "teacher certificate, resampler pulse equality, and decoder boundary validity"
+    ],
+    "validation_receipts_not_contributions": [
+      "feature-vault firewall",
+      "identity isolation",
+      "shortcut attacks",
+      "NOLA gradient and reset fixtures",
+      "artifact and hash gates"
+    ]
+  },
+  "blocking_issues": [
+    {
+      "id": "B1_X0_PHASE_ORIGIN",
+      "priority": "CRITICAL",
+      "issue": "F7 fixes the geometry landmark at phi=1/4 mod 1, while z-star and e-star use a seam at phi=0 mod 1.",
+      "consequence": "The analytic pulse, the claimed event-to-window offset, and the teacher's landmark-canonicalized pulse are offset by one quarter traversal; e-star is not bound to the certified ledger.",
+      "bounded_fix": "Align the analytic phase seam to the landmark or change the fundamental so the landmark is at analytic phase zero, then require analytic/certified pulse-bit equality."
+    },
+    {
+      "id": "B2_X0_TRAVERSAL_CARDINALITY",
+      "priority": "CRITICAL",
+      "issue": "The clean ten-cycle interval has ten internal landmark maxima and therefore nine landmark-to-landmark certified traversals, not the required ten.",
+      "deterministic_witness": "Landmarks occur at clean coordinates 8,40,72,104,136,168,200,232,264,296.",
+      "bounded_fix": "Extend the internal context/domain or change the declared quantifier so generator cardinality and certified traversal count are identical."
+    },
+    {
+      "id": "B3_X0_OFFSET_DOMAIN",
+      "priority": "CRITICAL",
+      "issue": "The -32 clean extension is insufficient for all 32 offsets at the fastest trained strata.",
+      "deterministic_witness": "For d=5,o=31 the first clean query is -166.4; for d=8 it is -92, both outside [-32,352] with extrapolate=false.",
+      "bounded_fix": "Derive and freeze the worst query and sinc-tap bounds, then provide sufficient periodic knots without changing the source-unit count."
+    },
+    {
+      "id": "B4_TOPOLOGY_ATTACK_CONTRACT",
+      "priority": "CRITICAL",
+      "issue": "Degree, harmonic, reversal, bypass, collision, and homeomorphism attacks are named but not generated, parameterized, hashed, or assigned exact equality/rejection fields.",
+      "consequence": "G1 cannot be implemented from temporac.execution.v3 alone, and full phase-array invariance is overclaimed for general orientation-preserving homeomorphisms.",
+      "bounded_fix": "Freeze one finite attack table; require degree/seam/pulse invariants where mathematically valid and do not require arbitrary phase-parameterization equality."
+    },
+    {
+      "id": "B5_NATURAL_PRIMITIVE_UNIT",
+      "priority": "CRITICAL",
+      "issue": "K7 tests only relative model efficacy and clean retention, so it can pass with a shared off-by-one or integer-multiple teacher unit.",
+      "bounded_fix": "Freeze teacher target counts before vault opening and require exact teacher-target-count agreement with evaluator count on every certified development identity as a kill-only K7 prerequisite."
+    },
+    {
+      "id": "B6_IDENTITY_ISOLATION",
+      "priority": "CRITICAL",
+      "issue": "The anchor requires no cross-person leakage, but the proposal has batch permutation rather than an untouched-identity intervention.",
+      "bounded_fix": "Add one two-identity G2 fixture that perturbs all allowed bytes of one identity and requires every output byte of the other identity to remain equal; key/order changes may only permute whole outputs."
+    },
+    {
+      "id": "B7_EXECUTION_SURFACE",
+      "priority": "CRITICAL",
+      "issue": "Section 3 and Section 13 disagree on NPZ granularity/shapes; certify_target returns a reason list while PredictionV3 stores one reason; job caps define no successful stop; neural dtype/runtime/determinism are unbound.",
+      "bounded_fix": "Freeze one per-identity archive and reason schema, one exact scheduled training horizon and LR horizon, and one numeric runtime/determinism contract."
+    },
+    {
+      "id": "B8_DERIVED_DRIFT_DOMAIN",
+      "priority": "IMPORTANT",
+      "issue": "The 27/19 drift slope can map a supported delta-q=4 edge to 108/19 > P_min, while K7 checks only unwarped periods; unwarped natural tracks are also called stationary without evidence.",
+      "bounded_fix": "Require every mapped edge span below P_min before vault opening or reduce the frozen slopes, and rename the natural comparator unwarped/clean."
+    }
+  ],
+  "degree_one_teacher": {
+    "ruling": "PER_TRAVERSAL_CERTIFICATE_CREDIBLE_SYNTHETIC_WITNESS_AND_NATURAL_UNIT_CHECK_BLOCKED",
+    "strengths": [
+      "memoryless clock-blind phase path",
+      "no-bypass reconstruction decoder",
+      "fixed pose-only landmark and traversal-arc static code",
+      "per-traversal monotone degree +1 and exactly one owned positive seam crossing",
+      "observed and dense phase coverage",
+      "reconstruction, collision, origin, and landmark stability gates",
+      "three-tolerance seam and pulse invariance",
+      "PCHIP/sinc matched-state and pulled-back pulse equality"
+    ],
+    "phase_parameterization_gauge_removed": false,
+    "constant_rotation_gauge_removed": true,
+    "one_event_per_certified_traversal_conditional": true,
+    "one_event_per_human_repetition_established": false,
+    "integral_decoder_replacement_permitted": false
+  },
+  "one_final_peak_pass": {
+    "ruling": "PRESERVE_CONDITIONALLY_DEFENSIBLE_NO_INTEGRAL_REPLACEMENT",
+    "decoder": "One threshold-0.5 connected-component call per identity after exact positive NOLA.",
+    "resolved": [
+      "binary target and fixed threshold",
+      "balanced response loss with positive and valley margins",
+      "differentiable NOLA with exact positive denominator",
+      "run-local resets and no cross-gap component adjacency",
+      "operator-only versus trained-output spacing domains",
+      "explicit one-to-one truth/component association"
+    ],
+    "current_blocker": "The trained G4 source bank cannot be constructed with the stated X0 seam, traversal count, and knot bounds.",
+    "failure_action": "Reject strict TempoRAC; do not substitute integral mass, NMS, period fitting, or independent window counts."
+  },
+  "cue_only_routing_and_matched_experts": {
+    "ruling": "CAUSAL_ROUTING_AND_MATCHED_CONTROL_STRONG_IDENTITY_ISOLATION_FIXTURE_MISSING",
+    "strengths": [
+      "cue excluded from encoder and branch inputs",
+      "local/global/uniform/blocked/shuffled modes reuse identical frozen branch responses",
+      "blocked and uniform bit equality",
+      "three equal-shape equal-parameter-count causal branches",
+      "capacity control matches probability placement, v*chi measure, optimizer, seeds, and checkpoint rule",
+      "K3 paired local advantage, cue-removal, and shortcut thresholds",
+      "K4 per-seed and aggregate diagonal specialization with responsibility floors"
+    ],
+    "identity_isolation_counterfactual_present": false,
+    "batch_permutation_is_sufficient_identity_test": false
+  },
+  "v44_and_firewall": {
+    "unwarped_acquisition_contract": "COHERENT_AND_FAIL_CLOSED",
+    "unique_source_bound": true,
+    "duplicate_policy_bound": true,
+    "p_min": 5,
+    "supported_gap": "1 <= delta-q < 5",
+    "v44_all_gap_arithmetic": "all adjacent gaps admitted iff source_length <= 1277",
+    "whole_identity_failure": true,
+    "unconditional_g0_denominators": {
+      "train_identities": 268,
+      "development_identities": 134,
+      "train_components": 18,
+      "development_components": 9
+    },
+    "unconditional_g0_floors": {
+      "train_identities": 215,
+      "development_identities": 108,
+      "train_components": 15,
+      "development_components": 8
+    },
+    "physical_feature_vault_separation": "WELL_SPECIFIED_PROSPECTIVE_BOUNDARY",
+    "label_leakage_path_in_proposal": false,
+    "derived_drift_support": "NOT_CLOSED",
+    "natural_stationary_label": "UNSUPPORTED_RENAME_TO_UNWARPED_CLEAN"
+  },
+  "gate_executability": [
+    {
+      "gate": "G0/K0",
+      "status": "ACYCLIC_AND_EXECUTABLE_IN_PRINCIPLE_AFTER_SEPARATE_PACKER_AUTHORIZATION"
+    },
+    {
+      "gate": "G1/K1",
+      "status": "BLOCKED_BY_X0_PHASE_CARDINALITY_OFFSET_AND_ATTACK_CONTRACT"
+    },
+    {
+      "gate": "G2/K2",
+      "status": "MOSTLY_EXECUTABLE_IDENTITY_COUNTERFACTUAL_MISSING"
+    },
+    {
+      "gate": "G3/K3/K4",
+      "status": "CAUSAL_AND_MATCHED_BUT_DEPENDS_ON_REPAIRED_X0_AND_FIXED_TRAINING_HORIZON"
+    },
+    {
+      "gate": "G4/K5/K6",
+      "status": "SOURCE_SPECIFIC_QUANTIFIERS_CORRECT_INPUT_BANK_IMPOSSIBLE_AS_WRITTEN"
+    },
+    {
+      "gate": "G5/K7",
+      "status": "ACYCLIC_FIREWALL_SOUND_PRIMITIVE_UNIT_AND_TRANSFORM_SUPPORT_CHECKS_MISSING"
+    }
+  ],
+  "interfaces_and_numerics": {
+    "status": "NOT_IMPLEMENTATION_READY",
+    "neural_shapes": "IMPLEMENTATION_GRADE",
+    "feature_npz": "CONFLICTING_BATCH_AND_PER_IDENTITY_SHAPES",
+    "abstention_reason": "ORDERED_LIST_VERSUS_SCALAR_CONFLICT",
+    "training_completion": "UNDEFINED_WITHIN_CAPS",
+    "learning_rate_total_horizon": "UNDEFINED",
+    "neural_framework_dtype_runtime": "UNBOUND",
+    "byte_determinism": "UNSUPPORTED_UNTIL_RUNTIME_OR_TOLERANCE_IS_FROZEN"
+  },
+  "staged_compute_and_validation": {
+    "gpu_budget_a6000_hours_max": 100,
+    "teacher_jobs": 3,
+    "response_jobs": 24,
+    "response_job_breakdown": {
+      "canonical": 3,
+      "capacity_control": 3,
+      "shortcut": 18
+    },
+    "teacher_a6000_hours": 18,
+    "response_a6000_hours": 60,
+    "heldout_inference_a6000_hours": 3,
+    "natural_prediction_a6000_hours": 12,
+    "total_allocated_a6000_hours": 93,
+    "unallocated_a6000_hours": 7,
+    "outer_budget_status": "ARITHMETICALLY_WITHIN_CONSTRAINT",
+    "stage_order_minimality": "GOOD_G0_AND_K1_PRECEDE_RESPONSE_TRAINING",
+    "successful_job_termination_status": "NOT_DEFINED",
+    "paper_visible_evidence_block_count": 3,
+    "route_or_job_expansion_recommended": false
+  },
+  "dimensions_below_7": [
+    {
+      "dimension": "Method Specificity",
+      "score": 6.8,
+      "weakness": "X0's landmark phase, analytic pulse, traversal count, and offset knot domain disagree, while attack, archive, abstention, stopping, and neural-runtime clauses remain non-unique.",
+      "concrete_fix": "Freeze one temporac.execution.v4 table aligning the synthetic truth and certificate and binding one attack/archive/runtime/training contract.",
+      "priority": "CRITICAL"
+    },
+    {
+      "dimension": "Feasibility",
+      "score": 6.3,
+      "weakness": "The fastest all-offset strata query outside the knot domain, ten cycles produce nine certified intervals, and job caps contain no successful completion point.",
+      "concrete_fix": "Repair X0 bounds/cardinality analytically and freeze exact scheduled steps and epochs inside the unchanged 93-hour inventory.",
+      "priority": "CRITICAL"
+    },
+    {
+      "dimension": "Validation Focus",
+      "score": 6.8,
+      "weakness": "Relative efficacy does not falsify a wrong teacher unit, batch permutation does not falsify symmetric cross-person coupling, and the natural stationary label and transformed support premise are not valid as written.",
+      "concrete_fix": "Fold teacher-count agreement into K7 and untouched-identity isolation into G2, verify transformed support before vault opening, and rename the natural baseline clean/unwarped.",
+      "priority": "CRITICAL"
+    },
+    {
+      "dimension": "Venue Readiness",
+      "score": 6.8,
+      "weakness": "A conforming G4 bank cannot be generated and consequential implementation choices remain; novelty/TWCRAC is separately unresolved.",
+      "concrete_fix": "Complete one contract-only refinement, then re-review without starting implementation or expanding the route.",
+      "priority": "IMPORTANT"
+    }
+  ],
+  "simplification_opportunities": [
+    "Use one synthetic truth seam by aligning z-star/e-star to the frozen pose landmark and binding it to certify_target; delete the disconnected analytic pulse convention.",
+    "Fold identity isolation into G2 and teacher-unit agreement into K7 as receipts rather than adding arms, jobs, paper tables, or claims.",
+    "Replace duplicate NPZ/record and cap/stopping prose with one archive-and-runtime execution table."
+  ],
+  "modernization_opportunities": {
+    "status": "NONE",
+    "reason": "LLM, VLM, diffusion, RL, distillation, or inference-time search does not solve the remaining phase-origin, finite-domain, identity-isolation, loader, or stopping contradictions and would add sprawl."
+  },
+  "drift": {
+    "warning": "NONE",
+    "anchor_fields_preserved": true,
+    "drift_guard_preserved": true,
+    "entire_problem_anchor_section_verbatim": true,
+    "graph_preserved": true,
+    "substantive_drift_detected": false,
+    "future_drift_triggers": [
+      "replace fixed local three-expert routing with WARP-PHASE or a global selector",
+      "use evaluator count, period, density, or boundaries in training, target generation, checkpointing, or reruns",
+      "add a learned router or per-person model copy",
+      "allow cross-identity state",
+      "decode windows independently",
+      "replace the peak decoder with integral mass after a failure",
+      "add a fourth paper-visible claim or evidence block"
+    ]
+  },
+  "remaining_action_items": [
+    {
+      "rank": 1,
+      "priority": "CRITICAL",
+      "action": "Make X0 one coherent certificate population: align landmark and analytic origins, bind e-star to certified pulses, extend worst-case offset/sinc context, match internal landmark and traversal counts, and freeze topology/homeomorphism attacks."
+    },
+    {
+      "rank": 2,
+      "priority": "CRITICAL",
+      "action": "Add the two anchor-level falsifiers without new training: a two-identity untouched-output G2 fixture and a post-freeze exact teacher-target-count versus evaluator-count K7 prerequisite."
+    },
+    {
+      "rank": 3,
+      "priority": "CRITICAL",
+      "action": "Freeze one per-identity feature archive and abstention schema, one neural numeric/determinism runtime, and one exact scheduled epoch/step and LR horizon inside the 93-hour inventory."
+    },
+    {
+      "rank": 4,
+      "priority": "IMPORTANT",
+      "action": "Keep deterministic natural drift inside the mapped-edge P_min domain before vault opening and rename the natural paired baseline unwarped/clean."
+    },
+    {
+      "rank": 5,
+      "priority": "IMPORTANT",
+      "action": "Treat ranks 1-4 as one bounded execution-contract repair; add no route, module, arm, seed, dataset, paper block, or integral decoder."
+    }
+  ],
+  "authorization": {
+    "method_refinement_verdict": "REVISE",
+    "local_contract_editing": "NEXT_REFINEMENT_STEP_NOT_STARTED",
+    "novelty_clearance": "NOT_GRANTED",
+    "closest_prior_twcrac_resolution": "UNRESOLVED",
+    "title_or_acronym_freeze": "NOT_AUTHORIZED",
+    "implementation_or_test_execution": "NOT_AUTHORIZED_BY_THIS_REVIEW",
+    "server_or_data_bearing_training": "NOT_AUTHORIZED",
+    "test_sealed_heldout_historical_result_access": "NOT_AUTHORIZED",
+    "positive_performance_claims": "NOT_AUTHORIZED",
+    "paper_drafting_editing_submission_public_claim": "NOT_AUTHORIZED"
+  },
+  "verdict": {
+    "code": "REVISE",
+    "ready_rule_satisfied": false,
+    "weighted_score_at_least_9": false,
+    "no_substantive_drift": true,
+    "no_blocking_issue": false,
+    "rationale": "The full anchor and exact TempoRAC graph are preserved and the proposal repairs the prior round's central contracts, but X0 does not define a possible certified all-offset population, natural unit and identity-isolation falsifiers are missing, and the archive/training runtime is not singular."
+  },
+  "input_resolution": {
+    "requested_missing_path": "idea-stage/RESEARCH_REVIEW.md",
+    "status": "MISSING",
+    "authorized_substitute": "idea-stage/RESEARCH_REVIEW.json",
+    "missing_input_is_blocker": false,
+    "audits_resolved_at_worktree_root": [
+      "EXPERIMENT_AUDIT_WARP_PHASE.md",
+      "EXPERIMENT_AUDIT_WARP_PHASE.json",
+      "PILOT_DATA_SCHEMA_AUDIT.md",
+      "PILOT_DATA_SCHEMA_AUDIT.json",
+      "PILOT_PERIOD_SCHEMA_ADDENDUM.md",
+      "PILOT_PERIOD_SCHEMA_ADDENDUM.json"
+    ]
+  },
+  "input_sha256": {
+    ".agents/skills/research-refine/SKILL.md": "bb489173329fec7a6551c74c319e2103d83f722ea11fc11462a7c4ccacd00b09",
+    ".agents/skills/shared-references/review-tracing.md": "4f4936984391da87464b8e8bf6f7c984f3f186e8fdc42890d0ac999b5e2024dc",
+    "refine-logs/temporac/round-3-refinement.md": "06c323a8e0713ffe2d586c26e83331480f0d5f3f8852606108f7b4790c9de707",
+    "refine-logs/temporac/round-0-initial-proposal.md": "654fbbc0038a7c74ffd73295ccb5a0bca533ccbee3b527b2c7804b528abe6fb2",
+    "refine-logs/temporac/PHASE_ORIGIN_AUDIT.md": "83909c6b34757fc6d15502ff202c6e50d26c69b1d5763c4322857b160c242b1c",
+    "idea-stage/TEMPORAC_CANONICAL_REVIEW_BRIEF.md": "63b84447a6af9c4228bd5f93787b7cab0da4e9e96ac7258d7217e14ce915ba08",
+    "idea-stage/TEMPORAC_RESEARCH_REVIEW.md": "ebfbb5cb5ff3963daf70156082bfeefc3832aa4932d3699aa40f7cb2b52012a9",
+    "idea-stage/TEMPORAC_RESEARCH_REVIEW.json": "27cb7a828cefa4a1110f2ba70875a1654c4435d79cafdec40f83691f695a7864",
+    "idea-stage/NOVELTY_CHECK.json": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5",
+    "idea-stage/RESEARCH_REVIEW.json": "fbc2462303c3ddcb4b23ef4cbf4f81b01a863ff433c6a58dec3f8cd99790caa3",
+    "EXPERIMENT_AUDIT_WARP_PHASE.md": "770ea5d9c86fce3a88a1f859434edeec893eec2d1b326cf95ec33a6112ac8e7c",
+    "EXPERIMENT_AUDIT_WARP_PHASE.json": "457d09da6b4c7c7a9e7734e21bc3564f2d2a66dc610cc549fc70203b7fdfd7ed",
+    "PILOT_DATA_SCHEMA_AUDIT.md": "7058981e8eb37622c09f5808a4b1329bc7cd133f474101723f15e5e4273eab25",
+    "PILOT_DATA_SCHEMA_AUDIT.json": "ba1c376127d0304d7ee76f902c56dd753c351b71fc11655c45451b98fa0481b8",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.md": "49edcfe25c302c2b55b8e65bc18e1cb7febe25cc8b76698d631fa24150d4b0b5",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.json": "2c95af393fa73f3c581a327f9ee8a5e8a5a5c69c03a9fe6349d3b6531c48e914",
+    "refine-logs/temporac/round-3-review.md": "37b9ac78321e5d59b5b0858b8f389f18071bebe6680cf27080a065b80f336036",
+    "refine-logs/temporac/round-3-review.json": "9f1b81db935cf1e44729f19b1a59bb9671b9967f7ebfa84f84d3b9964e08bd58"
+  },
+  "raw_review_binding": {
+    "trace_response_path": ".aris/traces/research-refine/20260816_temporac_round4_sol/001-round-4-review.response.md",
+    "trace_response_sha256": "ae42c04e4a3660096112f1976ad73c0a9c92fcb7ed1c0d79b783e730d39a7346",
+    "canonical_markdown_path": "refine-logs/temporac/round-4-review.md",
+    "canonical_markdown_sha256": "0ce87089296daf423452430f1782efef1b0276b64d1419706cc29276bf52dfdb",
+    "canonical_contains_complete_raw_review_verbatim": true
+  },
+  "trace_binding": {
+    "run_meta_path": ".aris/traces/research-refine/20260816_temporac_round4_sol/run.meta.json",
+    "run_meta_sha256": "7b9054f3ac02f89fc732a2d1a9214e1f1af3cb3c99d082becaea06f51c13de98",
+    "request_path": ".aris/traces/research-refine/20260816_temporac_round4_sol/001-round-4-review.request.json",
+    "request_sha256": "be063f104edf07942f6b49000657987a8d2ce377fa9854032ce3eaf55cfe51e0"
+  },
+  "output_status": {
+    "canonical_markdown": "WRITTEN_AND_VALIDATED",
+    "structured_json": "WRITTEN_AND_VALIDATED",
+    "trace": "FULL_TRACE_WRITTEN_AND_VALIDATED",
+    "review_trace_event": "APPENDED_EXACTLY_ONCE_AND_VALIDATED",
+    "utf8_no_bom": "VALIDATED",
+    "raw_response_binding": "VALIDATED",
+    "input_rehash": "VERIFIED_AT_FINALIZATION",
+    "output_scope": "VERIFIED_ALLOWED_PATHS_PLUS_REQUIRED_TRACE_EVENT_ONLY",
+    "manifest_modified": false,
+    "refine_state_modified": false,
+    "score_history_modified": false,
+    "proposal_modified": false,
+    "code_or_tests_modified": false,
+    "implementation_started": false,
+    "data_modified": false,
+    "server_accessed": false,
+    "paper_modified": false,
+    "git_command_or_index_modified": false
+  }
+}

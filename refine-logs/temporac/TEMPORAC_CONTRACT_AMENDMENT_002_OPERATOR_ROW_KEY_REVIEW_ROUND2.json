@@ -1,0 +1,233 @@
+{
+  "acceptance_status": "provisional",
+  "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY",
+  "artifact_type": "temporac_contract_amendment_review",
+  "authoritative": false,
+  "authorizes": [],
+  "blocking_issue_count": 0,
+  "date": "2026-08-16",
+  "executor_family": "openai",
+  "fresh_zero_context": false,
+  "input_rehash_status": "verified_at_persistence",
+  "bindings": {
+    "amendment_json": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.json",
+      "sha256": "d524556f292ec17a155cdcd962cf8a88bea26f32b810ffb7bd8e45744f1c54fc"
+    },
+    "amendment_markdown": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.md",
+      "sha256": "899d6f071c89f898bf3825adfb30a326904f9bc7fe44d44351da8a5d0d9ccb14"
+    },
+    "canonical_review_markdown": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.md",
+      "sha256": "a86da733f3ae048b867ec8b2366a9f0262ca2b390ef08687ca7d710654e8301f"
+    },
+    "contract": {
+      "path": "src/pams/temporac/contract.py",
+      "sha256": "b71255a35cce1701d2741064064b53ba819b742873a348f1852f147149e36467"
+    },
+    "experiment_plan": {
+      "path": "refine-logs/EXPERIMENT_PLAN.md",
+      "sha256": "3fd1986871b32674d74b395fbfc9720712d9fba0c8583c24c1d5bddb87086eb6"
+    },
+    "experiment_tracker": {
+      "path": "refine-logs/EXPERIMENT_TRACKER.md",
+      "sha256": "c7e2f32c3c81b66884abb13760a671ecc7cdd314fd6c994a4ed4c46cb754a63b"
+    },
+    "fixtures": {
+      "path": "src/pams/temporac/fixtures.py",
+      "sha256": "a8d10df7c8e3cbcb5684198192d3a553921da0f6aa92f03e54448ee182671406"
+    },
+    "hashio": {
+      "path": "src/pams/temporac/hashio.py",
+      "sha256": "2d81e415b45e3d1b612f998b6a8386a967dfdfcfaac31bc914b2c95cbaeeab3a"
+    },
+    "proposal_primary": {
+      "path": "refine-logs/FINAL_PROPOSAL.md",
+      "sha256": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c"
+    },
+    "proposal_temporac": {
+      "path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+      "sha256": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c"
+    },
+    "test_probe": {
+      "path": "tests/temporac/test_gates_fixtures.py",
+      "sha256": "4c33a46d6dfe4119c3a82e1d8df5602d12bc1fd469664805be1a67be75ad6443"
+    }
+  },
+  "contradiction_adjudication": {
+    "digest_byte_index_defined": false,
+    "length_prefix_defined": false,
+    "production_fail_closed_is_correct": true,
+    "result": "BLOCKED_UNDEFINED_ROW_KEY_PREIMAGE",
+    "row_key_bytes_defined": false,
+    "semantic_population_defined": true
+  },
+  "repair_adjudication": {
+    "categorical_indices_coherent": true,
+    "digest_byte": "D(e)[0]",
+    "digest_byte_coherent": true,
+    "digest_preimage": "ASCII(temporac.operator.v4)||0x00||uint64_be(10)||K||uint32_be(e)",
+    "fixed_key_bytes": 10,
+    "injective": true,
+    "literal_minimum_byte_length_claim_allowed": false,
+    "non_expansive": true,
+    "normative_scope_minimal": true,
+    "one_uint64_length_prefix_coherent": true,
+    "platform_independent": true,
+    "raw_uint32_edge_coherent": true
+  },
+  "independent_inventory_replay": {
+    "all_keys_exactly_10_bytes": true,
+    "edge0_raw_digest_inventory_bytes": 331776,
+    "edge0_raw_digest_inventory_sha256": "ba797f6ae59cbbb40f19a61199afaaa1ac5b2c001a3c9fc34f1dba8f79cf78e4",
+    "first_key_hex": "00040001000000000000",
+    "key_inventory_bytes": 186624,
+    "key_inventory_sha256": "18dfdafe237b77565de36bab6d4642efb314ec1cbbd76e852938ed5c4d424a55",
+    "keys_strictly_increasing_bytewise": true,
+    "last_key_hex": "008100040002001f0003",
+    "row_count": 10368,
+    "semantic_json_bytes": 746714,
+    "semantic_json_sha256": "0fe8b2619a3f33cc4a83485053888c04c567b015eea65f81bf6cd9ec715ee4f2",
+    "unique_key_count": 10368,
+    "unique_semantic_row_count": 10368
+  },
+  "independent_float32_replay": {
+    "b255_actual_inactive_edges": 8945,
+    "b255_actual_inactive_rows": 5665,
+    "b255_committed_bits": "3ecccccc",
+    "b255_committed_f4_le_hex": "cccccc3e",
+    "b255_uncapped_bits": "3ecccccd",
+    "b255_uncapped_f4_le_hex": "cdcccc3e",
+    "changed_from_uncapped_b_values": [255],
+    "inactive_lookup_bytes": 1024,
+    "inactive_lookup_sha256": "afa6eff0d744acfdf9cf78adc43aa8daf01633f3345d7567d642a7782885040d",
+    "inactive_lookup_unique_value_count": 256,
+    "inactive_max_binary64": 0.3999999761581421,
+    "inactive_negative_margin_binary64": 0.10000002384185791,
+    "operation_order_replayed": "exact integer numerator; one binary64 division; one RN-even binary32 conversion; numerical min with exact binary32 cap"
+  },
+  "plateau_replay": {
+    "amplitude_1_flat_plateau_count": 6912,
+    "amplitude_1_flat_row_count": 2304,
+    "bits": {
+      "aidx_0_boosted": "3f266666",
+      "aidx_0_ordinary": "3f19999a",
+      "aidx_1_boosted": "3f4ccccd",
+      "aidx_1_ordinary": "3f400000",
+      "aidx_2_boosted": "3f800000",
+      "aidx_2_ordinary": "3f800000"
+    },
+    "f4_le_hex": {
+      "aidx_0_boosted": "6666263f",
+      "aidx_0_ordinary": "9a99193f",
+      "aidx_1_boosted": "cdcc4c3f",
+      "aidx_1_ordinary": "0000403f",
+      "aidx_2_boosted": "0000803f",
+      "aidx_2_ordinary": "0000803f"
+    },
+    "lower_middle_edge": "start+floor((width-1)/2)",
+    "unique_maximum_required_for_amplitude_1_width_2_or_4": false
+  },
+  "row_witnesses": [
+    {
+      "actual_generated_f4_le_hex": "65984b3e",
+      "actual_kind": "inactive",
+      "digest": "54ac35705b42e8296cf324b893e5450c123b8b48c45e912cba928a6c432f60c4",
+      "digest_byte": 84,
+      "edge": 0,
+      "inactive_function_f4_le_hex": "65984b3e",
+      "key_hex": "00040001000000000000",
+      "row": "(4,1,aidx=0,o=0,lidx=0)"
+    },
+    {
+      "actual_generated_f4_le_hex": "6666263f",
+      "actual_kind": "boosted_plateau_0.65",
+      "digest": "dee0ad937ac053341db0c0b1dc6a179c6684e9a6108b76336070f4cb910e1170",
+      "digest_byte": 222,
+      "edge": 32,
+      "inactive_function_f4_le_hex": "1fecb83e",
+      "inactive_function_is_hypothetical": true,
+      "key_hex": "00040001000000000000",
+      "row": "(4,1,aidx=0,o=0,lidx=0)"
+    },
+    {
+      "actual_generated_f4_le_hex": "26598c3e",
+      "actual_kind": "inactive",
+      "digest": "9406bcc666d0a8487362b65700a5daebd6d3f4496c54c5b2da1f849ba52d3ee1",
+      "digest_byte": 148,
+      "edge": 17,
+      "inactive_function_f4_le_hex": "26598c3e",
+      "key_hex": "00050002000100070002",
+      "row": "(5,2,aidx=1,o=7,lidx=2)"
+    },
+    {
+      "actual_generated_f4_le_hex": "fe63ca3e",
+      "actual_kind": "inactive",
+      "digest": "fb06baef760aaeb7ab2a4aeaad5d13dc457afc989fb75db931e1535c4213c215",
+      "digest_byte": 251,
+      "edge": 319,
+      "inactive_function_f4_le_hex": "fe63ca3e",
+      "key_hex": "008100040002001f0003",
+      "row": "(129,4,aidx=2,o=31,lidx=3)"
+    },
+    {
+      "actual_generated_f4_le_hex": "cccccc3e",
+      "actual_kind": "inactive",
+      "digest": "ff78168a29882190e18b1fd5957cf1eb549c721c227344c8fbfc20ec8d9f4fb3",
+      "digest_byte": 255,
+      "edge": 42,
+      "first_actual_b255_inactive": true,
+      "inactive_function_f4_le_hex": "cccccc3e",
+      "key_hex": "00040001000000000001",
+      "row": "(4,1,aidx=0,o=0,lidx=1)"
+    }
+  ],
+  "first_preimage_hex": "74656d706f7261632e6f70657261746f722e763400000000000000000a0004000100000000000000000000",
+  "preservation": {
+    "claims_and_evidence_ceiling": true,
+    "data_and_protocol": true,
+    "disk_cap_gib": 64,
+    "f23_and_gates": true,
+    "jobs": 27,
+    "jobs_and_resources": true,
+    "layouts_targets_masks_components_geometry": true,
+    "max_concurrency": 2,
+    "models_training_metrics": true,
+    "nola_decoder_topology": true,
+    "resource_budget_a6000_hours": 93,
+    "scientific_population_and_order": true,
+    "thresholds": true
+  },
+  "canonical_patch_conditions": [
+    "Patch both FINAL_PROPOSAL.md copies byte-identically under separate edit authority.",
+    "Assign one new shared proposal SHA-256 and rebind the plan, tracker, contract, and every dependent test, manifest, receipt, and hash consumer.",
+    "Implement exactly five uint16_be fields, one uint64_be(10), raw uint32_be(e), and D(e)[0], with no H wrapper or added prefix.",
+    "Preserve the exact binary32 operation order, cap, plateau bytes, and actual-versus-hypothetical witness distinction.",
+    "Verify all row, lookup, inventory, full-response, complete-manifest, and aggregate witnesses in the locked runtime.",
+    "Remain fail-closed and inherit no S0 or gate status until the canonical patch is fully rebound and freshly reviewed."
+  ],
+  "authority_ceiling": {
+    "canonical_edit_authorized": false,
+    "claims_authorized": false,
+    "data_access_authorized": false,
+    "evaluator_capability_authorized": false,
+    "gate_pass_authorized": false,
+    "git_authorized": false,
+    "implementation_authorized": false,
+    "manifest_authorized": false,
+    "paper_promotion_authorized": false,
+    "result_authorized": false,
+    "s0_authorized": false,
+    "server_access_authorized": false,
+    "test_execution_authorized": false,
+    "training_authorized": false
+  },
+  "model": "gpt-5.6-sol",
+  "review_independence": "same-family",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "round": 2,
+  "status": "ACCEPT_SAME_FAMILY_PROVISIONAL_ZERO_AUTHORITY",
+  "verdict": "ACCEPT"
+}

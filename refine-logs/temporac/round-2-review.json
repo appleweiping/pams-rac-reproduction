@@ -1,0 +1,445 @@
+{
+  "schema_version": "temporac.research_refine_review.v2",
+  "skill": "research-refine",
+  "review_round": 2,
+  "review_date": "2026-08-15",
+  "proposal_under_review": "refine-logs/temporac/round-1-refinement.md",
+  "reviewer": {
+    "agent_id": "/root/temporac_refine_reviewer",
+    "reviewer_model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "reasoning_effort": "xhigh",
+    "continuation_of_round_1_same_agent": true
+  },
+  "calibration": {
+    "status": "none",
+    "statement": "No curated known-good/known-bad local research-refine proposals were supplied; scoring uses only the stated top-venue method-first rubric."
+  },
+  "anchor": {
+    "immutable_field_status": "VERBATIM_PRESERVED",
+    "immutable_field_count": 5,
+    "immutable_field_block_sha256": "919a22bbab10c4f1e830f43bcd2c2a6d2ac604a099729013e7478b02ac638846",
+    "revised_occurrences": 2,
+    "both_revised_field_blocks_exactly_match_round_0": true,
+    "entire_problem_anchor_section_verbatim": false,
+    "bounded_integrity_defect": "The round-0 Problem Anchor section's separate trailing drift-guard paragraph beginning 'The five bullets above are immutable.' is omitted from both revised copies.",
+    "required_bounded_repair": "Restore the omitted drift-guard paragraph verbatim after both immutable five-field blocks without changing the fields.",
+    "substantive_drift": false,
+    "graph_matches_original_temporac": true,
+    "graph": [
+      "externally supplied person-indexed pose tracks",
+      "identity-private preprocessing and state",
+      "one shared local encoder",
+      "three shared matched slow/medium/fast response experts",
+      "fixed cue-only relative-tempo soft routing",
+      "response-level fusion",
+      "positive NOLA reconstruction",
+      "one threshold-0.5 connected-component decoder per identity"
+    ],
+    "forbidden_replacements_absent": [
+      "WARP-PHASE selector",
+      "scene-level counter",
+      "per-person model copies",
+      "learned router",
+      "human count or period input",
+      "independent window decode",
+      "integral decision decoder"
+    ]
+  },
+  "scores": [
+    {
+      "dimension": "Problem Fidelity",
+      "weight": 0.15,
+      "score": 9.6,
+      "weighted_contribution": 1.44
+    },
+    {
+      "dimension": "Method Specificity",
+      "weight": 0.25,
+      "score": 7.2,
+      "weighted_contribution": 1.8
+    },
+    {
+      "dimension": "Contribution Quality",
+      "weight": 0.25,
+      "score": 7.5,
+      "weighted_contribution": 1.875
+    },
+    {
+      "dimension": "Frontier Leverage",
+      "weight": 0.15,
+      "score": 7.5,
+      "weighted_contribution": 1.125
+    },
+    {
+      "dimension": "Feasibility",
+      "weight": 0.1,
+      "score": 6.5,
+      "weighted_contribution": 0.65
+    },
+    {
+      "dimension": "Validation Focus",
+      "weight": 0.05,
+      "score": 7.5,
+      "weighted_contribution": 0.375
+    },
+    {
+      "dimension": "Venue Readiness",
+      "weight": 0.05,
+      "score": 6.5,
+      "weighted_contribution": 0.325
+    }
+  ],
+  "weighted_composite": {
+    "exact": 7.59,
+    "displayed": 7.59,
+    "calculation": "9.6*0.15 + 7.2*0.25 + 7.5*0.25 + 7.5*0.15 + 6.5*0.10 + 7.5*0.05 + 6.5*0.05 = 7.590",
+    "ready_threshold": 9
+  },
+  "gap": {
+    "exact_to_ready_threshold": 1.41,
+    "statement": "The proposal is 1.410 points below READY. Structural drift and component sprawl are largely resolved; the remaining blockers are per-track crossing certification, seam and hidden-cycle numerics, trained-output pulse binding, and a control-path nonlinearity mismatch."
+  },
+  "round_1_resolution": [
+    {
+      "issue": "degree-zero arc compression and missing closing-edge degree test",
+      "status": "SUBSTANTIALLY_RESOLVED",
+      "remainder": "Per-track monotonic and no-hidden-cycle certification remains open."
+    },
+    {
+      "issue": "unfixed phase origin",
+      "status": "SUBSTANTIALLY_RESOLVED",
+      "remainder": "Local-maximum semantics and exact tangent/resampler invariance remain open."
+    },
+    {
+      "issue": "integral decoder could replace final peak pass",
+      "status": "RESOLVED_AS_DESIGN_DECISION",
+      "remainder": "The trained-response hard resolvability gate remains ambiguous."
+    },
+    {
+      "issue": "router controls retrained and latent cue bypass possible",
+      "status": "RESOLVED_FOR_MAIN_CAUSAL_INTERVENTION",
+      "remainder": "A paired gate decision margin must be frozen."
+    },
+    {
+      "issue": "one-output capacity control not exact",
+      "status": "PARTLY_RESOLVED",
+      "remainder": "The control averages logits before sigmoid while TempoRAC fuses sigmoid responses."
+    },
+    {
+      "issue": "feature-vault leakage boundary missing",
+      "status": "RESOLVED_AT_SPECIFICATION_LEVEL",
+      "remainder": "No implementation or data-bearing execution is authorized here."
+    },
+    {
+      "issue": "contribution sprawl",
+      "status": "RESOLVED_AT_CLAIM_LEVEL",
+      "remainder": "The teacher prerequisite remains expensive to explain in four pages."
+    }
+  ],
+  "dominant_claim": {
+    "status": "FOCUSED",
+    "claim": "After a frozen response-unit prerequisite, identity-indexed cue-only local relative-tempo routing selects useful shared response scales under within-track drift.",
+    "supporting_mechanism_only": "Expert diagonal tempo specialization",
+    "correctness_plumbing_only": [
+      "primitive-orbit teacher prerequisite",
+      "positive NOLA",
+      "one fixed peak decoder"
+    ],
+    "excluded_from_first_route": [
+      "L_cont",
+      "PAMS-TCC initialization",
+      "ACF fusion",
+      "learned router",
+      "GRU alternative",
+      "integral decision decoder"
+    ]
+  },
+  "degree_one_teacher": {
+    "ruling": "MATHEMATICALLY_CREDIBLE_ON_SUPPORTED_DOMAIN_NOT_NUMERICALLY_SUFFICIENT_FOR_TARGET_EMISSION",
+    "strengths": [
+      "clock-blind state and no-bypass decoder",
+      "fixed pose-only landmark and one-landmark-per-traversal origin average",
+      "closing-edge winding, coverage, circular-gap, collision, reconstruction, alias, and coherence tests",
+      "degree 0/-1/+2, harmonic, symmetry, static-code, decoder-bypass, homeomorphism, and resampler attacks",
+      "deterministic checkpoint precedence",
+      "fail-closed natural-unit audit with no human-guided repair"
+    ],
+    "blockers": [
+      {
+        "id": "T1",
+        "issue": "G1 permits up to 1% negative sequential edges at population level.",
+        "consequence": "Net winding +1 can coexist with two forward seam crossings after backtracking; F7 counts both.",
+        "fix": "For every target-emitting track require -1e-12 <= delta_t < 0.25 on every valid edge, no backward crossing, and exactly one positive crossing per retained-landmark traversal; otherwise abstain."
+      },
+      {
+        "id": "T2",
+        "issue": "F7 uses unspecified accumulation precision and raw floor seam ownership.",
+        "consequence": "Near-integer accumulated phase can shift or duplicate a pulse across implementations.",
+        "fix": "Use compensated float64 accumulation, S_tau with tau=1e-7 cycles, and pulse invariance for tau in {1e-8,1e-7,1e-6}; seam-ambiguous tracks abstain."
+      },
+      {
+        "id": "T3",
+        "issue": "Every edge with Delta q > 0 is valid, so source gaps do not operationally defend no hidden cycles.",
+        "consequence": "A small wrapped endpoint increment cannot exclude unobserved full cycles across the gap.",
+        "fix": "Freeze a supported acquisition domain, split unsupported gaps such as Delta q != 1, declare the minimum supported source period, and never unwrap, reconstruct, or decode across invalid gaps."
+      },
+      {
+        "id": "T4",
+        "issue": "The average of two normalized immediate-neighbor chords is called warp invariant.",
+        "consequence": "On a curved orbit it depends on neighbor physical offsets and is only an approximate direction estimate under resampling.",
+        "fix": "Relabel F1 and require full matched-state canonical-phase and emitted-pulse equality on unseen resamplers; remove the tangent from supported state or abstain if the gate fails."
+      },
+      {
+        "id": "T5",
+        "issue": "F5 says strict local maximum but specifies ell[t-1] < ell[t] >= ell[t+1].",
+        "consequence": "Plateau and parabolic-denominator behavior is not deterministic.",
+        "fix": "Freeze strict greater-than on both sides with negative denominator or an explicit plateau ownership/abstention rule."
+      }
+    ],
+    "minimal_interface_fix": "One evaluator-owned certify_target(track) predicate returning eligibility, abstention reason, landmarks, deltas, crossings, and pulse before any target is serialized."
+  },
+  "one_final_peak_pass": {
+    "ruling": "PRESERVE_CONDITIONALLY_DEFENSIBLE_NO_INTEGRAL_REPLACEMENT",
+    "decoder": "One threshold-0.5 connected-component pass per supplied identity after positive NOLA.",
+    "positive_closures": [
+      "class-balanced BCE",
+      "fixed event target 0.75 margin",
+      "fixed non-event 0.25 valley margin",
+      "positive taper and NOLA",
+      "fixed 0.5 threshold",
+      "no NMS, learned threshold, minimum distance, period rule, or integral fallback"
+    ],
+    "blockers": [
+      {
+        "issue": "G4 does not say whether the held-out pulse pack contains operator fixtures, frozen trained-model outputs, or both.",
+        "fix": "Use one schema with both sources; require zero hard threshold misses, extras, splits, and merges and record worst-case margins."
+      },
+      {
+        "issue": "G4 includes event spacings 2 and 3 despite the declared per-edge delta < 0.25 supported phase domain.",
+        "fix": "Remove unsupported spacings 2 and 3; derive the minimum spacing and retain boundary cases from 4 upward."
+      }
+    ],
+    "failure_action": "Reject strict TempoRAC; the integral audit remains non-decision-bearing."
+  },
+  "cue_only_routing_and_matched_experts": {
+    "ruling": "MAIN_CAUSAL_INTERVENTION_VALID_AFTER_ONE_CONTROL_CORRECTION",
+    "strengths": [
+      "fixed cue-only router",
+      "one declared irregular-clock NUDFT cue",
+      "three equal-width matched TCN experts",
+      "one trained and frozen bank",
+      "local/global/uniform/blocked/shuffled interventions on the same cached response tensor",
+      "held-out expert-by-tempo diagonal matrix as supporting mechanism evidence"
+    ],
+    "blocker": {
+      "issue": "TempoRAC mixes branch sigmoid probabilities, but the capacity control averages logits before one sigmoid.",
+      "consequence": "A difference can arise from nonlinear placement and calibration rather than routing.",
+      "fix": "Use identical sigmoid branches plus exact uniform probability-level fusion and name it an unrouted capacity-matched three-branch control."
+    },
+    "decision_rule_fix": "Replace bare G3 'beats' with a frozen paired lower-bound rule against the strongest nonlocal gate; blocked versus uniform is a path-integrity assertion."
+  },
+  "gate_executability": [
+    {
+      "gate": "G0",
+      "status": "EXECUTABLE_ON_PAPER_NOT_RUN_OR_AUTHORIZED",
+      "closure": "None at method level; implementation requires separate authorization."
+    },
+    {
+      "gate": "G1",
+      "status": "BLOCKED_FOR_TARGET_EMISSION",
+      "closure": "Per-track crossing certificate, seam numerics, no-hidden-cycle rule, full resampler pulse equality, and strict landmark semantics."
+    },
+    {
+      "gate": "G2",
+      "status": "EXECUTABLE_ON_PAPER",
+      "closure": "Preserve raw-cue locality versus documented identity-local reference dependence."
+    },
+    {
+      "gate": "G3",
+      "status": "PARTIALLY_EXECUTABLE",
+      "closure": "Correct probability-level control fusion and freeze a paired decision threshold."
+    },
+    {
+      "gate": "G4",
+      "status": "PARTIALLY_EXECUTABLE",
+      "closure": "Bind operator and model-output packs, record hard margins, and remove unsupported spacings."
+    },
+    {
+      "gate": "G5",
+      "status": "CONDITIONALLY_EXECUTABLE_NOT_AUTHORIZED",
+      "closure": "All earlier gates and evaluator/comparison hashes must pass before any run."
+    }
+  ],
+  "staged_compute_and_validation": {
+    "gpu_budget_ruling": "PLAUSIBLE_AND_HARD_STOPPED",
+    "gpu_budget_a6000_hours_max": 100,
+    "proposed_engineer_days": "15-23",
+    "reviewer_engineer_days": "20-30",
+    "overbuilt": false,
+    "qualification": "Internal G/K checks are appropriate fail-closed receipts but should be compressed into three paper-visible evidence blocks.",
+    "paper_visible_evidence_blocks": [
+      "response-unit and decoder eligibility",
+      "frozen-response routing mechanism",
+      "supplied-track efficacy and stationarity"
+    ]
+  },
+  "dimensions_below_7": [
+    {
+      "dimension": "Feasibility",
+      "score": 6.5,
+      "weakness": "The schedule assumes unresolved G1/G4 numerical contracts can be settled during implementation, while feature-vault, execution JSON, fixtures, and traces are still specifications.",
+      "concrete_fix": "Freeze certify_target, supported gap/period assumptions, seam precision, strict landmark semantics, the corrected control, and the two-source G4 pack before any data-bearing run; budget 20-30 engineer-days under the same GPU cap.",
+      "priority": "CRITICAL"
+    },
+    {
+      "dimension": "Venue Readiness",
+      "score": 6.5,
+      "weakness": "The central conjunction is unvalidated, closest-prior/TWCRAC overlap remains unresolved, eligible results do not exist, and the prerequisite can eclipse the routing claim in four pages.",
+      "concrete_fix": "Close the four contract edits, expose only three evidence blocks and one dominant claim, report teacher/decoder as eligibility, and keep novelty/title/server/result/paper authorization separate.",
+      "priority": "IMPORTANT"
+    }
+  ],
+  "simplification_opportunities": [
+    "Consolidate landmark, topology, crossing, gap, and seam rules into one certify_target interface and receipt.",
+    "Remove G4 spacings 2 and 3 because they lie outside the supported delta < 0.25 domain.",
+    "Reuse canonical sigmoid and uniform probability fusion for the unrouted capacity control.",
+    "Compress internal G/K receipts into three paper-visible evidence blocks without deleting fail-closed checks."
+  ],
+  "modernization_opportunities": {
+    "status": "NONE",
+    "reason": "LLM, VLM, diffusion, RL, or inference-time search does not resolve phase topology, irregular sampling, response-scale selection, state isolation, or reconstruction semantics and would add sprawl."
+  },
+  "drift": {
+    "warning": "NONE_SUBSTANTIVE",
+    "anchor_fields_preserved": true,
+    "full_section_integrity_issue": "Omitted trailing drift-guard paragraph must be restored verbatim in both copies.",
+    "graph_preserved": true,
+    "substantive_drift_detected": false,
+    "future_drift_triggers": [
+      "Replacing local three-expert routing with WARP-PHASE or an easier global selector",
+      "Permitting cross-identity state",
+      "Using human evaluator fields to create, repair, or select training targets",
+      "Decoding windows independently",
+      "Substituting an integral decoder after the fixed peak contract fails"
+    ]
+  },
+  "remaining_action_items": [
+    {
+      "rank": 1,
+      "priority": "CRITICAL",
+      "action": "Make response-unit certification per target-bearing track with strict forward increments and exactly one crossing per retained-landmark traversal."
+    },
+    {
+      "rank": 2,
+      "priority": "CRITICAL",
+      "action": "Own seam and sampling numerics with compensated float64, S_tau, tolerance invariance, and an explicit no-hidden-cycle/source-gap rule."
+    },
+    {
+      "rank": 3,
+      "priority": "CRITICAL",
+      "action": "Bind G4 to frozen held-out model outputs and operator fixtures, require hard zero split/merge/miss, and remove spacings 2 and 3."
+    },
+    {
+      "rank": 4,
+      "priority": "IMPORTANT",
+      "action": "Treat F1 as an approximate direction estimate, require full phase/pulse resampler equality, and freeze strict landmark semantics."
+    },
+    {
+      "rank": 5,
+      "priority": "IMPORTANT",
+      "action": "Move the capacity-control sigmoid before uniform probability fusion and freeze the paired G3 gate decision."
+    },
+    {
+      "rank": 6,
+      "priority": "IMPORTANT",
+      "action": "Keep one routing claim and three paper-visible evidence blocks; do not add modules or experiments."
+    },
+    {
+      "rank": 7,
+      "priority": "IMPORTANT",
+      "action": "Restore the omitted original drift-guard paragraph verbatim in both Problem Anchor occurrences without altering the five fields."
+    },
+    {
+      "rank": 8,
+      "priority": "IMPORTANT",
+      "action": "Keep novelty, closest-prior, title, implementation, server/training, result, paper, and submission authorization separate."
+    }
+  ],
+  "authorization": {
+    "method_refinement_verdict": "REVISE",
+    "local_contract_editing": "NEXT_REFINEMENT_STEP_NOT_STARTED",
+    "novelty_clearance": "NOT_GRANTED",
+    "closest_prior_twcrac_resolution": "UNRESOLVED",
+    "title_or_acronym_freeze": "NOT_AUTHORIZED",
+    "implementation_or_test_execution": "NOT_AUTHORIZED_BY_THIS_REVIEW",
+    "server_or_data_bearing_training": "NOT_AUTHORIZED",
+    "test_sealed_heldout_historical_result_access": "NOT_AUTHORIZED",
+    "positive_performance_claims": "NOT_AUTHORIZED",
+    "paper_drafting_submission_public_claim": "NOT_AUTHORIZED"
+  },
+  "verdict": {
+    "code": "REVISE",
+    "ready_rule_satisfied": false,
+    "weighted_score_at_least_9": false,
+    "no_substantive_drift": true,
+    "no_blocking_issue": false,
+    "rationale": "The revised proposal is on-anchor and focused, but individual one-event certification, seam and hidden-cycle numerics, trained-response peak binding, and exact capacity-control matching remain blocking."
+  },
+  "input_resolution": {
+    "requested_missing_path": "idea-stage/RESEARCH_REVIEW.md",
+    "status": "MISSING",
+    "authorized_substitute": "idea-stage/RESEARCH_REVIEW.json",
+    "missing_input_is_blocker": false,
+    "audits_resolved_at_worktree_root": [
+      "EXPERIMENT_AUDIT_WARP_PHASE.md",
+      "EXPERIMENT_AUDIT_WARP_PHASE.json",
+      "PILOT_DATA_SCHEMA_AUDIT.md",
+      "PILOT_PERIOD_SCHEMA_ADDENDUM.md"
+    ]
+  },
+  "input_sha256": {
+    "refine-logs/temporac/round-1-refinement.md": "977d1368237cca4348973cf0142ecfee1157ad1073ebbdc7ca2430e673e82a9c",
+    "refine-logs/temporac/PHASE_ORIGIN_AUDIT.md": "83909c6b34757fc6d15502ff202c6e50d26c69b1d5763c4322857b160c242b1c",
+    "refine-logs/temporac/round-0-initial-proposal.md": "654fbbc0038a7c74ffd73295ccb5a0bca533ccbee3b527b2c7804b528abe6fb2",
+    "idea-stage/TEMPORAC_CANONICAL_REVIEW_BRIEF.md": "63b84447a6af9c4228bd5f93787b7cab0da4e9e96ac7258d7217e14ce915ba08",
+    "idea-stage/TEMPORAC_RESEARCH_REVIEW.md": "ebfbb5cb5ff3963daf70156082bfeefc3832aa4932d3699aa40f7cb2b52012a9",
+    "idea-stage/TEMPORAC_RESEARCH_REVIEW.json": "27cb7a828cefa4a1110f2ba70875a1654c4435d79cafdec40f83691f695a7864",
+    "idea-stage/NOVELTY_CHECK.json": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5",
+    "idea-stage/RESEARCH_REVIEW.json": "fbc2462303c3ddcb4b23ef4cbf4f81b01a863ff433c6a58dec3f8cd99790caa3",
+    "EXPERIMENT_AUDIT_WARP_PHASE.md": "770ea5d9c86fce3a88a1f859434edeec893eec2d1b326cf95ec33a6112ac8e7c",
+    "EXPERIMENT_AUDIT_WARP_PHASE.json": "457d09da6b4c7c7a9e7734e21bc3564f2d2a66dc610cc549fc70203b7fdfd7ed",
+    "PILOT_DATA_SCHEMA_AUDIT.md": "7058981e8eb37622c09f5808a4b1329bc7cd133f474101723f15e5e4273eab25",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.md": "49edcfe25c302c2b55b8e65bc18e1cb7febe25cc8b76698d631fa24150d4b0b5",
+    "refine-logs/temporac/round-1-review.md": "09d7397e819052be4f20c99ddbc75c77fc5b5665448c008cc1ca6a1edc539bd7",
+    "refine-logs/temporac/round-1-review.json": "4708df7dd2c3b61cfd2373f2e1149584711afccc06190d10102be945818f0574",
+    ".aris/traces/research-refine/20260815_temporac_round1_sol/001-round-1-review.response.md": "48fc63c647396c7d067b21d645bb05720adbf19ea04ab59c6a64cf5684a06a97"
+  },
+  "raw_review_binding": {
+    "trace_response_path": ".aris/traces/research-refine/20260815_temporac_round2_sol/001-round-2-review.response.md",
+    "trace_response_sha256": "f2f3c62f6e2327a5fcda6fdaa55ea27541a9173beb343c93cd62229aea43d4ce",
+    "canonical_markdown_path": "refine-logs/temporac/round-2-review.md",
+    "canonical_markdown_sha256": "6f96f06bd55e4787ac37029adc43d8351748374755f458793ccae392ebfc7974",
+    "canonical_contains_complete_raw_review_verbatim": true
+  },
+  "output_status": {
+    "canonical_markdown": "WRITTEN_AND_VALIDATED",
+    "structured_json": "WRITTEN_AND_VALIDATED",
+    "trace": "FULL_TRACE_WRITTEN_AND_VALIDATED",
+    "review_trace_event": "APPENDED_EXACTLY_ONCE_AND_VALIDATED",
+    "utf8_no_bom": "VALIDATED",
+    "raw_response_binding": "VALIDATED",
+    "input_rehash": "VERIFIED_AT_FINALIZATION",
+    "output_scope": "VERIFIED_ALLOWED_PATHS_PLUS_REQUIRED_TRACE_EVENT_ONLY",
+    "manifest_modified": false,
+    "refine_state_modified": false,
+    "score_history_modified": false,
+    "proposal_modified": false,
+    "code_or_tests_modified": false,
+    "implementation_started": false,
+    "server_accessed": false,
+    "git_command_or_index_modified": false
+  }
+}

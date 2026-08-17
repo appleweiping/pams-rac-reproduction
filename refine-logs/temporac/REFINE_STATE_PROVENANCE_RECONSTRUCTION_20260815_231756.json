@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "record_type": "refine_state_provenance_reconstruction",
+  "run_id": "rac-temporac-restoration-icassp27-20260815-sol",
+  "generated_at": "2026-08-15T23:17:56+08:00",
+  "status": "RECONSTRUCTED_FROM_IMMUTABLE_ARTIFACTS",
+  "limitations": [
+    "The phase-boundary REFINE_STATE files for anchor round 0, proposal round 0, and review round 1 were not written at their original boundaries.",
+    "This record does not fabricate original state-file bytes, write timestamps, or historical SHA-256 values.",
+    "It reconstructs only the transitions directly supported by the named immutable artifacts."
+  ],
+  "reconstructed_transitions": [
+    {
+      "phase": "anchor",
+      "round": 0,
+      "evidence_path": "refine-logs/temporac/round-0-initial-proposal.md",
+      "evidence_sha256": "654fbbc0038a7c74ffd73295ccb5a0bca533ccbee3b527b2c7804b528abe6fb2",
+      "evidence_scope": "contains the initial immutable five-field Problem Anchor and full initial proposal"
+    },
+    {
+      "phase": "proposal",
+      "round": 0,
+      "evidence_path": "refine-logs/temporac/round-0-initial-proposal.md",
+      "evidence_sha256": "654fbbc0038a7c74ffd73295ccb5a0bca533ccbee3b527b2c7804b528abe6fb2",
+      "evidence_scope": "complete Round-0 proposal"
+    },
+    {
+      "phase": "review",
+      "round": 1,
+      "score": 6.575,
+      "verdict": "REVISE",
+      "reviewer": "gpt-5.6-sol",
+      "review_independence": "same-family",
+      "acceptance_status": "provisional",
+      "markdown_path": "refine-logs/temporac/round-1-review.md",
+      "markdown_sha256": "09d7397e819052be4f20c99ddbc75c77fc5b5665448c008cc1ca6a1edc539bd7",
+      "json_path": "refine-logs/temporac/round-1-review.json",
+      "json_sha256": "4708df7dd2c3b61cfd2373f2e1149584711afccc06190d10102be945818f0574"
+    },
+    {
+      "phase": "refine",
+      "round": 1,
+      "evidence_path": "refine-logs/temporac/round-1-refinement.md",
+      "evidence_sha256": "977d1368237cca4348973cf0142ecfee1157ad1073ebbdc7ca2430e673e82a9c",
+      "state_path": "refine-logs/temporac/REFINE_STATE_20260815_230132.json",
+      "state_sha256": "ddc539812d0910b8fdfb3f80d0bf4c894983087570d87f05a8a136fb11390ff9"
+    }
+  ],
+  "anchor_binding": {
+    "canonical_object": "five immutable Problem Anchor fields",
+    "field_block_sha256": "919a22bbab10c4f1e830f43bcd2c2a6d2ac604a099729013e7478b02ac638846",
+    "round0_full_section_sha256": "44dce8546f499acdede797055625657579685c0b75dc64c26d3f51003e956b71",
+    "round1_full_section_sha256": "72492b281a24dc67cb87fd198c216397b17acf57548b61af776b8000aecbecf4",
+    "required_repair": "Restore the omitted Round-0 drift paragraph in the next full refinement; until then only the five-field block is verbatim."
+  },
+  "authority": {
+    "canonical_lineage": "TempoRAC restoration",
+    "warp_phase": "terminal_failed_non_authoritative",
+    "backup_pivot": "separate_backup_only_non_authoritative",
+    "implementation_authorized": false,
+    "server_authorized": false,
+    "paper_claim_authorized": false
+  }
+}
+

@@ -1,0 +1,371 @@
+{
+  "schema_version": "aris.novelty_check.set_valued.v1",
+  "audit_id": "20260815_set_valued_sol",
+  "generated_at": "2026-08-15T21:00:00+08:00",
+  "reviewer": {
+    "reviewer_model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "fresh_context": false,
+    "nonfresh_reason": "agent_thread_lifetime_limit",
+    "role": "continuation ARIS novelty-check reviewer"
+  },
+  "scope": {
+    "venue": "ICASSP 2027",
+    "candidate_key": "set-valued-counting-pose-missingness",
+    "candidate_title": "Set-Valued Counting Under Pose Missingness",
+    "task": "Pose-driven supplied-track multi-person repetition counting without learner-side per-person count or period labels",
+    "research_only": true,
+    "implementation_performed": false,
+    "training_performed": false,
+    "manifest_modified": false,
+    "server_test_sealed_heldout_results_accessed": false,
+    "external_evidence_cutoff": "2026-08-15"
+  },
+  "candidate_mechanism": [
+    "Estimate kinematic feasible sets from train-only bone-length and velocity feature statistics without evaluator labels.",
+    "Propagate observed joints and missing-coordinate sets through one frozen multiband analytic response bank.",
+    "Return a per-supplied-identity count set or interval, and return a point estimate only when that set is sufficiently narrow.",
+    "Require structural inclusion under nested missingness masks and audit width separately from point-count error."
+  ],
+  "core_claims": [
+    {
+      "claim_id": "C1",
+      "claim": "A pose-missingness set can be propagated to a set of plausible repetition counts for each supplied identity without using per-person count or period labels in the learner.",
+      "finding": "No checked primary source directly discloses this exact input-to-output task. SSTRAC and Viewpoint-Invariant Exercise Repetition Counting repair or interpolate pose and emit point counts; PAMS emits a self-supervised point count; MultiCounter and MultiCounter+ emit supervised per-person point counts. The residual is therefore plausible but only task-specific.",
+      "status": "PLAUSIBLE_NARROW_RESIDUAL_NOT_NOVELTY_CLEARANCE"
+    },
+    {
+      "claim_id": "C2",
+      "claim": "Nested missingness masks should induce nested output count sets and nondecreasing uncertainty width.",
+      "finding": "The general nested-mask and missing-information uncertainty principle is occupied. Zaffran et al. explicitly define included masks, analyze variance, inter-quantile distance and interval-length isotonicity under assumptions, and construct CP-MDA-Nested variants. Exact output-set inclusion for this particular analytic RAC map could be a correctness property, but not a broad novelty claim.",
+      "status": "GENERAL_CLAIM_OCCUPIED_TASK_SPECIFIC_CORRECTNESS_ONLY"
+    },
+    {
+      "claim_id": "C3",
+      "claim": "Containment of the frozen full-observation point estimate by a masked-input interval establishes coverage.",
+      "finding": "False. Self-containment measures consistency with the method's own reference prediction and can preserve systematic count bias. Statistical coverage concerns the true count and requires labeled calibration or a proved set-membership model plus explicit assumptions. The proposed label-free gate cannot license conformal, calibrated, mask-conditional, or true-count coverage language.",
+      "status": "REJECTED_AS_COVERAGE_CLAIM"
+    },
+    {
+      "claim_id": "C4",
+      "claim": "The resulting count interval is a non-vacuous partial-identification region under pose missingness.",
+      "finding": "Unproven. A kinematic envelope estimated from empirical feature statistics is not automatically a valid set containing the latent pose, and an approximate lower/upper response mass is not automatically the sharp image of that set through the count operator. The safe term is sensitivity envelope or feasible-set count range unless soundness and, for partial identification, sharpness are established.",
+      "status": "CONDITIONAL_AND_CURRENTLY_UNPROVEN"
+    }
+  ],
+  "search_protocol": {
+    "local_pdf_scan": "No local paper PDFs were found; local evidence contributed project boundaries but no external-paper full text.",
+    "retrieval": [
+      "Primary publisher and proceedings pages/PDFs",
+      "arXiv author records and full text",
+      "Official author repositories only for method confirmation"
+    ],
+    "date_coverage": "Queries explicitly covered 2024-2026 and a separate 2026-02-15 through 2026-08-15 recent-arXiv window.",
+    "claim_queries": [
+      {
+        "claim_id": "C1",
+        "queries": [
+          "2024 2025 2026 repetitive action counting missing pose uncertainty interval prediction skeleton",
+          "\"repetition counting\" \"prediction interval\" pose OR skeleton",
+          "\"set-valued\" \"repetition counting\" missing data",
+          "site:arxiv.org repetition counting uncertainty missing pose skeleton interval"
+        ],
+        "resolved_primary_neighbors": ["S01", "S02", "S03", "S04", "S05"],
+        "context": "Found MRAC point counting, self-supervised point counting, skeleton repair, and missing-frame interpolation, but no direct pose-missingness-to-repetition-count-set method in the checked corpus. Search absence is not proof of novelty."
+      },
+      {
+        "claim_id": "C2",
+        "queries": [
+          "2024 2025 2026 nested mask prediction intervals missing covariates monotonic uncertainty sets",
+          "\"nested masks\" uncertainty interval missing data machine learning",
+          "conformal prediction missing covariates nested missingness sets monotonic width",
+          "site:arxiv.org 2026 \"missing covariates\" conformal prediction sets"
+        ],
+        "resolved_primary_neighbors": ["S08", "S09", "S10", "S13"],
+        "context": "General nested masking, mask-conditional coverage, and increasing uncertainty under missing inputs are directly occupied; their guarantees require response labels, calibration, and assumptions."
+      },
+      {
+        "claim_id": "C3",
+        "queries": [
+          "2024 2025 2026 conformal prediction intervals count data event count time series",
+          "\"prediction interval\" \"event count\" missing observations time series",
+          "\"partial identification\" count missing data time series observations",
+          "site:arxiv.org set-valued count prediction missing time series 2026"
+        ],
+        "resolved_primary_neighbors": ["S06", "S07", "S08", "S09", "S12", "S14"],
+        "context": "Predictive intervals for counts and uncertainty-aware counting exist outside RAC. Validated coverage is defined against true outcomes, not a model's own full-input estimate."
+      },
+      {
+        "claim_id": "C4",
+        "queries": [
+          "2024 2025 2026 human pose estimation uncertainty prediction sets missing joints conformal",
+          "site:arxiv.org human pose uncertainty set missing joints occlusion 2026",
+          "site:arxiv.org repetitive action counting uncertainty 2026 pose",
+          "2026 arXiv repetition counting occlusion missing skeleton uncertainty interval"
+        ],
+        "resolved_primary_neighbors": ["S04", "S05", "S11", "S13", "S14"],
+        "context": "Pose uncertainty, pose repair and missing-input prediction sets exist, but checked methods do not propagate the missing pose to a repetition-count set. Partial-identification terminology remains unjustified without a sharp feasible-set argument."
+      }
+    ],
+    "recent_six_month_queries": [
+      "repetitive action counting uncertainty interval pose skeleton",
+      "conformal prediction missing covariates mask conditional nested",
+      "partial identification missing time series count interval",
+      "human pose uncertainty missing joints prediction sets",
+      "site:arxiv.org/abs/ repetition counting missing skeleton uncertainty interval after:2026-02-15"
+    ],
+    "recent_six_month_context": "The recent window surfaced AISTATS 2026 mask-conditional conformal prediction, an August 2026 missing-modality conformal preprint, 2026 partial-identification papers, PAMS, and future-event count intervals; it did not surface a direct repetition-count interval under pose missingness."
+  },
+  "primary_source_ledger": [
+    {
+      "source_id": "S01",
+      "work": "MultiCounter: Multiple Action Agnostic Repetition Counting in Untrimmed Videos",
+      "status": "ECAI 2024 proceedings / author arXiv",
+      "url": "https://journals.sagepub.com/doi/pdf/10.3233/FAIA240494",
+      "inspected": "abstract, related work, task definition, method and outputs",
+      "boundary": "Defines MRAC and supervised per-instance localization plus point count. It does not return count sets or model missing-pose uncertainty."
+    },
+    {
+      "source_id": "S02",
+      "work": "MultiCounter+: Toward Efficient and Robust Multi-Instance Repetitive Action Counting",
+      "status": "IEEE TCSVT 2026 official record",
+      "url": "https://ieeexplore.ieee.org/document/11421441/",
+      "inspected": "publisher abstract and disclosed method boundary",
+      "boundary": "Owns unified MRAC, spatial-temporal consistency, long-short-period awareness and supervised/synthetic training, not missing-pose count intervals."
+    },
+    {
+      "source_id": "S03",
+      "work": "Count What Repeats: Period-Adaptive Multi-Scale Consistency for Self-Supervised Repetitive Action Counting",
+      "status": "CVPR Findings 2026 official proceedings",
+      "url": "https://openaccess.thecvf.com/content/CVPR2026F/html/Gao_Count_What_Repeats_Period-Adaptive_Multi-Scale_Consistency_for_Self-Supervised_Repetitive_Action_CVPRF_2026_paper.html",
+      "inspected": "abstract, introduction/related-work boundary, method and inference consensus",
+      "boundary": "Owns unlabeled-skeleton periodic representation learning, PAMS-TCC, tempo robustness and multi-expert point-count consensus."
+    },
+    {
+      "source_id": "S04",
+      "work": "SSTRAC: Skeleton-Based Dual-Stream Spatio-Temporal Transformer for Repetitive Action Counting in Videos",
+      "status": "IEEE Access 2025 official DOI and author-hosted journal PDF",
+      "url": "https://doi.org/10.1109/ACCESS.2025.3624029",
+      "inspected": "abstract, related work, full proposed model, density-map supervision and occlusion experiment",
+      "boundary": "Uses an externally pretrained occlusion-robust pose estimator to reconstruct defective skeletons, then predicts a supervised density map and point count. It selected videos with well-recognized skeletons for core training and reports no interval."
+    },
+    {
+      "source_id": "S05",
+      "work": "Viewpoint-Invariant Exercise Repetition Counting",
+      "status": "journal full text and arXiv 2107.13760",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10692053/",
+      "inspected": "method, robustness section and missing-frame experiment",
+      "boundary": "Simulates missing frames, interpolates nearest frames and evaluates point-count MAE. This blocks generic missing-frame robustness claims, not set-valued count propagation."
+    },
+    {
+      "source_id": "S06",
+      "work": "As Easy as 1, 2... 4? Uncertainty in Counting Tasks for Medical Imaging",
+      "status": "MICCAI 2019 primary full text",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7611043/",
+      "inspected": "counting methods, predictive-interval loss, calibration and results",
+      "boundary": "Directly learns predictive count bounds from real count targets, calibrates against ground-truth counts and evaluates coverage-width tradeoffs. It forbids any generic first count-interval or first count-UQ claim."
+    },
+    {
+      "source_id": "S07",
+      "work": "Uncertainty-aware Continuous Implicit Neural Representations for Remote Sensing Object Counting",
+      "status": "AISTATS 2024 PMLR paper",
+      "url": "https://proceedings.mlr.press/v238/xu24b.html",
+      "inspected": "abstract, related work, Sections 3.1-3.4 and UQ outputs",
+      "boundary": "UNIC uses labeled object annotation maps and a variational stochastic density process to produce count uncertainty. It is neither RAC nor missing-pose propagation, but uncertainty-aware counting is not new."
+    },
+    {
+      "source_id": "S08",
+      "work": "Conformal Prediction with Missing Values",
+      "status": "ICML 2023 PMLR paper",
+      "url": "https://proceedings.mlr.press/v202/zaffran23a.html",
+      "inspected": "abstract, related work, CP-MDA-Exact and CP-MDA-Nested methods and guarantees",
+      "boundary": "Provides predictive intervals with missing covariates and mask-conditional validity using labeled responses and calibration. Generic nested masking and coverage are occupied."
+    },
+    {
+      "source_id": "S09",
+      "work": "Predictive Uncertainty Quantification with Missing Covariates",
+      "status": "2024 author arXiv full text",
+      "url": "https://arxiv.org/abs/2405.15641",
+      "inspected": "abstract, literature, hardness results, mask partial order, interval-length isotonicity, CP-MDA-Nested-star and guarantees",
+      "boundary": "Shows informative distribution-free mask-conditional validity is impossible in general, formalizes when more missingness increases uncertainty, and uses labeled calibration. It is the closest mechanism-level prior."
+    },
+    {
+      "source_id": "S10",
+      "work": "Mask-Conditional Conformal Prediction: Valid Uncertainty For All Missing Data Mechanisms",
+      "status": "AISTATS 2026 official program / author OpenReview paper",
+      "url": "https://openreview.net/pdf?id=FiQAQSTXZn",
+      "inspected": "abstract, related-work context, preimpute-mask-then-correct method and stated validity",
+      "boundary": "Uses multiple imputation plus reweighted or acceptance-rejection conformal calibration to target marginal and mask-conditional coverage. It requires response-labeled calibration and is not RAC."
+    },
+    {
+      "source_id": "S11",
+      "work": "CUPS: Improving Human Pose-Shape Estimators with Conformalized Deep Uncertainty",
+      "status": "ICML 2025 PMLR paper / author preprint",
+      "url": "https://proceedings.mlr.press/v267/zhang25g.html",
+      "inspected": "abstract, method overview, deep uncertainty function and conformal calibration",
+      "boundary": "Produces calibrated uncertainty sets for 3D pose-shape estimation using supervised pose losses and a labeled calibration set; it does not propagate pose uncertainty to repetition counts."
+    },
+    {
+      "source_id": "S12",
+      "work": "Prediction Intervals for Interim Events in Randomized Clinical Trials with Time-to-Event Endpoints",
+      "status": "2026 author arXiv record",
+      "url": "https://arxiv.org/abs/2601.04192",
+      "inspected": "abstract and method scope",
+      "boundary": "Constructs future event-count prediction intervals with parametric survival models and bootstrap inference. It reinforces that count intervals are generic prior art, but is not pose or RAC."
+    },
+    {
+      "source_id": "S13",
+      "work": "Conformal Fusion Under Missing Modalities",
+      "status": "August 2026 author arXiv preprint; not peer-reviewed",
+      "url": "https://arxiv.org/abs/2608.07183",
+      "inspected": "abstract, related work, mask-conditioned architecture, Mondrian calibration and limitations",
+      "boundary": "Missing inputs can drive widened prediction sets and mask-keyed conformal coverage, but labeled per-mask calibration remains essential. The task is multimodal classification, not RAC."
+    },
+    {
+      "source_id": "S14",
+      "work": "Partial Identification under Missing Data Using Weak Shadow Variables from Pretrained Models",
+      "status": "February 2026 author arXiv preprint",
+      "url": "https://arxiv.org/abs/2602.16061",
+      "inspected": "abstract, estimand, sharp-bound construction and coverage distinction",
+      "boundary": "Uses constrained linear programs to form sharp identified sets for population estimands under explicit assumptions. It demonstrates why an arbitrary sensitivity interval should not be called partial identification."
+    },
+    {
+      "source_id": "S15",
+      "work": "DeepPhase: Periodic Autoencoders for Learning Motion Phase Manifolds",
+      "status": "ACM SIGGRAPH 2023 primary publication",
+      "url": "https://dl.acm.org/doi/10.1145/3588432.3591500",
+      "inspected": "existing full-method boundary from the current project novelty ledger",
+      "boundary": "Owns unsupervised local periodic motion phase representations. Phase itself is not a contribution here."
+    },
+    {
+      "source_id": "S16",
+      "work": "TWCRAC: Leveraging Temporal Cycle Consistency and Dynamic Thresholding for Robust Repetitive Action Counting",
+      "status": "2026 SSRN primary record; full text not obtained in the prior adjudication",
+      "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6630216",
+      "inspected": "abstract-level boundary only; excluded from absence inference",
+      "boundary": "Local nonstationary statistics, intra-video cycle consistency and dynamic thresholds are not contributions. Its unavailable full method neither proves nor disproves the set-valued candidate."
+    }
+  ],
+  "closest_prior": [
+    {
+      "rank": 1,
+      "sources": ["S08", "S09", "S10"],
+      "overlap": "Predictive sets under missing covariates, nested masking, mask-conditional validity, width and coverage.",
+      "delta": "The candidate targets a discrete per-track repetition count through a fixed signal-processing map and refuses learner-side count labels; the priors use labeled responses and generic predictors."
+    },
+    {
+      "rank": 2,
+      "sources": ["S04", "S05"],
+      "overlap": "Skeleton RAC under occlusion or missing frames.",
+      "delta": "They repair/interpolate pose then output point counts; the candidate would preserve ambiguity and output a count set."
+    },
+    {
+      "rank": 3,
+      "sources": ["S06", "S07", "S12"],
+      "overlap": "Count uncertainty and predictive count intervals.",
+      "delta": "They are not repetitive-action counting from incomplete pose and generally use outcome labels or parametric count models."
+    },
+    {
+      "rank": 4,
+      "sources": ["S11", "S13", "S14"],
+      "overlap": "Pose uncertainty, missing-input uncertainty sets and partial identification.",
+      "delta": "None directly maps a supplied partial pose track to a per-person repetition-count set, but each blocks generic terminology."
+    }
+  ],
+  "adjudication": {
+    "score_10": 5.6,
+    "score_label": "moderate task-specific novelty, weak component novelty",
+    "verdict": "CAUTION",
+    "novelty_cleared": false,
+    "implementation_authorized": false,
+    "training_authorized": false,
+    "paper_claim_authorized": false,
+    "precise_delta": "Given a supplied, possibly incomplete pose track for one identity, propagate one explicitly nested feasible coordinate set through one frozen analytic repetition-response map and return the corresponding discrete count range; then test whether that range stays informative as pose is removed, without fitting the learner to per-person count or period labels. The contribution, if it survives, is this task-specific propagation-and-non-vacuity result, not counting intervals, conformal prediction, nested masking, pose uncertainty, skeleton repair, robust RAC, self-supervised periodicity, or multi-person counting.",
+    "brutal_summary": "The direct conjunction was not found, but the candidate is currently a composition of established ideas with unresolved semantics. Its strongest advertised gate measures agreement with its own point counter, not truth. Without a sound feasible set and exact or certified propagation, the output is only a sensitivity envelope; without labeled calibration, it has no statistical coverage guarantee. This is enough for one tiny proof-and-vacuity gate, not enough for a method claim."
+  },
+  "coverage_semantics": {
+    "nested_mask_set_inclusion": "A deterministic structural property. It can be proved or exhaustively checked for the implemented set map. It says nothing by itself about the true count.",
+    "full_observation_self_containment": "An engineering sanity check: whether the masked interval contains the frozen full-input model estimate. It is not calibration and can preserve model bias.",
+    "empirical_true_count_coverage": "A post-freeze evaluation statistic requiring evaluator-side real count labels. It does not become a finite-sample guarantee merely because the learner did not see those labels.",
+    "calibrated_coverage": "Requires a labeled calibration sample, a declared calibration algorithm and assumptions such as exchangeability or a justified correction. This conflicts with the current no learner-side count-label story if calibration is part of the method.",
+    "set_membership_soundness": "A conditional guarantee is possible only if the latent missing pose is assumed or shown to lie in the feasible set and the output range contains every count attainable by that set.",
+    "partial_identification": "Allowed only with an explicit identified estimand, admissible-data model, proof of validity and, if sharpness is claimed, proof that every point in the region is attainable."
+  },
+  "fatal_risks": [
+    "The train-statistic kinematic set may not contain latent joints under occlusion, off-frame motion, detector failure or MNAR missingness.",
+    "Peak selection, thresholding and cycle rounding are nonlinear; interval arithmetic can under-approximate the attainable count set or explode into a vacuous range.",
+    "No learner-side real count labels means no conformal or empirical coverage calibration of the count endpoint.",
+    "A 95% full-estimate containment gate can pass while true-count coverage is arbitrarily bad.",
+    "The interval can be no tighter than a trivial [0, maximum feasible cycles] range at realistic missingness.",
+    "The work may read as an application of missing-covariate UQ plus SSTRAC-style robustness rather than a new signal-processing principle.",
+    "Per-track decomposition on supplied identities does not create a new MRAC contribution and depends on externally supervised detector, pose estimator and tracker quality.",
+    "Only random masks would not support claims about real occlusion or tracker-linked missingness."
+  ],
+  "allowed_claims": [
+    "We study set-valued repetition counting under controlled missingness on supplied pose tracks.",
+    "The learner-side uncertainty-set constructor and analytic counter use no per-person count or period labels, if the implementation audit confirms this exactly.",
+    "Under the declared feasible-set and exact-propagation assumptions, nested input feasible sets induce nested output count sets.",
+    "After predictions are frozen, evaluator-side labels show an empirical true-count containment rate on the named validation split.",
+    "The returned sets were narrower than the preregistered trivial baseline at matched empirical containment on the audited mask families, if observed.",
+    "External detector, pose estimator and tracker supervision are disclosed explicitly."
+  ],
+  "forbidden_claims": [
+    "first count interval, first uncertainty-aware counting, first missing-pose RAC, or any other first claim",
+    "annotation-free or fully label-free system",
+    "end-to-end multi-person counting",
+    "state of the art or superior robustness without matched evidence",
+    "calibrated, conformal, valid, guaranteed or mask-conditionally covered count intervals without labeled calibration and proved assumptions",
+    "partial identification or sharp bounds without a formal admissible-set and sharpness argument",
+    "nested-mask monotonicity as a new general principle",
+    "robustness to real occlusion from random-mask self-containment alone",
+    "constant-time inference",
+    "phase, local-window, dynamic-threshold, identity-consistency, self-supervised periodicity or MRAC novelty"
+  ],
+  "minimum_next_gate": {
+    "name": "G0_SET_SEMANTICS_AND_NONVACUITY",
+    "scope": "Frozen local train/validation only; no server, test, sealed, heldout or result access; no training and no threshold tuning after inspection.",
+    "precommit": [
+      "Freeze one analytic response bank, one missing-coordinate feasible-set rule, one count-set definition, one trivial count-set baseline and deterministic nested mask chains.",
+      "State whether the output is an exact attainable count set, a certified outer bound or only a sensitivity envelope.",
+      "Separate learner-side label access, evaluator-side post-freeze scoring and any calibration data."
+    ],
+    "checks": [
+      "On short enumeratable pose fragments, compare the computed output set with exhaustive feasible completions; kill on any under-coverage of the exact attainable set.",
+      "Across every audited nested mask pair, require exact set inclusion and nondecreasing width; kill on the first violation.",
+      "Retain the original sanity target of at least 95% containment of the frozen full-observation estimate, but label it self-containment only.",
+      "At 30% missing joints, kill if median width exceeds 1.5 cycles or if the method is not tighter than the preregistered trivial range at matched self-containment.",
+      "After all predictions are locked, allow an evaluator-only validation pass against true counts. Report empirical coverage with uncertainty; kill the coverage story if the predeclared target is missed, and never upgrade it to a guarantee.",
+      "Run at least random-joint, contiguous-frame, limb-block and confidence-correlated mask families; restrict conclusions to the families that pass."
+    ],
+    "decision": "Only a zero-violation soundness/nesting result plus non-vacuous width and honest evaluator-side truth containment justifies a later bounded implementation proposal. Otherwise abandon the candidate or relabel it as a diagnostic sensitivity baseline."
+  },
+  "prior_boundaries": {
+    "MultiCounter_and_MultiCounterPlus": "MRAC, per-person point counts, identity consistency and long-short-period awareness are prior work.",
+    "PAMS": "Self-supervised skeleton periodic learning, multiscale temporal cycle consistency, tempo stress and peak consensus are prior work.",
+    "DeepPhase": "Unsupervised local motion phase is prior work.",
+    "TWCRAC": "Local nonstationary statistics, local TCC and dynamic thresholds are not contributions; its unavailable full text is not used as absence evidence.",
+    "SSTRAC": "Skeleton reconstruction/repair and occlusion-robust point RAC are prior work.",
+    "external_supervision": "The supplied tracks depend on externally supervised detector, pose and tracking systems and must never be described as annotation-free."
+  },
+  "warp_failure_memory": {
+    "candidate": "signed warp-integral WARP-PHASE",
+    "status": "terminally killed",
+    "immutable_gate2_counts": [246, 55, 144, 50, 66],
+    "prohibited_actions": [
+      "threshold tuning",
+      "fixture replacement",
+      "resurrection or reinterpretation",
+      "server training or a new server route"
+    ],
+    "relationship_to_this_candidate": "No WARP-PHASE mechanism or selector is carried into this novelty check."
+  },
+  "limitations": [
+    "This was a same-family continuation review and is provisional.",
+    "Failure to locate a direct disclosure is not proof of novelty.",
+    "MultiCounter+ was available primarily through the official publisher record, and TWCRAC full text remained unavailable; neither limitation is used to infer absence of the exact mechanism.",
+    "No experiment, implementation, training or result inspection was performed."
+  ],
+  "status": "complete_novelty_check_only"
+}

@@ -1,0 +1,93 @@
+{
+  "schema_version": "aris.trace.run_meta.v1",
+  "trace_id": "20260815_pivot_landscape_sol",
+  "stage": "research-lit",
+  "generated_at": "2026-08-15T21:00:00+08:00",
+  "completed_at": "2026-08-15T21:10:19+08:00",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "ultra",
+  "fresh_context": false,
+  "review_fresh_context": false,
+  "nonfresh_reason": "agent_thread_lifetime_limit",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "outcome": {
+    "status": "LANDSCAPE_ONLY_NO_NOVELTY_VERDICT",
+    "paper_count": 28,
+    "direct_count": 10,
+    "adjacent_count": 13,
+    "foundational_count": 5,
+    "direction_a_query_count": 3,
+    "direction_b_query_count": 3,
+    "actual_gap_count": 5,
+    "unresolved_full_text_limit_count": 6,
+    "novelty_confirmed": false,
+    "candidate_verdict_issued": false,
+    "implementation_authorized": false,
+    "training_authorized": false,
+    "paper_claim_authorized": false
+  },
+  "local_library": {
+    "status": "WARN_LOCAL_CONTRIBUTED_NOTHING",
+    "papers_directory_exists": false,
+    "literature_directory_exists": false,
+    "agents_md_paper_library_heading_exists": false,
+    "warning": "WARN: local contributed nothing — no PDFs found in papers/, literature/, or a configured paper library. To include yours, add a \"## Paper Library\" heading to AGENTS.md followed by the directory path."
+  },
+  "arxiv_verification": {
+    "tool": "C:/Users/admin/.aris/repos/auto-research-in-sleep-e12e07c-full/tools/verify_papers.py",
+    "cache_scope": "none",
+    "verdict": "PASS",
+    "submitted_count": 15,
+    "verified_count": 15,
+    "hallucination_rate": 0.0,
+    "pending_rate": 0.0,
+    "warnings": []
+  },
+  "source_warnings": [
+    "One early arxiv_fetch.py invocation encountered Windows console encoding and was rerun with PYTHONIOENCODING=utf-8; no conclusion depends on the failed invocation.",
+    "MultiCounter+ full text was not retrieved.",
+    "TWCRAC full text was not retrieved.",
+    "SRITrack full text was not retrieved.",
+    "The final latent-conformal motion paper was not fully adjudicated and its related preliminary arXiv title differs.",
+    "Keyword/index search cannot prove absence."
+  ],
+  "input_sha256": {
+    ".agents/skills/research-lit/SKILL.md": "d6293c58a6d6319b7ae5075ee9a1587ae83368400fbe15ff89a338e52e549c61",
+    ".agents/skills/shared-references/fan-out-pattern.md": "550eb36f8b807001fdbe4c5357ea2927b5efb88bda74223747d5c45ab28edca4",
+    ".agents/skills/shared-references/integration-contract.md": "5d393c31b36e98ae99c17ab9cf5879853c0cb595bbd9f4973ffe7bcd6549f4e7",
+    "idea-stage/PIVOT_CANDIDATE_UNION.json": "8c1552da0166d02ab565e5b4072fda5cc2a36a1acb46f3d58ccdb418dc33e652",
+    "idea-stage/PIVOT_IDEA_JURY.json": "cac5b3d0217854d886223934724075f2cadd5a2b08f866bc1194ec4f5b09f800",
+    "idea-stage/IDEA_REPORT.md": "6105bcc49d1a4756b7927e87f02d3b38d23ed0d6115f344409d7d8a68c0d2610",
+    "idea-stage/NOVELTY_CHECK.json": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5",
+    "paper/references.bib": "c84cb6df17ac4133f7c3115e1aa4dcad82e9e850f1ebdc5e6979cbc1cfd917b3",
+    "CLAIMS_FROM_RESULTS_WARP_PHASE.json": "82b3cd6b687d7a4aee8ef3b9c5c6e8159c2a1ee68d75bf94b85bc7430676bb85",
+    "EXPERIMENT_AUDIT_WARP_PHASE.json": "457d09da6b4c7c7a9e7734e21bc3564f2d2a66dc610cc549fc70203b7fdfd7ed",
+    "AGENTS.md": "35eaf270a8f50c943577a7d00c4d5a78a22a02874489709db6ada5c850aa2251"
+  },
+  "output_sha256": {
+    "idea-stage/PIVOT_LITERATURE_LANDSCAPE_20260815_210000.json": "eb5890a471cb0646584f4636c0621b66bc94b7cf6095614b9fc233711da8846f",
+    "idea-stage/PIVOT_LITERATURE_LANDSCAPE.json": "eb5890a471cb0646584f4636c0621b66bc94b7cf6095614b9fc233711da8846f",
+    "idea-stage/PIVOT_LITERATURE_LANDSCAPE_20260815_210000.md": "83597adb68934d1dafa81087024e4871f52a8850f5b7f64fe8cf636d9028e781",
+    "idea-stage/PIVOT_LITERATURE_LANDSCAPE.md": "83597adb68934d1dafa81087024e4871f52a8850f5b7f64fe8cf636d9028e781",
+    ".aris/traces/research-lit/20260815_pivot_landscape_sol/request.json": "424a1127b75fb61a413f91e7f626aa510b48987cccfb0af8d3e0c24bd6855482",
+    ".aris/traces/research-lit/20260815_pivot_landscape_sol/response.md": "98be7dd1d48d1deabbd19852c33465f9b645b738eae7a7f7d2fb4a6c217962f2"
+  },
+  "validation": {
+    "json_parse": true,
+    "paper_count_matches": true,
+    "three_queries_per_theme": true,
+    "arxiv_ids_verified": true,
+    "timestamp_fixed_json_byte_identical": true,
+    "timestamp_fixed_markdown_byte_identical": true,
+    "utf8_without_bom": true,
+    "exactly_one_terminal_lf": true,
+    "only_requested_outputs_written": true,
+    "manifest_modified": false,
+    "idea_report_modified": false,
+    "source_tests_receipts_modified": false,
+    "server_test_sealed_heldout_results_accessed": false,
+    "agent_spawned": false,
+    "warp_phase_retried_or_resurrected": false
+  }
+}

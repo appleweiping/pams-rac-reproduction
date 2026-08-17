@@ -1,0 +1,71 @@
+{
+  "candidate_byte_comparison": {
+    "candidate_receipt.json": {
+      "byte_equal": true,
+      "bytes": 1729,
+      "sha256": "2e457e01166c6151e4edc688e8fd6f981d1278231fcd8c2bc000179f7a825102"
+    },
+    "candidate_schema.json": {
+      "byte_equal": true,
+      "bytes": 1301,
+      "sha256": "9f4b2ced821e667f950c1f56bbf9adbdc14b2c387c1932953048caf3f747a8cd"
+    },
+    "environment_lock.json": {
+      "byte_equal": true,
+      "bytes": 458,
+      "sha256": "709db0943752965524b507dd6340554a8d7d218be125317af0fc8b7748a5a947"
+    },
+    "member_set_equal": true,
+    "replay_witness.json": {
+      "byte_equal": true,
+      "bytes": 3908,
+      "sha256": "36f60f41ac111a7b05e5f4846464cc774e09bb9faa44feed10be5a4f35418653"
+    },
+    "temporac.operator-manifest.candidate-v1.json": {
+      "byte_equal": true,
+      "bytes": 15039512,
+      "sha256": "1f39378d6f7a970b1f183558ed145bd97107f2aeda41902f4736e6778930e1bb"
+    }
+  },
+  "docker": {
+    "generator_exit_code": 0,
+    "image": "python@sha256:e8be0ea148390d08bc077840cf87ac6a538d80b0ea1e8752b3e3982987cd0a53",
+    "numpy": "2.1.0",
+    "platform": "linux/amd64",
+    "python": "CPython 3.12.4",
+    "regeneration_directory": "D:\\Temp\\temporac_operator_impl_review_c46e56f9afe04a3ebcb83f00b09fd92d\\regenerated"
+  },
+  "fail_closed_probes": {
+    "existing_directory": "exit=2; BLOCKED refusing to overwrite; no candidate member created",
+    "existing_file": "FileExistsError; original SHA-256 0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5 unchanged"
+  },
+  "independent_replay": {
+    "changed_uncapped_lookup_indices": [
+      255
+    ],
+    "flat_amplitude_one_plateaus": 6912,
+    "flat_amplitude_one_rows": 2304,
+    "inactive_b255_edges": 8945,
+    "inactive_b255_rows": 5665,
+    "maximum_nola_float64_deviation_before_f4": 1.1102230246251565e-16,
+    "minimum_positive_nola_denominator": 0.0011528184020849772,
+    "rows": 10368,
+    "unique_keys": 10368,
+    "worst_negative_margin": 0.10000002384185791,
+    "worst_positive_margin": 0.1499999761581421
+  },
+  "normative_roots": {
+    "edge0_digest_inventory": "ba797f6ae59cbbb40f19a61199afaaa1ac5b2c001a3c9fc34f1dba8f79cf78e4",
+    "inactive_lookup": "afa6eff0d744acfdf9cf78adc43aa8daf01633f3345d7567d642a7782885040d",
+    "key_inventory": "18dfdafe237b77565de36bab6d4642efb314ec1cbbd76e852938ed5c4d424a55",
+    "semantic_inventory": "0fe8b2619a3f33cc4a83485053888c04c567b015eea65f81bf6cd9ec715ee4f2"
+  },
+  "static_and_tests": {
+    "full_mypy": "FAIL: 1 arg-type error at tests/temporac/test_x0.py:146; 44 files checked",
+    "full_pytest": "109 passed, 1 skipped in 143.20s; skip=symlink creation is not permitted",
+    "mypy_production": "PASS: 25 source files",
+    "mypy_scoped": "PASS: 4 source files",
+    "ruff": "PASS: All checks passed",
+    "targeted_pytest": "13 passed in 45.07s"
+  }
+}

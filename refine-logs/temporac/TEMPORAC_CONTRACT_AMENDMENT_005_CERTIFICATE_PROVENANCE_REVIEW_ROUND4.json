@@ -1,0 +1,251 @@
+{
+  "acceptance_status": "provisional",
+  "authoritative": false,
+  "authority": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P2-METRIC": 0,
+    "P3": 0,
+    "S0": 0,
+    "capability": 0,
+    "data": 0,
+    "evaluator": 0,
+    "gate": 0,
+    "git": 0,
+    "gpu": 0,
+    "launch": 0,
+    "paper_claim": 0,
+    "result": 0,
+    "server": 0,
+    "test": 0,
+    "training": 0
+  },
+  "authorizes": [],
+  "binding_verification": {
+    "all_declared_bindings_match": true,
+    "current_runtime_bootstrap_binding_count": 3,
+    "current_source_binding_count": 24,
+    "current_test_binding_count": 19,
+    "declared_binding_count": 55,
+    "final_mismatch_count": 0,
+    "initial_rehash_all_match": true,
+    "planning_and_review_binding_count": 9,
+    "terminal_rehash_all_match": true,
+    "timestamped_and_fixed_aliases_byte_identical": true
+  },
+  "blocking_issue_count": 3,
+  "blocking_issues": [
+    {
+      "attack": "Construct one supervisor from PyConfig_InitIsolatedConfig defaults and another from PyConfig_InitPythonConfig plus the same 23 serialized field assignments, or vary an unlisted use_frozen_modules/PyPreConfig value. Both match the exact JSON launcher record but can select different source/frozen origins and encoding state. Likewise, pass equal fd payload bytes through descriptor types/flags/offsets not represented by the three-key fd rows.",
+      "closure": [
+        "A005-R3-B1"
+      ],
+      "evidence": [
+        "Final Amendment JSON 783-907 freezes argv/envp/fd rows and only 23 PyConfig fields",
+        "Final Amendment JSON 815-840 gives no descriptor class, flags, offset, length/sealing, fd1/fd2, or extra-fd rule",
+        "CPython 3.12 public PyPreConfig and PyConfig contain omitted authority-relevant initialization fields, including locale/UTF-8 and use_frozen_modules",
+        "Final Amendment required tests call PyConfig exact but provide no complete readback/preimage"
+      ],
+      "id": "A005-R4-B1",
+      "required_revision": "Freeze the exact PyPreConfig/PyConfig constructor and call order; bind every platform-applicable input and required readback or require all omitted fields to remain the exact named-constructor defaults; bind frozen-module, encoding/path, argv/options, locale/UTF-8, allocator, and initialization-phase state. Define an exact FD schema including class, flags, offset, length/sealing/EOF, fd1/fd2, extras, and reset/close timing.",
+      "severity": "blocking",
+      "title": "The native CPython initialization and descriptor state is not closed"
+    },
+    {
+      "attack": "Use the two P06 bootstrap executions to discover trusted generated rows. The final environment and supervisor require trusted_generated_source_index_sha256 and consume precommitted rows before dispatch, so the discovery either already depends on its result or runs under an uncommitted launch state. The fixed argv/envp/fd schema has no authenticated bootstrap-only mode, while every exact entrypoint is declared to dispatch.",
+      "closure": [
+        "A005-R3-B1"
+      ],
+      "evidence": [
+        "Final Amendment JSON 936-975 says two P06 fresh processes discover and precommit generated-source rows",
+        "Final Amendment JSON 848-851 validates generated index/environment before exec and consumes all trusted rows before DISPATCH_BEGIN",
+        "Final Amendment JSON 1135 and 1453 routes every exact entrypoint through protocol_entry.dispatch",
+        "Final Amendment JSON 783-907 has one fixed launcher mode and no acyclic discovery capsule or selector"
+      ],
+      "id": "A005-R4-B2",
+      "required_revision": "Within the existing P06 owner, define a closed acyclic bootstrap-only discovery capsule that binds contract, supervisor/config, source, wheel, installed, and CPython inputs but has no generated/environment/trace digest; run the two equal discoveries there, then construct the generated index/final environment and execute a distinct final P06 verification/dispatch under those bytes. Alternatively define a deterministic static derivation. Discovery must never authorize its own process.",
+      "severity": "blocking",
+      "title": "Trusted-generated-source discovery depends on its own final precommit"
+    },
+    {
+      "attack": "Set installed-row normalized_member_path to one valid path while wheel_member_path_or_null names another, or choose arbitrary ordering tokens for null generated rows. Separately encode a composite trace origin in multiple string/object forms, or omit generator qualname/mode while retaining the source digest; the five-key event schema supplies no typed origin preimage by which an independent verifier can reject those substitutions.",
+      "closure": [
+        "A005-R3-B1"
+      ],
+      "evidence": [
+        "Final Amendment JSON 713-766 requires both normalized_member_path and wheel_member_path_or_null but defines no equality or null-row derivation",
+        "Final Amendment JSON 1079-1085 gives every event only event/origin/process_ordinal/sequence/sha256",
+        "Final Amendment JSON 1100 and 1121-1129 requires composite generator/provider/build/member identities without an origin type, delimiter, length prefix, or event-specific keys"
+      ],
+      "id": "A005-R4-B3",
+      "required_revision": "Make the installed member association executable: non-null normalized_member_path must equal the exact normalization of wheel_member_path_or_null, and null rows need one collision-free derived key or a separate nullable/memberless schema plus fixed generated ownership. Give each trace event an exact event-specific closed origin object or tagged length-prefixed encoding containing every independently verified association field, and require parse/re-encode equality.",
+      "severity": "blocking",
+      "title": "Installed-member and trace-origin associations lack unique typed preimages"
+    }
+  ],
+  "byte_validation": {
+    "archived_round3_pair_unchanged": true,
+    "current_json_appendix_byte_identical": true,
+    "current_json_bom": false,
+    "current_json_cr_count": 0,
+    "current_json_duplicate_keys": [],
+    "current_json_keys_recursively_sorted": true,
+    "current_json_nonfinite_or_negative_zero": [],
+    "current_json_terminal_lf_count": 1,
+    "current_json_utf8_strict": true,
+    "current_markdown_bom": false,
+    "current_markdown_cr_count": 0,
+    "current_markdown_terminal_lf_count": 1,
+    "current_markdown_utf8_strict": true,
+    "fixed_and_timestamped_pairs_byte_identical": true
+  },
+  "closure_assessment": {
+    "A005-R3-B1": {
+      "blocking_issue_ids": [
+        "A005-R4-B1",
+        "A005-R4-B2",
+        "A005-R4-B3"
+      ],
+      "positive": "The candidate now has an absolute native pre-import supervisor, a hook that can precede Py_InitializeFromConfig, installed-distribution and CPython runtime ledgers, project/repository equality, trusted generated-source rows, exact entrypoint inventory, and evidence-only post-run trace direction.",
+      "status": "REVISE"
+    },
+    "A005-R3-B2": {
+      "blocking_issue_ids": [],
+      "positive": "NATP is exact14 with one K6-equal upstream, k1.upstream ordinals are exactly G0 then G1 with evidence equalities, the 54-owner inventory is unique, all 106 roster-direct edges point backward, and the declared per-class and per-role counts reproduce exactly.",
+      "status": "CLOSED"
+    },
+    "PREVIOUSLY_CLOSED_SEMANTICS": {
+      "blocking_issue_ids": [],
+      "positive": "Normalized SmoothL1/run_bounds/three-run order, active CPU arithmetic controls, all-checkpoint selection, K1/Cdev preimage and floors, 9648 manifest-derived predictions, target replay, capability order, data firewall, F4 Mapping composition, science, jobs, resources, thresholds, and claims did not drift.",
+      "status": "NO_REGRESSION"
+    },
+    "REVIEW_SNAPSHOT": {
+      "blocking_issue_ids": [],
+      "positive": "The timestamped/fixed pair and all 55 declared current bindings matched at start and terminal rehash.",
+      "status": "CLOSED"
+    }
+  },
+  "current_implementation": {
+    "code_or_tests_modified_by_reviewer": false,
+    "current_source_implements_round4_runtime": false,
+    "gate_bearing_tests_executed": false,
+    "implementation_acceptance": false,
+    "mechanical_review_checks_only": true,
+    "source_file_count_read": 27,
+    "test_file_count_read": 19
+  },
+  "date": "2026-08-16",
+  "independence_verified": false,
+  "mechanical_dag_verification": {
+    "all_roster_edges_point_to_earlier_owner": true,
+    "class_counts": {
+      "g1-teacher-selection": 1,
+      "k1-certificate-outcome": 1,
+      "k3": 1,
+      "k4": 1,
+      "natural-prediction-completion": 3,
+      "pre-g5a-stage": 17,
+      "run": 27,
+      "x0-inference": 3
+    },
+    "declared_and_recomputed_direct_edge_count": 106,
+    "entrypoint_descriptor_count": 57,
+    "entrypoint_prefix_equals_owner_roster": true,
+    "k1_upstream_role_present": true,
+    "natp_exact_key_count": 14,
+    "natp_upstream_length_and_k6_equality_specified": true,
+    "owner_count": 54,
+    "owner_unique_count": 54,
+    "topological_roster_cycle": false
+  },
+  "non_expansion": {
+    "algorithm_changed": false,
+    "claim_changed": false,
+    "dataset_scope_changed": false,
+    "g5a_receipt_key_set_changed": false,
+    "jobs_changed": false,
+    "paper_visible_blocks_changed": false,
+    "resource_ceiling_changed": false,
+    "target_receipt_key_set_changed": false,
+    "thresholds_changed": false
+  },
+  "purpose": "temporac-certificate-amendment-005-round4-normative-review",
+  "review_round": 4,
+  "reviewed_inputs": {
+    "archived_rejected_round3_json": {
+      "bytes": 138394,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_143304.json",
+      "sha256": "187aa3450a9e40f1c75a04b135c5e97e856e18f0165e677a062317e3587be7f2"
+    },
+    "archived_rejected_round3_markdown": {
+      "bytes": 166625,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_143304.md",
+      "sha256": "8d02c70186c38959c74b774e211427f86435664d00106159c0da11ce5843dae9"
+    },
+    "canonical_proposal": {
+      "bytes": 79366,
+      "path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+      "sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"
+    },
+    "certificate_postfix_round2_json": {
+      "bytes": 14527,
+      "path": "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_ROUND2_20260816.json",
+      "sha256": "144d2f22f4f75166b8cbefe54157d08690408979dd7cb34ef8c97e1738432872"
+    },
+    "certificate_postfix_round2_markdown": {
+      "bytes": 12283,
+      "path": "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_ROUND2_20260816.md",
+      "sha256": "93a9cae771b34c185b9057286794b894d615aec5424011df145aaf8900f008d8"
+    },
+    "current_fixed_alias_json": {
+      "bytes": 165291,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.json",
+      "sha256": "04d24ad19b19470bcd675974766a279dc7691d3fdaecf665e3fd24e4a4aaeb82"
+    },
+    "current_fixed_alias_markdown": {
+      "bytes": 203317,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.md",
+      "sha256": "0552aaca74b34929ead1124cce846d2a583931aa89ad29fcf0f97486b7be0198"
+    },
+    "current_timestamped_json": {
+      "bytes": 165291,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_154812.json",
+      "sha256": "04d24ad19b19470bcd675974766a279dc7691d3fdaecf665e3fd24e4a4aaeb82"
+    },
+    "current_timestamped_markdown": {
+      "bytes": 203317,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_154812.md",
+      "sha256": "0552aaca74b34929ead1124cce846d2a583931aa89ad29fcf0f97486b7be0198"
+    },
+    "experiment_plan": {
+      "bytes": 34198,
+      "path": "refine-logs/EXPERIMENT_PLAN.md",
+      "sha256": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e"
+    },
+    "experiment_tracker": {
+      "bytes": 22360,
+      "path": "refine-logs/EXPERIMENT_TRACKER.md",
+      "sha256": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b"
+    },
+    "round3_review_json": {
+      "bytes": 14826,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND3.json",
+      "sha256": "df7917f5eb215779afca36a4db1b978f0a2f6b64b720267b2b14cb20e703339a"
+    },
+    "round3_review_markdown": {
+      "bytes": 16188,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND3.md",
+      "sha256": "e29f1cab1e92feba575cf7d5f446de4f8388b42b7c2d1c65e21d8187f856a54e"
+    }
+  },
+  "reviewer": {
+    "agent_id": "/root/temporac_certificate_amendment005_review",
+    "executor_family": "openai",
+    "family_relation": "same",
+    "model": "gpt-5.6-sol",
+    "reviewer_family": "openai"
+  },
+  "schema": "temporac.contract-amendment-review.v1",
+  "verdict": "REVISE"
+}

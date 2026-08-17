@@ -1,0 +1,414 @@
+{
+  "acceptance_status": "provisional",
+  "agent_id": "/root/temporac_p05m_amendment_review",
+  "amendment": {
+    "fixed_alias_json_path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.json",
+    "fixed_alias_markdown_path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.md",
+    "json_bytes": 81019,
+    "json_path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_20260816_151047.json",
+    "json_sha256": "09b7a835bcc3e3d3c5193b23830c1afc97811665953aaefffc867d8abcf619c7",
+    "markdown_bytes": 45024,
+    "markdown_path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_20260816_151047.md",
+    "markdown_sha256": "7ed7dd65adba298a176cfef52ea6bc5464a664ec7d664ef49995ec154895f71b",
+    "timestamped_pair_byte_identical_to_fixed_aliases": true
+  },
+  "authoritative": false,
+  "authority": {
+    "capability": 0,
+    "data": 0,
+    "evaluator": 0,
+    "g5a": 0,
+    "gate": 0,
+    "git": 0,
+    "gpu": 0,
+    "k7": 0,
+    "launch": 0,
+    "p0": 0,
+    "p1": 0,
+    "p2": 0,
+    "p2_metric": 0,
+    "p3": 0,
+    "paper_claim": 0,
+    "results": 0,
+    "s0": 0,
+    "server": 0,
+    "test": 0,
+    "training": 0
+  },
+  "authorizes": [],
+  "blockers": [
+    {
+      "affected_prior_closure": "R2-B2",
+      "classification": "blocking",
+      "evidence": [
+        "Amendment JSON:1258-1290 requires each process witness to embed complete post-scoring module-origin data, native-image digest and sandbox witness.",
+        "Amendment JSON:1209-1221 and 1388-1402 makes each child's entire successful stdout exactly a nine-key role observation that contains none of those process-witness fields; successful stderr is empty and stdin is only the worker request.",
+        "Amendment JSON:1431-1437 nevertheless requires the controller to verify those actual child values, but defines no extra descriptor, pipe, file, sidecar, monitor, tracer or attestation transport.",
+        "Amendment JSON:1405-1442 makes controller stdout exactly runner evidence, which contains child witnesses but no controller witness; JSON:1463-1466 says P2 constructs the controller witness only after exit, when post-scoring sys.modules is no longer externally observable from the OS process handle.",
+        "Markdown:520 calls the working root read-only, while JSON:987 authoritatively makes $WORK/empty writable. Every role uses the same token and no rule binds distinct mount identities, final emptiness, write prohibition or cross-role isolation."
+      ],
+      "exact_minimal_fix": [
+        "Define one exact parent-observable attestation transport for each role, including descriptor/path identity, creator, canonical bytes, schema, ordering, lifetime and hash preimage; include any monitor or launcher in a freshly reviewed executable/runtime closure.",
+        "Carry or externally attest the complete post-scoring module-origin/native-image/sandbox observations and specify how completeness is checked rather than copied from an expected allowlist.",
+        "Attest controller state before exit on the same closed chain.",
+        "Make work roots explicitly read-only, or bind three distinct per-role mount identities with cross-role access forbidden and initial/final tree witnesses."
+      ],
+      "finding": "The child and controller process witnesses claim actual runtime observations that cannot be constructed or independently verified from the only frozen I/O, while an unfrozen writable work mount permits an unbound substitute channel.",
+      "id": "R3-B1",
+      "impact": "Expected manifests can be copied into witnesses without proving the processes' actual post-scoring state, and production/reference isolation is not mechanically guaranteed.",
+      "status": "OPEN",
+      "title": "Process-witness attestation and work-mount isolation are not closed"
+    },
+    {
+      "affected_prior_closure": "R2-B2 outer PASS authority",
+      "classification": "blocking",
+      "evidence": [
+        "p2_verifier_closure_sha256 occurs only as one gate-evidence closed key at Amendment JSON:1455 and as the prose label P2-verifier 17-member closure hash at Markdown:680.",
+        "No member array, preimage, digest rule, equality to production_executable_closure_sha256, verifier entry point, runtime/origin closure, candidate-review relation or process witness is defined for that field.",
+        "Amendment JSON:1037 limits repository bytes executable in P2/K7 to the candidate snapshot but does not identify which bytes implement the external PASS-writing verifier.",
+        "None of JSON:1462-1470's construction or PASS rules compares the field with a recomputed executable closure."
+      ],
+      "exact_minimal_fix": [
+        "If P2 uses the 17 candidate members, require p2_verifier_closure_sha256 to equal the freshly reviewed production_executable_closure_sha256, identify the verifier entry point and bind its actual runtime/module/process witness before PASS.",
+        "Otherwise define a separate external verifier member list, exact raw-byte preimage, runtime/origin closure, independent review and execution witness, and recompute it before setting status PASS."
+      ],
+      "finding": "The sole PASS writer is not bound to any uniquely constructible executable closure.",
+      "id": "R3-B2",
+      "impact": "A canonical gate-evidence object can carry an arbitrary 64-hex verifier digest while satisfying every stated construction step, so P2 PASS remains self-asserted at its final authority boundary.",
+      "status": "OPEN",
+      "title": "P2 verifier closure is a bare unconstrained digest"
+    }
+  ],
+  "blocking_issue_count": 2,
+  "canonical_markdown": {
+    "bytes": 23288,
+    "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_REVIEW_ROUND3.md",
+    "sha256": "7055c41896a728d7612e352b390d8e8a02c040a1bfe086a8a51dc162a3e734b7"
+  },
+  "checks": [
+    {
+      "conclusion": "The exact 17-member raw-file closure, both package initializers, gates/fixtures, module origins, package initialization order, runtime/native contracts and acyclic 34-edge DAG are defined and independently reproduced.",
+      "id": "R2-B1",
+      "status": "CLOSED"
+    },
+    {
+      "conclusion": "Runner path/preimage, three process roles, challenges, role observations, direction to observation roots and exact execution counts are specified; actual witness transport and the PASS-writer closure remain open as R3-B1/R3-B2.",
+      "id": "R2-B2",
+      "status": "OPEN"
+    },
+    {
+      "conclusion": "The exact plan/tracker bytes are bound by a closed semantic overlay and the complete outer gate evidence is the unique P05M gate input at every named interface.",
+      "id": "R2-B3",
+      "status": "CLOSED"
+    },
+    {
+      "conclusion": "The six-key inner receipt is mandatory subordinate evidence and is never sufficient or optional as a standalone gate input.",
+      "id": "R2-B4",
+      "status": "CLOSED"
+    },
+    {
+      "conclusion": "Historical audit bytes are provenance only; the future candidate index has no self hash, admits new implementation hashes and requires a separate fresh review.",
+      "id": "historical_vs_fresh_candidate",
+      "status": "CLOSED"
+    },
+    {
+      "conclusion": "K7 recursively verifies gate/review/snapshot/closure/runtime/witness/root state before evaluator construction or consumed-state transition; consumption is successful OS process creation.",
+      "id": "k7_verify_before_consume",
+      "status": "CLOSED_DECLARATIVELY"
+    }
+  ],
+  "closure_witness": {
+    "component_order_sha256": "8583d714619e7b1bddc755bac95b91a801a8c97951e382fbfd7f875a70f066f2",
+    "dependency_contract_sha256": "12ae175a3934a450ddc389291d1e83152c034068de641434be0017d39ee6cc7c",
+    "dependency_dag_acyclic": true,
+    "dependency_dag_edge_count": 34,
+    "dependency_dag_sha256": "e3a6170a5d54a3bd9373939351caabeb70cbaeef5695c5aa26b3de94bb261073",
+    "historical_audit_basis_sha256": "24a80d9007098a7a523c9634c6d5fe9f04cfb473c69b2d019fac036aca1c879c",
+    "package_initialization_order": [
+      "pams",
+      "pams.temporac"
+    ],
+    "plan_tracker_semantic_rebinding_sha256": "0c77607394c413cff2d6d8909ddd1c4538462b87e037e4c70a324c398a4fc250",
+    "production_closure_member_count": 17,
+    "production_closure_preimage_bytes": 316199,
+    "production_closure_sha256": "dfcf258b13aa571d3636101f09e66c9d7889a0f09dd88515f4c332ae2d662943",
+    "reference_runtime_contract_sha256": "3343fdcf99eba48c3c21ad2b65008855cd398cdfa04ed66d7a9ee634e9a32a3d",
+    "reference_source_bytes": 11571,
+    "reference_source_sha256": "b23bf344a10f84a583c38e2326efd5ca70d4c4462fbf76715cd32b9afd20922f",
+    "runtime_lock_contract_sha256": "d693ec66170d3e66ac1d92a049b9b57dd80ce788c38907369bbb335f426d28b1",
+    "sandbox_profile_contract_sha256": "a1c65c29d8482cc6f266cde3869c1f46bd57052b0d24f58972e55df0ebf08e07"
+  },
+  "date": "2026-08-16",
+  "executor_family": "openai",
+  "executor_model": "gpt-5.6-sol",
+  "family_relation": "same",
+  "final_verdict": "REVISE",
+  "fresh_reread": true,
+  "independence_verified": false,
+  "input_integrity": {
+    "amendment_fixed_aliases_byte_identical": true,
+    "bound_filesystem_member_count": 50,
+    "bound_filesystem_mismatch_count": 0,
+    "duplicate_json_keys": "none",
+    "encoding": "UTF-8 without BOM or CR; exactly one terminal LF",
+    "historical_audit_basis": {
+      "canonical_sha256": "24a80d9007098a7a523c9634c6d5fe9f04cfb473c69b2d019fac036aca1c879c",
+      "filesystem_members": 50,
+      "member_count": 55,
+      "skill_resource_members": [
+        {
+          "bytes": 33480,
+          "path": "skill://research-refine/SKILL.md",
+          "sha256": "2cbda50557603d608990eff7f7a9890b2f75978a5219a8bc8b6e49cebe7e1884"
+        },
+        {
+          "bytes": 4807,
+          "path": "skill://shared-references/output-versioning.md",
+          "sha256": "73a4269b537be728b0ecc35789f11fa6d1fafa6d0430d07ad2738f064b1e4da3"
+        },
+        {
+          "bytes": 2354,
+          "path": "skill://shared-references/output-manifest.md",
+          "sha256": "28e29bc8e53c52afe4eeeb590df8893282a3bbced08e105e154ad228b6cd1922"
+        },
+        {
+          "bytes": 2215,
+          "path": "skill://shared-references/output-language.md",
+          "sha256": "7b326400dca5130ce4beedf72fc2010680afe96eb56a6ab21210d323adc9a52e"
+        },
+        {
+          "bytes": 5005,
+          "path": "skill://shared-references/output-composition.md",
+          "sha256": "8de81708431091a21a641be5f91db7958bb9f9a4b85d4fe03f52c5b496948651"
+        }
+      ],
+      "skill_resource_note": "These five exact skill:// rows are immutable amendment provenance, not candidate authority. Current project-local protocol mirrors were read and hashed separately."
+    },
+    "main_inputs": {
+      "idea-stage/docs/research_contract.md": {
+        "bytes": 12060,
+        "sha256": "3e037a2f74c49dd62e596dc7b875d94216e45b7f693b80a7afb6a60f8244367b"
+      },
+      "refine-logs/EXPERIMENT_PLAN.md": {
+        "bytes": 34198,
+        "sha256": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e"
+      },
+      "refine-logs/EXPERIMENT_TRACKER.md": {
+        "bytes": 22360,
+        "sha256": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b"
+      },
+      "refine-logs/FINAL_PROPOSAL.md": {
+        "bytes": 79366,
+        "sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"
+      },
+      "refine-logs/temporac/FINAL_PROPOSAL.md": {
+        "bytes": 79366,
+        "sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"
+      },
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_REVIEW_ROUND2.json": {
+        "bytes": 12771,
+        "sha256": "b8552d10bf8b9d9e6b3f9202127b1ea56f9b3ea9d43a9f9994e06166ce741fe2"
+      },
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_REVIEW_ROUND2.md": {
+        "bytes": 17015,
+        "sha256": "9f4dc98b3f2237dbd17381007105977639b13d60b478e13e162631666504296b"
+      }
+    },
+    "numeric_json": "no non-finite number or negative zero",
+    "protocol_inputs": {
+      ".agents/skills/research-refine/SKILL.md": {
+        "bytes": 30984,
+        "sha256": "bb489173329fec7a6551c74c319e2103d83f722ea11fc11462a7c4ccacd00b09"
+      },
+      ".agents/skills/shared-references/output-composition.md": {
+        "bytes": 5293,
+        "sha256": "79a72c7ea02102c460ae3ad55853c21a4054b9df93f377c29dd34555e6d3c3a7"
+      },
+      ".agents/skills/shared-references/output-language.md": {
+        "bytes": 2215,
+        "sha256": "0f1447579bd7a2195fd4a074be70ae6345b5c368f1a70d327e89748bf5a378f9"
+      },
+      ".agents/skills/shared-references/output-manifest.md": {
+        "bytes": 1753,
+        "sha256": "e767083e0ef97a7adf7a4e8a574090067a59c0655d5aca422a3747cd32b6afde"
+      },
+      ".agents/skills/shared-references/output-versioning.md": {
+        "bytes": 4828,
+        "sha256": "de8e7ac23069de6c5d0c482d4cef117dd5a543e00b57e2dc6c62560a457290c5"
+      },
+      "docs/BASELINE_PROTOCOLS.md": {
+        "bytes": 7623,
+        "sha256": "2084578b70797bf2988768848b96b23f20013d92ff32d13334166350d19d910d"
+      }
+    },
+    "recursive_object_key_order": "UTF-8 lexical",
+    "source_members": {
+      "src/pams/__init__.py": "8b6ffbf3ac8ed7e43f1f40ef5793baa087f73b303eff342d891380bc9a5d67ce",
+      "src/pams/temporac/__init__.py": "e3f71c2d85974ac3f635f76ee61f8e1f793b9bc251b25ff4336563d4da52c2a3",
+      "src/pams/temporac/certify.py": "468ce8418bff0f43582d341f3e1b8064cf1c429301d1f56be84b8e13ad59a3f1",
+      "src/pams/temporac/contract.py": "5ab8fb62dc558ba78e95fc07e52c1f1a1afbff5b1c5003834079eea6143d745f",
+      "src/pams/temporac/decode.py": "766cd6ca4b9e133041bd602f50fde840ec7caadd376bd6851799583d44f31f5e",
+      "src/pams/temporac/evaluator.py": "f981c6c7061c3388f06ef39466ef98192e65c62c501821be2b211f903cfaf9de",
+      "src/pams/temporac/fixtures.py": "979b8cee4fed117f5471cf399794f615c60eae52dbba2c946109ff836206b464",
+      "src/pams/temporac/gates.py": "b6c9d7432443d7ad36738a81700746709fd571d475514aa6f1bbcd39be744b4a",
+      "src/pams/temporac/hashio.py": "aa460d5de51f107b2fc6b2ad171747e0da38a87cf30f82a869a335c268f1d613",
+      "src/pams/temporac/metrics.py": "1dadf08e89330bed2ab773afda05bffcb3fe2252b0d3e23c0bcc18c2c3b049dd",
+      "src/pams/temporac/preprocess.py": "042b5cae1917359cb5596837c81c0e36658ff99a6a8fd6f2602b478ca6f98bc3",
+      "src/pams/temporac/quadrature.py": "44f4b91dc4d5631442982732177a6f57726c0b8f42594380b5a75f2209efc2f3",
+      "src/pams/temporac/receipts.py": "564039b5d37a4a2759544a9ae65f267b57d7f6c1e46bca812ae5ed4f4a2c17e4",
+      "src/pams/temporac/trusted_packer.py": "40d6e3d5be1b26b7ba0f0f7aadf8da7496c95c4e829face5c7e9faaee2cdf94e",
+      "src/pams/temporac/types.py": "4249eac2738f5b2edf53f38cbb681dffae609c151d493dd03b625fe10ad4c3ca",
+      "src/pams/temporac/x0.py": "5f4585425a83bf63779265db9004d210c5c2875a579ebc9a6c51297eb647c7a2",
+      "src/pams/types.py": "78c2ad53e98856425492a1711faa62fc2bb7764767dc48a22f7c4d5e043a3e31"
+    },
+    "test_members": {
+      "tests/temporac/__init__.py": "dd07192e3b73d582dfb5f0325cfafd7462040c76574ad8241a661fdc4713a24e",
+      "tests/temporac/test_certificate_artifact.py": "f2b0ef6e6d977bf3532595147fba89b611258063ee5e36e30657c31c62e56c20",
+      "tests/temporac/test_certificate_tau.py": "f7e2f25ab93226568910b856167e441037213ba3dd937d6915587037b7c6a94b",
+      "tests/temporac/test_contract_hashio.py": "524c9ddf04e8cd29735c2c7d958f5f9e31afd8fea0bb3b6068a09b2de75b7104",
+      "tests/temporac/test_feature_io_firewall.py": "f049e54c7254a848dc6cdd10afb853c5538fd8ecabd02b86950eb77d8a74c12b",
+      "tests/temporac/test_gates_fixtures.py": "d6d91a7dd606c42f672bb015d77c5c10406c2c6de69ed3a8bff76a0ce4f713d3",
+      "tests/temporac/test_metrics_evaluator.py": "a6f4aa275796b06162cac863674205d85b07adc46f89bc8d9821c48d17440fc6",
+      "tests/temporac/test_nola_decode.py": "80586866a9293e892c2cab1ca7318b97d341c2aa5990f7e1a31695f18376ff0b",
+      "tests/temporac/test_objective_runtime.py": "cc3685e2bf53ed7535addb1c09f08e0520dbd9143ba5d44da1cca28761107fa5",
+      "tests/temporac/test_operator_manifest.py": "7f2c90c320d7378a74fcc64f6c808eb6e426cdcfbd73cab0fb1242f690db9db0",
+      "tests/temporac/test_prediction_identity.py": "7967b11ee6585c2664fa4f39f5a9d9798ab407317f0d4efcf790f8d7a7bd5148",
+      "tests/temporac/test_prediction_receipts.py": "25fe8cc8696ab6c4108ba909b2f315c83b674fbe6ec9a770e6b7f6e449b410d4",
+      "tests/temporac/test_preprocess_geometry.py": "2edda5c593992c32aca30452340fce357930262978e331d37b6e5d55d3eb3b3f",
+      "tests/temporac/test_quadrature_cue.py": "4b7f977cbd31dc441ac021666bbc036b1d7de505ee884445df356b57b88374b6",
+      "tests/temporac/test_response_invariants.py": "b2e88e011bb06b9e21011ff252b630ffcbfcbe53a29638f8983b563f00ffae63",
+      "tests/temporac/test_teacher_certificate.py": "a5dc0bff236f417ab570193e46542b693d0f201fedd91693e6c572a70d20e012",
+      "tests/temporac/test_training_fresh_graph.py": "52b9f266173fec04152240d629dbf651aadd5b85d5839abcfe9f16fedc608845",
+      "tests/temporac/test_x0.py": "90206f53c7fffeabe9bcb3d6374fd60d3c51c69a7d1137df0cba797b583d1ef8",
+      "tests/temporac/test_x0_manifest.py": "074bb8df9dce5d1ea9e987499dac0d8824e1803a5f4bdc32495bd957e8c4c6a3"
+    }
+  },
+  "model": "gpt-5.6-sol",
+  "no_actions_taken": {
+    "amendment_modified": false,
+    "candidate_materialized": false,
+    "code_modified": false,
+    "data_accessed": false,
+    "evaluator_accessed": false,
+    "experiments_run": false,
+    "git_modified": false,
+    "manifest_modified": false,
+    "plan_modified": false,
+    "proposal_modified": false,
+    "project_tests_run": false,
+    "research_contract_modified": false,
+    "server_accessed": false,
+    "tests_modified": false,
+    "tracker_modified": false,
+    "training_started": false
+  },
+  "numeric_witness": {
+    "attack_count": 17,
+    "attack_expected_sha256": "2e62a7b830f453e0505cdeabb766f8a46c0ab2523321d3b1f933bf7fd2cc5f30",
+    "attack_results": [
+      "A00:P05M_EMPTY_POPULATION",
+      "A01:P05M_INCOMPLETE_CROSS_PRODUCT",
+      "A02:P05M_DUPLICATE_OBSERVATION",
+      "A03:P05M_ROW_KEYS",
+      "A04:P05M_ROW_KEYS",
+      "A05:P05M_INTEGER_TYPE",
+      "A06:P05M_INTEGER_TYPE",
+      "A07:P05M_NONFINITE",
+      "A08:P05M_NONFINITE",
+      "A09:P05M_POSITIVE_GT",
+      "A10:P05M_NONNEGATIVE_ESTIMATE",
+      "A11:P05M_COMPONENT_ORDER",
+      "A12:P05M_COMPONENT_ORDER",
+      "A13:P05M_IDENTITY_METADATA",
+      "A14:P05M_SEED",
+      "A15:P05M_TOKEN",
+      "A16:P05M_MIN_COMPONENTS"
+    ],
+    "bootstrap": {
+      "clean_draws_raw_f64le_sha256": "91d1fa29d36ad2e4e41733141d841a756c986b3670617f651315026a7157bdae",
+      "clean_upper_f64le": "692fa1bd84f6a2bf",
+      "comparator_draw_counts": {
+        "capacity-control": 2300,
+        "global": 3567,
+        "uniform": 4133
+      },
+      "draw_count": 10000,
+      "draw_pair_root_sha256": "49b83785c436d2abd5cbcda617d142922f27ee21a4e17a39f730135add15cf3e",
+      "raw_indices_sha256": "bcfccfc96c2781162e3c973dea8f88478b1912553acc730aa52772947ed8aef1",
+      "route_draws_raw_f64le_sha256": "8a325a51517a7a7669f4f8d4bdfa4d103204383b5d769e19cad409aba5f9e132",
+      "route_lower_f64le": "2c9b6cb2c926abbf",
+      "route_upper_f64le": "e7a28b2ebae8c23f",
+      "stream_seed_u64": 3783362605739069799
+    },
+    "component_order_sha256": "8583d714619e7b1bddc755bac95b91a801a8c97951e382fbfd7f875a70f066f2",
+    "fixture_input_sha256": "1264779925401d8efeecddefbe7245eca892543e923ec7c19ade08286fa062c9",
+    "local_replay_runtime": {
+      "numpy": "1.26.4",
+      "operating_system": "Windows",
+      "python": "CPython 3.12.0",
+      "status": "diagnostic_non_authoritative_byte_equal_replay"
+    },
+    "normal_expected_sha256": "50f8376d0ee1e245a8521c7831d6d23635ac8cc74694ceeef1f028c8c48e6622",
+    "point": {
+      "avg_mae_f64le": {
+        "capacity-control/natural-clean": "555555555555c13f",
+        "capacity-control/natural-drift": "deddddddddddd33f",
+        "global/natural-clean": "676666666666c23f",
+        "global/natural-drift": "676666666666d43f",
+        "local/natural-clean": "efeeeeeeeeeeae3f",
+        "local/natural-drift": "abaaaaaaaaaac63f",
+        "uniform/natural-clean": "676666666666c23f",
+        "uniform/natural-drift": "cdccccccccccd23f"
+      },
+      "avg_obo_f64le": {
+        "capacity-control/natural-clean": "111111111111e13f",
+        "capacity-control/natural-drift": "555555555555c53f",
+        "global/natural-clean": "abaaaaaaaaaada3f",
+        "global/natural-drift": "111111111111d13f",
+        "local/natural-clean": "888888888888e83f",
+        "local/natural-drift": "bcbbbbbbbbbbdb3f",
+        "uniform/natural-clean": "efeeeeeeeeeede3f",
+        "uniform/natural-drift": "111111111111d13f"
+      },
+      "clean_delta_f64le": "565555555555b5bf",
+      "route_margin_f64le": "deddddddddddbd3f",
+      "strongest_comparator": "uniform"
+    },
+    "row_count": 288,
+    "rows_sha256": "759b344fbc7db6ea78b041c84e23ff0fc59733985775be18f6d5c235e8408dbf",
+    "scratch_implementation_independent_of_production": true
+  },
+  "review_independence": "same-family",
+  "review_type": "Amendment 003 P05M fixture normative review Round 3",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "same_family_provisional_ceiling": "REVISE_SAME_FAMILY_PROVISIONAL_ZERO_AUTHORITY",
+  "same_reviewer_continuation": true,
+  "scope": [
+    "Full Round 3 amendment Markdown/JSON and fixed-alias byte identity",
+    "Round 2 blockers R2-B1 through R2-B4",
+    "Canonical proposal, plan, tracker and research contract",
+    "Complete 17-member production/P2/K7 local closure and 34-edge dependency DAG",
+    "Runtime, native-image, module-origin, sandbox and three-process evidence semantics",
+    "288-row fixture, F20/F21, ordered component/video/seed reduction, 10000 PCG64 draws and 17 attacks",
+    "Historical/fresh candidate separation, unique outer gate input, subordinate inner receipt and K7 prestart ordering",
+    "Authority and scientific/resource/claim non-expansion"
+  ],
+  "status": "completed",
+  "summary": {
+    "blocking_groups": 2,
+    "closed_items": [
+      "R2-B1",
+      "R2-B3",
+      "R2-B4",
+      "historical_vs_fresh_candidate",
+      "k7_verify_before_consume",
+      "fixture_science"
+    ],
+    "open_items": [
+      "R2-B2 via R3-B1",
+      "R2-B2 outer PASS authority via R3-B2"
+    ]
+  },
+  "trace_path": ".aris/traces/research-refine/20260816_temporac_p05m_amendment_review_sol/"
+}

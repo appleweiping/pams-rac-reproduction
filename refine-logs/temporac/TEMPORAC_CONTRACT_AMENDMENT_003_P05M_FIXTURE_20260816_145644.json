@@ -1,0 +1,364 @@
+{
+  "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE",
+  "artifact_commitments": {
+    "attack_expected_global_fail_sha256": "2e62a7b830f453e0505cdeabb766f8a46c0ab2523321d3b1f933bf7fd2cc5f30",
+    "component_order_sha256": "8583d714619e7b1bddc755bac95b91a801a8c97951e382fbfd7f875a70f066f2",
+    "expected_output_sha256": "50f8376d0ee1e245a8521c7831d6d23635ac8cc74694ceeef1f028c8c48e6622",
+    "evaluator_dependency_contract_sha256": "646ac92f9b20eafb1ca96d8d06692984d4fca21b48a85de5f19ac2fa8c53576d",
+    "fixture_input_sha256": "1264779925401d8efeecddefbe7245eca892543e923ec7c19ade08286fa062c9",
+    "historical_audit_basis_sha256": "8fead557cfc236fe35468e39f69ceed162b5496fb8195a73587b31376cd2f1fb",
+    "materialized_rows_sha256": "759b344fbc7db6ea78b041c84e23ff0fc59733985775be18f6d5c235e8408dbf",
+    "reference_runtime_contract_sha256": "c8bb58ec5d347573180d39ff369f32604737cccf8784da4cca47067c137d2d23",
+    "reference_source_sha256": "b23bf344a10f84a583c38e2326efd5ca70d4c4462fbf76715cd32b9afd20922f"
+  },
+  "attack_expected": {
+    "results": [
+      {"attack_id": "A00_EMPTY_ROWS", "error_code": "P05M_EMPTY_POPULATION", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A01_DELETE_LAST_ROW", "error_code": "P05M_INCOMPLETE_CROSS_PRODUCT", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A02_DUPLICATE_FIRST_ROW", "error_code": "P05M_DUPLICATE_OBSERVATION", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A03_ADD_UNKNOWN_KEY", "error_code": "P05M_ROW_KEYS", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A04_DELETE_ESTIMATE_KEY", "error_code": "P05M_ROW_KEYS", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A05_COUNT_GT_FINITE_FLOAT", "error_code": "P05M_INTEGER_TYPE", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A06_ESTIMATE_BOOL", "error_code": "P05M_INTEGER_TYPE", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A07_ESTIMATE_QUIET_NAN", "error_code": "P05M_NONFINITE", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A08_ESTIMATE_POSITIVE_INFINITY", "error_code": "P05M_NONFINITE", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A09_COUNT_GT_ZERO", "error_code": "P05M_POSITIVE_GT", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A10_ESTIMATE_NEGATIVE", "error_code": "P05M_NONNEGATIVE_ESTIMATE", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A11_EMPTY_COMPONENT_ORDER", "error_code": "P05M_COMPONENT_ORDER", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A12_DUPLICATE_COMPONENT_ORDER", "error_code": "P05M_COMPONENT_ORDER", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A13_COMPONENT_METADATA_CONFLICT", "error_code": "P05M_IDENTITY_METADATA", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A14_SEED_FINITE_FLOAT", "error_code": "P05M_SEED", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A15_NUL_VIDEO_TOKEN", "error_code": "P05M_TOKEN", "status": "GLOBAL_FAIL"},
+      {"attack_id": "A16_DROP_EIGHTH_COMPONENT", "error_code": "P05M_MIN_COMPONENTS", "status": "GLOBAL_FAIL"}
+    ],
+    "schema": "temporac.count-metric-fixture-attack-expected.v1"
+  },
+  "authority": {
+    "capability_authority": false,
+    "data_access_authority": false,
+    "experiment_authority": false,
+    "gate_authority": false,
+    "git_authority": false,
+    "launch_authority": false,
+    "paper_promotion_authority": false,
+    "server_authority": false
+  },
+  "historical_audit_basis": [
+    {"path": "refine-logs/temporac/FINAL_PROPOSAL.md", "role": "sole_scientific_contract", "sha256": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c"},
+    {"path": "refine-logs/EXPERIMENT_PLAN.md", "role": "p05m_plan", "sha256": "3fd1986871b32674d74b395fbfc9720712d9fba0c8583c24c1d5bddb87086eb6"},
+    {"path": "refine-logs/EXPERIMENT_TRACKER.md", "role": "p05m_tracker", "sha256": "c7e2f32c3c81b66884abb13760a671ecc7cdd314fd6c994a4ed4c46cb754a63b"},
+    {"path": "src/pams/temporac/metrics.py", "role": "audited_production_metric_candidate", "sha256": "1dadf08e89330bed2ab773afda05bffcb3fe2252b0d3e23c0bcc18c2c3b049dd"},
+    {"path": "src/pams/temporac/evaluator.py", "role": "audited_production_evaluator_candidate", "sha256": "81037186896309b093cd184b6e63542653f5a7e1ab063b78a9e63558369a47d2"},
+    {"path": "src/pams/temporac/contract.py", "role": "audited_evaluator_closure_dependency", "sha256": "b71255a35cce1701d2741064064b53ba819b742873a348f1852f147149e36467"},
+    {"path": "src/pams/temporac/types.py", "role": "audited_evaluator_closure_dependency", "sha256": "4d2ba91a19b9eddf529d91a366d29072dedcdc5977ba5daf7a1720484259181b"},
+    {"path": "src/pams/temporac/hashio.py", "role": "audited_evaluator_closure_dependency_stable", "sha256": "2d81e415b45e3d1b612f998b6a8386a967dfdfcfaac31bc914b2c95cbaeeab3a"},
+    {"path": "src/pams/temporac/receipts.py", "role": "audited_evaluator_closure_dependency_stable", "sha256": "0ac800d96f536a41a67775bc8e8e778fe14c312c02f642f7cde78d210244016d"},
+    {"path": "src/pams/temporac/trusted_packer.py", "role": "audited_evaluator_closure_dependency", "sha256": "40d6e3d5be1b26b7ba0f0f7aadf8da7496c95c4e829face5c7e9faaee2cdf94e"},
+    {"path": "src/pams/temporac/fixtures.py", "role": "audited_fixture_candidate", "sha256": "a8d10df7c8e3cbcb5684198192d3a553921da0f6aa92f03e54448ee182671406"},
+    {"path": "src/pams/temporac/gates.py", "role": "audited_gate_candidate", "sha256": "b6c9d7432443d7ad36738a81700746709fd571d475514aa6f1bbcd39be744b4a"}
+  ],
+  "canonical_json": {
+    "allow_nan": false,
+    "encoding": "UTF-8",
+    "ensure_ascii": false,
+    "separators": [",", ":"],
+    "sort_keys": true,
+    "terminal_lf_count": 1
+  },
+  "cross_stage_verification": {
+    "G5a": [
+      "load the S0-bound fresh candidate conformance index and its ACCEPTED fresh-review receipt",
+      "recompute the complete seven-member evaluator executable closure from current raw candidate bytes",
+      "require closure equality with candidate index, P2 runner evidence, S0 surrounding index and runtime lock",
+      "write that exact closure digest only to the existing closed g5a evaluator_code_sha256 field",
+      "do not add P05M keys to the closed g5a schema"
+    ],
+    "K7_prestart": [
+      "run this verification before OneUseEvaluator construction or any consumed-state transition",
+      "require exact candidate index, fresh-review receipt, runner-evidence receipt and inner-summary receipt bytes from S0",
+      "validate both process witnesses, actual command specs, runtime lock, reference source/runtime and all observed normal/attack/draw roots",
+      "recompute the complete seven-member closure and require equality with candidate index, runner evidence, G5a and grant evaluator_code_sha256",
+      "missing or mismatched bytes refuse start with STOP-METRIC"
+    ],
+    "P2": [
+      "verify historical_audit_basis_sha256 only as amendment provenance; never compare fresh candidate files to historical member hashes",
+      "require a newly materialized candidate conformance index and a separate fresh-review receipt with status ACCEPTED_FOR_P05M_EXECUTION",
+      "treat candidate index member/runtime/runner hashes as authoritative even when they differ from historical provenance",
+      "materialize exactly 288 rows and verify materialized_rows_sha256",
+      "launch exactly one fresh production process and one distinct fresh reference process from frozen command specs",
+      "in each process execute the normal fixture and all seventeen attacks",
+      "require byte-identical expected normal output, GLOBAL_FAIL attack oracle and raw draw hashes",
+      "only the separate runner-evidence receipt may carry the P2-conformance PASS"
+    ],
+    "S0": [
+      "commit exact candidate index, fresh-review receipt, runner-evidence receipt and optional inner-summary receipt bytes and digests",
+      "commit evaluator closure, runtime lock, command/process witnesses, fixture input, expected output, attack oracle and observed roots in a surrounding index",
+      "do not add fields to any proposal-closed receipt schema"
+    ]
+  },
+  "evaluator_dependency_contract": {
+    "allowed_numpy_imports": ["numpy", "numpy.typing"],
+    "allowed_stdlib_imports": ["binascii", "collections", "collections.abc", "contextlib", "dataclasses", "enum", "hashlib", "io", "json", "math", "os", "pathlib", "re", "stat", "struct", "types", "typing", "zipfile"],
+    "forbidden_third_party_imports": "all except numpy 2.1.0",
+    "runtime": {
+      "architecture": "x86_64",
+      "implementation": "CPython",
+      "numpy": "2.1.0",
+      "operating_system": "Linux",
+      "python": "3.12.4",
+      "stdlib_source": "the exact CPython 3.12.4 standard library bound by candidate runtime_lock_sha256"
+    },
+    "schema": "temporac.p05m-evaluator-dependency-contract.v1"
+  },
+  "evaluator_executable_closure": {
+    "historical_audit_closure_sha256": "85a1e5f0c81fd399ed84dee5e772a1d8f1ab0c5ae81942fb87e5a7cee085e208",
+    "digest": "SHA-256 over the exact preimage",
+    "member_order": [
+      "src/pams/temporac/metrics.py",
+      "src/pams/temporac/evaluator.py",
+      "src/pams/temporac/contract.py",
+      "src/pams/temporac/types.py",
+      "src/pams/temporac/hashio.py",
+      "src/pams/temporac/receipts.py",
+      "src/pams/temporac/trusted_packer.py"
+    ],
+    "member_rule": "for each member append uint64_be(path_ascii_byte_length), path_ascii, uint64_be(raw_file_byte_length), raw_file_bytes",
+    "preimage_prefix_ascii_nul": "temporac.p05m.evaluator-executable-closure.v1\u0000",
+    "runtime_rule": "candidate index separately binds evaluator_dependency_contract_sha256 and the exact runtime_lock_sha256; unlisted imports fail",
+    "authoritative_rule": "historical_audit_closure_sha256 is provenance only; evaluator_code_sha256 is always the closure digest recomputed from the fresh candidate members named by the accepted candidate index"
+  },
+  "candidate_conformance_index": {
+    "authoritative_when": "a separately hashed fresh-review receipt binds the exact candidate index bytes with status ACCEPTED_FOR_P05M_EXECUTION",
+    "closed_keys": ["attack_expected_global_fail_sha256", "candidate_id", "component_order_sha256", "evaluator_closure_members", "evaluator_closure_sha256", "evaluator_dependency_contract_sha256", "expected_output_sha256", "fixture_input_sha256", "materialized_rows_sha256", "production_command_spec_sha256", "reference_command_spec_sha256", "reference_runtime_contract_sha256", "reference_source_sha256", "runner_code_sha256", "runtime_lock_sha256", "schema", "status"],
+    "current_state": "NOT_MATERIALIZED_PENDING_IMPLEMENTATION_AND_FRESH_REVIEW",
+    "member_object_keys": ["bytes", "path", "sha256"],
+    "member_object_semantics": {
+      "bytes": "nonnegative JSON integer equal to the raw file byte length used in the closure preimage",
+      "path": "the literal forward-slash ASCII path at the same array position in member_order",
+      "sha256": "64-character lowercase hexadecimal SHA-256 of the unchanged raw file bytes"
+    },
+    "member_order": ["src/pams/temporac/metrics.py", "src/pams/temporac/evaluator.py", "src/pams/temporac/contract.py", "src/pams/temporac/types.py", "src/pams/temporac/hashio.py", "src/pams/temporac/receipts.py", "src/pams/temporac/trusted_packer.py"],
+    "no_self_hash": "candidate_conformance_index_sha256 is computed over complete canonical index bytes and is stored only in the external fresh-review and runner-evidence receipts",
+    "schema": "temporac.p05m-candidate-conformance-index.v1",
+    "status_value": "FROZEN_CANDIDATE_PENDING_EXECUTION",
+    "historical_separation": "candidate member hashes may and normally will differ from historical_audit_basis; historical values cannot be copied as candidate authority"
+  },
+  "candidate_review_receipt": {
+    "closed_keys": ["amendment_json_sha256", "candidate_conformance_index_sha256", "reviewer_witness_sha256", "schema", "status"],
+    "no_gate_authority": true,
+    "schema": "temporac.p05m-candidate-review-receipt.v1",
+    "status_value": "ACCEPTED_FOR_P05M_EXECUTION"
+  },
+  "command_and_process_evidence": {
+    "command_spec": {
+      "closed_keys": ["argv", "candidate_conformance_index_sha256", "command_role", "environment_allowlist", "runtime_lock_sha256", "schema", "working_directory_token"],
+      "roles": ["production", "reference"],
+      "schema": "temporac.p05m-command-spec.v1",
+      "working_directory_token": "isolated-p05m-workdir"
+    },
+    "freshness_rule": "production and reference witnesses must name distinct operating-system process identity hashes and each command executes exactly once from a clean process",
+    "process_witness": {
+      "closed_keys": ["candidate_conformance_index_sha256", "command_role", "command_spec_sha256", "environment_sha256", "executable_sha256", "exit_code", "fresh_process_identity_sha256", "runtime_lock_sha256", "schema", "stderr_sha256", "stdout_sha256", "working_directory_token"],
+      "required_exit_code": 0,
+      "schema": "temporac.p05m-process-witness.v1"
+    },
+    "runtime_witness_rule": "runtime_lock_sha256 binds OS/architecture, CPython executable and stdlib tree, NumPy 2.1.0 package bytes, locale, byte order, environment allowlist and disabled network/GPU state"
+  },
+  "observation_root_contract": {
+    "closed_keys": ["attack_observed_sha256", "clean_draws_raw_f64le_sha256", "materialized_rows_sha256", "normal_observed_sha256", "route_draws_raw_f64le_sha256", "schema"],
+    "schema": "temporac.p05m-observation-root.v1"
+  },
+  "runner_evidence_receipt": {
+    "closed_keys": ["attack_expected_global_fail_sha256", "candidate_conformance_index_sha256", "candidate_review_receipt_sha256", "evaluator_closure_sha256", "expected_output_sha256", "fixture_input_sha256", "inner_summary_receipt_sha256", "production_attack_observed_sha256", "production_normal_observed_sha256", "production_observation_root_sha256", "production_process_witness_sha256", "reference_attack_observed_sha256", "reference_normal_observed_sha256", "reference_observation_root_sha256", "reference_process_witness_sha256", "reference_runtime_contract_sha256", "reference_source_sha256", "runner_code_sha256", "runtime_lock_sha256", "schema", "status"],
+    "construction_order": [
+      "verify accepted candidate index and both exact command specs",
+      "launch distinct fresh production and reference processes",
+      "each process materializes 288 rows, runs normal scoring, retains raw route/clean draw hashes, and executes all seventeen attacks",
+      "verify process witnesses and construct production/reference observation roots",
+      "require both normal observations equal expected_output_sha256 and both attack observations equal attack_expected_global_fail_sha256",
+      "require both observation roots contain the frozen materialized row and raw draw hashes",
+      "only after every equality construct the canonical runner-evidence receipt with status PASS"
+    ],
+    "no_self_hash": "the runner-evidence receipt never contains its own digest; its digest is computed afterward and bound by P2/S0",
+    "p2_authority": "this is the only P05M receipt whose PASS can satisfy P2-METRIC; the six-key inner summary cannot",
+    "required_status": "PASS",
+    "schema": "temporac.count-metric-fixture-runner-evidence.v1"
+  },
+  "fixture_input": {
+    "attacks": [
+      {"attack_id": "A00_EMPTY_ROWS", "expected_error_code": "P05M_EMPTY_POPULATION", "mutation": {"op": "replace_rows_with_empty_array"}},
+      {"attack_id": "A01_DELETE_LAST_ROW", "expected_error_code": "P05M_INCOMPLETE_CROSS_PRODUCT", "mutation": {"op": "delete_row", "row_index": 287}},
+      {"attack_id": "A02_DUPLICATE_FIRST_ROW", "expected_error_code": "P05M_DUPLICATE_OBSERVATION", "mutation": {"op": "append_copy_of_row", "row_index": 0}},
+      {"attack_id": "A03_ADD_UNKNOWN_KEY", "expected_error_code": "P05M_ROW_KEYS", "mutation": {"field": "unexpected", "op": "add_row_field", "row_index": 0, "transport": {"encoding": "canonical-json-scalar", "value": 0}}},
+      {"attack_id": "A04_DELETE_ESTIMATE_KEY", "expected_error_code": "P05M_ROW_KEYS", "mutation": {"field": "estimate", "op": "delete_row_field", "row_index": 0}},
+      {"attack_id": "A05_COUNT_GT_FINITE_FLOAT", "expected_error_code": "P05M_INTEGER_TYPE", "mutation": {"field": "count_gt", "op": "replace_row_field", "row_index": 0, "transport": {"encoding": "ieee754-binary64-little-endian", "hex": "0000000000002040", "materialized_python_type": "float"}}},
+      {"attack_id": "A06_ESTIMATE_BOOL", "expected_error_code": "P05M_INTEGER_TYPE", "mutation": {"field": "estimate", "op": "replace_row_field", "row_index": 0, "transport": {"encoding": "canonical-json-scalar", "value": true}}},
+      {"attack_id": "A07_ESTIMATE_QUIET_NAN", "expected_error_code": "P05M_NONFINITE", "mutation": {"field": "estimate", "op": "replace_row_field", "row_index": 0, "transport": {"encoding": "ieee754-binary64-little-endian", "hex": "000000000000f87f", "materialized_python_type": "float"}}},
+      {"attack_id": "A08_ESTIMATE_POSITIVE_INFINITY", "expected_error_code": "P05M_NONFINITE", "mutation": {"field": "estimate", "op": "replace_row_field", "row_index": 0, "transport": {"encoding": "ieee754-binary64-little-endian", "hex": "000000000000f07f", "materialized_python_type": "float"}}},
+      {"attack_id": "A09_COUNT_GT_ZERO", "expected_error_code": "P05M_POSITIVE_GT", "mutation": {"field": "count_gt", "op": "replace_row_field", "row_index": 0, "transport": {"encoding": "canonical-json-scalar", "value": 0}}},
+      {"attack_id": "A10_ESTIMATE_NEGATIVE", "expected_error_code": "P05M_NONNEGATIVE_ESTIMATE", "mutation": {"field": "estimate", "op": "replace_row_field", "row_index": 0, "transport": {"encoding": "canonical-json-scalar", "value": -1}}},
+      {"attack_id": "A11_EMPTY_COMPONENT_ORDER", "expected_error_code": "P05M_COMPONENT_ORDER", "mutation": {"op": "replace_component_order_with_empty_array"}},
+      {"attack_id": "A12_DUPLICATE_COMPONENT_ORDER", "expected_error_code": "P05M_COMPONENT_ORDER", "mutation": {"component_token": "cmp-07", "op": "append_component_order_token"}},
+      {"attack_id": "A13_COMPONENT_METADATA_CONFLICT", "expected_error_code": "P05M_IDENTITY_METADATA", "mutation": {"field": "component_token", "op": "replace_row_field", "row_index": 0, "transport": {"encoding": "canonical-json-scalar", "value": "cmp-00"}}},
+      {"attack_id": "A14_SEED_FINITE_FLOAT", "expected_error_code": "P05M_SEED", "mutation": {"field": "seed", "op": "replace_row_field", "row_index": 0, "transport": {"encoding": "ieee754-binary64-little-endian", "hex": "000000f07c527341", "materialized_python_type": "float"}}},
+      {"attack_id": "A15_NUL_VIDEO_TOKEN", "expected_error_code": "P05M_TOKEN", "mutation": {"field": "video_token", "op": "replace_row_field", "row_index": 0, "transport": {"encoding": "canonical-json-scalar", "value": "vid-\u0000attack"}}},
+      {"attack_id": "A16_DROP_EIGHTH_COMPONENT", "expected_error_code": "P05M_MIN_COMPONENTS", "mutation": {"component_token": "cmp-03", "op": "drop_component_and_rows"}}
+    ],
+    "normal": {
+      "arms": ["local", "global", "uniform", "capacity-control"],
+      "base_error_eighths": {
+        "natural-clean": {
+          "capacity-control": {"20260815": [1,1,1,1,1,1,0,0], "20260816": [1,1,2,1,1,1,0,1], "20260817": [2,1,1,1,1,0,1,0]},
+          "global": {"20260815": [0,1,1,1,1,1,1,1], "20260816": [1,1,2,1,1,2,1,1], "20260817": [0,1,1,2,1,1,2,1]},
+          "local": {"20260815": [0,0,0,0,0,0,0,0], "20260816": [1,1,1,1,1,1,1,1], "20260817": [0,0,0,0,0,0,0,0]},
+          "uniform": {"20260815": [1,1,1,0,0,1,1,1], "20260816": [1,2,1,1,1,1,2,1], "20260817": [1,1,2,0,1,1,1,2]}
+        },
+        "natural-drift": {
+          "capacity-control": {"20260815": [3,3,3,3,3,2,0,0], "20260816": [3,4,3,3,2,2,0,1], "20260817": [4,3,3,2,3,1,1,0]},
+          "global": {"20260815": [0,0,1,2,4,4,4,4], "20260816": [0,1,1,2,4,5,4,4], "20260817": [1,0,1,3,3,4,5,3]},
+          "local": {"20260815": [1,1,1,1,1,1,1,1], "20260816": [2,2,2,2,2,2,2,2], "20260817": [0,0,0,0,0,0,0,0]},
+          "uniform": {"20260815": [4,4,3,0,0,1,2,3], "20260816": [4,5,3,0,1,1,2,3], "20260817": [3,4,4,1,0,1,3,2]}
+        }
+      },
+      "component_order": ["cmp-07", "cmp-00", "cmp-05", "cmp-02", "cmp-06", "cmp-01", "cmp-04", "cmp-03"],
+      "conditions": ["natural-clean", "natural-drift"],
+      "estimate_rule": "e=clamp(base_error_eighths[condition][arm][decimal_seed][component_index]+bias_eighths,0,8); estimate=count_gt-(count_gt*e//8); then exact stub override to zero",
+      "identities": [
+        {"bias_eighths": 0, "component_token": "cmp-07", "count_gt": 8, "slot": 0, "video_token": "vid-00"},
+        {"bias_eighths": 2, "component_token": "cmp-07", "count_gt": 16, "slot": 1, "video_token": "vid-00"},
+        {"bias_eighths": 0, "component_token": "cmp-07", "count_gt": 8, "slot": 0, "video_token": "vid-01"},
+        {"bias_eighths": 0, "component_token": "cmp-00", "count_gt": 16, "slot": 0, "video_token": "vid-02"},
+        {"bias_eighths": 0, "component_token": "cmp-05", "count_gt": 8, "slot": 0, "video_token": "vid-03"},
+        {"bias_eighths": 1, "component_token": "cmp-05", "count_gt": 16, "slot": 1, "video_token": "vid-03"},
+        {"bias_eighths": 0, "component_token": "cmp-02", "count_gt": 8, "slot": 0, "video_token": "vid-04"},
+        {"bias_eighths": 0, "component_token": "cmp-06", "count_gt": 16, "slot": 0, "video_token": "vid-05"},
+        {"bias_eighths": 0, "component_token": "cmp-06", "count_gt": 8, "slot": 0, "video_token": "vid-06"},
+        {"bias_eighths": 0, "component_token": "cmp-01", "count_gt": 16, "slot": 0, "video_token": "vid-07"},
+        {"bias_eighths": 0, "component_token": "cmp-04", "count_gt": 8, "slot": 0, "video_token": "vid-08"},
+        {"bias_eighths": 0, "component_token": "cmp-03", "count_gt": 16, "slot": 0, "video_token": "vid-09"}
+      ],
+      "materialized_row_keys": ["arm", "component_token", "condition", "count_gt", "estimate", "seed", "slot", "video_token"],
+      "row_order": ["component_order", "identity_appearance_within_component", "arms", "seeds", "conditions"],
+      "seeds": [20260815, 20260816, 20260817],
+      "stub_overrides": [
+        {"arm": "local", "condition": "natural-drift", "estimate": 0, "seed": 20260817, "slot": 0, "video_token": "vid-09"}
+      ]
+    },
+    "schema": "temporac.count-metric-fixture-input.v1"
+  },
+  "normal_expected": {
+    "bootstrap": {
+      "clean_draws_raw_f64le_sha256": "91d1fa29d36ad2e4e41733141d841a756c986b3670617f651315026a7157bdae",
+      "clean_upper_f64le": "692fa1bd84f6a2bf",
+      "comparator_draw_counts": {"capacity-control": 2300, "global": 3567, "uniform": 4133},
+      "draw_count": 10000,
+      "draw_pair_root_sha256": "49b83785c436d2abd5cbcda617d142922f27ee21a4e17a39f730135add15cf3e",
+      "route_draws_raw_f64le_sha256": "8a325a51517a7a7669f4f8d4bdfa4d103204383b5d769e19cad409aba5f9e132",
+      "route_lower_f64le": "2c9b6cb2c926abbf",
+      "route_upper_f64le": "e7a28b2ebae8c23f",
+      "stream_seed_u64": 3783362605739069799
+    },
+    "component_order_sha256": "8583d714619e7b1bddc755bac95b91a801a8c97951e382fbfd7f875a70f066f2",
+    "materialized_rows_sha256": "759b344fbc7db6ea78b041c84e23ff0fc59733985775be18f6d5c235e8408dbf",
+    "point": {
+      "avg_mae_f64le": {
+        "capacity-control/natural-clean": "555555555555c13f",
+        "capacity-control/natural-drift": "deddddddddddd33f",
+        "global/natural-clean": "676666666666c23f",
+        "global/natural-drift": "676666666666d43f",
+        "local/natural-clean": "efeeeeeeeeeeae3f",
+        "local/natural-drift": "abaaaaaaaaaac63f",
+        "uniform/natural-clean": "676666666666c23f",
+        "uniform/natural-drift": "cdccccccccccd23f"
+      },
+      "avg_obo_f64le": {
+        "capacity-control/natural-clean": "111111111111e13f",
+        "capacity-control/natural-drift": "555555555555c53f",
+        "global/natural-clean": "abaaaaaaaaaada3f",
+        "global/natural-drift": "111111111111d13f",
+        "local/natural-clean": "888888888888e83f",
+        "local/natural-drift": "bcbbbbbbbbbbdb3f",
+        "uniform/natural-clean": "efeeeeeeeeeede3f",
+        "uniform/natural-drift": "111111111111d13f"
+      },
+      "clean_delta_f64le": "565555555555b5bf",
+      "route_margin_f64le": "deddddddddddbd3f",
+      "strongest_comparator": "uniform"
+    },
+    "row_count": 288,
+    "schema": "temporac.count-metric-fixture-expected-output.v1",
+    "status": "PASS"
+  },
+  "non_changes": {
+    "allocated_a6000_hours": 93,
+    "bootstrap_draws": 10000,
+    "claims": 1,
+    "component_bootstrap_semantics": "unchanged F20/F21 and Section 11.3",
+    "experiment_blocks": 4,
+    "f23_order": "unchanged",
+    "job_names_or_steps_changed": false,
+    "scientific_thresholds_changed": false,
+    "seeds": [20260815, 20260816, 20260817],
+    "training_jobs": 27
+  },
+  "current_production_conformance": {
+    "status": "NONCONFORMING_HISTORICAL_AUDIT_BASIS",
+    "mismatches": [
+      "metrics.py derives components by bytewise token sort and paired_component_bootstrap accepts no explicit frozen component_order; the fixture order is intentionally nonlexical",
+      "evaluator.py consumes the one-use capability before validating even the six-key P05M summary; revised K7 prestart requires runner evidence validation before any consumed-state transition",
+      "count_metric_fixture_receipt hashes caller-provided bytes and emits PASS without executing production, reference or attacks",
+      "gates.py can mark P2-METRIC PASS from an arbitrary syntactically valid digest",
+      "fixtures.py still names attack_global_fail_sha256 instead of the unique attack_expected_global_fail_sha256"
+    ],
+    "rule": "these historical files cannot populate an authoritative candidate index or runner PASS without a newly reviewed implementation"
+  },
+  "inner_hash_summary_receipt": {
+    "closed_keys": [
+      "attack_expected_global_fail_sha256",
+      "evaluator_code_sha256",
+      "expected_output_sha256",
+      "fixture_input_sha256",
+      "schema",
+      "status"
+    ],
+    "insufficiency": "this six-key object is only an inner hash summary; its PASS is never P2/S0/G5a/K7 evidence and cannot be accepted without a valid runner-evidence receipt that binds its exact digest",
+    "receipt_hash": "SHA-256 over canonical JSON bytes including the one terminal LF; the digest is stored in runner_evidence_receipt.inner_summary_receipt_sha256",
+    "schema": "temporac.count-metric-fixture-receipt.v1",
+    "status_semantics": {
+      "GLOBAL_FAIL": "an individual attack terminates the complete scorer atomically with its exact error code and returns no point, bootstrap, draw, row or partial payload",
+      "PASS": "inner-summary hashes are syntactically complete; no execution or gate conclusion follows from this value"
+    },
+    "unique_attack_hash_field": "attack_expected_global_fail_sha256"
+  },
+  "reference_implementation": {
+    "allowed_imports": ["copy", "hashlib", "json", "math", "struct", "collections.Counter", "numpy"],
+    "execution": "extract the exact LF-terminated ASCII source block from the amendment Markdown, verify source_sha256, compile with filename <temporac-p05m-reference-v1>, and call execute(fixture_input)",
+    "forbidden": ["pams", "pams.temporac", "production evaluator imports", "filesystem data access", "network", "server", "subprocess", "GPU"],
+    "independence": "production code must neither import nor call the reference; reference must neither import nor call production code",
+    "runtime_contract": {
+      "allowed_imports": ["copy", "hashlib", "json", "math", "struct", "collections.Counter", "numpy"],
+      "architecture": "x86_64",
+      "numpy": "2.1.0",
+      "operating_system": "Linux",
+      "python": "CPython 3.12.4",
+      "schema": "temporac.p05m-reference-runtime.v1"
+    },
+    "runtime_witness_rule": "the reference process witness binds this runtime contract, the same runtime_lock_sha256 named by the candidate index, and the actual executable/environment bytes",
+    "source_encoding": "ASCII with LF line endings and exactly one terminal LF",
+    "source_location": "TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.md block TEMPORAC_P05M_REFERENCE_SOURCE_V1",
+    "source_sha256": "b23bf344a10f84a583c38e2326efd5ca70d4c4462fbf76715cd32b9afd20922f"
+  },
+  "self_binding_policy": {
+    "amendment": "the amendment JSON does not contain its own digest; reviewer handoff reports it externally and the later candidate-review receipt binds that external digest",
+    "candidate_index": "contains no candidate_conformance_index_sha256 field; fresh-review and runner-evidence receipts bind it externally",
+    "runner_evidence": "contains no runner-evidence digest; P2/S0 bind it after canonical serialization",
+    "rule": "no PASS-bearing object is allowed to establish authority by validating only hashes that it generated or by containing its own digest"
+  },
+  "review": {
+    "family": "same-family",
+    "finding_authority": "provisional",
+    "required_next_action": "fresh independent review of this amendment and all embedded hashes before any implementation can claim conformance"
+  },
+  "schema": "temporac.contract-amendment.p05m-fixture.v1",
+  "status": "PROPOSED_PENDING_FRESH_REVIEW"
+}

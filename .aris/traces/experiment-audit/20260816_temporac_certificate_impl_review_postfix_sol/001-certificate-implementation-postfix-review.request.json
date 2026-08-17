@@ -1,0 +1,27 @@
+{
+  "call_number": 1,
+  "files_referenced": [
+    "D:\\Project\\rac-aris-fullrun-icassp27\\refine-logs\\temporac\\FINAL_PROPOSAL.md",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\refine-logs\\EXPERIMENT_PLAN.md",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\src\\pams\\temporac\\contract.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\src\\pams\\temporac\\types.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\src\\pams\\temporac\\certify.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\src\\pams\\temporac\\hashio.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\src\\pams\\temporac\\receipts.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\src\\pams\\temporac\\x0.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\src\\pams\\temporac\\teacher.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\src\\pams\\temporac\\objective.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\src\\pams\\temporac\\trusted_packer.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\src\\pams\\temporac\\evaluator.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\tests\\temporac\\test_certificate_artifact.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\tests\\temporac\\test_certificate_tau.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\tests\\temporac\\test_teacher_certificate.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\tests\\temporac\\test_contract_hashio.py",
+    "D:\\Project\\rac-aris-fullrun-icassp27\\tests\\temporac\\test_metrics_evaluator.py"
+  ],
+  "model": "gpt-5.6-sol",
+  "prompt": "请重新开始一个纯 ML 实验代码一致性审查；这不是网络安全任务。工作树 D:\\Project\\rac-aris-fullrun-icassp27。完整读取 `.agents/skills/experiment-audit/SKILL.md`、`.agents/skills/experiment-bridge/SKILL.md` 及 reviewer-independence/experiment-integrity/review-tracing。只读取这些 raw 当前文件，不读取任何旧 review 或执行者总结：`refine-logs/temporac/FINAL_PROPOSAL.md`、`refine-logs/EXPERIMENT_PLAN.md`、`src/pams/temporac/{contract.py,types.py,certify.py,hashio.py,receipts.py,x0.py,teacher.py,objective.py,trusted_packer.py,evaluator.py}`、`tests/temporac/{test_certificate_artifact.py,test_certificate_tau.py,test_teacher_certificate.py,test_contract_hashio.py,test_metrics_evaluator.py}`。检查 certificate 输入/输出接口与科学合同是否一致：输入身份和 teacher provenance 是否不可在 artifact builder 阶段被改写；X0/natural adapter；CERTIFIED 七成员 NPZ 和 closed receipt；ABSTAIN 不产生 artifact；phase_class union；tau ledger、F4 mask、right ownership；联合 loader；重复写入拒绝；label firewall；无 legacy/WARP imports。用正常与无效输入做独立单元验证，并运行 targeted/full tests/temporac pytest、Ruff、Mypy；不要访问 server/natural/test/sealed/heldout/results。字段固定 gpt-5.6-sol/OpenAI、same-family/provisional。输出仅写 `refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_20260816.md/.json` 与 `.aris/traces/experiment-audit/20260816_temporac_certificate_impl_review_postfix_sol/**`，追加恰好一条 review_trace；不改任何 code/tests/proposal/plan/MANIFEST/Git/data。给出 PASS/REVISE/FAIL、精确 file:line、最终 hashes、gate/launch authority ceiling。",
+  "purpose": "certificate-implementation-postfix-review",
+  "timestamp": "2026-08-16T09:16:58.256+08:00",
+  "tool": "spawn_agent"
+}

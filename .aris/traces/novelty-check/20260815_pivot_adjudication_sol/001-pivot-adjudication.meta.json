@@ -1,0 +1,37 @@
+{
+  "schema_version": "aris.review_trace.call_meta.v1",
+  "call_number": 1,
+  "purpose": "pivot-novelty-adjudication",
+  "timestamp": "2026-08-15T21:30:00+08:00",
+  "tool": "continuation_in_process_reviewer",
+  "agent_id": null,
+  "model": "gpt-5.6-sol",
+  "reasoning": "ultra",
+  "reviewer_family": "openai",
+  "fresh_context": false,
+  "nonfresh_reason": "agent_thread_lifetime_limit",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "duration_ms": 0,
+  "duration_semantics": "No delegated reviewer call occurred; zero means not applicable and is not a wall-clock duration for the continuation task.",
+  "status": "ok",
+  "verdict": "ADVANCE_ONE_TO_RESEARCH_REVIEW_PROVISIONAL",
+  "selected_count": 1,
+  "selected": [
+    "set-valued-counting-pose-missingness"
+  ],
+  "backup_pivot_only": true,
+  "route_scope": "BACKUP_ONLY",
+  "canonical_paper_anchor_label": "original TempoRAC anchor",
+  "canonical_paper_anchor": "identity-indexed window-local tempo routing",
+  "canonical_paper_anchor_replacement_authorized": false,
+  "paper_title_method_or_implementation_mainline_change_authorized": false,
+  "request_sha256": "00595670f4b31faacec79c4e8936f39a84457d86ba879263bf8a2d36aba0b16f",
+  "response_sha256": "ff8caeee5d51ca1bb33e7811238ed32b4509eac12e74049de920c84bdfa945be",
+  "primary_output_sha256": {
+    "idea-stage/PIVOT_NOVELTY_ADJUDICATION_20260815_213000.json": "a8d89868dfb662f5bba767400f8fcfc52dc66383a910fd48e885c3431bd35be1",
+    "idea-stage/PIVOT_NOVELTY_ADJUDICATION.json": "a8d89868dfb662f5bba767400f8fcfc52dc66383a910fd48e885c3431bd35be1",
+    "idea-stage/PIVOT_NOVELTY_ADJUDICATION_20260815_213000.md": "4bccec001d42525e4c4bbd2adb2ee02cd64f1c72864af7daa25d412a757cac80",
+    "idea-stage/PIVOT_NOVELTY_ADJUDICATION.md": "4bccec001d42525e4c4bbd2adb2ee02cd64f1c72864af7daa25d412a757cac80"
+  }
+}

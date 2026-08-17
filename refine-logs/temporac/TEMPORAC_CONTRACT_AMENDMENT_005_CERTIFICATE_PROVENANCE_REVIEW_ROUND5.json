@@ -1,0 +1,346 @@
+{
+  "acceptance_status": "provisional",
+  "authoritative": false,
+  "authority": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P2-METRIC": 0,
+    "P3": 0,
+    "S0": 0,
+    "capability": 0,
+    "data": 0,
+    "evaluator": 0,
+    "gate": 0,
+    "git": 0,
+    "gpu": 0,
+    "launch": 0,
+    "paper_claim": 0,
+    "result": 0,
+    "server": 0,
+    "test": 0,
+    "training": 0
+  },
+  "authorizes": [],
+  "binding_verification": {
+    "all_declared_bindings_match": true,
+    "current_runtime_bootstrap_binding_count": 3,
+    "current_source_binding_count": 24,
+    "current_test_binding_count": 19,
+    "declared_binding_count": 57,
+    "final_mismatch_count": 0,
+    "initial_rehash_all_match": true,
+    "planning_and_review_binding_count": 11,
+    "terminal_rehash_all_match": true,
+    "timestamped_and_fixed_aliases_byte_identical": true
+  },
+  "blocking_issue_count": 4,
+  "blocking_issues": [
+    {
+      "attack": "Construct each sealed input exactly as written: create a writable anonymous memfd, populate and fully seal it, close it, then reopen it through that descriptor as a distinct O_RDONLY open-file description. Closing the last reference releases the memfd and removes the /proc/self/fd/N entry, so the reopen has no source descriptor. Reusing or duplicating the writer violates the required read-only distinct open-file description.",
+      "closure": [
+        "A005-R4-B1"
+      ],
+      "evidence": [
+        "Final Amendment JSON 1268-1274, especially line 1270, orders fully sealed then closed then reopened through its descriptor",
+        "Linux memfd_create(2) states that the anonymous file is released once all references are dropped",
+        "Linux proc_pid_fd(5) states that /proc/pid/fd has entries only for files the process has open"
+      ],
+      "id": "A005-R5-B1",
+      "required_revision": "While the sealed writer remains open, open /proc/self/fd/<writer-fd> with exact O_RDONLY|O_CLOEXEC to obtain a distinct open-file description, validate its flags/offset/size/seals/EOF, then close the writer and move the read-only descriptor to the prescribed child FD. Preserve the three-stage no-extra/readback rules.",
+      "severity": "blocking",
+      "title": "The sealed-memfd close/reopen order is not executable"
+    },
+    {
+      "attack": "Produce byte-identical discovery row outputs while omitting one fresh launch, reusing a process, changing one launch/config/FD state, or supplying no committed readback. Prose requires both launch/config/FD readbacks to be bound, but the exact output and trusted index contain no pair of launch instances or readback digests, the final environment has no twin-evidence root, and no P06 payload-index schema or FD3 framing defines those bytes.",
+      "closure": [
+        "A005-R4-B2"
+      ],
+      "evidence": [
+        "Final Amendment JSON 1854-1876 limits discovery output to capsule_sha256, rows and schema",
+        "Final Amendment JSON 1889-1894 requires binding both launch/config/FD readbacks but defines no evidence object",
+        "Final Amendment JSON 1925-1935 stores one output byte count/hash/root and no twin launch/readback records",
+        "Final Amendment JSON 1751-1764 binds no discovery-evidence index root",
+        "Final Amendment JSON 1120-1144 gives discovery only one write channel with role discovery-output and no record framing"
+      ],
+      "id": "A005-R5-B2",
+      "required_revision": "Define an exactly two-row ordered discovery-evidence index. Each row must commit fresh process ordinal, launch-instance bytes/hash, three FD readback bytes/hashes, complete CPython readback bytes/hash, output bytes/hash/root, joined exit and capsule/precommit equality. Define pipe framing or separate fixed roles, hash the index, require equal outputs, and bind its digest in the trusted index and final environment without adding a job.",
+      "severity": "blocking",
+      "title": "The two discovery launches' authority-bearing readbacks have no committed preimage"
+    },
+    {
+      "attack": "Run the exact bootstrap-only import. CPython 3.12.13 dataclasses imports inspect; inspect creates namedtuple classes at import; collections.namedtuple constructs source and calls eval. The native audit filter therefore emits non-file-backed generated compile/exec events. The discovery/trusted/full-runtime rules require these rows, while origin field equality says the trusted set is empty and rejects every trusted-generated instance, so no trace can conform.",
+      "closure": [
+        "A005-R4-B2"
+      ],
+      "evidence": [
+        "Final Amendment JSON 1854-1876 allows and requires the complete freshly observed nonempty discovery sequence",
+        "Final Amendment JSON 1767-1936 and 2048-2069 require trusted generated rows to be consumed before dispatch",
+        "Final Amendment JSON 2224-2229 declares the trusted set empty and every instance rejected",
+        "CPython v3.12.13 Lib/dataclasses.py imports inspect; Lib/inspect.py calls namedtuple during import; Lib/collections/__init__.py namedtuple calls eval"
+      ],
+      "id": "A005-R5-B3",
+      "required_revision": "Delete the false empty-set rule. Accept exactly the complete two-run-equal discovery rows in ordinal order and only in the required trusted compile-to-exec chain before DISPATCH_BEGIN; continue to reject missing, extra, reordered, project/third-party and post-boundary events.",
+      "severity": "blocking",
+      "title": "Generated-source completeness and origin acceptance are contradictory"
+    },
+    {
+      "attack": "Attempt to reconstruct a trusted-generated origin from one discovery/trusted row. The origin requires trusted_row_sha256, generator_origin_kind and generator_origin_sha256, while the row has no row digest and instead names generator_origin_class and generator_sha256. trusted_row_sha256 has no other occurrence or canonical preimage, and neither renamed field has an equality mapping. Multiple origin objects can therefore claim the same row.",
+      "closure": [
+        "A005-R4-B3"
+      ],
+      "evidence": [
+        "Final Amendment JSON 1858-1869 and 1911-1923 define discovery/trusted row keys",
+        "Final Amendment JSON 2338-2351 defines the incompatible 13-key trusted-generated origin",
+        "trusted_row_sha256 occurs only in the origin key list and has no digest rule",
+        "No rule maps generator_origin_class to generator_origin_kind or generator_sha256 to generator_origin_sha256"
+      ],
+      "id": "A005-R5-B4",
+      "required_revision": "Define trusted_row_sha256 as SHA-256 of one exact standalone canonical trusted-row object including LF and generated_source_hex; require bytewise equality to the discovery row; freeze the sole class-to-kind and generator-digest mappings; and require every origin field/output root/row digest to resolve one unique trusted row with parse/re-encode equality.",
+      "severity": "blocking",
+      "title": "The trusted-generated trace origin lacks a reconstructible typed row preimage"
+    }
+  ],
+  "byte_validation": {
+    "archived_round4_pair_unchanged": true,
+    "current_json_appendix_byte_identical": true,
+    "current_json_bom": false,
+    "current_json_cr_count": 0,
+    "current_json_duplicate_keys": [],
+    "current_json_keys_recursively_sorted": true,
+    "current_json_nonfinite_or_negative_zero": [],
+    "current_json_terminal_lf_count": 1,
+    "current_json_utf8_strict": true,
+    "current_markdown_bom": false,
+    "current_markdown_cr_count": 0,
+    "current_markdown_terminal_lf_count": 1,
+    "current_markdown_utf8_strict": true,
+    "fixed_and_timestamped_pairs_byte_identical": true
+  },
+  "closure_assessment": {
+    "A005-R4-B1": {
+      "blocking_issue_ids": [
+        "A005-R5-B1"
+      ],
+      "positive": "All 10 Linux PyPreConfig and all 64 Linux PyConfig fields, constructors, defaults/finals, setters, no-Read rule, status branches, full readbacks and clear order are exact. FD launch/readback schemas close seven/four descriptors and three stages; only the memfd creation order is impossible.",
+      "status": "REVISE"
+    },
+    "A005-R4-B2": {
+      "blocking_issue_ids": [
+        "A005-R5-B2",
+        "A005-R5-B3"
+      ],
+      "positive": "The capsule/precommit -> two outputs -> trusted index -> final environment -> distinct full P06 direction is acyclic and excludes final code/environment dependencies from discovery.",
+      "status": "REVISE"
+    },
+    "A005-R4-B3": {
+      "blocking_issue_ids": [
+        "A005-R5-B4"
+      ],
+      "positive": "The installed-member association now has one exact 16-key preimage with path/discriminant/equality closure, and ten of eleven event-origin kinds have reconstructible typed schemas.",
+      "status": "REVISE"
+    },
+    "A005-R3-B2": {
+      "blocking_issue_ids": [],
+      "positive": "NATP exact14/K6 equality, K1 G0/G1 ordered upstreams, 54 unique owners, 106 backward direct edges and 57 owner-aligned entrypoints remain coherent.",
+      "status": "CLOSED"
+    },
+    "PREVIOUSLY_CLOSED_SEMANTICS": {
+      "blocking_issue_ids": [],
+      "positive": "SmoothL1/run_bounds/three-run order, active CPU arithmetic controls, complete checkpoint selection, K1/Cdev, prediction population, target replay, capability order, data firewall, F4 Mapping composition, science, jobs, resources, thresholds and claims did not drift.",
+      "status": "NO_REGRESSION"
+    },
+    "REVIEW_SNAPSHOT": {
+      "blocking_issue_ids": [],
+      "positive": "The timestamped/fixed pair, archived Round-4 pair and all 57 declared current bindings matched at start and terminal rehash.",
+      "status": "CLOSED"
+    }
+  },
+  "cpython_and_fd_mechanical_verification": {
+    "call_sequence_step_count": 12,
+    "config_assignment_partition": {
+      "constructor_owned_config_init": 1,
+      "list": 5,
+      "scalar": 37,
+      "string": 21,
+      "total": 64
+    },
+    "discovery_fd_count": 4,
+    "fd_launch_row_key_count": 20,
+    "fd_readback_row_key_count": 15,
+    "fd_readback_stage_count": 3,
+    "full_runtime_fd_count": 7,
+    "official_source_checks": {
+      "Doc/c-api/init_config.rst": {
+        "bytes": 54271,
+        "sha256": "b6064567d191ade7c873b229d8ded27b917710c0da367343edb13488d2c63d88"
+      },
+      "Include/cpython/initconfig.h": {
+        "bytes": 7820,
+        "sha256": "86e3b9d1de6f310415912e2cdfdc276e311c026ec7fdf6190893f6313cd860a3"
+      },
+      "Lib/collections/__init__.py": {
+        "bytes": 52378,
+        "sha256": "7fdb04dd248ab37909f46d2085bfee56b32d7e91e49ad3a2fad99c453295659b"
+      },
+      "Lib/dataclasses.py": {
+        "bytes": 62085,
+        "sha256": "d242aea5fcf6408b1c1f622442f88f68b9526ce1f8bd2890d74a144677c427d9"
+      },
+      "Lib/inspect.py": {
+        "bytes": 127125,
+        "sha256": "5c54ebf0bfdc25397750e5d0f63800751650ee50e65325ff3ea4069c9bfa5f75"
+      },
+      "Python/initconfig.c": {
+        "bytes": 92299,
+        "sha256": "a50ff760d49e9d1da8a5a998bcedc8c377f12628d7d0426fc4dab89c1abfeff7"
+      },
+      "Python/preconfig.c": {
+        "bytes": 25540,
+        "sha256": "837e6e39347c4ded7d053c7f23d3ac751614a8dc135332748af7a4b0fcd46cab"
+      }
+    },
+    "preconfig_constructor_default_final_field_count": 10,
+    "preconfig_field_sets_equal_header": true,
+    "pyconfig_constructor_discovery_full_field_count": 64,
+    "pyconfig_field_sets_equal_header": true,
+    "runtime_config_readback_field_count": 64,
+    "runtime_preconfig_readback_field_count": 10
+  },
+  "current_implementation": {
+    "code_or_tests_modified_by_reviewer": false,
+    "current_source_implements_round5_runtime": false,
+    "gate_bearing_tests_executed": false,
+    "implementation_acceptance": false,
+    "mechanical_review_checks_only": true,
+    "runtime_bootstrap_and_source_file_count_read": 27,
+    "test_file_count_read": 19
+  },
+  "date": "2026-08-16",
+  "discovery_and_origin_verification": {
+    "association_preimage_key_count": 16,
+    "bootstrap_final_environment_dependency_present": false,
+    "bootstrap_final_source_allowlist_dependency_present": false,
+    "bootstrap_precommit_created_before_discovery": true,
+    "discovery_output_top_level_key_count": 3,
+    "discovery_twin_evidence_index_specified": false,
+    "event_origin_kind_count": 11,
+    "installed_association_closed": true,
+    "trusted_generated_actual_sequence_nonempty": true,
+    "trusted_generated_empty_rule_contradiction": true,
+    "trusted_generated_origin_preimage_closed": false
+  },
+  "independence_verified": false,
+  "mechanical_dag_verification": {
+    "all_roster_edges_point_to_earlier_owner": true,
+    "class_counts": {
+      "g1-teacher-selection": 1,
+      "k1-certificate-outcome": 1,
+      "k3": 1,
+      "k4": 1,
+      "natural-prediction-completion": 3,
+      "pre-g5a-stage": 17,
+      "run": 27,
+      "x0-inference": 3
+    },
+    "declared_and_recomputed_direct_edge_count": 106,
+    "effective_contract_prospective_cycle": false,
+    "entrypoint_descriptor_count": 57,
+    "entrypoint_prefix_equals_owner_roster": true,
+    "k1_upstream_role_present": true,
+    "natp_exact_key_count": 14,
+    "natp_upstream_length_and_k6_equality_specified": true,
+    "owner_count": 54,
+    "owner_unique_count": 54,
+    "topological_roster_cycle": false
+  },
+  "non_expansion": {
+    "algorithm_changed": false,
+    "claim_changed": false,
+    "dataset_scope_changed": false,
+    "g5a_receipt_key_set_changed": false,
+    "jobs_changed": false,
+    "paper_visible_blocks_changed": false,
+    "resource_ceiling_changed": false,
+    "target_receipt_key_set_changed": false,
+    "thresholds_changed": false
+  },
+  "purpose": "temporac-certificate-amendment-005-round5-normative-review",
+  "review_round": 5,
+  "reviewed_inputs": {
+    "archived_rejected_round4_json": {
+      "bytes": 165291,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_173526.json",
+      "sha256": "04d24ad19b19470bcd675974766a279dc7691d3fdaecf665e3fd24e4a4aaeb82"
+    },
+    "archived_rejected_round4_markdown": {
+      "bytes": 203317,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_173526.md",
+      "sha256": "0552aaca74b34929ead1124cce846d2a583931aa89ad29fcf0f97486b7be0198"
+    },
+    "canonical_proposal": {
+      "bytes": 79366,
+      "path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+      "sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"
+    },
+    "certificate_postfix_round2_json": {
+      "bytes": 14527,
+      "path": "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_ROUND2_20260816.json",
+      "sha256": "144d2f22f4f75166b8cbefe54157d08690408979dd7cb34ef8c97e1738432872"
+    },
+    "certificate_postfix_round2_markdown": {
+      "bytes": 12283,
+      "path": "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_ROUND2_20260816.md",
+      "sha256": "93a9cae771b34c185b9057286794b894d615aec5424011df145aaf8900f008d8"
+    },
+    "current_fixed_alias_json": {
+      "bytes": 226592,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.json",
+      "sha256": "94fc8e5db1031686ea0d5e5646c94606728c18cff19915a6deb231a3bf80cfcb"
+    },
+    "current_fixed_alias_markdown": {
+      "bytes": 269255,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.md",
+      "sha256": "dbf797e80156d627b14290dfe558222878fdec8ccefbf28a051093130e1349e4"
+    },
+    "current_timestamped_json": {
+      "bytes": 226592,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_173527.json",
+      "sha256": "94fc8e5db1031686ea0d5e5646c94606728c18cff19915a6deb231a3bf80cfcb"
+    },
+    "current_timestamped_markdown": {
+      "bytes": 269255,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_173527.md",
+      "sha256": "dbf797e80156d627b14290dfe558222878fdec8ccefbf28a051093130e1349e4"
+    },
+    "experiment_plan": {
+      "bytes": 34198,
+      "path": "refine-logs/EXPERIMENT_PLAN.md",
+      "sha256": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e"
+    },
+    "experiment_tracker": {
+      "bytes": 22360,
+      "path": "refine-logs/EXPERIMENT_TRACKER.md",
+      "sha256": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b"
+    },
+    "round4_review_json": {
+      "bytes": 12977,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND4.json",
+      "sha256": "f8552023abb52c98baec6a9143d15e93e3268d883bf3967c446c3fcbcd9d06d9"
+    },
+    "round4_review_markdown": {
+      "bytes": 18713,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND4.md",
+      "sha256": "988eb7c2b61eb445a07e1c17b7bcf44be256f9948d6600a6ed6edc62ef71cfc1"
+    }
+  },
+  "reviewer": {
+    "agent_id": "/root/temporac_certificate_amendment005_review",
+    "executor_family": "openai",
+    "family_relation": "same",
+    "model": "gpt-5.6-sol",
+    "reviewer_family": "openai"
+  },
+  "schema": "temporac.contract-amendment-review.v1",
+  "verdict": "REVISE"
+}

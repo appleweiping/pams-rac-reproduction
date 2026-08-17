@@ -1,0 +1,119 @@
+{
+  "acceptance_status": "provisional",
+  "binding_check_history": [
+    {
+      "hashio_sha256": "f6f8e4e6f891c510c561b507d6826bae3cddb12ee9c34d4bade584f98e7fb0bf",
+      "receipts_sha256": "5f30581bdf31be4f98a891f9631f0ef7eda9ddcd58c2893f064ab277c3d879bd",
+      "result": "intermediate_formatter_snapshot_not_round_1_binding",
+      "stage": "round_1_pre_format"
+    },
+    {
+      "hashio_sha256": "2d81e415b45e3d1b612f998b6a8386a967dfdfcfaac31bc914b2c95cbaeeab3a",
+      "receipts_sha256": "0ac800d96f536a41a67775bc8e8e778fe14c312c02f642f7cde78d210244016d",
+      "result": "round_1_final_reviewed_snapshot",
+      "stage": "round_1_stable"
+    },
+    {
+      "hashio_sha256": "df56cc69701bba1f5d395dba8b4f4289fe8e6d409fae21b01a4daaacd2c0db85",
+      "receipts_sha256": "3264cacb8820a422ca8e55b18ea4819b8cb1de111edc4ab77c9842c583ede537",
+      "result": "excluded_pre_integration_snapshot",
+      "stage": "round_2_pre_integration"
+    },
+    {
+      "evaluator_closure_sha256": "910f4f9085ca1a643f60912fa8f6a2284dc8dd24fa43af0d521b43793b1b8d4c",
+      "hashio_sha256": "df872dc5709cc8814b5d11f87d4de8cc0351459cf5cdf04e19afd0a2baf2b13c",
+      "receipts_sha256": "7cddf857a7b5f0fa9c420d94f13f80f91c0734ee3bf98c189e1639fa8a85bf9a",
+      "result": "excluded_torn_snapshot",
+      "stage": "round_2_mid_integration",
+      "types_sha256": "6610a7f5226e341ff61a90bb89fbdbb75e375d11816ea14a0f8670ad090007f3"
+    },
+    {
+      "evaluator_closure_sha256": "755743d16190b9d055b0f6a3c341ada4b8a6084e0c49477287bddc2755ad50bd",
+      "hashio_sha256": "df872dc5709cc8814b5d11f87d4de8cc0351459cf5cdf04e19afd0a2baf2b13c",
+      "receipts_sha256": "ed1a993a832b5cb471a56ec6c9df39f5f6873efb88a33c223f4a4d741e946f15",
+      "result": "final_closure_binding_verified",
+      "stage": "round_2_final_frozen",
+      "types_sha256": "32cd9450e836d97d4311d59ad504c987ff47970a134ac1f860d96951caea8228"
+    }
+  ],
+  "call_number": 2,
+  "executor_family": "openai",
+  "files_referenced": [
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.md",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.json",
+    "refine-logs/FINAL_PROPOSAL.md",
+    "refine-logs/temporac/FINAL_PROPOSAL.md",
+    "refine-logs/EXPERIMENT_PLAN.md",
+    "refine-logs/EXPERIMENT_TRACKER.md",
+    "src/pams/temporac/metrics.py",
+    "src/pams/temporac/evaluator.py",
+    "src/pams/temporac/contract.py",
+    "src/pams/temporac/types.py",
+    "src/pams/temporac/hashio.py",
+    "src/pams/temporac/receipts.py",
+    "src/pams/temporac/trusted_packer.py",
+    "src/pams/temporac/gates.py",
+    "src/pams/temporac/fixtures.py",
+    "src/pams/__init__.py",
+    "src/pams/types.py",
+    "src/pams/temporac/__init__.py"
+  ],
+  "final_reviewed_input_sha256": {
+    "refine-logs/EXPERIMENT_PLAN.md": "3fd1986871b32674d74b395fbfc9720712d9fba0c8583c24c1d5bddb87086eb6",
+    "refine-logs/EXPERIMENT_TRACKER.md": "c7e2f32c3c81b66884abb13760a671ecc7cdd314fd6c994a4ed4c46cb754a63b",
+    "refine-logs/FINAL_PROPOSAL.md": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c",
+    "refine-logs/temporac/FINAL_PROPOSAL.md": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.json": "c73b85731ece838684f78c41b3dfcdb498af5cf9822f7ee84d2add4d09ffe1fc",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.md": "d615def9dc468b7e483488b87cb0524302f1c4c325df8bf092e741e21f6262d1",
+    "src/pams/__init__.py": "8b6ffbf3ac8ed7e43f1f40ef5793baa087f73b303eff342d891380bc9a5d67ce",
+    "src/pams/types.py": "78c2ad53e98856425492a1711faa62fc2bb7764767dc48a22f7c4d5e043a3e31",
+    "src/pams/temporac/__init__.py": "e3f71c2d85974ac3f635f76ee61f8e1f793b9bc251b25ff4336563d4da52c2a3",
+    "src/pams/temporac/contract.py": "b71255a35cce1701d2741064064b53ba819b742873a348f1852f147149e36467",
+    "src/pams/temporac/evaluator.py": "81037186896309b093cd184b6e63542653f5a7e1ab063b78a9e63558369a47d2",
+    "src/pams/temporac/fixtures.py": "a8d10df7c8e3cbcb5684198192d3a553921da0f6aa92f03e54448ee182671406",
+    "src/pams/temporac/gates.py": "b6c9d7432443d7ad36738a81700746709fd571d475514aa6f1bbcd39be744b4a",
+    "src/pams/temporac/hashio.py": "df872dc5709cc8814b5d11f87d4de8cc0351459cf5cdf04e19afd0a2baf2b13c",
+    "src/pams/temporac/metrics.py": "1dadf08e89330bed2ab773afda05bffcb3fe2252b0d3e23c0bcc18c2c3b049dd",
+    "src/pams/temporac/receipts.py": "ed1a993a832b5cb471a56ec6c9df39f5f6873efb88a33c223f4a4d741e946f15",
+    "src/pams/temporac/trusted_packer.py": "40d6e3d5be1b26b7ba0f0f7aadf8da7496c95c4e829face5c7e9faaee2cdf94e",
+    "src/pams/temporac/types.py": "32cd9450e836d97d4311d59ad504c987ff47970a134ac1f860d96951caea8228"
+  },
+  "persistence_time_supersession": {
+    "refine-logs/EXPERIMENT_PLAN.md": "5876b40075b488866960ab2c74f8aac5f655ef8df8727cdebdf89cc1d4814263",
+    "refine-logs/EXPERIMENT_TRACKER.md": "176b0ef18fe0b19ebdbe140638accb2d71fe3742be14a233042de54cd3a5ee71",
+    "refine-logs/FINAL_PROPOSAL.md": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+    "refine-logs/temporac/FINAL_PROPOSAL.md": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+    "result": "not_round_2_inputs_and_not_adjudicated"
+  },
+  "final_validation_supersession": {
+    "refine-logs/EXPERIMENT_PLAN.md": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e",
+    "refine-logs/EXPERIMENT_TRACKER.md": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b",
+    "src/pams/temporac/contract.py": "5ab8fb62dc558ba78e95fc07e52c1f1a1afbff5b1c5003834079eea6143d745f",
+    "result": "post_review_nonbinding_bytes_not_adjudicated"
+  },
+  "model": "gpt-5.6-sol",
+  "prompt": "Same-reviewer continuation after Amendment 003 revision. Fully reread the final amendment/JSON, proposal/plan/tracker and complete seven-file closure from disk after freeze. Independently confirm separation of historical_audit_basis from the freshly reviewed candidate index, no P2 self-lock, executable/runtime closure, outer runner binding of fresh production/reference/all-17-attack observations, inability of the six-key inner receipt to self-certify, and K7 verification before capability consumption. Recompute all 288 rows, 10,000 PCG64 draws, 17 attacks, canonical and raw-f64 hashes, closure preimage, current production counterexample and closed receipt. Persist faithful Round 1 and Round 2 review/trace records with exactly two events, gpt-5.6-sol/openai/openai/same-family/provisional and zero authority. Write only review, trace and event files. Proposal/plan/tracker canonicalized after the full Round 2 read; preserve the reviewed historical snapshot and do not represent later bytes as this round's input.",
+  "purpose": "temporac-p05m-amendment-003-round-2-review",
+  "recorded_at": "2026-08-16T08:02:13.4471070+08:00",
+  "review_independence": "same-family",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "tool": "codex",
+  "turn": 2,
+  "verdict": "REVISE",
+  "authority": {
+    "canonical_edit": false,
+    "claims": false,
+    "data_access": false,
+    "gate_pass": false,
+    "git": false,
+    "implementation": false,
+    "manifest": false,
+    "paper_promotion": false,
+    "results": false,
+    "s0": false,
+    "server": false,
+    "test_execution": false,
+    "training": false
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_fragment_transport_sol",
+  "date": "2026-08-15",
+  "cutoff": "2026-08-15",
+  "recent_arxiv_window_start": "2026-02-15",
+  "core_claim_queries": [
+    {
+      "claim_id": "C1",
+      "topic": "fragment count-mass conservation and additive response",
+      "queries": [
+        "repetition counting fragmented tracks count mass conservation endpoint correction 2024 2025 2026",
+        "event counting temporal fragments additive density boundary correction video 2024 2025 2026",
+        "video repetition count crop cut consistency density integral additivity fragments",
+        "site:arxiv.org/abs after:2026-02-15 repetition counting fragment gap count conservation endpoint"
+      ]
+    },
+    {
+      "claim_id": "C2",
+      "topic": "endpoint-conditioned fragment repair, re-entry, and identity isolation",
+      "queries": [
+        "Automated repair of fragmented tracks with 1D CNNs Tekin Image and Vision Computing 101 103982",
+        "tracklet association gap interpolation endpoint motion re-identification 2024 2025 2026",
+        "occlusion fragmented tracks re-entry wrong-ID negative endpoint velocity",
+        "site:arxiv.org/abs after:2026-02-15 tracklet gap filling re-entry endpoint state uncertainty"
+      ]
+    },
+    {
+      "claim_id": "C3",
+      "topic": "synthetic cut/crop consistency and wrong-ID negatives",
+      "queries": [
+        "self-supervised temporal cut consistency synthetic gaps intact fragment conservation",
+        "temporal crop consistency action counting sum fragment count",
+        "cut paste temporal consistency missing interval video repetition self supervision",
+        "site:arxiv.org/abs after:2026-02-15 temporal crop cut consistency repetition counting"
+      ]
+    },
+    {
+      "claim_id": "C4",
+      "topic": "residual uncertainty, abstention, and risk coverage",
+      "queries": [
+        "selective prediction abstention tracklet association gap uncertainty 2024 2025 2026",
+        "uncertainty abstain fragmented trajectory repair endpoint states",
+        "repetition counting abstention uncertain period interval",
+        "site:arxiv.org/abs after:2026-02-15 selective prediction temporal partial observability abstention"
+      ]
+    }
+  ],
+  "exact_and_neighbor_queries": [
+    "MultiCounter L_t empty invisible frames joint detect track count",
+    "MultiCounter+ 10.1109/TCSVT.2026.3670243 spatial-temporal consistency long-short period",
+    "RepNet p_i l_i sum per frame count",
+    "OC-SORT observation-centric re-update virtual trajectory occlusion",
+    "PAMS PAMS-TCC method related work multi-expert consensus",
+    "TWCRAC time-window-cycle temporal consistency local periodic statistics",
+    "Video Individual Counting for Moving Drones shared density inflow outflow sum",
+    "site:openaccess.thecvf.com video individual counting density conservation inflow outflow optimal transport ICCV 2025",
+    "site:openaccess.thecvf.com crowd counting flow conservation temporal density video",
+    "MultiCounter+ Toward Efficient and Robust Multi-Instance Repetitive Action Counting PDF",
+    "Siamese query repetitive action counting",
+    "dynamic query update repetition counting",
+    "site:arxiv.org/abs after:2026-02-15 repetition counting fragmented track gap endpoint correction",
+    "site:arxiv.org/abs after:2026-02-15 video counting temporal fragments mass conservation",
+    "site:arxiv.org/abs after:2026-02-15 tracklet gap filling wrong identity negative abstention",
+    "site:arxiv.org/abs after:2026-02-15 temporal crop cut consistency repetition counting"
+  ],
+  "tools": [
+    {
+      "tool": "web search/open",
+      "purpose": "Resolve current primary/official sources and inspect indexed abstract, method, and related-work context."
+    },
+    {
+      "tool": "C:/Users/admin/.aris/repos/auto-research-in-sleep-e12e07c-full/tools/arxiv_fetch.py",
+      "purpose": "Bounded arXiv title/abstract retrieval with explicit recent-window queries."
+    }
+  ],
+  "retrieval_events": [
+    {
+      "event": "arxiv_helper_retry",
+      "status": "recovered",
+      "context": "Two Windows console attempts encountered GBK output encoding failures; both were rerun with UTF-8 output and completed. No query was dropped."
+    },
+    {
+      "event": "local_corpus_check",
+      "status": "warn",
+      "context": "Project-local papers/ and literature/ directories were absent."
+    },
+    {
+      "event": "publisher_fulltext_access",
+      "status": "partial",
+      "context": "The official IEEE MultiCounter+ record exposed abstract/introduction but not full method; the SSRN TWCRAC full text was not retrievable. Both were handled fail-closed."
+    }
+  ],
+  "bounded_result": {
+    "exact_five_part_isomorph_found": false,
+    "negative_search_is_not_firstness_proof": true,
+    "new_sources_after_decision_boundary": 0,
+    "scope_stopped_after_core_neighbors": true
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "acceptance_status": "provisional",
+  "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE",
+  "artifact_type": "temporac_contract_amendment_review",
+  "authoritative": false,
+  "authorizes": [],
+  "blocking_issue_count": 0,
+  "date": "2026-08-16",
+  "executor_family": "openai",
+  "fresh_zero_context": true,
+  "input_rehash_status": "verified_at_persistence",
+  "bindings": {
+    "amendment_json": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE.json",
+      "sha256": "b1fb03f5cd5021ff6397f74b9b6a8cd074d0ed5fd2e72746fc40df44266a41cc"
+    },
+    "amendment_markdown": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE.md",
+      "sha256": "ca44173bd2bc2be3fa5eaf9dc362d88d981603d28328bf365efc68567f1ae5bb"
+    },
+    "canonical_review_markdown": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE_REVIEW.md",
+      "sha256": "ad14875c91faa184f156f86e9d559a9bb8927db8a2309dc4fbd963074e1a3a58"
+    },
+    "experiment_plan": {
+      "path": "refine-logs/EXPERIMENT_PLAN.md",
+      "sha256": "3fd1986871b32674d74b395fbfc9720712d9fba0c8583c24c1d5bddb87086eb6"
+    },
+    "experiment_tracker": {
+      "path": "refine-logs/EXPERIMENT_TRACKER.md",
+      "sha256": "c7e2f32c3c81b66884abb13760a671ecc7cdd314fd6c994a4ed4c46cb754a63b"
+    },
+    "implementation": {
+      "path": "src/pams/temporac/x0.py",
+      "sha256": "1690abb9bc6b6da4a25a4467162c8ddc111fe0a3c8cf33e7f70f0faa8e84f6f4"
+    },
+    "normative_proposal": {
+      "path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+      "sha256": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c"
+    },
+    "test_probe": {
+      "path": "tests/temporac/test_x0.py",
+      "sha256": "a2e13ad508777d76a0e31075b4ea7dcff843e6f4168096736b98f008ade48620"
+    }
+  },
+  "original_f8_adjudication": {
+    "all_40_sources_all_64_attempts_fail": true,
+    "all_34_coordinate_rms_d2_to_d8": [
+      0.029305691075485064,
+      0.025692611664010475,
+      0.021351401662213574,
+      0.018152744011886935,
+      0.01575898436560219,
+      0.013896607758660433,
+      0.012407402566436636
+    ],
+    "moving_16_coordinate_interpretation_passes": false,
+    "production_fail_closed_is_correct": true,
+    "raw_unnormalized_w_allowed": false
+  },
+  "repair_adjudication": {
+    "critical_scale_strict_lower_boundary": 4.0298523185872455,
+    "full_bracket_required": true,
+    "minimal_in_normative_scope": true,
+    "numerically_least_scale_exists": false,
+    "non_expansive": true,
+    "scale": "25/6",
+    "single_fundamental_only_reversal_floor": 0.004735659467089593,
+    "worst_separation_margin_above_threshold": 0.00169751069348597
+  },
+  "independent_replay": {
+    "candidate_attempts_checked": 2560,
+    "candidate_attempts_passing": 2560,
+    "coordinate_max": 0.95,
+    "coordinate_min": -1.0615805372092377,
+    "exact_outer_binary64_multiply_replayed": true,
+    "exact_separation_reduction_replayed": true,
+    "geometry_arc_max": 4.317988354684301,
+    "geometry_arc_min": 4.088598312896032,
+    "gram_error_max": 6.661338147750939e-16,
+    "landmark_failures": 0,
+    "literal_full_pose_fft_replayed": true,
+    "mgs_minimum_pre_normalization_norm": 0.7032768742199463,
+    "pose_scale": 0.65,
+    "retained_attempt_for_all_sources": 0,
+    "retained_sources": 40,
+    "reversal_failures": 0,
+    "reversal_shift_indices": [2048],
+    "reversal_rms_max": 0.019731914446211345,
+    "reversal_rms_min": 0.019731914446203404,
+    "separation_failures": 0,
+    "separation_rms_min_d2_to_d8": [
+      0.12210704614785442,
+      0.10705254860004362,
+      0.08896417359255655,
+      0.07563643338286219,
+      0.06566243485667576,
+      0.057902532327751784,
+      0.05169751069348597
+    ],
+    "state_collision_analytic_lower_witness": 0.014291548761875736,
+    "state_collision_radius_pairs_examined": 105241600,
+    "state_collision_violations": 0,
+    "tangent_max": 3.4234712246919234,
+    "tangent_min": 1.360349523175663
+  },
+  "binary64_contract": {
+    "distributive_reassociation_allowed": false,
+    "displacement_order": "fundamental assignment; h=2,3,4 increasing in-place additions; one final np.float64(25.0/6.0) outer multiplication",
+    "rms_domain": "complete 4096 x 34 binary64 COCO17 x,y difference array",
+    "separation_reduction": "difference; np.square; np.mean(dtype=np.float64); Python float; math.sqrt",
+    "tangent_order": "complete existing tangent accumulation; one final np.float64(25.0/6.0) outer multiplication",
+    "test_probe_status": "mathematical_decision_witness_not_orbit_byte_hash_witness",
+    "reversal_reduction": "literal C-order flatten, reversed-grid indexing, rfft, conjugate product, irfft, energy, nonnegative clamp, minimum"
+  },
+  "preservation": {
+    "architecture_invariants": true,
+    "claims_and_evidence_ceiling": true,
+    "data_and_protocol": true,
+    "f9_through_f23": true,
+    "gates_and_receipts": true,
+    "jobs": 27,
+    "landmarks_phase_pulses_masks_ownership": true,
+    "max_concurrency": 2,
+    "resource_budget_a6000_hours": 93,
+    "thresholds": true,
+    "training_and_evaluation_graph": true
+  },
+  "canonical_patch_conditions": [
+    "Patch both FINAL_PROPOSAL.md copies byte-identically under separate edit authority.",
+    "Implement one outer binary64 scale after the completed displacement bracket and the same rule for the completed tangent; forbid reassociation.",
+    "Preserve the frozen separation reduction and literal FFT reversal sequences.",
+    "Run a locked CPython 3.12.4, NumPy 2.1.0, SciPy 1.14.1 byte-level replay of all 2560 attempts and regenerate the 40-row manifest and orbit hashes.",
+    "Rehash both proposal copies and update only dependent hash references while keeping the proposal copies byte-identical.",
+    "Re-run affected P00, P01, and P02 checks without inheriting an S0 or gate pass.",
+    "Preserve all jobs, resources, thresholds, claims, protocol labels, and the partial-cache appendix-only ceiling."
+  ],
+  "authority_ceiling": {
+    "canonical_edit_authorized": false,
+    "claims_authorized": false,
+    "data_access_authorized": false,
+    "evaluator_capability_authorized": false,
+    "gate_pass_authorized": false,
+    "git_authorized": false,
+    "implementation_authorized": false,
+    "paper_promotion_authorized": false,
+    "result_authorized": false,
+    "s0_authorized": false,
+    "server_access_authorized": false,
+    "training_authorized": false
+  },
+  "review_independence": "same-family",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "status": "ACCEPT_SAME_FAMILY_PROVISIONAL_ZERO_AUTHORITY",
+  "verdict": "ACCEPT"
+}

@@ -1,0 +1,32 @@
+{
+  "acceptance_status": "provisional",
+  "call_number": 1,
+  "executor_family": "openai",
+  "files_referenced": [
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE.md",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE.json",
+    "refine-logs/temporac/FINAL_PROPOSAL.md",
+    "refine-logs/EXPERIMENT_PLAN.md",
+    "refine-logs/EXPERIMENT_TRACKER.md",
+    "src/pams/temporac/x0.py",
+    "tests/temporac/test_x0.py"
+  ],
+  "input_sha256": {
+    "refine-logs/EXPERIMENT_PLAN.md": "3fd1986871b32674d74b395fbfc9720712d9fba0c8583c24c1d5bddb87086eb6",
+    "refine-logs/EXPERIMENT_TRACKER.md": "c7e2f32c3c81b66884abb13760a671ecc7cdd314fd6c994a4ed4c46cb754a63b",
+    "refine-logs/temporac/FINAL_PROPOSAL.md": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE.json": "b1fb03f5cd5021ff6397f74b9b6a8cd074d0ed5fd2e72746fc40df44266a41cc",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE.md": "ca44173bd2bc2be3fa5eaf9dc362d88d981603d28328bf365efc68567f1ae5bb",
+    "src/pams/temporac/x0.py": "1690abb9bc6b6da4a25a4467162c8ddc111fe0a3c8cf33e7f70f0faa8e84f6f4",
+    "tests/temporac/test_x0.py": "a2e13ad508777d76a0e31075b4ea7dcff843e6f4168096736b98f008ade48620"
+  },
+  "model": "gpt-5.6-sol",
+  "prompt": "Fresh zero-context adjudication of TempoRAC Contract Amendment 001. Re-read and rehash the final amendment, proposal, experiment plan/tracker, current X0 implementation, and test probe. Independently derive original F8 executability and replay all 40 source IDs by 64 attempts on the exact 4096 grid. Check outer binary64 scale placement, tangent, coordinate/pose/arc/state/reversal/landmark guards, phase/pulse/topology preservation, jobs/resources/claims/authority, and MD/JSON exactness. Return ACCEPT/REVISE/REJECT. Persist the final ACCEPT review and structured trace only in the explicitly authorized review/trace/event paths, with response.md byte-identical to canonical review Markdown and exactly one review_trace event.",
+  "purpose": "temporac-x0-amendment-001-fresh-review",
+  "review_independence": "same-family",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "timestamp": "2026-08-16T06:46:01.1333865+08:00",
+  "tool": "codex",
+  "verdict": "ACCEPT"
+}

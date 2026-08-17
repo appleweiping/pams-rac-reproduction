@@ -1,0 +1,645 @@
+{
+  "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE",
+  "authority": {
+    "P2": false,
+    "P3": false,
+    "S0": false,
+    "capability": false,
+    "data": false,
+    "gate": false,
+    "git": false,
+    "gpu": false,
+    "heldout": false,
+    "launch": false,
+    "paper_claim": false,
+    "results": false,
+    "sealed": false,
+    "server": false,
+    "test": false,
+    "training": false
+  },
+  "bindings": {
+    "refine-logs/EXPERIMENT_PLAN.md": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e",
+    "refine-logs/EXPERIMENT_TRACKER.md": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b",
+    "refine-logs/temporac/FINAL_PROPOSAL.md": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+    "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_ROUND2_20260816.json": "144d2f22f4f75166b8cbefe54157d08690408979dd7cb34ef8c97e1738432872",
+    "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_ROUND2_20260816.md": "93a9cae771b34c185b9057286794b894d615aec5424011df145aaf8900f008d8",
+    "src/pams/temporac/certify.py": "468ce8418bff0f43582d341f3e1b8064cf1c429301d1f56be84b8e13ad59a3f1",
+    "src/pams/temporac/contract.py": "5ab8fb62dc558ba78e95fc07e52c1f1a1afbff5b1c5003834079eea6143d745f",
+    "src/pams/temporac/evaluator.py": "f981c6c7061c3388f06ef39466ef98192e65c62c501821be2b211f903cfaf9de",
+    "src/pams/temporac/feature_io.py": "f54f17ca204c242d304314f4280e7540c28588e86ea588a405fff02176b95428",
+    "src/pams/temporac/gates.py": "b6c9d7432443d7ad36738a81700746709fd571d475514aa6f1bbcd39be744b4a",
+    "src/pams/temporac/hashio.py": "aa460d5de51f107b2fc6b2ad171747e0da38a87cf30f82a869a335c268f1d613",
+    "src/pams/temporac/preprocess.py": "042b5cae1917359cb5596837c81c0e36658ff99a6a8fd6f2602b478ca6f98bc3",
+    "src/pams/temporac/receipts.py": "564039b5d37a4a2759544a9ae65f267b57d7f6c1e46bca812ae5ed4f4a2c17e4",
+    "src/pams/temporac/teacher.py": "30575fa64875aa6b77de157cf6af348b3b7900851a1c1742993842eea7928b30",
+    "src/pams/temporac/trusted_packer.py": "40d6e3d5be1b26b7ba0f0f7aadf8da7496c95c4e829face5c7e9faaee2cdf94e",
+    "src/pams/temporac/types.py": "4249eac2738f5b2edf53f38cbb681dffae609c151d493dd03b625fe10ad4c3ca"
+  },
+  "canonical_bytes": {
+    "array_hash_preimage": "exact raw C-order bytes with no header, filename, shape prefix, or terminal LF",
+    "artifact_hash": "SHA-256 of complete exact artifact bytes",
+    "bom_allowed": false,
+    "duplicate_keys_allowed": false,
+    "encoding": "UTF-8",
+    "ensure_ascii": false,
+    "hash_format": "64 lowercase hexadecimal characters",
+    "json_allow_nan": false,
+    "json_object_key_order": "lexicographically sorted",
+    "json_separators": [
+      ",",
+      ":"
+    ],
+    "line_endings": "LF",
+    "receipt_hash": "SHA-256 of complete canonical JSON receipt bytes",
+    "self_hash_fields_allowed": false,
+    "terminal_lf_count": 1
+  },
+  "certified_development_binding": {
+    "g5a_receipt_root": {
+      "closed_keys": [
+        "certified_development_index_bytes",
+        "certified_development_index_sha256",
+        "contract_sha256",
+        "receipt_sha256",
+        "schema"
+      ],
+      "commitment": "the existing temporac.g5a-receipt.v4 receipt_root_sha256 is SHA-256 of these exact canonical JSON bytes",
+      "index_binding": "certified_development_index_bytes is the positive exact byte count and certified_development_index_sha256 hashes the complete index bytes",
+      "receipt_inventory": {
+        "completeness_sources": [
+          "frozen population index",
+          "frozen prediction index",
+          "frozen checkpoint index",
+          "frozen target index",
+          "current experiment plan",
+          "surrounding pilot-scope index"
+        ],
+        "included_receipt_classes": [
+          "feature",
+          "target",
+          "natural-input",
+          "teacher-checkpoint",
+          "teacher-selection",
+          "run",
+          "prediction",
+          "required fixture"
+        ],
+        "multiplicity": "one entry per receipt artifact in the frozen inventory; identical digests retain multiplicity",
+        "order": "decoded raw 32-byte digest ascending"
+      },
+      "schema": "temporac.g5a-receipt-root-index.v4"
+    },
+    "index": {
+      "row_closed_keys": [
+        "component_key_hex",
+        "feature_artifact_sha256",
+        "feature_receipt_sha256",
+        "natural_input_receipt_sha256",
+        "opaque_key_hex",
+        "selection_receipt_sha256",
+        "selected_checkpoint_artifact_sha256",
+        "selected_checkpoint_receipt_sha256",
+        "slot",
+        "target_artifact_sha256",
+        "target_receipt_sha256"
+      ],
+      "row_order": [
+        "opaque_key_hex",
+        "slot"
+      ],
+      "row_rules": [
+        "rows are strictly ordered with no duplicate identity",
+        "rows contain every and only the frozen K1/G5a certified development identities",
+        "opaque_key_hex and component_key_hex are lowercase 32-byte hex",
+        "slot is the exact nonnegative development local-person slot",
+        "all rows bind the one exact selection receipt and selected checkpoint artifact/receipt",
+        "component_key_hex equals the exact frozen population-manifest component key for the same identity and is not caller-selectable",
+        "feature and target receipts validate against their named exact artifacts and identity",
+        "natural input validates against the exact feature and selection",
+        "target source kind is natural and every teacher digest equals selected_checkpoint_artifact_sha256"
+      ],
+      "schema": "temporac.certified-development-index.v4",
+      "top_level_closed_keys": [
+        "contract_sha256",
+        "rows",
+        "schema"
+      ]
+    },
+    "k7_replay": {
+      "before": "vault unit checks and every metric calculation",
+      "caller_substitution_allowed": false,
+      "steps": [
+        "verify G5a receipt_root_sha256 against exact g5a receipt-root-index bytes and verify certified-development index bytes/hash",
+        "load and validate exact feature artifact and feature receipt",
+        "reload the complete score index, all checkpoint and run receipts, exact selection receipt, and exact selected checkpoint artifact/receipt; reconstruct SelectedTeacher and require its code/environment bindings to equal G5a",
+        "rerun canonical natural inference and require rebuilt natural-input receipt bytes to equal indexed bytes",
+        "bind the certificate track, rerun certify_target, and require CERTIFIED",
+        "rebuild the unchanged seven-member target NPZ and unchanged ten-key target receipt",
+        "require rebuilt target NPZ bytes and target receipt bytes to be bytewise identical to indexed artifacts"
+      ],
+      "swap_rule": "same identity and teacher with a different feature, natural input, teacher, selection, target artifact, or target receipt fails"
+    },
+    "target_non_change": {
+      "member_names": [
+        "chi",
+        "contract_sha256",
+        "edge_mask",
+        "pulse",
+        "source_kind",
+        "target_mask",
+        "teacher_sha256"
+      ],
+      "npz_member_count": 7,
+      "receipt_closed_keys": [
+        "artifact_bytes",
+        "artifact_sha256",
+        "certificate_status",
+        "contract_sha256",
+        "members",
+        "schema",
+        "source_key_hex",
+        "source_kind",
+        "source_unit_index",
+        "teacher_sha256"
+      ],
+      "receipt_schema": "temporac.target-receipt.v4"
+    }
+  },
+  "certificate_provenance": {
+    "checkpoint_artifact": {
+      "archive_rules": {
+        "allow_pickle": false,
+        "compression": "ZIP_STORED",
+        "deterministic_writer": "the fixed-metadata deterministic_npz_bytes algorithm bound by src/pams/temporac/hashio.py",
+        "dtype": "<f4",
+        "encrypted": false,
+        "member_count": 16,
+        "member_extras_allowed": false,
+        "member_order": "raw ASCII member name ascending",
+        "npy_version": "2.0",
+        "pickle_allowed": false,
+        "tensor_order": "C-contiguous",
+        "zip_comments_allowed": false
+      },
+      "members": [
+        {
+          "dtype": "<f4",
+          "name": "phase.layers.0.bias.npy",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "phase.layers.0.weight.npy",
+          "shape": [
+            256,
+            247
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "phase.layers.2.bias.npy",
+          "shape": [
+            128
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "phase.layers.2.weight.npy",
+          "shape": [
+            128,
+            256
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "phase.layers.4.bias.npy",
+          "shape": [
+            2
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "phase.layers.4.weight.npy",
+          "shape": [
+            2,
+            128
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "reconstruction.layers.0.bias.npy",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "reconstruction.layers.0.weight.npy",
+          "shape": [
+            256,
+            34
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "reconstruction.layers.2.bias.npy",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "reconstruction.layers.2.weight.npy",
+          "shape": [
+            256,
+            256
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "reconstruction.layers.4.bias.npy",
+          "shape": [
+            149
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "reconstruction.layers.4.weight.npy",
+          "shape": [
+            149,
+            256
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "static.layers.0.bias.npy",
+          "shape": [
+            128
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "static.layers.0.weight.npy",
+          "shape": [
+            128,
+            298
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "static.layers.2.bias.npy",
+          "shape": [
+            32
+          ]
+        },
+        {
+          "dtype": "<f4",
+          "name": "static.layers.2.weight.npy",
+          "shape": [
+            32,
+            128
+          ]
+        }
+      ],
+      "teacher_sha256_definition": "SHA-256 of the complete exact 16-member checkpoint artifact bytes"
+    },
+    "checkpoint_receipt": {
+      "closed_keys": [
+        "artifact_bytes",
+        "artifact_sha256",
+        "code_sha256",
+        "config_sha256",
+        "contract_sha256",
+        "environment_sha256",
+        "job_name_hex",
+        "members",
+        "run_receipt_sha256",
+        "schema",
+        "seed",
+        "step"
+      ],
+      "job_name": "temporac.execution.v4/teacher/seed=<seed>",
+      "member_ledger_closed_keys": [
+        "bytes",
+        "dtype",
+        "name",
+        "sha256",
+        "shape"
+      ],
+      "member_ledger_count": 16,
+      "replay_binding": "code_sha256 and environment_sha256 also equal the existing G5a code/environment commitments; config_sha256 remains the exact selected teacher-run configuration commitment",
+      "run_binding": "artifact_sha256 equals ordered_checkpoint_sha256[step/500-1] in the exact successful teacher run receipt, and code/config/environment/job/seed match that receipt",
+      "schema": "temporac.teacher-checkpoint-receipt.v4",
+      "seeds": [
+        20260815,
+        20260816,
+        20260817
+      ],
+      "steps": {
+        "count_per_seed": 40,
+        "first": 500,
+        "last": 20000,
+        "stride": 500
+      }
+    },
+    "natural_inference": {
+      "builder_forbidden_parameters": [
+        "selected_teacher_sha256",
+        "phase",
+        "reconstruction"
+      ],
+      "builder_required_inputs": [
+        "typed FeatureRecord",
+        "exact feature receipt bytes and expected digest",
+        "verified SelectedTeacher"
+      ],
+      "f5": {
+        "continuous": "C-order <f8[T,149] formed once from canonical teacher_input[:,0:149]",
+        "edge_lengths": "canonical binary64 preprocessing edge lengths",
+        "equal_traversal_aggregation": "Neumaier sum traversal means and second moments in traversal order, divide by integer traversal count",
+        "mean_term_operation_order": "lambda*((A+B)/2) in binary64",
+        "neumaier_update": "for each x: t=s+x; if abs(s)>=abs(x), compensation+=(s-t)+x, else compensation+=(x-t)+s; s=t; result=s+compensation",
+        "ordinary_or_reordered_reduction_allowed": false,
+        "output": "C-order <f8[298] equal to concatenate(bar_m,sqrt(max(bar_q-bar_m*bar_m,+0.0)))",
+        "second_moment_operation_order": "lambda*(((A*A+A*B)+B*B)/3) in binary64",
+        "static_cast": "exactly one complete C-order cast from <f8[298] to <f4[298]",
+        "subedge_order": "left-to-right base-edge subedges within each traversal",
+        "traversal_order": "run order then landmark order"
+      },
+      "inference_runtime": {
+        "autocast": false,
+        "device": "CPU only",
+        "forward_calls_per_identity": 1,
+        "mode": "TempoRACTeacher.eval() plus torch.inference_mode()",
+        "model_dtype": "float32",
+        "single_thread": true,
+        "teacher_input": "exact C-order <f4[T,215]",
+        "tf32": false
+      },
+      "landmark_precheck": {
+        "failure_artifacts_forbidden": [
+          "natural teacher output",
+          "natural input receipt",
+          "target artifact",
+          "target receipt"
+        ],
+        "failure_reason_name": "LANDMARK",
+        "failure_reason_vector": [
+          11
+        ],
+        "landmark_source": "geometry-only integer_landmarks for each sample-run",
+        "minimum_per_run": 3,
+        "preprocessing_run_conversion": "edge-run [a,b) becomes sample-run [a,b+1)",
+        "teacher_output_dependency": false,
+        "traversals": "same-run consecutive landmarks only, concatenated in run order"
+      },
+      "natural_input_receipt": {
+        "built_after_forward_only": true,
+        "closed_keys": [
+          "continuous_mask_sha256",
+          "continuous_sha256",
+          "feature_artifact_sha256",
+          "feature_receipt_sha256",
+          "geometry_sha256",
+          "opaque_key_hex",
+          "phase_sha256",
+          "reconstruction_sha256",
+          "run_bounds_sha256",
+          "sampled_source_clock_sha256",
+          "schema",
+          "slot",
+          "source_binding_sha256",
+          "teacher_input_sha256",
+          "teacher_sha256"
+        ],
+        "schema": "temporac.natural-certificate-input.v4",
+        "static_and_traversal_evidence": "independently rederived from the exact feature, not trusted from receipt",
+        "teacher_sha256": "derived selected checkpoint artifact digest"
+      },
+      "order": [
+        "validate typed feature against exact feature artifact/receipt",
+        "run canonical preprocessing once",
+        "derive geometry-only integer landmarks per run and immediately LANDMARK-abstain if any run has fewer than three",
+        "form same-run consecutive-landmark traversal bounds",
+        "compute normative binary64 Neumaier F5 static vector",
+        "cast static vector once to float32 and perform one canonical CPU teacher forward",
+        "validate float32 outputs then cast once to C-order <f8 phase/reconstruction and hash"
+      ],
+      "output_casts": {
+        "phase": "float32 model output validated then exactly one C-order cast to <f8[T,2]",
+        "reconstruction": "float32 model output validated then exactly one C-order cast to <f8[T,149]"
+      }
+    },
+    "score_index": {
+      "container": "top-level canonical JSON array",
+      "row_closed_keys": [
+        "checkpoint_receipt_sha256",
+        "mean_masked_reconstruction",
+        "negative_edge_fraction",
+        "seed",
+        "step",
+        "tune_abstentions",
+        "tune_objective"
+      ],
+      "row_count": 120,
+      "row_order": [
+        "seed numeric ascending",
+        "step numeric ascending"
+      ],
+      "rules": [
+        "exactly three seeds and all forty 500-step checkpoints per seed",
+        "six score values equal the six non-payload TeacherCheckpointScore fields",
+        "score-valued fields are finite binary64",
+        "negative_edge_fraction is in [0,1] and tune_abstentions is a nonnegative integer",
+        "checkpoint_receipt_sha256 binds the same seed and step",
+        "duplicate, missing, extra, or mismatched rows fail globally"
+      ],
+      "schema": "temporac.teacher-selection-score-index.v4"
+    },
+    "selected_teacher_loader": {
+      "construction_inputs": [
+        "exact 120-row score-index bytes",
+        "exact selection-receipt bytes",
+        "all 120 exact checkpoint-receipt bytes",
+        "three exact teacher run-receipt bytes",
+        "exact globally selected checkpoint artifact bytes"
+      ],
+      "digest_source": "recomputed selected checkpoint artifact bytes only",
+      "forbidden_constructors": [
+        "caller digest",
+        "untyped module",
+        "unverified state dictionary",
+        "previously computed phase/reconstruction arrays"
+      ],
+      "load_rules": [
+        "verify every hash, closed schema, complete inventory, run binding, and selection result",
+        "instantiate a fresh current TempoRACTeacher on CPU",
+        "reject every key, shape, or dtype not in the exact 16-member table",
+        "strict-load without alternate dtype conversion",
+        "reserialize through the same deterministic NPZ writer and require exact input byte equality",
+        "set eval mode before exposing the typed SelectedTeacher"
+      ],
+      "typed_value": "SelectedTeacher"
+    },
+    "selection_receipt": {
+      "closed_keys": [
+        "code_sha256",
+        "contract_sha256",
+        "per_seed_winner_checkpoint_receipt_sha256",
+        "schema",
+        "score_index_bytes",
+        "score_index_sha256",
+        "selected_checkpoint_artifact_sha256",
+        "selected_checkpoint_receipt_sha256"
+      ],
+      "global_precedence": [
+        "tune_abstentions",
+        "mean_masked_reconstruction",
+        "tune_objective",
+        "seed"
+      ],
+      "per_seed_precedence": [
+        "tune_objective",
+        "step"
+      ],
+      "per_seed_winner_order": [
+        20260815,
+        20260816,
+        20260817
+      ],
+      "rejection_rule": "discard negative_edge_fraction greater than 0.01; fail when a seed has no remaining checkpoint",
+      "schema": "temporac.teacher-selection-receipt.v4",
+      "verifier": "reloads all 120 rows and their checkpoint receipts, recomputes the three winners and global winner, and bytewise checks every recorded digest"
+    }
+  },
+  "date": "2026-08-16",
+  "mapping_composition": {
+    "builder": "count_metric_fixture_receipt",
+    "builder_return_type": "any immutable Mapping including MappingProxyType",
+    "caller_adaptation_required": false,
+    "consumer_order": [
+      "validate the Mapping against the exact six-key P05M receipt schema",
+      "internally materialize a plain dictionary from the six validated keys",
+      "canonicalize and hash that internal dictionary"
+    ],
+    "direct_composition": "consumer(count_metric_fixture_receipt(...))",
+    "malformed_mapping_rule": "unknown, missing, or invalid values fail before hashing",
+    "required_byte_equality": "internal canonical bytes equal canonical bytes for a normal dictionary containing the same six key/value pairs"
+  },
+  "non_changes": {
+    "arms": 4,
+    "claims_changed": false,
+    "conditions": 2,
+    "data_changed": false,
+    "development_identity_count": 134,
+    "gate_order_changed": false,
+    "jobs_changed": false,
+    "paper_promotion_changed": false,
+    "population_identity_count": 402,
+    "prediction_envelope_count": 9648,
+    "resource_ceiling_changed": false,
+    "seeds": 3,
+    "target_member_count": 7,
+    "target_receipt_key_count": 10,
+    "target_receipt_schema_changed": false,
+    "thresholds_changed": false,
+    "train_identity_count": 268
+  },
+  "population_equalities": {
+    "Cdev": {
+      "component_floor": 8,
+      "definition": "ordered identity projection frozen at K1 and committed by the certified-development index at G5a",
+      "identity_floor": 108,
+      "required_equal_sequences": [
+        "certified-development index identity sequence",
+        "target-count row identity sequence",
+        "actual typed CertifiedDevelopmentTarget evidence identity sequence",
+        "K1/G5a committed development-certified identity sequence"
+      ],
+      "subset_of": "the exact 134 development identities",
+      "target_count_rule": "each count equals the sum of pulse bits in the bytewise-verified target for the same identity and the existing target-count root uses exactly Cdev rows"
+    },
+    "P402": {
+      "definition": "ordered identity projection of the frozen population manifest",
+      "development": 134,
+      "required_equal_sequences": [
+        "validated vault identity projection",
+        "prediction identity projection"
+      ],
+      "total": 402,
+      "train": 268
+    },
+    "certification_non_expansion": "Cdev need not contain all 134 development identities and never contains all 402 population identities by requirement",
+    "g5b_join_cardinality": {
+      "caller_supplied": false,
+      "computed_from": "verified P402 population/vault equality",
+      "value": 402
+    },
+    "no_late_filtering": true,
+    "prediction_cartesian_product": {
+      "arms": 4,
+      "conditions": 2,
+      "envelopes": 9648,
+      "identities": 402,
+      "multiplicity_per_combination": 1,
+      "seeds": 3
+    },
+    "prediction_failure_cases": [
+      "missing identity",
+      "extra identity",
+      "duplicate envelope",
+      "missing envelope",
+      "relabelled identity",
+      "subset inventory"
+    ],
+    "stubs_in_prediction_population": true
+  },
+  "purpose": "close only Round-2 certificate findings R2-F1 through R2-F4 without expanding algorithm, data, claims, jobs, thresholds, population, target schema, or authority",
+  "review": {
+    "fresh_independent_review_required": true,
+    "implementation_acceptance_after_spec_review": true,
+    "review_class": "same-family provisional",
+    "round2_closure": {
+      "R2-F1": {
+        "closure": "exact checkpoint bytes, closed receipts, complete selection replay, typed selected teacher, and actual canonical CPU inference",
+        "required_evidence": [
+          "reject digest relabelling",
+          "reject raw phase/reconstruction injection",
+          "reject incomplete 120-row score index",
+          "reject altered checkpoint bytes or member metadata",
+          "reject non-strict load and noncanonical inference",
+          "positive replay reproduces natural output receipt bytes"
+        ]
+      },
+      "R2-F2": {
+        "closure": "G5a-committed certified-development index plus K7 reconstruction and bytewise target NPZ/receipt equality with unchanged target schema",
+        "required_evidence": [
+          "same identity/teacher with different feature or natural input target swap fails",
+          "exact replay passes"
+        ]
+      },
+      "R2-F3": {
+        "closure": "exact P402, exact 9648 Cartesian envelopes, exact Cdev evidence/count/index equality, and computed G5b cardinality",
+        "required_evidence": [
+          "prediction subset fails before capability consumption",
+          "certified evidence subset fails before capability consumption",
+          "target-count subset fails before capability consumption",
+          "population/vault mismatch, duplicate, and extra identity fail"
+        ]
+      },
+      "R2-F4": {
+        "closure": "consumer validates any Mapping and internally canonicalizes a plain dictionary",
+        "required_evidence": [
+          "direct builder return consumes without caller adaptation",
+          "malformed mapping still fails"
+        ]
+      }
+    },
+    "test_pass_grants_authority": false
+  },
+  "schema": "temporac.contract-amendment.v4",
+  "status": "PROPOSED_PENDING_FRESH_REVIEW"
+}

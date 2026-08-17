@@ -1,0 +1,124 @@
+{
+  "accepted_amendments": [
+    {
+      "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE",
+      "amendment_json": {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE.json",
+        "sha256": "b1fb03f5cd5021ff6397f74b9b6a8cd074d0ed5fd2e72746fc40df44266a41cc"
+      },
+      "amendment_markdown": {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE.md",
+        "sha256": "ca44173bd2bc2be3fa5eaf9dc362d88d981603d28328bf365efc68567f1ae5bb"
+      },
+      "review_json": {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE_REVIEW.json",
+        "sha256": "8f38d6be24832a03ec8042062c80d5e6a2afbabcb8a78485ec21137b46581844"
+      },
+      "review_markdown": {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE_REVIEW.md",
+        "sha256": "ad14875c91faa184f156f86e9d559a9bb8927db8a2309dc4fbd963074e1a3a58"
+      },
+      "review_verdict": "ACCEPT"
+    },
+    {
+      "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY",
+      "amendment_json": {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.json",
+        "sha256": "d524556f292ec17a155cdcd962cf8a88bea26f32b810ffb7bd8e45744f1c54fc"
+      },
+      "amendment_markdown": {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.md",
+        "sha256": "899d6f071c89f898bf3825adfb30a326904f9bc7fe44d44351da8a5d0d9ccb14"
+      },
+      "review_json": {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.json",
+        "sha256": "3730d96eff1d3815499602eaf183774af032c514a588d4e92fe8a1cccf053e64"
+      },
+      "review_markdown": {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.md",
+        "sha256": "a86da733f3ae048b867ec8b2366a9f0262ca2b390ef08687ca7d710654e8301f"
+      },
+      "review_round": 2,
+      "review_verdict": "ACCEPT"
+    }
+  ],
+  "authority": {
+    "data": 0,
+    "launch": 0,
+    "p3_preflight": 0,
+    "s0": 0,
+    "server": 0,
+    "training": 0
+  },
+  "canonical_artifacts": {
+    "experiment_plan": {
+      "fixed_path": "refine-logs/EXPERIMENT_PLAN.md",
+      "sha256": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e",
+      "timestamped_path": "refine-logs/EXPERIMENT_PLAN_20260816_074150.md"
+    },
+    "experiment_tracker": {
+      "fixed_path": "refine-logs/EXPERIMENT_TRACKER.md",
+      "sha256": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b",
+      "timestamped_path": "refine-logs/EXPERIMENT_TRACKER_20260816_074150.md"
+    },
+    "proposal": {
+      "paths": [
+        "refine-logs/temporac/FINAL_PROPOSAL.md",
+        "refine-logs/temporac/FINAL_PROPOSAL_20260816_074150.md",
+        "refine-logs/FINAL_PROPOSAL.md",
+        "refine-logs/FINAL_PROPOSAL_20260816_074150.md"
+      ],
+      "sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"
+    },
+    "research_contract": {
+      "fixed_path": "idea-stage/docs/research_contract.md",
+      "sha256": "3e037a2f74c49dd62e596dc7b875d94216e45b7f693b80a7afb6a60f8244367b",
+      "timestamped_path": "idea-stage/docs/research_contract_20260816_074150.md"
+    }
+  },
+  "canonicalization_timestamp": "20260816_074150",
+  "certificate_implementation": {
+    "contract_fixed": true,
+    "fresh_post_canonicalization_review": false,
+    "inherited_gate_pass": false
+  },
+  "frozen_inventory": {
+    "allocated_a6000_hours": 93,
+    "baseline_families": 3,
+    "experiment_blocks": 4,
+    "primary_claims": 1,
+    "training_jobs": 27
+  },
+  "p05m_blocker": {
+    "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE",
+    "amendment_json": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.json",
+      "sha256": "c73b85731ece838684f78c41b3dfcdb498af5cf9822f7ee84d2add4d09ffe1fc"
+    },
+    "amendment_markdown": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.md",
+      "sha256": "d615def9dc468b7e483488b87cb0524302f1c4c325df8bf092e741e21f6262d1"
+    },
+    "execution_status": "BLOCKED",
+    "fresh_accept_receipt_present": false,
+    "review_artifact_present": true,
+    "review_disposition": "REVISE",
+    "review_json": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_REVIEW_ROUND2.json",
+      "sha256": "b8552d10bf8b9d9e6b3f9202127b1ea56f9b3ea9d43a9f9994e06166ce741fe2"
+    },
+    "review_markdown": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_REVIEW_ROUND2.md",
+      "sha256": "9f4dc98b3f2237dbd17381007105977639b13d60b478e13e162631666504296b"
+    },
+    "review_round": 2
+  },
+  "prior_proposal": {
+    "paths": [
+      "refine-logs/temporac/FINAL_PROPOSAL_20260816_034707.md",
+      "refine-logs/FINAL_PROPOSAL_20260816_041423.md"
+    ],
+    "sha256": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c"
+  },
+  "schema": "temporac.canonicalization-index.v1"
+}
