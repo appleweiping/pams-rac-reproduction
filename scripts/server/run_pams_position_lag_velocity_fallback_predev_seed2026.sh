@@ -554,6 +554,11 @@ def infer(sequences, model, config, device):
                     diagnostic.selection_source != "detrended-position-lag-acf"
                 ):
                     raise RuntimeError("selected lag/source mismatch")
+                if not (
+                    math.isfinite(float(diagnostic.fallback_period))
+                    and math.isfinite(float(diagnostic.fallback_confidence))
+                ):
+                    raise RuntimeError("lag-velocity fallback evidence is not finite")
                 raw_count = (
                     float(valid_frames - 1) / period
                     if confidence > 0.0 and valid_frames >= 2

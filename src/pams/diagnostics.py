@@ -618,10 +618,10 @@ def _correspondence_diagnostics(
                 effective_hits[index] += effective
                 nominal_hits[index] += nominal
             for (source, target), totals in pair_totals.items():
-                eligible = positives[source] & candidate
-                conflict = eligible & ~positives[target]
+                eligible_mask = positives[source] & candidate
+                conflict = eligible_mask & ~positives[target]
                 totals[0] += int(conflict.sum())
-                totals[1] += int(eligible.sum())
+                totals[1] += int(eligible_mask.sum())
 
     per_scale: dict[str, Any] = {}
     for index, scale in enumerate(scale_values):

@@ -12,6 +12,7 @@ artifacts/
 checkpoints/
 runs/
 outputs/
+tmp/
 *.pt
 *.pth
 *.ckpt

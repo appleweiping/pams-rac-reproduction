@@ -76,3 +76,9 @@ check_untyped_defs = true
 [[tool.mypy.overrides]]
 module = ["yaml", "scipy.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["pams.baselines.escounts_official_worker"]
+# This JSONL compatibility worker intentionally targets the frozen official
+# Python 3.8 runtime and imports dynamically audited upstream modules.
+disallow_untyped_defs = false
