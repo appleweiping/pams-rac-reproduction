@@ -31,6 +31,9 @@ Action Counting** (CVPR Findings 2026).
 > UCFRep test split remains untouched, so no test metric or successful
 > reproduction claim exists.
 
+For the current checkout's data, weight, cache, and V28 standalone status, see
+[the 2026-09-30 asset inventory](docs/LOCAL_ASSET_AND_V28_STATUS_20260930.md).
+
 ## Why this repository exists
 
 The paper does not publish an implementation and leaves several details
