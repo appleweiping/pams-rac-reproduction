@@ -18,9 +18,14 @@ final protocol or a claim of benchmark performance.
   are synthetic fixtures, not UCFRep videos, pose features, or model weights.
 
 From a local Windows Python 3.11 environment, `ruff check src tests scripts`
-passed and `pytest tests/temporac -q` reported **157 passed, 1 skipped**. The
-skip was a symlink-permission test on that Windows host. These checks establish
-code/fixture consistency, not natural-data efficacy.
+passed; `pytest tests/temporac -q` reported **157 passed, 1 skipped**, and the
+full local `pytest -q` reported **1179 passed, 7 skipped**. The skips reflect
+Windows symlink/POSIX or unavailable CUDA conditions. GitHub Actions runs a
+portable public-checkout suite across Python 3.10–3.12. It explicitly
+deselects five historical WARP-PHASE assertions that require an exact frozen
+CPython/NumPy runtime or an ignored 125 MB local fixture pack; those tests
+remain in the repository and are not counted as passing in Actions. These
+checks establish code/fixture consistency, not natural-data efficacy.
 
 ## Experiment boundary
 
