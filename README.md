@@ -1,5 +1,10 @@
 # PAMS RAC Reproduction
 
+TempoRAC's synchronized candidate code and its exact experiment boundary are
+documented in [the 2026-09-30 status](docs/TEMPORAC_SYNC_STATUS_20260930.md).
+The candidate sources and synthetic fixtures are public; natural data, pose
+caches, and model weights are not included.
+
 [![CI](https://github.com/appleweiping/pams-rac-reproduction/actions/workflows/ci.yml/badge.svg)](https://github.com/appleweiping/pams-rac-reproduction/actions/workflows/ci.yml)
 
 Independent, auditable reproduction of **Count What Repeats:

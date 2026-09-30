@@ -1,5 +1,9 @@
 # ICASSP 2027 pre-results paper package
 
+As of 2026-09-30 this remains an unsubmitted pre-results draft. The proposed
+TempoRAC table cells are not measured, and the previously planned submission
+window has passed. See the [current code and evidence status](../docs/TEMPORAC_SYNC_STATUS_20260930.md).
+
 This directory contains the evidence-gated regular-paper draft
 **TempoRAC: Identity-Indexed Local Tempo Routing for Multi-Person Repetition Counting**.
 It targets four pages of technical content plus an optional fifth page that
