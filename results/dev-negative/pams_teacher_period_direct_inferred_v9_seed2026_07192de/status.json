@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "status": "partial_reproduction",
+  "stage": "dev84_negative_diagnostic_published",
+  "method_key": "pams-teacher-period-direct-inferred-v1",
+  "classification": "posthoc_inferred_dev_only_diagnostic",
+  "dev_prediction_completed": true,
+  "dev_scoring_completed": true,
+  "formal_cli_equivalence_completed": true,
+  "paper_table_eligible": false,
+  "verified": false,
+  "test105_touched": false,
+  "test105_evaluation_authorized": false,
+  "seeds_completed": [
+    2026
+  ],
+  "seeds_42_3407_authorized": false,
+  "publication_claim": "negative result",
+  "updated_utc": "2026-07-30T16:47:47Z"
+}

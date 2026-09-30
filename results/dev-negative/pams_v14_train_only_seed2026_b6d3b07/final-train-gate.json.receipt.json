@@ -1,0 +1,19 @@
+{
+  "artifact_bytes": 638315,
+  "artifact_locator": "final-train-gate.json",
+  "artifact_sha256": "781fff3cc8cb8414c2fb5e4bf833a17fa3dd8501b0fb3d574bc1c525ff677a75",
+  "artifact_status": "failed",
+  "artifact_type": "pams_v14_terminal_train337_target_free_gate_receipt",
+  "checkpoint_algorithm_source_git_sha": "df2e7cdfcc91bb436eb99ee10852ddd66ee971e4",
+  "code_files_sha256_commitment": "6f6ce7bb2926fa305c83bd07e58d7b399c43825238efb9b2a8f332c421be30e7",
+  "config_sha256": "3b11c331fd7f9adb1fcb21981424ef2366e7ae4df226e2d100acb2d7b295e39b",
+  "encoder_checkpoint_sha256": "fd1ac8308f1e84b9a68c4131d8294e76d2f09a03607ae838809c6facec180f68",
+  "encoder_progress_sha256": "4d88ddf53358d1a3e95f328077c575066f4ebe24fdd6e84a491dea88c3ce0f51",
+  "gate_code_source_git_sha": "b6d3b0749fe6fdf1b2b328bdcda51177e3e6e08b",
+  "hardware_sha256": "eab46fe2baf67f1ee5b801837ee90e47d71b988e7e7950c01a7b8d52cb8983a2",
+  "runtime_sha256": "20157e855bbe985697af320b4a277702075d8ec905a00d3232bcb77131f212b2",
+  "schema_version": 1,
+  "sshead_checkpoint_sha256": "085273ba0665984687fa6230d6ada1a9a2db0d87b2a404b2c6f20364b648e261",
+  "sshead_progress_sha256": "4b364a95524bf4053c0e796057035e91b167cac75af2db4ad2e7cbfc1422159c",
+  "train337_pose_cache_set_sha256": "f32d718ae922120778f535a6a4f467edba79cafeba90373b3a6a55bf11be6ee2"
+}

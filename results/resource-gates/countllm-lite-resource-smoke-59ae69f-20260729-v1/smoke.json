@@ -1,0 +1,72 @@
+{
+  "baseline_status": "smoke_only",
+  "bridge_config": {
+    "dropout": 0.0,
+    "feedforward_dim": 256,
+    "input_dim": 64,
+    "model_dim": 128,
+    "num_heads": 8,
+    "num_layers": 2,
+    "num_queries": 16,
+    "output_dim": 256
+  },
+  "classification": "CountLLM-Lite resource-gated bridge smoke; not a full baseline experiment",
+  "cuda_peak_allocated_bytes": 70689792,
+  "cuda_runtime": "12.4",
+  "device_name": "NVIDIA RTX A6000",
+  "device_total_memory_bytes": 50807570432,
+  "environment_report": {
+    "comparable_to_reported_countllm": false,
+    "cuda_available": true,
+    "dependencies": [
+      {
+        "available": true,
+        "name": "transformers"
+      },
+      {
+        "available": true,
+        "name": "peft"
+      },
+      {
+        "available": true,
+        "name": "bitsandbytes"
+      }
+    ],
+    "device_count": 1,
+    "environment_ready_for_recipe": false,
+    "explanation": "maximum GPU memory is 47.3 GiB; 48.0 GiB is required. This is a non-comparable CountLLM-Lite recipe scaffold: stage 1/WebVid-10M is omitted, and no runnable full baseline adapter is provided.",
+    "maximum_gpu_memory_gib": 47.3182373046875,
+    "runnable_full_adapter": false,
+    "status": "blocked_resource"
+  },
+  "forward_backward_seconds": 2.272233534604311,
+  "input_gradient_finite": true,
+  "input_shape": [
+    1,
+    32,
+    64
+  ],
+  "loss": 0.3404350280761719,
+  "output_shape": [
+    1,
+    16,
+    256
+  ],
+  "python": "3.11.10",
+  "query_gradient_finite": true,
+  "resource_report": {
+    "cuda_available": true,
+    "decision": "Resource gate failed: maximum GPU memory is 47.3 GiB (required 48.0 GiB); smoke tests only.",
+    "device_count": 1,
+    "device_names": [
+      "NVIDIA RTX A6000"
+    ],
+    "eligible_for_training": false,
+    "maximum_gpu_memory_gib": 47.3182373046875
+  },
+  "schema_version": 1,
+  "sealed_test_touched": false,
+  "source_revision": "59ae69f24fa75b8d608633c75b8cda5aab4700ed",
+  "test_or_dev_labels_loaded": false,
+  "torch_version": "2.5.1+cu124"
+}

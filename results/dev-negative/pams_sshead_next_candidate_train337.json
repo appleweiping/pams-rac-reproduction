@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "status": "bounded_candidates_rejected_except_confidence_weighting_for_formal_test",
+  "classification": "label-free train337 and synthetic-only SSHead next-candidate audit",
+  "protocol": "ucfrep_526",
+  "split": "train",
+  "source_git_sha": "84ca7864e8a3c797d0687baf27121cb41c88e355",
+  "label_firewall": {
+    "train_rows": 337,
+    "train_inputs_sha256": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207",
+    "train_pose_cache_set_sha256": "34123ac27334ab06852c12254c7e0c046f7d86f3a066c81f9b8751c362dd0cd0",
+    "training_counts_loaded": false,
+    "development_inputs_loaded": false,
+    "development_targets_loaded": false,
+    "test105_accessed": false
+  },
+  "runtime": {
+    "gpu": "physical GPU 1, NVIDIA RTX A6000",
+    "gpu_lock_used": true,
+    "container_image_id": "sha256:38f65dc9aa0c825d3051ec6a515b934aa5a55421581eb957523759e68e0b67af",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "script": {
+      "path": "scripts/diagnose_sshead_phase_anchor.py",
+      "sha256": "4477aaa1c99c2ced955fef2c3f02e4f10dc9434bb0cf7a56e6bc7c7917555243"
+    },
+    "successful_run_id": "phase-anchor-train337-84ca786-v2",
+    "report_sha256": "ebc843561566b302caa14437cf9b6a47980d9c002c0903d4ebc458e048addb01",
+    "runtime_log_sha256": "5013065fd217e4d8e3e35da6cc711497229d4375c363e55e70e1a3f2ed49b033",
+    "excluded_attempt": {
+      "run_id": "phase-anchor-train337-84ca786-v1",
+      "runtime_log_sha256": "a2b359ccb08c812261a5d4f55bc27302e8abc40c9500267d19bbdfc1346c7fae",
+      "reason": "The image did not copy scripts/ into /workspace. Python exited before loading the checkpoint, pose sidecar, or running a forward pass. V2 mounted the clean 84ca786 checkout read-only."
+    }
+  },
+  "encoder_binding": {
+    "training_source_git_sha": "019ae1f",
+    "config_fingerprint": "01b0797639aef0314d70a858fc99d33ec05fb79a20411fdcc031b585329b4e9d",
+    "config_file_sha256": "786029ad9f1f44a59889a890cd29558f3433d9e71c92a507dc82d0f4316448a0",
+    "encoder_checkpoint_sha256": "4a6971701fcd9649221300caaefc121049cafc08fdc847f8e00dbae331ae3eb9",
+    "encoder_epochs": 150,
+    "sshead_input_source": "projected_pose_pre_pe",
+    "period_source": "projected_pose_velocity_vector_acf"
+  },
+  "random_head_feature_source_audit": {
+    "run_id": "v5-head-source-train337-39d0d7f",
+    "runtime_log_sha256": "111819acd69d5098e216ab60b4de28fcb2cc637f0b6c6f27efdf9ce770c17a53",
+    "training_target": {
+      "period_median": 9.142857551574707,
+      "period_p10": 4.654545307159424,
+      "period_p90": 51.20000076293945,
+      "confidence_mean": 0.1471434206389532
+    },
+    "sources": {
+      "encoder_embedding_post_pe": {
+        "cross_video_stream_correlation_median": 0.86270672082901,
+        "spectral_loss_mean": 0.9137343461860181,
+        "estimated_period_median": 6.564102649688721,
+        "stream_std_mean": 0.005607985605372431
+      },
+      "projected_pose_pre_pe": {
+        "cross_video_stream_correlation_median": 0.0014647439820691943,
+        "spectral_loss_mean": 0.8500339312793946,
+        "estimated_period_median": 85.33333587646484,
+        "period_128_count": 114,
+        "stream_std_mean": 0.008837659476747741
+      },
+      "encoder_zero_pose_residual": {
+        "cross_video_stream_correlation_median": 0.5664641261100769,
+        "spectral_loss_mean": 0.9019926018813951,
+        "estimated_period_median": 36.57143020629883,
+        "period_128_count": 53,
+        "stream_std_mean": 0.002633016164074666
+      },
+      "encoder_zero_pose_residual_l2": {
+        "cross_video_stream_correlation_median": 0.5662574172019958,
+        "spectral_loss_mean": 0.9012415704458333,
+        "estimated_period_median": 36.57143020629883,
+        "period_128_count": 52,
+        "stream_std_mean": 0.004827087693253549
+      }
+    },
+    "conclusion": "Pre-PE projection removes the shared positional template. Subtracting a zero-pose contextual embedding leaves a strong shared component and worsens target-band spectral loss, so this contextual position-residual source is rejected."
+  },
+  "phase_anchor_definition": {
+    "teacher": "For each video, center the projected pose, reconstruct target FFT bins k-1 through k+1, find the dominant signed temporal component in the six-dimensional real Fourier subspace, and standardize it over valid frames.",
+    "loss": "Normalized-confidence-weighted MSE between the centered Period Head stream and the signed unit-standard-deviation teacher.",
+    "weights_tested": [
+      0.0,
+      0.25,
+      1.0
+    ],
+    "constant_stream_proof": {
+      "phase_loss": 1.0,
+      "stream_gradient_l2": 0.125,
+      "nonzero_gradient_elements": 256,
+      "stream_elements": 256
+    },
+    "teacher_available_rows": 319,
+    "teacher_available_fraction": 0.9465875625610352
+  },
+  "period_confidence": {
+    "all_rows_mean": 0.1471434206831703,
+    "all_rows_median": 0.11702412366867065,
+    "all_rows_p90": 0.2877957284450532,
+    "positive_fraction": 0.9465875625610352,
+    "normalized_weight_effective_sample_size": 209.87899780273438,
+    "interpretation": "The historical nonzero gate gives a confidence near 0.044 the same period-loss weight as confidence 0.911. Normalized continuous weighting is a justified single-variable correction."
+  },
+  "thirty_epoch_candidates": {
+    "continuous_confidence_only": {
+      "head_state_sha256": "166122b67a4d28ceda35687bc5f31e71615fc53459b0d527a59a3b9dd2d71429",
+      "epoch_1": {
+        "base_loss": 0.9189492688688398,
+        "phase_loss_diagnostic": 1.0015547551457888,
+        "total": 0.9189492688688398
+      },
+      "epoch_30": {
+        "base_loss": 0.8823518753051758,
+        "phase_loss_diagnostic": 1.002054284871155,
+        "total": 0.8823518753051758
+      },
+      "train337": {
+        "stream_std_mean": 0.013790841875343065,
+        "stream_std_median": 0.01214771717786789,
+        "phase_correlation_mean": -0.029254625985633543,
+        "phase_correlation_median": -0.020130228251218796,
+        "cross_video_correlation_median": -0.0004240827402099967,
+        "head_period_median": 85.33333587646484,
+        "head_period_128_fraction": 0.35014837980270386,
+        "target_period_relative_error_confidence_weighted_mean": 5.992888927459717,
+        "target_period_within_10_percent_fraction": 0.15360501408576965
+      }
+    },
+    "continuous_confidence_phase_0p25": {
+      "head_state_sha256": "690b90040fa455fe48bf3220f5eaabd561635a17e88295c3aa23cb2d42d820eb",
+      "epoch_1": {
+        "base_loss": 0.9194441448333356,
+        "phase_loss": 1.0015005368507226,
+        "total": 1.1698192761276878
+      },
+      "epoch_30": {
+        "base_loss": 0.8814825864856959,
+        "phase_loss": 1.0015593735329829,
+        "total": 1.1318724296920732
+      },
+      "train337": {
+        "stream_std_mean": 0.012590744815013826,
+        "stream_std_median": 0.01151661854237318,
+        "phase_correlation_mean": -0.033141318167728404,
+        "phase_correlation_median": -0.02419981174170971,
+        "cross_video_correlation_median": 0.002669139066711068,
+        "head_period_median": 85.33333587646484,
+        "head_period_128_fraction": 0.3531157374382019,
+        "target_period_relative_error_confidence_weighted_mean": 6.236104965209961,
+        "target_period_within_10_percent_fraction": 0.1442006230354309
+      }
+    },
+    "continuous_confidence_phase_1p0": {
+      "head_state_sha256": "5883a2649fce08fe4fa0a4c2ffa21269bcbaf8383a347e1db5dbb05f5eb65e07",
+      "epoch_1": {
+        "base_loss": 0.9209350197180796,
+        "phase_loss": 1.0013427741449736,
+        "total": 1.9222778078356555
+      },
+      "epoch_30": {
+        "base_loss": 0.8839285214506201,
+        "phase_loss": 1.0004585496749652,
+        "total": 1.8843870598060084
+      },
+      "train337": {
+        "stream_std_mean": 0.010794713606493192,
+        "stream_std_median": 0.009743702597916126,
+        "phase_correlation_mean": 0.018240307081128736,
+        "phase_correlation_median": 0.035735420882701874,
+        "cross_video_correlation_median": -0.002827224088832736,
+        "head_period_median": 85.33333587646484,
+        "head_period_128_fraction": 0.35608309507369995,
+        "target_period_relative_error_confidence_weighted_mean": 6.453649044036865,
+        "target_period_within_10_percent_fraction": 0.15360501408576965
+      }
+    }
+  },
+  "synthetic_results_shared_by_all_three_candidates": {
+    "count_sweep_2_to_40": {
+      "cases": 39,
+      "period_within_10_percent_fraction": 1.0,
+      "count_exact_fraction": 0.0,
+      "count_obo_fraction": 1.0,
+      "count_nmae": 0.08406520612657373,
+      "interpretation": "All candidates recover the synthetic period, but the current peak counter returns target-1 because a finite sequence with endpoints contains one fewer interior peak. This readout convention cannot distinguish the candidates."
+    },
+    "stress_count12": {
+      "clean_period_relative_error": 2.9802322443206464e-8,
+      "variable_speed_period_relative_error": 0.0769230425357818,
+      "pause_period_relative_error": 0.14285710453987116,
+      "occlusion_period_relative_error": 2.9802322443206464e-8
+    }
+  },
+  "decision": {
+    "contextual_zero_pose_residual": "reject",
+    "pose_band_phase_anchor_with_pointwise_head": "reject",
+    "variance_weight_scan": "reject_as_next_step",
+    "continuous_period_confidence_weighting": "retain_only_as_a_formal_single_variable_experiment",
+    "reason": "The positional shortcut is gone, but the pointwise pre-PE head still maps most real training videos to long or boundary periods. Phase supervision has a valid collapse gradient yet remains at loss approximately 1 and worsens period agreement, showing that this per-video phase target is not consistently learnable by the disclosed pointwise head."
+  },
+  "next_implementation_if_confidence_weighting_fails": {
+    "name": "PAMS-TemporalSSHead-inferred",
+    "classification": "independently inferred architecture extension; never author-disclosed PAMS-SSHead",
+    "input": "projected_pose_pre_pe",
+    "minimal_architecture": "Prepend one residual-compatible depthwise Conv1d(512,512,kernel_size=5,padding=2,groups=512,bias=false), initialized to the identity delta kernel, then keep the disclosed Linear(512,128)->GELU->Linear(128,1) MLP unchanged. Zero inputs and outputs outside valid frames.",
+    "added_parameter_count": 2560,
+    "loss": "Use normalized continuous confidence weighting first, without the rejected phase term, so the architecture change remains single-variable.",
+    "rationale": "A pointwise head sees pose configuration but not local direction or velocity. A short PE-free temporal receptive field adds motion context without restoring absolute positional encoding.",
+    "phase_follow_up_condition": "Only revisit a phase term if the temporal head first reduces the train-only phase loss by at least 20% and reaches median signed phase correlation at least 0.5."
+  },
+  "label_free_acceptance_gates_before_any_development_scoring": {
+    "target_period_agreement": {
+      "confidence_weighted_mean_relative_error_maximum": 0.25,
+      "within_10_percent_fraction_minimum": 0.8
+    },
+    "boundary_and_mode_collapse": {
+      "period_4_fraction_maximum": 0.1,
+      "period_128_fraction_maximum": 0.1,
+      "single_rounded_period_mode_fraction_maximum": 0.25
+    },
+    "representation_shortcut": {
+      "absolute_fully_valid_cross_video_correlation_median_maximum": 0.1
+    },
+    "amplitude": {
+      "usable_stream_std_median_minimum": 0.1,
+      "usable_stream_near_zero_fraction_maximum": 0.05,
+      "unusable_rows_excluded_from_collapse_denominator": true
+    },
+    "synthetic": {
+      "count_2_to_40_period_within_10_percent_fraction": 1.0,
+      "variable_speed_period_relative_error_maximum": 0.1,
+      "pause_period_relative_error_maximum": 0.15,
+      "count_gate": "OBO only until the endpoint peak convention is explicitly corrected and refrozen"
+    },
+    "optimization": {
+      "finite_loss_and_gradients": true,
+      "zero_gradient_optimizer_steps": 0,
+      "constant_stream_behavior_recorded": true
+    },
+    "gate_policy": "Thresholds are frozen from synthetic semantics and the nominal SSHead variance margin, not from development labels. Failure stops the candidate before development scoring."
+  },
+  "claim_boundary": {
+    "verified_reproduction": false,
+    "sealed_test_result": false,
+    "development_selection": false,
+    "formal_v6_result_included": false,
+    "conclusion": "This bounded audit rejects two next candidates and specifies a single remaining formal experiment plus a predeclared architecture fallback. It does not establish paper-level accuracy."
+  }
+}

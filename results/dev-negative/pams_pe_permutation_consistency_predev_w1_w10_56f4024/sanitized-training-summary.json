@@ -1,0 +1,55 @@
+{
+  "artifact_type": "sanitized_encoder_training_summary",
+  "schema_version": 1,
+  "classification": "aggregate target-free training statistics",
+  "raw_training_logs_published": false,
+  "identity_fields_included": false,
+  "source": {
+    "derivation": "Aggregate reduction of the checkpoint-bound encoder JSONL progress log",
+    "expected_epoch_rows_per_candidate": 150
+  },
+  "candidates": {
+    "weight_1": {
+      "training_source_revision": "3d0d4f1b28c0b171bd4575c19b46c7c0b691a4c2",
+      "config_fingerprint": "a5d09f346a0cf6644f36ba5e638b20e97bcdc8fa047382b9d44363ade948b602",
+      "training_log_sha256": "c23c6a768da837b83d14466e545175ea31184a5fa07bd0d6a5470b933017bfdb",
+      "epoch_first": 1,
+      "epoch_last": 150,
+      "epoch_rows": 150,
+      "optimizer_steps_total": 1500,
+      "cluster_refresh_epochs": 30,
+      "period_source_epoch_counts": {
+        "pose": 10,
+        "projected_pose_velocity_vector_acf": 140
+      },
+      "learning_rate_final": 0.000001,
+      "loss_first": 4.35505518913269,
+      "loss_final": 3.2902559518814085,
+      "loss_min": 3.207860255241394,
+      "position_permutation_consistency_first": 0.5166044875979423,
+      "position_permutation_consistency_final": 0.7971961259841919,
+      "position_permutation_consistency_min": 0.5166044875979423
+    },
+    "weight_10": {
+      "training_source_revision": "ce9d1805c29c660cb5d952ae89d904d6485edf31",
+      "config_fingerprint": "8b645dac5333f14cb60303589d01e975903688d42547f6d2c01892114522a2fb",
+      "training_log_sha256": "c781ae3bb79f635ec1700cb1359f7fccdd1868248f2494063e564486fa0f32d9",
+      "epoch_first": 1,
+      "epoch_last": 150,
+      "epoch_rows": 150,
+      "optimizer_steps_total": 1500,
+      "cluster_refresh_epochs": 30,
+      "period_source_epoch_counts": {
+        "pose": 10,
+        "projected_pose_velocity_vector_acf": 140
+      },
+      "learning_rate_final": 0.000001,
+      "loss_first": 6.148827981948853,
+      "loss_final": 5.664771461486817,
+      "loss_min": 5.664410781860352,
+      "position_permutation_consistency_first": 0.06563489809632302,
+      "position_permutation_consistency_final": 0.00007739480424788781,
+      "position_permutation_consistency_min": 0.00007553439136245287
+    }
+  }
+}

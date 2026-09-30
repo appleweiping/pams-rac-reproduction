@@ -1,0 +1,163 @@
+{
+  "classification": "direct-v8-frozen-readout-diagnostics",
+  "comparison_vs_v8_sshead": {
+    "a": "local_frequency_v3",
+    "absolute_error_comparison": {
+      "a_better": 46,
+      "a_worse": 15,
+      "tied": 23
+    },
+    "b": "sshead_v3",
+    "metrics": {
+      "exact": {
+        "confidence_interval_95": {
+          "high": 0.11904761904761904,
+          "level": 0.95,
+          "low": -0.07142857142857142
+        },
+        "difference_a_minus_b": 0.023809523809523808,
+        "samples": 10000,
+        "seed": 2026
+      },
+      "mae": {
+        "confidence_interval_95": {
+          "high": -0.17857142857142883,
+          "level": 0.95,
+          "low": -1.4404761904761902
+        },
+        "difference_a_minus_b": -0.7023809523809526,
+        "samples": 10000,
+        "seed": 2026
+      },
+      "nmae": {
+        "confidence_interval_95": {
+          "high": -0.031095746669176524,
+          "level": 0.95,
+          "low": -0.19377004619115146
+        },
+        "difference_a_minus_b": -0.11406491872932767,
+        "samples": 10000,
+        "seed": 2026
+      },
+      "obo": {
+        "confidence_interval_95": {
+          "high": 0.11904761904761907,
+          "level": 0.95,
+          "low": -0.047619047619047616
+        },
+        "difference_a_minus_b": 0.0357142857142857,
+        "samples": 10000,
+        "seed": 2026
+      },
+      "rmse": {
+        "confidence_interval_95": {
+          "high": 0.04753860021448606,
+          "level": 0.95,
+          "low": -2.8648233596760013
+        },
+        "difference_a_minus_b": -1.1410661943401506,
+        "samples": 10000,
+        "seed": 2026
+      }
+    }
+  },
+  "decision": {
+    "authorizes_seeds_42_3407": false,
+    "authorizes_test105": false,
+    "interpretation": "pose signal remains readable; learned SSHead/period stream is the primary bottleneck; longest-track v3 did not improve the same frozen readout over v2",
+    "nmae_improvement_ci_excludes_zero": true,
+    "obo_improvement_ci_excludes_zero": false,
+    "passes_diagnostic_continuation_thresholds_nmae_lte_0_60_obo_gte_0_30": true,
+    "readout_strictly_improves_v8_sshead_nmae_and_obo": true,
+    "strictly_improves_same_readout_v2_nmae_and_obo": false
+  },
+  "local_frequency_synthetic_frozen": {
+    "confidence_intervals": {
+      "exact": {
+        "high": 0.2619047619047619,
+        "level": 0.95,
+        "low": 0.09523809523809523
+      },
+      "mae": {
+        "high": 4.2860119047619,
+        "level": 0.95,
+        "low": 2.8214285714285716
+      },
+      "nmae": {
+        "high": 0.6064272838887987,
+        "level": 0.95,
+        "low": 0.4531929350240618
+      },
+      "obo": {
+        "high": 0.44047619047619047,
+        "level": 0.95,
+        "low": 0.23809523809523808
+      },
+      "rmse": {
+        "high": 5.848305613268041,
+        "level": 0.95,
+        "low": 3.9984744046962013
+      }
+    },
+    "eligible_for_paper_table": false,
+    "exact": 0.17857142857142858,
+    "mae": 3.5238095238095237,
+    "nmae": 0.5290583435903633,
+    "obo": 0.3333333333333333,
+    "rmse": 4.932882862316247,
+    "synthetic_replay": {
+      "exact_rate": 0.98,
+      "mean_absolute_error": 0.02,
+      "normalized_mean_absolute_error": 0.0025,
+      "obo": 1.0,
+      "sample_count": 50,
+      "selected_candidate": "frame_centered.min064.median"
+    }
+  },
+  "pams_literal": {
+    "confidence_intervals": {
+      "exact": {
+        "high": 0.23809523809523808,
+        "level": 0.95,
+        "low": 0.08333333333333333
+      },
+      "mae": {
+        "high": 4.857142857142857,
+        "level": 0.95,
+        "low": 3.357142857142857
+      },
+      "nmae": {
+        "high": 0.7467854668024002,
+        "level": 0.95,
+        "low": 0.5808999596006986
+      },
+      "obo": {
+        "high": 0.35714285714285715,
+        "level": 0.95,
+        "low": 0.16666666666666666
+      },
+      "rmse": {
+        "high": 6.322672732016933,
+        "level": 0.95,
+        "low": 4.480048343614221
+      }
+    },
+    "exact": 0.15476190476190477,
+    "mae": 4.071428571428571,
+    "nmae": 0.6646265395341749,
+    "obo": 0.2619047619047619,
+    "rmse": 5.400617248673217
+  },
+  "prediction_boundary": {
+    "literal_test_identity_only": true,
+    "targets_mounted": false,
+    "test_pose_mounted": false,
+    "test_targets_mounted": false,
+    "test_videos_mounted": false
+  },
+  "protocol": "ucfrep_526_dev84",
+  "schema_version": 1,
+  "seed": 2026,
+  "source_revision": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "status": "completed"
+}

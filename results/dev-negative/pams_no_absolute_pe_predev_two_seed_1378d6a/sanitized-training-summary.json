@@ -1,0 +1,116 @@
+{
+  "artifact_type": "sanitized_encoder_training_summary",
+  "schema_version": 1,
+  "classification": "aggregate target-free training statistics",
+  "raw_training_logs_published": false,
+  "raw_manifests_published": false,
+  "container_inspection_published": false,
+  "identity_fields_included": false,
+  "server_paths_included": false,
+  "source": {
+    "derivation": "Read-only aggregate reduction of each checkpoint-bound encoder JSONL progress log",
+    "expected_epoch_rows_per_candidate": 150
+  },
+  "candidates": {
+    "seed_2026": {
+      "training_seed": 2026,
+      "training_source_revision": "1378d6a977b364f0de93c85663c4e8aaabd6ffbd",
+      "config_fingerprint": "d7a81b4acc44b6148574553803c896d5183817200d7cac5b2621fdb7a87f8614",
+      "training_log_sha256": "6d565b0f4706be80373187b575ee59247ea387f526dadec6bb9c54101a0b0830",
+      "epoch_first": 1,
+      "epoch_last": 150,
+      "epoch_rows": 150,
+      "epochs_contiguous": true,
+      "optimizer_steps_per_epoch_unique": [
+        10
+      ],
+      "optimizer_steps_total": 1500,
+      "cluster_refresh_epochs": 30,
+      "period_source_epoch_counts": {
+        "pose": 10,
+        "projected_pose_velocity_vector_acf": 140
+      },
+      "learning_rate": {
+        "first": 0.0001,
+        "final": 0.0001,
+        "minimum": 0.0001,
+        "maximum": 0.0001
+      },
+      "loss": {
+        "first": 5.325000619888305,
+        "final": 3.029215598106384,
+        "minimum": 3.0202743291854857,
+        "maximum": 5.325000619888305,
+        "mean": 3.368693070411682
+      },
+      "period_confidence_mean": {
+        "first": 0.5546729862689972,
+        "final": 0.22317595332860946,
+        "minimum": 0.21669474095106125,
+        "maximum": 0.5622299969196319,
+        "mean": 0.24421789097785948
+      },
+      "period_valid_fraction": {
+        "first": 0.953125,
+        "final": 0.953125,
+        "minimum": 0.95,
+        "maximum": 0.959375,
+        "mean": 0.9521250000000003
+      },
+      "cross_cluster_requested_total": 133734171,
+      "cross_cluster_actual_total": 133734171,
+      "cross_cluster_shortfall_total": 0,
+      "all_numeric_values_finite": true
+    },
+    "seed_42": {
+      "training_seed": 42,
+      "training_source_revision": "1378d6a977b364f0de93c85663c4e8aaabd6ffbd",
+      "config_fingerprint": "6a177379f48a2233d5e53df1d7f7c8799f81ba45fa322a55c9b3e58774aeabf0",
+      "training_log_sha256": "49197706b83c9147102e70dd2d78d3a45a078aa9b813582462decc20e06ad58c",
+      "epoch_first": 1,
+      "epoch_last": 150,
+      "epoch_rows": 150,
+      "epochs_contiguous": true,
+      "optimizer_steps_per_epoch_unique": [
+        10
+      ],
+      "optimizer_steps_total": 1500,
+      "cluster_refresh_epochs": 30,
+      "period_source_epoch_counts": {
+        "pose": 10,
+        "projected_pose_velocity_vector_acf": 140
+      },
+      "learning_rate": {
+        "first": 0.0001,
+        "final": 0.0001,
+        "minimum": 0.0001,
+        "maximum": 0.0001
+      },
+      "loss": {
+        "first": 5.301638841629028,
+        "final": 3.017189645767212,
+        "minimum": 3.017189645767212,
+        "maximum": 5.301638841629028,
+        "mean": 3.3664097483952835
+      },
+      "period_confidence_mean": {
+        "first": 0.5588351309299469,
+        "final": 0.21865766644477844,
+        "minimum": 0.21570528149604798,
+        "maximum": 0.5619323194026947,
+        "mean": 0.24380799220005656
+      },
+      "period_valid_fraction": {
+        "first": 0.95625,
+        "final": 0.95,
+        "minimum": 0.95,
+        "maximum": 0.9625,
+        "mean": 0.9525625000000001
+      },
+      "cross_cluster_requested_total": 133839999,
+      "cross_cluster_actual_total": 133839999,
+      "cross_cluster_shortfall_total": 0,
+      "all_numeric_values_finite": true
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "artifact_type": "local_frequency_dev_prediction_receipt",
+  "code_sha256": "a034fdbaef3a431f73c14b7385e00d95e631eaad4330a1055ebbe4de1487ff51",
+  "config_fingerprint": "65272c8a9d969d27b1a5248670ac98645eecaabd070661b9ad83f217d74ed8ea",
+  "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+  "method_key": "pams-local-frequency-synthetic-v1",
+  "pose_cache_set_sha256": "681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1",
+  "prediction_bytes": 530579,
+  "prediction_file": "predictions.json",
+  "prediction_sha256": "415fd94928ec34dc17b11c4b9aa1ffcd34cac778453be077fe06beeea40c3056",
+  "protocol": "ucfrep_526",
+  "schema_version": 1,
+  "source_git_sha": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "split": "dev"
+}

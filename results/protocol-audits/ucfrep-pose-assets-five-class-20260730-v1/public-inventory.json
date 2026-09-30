@@ -1,0 +1,67 @@
+{
+  "artifact_type": "ucfrep_pose_110_public_safe_asset_inventory",
+  "schema_version": 1,
+  "audit_status": "protocol-unverifiable",
+  "source_artifact_id": "ucfrep-pose-assets-five-class-20260730-v1",
+  "source_audit_sha256": "9c04fc8c8693a33ff6a78e1907c48a1801f3b2d90e55c6b79873378fb8632dca",
+  "public_package_contains": {
+    "raw_videos": false,
+    "video_locators": false,
+    "video_ids": false,
+    "per_video_repetition_counts": false,
+    "per_video_action_labels": false,
+    "per_video_split_membership": false,
+    "pose_annotations": false,
+    "cycle_boundary_annotations": false,
+    "personal_information": false
+  },
+  "reviewed_source_artifacts": [
+    {
+      "name": "asset-audit.json",
+      "sha256": "9c04fc8c8693a33ff6a78e1907c48a1801f3b2d90e55c6b79873378fb8632dca",
+      "bytes": 4308,
+      "publication": "sanitized_summary_only",
+      "reason": "Contains class-by-partition aggregate protocol facts."
+    },
+    {
+      "name": "raw-five-class-inventory.json",
+      "sha256": "574d4c864fe0f9b4ff73c0f48239f0d2d2a2230352adcb5532270e3ae9c4a85e",
+      "bytes": 180139,
+      "record_count": 646,
+      "publication": "withheld",
+      "reason": "Contains record-level video identifiers, action labels, locators, file sizes, and content hashes."
+    },
+    {
+      "name": "standard-five-class-intersection.json",
+      "sha256": "fd85c296e3c2a3a7fcba2a2a406d41f436d2e617c66c9ffd22aabebb6b8b67a7",
+      "bytes": 22271,
+      "record_count": 119,
+      "publication": "withheld",
+      "reason": "Contains record-level video identifiers, action labels, source partitions, and pose-cache status."
+    },
+    {
+      "name": "receipt.json",
+      "sha256": "abb48673e242ceb1bc7326dc4a5dbdbdd1166092a02536dd7f1e714559a13d48",
+      "bytes": 502,
+      "publication": "included",
+      "reason": "Contains artifact filenames and SHA-256 digests only."
+    }
+  ],
+  "source_content_checks": {
+    "raw_inventory_contains_per_video_repetition_count": false,
+    "raw_inventory_contains_pose_or_cycle_annotations": false,
+    "standard_intersection_contains_per_video_repetition_count": false,
+    "standard_intersection_contains_pose_or_cycle_annotations": false,
+    "raw_inventory_eligible_as_ucfrep_pose_split": false,
+    "standard_intersection_eligible_as_ucfrep_pose_split": false
+  },
+  "protocol_findings": {
+    "expected_total_videos": 110,
+    "expected_training_videos": 89,
+    "expected_sealed_evaluation_videos": 21,
+    "standard_five_class_intersection_records": 119,
+    "exact_membership_available": false,
+    "training_salient_pose_annotations_available": false,
+    "substitute_split_allowed": false
+  }
+}

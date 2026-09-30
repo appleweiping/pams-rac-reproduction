@@ -1,0 +1,20 @@
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 12.4.1
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+/opt/conda/lib/python3.11/site-packages/torch/nn/modules/transformer.py:871: UserWarning: Deterministic behavior was enabled with either `torch.use_deterministic_algorithms(True)` or `at::Context::setDeterministicAlgorithms(true)`, but this operation is not deterministic because it uses CuBLAS and you have CUDA >= 10.2. To enable deterministic behavior in this case, you must set an environment variable before running your PyTorch application: CUBLAS_WORKSPACE_CONFIG=:4096:8 or CUBLAS_WORKSPACE_CONFIG=:16:8. For more information, go to https://docs.nvidia.com/cuda/cublas/index.html#results-reproducibility (Triggered internally at ../aten/src/ATen/Context.cpp:208.)
+  return torch._transformer_encoder_layer_fwd(
+/workspace/src/pams/period.py:313: UserWarning: Specified kernel cache directory could not be created! This disables kernel caching. Specified directory is /pams/tmp/xdg/torch/kernels. This warning will appear only once per process. (Triggered internally at ../aten/src/ATen/native/cuda/jit_utils.cpp:1442.)
+  power = torch.fft.rfft(sample_ac * window).abs().square()
+{"dev84_reachable": false, "model_sha256": "f3483b7bc393fa35061f1a00e4057434d9f5d652c37de0dcb9501ec66e12dc1e", "output_dir": "/pams/runs/train", "run_sha256": "f7dd3dbd20bc1ab7a1987b8eb582eb9bdd97d275e89a53e24daf8a1ad64684b0", "status": "supervised_upper_bound_probe_not_pams_result", "test105_access": "none"}

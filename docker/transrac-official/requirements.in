@@ -1,0 +1,11 @@
+# Direct package pins used by the audited image; this is not a hash-locked,
+# bit-reproducible environment lock. See server-pip-inventory.txt.
+addict==2.4.0
+einops==0.3.2
+kornia==0.5.11
+mmcv==1.4.0
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+pytest-runner==6.0.1
+timm==0.4.12
+yapf==0.32.0

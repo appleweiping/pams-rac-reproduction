@@ -1,0 +1,988 @@
+{
+  "schema_version": 1,
+  "status": "complete_negative_development_diagnostic",
+  "classification": "strict_independent_partial_reproduction_table2_proxy",
+  "method_family": "PAMS",
+  "protocol": {
+    "dataset": "UCFRep-526",
+    "split": "train337_dev84",
+    "seeds": [
+      42,
+      2026,
+      3407
+    ],
+    "sample_count_per_seed": 84,
+    "count_metric": "mean(abs(round(prediction)-ground_truth)/ground_truth)",
+    "count_metric_name": "NMAE",
+    "bootstrap": {
+      "replicates": 10000,
+      "seed": 2026,
+      "design": "paired resampling within each seed stratum, followed by an arithmetic mean across the three seed strata",
+      "confidence_interval": "percentile_95",
+      "difference_direction": "first_variant_minus_second_variant"
+    },
+    "development_targets_available_to_training": false,
+    "development_targets_available_to_prediction": false,
+    "development_targets_loaded_only_by_separate_scoring_process": true,
+    "test105_targets_loaded": false,
+    "test105_predictions_produced": false,
+    "test105_evaluation_produced": false
+  },
+  "shared_bindings": {
+    "server_root": "/media/lenovo/data2/pams-rac",
+    "closure_source_git_sha": "ebbc296db11c3d7d06f5fc3090a3487abed55e36",
+    "closure_container_image_id": "sha256:6e8105129eade4f6c6aa49a81e2d732e98cba66d7a70cd557c3d39cfc66b7738",
+    "legacy_multiscale_source_git_sha": "6c52288d6a227bc3040fd672c31039408e2d6696",
+    "legacy_multiscale_container_image_id": "sha256:022103f69a42ef3e88ee43ddcfbd706dabfdeec6247c257d1d01fda2c0ea2f91",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "protocol_identity_sha256": "7aaaea4fdd0620cc7abb4f307cf63a9506448540e3d3d920acf70957f6b8b97f",
+    "training_identity_sha256": "177e3a70e6fb272bac7c976e9700f70355bc30adb3990dc1276485c3e0cbddd6",
+    "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "dev_pose_cache_snapshot_sha256": "f36e34059c6d99878c31404a6a63b44d8cf3c5da901a8f6e13e009a25d819208",
+    "gpu": "NVIDIA RTX A6000",
+    "provenance_note": "The closure checkout and all newly generated Table-2 prediction/scoring artifacts use ebbc296 and image 6e810. Reused matched multi-scale encoder/head artifacts retain their original 6c52288 and image 022103 provenance; their immutable hashes and run paths are recorded below."
+  },
+  "frozen_verified_gate": {
+    "mean_nmae_max": 0.228,
+    "mean_obo_min": 0.666,
+    "minimum_individual_seed_joint_passes": 2,
+    "joint_seed_rule": "nmae <= 0.228 and obo >= 0.666",
+    "matrix_rows_passing": 0,
+    "verified_reproduction": false
+  },
+  "table2_proxy_rows": [
+    {
+      "row_id": "baseline",
+      "paper_label": "Baseline",
+      "classification": "inferred fixed-period-16, single-scale, Medium-only, Literal proxy",
+      "configuration": {
+        "period": "fixed_16_frames_inferred",
+        "scales": [
+          1.0
+        ],
+        "expert_mode": "medium_only",
+        "period_head": "literal_untrained"
+      },
+      "per_seed": [
+        {
+          "seed": 42,
+          "metrics": {
+            "nmae": 0.6041431509103922,
+            "obo": 0.36904761904761907,
+            "mae": 3.5357142857142856,
+            "rmse": 5.332961296547744
+          },
+          "joint_gate_pass": false
+        },
+        {
+          "seed": 2026,
+          "metrics": {
+            "nmae": 2.40108563667677,
+            "obo": 0.09523809523809523,
+            "mae": 8.94047619047619,
+            "rmse": 10.271898790481961
+          },
+          "joint_gate_pass": false
+        },
+        {
+          "seed": 3407,
+          "metrics": {
+            "nmae": 0.8430854722726642,
+            "obo": 0.23809523809523808,
+            "mae": 4.833333333333333,
+            "rmse": 6.579187965525403
+          },
+          "joint_gate_pass": false
+        }
+      ],
+      "aggregate_mean_and_sample_standard_deviation": {
+        "nmae": {
+          "mean": 1.2827714199532754,
+          "sample_sd": 0.9758295823190186
+        },
+        "obo": {
+          "mean": 0.2341269841269841,
+          "sample_sd": 0.13694788830743967
+        },
+        "mae": {
+          "mean": 5.76984126984127,
+          "sample_sd": 2.8214620586051034
+        },
+        "rmse": {
+          "mean": 7.394682684185035,
+          "sample_sd": 2.568472234494392
+        }
+      },
+      "individual_seed_joint_passes": 0,
+      "mean_gate_pass": false,
+      "artifact_set": "baseline_fixed_medium"
+    },
+    {
+      "row_id": "pams_no_multi_scale",
+      "paper_label": "PAMS w/o multi-scale",
+      "classification": "adaptive single-scale, Medium-only, Literal proxy",
+      "configuration": {
+        "period": "adaptive",
+        "scales": [
+          1.0
+        ],
+        "expert_mode": "medium_only",
+        "period_head": "literal_untrained"
+      },
+      "per_seed": [
+        {
+          "seed": 42,
+          "metrics": {
+            "nmae": 0.6482544201602083,
+            "obo": 0.34523809523809523,
+            "mae": 3.869047619047619,
+            "rmse": 5.634713834792322
+          },
+          "joint_gate_pass": false
+        },
+        {
+          "seed": 2026,
+          "metrics": {
+            "nmae": 2.8674059320764984,
+            "obo": 0.09523809523809523,
+            "mae": 11.285714285714286,
+            "rmse": 13.451854182690985
+          },
+          "joint_gate_pass": false
+        },
+        {
+          "seed": 3407,
+          "metrics": {
+            "nmae": 0.9883844193573256,
+            "obo": 0.20238095238095238,
+            "mae": 5.4523809523809526,
+            "rmse": 7.486495778908785
+          },
+          "joint_gate_pass": false
+        }
+      ],
+      "aggregate_mean_and_sample_standard_deviation": {
+        "nmae": {
+          "mean": 1.5013482571980108,
+          "sample_sd": 1.195201774768291
+        },
+        "obo": {
+          "mean": 0.21428571428571427,
+          "sample_sd": 0.12542444943872308
+        },
+        "mae": {
+          "mean": 6.8690476190476195,
+          "sample_sd": 3.9060138817526555
+        },
+        "rmse": {
+          "mean": 8.857687932130696,
+          "sample_sd": 4.084978181762947
+        }
+      },
+      "individual_seed_joint_passes": 0,
+      "mean_gate_pass": false,
+      "artifact_set": "adaptive_single_scale_medium"
+    },
+    {
+      "row_id": "pams_multi_scale",
+      "paper_label": "PAMS multi-scale",
+      "classification": "adaptive multi-scale, Medium-only, Literal proxy",
+      "configuration": {
+        "period": "adaptive",
+        "scales": [
+          0.5,
+          1.0,
+          1.5
+        ],
+        "expert_mode": "medium_only",
+        "period_head": "literal_untrained"
+      },
+      "per_seed": [
+        {
+          "seed": 42,
+          "metrics": {
+            "nmae": 0.5836939572469128,
+            "obo": 0.32142857142857145,
+            "mae": 3.7261904761904763,
+            "rmse": 5.512971716130706
+          },
+          "joint_gate_pass": false
+        },
+        {
+          "seed": 2026,
+          "metrics": {
+            "nmae": 0.6614407571765946,
+            "obo": 0.32142857142857145,
+            "mae": 3.75,
+            "rmse": 5.523758209942282
+          },
+          "joint_gate_pass": false
+        },
+        {
+          "seed": 3407,
+          "metrics": {
+            "nmae": 2.151914873805268,
+            "obo": 0.05952380952380952,
+            "mae": 8.214285714285714,
+            "rmse": 9.264628073124864
+          },
+          "joint_gate_pass": false
+        }
+      ],
+      "aggregate_mean_and_sample_standard_deviation": {
+        "nmae": {
+          "mean": 1.132349862742925,
+          "sample_sd": 0.8838245018451021
+        },
+        "obo": {
+          "mean": 0.23412698412698416,
+          "sample_sd": 0.15121078478775912
+        },
+        "mae": {
+          "mean": 5.23015873015873,
+          "sample_sd": 2.584357195977776
+        },
+        "rmse": {
+          "mean": 6.767119333065952,
+          "sample_sd": 2.1629127391356273
+        }
+      },
+      "individual_seed_joint_passes": 0,
+      "mean_gate_pass": false,
+      "artifact_set": "adaptive_multiscale_medium"
+    },
+    {
+      "row_id": "multi_expert_no_multi_expert",
+      "paper_label": "Multi-Expert w/o multi-expert",
+      "classification": "exact configuration and result alias of the frozen Baseline proxy",
+      "configuration_alias_of": "baseline",
+      "per_seed": [
+        {
+          "seed": 42,
+          "metrics": {
+            "nmae": 0.6041431509103922,
+            "obo": 0.36904761904761907,
+            "mae": 3.5357142857142856,
+            "rmse": 5.332961296547744
+          },
+          "joint_gate_pass": false
+        },
+        {
+          "seed": 2026,
+          "metrics": {
+            "nmae": 2.40108563667677,
+            "obo": 0.09523809523809523,
+            "mae": 8.94047619047619,
+            "rmse": 10.271898790481961
+          },
+          "joint_gate_pass": false
+        },
+        {
+          "seed": 3407,
+          "metrics": {
+            "nmae": 0.8430854722726642,
+            "obo": 0.23809523809523808,
+            "mae": 4.833333333333333,
+            "rmse": 6.579187965525403
+          },
+          "joint_gate_pass": false
+        }
+      ],
+      "aggregate_mean_and_sample_standard_deviation": {
+        "nmae": {
+          "mean": 1.2827714199532754,
+          "sample_sd": 0.9758295823190186
+        },
+        "obo": {
+          "mean": 0.2341269841269841,
+          "sample_sd": 0.13694788830743967
+        },
+        "mae": {
+          "mean": 5.76984126984127,
+          "sample_sd": 2.8214620586051034
+        },
+        "rmse": {
+          "mean": 7.394682684185035,
+          "sample_sd": 2.568472234494392
+        }
+      },
+      "individual_seed_joint_passes": 0,
+      "mean_gate_pass": false,
+      "artifact_set": "baseline_fixed_medium",
+      "artifact_alias_note": "No second computation is claimed: this row is deliberately the same frozen no-multi-expert configuration and immutable result as Baseline."
+    },
+    {
+      "row_id": "multi_expert",
+      "paper_label": "Multi-Expert",
+      "classification": "fixed-period-16, single-scale, multi-expert Literal proxy",
+      "configuration": {
+        "period": "fixed_16_frames_inferred",
+        "scales": [
+          1.0
+        ],
+        "expert_mode": "multi_expert_consensus",
+        "period_head": "literal_untrained"
+      },
+      "per_seed": [
+        {
+          "seed": 42,
+          "metrics": {
+            "nmae": 0.6324500292172704,
+            "obo": 0.3333333333333333,
+            "mae": 3.5595238095238093,
+            "rmse": 5.27008629187507
+          },
+          "joint_gate_pass": false
+        },
+        {
+          "seed": 2026,
+          "metrics": {
+            "nmae": 3.09908278411973,
+            "obo": 0.09523809523809523,
+            "mae": 11.714285714285714,
+            "rmse": 13.51454243187157
+          },
+          "joint_gate_pass": false
+        },
+        {
+          "seed": 3407,
+          "metrics": {
+            "nmae": 0.9355257467172491,
+            "obo": 0.30952380952380953,
+            "mae": 4.964285714285714,
+            "rmse": 7.280927465776923
+          },
+          "joint_gate_pass": false
+        }
+      ],
+      "aggregate_mean_and_sample_standard_deviation": {
+        "nmae": {
+          "mean": 1.55568618668475,
+          "sample_sd": 1.3451834504501374
+        },
+        "obo": {
+          "mean": 0.24603174603174605,
+          "sample_sd": 0.13113263207824052
+        },
+        "mae": {
+          "mean": 6.746031746031746,
+          "sample_sd": 4.359587093070977
+        },
+        "rmse": {
+          "mean": 8.688518729841187,
+          "sample_sd": 4.298691560938517
+        }
+      },
+      "individual_seed_joint_passes": 0,
+      "mean_gate_pass": false,
+      "artifact_set": "fixed_period_multi_expert"
+    },
+    {
+      "row_id": "full",
+      "paper_label": "Full",
+      "classification": "adaptive multi-scale, multi-expert, independently inferred SSHead completion",
+      "configuration": {
+        "period": "adaptive",
+        "scales": [
+          0.5,
+          1.0,
+          1.5
+        ],
+        "expert_mode": "multi_expert_consensus",
+        "period_head": "sshead_inferred_30_epochs"
+      },
+      "per_seed": [
+        {
+          "seed": 42,
+          "metrics": {
+            "nmae": 4.741497223470747,
+            "obo": 0.03571428571428571,
+            "mae": 18.142857142857142,
+            "rmse": 20.648417441952855
+          },
+          "joint_gate_pass": false
+        },
+        {
+          "seed": 2026,
+          "metrics": {
+            "nmae": 4.720313876394541,
+            "obo": 0.05952380952380952,
+            "mae": 18.011904761904763,
+            "rmse": 20.61928131397314
+          },
+          "joint_gate_pass": false
+        },
+        {
+          "seed": 3407,
+          "metrics": {
+            "nmae": 5.605601952553923,
+            "obo": 0.05952380952380952,
+            "mae": 21.63095238095238,
+            "rmse": 24.651137325254822
+          },
+          "joint_gate_pass": false
+        }
+      ],
+      "aggregate_mean_and_sample_standard_deviation": {
+        "nmae": {
+          "mean": 5.0224710174730705,
+          "sample_sd": 0.5051172627564218
+        },
+        "obo": {
+          "mean": 0.05158730158730159,
+          "sample_sd": 0.013746434980705375
+        },
+        "mae": {
+          "mean": 19.261904761904763,
+          "sample_sd": 2.0526999531119166
+        },
+        "rmse": {
+          "mean": 21.972945360393606,
+          "sample_sd": 2.3194280284099786
+        }
+      },
+      "individual_seed_joint_passes": 0,
+      "mean_gate_pass": false,
+      "artifact_set": "full_sshead_inferred"
+    }
+  ],
+  "additional_label_free_diagnostic": {
+    "row_id": "adaptive_multiscale_literal_multi_expert",
+    "purpose": "Same adaptive multi-scale encoder and Literal head as the Medium-only row, changing only the expert mode; kept outside the six paper-shaped rows.",
+    "per_seed": [
+      {
+        "seed": 42,
+        "metrics": {
+          "nmae": 0.6278058968945668,
+          "obo": 0.30952380952380953,
+          "mae": 3.738095238095238,
+          "rmse": 5.490251100164468
+        },
+        "joint_gate_pass": false
+      },
+      {
+        "seed": 2026,
+        "metrics": {
+          "nmae": 0.6896952407882211,
+          "obo": 0.32142857142857145,
+          "mae": 3.8095238095238093,
+          "rmse": 5.629429472910749
+        },
+        "joint_gate_pass": false
+      },
+      {
+        "seed": 3407,
+        "metrics": {
+          "nmae": 3.1513971227641173,
+          "obo": 0.047619047619047616,
+          "mae": 12.071428571428571,
+          "rmse": 13.828025372926017
+        },
+        "joint_gate_pass": false
+      }
+    ],
+    "aggregate_mean_and_sample_standard_deviation": {
+      "nmae": {
+        "mean": 1.4896327534823017,
+        "sample_sd": 1.4394628119485544
+      },
+      "obo": {
+        "mean": 0.2261904761904762,
+        "sample_sd": 0.15476190476190477
+      },
+      "mae": {
+        "mean": 6.53968253968254,
+        "sample_sd": 4.790765714372553
+      },
+      "rmse": {
+        "mean": 8.315901982000412,
+        "sample_sd": 4.774146087254974
+      }
+    },
+    "individual_seed_joint_passes": 0,
+    "mean_gate_pass": false,
+    "artifact_set": "adaptive_multiscale_literal_multi_expert"
+  },
+  "paired_stratified_bootstrap": {
+    "multiscale_medium_minus_single_scale_medium": {
+      "first_variant": "pams_multi_scale",
+      "second_variant": "pams_no_multi_scale",
+      "per_seed_point_differences": {
+        "42": {
+          "nmae": -0.06456046291329542,
+          "obo": -0.023809523809523808,
+          "mae": -0.14285714285714285
+        },
+        "2026": {
+          "nmae": -2.205965174899904,
+          "obo": 0.2261904761904762,
+          "mae": -7.535714285714286
+        },
+        "3407": {
+          "nmae": 1.1635304544479421,
+          "obo": -0.14285714285714285,
+          "mae": 2.761904761904762
+        }
+      },
+      "aggregate": {
+        "nmae": {
+          "mean_difference": -0.3689983944550857,
+          "sample_sd_across_seed_differences": 1.705252778818918,
+          "ci95": [
+            -0.6419606901861361,
+            -0.10361932556359904
+          ]
+        },
+        "obo": {
+          "mean_difference": 0.019841269841269844,
+          "sample_sd_across_seed_differences": 0.18835625851279075,
+          "ci95": [
+            -0.03571428571428571,
+            0.07539682539682539
+          ]
+        },
+        "mae": {
+          "mean_difference": -1.638888888888889,
+          "sample_sd_across_seed_differences": 5.309314715791743,
+          "ci95": [
+            -2.4722222222222223,
+            -0.7896825396825397
+          ]
+        }
+      },
+      "conclusion": "The stratified video bootstrap supports lower aggregate NMAE for multi-scale, but the OBO interval crosses zero and seed 3407 reverses the NMAE direction. The preregistered dual-metric ablation claim is not satisfied."
+    },
+    "fixed_multi_expert_minus_fixed_medium": {
+      "first_variant": "multi_expert",
+      "second_variant": "baseline",
+      "per_seed_point_differences": {
+        "42": {
+          "nmae": 0.028306878306878308,
+          "obo": -0.03571428571428571,
+          "mae": 0.023809523809523808
+        },
+        "2026": {
+          "nmae": 0.6979971474429603,
+          "obo": 0.0,
+          "mae": 2.7738095238095237
+        },
+        "3407": {
+          "nmae": 0.09244027444458479,
+          "obo": 0.07142857142857142,
+          "mae": 0.13095238095238096
+        }
+      },
+      "aggregate": {
+        "nmae": {
+          "mean_difference": 0.27291476673147447,
+          "sample_sd_across_seed_differences": 0.36952610992803664,
+          "ci95": [
+            0.2040608956350693,
+            0.3444242616865513
+          ]
+        },
+        "obo": {
+          "mean_difference": 0.011904761904761904,
+          "sample_sd_across_seed_differences": 0.05455447255899809,
+          "ci95": [
+            -0.01984126984126984,
+            0.04365079365079365
+          ]
+        },
+        "mae": {
+          "mean_difference": 0.9761904761904762,
+          "sample_sd_across_seed_differences": 1.5577052282865624,
+          "ci95": [
+            0.7301587301587301,
+            1.2261904761904763
+          ]
+        }
+      },
+      "conclusion": "The fixed-period multi-expert proxy is significantly worse in NMAE and raw MAE, with no supported OBO benefit."
+    },
+    "adaptive_multi_expert_minus_adaptive_medium": {
+      "first_variant": "adaptive_multiscale_literal_multi_expert",
+      "second_variant": "pams_multi_scale",
+      "per_seed_point_differences": {
+        "42": {
+          "nmae": 0.04411193964765393,
+          "obo": -0.011904761904761904,
+          "mae": 0.011904761904761904
+        },
+        "2026": {
+          "nmae": 0.028254483611626472,
+          "obo": 0.0,
+          "mae": 0.05952380952380952
+        },
+        "3407": {
+          "nmae": 0.99948224895885,
+          "obo": -0.011904761904761904,
+          "mae": 3.857142857142857
+        }
+      },
+      "aggregate": {
+        "nmae": {
+          "mean_difference": 0.3572828907393768,
+          "sample_sd_across_seed_differences": 0.5562174723083688,
+          "ci95": [
+            0.28338544738611443,
+            0.4374815573858575
+          ]
+        },
+        "obo": {
+          "mean_difference": -0.007936507936507936,
+          "sample_sd_across_seed_differences": 0.006873217490352687,
+          "ci95": [
+            -0.031746031746031744,
+            0.015873015873015872
+          ]
+        },
+        "mae": {
+          "mean_difference": 1.3095238095238095,
+          "sample_sd_across_seed_differences": 2.206431282017995,
+          "ci95": [
+            1.0595238095238095,
+            1.5555555555555556
+          ]
+        }
+      },
+      "conclusion": "Holding the adaptive multi-scale encoder and Literal head fixed, multi-expert consensus significantly worsens NMAE and raw MAE and does not improve OBO."
+    },
+    "full_minus_multiscale_medium": {
+      "first_variant": "full",
+      "second_variant": "pams_multi_scale",
+      "per_seed_point_differences": {
+        "42": {
+          "nmae": 4.157803266223833,
+          "obo": -0.2857142857142857,
+          "mae": 14.416666666666666
+        },
+        "2026": {
+          "nmae": 4.058873119217947,
+          "obo": -0.2619047619047619,
+          "mae": 14.261904761904763
+        },
+        "3407": {
+          "nmae": 3.453687078748655,
+          "obo": 0.0,
+          "mae": 13.416666666666666
+        }
+      },
+      "aggregate": {
+        "nmae": {
+          "mean_difference": 3.8901211547301444,
+          "sample_sd_across_seed_differences": 0.3811860707122102,
+          "ci95": [
+            3.4205629413518897,
+            4.369120831413654
+          ]
+        },
+        "obo": {
+          "mean_difference": -0.18253968253968256,
+          "sample_sd_across_seed_differences": 0.15853162186855696,
+          "ci95": [
+            -0.23809523809523808,
+            -0.12301587301587301
+          ]
+        },
+        "mae": {
+          "mean_difference": 14.031746031746032,
+          "sample_sd_across_seed_differences": 0.5382655300139604,
+          "ci95": [
+            12.595238095238095,
+            15.448412698412698
+          ]
+        }
+      },
+      "conclusion": "The independently inferred Full completion is decisively worse than the Literal multi-scale Medium-only row on NMAE, OBO, and raw MAE."
+    }
+  },
+  "artifact_sets": {
+    "baseline_fixed_medium": {
+      "42": {
+        "training_runtime": "closure_ebbc296",
+        "checkpoint_run": "runs/ablations/fixed-period16-inferred-train337-dev84-ebbc296-seed42-150ep-20260729-v1",
+        "prediction_run": "runs/ablations/table2-baseline-fixed-period16-medium-only-literal-dev-predict-ebbc296-seed42-20260729-v1",
+        "evaluation_run": "runs/ablations/table2-baseline-fixed-period16-medium-only-literal-dev-score-ebbc296-seed42-20260729-v1",
+        "encoder_checkpoint_sha256": "b67abc86757849c5122e9a827775d3ad104ab317d4160641e274a00f57b36224",
+        "encoder_progress_sha256": "02276e1e33168d7c94d1c0aa74228eb726d99ff1dedd6755898ed85e2df1e8fc",
+        "encoder_completion_receipt_sha256": "a779324c8c60901573c2de286308bb85cdf8703714e9c835c19a1b937b6d0c30",
+        "prediction_sha256": "b5214ed55dabc0f14d98c52321efe97a803a60c368e6261d744a7d05da1de54c",
+        "prediction_receipt_sha256": "36b2aafe699faa94f615eb9850bd9c1d768a356e4785a98962d1dca9933b171f",
+        "evaluation_sha256": "f2093f51a8fe188d7aa0e2573c1c13e34d2c4cc2f41e5a25eefe6a6196a30b02",
+        "evaluation_receipt_sha256": "ebd6f475c349b54570cec198639fec22f993c0429dfc541a1b8ac2db33564b77"
+      },
+      "2026": {
+        "training_runtime": "closure_ebbc296",
+        "checkpoint_run": "runs/ablations/fixed-period16-inferred-train337-dev84-ebbc296-seed2026-150ep-20260729-v1",
+        "prediction_run": "runs/ablations/table2-baseline-fixed-period16-medium-only-literal-dev-predict-ebbc296-seed2026-20260729-v1",
+        "evaluation_run": "runs/ablations/table2-baseline-fixed-period16-medium-only-literal-dev-score-ebbc296-seed2026-20260729-v1",
+        "encoder_checkpoint_sha256": "959fc1959b23ce028806d81769fe7d3a2139f1161bdaf4ecf9d5353addae64a5",
+        "encoder_progress_sha256": "80f03c547cf16f7379f7dae9e860eaee9db58bcba42242ad8c340c01d89ff4f9",
+        "encoder_completion_receipt_sha256": "83d7fa47d60bd85623182abf6205315d515ed3de02a9014faf67acd035f6e997",
+        "prediction_sha256": "35598a3db52681d2d16003b4d61c08db9e72bc6da66b55d1fd3507ee705c99e9",
+        "prediction_receipt_sha256": "c6b27923d9a70d39dba57d05c01df247b2f824f7ed69bba8f395d9728150d8e3",
+        "evaluation_sha256": "fca97d1b87e2eed44b34091f51bf573a1615522184e328ef73fa8c533f6cfc8e",
+        "evaluation_receipt_sha256": "ca1533f2e94ac2e3102c59786ee8a130aa0f2a848146dfe783ad2337ebc015d8"
+      },
+      "3407": {
+        "training_runtime": "closure_ebbc296",
+        "checkpoint_run": "runs/ablations/fixed-period16-inferred-train337-dev84-ebbc296-seed3407-150ep-20260729-v1",
+        "prediction_run": "runs/ablations/table2-baseline-fixed-period16-medium-only-literal-dev-predict-ebbc296-seed3407-20260729-v1",
+        "evaluation_run": "runs/ablations/table2-baseline-fixed-period16-medium-only-literal-dev-score-ebbc296-seed3407-20260729-v1",
+        "encoder_checkpoint_sha256": "95c6cd656ca9c09974433dc2476f264e919e74b9693bf2f31de4d5065c9ca31f",
+        "encoder_progress_sha256": "172c6f64b83211dc7871bb299520bb4adc8b17e4445b78641ad6a53df1eaadbd",
+        "encoder_completion_receipt_sha256": "d0f4ab85e90fa54fe7e53cbda1c5f513cfad17d32365aeab08f114c729659f61",
+        "prediction_sha256": "95efd3da0aa92c63a2c4db108de8143323ed346bda5d8b465af83ad7f4e6fc16",
+        "prediction_receipt_sha256": "d01af5c8d57aa1ae8762d0039a9b2d59b9ed5c37f5b56faaf8750460fd8e0584",
+        "evaluation_sha256": "a622ce0057a0bc7cd8127d21ff651c290adf3e134aaa4179a6f973011cde8f1f",
+        "evaluation_receipt_sha256": "19b020dfb2f712f16662943f1e02b4a7c3840068c83b0071b2ea1e395f5661e9"
+      }
+    },
+    "adaptive_single_scale_medium": {
+      "42": {
+        "training_runtime": "closure_ebbc296",
+        "checkpoint_run": "runs/ablations/table2-adaptive-single-scale-train337-dev84-ebbc296-seed42-150ep-20260729-v1",
+        "prediction_run": "runs/ablations/table2-pams-no-multi-scale-medium-only-literal-dev-predict-ebbc296-seed42-20260729-v2",
+        "evaluation_run": "runs/ablations/table2-pams-no-multi-scale-medium-only-literal-dev-score-ebbc296-seed42-20260729-v2",
+        "encoder_checkpoint_sha256": "040764afd562a123e17b92088885457110701bc73722c13e6072417ccd722f8e",
+        "encoder_progress_sha256": "ae526be27600e109e20dbbccd6c254944df594006b709be0584af9d0180f6196",
+        "encoder_completion_receipt_sha256": "7a225975a785c3d011c61322e85410463f9a468572bdc08ca402dec836466c64",
+        "prediction_sha256": "6ade24b5767d0d173a83d0bf3dcfb4756f169b4480af85006afc77794b9e068f",
+        "prediction_receipt_sha256": "8b1f4fe448399c3608af0094e86344bcde043af2032a36a417499dbb675aba76",
+        "evaluation_sha256": "51e80d766173ff394b351142bc2e5d7b3bf257d0600235a83a62908712d1ea08",
+        "evaluation_receipt_sha256": "a2de836025a764845263dcf33c9f1ce5eb850446976d00ab5e5893ad3c498297"
+      },
+      "2026": {
+        "training_runtime": "legacy_6c52288",
+        "checkpoint_run": "runs/ablations/diagnostic-single-scale-train337-dev84-b0b85f1-seed2026-150ep-20260729T012500Z",
+        "prediction_run": "runs/ablations/table2-pams-no-multi-scale-medium-only-literal-dev-predict-ebbc296-seed2026-20260729-v1",
+        "evaluation_run": "runs/ablations/table2-pams-no-multi-scale-medium-only-literal-dev-score-ebbc296-seed2026-20260729-v1",
+        "encoder_checkpoint_sha256": "e45d3c45ebb226bcca4039572d3a455d95039d540ac6699f0231d70132ffa534",
+        "encoder_progress_sha256": "d32573853e8e23ba72a98fdceee42b4bdbd63d2343318e567dc34c768ed9f01d",
+        "encoder_completion_receipt_sha256": "5c553be04327a824f391f3a25e6c3665b0abc0e8bb8e666b72e319d1f913f17e",
+        "prediction_sha256": "80e67cb124618023ec9b947ef8ef388e6d9cc72b93464db8affb91b66c13fa61",
+        "prediction_receipt_sha256": "c55805ac728b0f7f8216db24db86133c86ebaa04b90a06ebb1a2b279f99c7b82",
+        "evaluation_sha256": "756bdf69d77724d4bf6a1a40df7f771e8408ae4de3937a38b3f6414f9e982918",
+        "evaluation_receipt_sha256": "214adeff498ca1c5ab14834d4a127464106337806156afa4d6274e705ec6429e"
+      },
+      "3407": {
+        "training_runtime": "closure_ebbc296",
+        "checkpoint_run": "runs/ablations/table2-adaptive-single-scale-train337-dev84-ebbc296-seed3407-150ep-20260729-v1",
+        "prediction_run": "runs/ablations/table2-pams-no-multi-scale-medium-only-literal-dev-predict-ebbc296-seed3407-20260729-v1",
+        "evaluation_run": "runs/ablations/table2-pams-no-multi-scale-medium-only-literal-dev-score-ebbc296-seed3407-20260729-v1",
+        "encoder_checkpoint_sha256": "0e8f09cb1bc80d0ced74b2e6df4ab7d74334641b3d69c7a8c9ec9c7f9561b4a6",
+        "encoder_progress_sha256": "8a3f6ab7f4672b433852d6b8fc9867b980bf93d72a0536d61b44dc01c90d993d",
+        "encoder_completion_receipt_sha256": "4abe8d46a9202cea5dd3c1deb5df2915592ed5556d0d64e5406392ea5f3a0563",
+        "prediction_sha256": "40edc371bd91c5a279f4f05676793459f1b0a0e5f5bec132983ce1ecacec62e9",
+        "prediction_receipt_sha256": "d5f76ae6a757903c48f9f4f358533ec6a7ccd93aa2c54072b1b54370f146db81",
+        "evaluation_sha256": "9c3496973420a75c3affaf2f60c2611fee07ea3a08ccabb041091987a503ab11",
+        "evaluation_receipt_sha256": "a8d7662a70cba7cd5a5dcdc23586e1bdfcdd953f6ec89dae90150716d4359b64"
+      }
+    },
+    "adaptive_multiscale_medium": {
+      "42": {
+        "training_runtime": "legacy_6c52288",
+        "checkpoint_run": "runs/formal/matched-full-multiscale-train337-dev84-b0b85f1-seed42-150ep-20260729T040100Z-v1",
+        "prediction_run": "runs/ablations/table2-pams-multi-scale-medium-only-literal-dev-predict-ebbc296-seed42-20260729-v1",
+        "evaluation_run": "runs/ablations/table2-pams-multi-scale-medium-only-literal-dev-score-ebbc296-seed42-20260729-v1",
+        "encoder_checkpoint_sha256": "c4c5b6dd71504a767a8211442c1417fbf79c7c27d924d0e423e72d0f76b28e0d",
+        "encoder_progress_sha256": "d09de90cbeab849e20c7dfa004d6f5defc825137b3cc90a803536843f7aec50a",
+        "encoder_completion_receipt_sha256": "f7fe6c27060bfcccc51d1d6b8114bbac6b0b012d831afbc93c6e34f0fe258246",
+        "prediction_sha256": "77ebd0958cd480ba3a72b9ca31df717d6e157ca3039d536c949d7b46d627fad8",
+        "prediction_receipt_sha256": "4e2754baf78b50d18f2d57deb833ff006c575608a66078126ea568e894bd4ebc",
+        "evaluation_sha256": "00daf9c364159814c58b3f8bafa68d4ec4a27e1ce72dd453f2fb816b1853b4e5",
+        "evaluation_receipt_sha256": "d32935838b77850623dc111fb9e2cecad7cc5f1f163f78f5c4251d9f34284784"
+      },
+      "2026": {
+        "training_runtime": "legacy_6c52288",
+        "checkpoint_run": "runs/ablations/matched-full-multiscale-train337-dev84-b0b85f1-seed2026-150ep-20260729T033000Z-v4",
+        "prediction_run": "runs/ablations/table2-pams-multi-scale-medium-only-literal-dev-predict-ebbc296-seed2026-20260729-v1",
+        "evaluation_run": "runs/ablations/table2-pams-multi-scale-medium-only-literal-dev-score-ebbc296-seed2026-20260729-v1",
+        "encoder_checkpoint_sha256": "ecaf3c2bd54ffc12c396f9da0044b2799917fb8a6f3811547ba9bcab6fe9d45e",
+        "encoder_progress_sha256": "4884a3d2740eadad375248e872cb5a1d554f2a23dabb418c4380b8e6eb6536a0",
+        "encoder_completion_receipt_sha256": "9dc667fa940576c8ea0da6e683d1db63a64e6614b9b42f60d6f2a8e19188bcbc",
+        "prediction_sha256": "1ed64b7ba70d6a9ff6c73de8e91ef393ee9b8516aedbe8653dca5fb0e8495f7b",
+        "prediction_receipt_sha256": "7af9b2802c97d2e93291e1f87bb943e663b2d7715010d645f8b6cf503178f303",
+        "evaluation_sha256": "6e9263486ed1dd2541faeb90fb9b864e9e45e1a4d07c439955acfff37b2ed041",
+        "evaluation_receipt_sha256": "4090fcd5ef94c11a3076253caa505740dfc91083a74097facedf65df418087de"
+      },
+      "3407": {
+        "training_runtime": "legacy_6c52288",
+        "checkpoint_run": "runs/formal/matched-full-multiscale-train337-dev84-b0b85f1-seed3407-150ep-20260729T041500Z-v1",
+        "prediction_run": "runs/ablations/table2-pams-multi-scale-medium-only-literal-dev-predict-ebbc296-seed3407-20260729-v1",
+        "evaluation_run": "runs/ablations/table2-pams-multi-scale-medium-only-literal-dev-score-ebbc296-seed3407-20260729-v1",
+        "encoder_checkpoint_sha256": "2e43be20ccee315b513a8002c7c2be7dcfc5a14d4d9e7a1406966d50fc04f597",
+        "encoder_progress_sha256": "a78ac1d4a668d6544f95725ff1ab113ee084c072e7ac9945aa9475e6c489e2f9",
+        "encoder_completion_receipt_sha256": "66bdb8771b9a15336f9fcc3d6a3046194f04e7d0bb47dcd55f25eb3e93cccffe",
+        "prediction_sha256": "1f3b2b19e1a3abf979c28fae38f753a2813f3db969230417840c08d51fe485bd",
+        "prediction_receipt_sha256": "2f2755e97cd57cf7b4776cb6a78134076d0dfad0d90ceba45b7a28875d6508d7",
+        "evaluation_sha256": "c93f85d06053ba07650778ffc32baf9880127307f110cd3dc93a8de0e07d16bc",
+        "evaluation_receipt_sha256": "8f6a87afb227a67c039d9c6f9a26c6fb18ccedbf9157a2458a435bb173e9a840"
+      }
+    },
+    "fixed_period_multi_expert": {
+      "42": {
+        "training_runtime": "closure_ebbc296",
+        "checkpoint_run": "runs/ablations/fixed-period16-inferred-train337-dev84-ebbc296-seed42-150ep-20260729-v1",
+        "prediction_run": "runs/ablations/fixed-period16-inferred-literal-dev-predict-ebbc296-seed42-20260729-v1",
+        "evaluation_run": "runs/ablations/fixed-period16-inferred-literal-dev-score-ebbc296-seed42-20260729-v1",
+        "encoder_checkpoint_sha256": "b67abc86757849c5122e9a827775d3ad104ab317d4160641e274a00f57b36224",
+        "encoder_progress_sha256": "02276e1e33168d7c94d1c0aa74228eb726d99ff1dedd6755898ed85e2df1e8fc",
+        "encoder_completion_receipt_sha256": "a779324c8c60901573c2de286308bb85cdf8703714e9c835c19a1b937b6d0c30",
+        "prediction_sha256": "58d3d6c8293123ede71b0a4f3f1e2b6d88c2fce5b3d770f7ccfb3c7d006edee2",
+        "prediction_receipt_sha256": "8c93f8eb9a857de7eb153fc20debd65d14f72b189b772d36bdf9b026058b7a25",
+        "evaluation_sha256": "0140afd16be64c05ead42a087ddbb4eec7ebffd66df9e5333ccb1c0fb9140023",
+        "evaluation_receipt_sha256": "bb0b9db4dec1463ed97f967adb0732732d30501bb476f5498899b27d17a06248"
+      },
+      "2026": {
+        "training_runtime": "closure_ebbc296",
+        "checkpoint_run": "runs/ablations/fixed-period16-inferred-train337-dev84-ebbc296-seed2026-150ep-20260729-v1",
+        "prediction_run": "runs/ablations/fixed-period16-inferred-literal-dev-predict-ebbc296-seed2026-20260729-v1",
+        "evaluation_run": "runs/ablations/fixed-period16-inferred-literal-dev-score-ebbc296-seed2026-20260729-v1",
+        "encoder_checkpoint_sha256": "959fc1959b23ce028806d81769fe7d3a2139f1161bdaf4ecf9d5353addae64a5",
+        "encoder_progress_sha256": "80f03c547cf16f7379f7dae9e860eaee9db58bcba42242ad8c340c01d89ff4f9",
+        "encoder_completion_receipt_sha256": "83d7fa47d60bd85623182abf6205315d515ed3de02a9014faf67acd035f6e997",
+        "prediction_sha256": "801cf057458acc081db7dd0217a6ddd2779df82791db9262e85b5772b3e7332f",
+        "prediction_receipt_sha256": "07e214f1a4d18ad173335a5eaefe3df9cf1a0c959fea94ae75f902d2b420b1e8",
+        "evaluation_sha256": "6029a79f002bba3129883976f29221241d4049dacf2f9834cf149385e0d91eca",
+        "evaluation_receipt_sha256": "d9663cc2a18795fd711a0dfd510529645b9ed26aacb2b6417dfd3df561ab7384"
+      },
+      "3407": {
+        "training_runtime": "closure_ebbc296",
+        "checkpoint_run": "runs/ablations/fixed-period16-inferred-train337-dev84-ebbc296-seed3407-150ep-20260729-v1",
+        "prediction_run": "runs/ablations/fixed-period16-inferred-literal-dev-predict-ebbc296-seed3407-20260729-v1",
+        "evaluation_run": "runs/ablations/fixed-period16-inferred-literal-dev-score-ebbc296-seed3407-20260729-v1",
+        "encoder_checkpoint_sha256": "95c6cd656ca9c09974433dc2476f264e919e74b9693bf2f31de4d5065c9ca31f",
+        "encoder_progress_sha256": "172c6f64b83211dc7871bb299520bb4adc8b17e4445b78641ad6a53df1eaadbd",
+        "encoder_completion_receipt_sha256": "d0f4ab85e90fa54fe7e53cbda1c5f513cfad17d32365aeab08f114c729659f61",
+        "prediction_sha256": "8849853685b60ea4e8e2bc048b5a05153efd575b5d46814dbb60f4fad88438fd",
+        "prediction_receipt_sha256": "d625faf20e530f0bd75b43d9c46fb4a1f1c8f08337c1d946b2cc54d2626cfbf2",
+        "evaluation_sha256": "de4c14cad271ab19b251557963caa7a74df04b28090f9208827504c1fe257755",
+        "evaluation_receipt_sha256": "d4fad4322c485a20888fb3a9b787a652b0f29eb808a7c6cff9415b1b9519d81e"
+      }
+    },
+    "adaptive_multiscale_literal_multi_expert": {
+      "42": {
+        "training_runtime": "legacy_6c52288",
+        "checkpoint_run": "runs/formal/matched-full-multiscale-train337-dev84-b0b85f1-seed42-150ep-20260729T040100Z-v1",
+        "prediction_run": "runs/formal/pams-full-multiscale-literal-dev-predict-6c52288-seed42-20260729T043100Z-v1",
+        "evaluation_run": "runs/formal/pams-full-multiscale-literal-dev-score-6c52288-seed42-20260729T043100Z-v1",
+        "encoder_checkpoint_sha256": "c4c5b6dd71504a767a8211442c1417fbf79c7c27d924d0e423e72d0f76b28e0d",
+        "encoder_progress_sha256": "d09de90cbeab849e20c7dfa004d6f5defc825137b3cc90a803536843f7aec50a",
+        "encoder_completion_receipt_sha256": "f7fe6c27060bfcccc51d1d6b8114bbac6b0b012d831afbc93c6e34f0fe258246",
+        "prediction_sha256": "8665177bd22ddf3c8eb51113514a4f22706d3b98c94b990e9b40b79cb982db76",
+        "prediction_receipt_sha256": "3c58b50a34f0472f54192cd4bdd489b4e5379f0b7e219fd3b885293a420a5330",
+        "evaluation_sha256": "db53d37b00cd3e235ca2ce6bb8a03eb4a43d882d796f7bbdd7279ef8e2d80c80",
+        "evaluation_receipt_sha256": "c8626f006ab78485f567dbae629b4eb344cb364b6549a50f208c44daa621b8cd"
+      },
+      "2026": {
+        "training_runtime": "legacy_6c52288",
+        "checkpoint_run": "runs/ablations/matched-full-multiscale-train337-dev84-b0b85f1-seed2026-150ep-20260729T033000Z-v4",
+        "prediction_run": "runs/formal/pams-full-multiscale-literal-dev-predict-6c52288-seed2026-20260729T043000Z-v1",
+        "evaluation_run": "runs/formal/pams-full-multiscale-literal-dev-score-6c52288-seed2026-20260729T043000Z-v1",
+        "encoder_checkpoint_sha256": "ecaf3c2bd54ffc12c396f9da0044b2799917fb8a6f3811547ba9bcab6fe9d45e",
+        "encoder_progress_sha256": "4884a3d2740eadad375248e872cb5a1d554f2a23dabb418c4380b8e6eb6536a0",
+        "encoder_completion_receipt_sha256": "9dc667fa940576c8ea0da6e683d1db63a64e6614b9b42f60d6f2a8e19188bcbc",
+        "prediction_sha256": "f112e2694c401dd706a701af11d93b5c2903d9fcf05aeedc32d4b9aac073c706",
+        "prediction_receipt_sha256": "a6b1e35c5b9daf211f14455ffe95fdbc630770067327431c389688a89693da82",
+        "evaluation_sha256": "646deae32ad3a25a0c076c7779609bb981863e4a458f30ecaf686b4f203d2338",
+        "evaluation_receipt_sha256": "65f0a2b4168186e33b7c1acb3e68fa5f0cb1e826390344d271aab79e23af5ac9"
+      },
+      "3407": {
+        "training_runtime": "legacy_6c52288",
+        "checkpoint_run": "runs/formal/matched-full-multiscale-train337-dev84-b0b85f1-seed3407-150ep-20260729T041500Z-v1",
+        "prediction_run": "runs/formal/pams-full-multiscale-literal-dev-predict-6c52288-seed3407-20260729T043200Z-v1",
+        "evaluation_run": "runs/formal/pams-full-multiscale-literal-dev-score-6c52288-seed3407-20260729T043200Z-v1",
+        "encoder_checkpoint_sha256": "2e43be20ccee315b513a8002c7c2be7dcfc5a14d4d9e7a1406966d50fc04f597",
+        "encoder_progress_sha256": "a78ac1d4a668d6544f95725ff1ab113ee084c072e7ac9945aa9475e6c489e2f9",
+        "encoder_completion_receipt_sha256": "66bdb8771b9a15336f9fcc3d6a3046194f04e7d0bb47dcd55f25eb3e93cccffe",
+        "prediction_sha256": "f11cc8e9c6f85691887760f4c14a52c3ff6757cedc13971bbb2d33d73380087c",
+        "prediction_receipt_sha256": "a41ab6ec271f9671c0b176303a5bdfe4ccac806f42963af1f0031c3d591bdda4",
+        "evaluation_sha256": "b30c5b752d4982a4a64171a56df5696f3df3992f206aa10ac4166c6240edc9d6",
+        "evaluation_receipt_sha256": "809bbab13b56828de1795ba3740ec922727f02ee5fb7cb851df1ea841ad3233c"
+      }
+    },
+    "full_sshead_inferred": {
+      "42": {
+        "training_runtime": "legacy_6c52288",
+        "encoder_run": "runs/formal/matched-full-multiscale-train337-dev84-b0b85f1-seed42-150ep-20260729T040100Z-v1",
+        "head_run": "runs/formal/matched-full-multiscale-sshead-train337-dev84-b0b85f1-seed42-30ep-20260729T040100Z-v1",
+        "prediction_run": "runs/formal/pams-full-multiscale-dev-predict-6c52288-seed42-20260729T041100Z-v1",
+        "evaluation_run": "runs/formal/pams-full-multiscale-dev-score-6c52288-seed42-20260729T041200Z-v1",
+        "encoder_checkpoint_sha256": "c4c5b6dd71504a767a8211442c1417fbf79c7c27d924d0e423e72d0f76b28e0d",
+        "encoder_progress_sha256": "d09de90cbeab849e20c7dfa004d6f5defc825137b3cc90a803536843f7aec50a",
+        "encoder_completion_receipt_sha256": "f7fe6c27060bfcccc51d1d6b8114bbac6b0b012d831afbc93c6e34f0fe258246",
+        "head_checkpoint_sha256": "0c29a05651de63aaf4a64567ad03cd7786b506baed651f21f67b206e615b1aca",
+        "head_progress_sha256": "6e17e6854af485bd5d8838b036b6f3b36d1f1b0822ddc0b8937e664eb4b13f10",
+        "head_completion_receipt_sha256": "69a6f733d5d4d33f54b8b4558508c3ae37b5844fa81bf064b1a6536429bbbc94",
+        "prediction_sha256": "2b30a5e611f8a84bfa02ff4da8ff71977876ef4ea8e0329d3aafbc520c9e2aab",
+        "prediction_receipt_sha256": "ccb62779965adba7b2ceae9acbda3fe0c93e5ca19ff423b7ec51a3ecfd8e1666",
+        "evaluation_sha256": "6905670ac6261a4f8090bd3506c5bd88561030abc9fd65de01308d7a47a1a439",
+        "evaluation_receipt_sha256": "10a9b2baea43eb6a61d216416a8684a301dc14717d2920a143624b4a428a4ccb"
+      },
+      "2026": {
+        "training_runtime": "legacy_6c52288",
+        "encoder_run": "runs/ablations/matched-full-multiscale-train337-dev84-b0b85f1-seed2026-150ep-20260729T033000Z-v4",
+        "head_run": "runs/ablations/matched-full-multiscale-sshead-train337-dev84-b0b85f1-seed2026-30ep-20260729T033000Z-v4",
+        "prediction_run": "runs/ablations/matched-full-multiscale-dev-predict-6c52288-seed2026-20260729T034000Z-v3",
+        "evaluation_run": "runs/ablations/matched-full-multiscale-dev-score-6c52288-seed2026-20260729T034100Z",
+        "encoder_checkpoint_sha256": "ecaf3c2bd54ffc12c396f9da0044b2799917fb8a6f3811547ba9bcab6fe9d45e",
+        "encoder_progress_sha256": "4884a3d2740eadad375248e872cb5a1d554f2a23dabb418c4380b8e6eb6536a0",
+        "encoder_completion_receipt_sha256": "9dc667fa940576c8ea0da6e683d1db63a64e6614b9b42f60d6f2a8e19188bcbc",
+        "head_checkpoint_sha256": "732c1b243c39aa250ef0cda411e1691b8bd8383f110fd95b42d191798c3c2242",
+        "head_progress_sha256": "40a9d057d1cbf29041e789885d125c5e6cdd3f9155d30361df946335a6558f54",
+        "head_completion_receipt_sha256": "cf3c4337186dfab2df48068075be3f917875b7c830b20d4e66d1e591b0265fec",
+        "prediction_sha256": "b1a298407ede3a31796c7db0dba13120da84759c17c33fe6f761911c73f7998f",
+        "prediction_receipt_sha256": "4066ce0e7ac788d2954ad12ff11481d1402731becfb5b023583648d235a325ee",
+        "evaluation_sha256": "dd442524d7f8777a2037ae7bfa81dd0916bada2be593ac43bb41bd9f3f772692",
+        "evaluation_receipt_sha256": "33ed1b718acf96e176a60183439b3d41156c03b094c9e19952be3ed56ea152d8"
+      },
+      "3407": {
+        "training_runtime": "legacy_6c52288",
+        "encoder_run": "runs/formal/matched-full-multiscale-train337-dev84-b0b85f1-seed3407-150ep-20260729T041500Z-v1",
+        "head_run": "runs/formal/matched-full-multiscale-sshead-train337-dev84-b0b85f1-seed3407-30ep-20260729T041500Z-v1",
+        "prediction_run": "runs/formal/pams-full-multiscale-dev-predict-6c52288-seed3407-20260729T042300Z-v1",
+        "evaluation_run": "runs/formal/pams-full-multiscale-dev-score-6c52288-seed3407-20260729T042400Z-v1",
+        "encoder_checkpoint_sha256": "2e43be20ccee315b513a8002c7c2be7dcfc5a14d4d9e7a1406966d50fc04f597",
+        "encoder_progress_sha256": "a78ac1d4a668d6544f95725ff1ab113ee084c072e7ac9945aa9475e6c489e2f9",
+        "encoder_completion_receipt_sha256": "66bdb8771b9a15336f9fcc3d6a3046194f04e7d0bb47dcd55f25eb3e93cccffe",
+        "head_checkpoint_sha256": "e7e3cc50dbc3166587aa5091b2e9c7b38441a4d49b19c36ec5580e04ac703ee7",
+        "head_progress_sha256": "39c2f06653a193f7c0ad7d4dbb0a884bf1d140e1108a88ec89cc0f44caa6d3e1",
+        "head_completion_receipt_sha256": "5876dab3a0ef0fcf0989e3667af9ab88f35f285594139588ac564a2bca652918",
+        "prediction_sha256": "a8c8014b817bd63e21e9e39f13ceb23f752aeb5840648a388c5a2f2f10fe54ed",
+        "prediction_receipt_sha256": "461cc5fd0cba083592f12d254b5be315a7b6080c8fb7a52478c3d7465c031647",
+        "evaluation_sha256": "7e42df36eb1b603651f838eb0c899772afa4a2cc9b90a879b3a7635aab929480",
+        "evaluation_receipt_sha256": "86357e6aa19379462574b5208a2ee7554fc30f71b5edce9c672c8870e6d5265e"
+      }
+    }
+  },
+  "failed_launches": [
+    {
+      "intended_row": "pams_no_multi_scale",
+      "seed": 42,
+      "failed_run": "runs/ablations/table2-pams-no-multi-scale-medium-only-literal-dev-predict-ebbc296-seed42-20260729-v1",
+      "artifact": "launcher.log",
+      "artifact_bytes": 0,
+      "artifact_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "cause": "GPU 1 project lock was held by the concurrent JTSPS run, so no container was launched.",
+      "produced_prediction": false,
+      "produced_evaluation": false,
+      "canonical_replacement": "runs/ablations/table2-pams-no-multi-scale-medium-only-literal-dev-predict-ebbc296-seed42-20260729-v2",
+      "effect_on_reported_metrics": "none"
+    }
+  ],
+  "conclusions": [
+    "Every one of the six paper-shaped rows passes the frozen joint gate on 0 of 3 seeds and fails the mean gate.",
+    "The Full row is not the best row; it is decisively worse than the Literal multi-scale Medium-only row.",
+    "Multi-scale lowers aggregate NMAE relative to single-scale, but does not establish an OBO benefit and reverses direction at seed 3407.",
+    "Multi-expert consensus does not improve the fixed-period or adaptive multi-scale proxy and significantly worsens NMAE in both paired comparisons.",
+    "This evidence is a complete negative dev84 Table-2-shaped diagnostic, not a verified reproduction of the paper's Table 2 and not a test105 result."
+  ],
+  "claim_boundary": {
+    "paper_table2_eligible": false,
+    "reason": "Several protocol details, including the trained Period Head gradient path, remain undisclosed; fixed-period and SSHead rows are independently inferred closures.",
+    "release_label": "partial reproduction",
+    "test105_remains_sealed": true
+  }
+}

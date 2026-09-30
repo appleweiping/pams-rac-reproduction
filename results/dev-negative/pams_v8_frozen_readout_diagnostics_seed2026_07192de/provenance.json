@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "classification": "direct-v8-frozen-readout-diagnostics",
+  "status": "completed",
+  "protocol": "ucfrep_526_dev84",
+  "seed": 2026,
+  "source_revision": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "container_image_id": "sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005",
+  "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+  "v8_config_sha256": "eb4072a195608757cd2542855b33fb000c987f96c94b83a1e448ab78f97e9374",
+  "v8_config_fingerprint": "eaf9e2ce6047c4a13c13daaef10af1ae288542ad94ff9fb513d19e225912adf2",
+  "pose_fingerprint": "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116",
+  "encoder_checkpoint_sha256": "6817fe468d76c3fa2182dd831695d6fe3d6da208a2b7f8dfa90cffa6872e8053",
+  "local_frequency_config_sha256": "52f007b51f1edb6aca7047556e615b2912138fc51b51b71465427fa68a0db719",
+  "source_export_receipt_sha256": "a341860dd9eccfd31a4be30a5cfddf25136cabff7fbde45d4c6382266549cf38",
+  "server_run_artifact_manifest_sha256": "84eace40837b76cde8feba539773214baf3299c3dc375101fd7e0a2a6d151a3a",
+  "paired_comparison": {
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 2026,
+    "pairing": "same_84_video_rows",
+    "input_evaluation_sha256": {
+      "literal_v3": "4009e32bc0cddcfe37bf0e2c057de4be3f140190dfc580381426d5e162a99e68",
+      "local_frequency_v3": "b6add8af9c229cd467be6bba282f267d0d70651a1a39b46ba1443016689add97",
+      "sshead_v3": "a9d6e5970bab06752021fd29e2a692ece7aaf57c82b7d1d048d6022413648c44",
+      "local_frequency_v2": "be1b7444fa0e7fabf0ab85ac1298a77d376ee086d4b44744fecce060255b5512"
+    },
+    "clean_rerun_container_receipt_available": false,
+    "independent_recalculation_matched": true
+  },
+  "prediction_isolation": {
+    "development_targets_mounted": false,
+    "test_videos_mounted": false,
+    "test_pose_mounted": false,
+    "test_targets_mounted": false,
+    "literal_test_identity_sidecars_only": true
+  },
+  "execution": {
+    "literal_prediction_accelerator": "NVIDIA RTX A6000",
+    "local_frequency_accelerator": "CPU",
+    "prediction_container_exit_codes": [0, 0],
+    "score_container_exit_codes": [0, 0],
+    "network_mode": "none",
+    "read_only_root": true
+  },
+  "authorization": {
+    "seeds_42_3407": false,
+    "test105": false,
+    "paper_table": false
+  }
+}

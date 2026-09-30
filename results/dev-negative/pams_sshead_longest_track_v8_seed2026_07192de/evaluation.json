@@ -1,0 +1,2109 @@
+{
+  "ablation_status": "default multi-expert",
+  "artifact_type": "pams_checkpoint_dev_evaluation",
+  "bootstrap_pairing": "paired_prediction_target_rows",
+  "checkpoint_completion_receipt_sha256": "e257df83afdf88c82e8596ff2aa48edfda8d5907e5685f9b99310f276add38ee",
+  "checkpoint_progress_sha256": "9816723cc89605347aa09944029f8c7e785558ea21386bd8785f28551ad5ac25",
+  "checkpoint_sha256": "a277fccfc12bc67d8fcf5a0da865f0fde86186b996e20c4ba6b4355c50e7b09a",
+  "checkpoint_source_git_sha": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "classification": "PAMS dev representation diagnostic",
+  "config_file_sha256": "eb4072a195608757cd2542855b33fb000c987f96c94b83a1e448ab78f97e9374",
+  "config_fingerprint": "eaf9e2ce6047c4a13c13daaef10af1ae288542ad94ff9fb513d19e225912adf2",
+  "consensus_expert_mode": "multi",
+  "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+  "dev_pose_cache_set_sha256": "681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1",
+  "dev_pose_cache_snapshot_sha256": "14c290d86097b572cd544853f9d9c8bde379a3e53d7b637b22b66c6fbe1bb417",
+  "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+  "method_key": "pams-sshead-inferred",
+  "prediction_code_files_sha256": {
+    "config": "38dcc6b5e60d33ccff5e7495e48c72f8d949bf887136e3abf2240f66c6550a2f",
+    "consensus": "29498df4156cac109496362d13b7cc7fc0de416a9b7d8a4831181abcc937cc34",
+    "data": "93dc27fb8bae9c7d2c0d185e883a8608d4ad0550344e7b01802925e11a612cc0",
+    "evaluation": "5a0f25f3892a05472014ea402c5baa4b9d2c7d383844c488b8709bdfddb63141",
+    "pams_dev": "7152fb953fe52e5065b3f15e8f6ea05fc0a3991eaaca46a35e0cfc95dda3efe0",
+    "training": "ac6827b428d737eb254f3b77106af87dce071f390585f263932f8425d7dd6d60"
+  },
+  "prediction_code_sha256": "11909d0a6d7d45f898b6f94bc0d457053a230b18f9b708a12b4f425a7217beec",
+  "prediction_receipt_sha256": "079d1765491fd73e9a4a4740f423af35e78abd81e21ae3cc4f68ce5514ca55e1",
+  "prediction_sha256": "e7fccd1ee7bb3916f2b0e6b544e8ddcb5355e2de2500042a2c1a74104439520c",
+  "prediction_source_git_sha": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "predictions": [
+    {
+      "confidence": 0.18441375096638996,
+      "count": 1,
+      "expert_counts": [
+        2,
+        1,
+        1
+      ],
+      "period_frames": 42.66666793823242,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BabyCrawling_g02_c01"
+    },
+    {
+      "confidence": 0.19512318074703217,
+      "count": 2,
+      "expert_counts": [
+        2,
+        2,
+        2
+      ],
+      "period_frames": 85.33333587646484,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BabyCrawling_g07_c01"
+    },
+    {
+      "confidence": 0.24592187007268268,
+      "count": 0,
+      "expert_counts": [
+        2,
+        0,
+        0
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BabyCrawling_g11_c04"
+    },
+    {
+      "confidence": 0.39986252784729004,
+      "count": 3,
+      "expert_counts": [
+        3,
+        3,
+        1
+      ],
+      "period_frames": 85.33333587646484,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BabyCrawling_g13_c06"
+    },
+    {
+      "confidence": 0.14578853050867716,
+      "count": 4,
+      "expert_counts": [
+        4,
+        3,
+        2
+      ],
+      "period_frames": 51.20000076293945,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BenchPress_g04_c03"
+    },
+    {
+      "confidence": 0.19179046154022217,
+      "count": 3,
+      "expert_counts": [
+        4,
+        3,
+        3
+      ],
+      "period_frames": 51.20000076293945,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BenchPress_g11_c01"
+    },
+    {
+      "confidence": 0.3196059664090474,
+      "count": 3,
+      "expert_counts": [
+        3,
+        3,
+        1
+      ],
+      "period_frames": 85.33333587646484,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BenchPress_g15_c01"
+    },
+    {
+      "confidence": 0.8504233956336975,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BenchPress_g17_c01"
+    },
+    {
+      "confidence": 0.5443024237950642,
+      "count": 1,
+      "expert_counts": [
+        2,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Biking_g01_c01"
+    },
+    {
+      "confidence": 0.20832393566767374,
+      "count": 2,
+      "expert_counts": [
+        3,
+        2,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Biking_g05_c01"
+    },
+    {
+      "confidence": 0.5202467441558838,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        0
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Biking_g10_c01"
+    },
+    {
+      "confidence": 0.0,
+      "count": 0,
+      "expert_counts": [
+        0,
+        0,
+        0
+      ],
+      "period_frames": 4.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Biking_g16_c02"
+    },
+    {
+      "confidence": 0.3230744401613871,
+      "count": 2,
+      "expert_counts": [
+        2,
+        2,
+        1
+      ],
+      "period_frames": 64.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BodyWeightSquats_g03_c01"
+    },
+    {
+      "confidence": 0.37015084425608313,
+      "count": 1,
+      "expert_counts": [
+        3,
+        1,
+        1
+      ],
+      "period_frames": 51.20000076293945,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BodyWeightSquats_g10_c01"
+    },
+    {
+      "confidence": 0.452423890431722,
+      "count": 2,
+      "expert_counts": [
+        2,
+        2,
+        1
+      ],
+      "period_frames": 85.33333587646484,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BodyWeightSquats_g12_c01"
+    },
+    {
+      "confidence": 0.37330404917399085,
+      "count": 3,
+      "expert_counts": [
+        3,
+        3,
+        2
+      ],
+      "period_frames": 64.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BodyWeightSquats_g19_c01"
+    },
+    {
+      "confidence": 0.0,
+      "count": 0,
+      "expert_counts": [
+        0,
+        0,
+        0
+      ],
+      "period_frames": 4.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BreastStroke_g01_c01"
+    },
+    {
+      "confidence": 0.7540866136550903,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BreastStroke_g02_c01"
+    },
+    {
+      "confidence": 0.960476279258728,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BreastStroke_g10_c02"
+    },
+    {
+      "confidence": 0.0,
+      "count": 0,
+      "expert_counts": [
+        0,
+        0,
+        0
+      ],
+      "period_frames": 4.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_BreastStroke_g12_c02"
+    },
+    {
+      "confidence": 0.20217041174570718,
+      "count": 1,
+      "expert_counts": [
+        3,
+        1,
+        1
+      ],
+      "period_frames": 85.33333587646484,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_CuttingInKitchen_g01_c01"
+    },
+    {
+      "confidence": 0.6555801033973694,
+      "count": 0,
+      "expert_counts": [
+        0,
+        0,
+        0
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_CuttingInKitchen_g02_c01"
+    },
+    {
+      "confidence": 0.3587476909160614,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_CuttingInKitchen_g03_c01"
+    },
+    {
+      "confidence": 0.28191788991292316,
+      "count": 1,
+      "expert_counts": [
+        1,
+        2,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_FrontCrawl_g09_c03"
+    },
+    {
+      "confidence": 0.4745861689249674,
+      "count": 0,
+      "expert_counts": [
+        2,
+        0,
+        0
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_FrontCrawl_g11_c02"
+    },
+    {
+      "confidence": 0.9910283088684082,
+      "count": 0,
+      "expert_counts": [
+        0,
+        0,
+        0
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_FrontCrawl_g15_c04"
+    },
+    {
+      "confidence": 0.8377875089645386,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_FrontCrawl_g17_c02"
+    },
+    {
+      "confidence": 0.4388039708137512,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HammerThrow_g05_c02"
+    },
+    {
+      "confidence": 0.2824203570683797,
+      "count": 1,
+      "expert_counts": [
+        2,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HammerThrow_g06_c04"
+    },
+    {
+      "confidence": 0.2180078625679016,
+      "count": 1,
+      "expert_counts": [
+        4,
+        1,
+        1
+      ],
+      "period_frames": 64.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HammerThrow_g08_c01"
+    },
+    {
+      "confidence": 0.604012131690979,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HammerThrow_g19_c06"
+    },
+    {
+      "confidence": 0.5299786726633707,
+      "count": 1,
+      "expert_counts": [
+        2,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Hammering_g01_c01"
+    },
+    {
+      "confidence": 0.44157513976097107,
+      "count": 2,
+      "expert_counts": [
+        2,
+        2,
+        2
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Hammering_g06_c03"
+    },
+    {
+      "confidence": 0.19121940930684406,
+      "count": 1,
+      "expert_counts": [
+        2,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Hammering_g10_c01"
+    },
+    {
+      "confidence": 0.444877823193868,
+      "count": 4,
+      "expert_counts": [
+        4,
+        4,
+        2
+      ],
+      "period_frames": 64.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Hammering_g17_c01"
+    },
+    {
+      "confidence": 0.4752406179904938,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HandStandPushups_g02_c04"
+    },
+    {
+      "confidence": 0.2399686574935913,
+      "count": 1,
+      "expert_counts": [
+        2,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HandStandPushups_g06_c02"
+    },
+    {
+      "confidence": 0.3742098013559977,
+      "count": 4,
+      "expert_counts": [
+        4,
+        4,
+        1
+      ],
+      "period_frames": 64.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HandStandPushups_g12_c07"
+    },
+    {
+      "confidence": 0.22967323660850525,
+      "count": 5,
+      "expert_counts": [
+        5,
+        5,
+        5
+      ],
+      "period_frames": 25.600000381469727,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HandStandPushups_g13_c07"
+    },
+    {
+      "confidence": 0.48025670647621155,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HandstandWalking_g03_c04"
+    },
+    {
+      "confidence": 0.03916925936937332,
+      "count": 5,
+      "expert_counts": [
+        5,
+        3,
+        2
+      ],
+      "period_frames": 36.57143020629883,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HandstandWalking_g05_c05"
+    },
+    {
+      "confidence": 0.4299430251121521,
+      "count": 0,
+      "expert_counts": [
+        0,
+        0,
+        0
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HandstandWalking_g07_c01"
+    },
+    {
+      "confidence": 0.7632524967193604,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HandstandWalking_g19_c03"
+    },
+    {
+      "confidence": 0.31550248463948566,
+      "count": 1,
+      "expert_counts": [
+        2,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HulaHoop_g09_c01"
+    },
+    {
+      "confidence": 0.7799732089042664,
+      "count": 0,
+      "expert_counts": [
+        0,
+        0,
+        0
+      ],
+      "period_frames": 85.33333587646484,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HulaHoop_g12_c01"
+    },
+    {
+      "confidence": 0.14214905103047687,
+      "count": 4,
+      "expert_counts": [
+        4,
+        3,
+        2
+      ],
+      "period_frames": 51.20000076293945,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HulaHoop_g15_c05"
+    },
+    {
+      "confidence": 0.27083492279052734,
+      "count": 0,
+      "expert_counts": [
+        1,
+        0,
+        0
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_HulaHoop_g17_c02"
+    },
+    {
+      "confidence": 0.4117245276769002,
+      "count": 2,
+      "expert_counts": [
+        2,
+        2,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_JumpRope_g02_c07"
+    },
+    {
+      "confidence": 0.4543938636779785,
+      "count": 0,
+      "expert_counts": [
+        1,
+        0,
+        0
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_JumpRope_g03_c04"
+    },
+    {
+      "confidence": 0.10126268863677979,
+      "count": 2,
+      "expert_counts": [
+        2,
+        2,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_JumpRope_g15_c01"
+    },
+    {
+      "confidence": 0.10459055503209432,
+      "count": 5,
+      "expert_counts": [
+        5,
+        4,
+        2
+      ],
+      "period_frames": 42.66666793823242,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_JumpingJack_g01_c01"
+    },
+    {
+      "confidence": 0.20906152327855426,
+      "count": 5,
+      "expert_counts": [
+        5,
+        4,
+        3
+      ],
+      "period_frames": 42.66666793823242,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_JumpingJack_g09_c01"
+    },
+    {
+      "confidence": 0.206538716952006,
+      "count": 2,
+      "expert_counts": [
+        2,
+        2,
+        1
+      ],
+      "period_frames": 85.33333587646484,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_JumpingJack_g13_c02"
+    },
+    {
+      "confidence": 0.27277400096257526,
+      "count": 3,
+      "expert_counts": [
+        3,
+        3,
+        2
+      ],
+      "period_frames": 85.33333587646484,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_JumpingJack_g18_c04"
+    },
+    {
+      "confidence": 0.8909207582473755,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Kayaking_g10_c04"
+    },
+    {
+      "confidence": 0.7901046872138977,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Kayaking_g16_c05"
+    },
+    {
+      "confidence": 0.6147422393163045,
+      "count": 1,
+      "expert_counts": [
+        0,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Kayaking_g17_c04"
+    },
+    {
+      "confidence": 0.17561662197113037,
+      "count": 0,
+      "expert_counts": [
+        1,
+        0,
+        0
+      ],
+      "period_frames": 64.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_PlayingCello_g03_c04"
+    },
+    {
+      "confidence": 0.3044353723526001,
+      "count": 2,
+      "expert_counts": [
+        3,
+        2,
+        2
+      ],
+      "period_frames": 85.33333587646484,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_PlayingCello_g05_c02"
+    },
+    {
+      "confidence": 0.37453464667002356,
+      "count": 2,
+      "expert_counts": [
+        2,
+        2,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_PlayingCello_g08_c03"
+    },
+    {
+      "confidence": 0.3170338670412699,
+      "count": 3,
+      "expert_counts": [
+        3,
+        3,
+        2
+      ],
+      "period_frames": 42.66666793823242,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_PlayingCello_g18_c03"
+    },
+    {
+      "confidence": 0.08662465214729309,
+      "count": 4,
+      "expert_counts": [
+        4,
+        3,
+        2
+      ],
+      "period_frames": 64.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_PlayingViolin_g06_c04"
+    },
+    {
+      "confidence": 0.0,
+      "count": 0,
+      "expert_counts": [
+        0,
+        0,
+        0
+      ],
+      "period_frames": 4.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_PlayingViolin_g08_c04"
+    },
+    {
+      "confidence": 0.2847743332386017,
+      "count": 4,
+      "expert_counts": [
+        4,
+        4,
+        4
+      ],
+      "period_frames": 25.600000381469727,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_PlayingViolin_g19_c03"
+    },
+    {
+      "confidence": 0.5298954645792643,
+      "count": 0,
+      "expert_counts": [
+        1,
+        0,
+        0
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_PlayingViolin_g20_c04"
+    },
+    {
+      "confidence": 0.3186814785003662,
+      "count": 1,
+      "expert_counts": [
+        2,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_PommelHorse_g04_c05"
+    },
+    {
+      "confidence": 0.3091196616490682,
+      "count": 2,
+      "expert_counts": [
+        2,
+        2,
+        1
+      ],
+      "period_frames": 85.33333587646484,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_PommelHorse_g07_c06"
+    },
+    {
+      "confidence": 0.6734632253646851,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_PommelHorse_g14_c02"
+    },
+    {
+      "confidence": 0.0,
+      "count": 0,
+      "expert_counts": [
+        0,
+        0,
+        0
+      ],
+      "period_frames": 4.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Rowing_g01_c03"
+    },
+    {
+      "confidence": 0.44009554386138916,
+      "count": 5,
+      "expert_counts": [
+        5,
+        5,
+        2
+      ],
+      "period_frames": 51.20000076293945,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Rowing_g11_c02"
+    },
+    {
+      "confidence": 0.0,
+      "count": 0,
+      "expert_counts": [
+        0,
+        0,
+        0
+      ],
+      "period_frames": 4.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_Rowing_g14_c07"
+    },
+    {
+      "confidence": 0.9491575360298157,
+      "count": 2,
+      "expert_counts": [
+        2,
+        2,
+        2
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_ShavingBeard_g02_c07"
+    },
+    {
+      "confidence": 0.12917093435923258,
+      "count": 5,
+      "expert_counts": [
+        5,
+        5,
+        3
+      ],
+      "period_frames": 36.57143020629883,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_ShavingBeard_g07_c04"
+    },
+    {
+      "confidence": 0.3102642695109049,
+      "count": 1,
+      "expert_counts": [
+        2,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_ShavingBeard_g15_c07"
+    },
+    {
+      "confidence": 0.8730041980743408,
+      "count": 0,
+      "expert_counts": [
+        0,
+        0,
+        0
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_ShavingBeard_g17_c07"
+    },
+    {
+      "confidence": 0.06512707471847534,
+      "count": 5,
+      "expert_counts": [
+        5,
+        2,
+        1
+      ],
+      "period_frames": 42.66666793823242,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_SoccerJuggling_g06_c05"
+    },
+    {
+      "confidence": 0.10951188206672668,
+      "count": 4,
+      "expert_counts": [
+        4,
+        2,
+        1
+      ],
+      "period_frames": 64.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_SoccerJuggling_g10_c01"
+    },
+    {
+      "confidence": 0.037385555605093636,
+      "count": 9,
+      "expert_counts": [
+        9,
+        5,
+        3
+      ],
+      "period_frames": 23.272727966308594,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_SoccerJuggling_g18_c05"
+    },
+    {
+      "confidence": 0.37302541732788086,
+      "count": 7,
+      "expert_counts": [
+        7,
+        7,
+        3
+      ],
+      "period_frames": 36.57143020629883,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_TableTennisShot_g05_c03"
+    },
+    {
+      "confidence": 0.38491543134053546,
+      "count": 5,
+      "expert_counts": [
+        5,
+        5,
+        3
+      ],
+      "period_frames": 42.66666793823242,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_TableTennisShot_g19_c07"
+    },
+    {
+      "confidence": 0.4289623896280924,
+      "count": 4,
+      "expert_counts": [
+        4,
+        4,
+        2
+      ],
+      "period_frames": 51.20000076293945,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_TableTennisShot_g20_c03"
+    },
+    {
+      "confidence": 0.5721727609634399,
+      "count": 0,
+      "expert_counts": [
+        0,
+        0,
+        0
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_TrampolineJumping_g12_c02"
+    },
+    {
+      "confidence": 0.4771524965763092,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        1
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_TrampolineJumping_g14_c02"
+    },
+    {
+      "confidence": 0.3431989749272664,
+      "count": 1,
+      "expert_counts": [
+        1,
+        1,
+        0
+      ],
+      "period_frames": 128.0,
+      "selected_expert": null,
+      "selection_mode": "multi",
+      "video_id": "v_TrampolineJumping_g17_c02"
+    }
+  ],
+  "protocol": "ucfrep_526",
+  "protocol_identity_sha256": "7aaaea4fdd0620cc7abb4f307cf63a9506448540e3d3d920acf70957f6b8b97f",
+  "report": {
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 2026,
+    "confidence_intervals": {
+      "exact": {
+        "high": 0.23809523809523808,
+        "level": 0.95,
+        "low": 0.08333333333333333
+      },
+      "mae": {
+        "high": 5.238095238095238,
+        "level": 0.95,
+        "low": 3.357142857142857
+      },
+      "nmae": {
+        "high": 0.720873135214653,
+        "level": 0.95,
+        "low": 0.5634624572682608
+      },
+      "obo": {
+        "high": 0.39285714285714285,
+        "level": 0.95,
+        "low": 0.20238095238095238
+      },
+      "rmse": {
+        "high": 7.840694362184468,
+        "level": 0.95,
+        "low": 4.548645790746545
+      }
+    },
+    "exact": 0.15476190476190477,
+    "mae": 4.226190476190476,
+    "nmae": 0.643123262319691,
+    "obo": 0.2976190476190476,
+    "per_video": [
+      {
+        "absolute_error": 3,
+        "action": "BabyCrawling",
+        "exact": false,
+        "normalized_absolute_error": 0.75,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 4,
+        "video_id": "v_BabyCrawling_g02_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 7,
+        "action": "BabyCrawling",
+        "exact": false,
+        "normalized_absolute_error": 0.7777777777777778,
+        "prediction": 2.0,
+        "rounded_prediction": 2,
+        "target": 9,
+        "video_id": "v_BabyCrawling_g07_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 3,
+        "action": "BabyCrawling",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 3,
+        "video_id": "v_BabyCrawling_g11_c04",
+        "within_one": false
+      },
+      {
+        "absolute_error": 2,
+        "action": "BabyCrawling",
+        "exact": false,
+        "normalized_absolute_error": 0.4,
+        "prediction": 3.0,
+        "rounded_prediction": 3,
+        "target": 5,
+        "video_id": "v_BabyCrawling_g13_c06",
+        "within_one": false
+      },
+      {
+        "absolute_error": 0,
+        "action": "BenchPress",
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "prediction": 4.0,
+        "rounded_prediction": 4,
+        "target": 4,
+        "video_id": "v_BenchPress_g04_c03",
+        "within_one": true
+      },
+      {
+        "absolute_error": 0,
+        "action": "BenchPress",
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "prediction": 3.0,
+        "rounded_prediction": 3,
+        "target": 3,
+        "video_id": "v_BenchPress_g11_c01",
+        "within_one": true
+      },
+      {
+        "absolute_error": 0,
+        "action": "BenchPress",
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "prediction": 3.0,
+        "rounded_prediction": 3,
+        "target": 3,
+        "video_id": "v_BenchPress_g15_c01",
+        "within_one": true
+      },
+      {
+        "absolute_error": 1,
+        "action": "BenchPress",
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 2,
+        "video_id": "v_BenchPress_g17_c01",
+        "within_one": true
+      },
+      {
+        "absolute_error": 3,
+        "action": "Biking",
+        "exact": false,
+        "normalized_absolute_error": 0.75,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 4,
+        "video_id": "v_Biking_g01_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 3,
+        "action": "Biking",
+        "exact": false,
+        "normalized_absolute_error": 0.6,
+        "prediction": 2.0,
+        "rounded_prediction": 2,
+        "target": 5,
+        "video_id": "v_Biking_g05_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 10,
+        "action": "Biking",
+        "exact": false,
+        "normalized_absolute_error": 0.9090909090909091,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 11,
+        "video_id": "v_Biking_g10_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 7,
+        "action": "Biking",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 7,
+        "video_id": "v_Biking_g16_c02",
+        "within_one": false
+      },
+      {
+        "absolute_error": 0,
+        "action": "BodyWeightSquats",
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "prediction": 2.0,
+        "rounded_prediction": 2,
+        "target": 2,
+        "video_id": "v_BodyWeightSquats_g03_c01",
+        "within_one": true
+      },
+      {
+        "absolute_error": 2,
+        "action": "BodyWeightSquats",
+        "exact": false,
+        "normalized_absolute_error": 0.6666666666666666,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 3,
+        "video_id": "v_BodyWeightSquats_g10_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 1,
+        "action": "BodyWeightSquats",
+        "exact": false,
+        "normalized_absolute_error": 0.3333333333333333,
+        "prediction": 2.0,
+        "rounded_prediction": 2,
+        "target": 3,
+        "video_id": "v_BodyWeightSquats_g12_c01",
+        "within_one": true
+      },
+      {
+        "absolute_error": 0,
+        "action": "BodyWeightSquats",
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "prediction": 3.0,
+        "rounded_prediction": 3,
+        "target": 3,
+        "video_id": "v_BodyWeightSquats_g19_c01",
+        "within_one": true
+      },
+      {
+        "absolute_error": 2,
+        "action": "BreastStroke",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 2,
+        "video_id": "v_BreastStroke_g01_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 4,
+        "action": "BreastStroke",
+        "exact": false,
+        "normalized_absolute_error": 0.8,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 5,
+        "video_id": "v_BreastStroke_g02_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 3,
+        "action": "BreastStroke",
+        "exact": false,
+        "normalized_absolute_error": 0.75,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 4,
+        "video_id": "v_BreastStroke_g10_c02",
+        "within_one": false
+      },
+      {
+        "absolute_error": 7,
+        "action": "BreastStroke",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 7,
+        "video_id": "v_BreastStroke_g12_c02",
+        "within_one": false
+      },
+      {
+        "absolute_error": 9,
+        "action": "CuttingInKitchen",
+        "exact": false,
+        "normalized_absolute_error": 0.9,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 10,
+        "video_id": "v_CuttingInKitchen_g01_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 2,
+        "action": "CuttingInKitchen",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 2,
+        "video_id": "v_CuttingInKitchen_g02_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 13,
+        "action": "CuttingInKitchen",
+        "exact": false,
+        "normalized_absolute_error": 0.9285714285714286,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 14,
+        "video_id": "v_CuttingInKitchen_g03_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 1,
+        "action": "FrontCrawl",
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 2,
+        "video_id": "v_FrontCrawl_g09_c03",
+        "within_one": true
+      },
+      {
+        "absolute_error": 7,
+        "action": "FrontCrawl",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 7,
+        "video_id": "v_FrontCrawl_g11_c02",
+        "within_one": false
+      },
+      {
+        "absolute_error": 3,
+        "action": "FrontCrawl",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 3,
+        "video_id": "v_FrontCrawl_g15_c04",
+        "within_one": false
+      },
+      {
+        "absolute_error": 1,
+        "action": "FrontCrawl",
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 2,
+        "video_id": "v_FrontCrawl_g17_c02",
+        "within_one": true
+      },
+      {
+        "absolute_error": 1,
+        "action": "HammerThrow",
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 2,
+        "video_id": "v_HammerThrow_g05_c02",
+        "within_one": true
+      },
+      {
+        "absolute_error": 5,
+        "action": "HammerThrow",
+        "exact": false,
+        "normalized_absolute_error": 0.8333333333333334,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 6,
+        "video_id": "v_HammerThrow_g06_c04",
+        "within_one": false
+      },
+      {
+        "absolute_error": 1,
+        "action": "HammerThrow",
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 2,
+        "video_id": "v_HammerThrow_g08_c01",
+        "within_one": true
+      },
+      {
+        "absolute_error": 3,
+        "action": "HammerThrow",
+        "exact": false,
+        "normalized_absolute_error": 0.75,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 4,
+        "video_id": "v_HammerThrow_g19_c06",
+        "within_one": false
+      },
+      {
+        "absolute_error": 7,
+        "action": "Hammering",
+        "exact": false,
+        "normalized_absolute_error": 0.875,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 8,
+        "video_id": "v_Hammering_g01_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 5,
+        "action": "Hammering",
+        "exact": false,
+        "normalized_absolute_error": 0.7142857142857143,
+        "prediction": 2.0,
+        "rounded_prediction": 2,
+        "target": 7,
+        "video_id": "v_Hammering_g06_c03",
+        "within_one": false
+      },
+      {
+        "absolute_error": 11,
+        "action": "Hammering",
+        "exact": false,
+        "normalized_absolute_error": 0.9166666666666666,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 12,
+        "video_id": "v_Hammering_g10_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 1,
+        "action": "Hammering",
+        "exact": false,
+        "normalized_absolute_error": 0.2,
+        "prediction": 4.0,
+        "rounded_prediction": 4,
+        "target": 5,
+        "video_id": "v_Hammering_g17_c01",
+        "within_one": true
+      },
+      {
+        "absolute_error": 1,
+        "action": "HandStandPushups",
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 2,
+        "video_id": "v_HandStandPushups_g02_c04",
+        "within_one": true
+      },
+      {
+        "absolute_error": 1,
+        "action": "HandStandPushups",
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 2,
+        "video_id": "v_HandStandPushups_g06_c02",
+        "within_one": true
+      },
+      {
+        "absolute_error": 0,
+        "action": "HandStandPushups",
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "prediction": 4.0,
+        "rounded_prediction": 4,
+        "target": 4,
+        "video_id": "v_HandStandPushups_g12_c07",
+        "within_one": true
+      },
+      {
+        "absolute_error": 1,
+        "action": "HandStandPushups",
+        "exact": false,
+        "normalized_absolute_error": 0.25,
+        "prediction": 5.0,
+        "rounded_prediction": 5,
+        "target": 4,
+        "video_id": "v_HandStandPushups_g13_c07",
+        "within_one": true
+      },
+      {
+        "absolute_error": 3,
+        "action": "HandstandWalking",
+        "exact": false,
+        "normalized_absolute_error": 0.75,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 4,
+        "video_id": "v_HandstandWalking_g03_c04",
+        "within_one": false
+      },
+      {
+        "absolute_error": 7,
+        "action": "HandstandWalking",
+        "exact": false,
+        "normalized_absolute_error": 0.5833333333333334,
+        "prediction": 5.0,
+        "rounded_prediction": 5,
+        "target": 12,
+        "video_id": "v_HandstandWalking_g05_c05",
+        "within_one": false
+      },
+      {
+        "absolute_error": 8,
+        "action": "HandstandWalking",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 8,
+        "video_id": "v_HandstandWalking_g07_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 4,
+        "action": "HandstandWalking",
+        "exact": false,
+        "normalized_absolute_error": 0.8,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 5,
+        "video_id": "v_HandstandWalking_g19_c03",
+        "within_one": false
+      },
+      {
+        "absolute_error": 7,
+        "action": "HulaHoop",
+        "exact": false,
+        "normalized_absolute_error": 0.875,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 8,
+        "video_id": "v_HulaHoop_g09_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 4,
+        "action": "HulaHoop",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 4,
+        "video_id": "v_HulaHoop_g12_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 2,
+        "action": "HulaHoop",
+        "exact": false,
+        "normalized_absolute_error": 0.3333333333333333,
+        "prediction": 4.0,
+        "rounded_prediction": 4,
+        "target": 6,
+        "video_id": "v_HulaHoop_g15_c05",
+        "within_one": false
+      },
+      {
+        "absolute_error": 8,
+        "action": "HulaHoop",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 8,
+        "video_id": "v_HulaHoop_g17_c02",
+        "within_one": false
+      },
+      {
+        "absolute_error": 12,
+        "action": "JumpRope",
+        "exact": false,
+        "normalized_absolute_error": 0.8571428571428571,
+        "prediction": 2.0,
+        "rounded_prediction": 2,
+        "target": 14,
+        "video_id": "v_JumpRope_g02_c07",
+        "within_one": false
+      },
+      {
+        "absolute_error": 29,
+        "action": "JumpRope",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 29,
+        "video_id": "v_JumpRope_g03_c04",
+        "within_one": false
+      },
+      {
+        "absolute_error": 5,
+        "action": "JumpRope",
+        "exact": false,
+        "normalized_absolute_error": 0.7142857142857143,
+        "prediction": 2.0,
+        "rounded_prediction": 2,
+        "target": 7,
+        "video_id": "v_JumpRope_g15_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 3,
+        "action": "JumpingJack",
+        "exact": false,
+        "normalized_absolute_error": 1.5,
+        "prediction": 5.0,
+        "rounded_prediction": 5,
+        "target": 2,
+        "video_id": "v_JumpingJack_g01_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 3,
+        "action": "JumpingJack",
+        "exact": false,
+        "normalized_absolute_error": 1.5,
+        "prediction": 5.0,
+        "rounded_prediction": 5,
+        "target": 2,
+        "video_id": "v_JumpingJack_g09_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 1,
+        "action": "JumpingJack",
+        "exact": false,
+        "normalized_absolute_error": 0.3333333333333333,
+        "prediction": 2.0,
+        "rounded_prediction": 2,
+        "target": 3,
+        "video_id": "v_JumpingJack_g13_c02",
+        "within_one": true
+      },
+      {
+        "absolute_error": 0,
+        "action": "JumpingJack",
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "prediction": 3.0,
+        "rounded_prediction": 3,
+        "target": 3,
+        "video_id": "v_JumpingJack_g18_c04",
+        "within_one": true
+      },
+      {
+        "absolute_error": 3,
+        "action": "Kayaking",
+        "exact": false,
+        "normalized_absolute_error": 0.75,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 4,
+        "video_id": "v_Kayaking_g10_c04",
+        "within_one": false
+      },
+      {
+        "absolute_error": 4,
+        "action": "Kayaking",
+        "exact": false,
+        "normalized_absolute_error": 0.8,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 5,
+        "video_id": "v_Kayaking_g16_c05",
+        "within_one": false
+      },
+      {
+        "absolute_error": 2,
+        "action": "Kayaking",
+        "exact": false,
+        "normalized_absolute_error": 0.6666666666666666,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 3,
+        "video_id": "v_Kayaking_g17_c04",
+        "within_one": false
+      },
+      {
+        "absolute_error": 4,
+        "action": "PlayingCello",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 4,
+        "video_id": "v_PlayingCello_g03_c04",
+        "within_one": false
+      },
+      {
+        "absolute_error": 6,
+        "action": "PlayingCello",
+        "exact": false,
+        "normalized_absolute_error": 0.75,
+        "prediction": 2.0,
+        "rounded_prediction": 2,
+        "target": 8,
+        "video_id": "v_PlayingCello_g05_c02",
+        "within_one": false
+      },
+      {
+        "absolute_error": 0,
+        "action": "PlayingCello",
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "prediction": 2.0,
+        "rounded_prediction": 2,
+        "target": 2,
+        "video_id": "v_PlayingCello_g08_c03",
+        "within_one": true
+      },
+      {
+        "absolute_error": 3,
+        "action": "PlayingCello",
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "prediction": 3.0,
+        "rounded_prediction": 3,
+        "target": 6,
+        "video_id": "v_PlayingCello_g18_c03",
+        "within_one": false
+      },
+      {
+        "absolute_error": 0,
+        "action": "PlayingViolin",
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "prediction": 4.0,
+        "rounded_prediction": 4,
+        "target": 4,
+        "video_id": "v_PlayingViolin_g06_c04",
+        "within_one": true
+      },
+      {
+        "absolute_error": 2,
+        "action": "PlayingViolin",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 2,
+        "video_id": "v_PlayingViolin_g08_c04",
+        "within_one": false
+      },
+      {
+        "absolute_error": 0,
+        "action": "PlayingViolin",
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "prediction": 4.0,
+        "rounded_prediction": 4,
+        "target": 4,
+        "video_id": "v_PlayingViolin_g19_c03",
+        "within_one": true
+      },
+      {
+        "absolute_error": 7,
+        "action": "PlayingViolin",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 7,
+        "video_id": "v_PlayingViolin_g20_c04",
+        "within_one": false
+      },
+      {
+        "absolute_error": 12,
+        "action": "PommelHorse",
+        "exact": false,
+        "normalized_absolute_error": 0.9230769230769231,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 13,
+        "video_id": "v_PommelHorse_g04_c05",
+        "within_one": false
+      },
+      {
+        "absolute_error": 4,
+        "action": "PommelHorse",
+        "exact": false,
+        "normalized_absolute_error": 0.6666666666666666,
+        "prediction": 2.0,
+        "rounded_prediction": 2,
+        "target": 6,
+        "video_id": "v_PommelHorse_g07_c06",
+        "within_one": false
+      },
+      {
+        "absolute_error": 5,
+        "action": "PommelHorse",
+        "exact": false,
+        "normalized_absolute_error": 0.8333333333333334,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 6,
+        "video_id": "v_PommelHorse_g14_c02",
+        "within_one": false
+      },
+      {
+        "absolute_error": 4,
+        "action": "Rowing",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 4,
+        "video_id": "v_Rowing_g01_c03",
+        "within_one": false
+      },
+      {
+        "absolute_error": 0,
+        "action": "Rowing",
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "prediction": 5.0,
+        "rounded_prediction": 5,
+        "target": 5,
+        "video_id": "v_Rowing_g11_c02",
+        "within_one": true
+      },
+      {
+        "absolute_error": 7,
+        "action": "Rowing",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 7,
+        "video_id": "v_Rowing_g14_c07",
+        "within_one": false
+      },
+      {
+        "absolute_error": 2,
+        "action": "ShavingBeard",
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "prediction": 2.0,
+        "rounded_prediction": 2,
+        "target": 4,
+        "video_id": "v_ShavingBeard_g02_c07",
+        "within_one": false
+      },
+      {
+        "absolute_error": 5,
+        "action": "ShavingBeard",
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "prediction": 5.0,
+        "rounded_prediction": 5,
+        "target": 10,
+        "video_id": "v_ShavingBeard_g07_c04",
+        "within_one": false
+      },
+      {
+        "absolute_error": 15,
+        "action": "ShavingBeard",
+        "exact": false,
+        "normalized_absolute_error": 0.9375,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 16,
+        "video_id": "v_ShavingBeard_g15_c07",
+        "within_one": false
+      },
+      {
+        "absolute_error": 6,
+        "action": "ShavingBeard",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 6,
+        "video_id": "v_ShavingBeard_g17_c07",
+        "within_one": false
+      },
+      {
+        "absolute_error": 8,
+        "action": "SoccerJuggling",
+        "exact": false,
+        "normalized_absolute_error": 0.6153846153846154,
+        "prediction": 5.0,
+        "rounded_prediction": 5,
+        "target": 13,
+        "video_id": "v_SoccerJuggling_g06_c05",
+        "within_one": false
+      },
+      {
+        "absolute_error": 3,
+        "action": "SoccerJuggling",
+        "exact": false,
+        "normalized_absolute_error": 0.42857142857142855,
+        "prediction": 4.0,
+        "rounded_prediction": 4,
+        "target": 7,
+        "video_id": "v_SoccerJuggling_g10_c01",
+        "within_one": false
+      },
+      {
+        "absolute_error": 9,
+        "action": "SoccerJuggling",
+        "exact": false,
+        "normalized_absolute_error": 0.5,
+        "prediction": 9.0,
+        "rounded_prediction": 9,
+        "target": 18,
+        "video_id": "v_SoccerJuggling_g18_c05",
+        "within_one": false
+      },
+      {
+        "absolute_error": 1,
+        "action": "TableTennisShot",
+        "exact": false,
+        "normalized_absolute_error": 0.16666666666666666,
+        "prediction": 7.0,
+        "rounded_prediction": 7,
+        "target": 6,
+        "video_id": "v_TableTennisShot_g05_c03",
+        "within_one": true
+      },
+      {
+        "absolute_error": 0,
+        "action": "TableTennisShot",
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "prediction": 5.0,
+        "rounded_prediction": 5,
+        "target": 5,
+        "video_id": "v_TableTennisShot_g19_c07",
+        "within_one": true
+      },
+      {
+        "absolute_error": 0,
+        "action": "TableTennisShot",
+        "exact": true,
+        "normalized_absolute_error": 0.0,
+        "prediction": 4.0,
+        "rounded_prediction": 4,
+        "target": 4,
+        "video_id": "v_TableTennisShot_g20_c03",
+        "within_one": true
+      },
+      {
+        "absolute_error": 7,
+        "action": "TrampolineJumping",
+        "exact": false,
+        "normalized_absolute_error": 1.0,
+        "prediction": 0.0,
+        "rounded_prediction": 0,
+        "target": 7,
+        "video_id": "v_TrampolineJumping_g12_c02",
+        "within_one": false
+      },
+      {
+        "absolute_error": 5,
+        "action": "TrampolineJumping",
+        "exact": false,
+        "normalized_absolute_error": 0.8333333333333334,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 6,
+        "video_id": "v_TrampolineJumping_g14_c02",
+        "within_one": false
+      },
+      {
+        "absolute_error": 4,
+        "action": "TrampolineJumping",
+        "exact": false,
+        "normalized_absolute_error": 0.8,
+        "prediction": 1.0,
+        "rounded_prediction": 1,
+        "target": 5,
+        "video_id": "v_TrampolineJumping_g17_c02",
+        "within_one": false
+      }
+    ],
+    "rmse": 6.073949056656398,
+    "sample_count": 84
+  },
+  "schema_version": 1,
+  "scoring_code_files_sha256": {
+    "config": "38dcc6b5e60d33ccff5e7495e48c72f8d949bf887136e3abf2240f66c6550a2f",
+    "consensus": "29498df4156cac109496362d13b7cc7fc0de416a9b7d8a4831181abcc937cc34",
+    "data": "93dc27fb8bae9c7d2c0d185e883a8608d4ad0550344e7b01802925e11a612cc0",
+    "evaluation": "5a0f25f3892a05472014ea402c5baa4b9d2c7d383844c488b8709bdfddb63141",
+    "pams_dev": "7152fb953fe52e5065b3f15e8f6ea05fc0a3991eaaca46a35e0cfc95dda3efe0",
+    "training": "ac6827b428d737eb254f3b77106af87dce071f390585f263932f8425d7dd6d60"
+  },
+  "scoring_code_sha256": "11909d0a6d7d45f898b6f94bc0d457053a230b18f9b708a12b4f425a7217beec",
+  "scoring_source_git_sha": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "split": "dev",
+  "table2_eligible": false,
+  "training_config_fingerprint": "eaf9e2ce6047c4a13c13daaef10af1ae288542ad94ff9fb513d19e225912adf2",
+  "training_identity_sha256": "177e3a70e6fb272bac7c976e9700f70355bc30adb3990dc1276485c3e0cbddd6",
+  "training_pose_cache_set_sha256": "f32d718ae922120778f535a6a4f467edba79cafeba90373b3a6a55bf11be6ee2",
+  "upstream_encoder_checkpoint_sha256": "6817fe468d76c3fa2182dd831695d6fe3d6da208a2b7f8dfa90cffa6872e8053",
+  "upstream_encoder_completion_receipt_sha256": "f4815e1961ba883c23ef479ddcdef44aea5cad8a50d54e17b8e6a4cccc613f3d",
+  "upstream_encoder_progress_sha256": "aadc8f9bf067b3489efcd80db43c42cf09dba3477c2976bbc16571ff31684622",
+  "variant": "sshead"
+}

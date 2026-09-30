@@ -1,0 +1,68 @@
+schema_version: 1
+key: ucfrep_526
+dataset:
+  name: UCFRep
+  total_videos: 526
+  source_repository: Xiaodomgdomg/Deep-Temporal-Repetition-Counting
+  source_revision: f7011d3ef29061b9c63cb7c12d5feeb2a93f7d35
+  annotation_archive:
+    filename: ucf526_annotations.zip
+    sha256: 08b2b8a88c2728e9aa6de6c62dc6b02f1941dfa2c3adb28dab5852c12695ae3c
+  videos_in_repository: false
+splits:
+  train_pool:
+    count: 421
+    source_mat_directory: annotations/train
+    id_manifest: data/splits/ucfrep_526_train_421.txt
+    id_manifest_sha256: 776489ba3c556a105f96bd18788c527a9157dfaa451a0eb766c38faca27e416f
+  sealed_test:
+    count: 105
+    source_mat_directory: annotations/val
+    id_manifest: data/splits/ucfrep_526_test_105.txt
+    id_manifest_sha256: 0ca00989fa5d378a5e92fbb9e9663ddde3805d6f1806816a6ed8cd7b3d819b8b
+    evaluation_attempts: 1
+  development:
+    train_count: 337
+    dev_count: 84
+    source_partition: train_pool
+    algorithm: pams.data.deterministic_stratified_split
+    seed: 2026
+    stratification_fields: [action, count_bin]
+    count_bins:
+      - {minimum: 1, maximum: 5}
+      - {minimum: 6, maximum: 10}
+      - {minimum: 11, maximum: 20}
+      - {minimum: 21, maximum: 40}
+      - {minimum: 41, maximum: null}
+    train_id_manifest: data/splits/ucfrep_526_train_337.txt
+    train_id_manifest_sha256: 811d263b61dce27671551326b45799b06ac4b07dba311bdc39d2ed6663729d25
+    dev_id_manifest: data/splits/ucfrep_526_dev_84.txt
+    dev_id_manifest_sha256: 2199294a1d22da6c67d2fdaaafb4bebaa11e92a5bb3accd4670975815001f2c6
+  final_training:
+    count: 421
+    source_partition: train_pool
+seeds: [42, 2026, 3407]
+split_integrity:
+  annotation_only_manifest_sha256: e0fde9919b5fa3b918d3e97636066e9008a7a5f0572d83fe684f0bb4f4132e30
+  preserve_source_manifest_order: false
+  canonical_order: video_id_ascending
+  reject_duplicate_ids: true
+  reject_cross_split_overlap: true
+  require_materialized_manifest_sha256: true
+  state_before_materialization: unverified
+failure_policy:
+  required_prediction_count: 105
+  failed_decode: disqualify_incomplete_run
+  failed_pose: retain_video_with_zero_pose_and_valid_mask_false
+label_firewall:
+  self_supervised_train_fields: [video_id, pose, valid_mask, fps]
+  forbidden_train_fields: [count, test_action, cycle_boundary]
+  split_compiler_may_read_train_labels: [action, count]
+  development_labels: post_freeze_diagnostic_only
+  sealed_test_labels: evaluator_only
+  supervised_baseline_train_labels: declared_by_method_protocol_only
+  forbidden_at_inference:
+    - ground_truth_count
+    - ground_truth_action
+    - cycle_boundary
+    - result_dependent_threshold

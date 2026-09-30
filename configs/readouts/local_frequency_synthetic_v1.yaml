@@ -1,0 +1,59 @@
+# Independently inferred diagnostic. This is not an author-disclosed PAMS
+# component and is permanently ineligible for a paper-comparison table.
+schema_version: 1
+key: pams-local-frequency-synthetic-v1
+classification: inferred synthetic-frozen label-free readout
+eligible_for_paper_table: false
+
+selection:
+  # The replay helper constructs these samples internally and has no argument
+  # through which UCFRep videos, counts, actions, or target manifests can enter.
+  label_source: synthetic_generation_truth_only
+  prohibited_label_sources:
+    - UCFRep train counts/actions
+    - UCFRep dev counts/actions
+    - UCFRep test counts/actions
+    - UCFRep-pose counts/actions
+  # This broader stress policy fixes the intended perturbation scope. The
+  # bounded selector below uses the repository's deterministic CPU generators:
+  # count sweep 2--40 plus synthetic_stress_suite(count=8), with its duplicate
+  # clean case removed.
+  scope_config: configs/stress.yaml
+  scope_config_sha256: 3e87313ff43a1baffd3bb5daff136c495e391ab42390ba8512d610a106d12962
+  count_sweep_minimum: 2
+  count_sweep_maximum: 40
+  frames: 256
+  count_sweep_seed: 2026
+  stress_count: 8
+  stress_seed: 2026
+  excluded_duplicate_stress_cases: [clean]
+  objective_order:
+    - mean_absolute_error
+    - negative_exact_rate
+    - negative_obo
+    - normalized_mean_absolute_error
+    - candidate_key
+  candidate_grid:
+    representations: [xyz, frame_centered]
+    minimum_window_frames: [64, 96]
+    aggregations: [mean, median, confidence_weighted]
+  expected_replay:
+    selected_candidate: frame_centered.min064.median
+    sample_count: 50
+    mean_absolute_error: 0.02
+    normalized_mean_absolute_error: 0.0025
+    exact_rate: 0.98
+    obo: 1.0
+
+readout:
+  representation: frame_centered
+  minimum_period: 4
+  maximum_period: 128
+  adaptive_window_cycles: 3.0
+  minimum_window_frames: 64
+  window_step_fraction: 0.25
+  minimum_step_frames: 8
+  minimum_fft_size: 512
+  harmonic_weight: 0.5
+  aggregation: median
+  duration_convention: frame_intervals_T_minus_1

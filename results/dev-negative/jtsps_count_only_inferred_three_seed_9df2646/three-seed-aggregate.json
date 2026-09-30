@@ -1,0 +1,158 @@
+{
+  "aggregator": {
+    "path": "scripts/aggregate_jtsps_seed_evaluations.py",
+    "sha256": "e6cbc56d75e142bb58fae7f052a0615815718ee4bfb129d39733a9d9edcab424"
+  },
+  "artifact_type": "jtsps_count_only_three_seed_dev84_aggregate",
+  "bootstrap": {
+    "confidence_level": 0.95,
+    "method": "paired percentile over video indices; same indices for all seeds; mean of per-seed metrics in each replicate",
+    "samples": 10000,
+    "seed": 2026
+  },
+  "claim_boundary": {
+    "development_only": true,
+    "eligible_for_original_paper_table": false,
+    "eligible_for_verified_pams_reproduction_claim": false,
+    "source_protocol_uniquely_verifiable": false,
+    "test105_access": false
+  },
+  "classification": "inferred clean-room baseline; not source parity",
+  "frozen_gate_reference_only": {
+    "individual_seeds_jointly_passing": 0,
+    "mean_nmae_pass": false,
+    "mean_obo_pass": false,
+    "note": "The gate is defined for PAMS verification, not baseline certification.",
+    "required_nmae_at_most": 0.228,
+    "required_obo_at_least": 0.666
+  },
+  "input_evaluations": [
+    {
+      "prediction_sha256": "38f554a7de6dc291fc2f7e19cbc9eaf07c1b5de9fc346040dc72e7ef2656e673",
+      "seed": 42,
+      "sha256": "1ef34521978dad1861905cea1166388e5f37acf8a25781c775a89cc537b7417c"
+    },
+    {
+      "prediction_sha256": "2f21829cdd64477ddf8792d2c222e20e24ae48399f4b4b3d208c9d76f0cd4848",
+      "seed": 2026,
+      "sha256": "0578d5d1d1243ae79ad1fc8bbbc68af6e8841f92b8a863f4e85d4bef8a933c00"
+    },
+    {
+      "prediction_sha256": "33de2319f3be44c5dc8f44ad33dadba7c8a7d34a300b9773693acb43b40bbcc5",
+      "seed": 3407,
+      "sha256": "3c74408dcb32859f8b06df28c60a18e030072da17b738f79ce2e6af06a8ffa7d"
+    }
+  ],
+  "method": "jtsps-count-only",
+  "metrics_after_half_up_rounding": {
+    "exact": {
+      "mean": 0.1626984126984127,
+      "paired_bootstrap_95_percent": {
+        "high": 0.2380952380952381,
+        "level": 0.95,
+        "low": 0.09126984126984128
+      },
+      "per_seed": {
+        "2026": 0.14285714285714285,
+        "3407": 0.17857142857142858,
+        "42": 0.16666666666666666
+      },
+      "sample_sd": 0.018184824186332705
+    },
+    "mae": {
+      "mean": 2.9603174603174605,
+      "paired_bootstrap_95_percent": {
+        "high": 3.8175595238095226,
+        "level": 0.95,
+        "low": 2.2459325396825403
+      },
+      "per_seed": {
+        "2026": 2.9761904761904763,
+        "3407": 2.9285714285714284,
+        "42": 2.9761904761904763
+      },
+      "sample_sd": 0.02749286996141091
+    },
+    "nmae": {
+      "mean": 0.48763353618649186,
+      "paired_bootstrap_95_percent": {
+        "high": 0.5669972779740328,
+        "level": 0.95,
+        "low": 0.40971817616906914
+      },
+      "per_seed": {
+        "2026": 0.5022753758283316,
+        "3407": 0.4823490719734563,
+        "42": 0.4782761607576878
+      },
+      "sample_sd": 0.012842692572661489
+    },
+    "obo": {
+      "mean": 0.4087301587301588,
+      "paired_bootstrap_95_percent": {
+        "high": 0.5119047619047619,
+        "level": 0.95,
+        "low": 0.30952380952380953
+      },
+      "per_seed": {
+        "2026": 0.39285714285714285,
+        "3407": 0.42857142857142855,
+        "42": 0.40476190476190477
+      },
+      "sample_sd": 0.018184824186332688
+    },
+    "rmse": {
+      "mean": 4.751683160185647,
+      "paired_bootstrap_95_percent": {
+        "high": 6.38891962101129,
+        "level": 0.95,
+        "low": 3.2450229038497933
+      },
+      "per_seed": {
+        "2026": 4.728334046695819,
+        "3407": 4.733366867755119,
+        "42": 4.793348566106003
+      },
+      "sample_sd": 0.03617093943810091
+    }
+  },
+  "protocol": "ucfrep_526_train337_dev84",
+  "raw_metrics": {
+    "mae": {
+      "mean": 2.981164912855814,
+      "per_seed": {
+        "2026": 2.946818313428334,
+        "3407": 2.9523938525290716,
+        "42": 3.0442825726100375
+      },
+      "sample_sd": 0.054732539578420614
+    },
+    "nmae": {
+      "mean": 0.49847825542569607,
+      "per_seed": {
+        "2026": 0.5139921032546519,
+        "3407": 0.503087860367018,
+        "42": 0.47835480265541813
+      },
+      "sample_sd": 0.018260357110043954
+    },
+    "rmse": {
+      "mean": 4.727113243663557,
+      "per_seed": {
+        "2026": 4.64228241113968,
+        "3407": 4.678651787697949,
+        "42": 4.860405532153041
+      },
+      "sample_sd": 0.11685806996473193
+    }
+  },
+  "sample_count_per_seed": 84,
+  "schema_version": 1,
+  "seeds": [
+    42,
+    2026,
+    3407
+  ],
+  "split": "dev",
+  "status": "inferred-clean-room-not-source-parity"
+}

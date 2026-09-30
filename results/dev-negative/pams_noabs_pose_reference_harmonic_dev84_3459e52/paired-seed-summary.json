@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "artifact_type": "pams_noabspe_pose_reference_harmonic_dev84_two_seed_summary",
+  "status": "partial_reproduction",
+  "classification": "independently inferred target-free dev diagnostic",
+  "method_id": "pams-noabspe-pose-reference-harmonic-multiexpert-inferred-v1",
+  "protocol": "ucfrep_526",
+  "split": "dev84",
+  "sample_count_per_seed": 84,
+  "eligible_for_paper_table": false,
+  "verified_reproduction": false,
+  "source": {
+    "prediction_and_scoring_protocol_git_sha": "3459e52091b7268d0cbecb13aade404cf68cba2d",
+    "encoder_training_source_git_sha": "1378d6a977b364f0de93c85663c4e8aaabd6ffbd",
+    "dev_runner_sha256": "2b949af102fcc49533353afc79a7647325aba558cfde05e61f7b02098041efb8",
+    "predev_runner_sha256": "65028e744588a828509763d1ca1374d07251033df80cc944c9c8a9b3c447f2b2"
+  },
+  "predev": {
+    "thresholds_frozen_before_checkpoint_evaluation": true,
+    "criterion_count": 6,
+    "seed_2026": {
+      "overall_pass": true,
+      "passed_criteria": 6,
+      "artifact_sha256": "0949dd2e8ad6381b9e910a330a96fab0c60d3ce26056a4ebb5ea1a12c6e2af22",
+      "criteria": {
+        "frame_index_r2": -0.1085032267,
+        "zero_pose_period_confidence": 0.0,
+        "random_pose_period_confidence": 0.0216028684,
+        "training_period_top_bin_share": 0.09375,
+        "canonical_permuted_embedding_median_cosine": 1.0,
+        "synthetic_period_median_relative_error": 1.49e-08
+      },
+      "dev84_prediction_authorized": true,
+      "dev84_scoring_authorized_by_predev_alone": false,
+      "test105_evaluation_authorized": false
+    },
+    "seed_42": {
+      "overall_pass": true,
+      "passed_criteria": 6,
+      "artifact_sha256": "14b7f8af14b5c2153ba7cd37fce6c4fa2fcfe7f619291140c474b5eb4ac33ba5",
+      "criteria": {
+        "frame_index_r2": -0.0510878326,
+        "zero_pose_period_confidence": 0.0,
+        "random_pose_period_confidence": 0.0235623673,
+        "training_period_top_bin_share": 0.125,
+        "canonical_permuted_embedding_median_cosine": 1.0,
+        "synthetic_period_median_relative_error": 0.0
+      },
+      "dev84_prediction_authorized": true,
+      "dev84_scoring_authorized_by_predev_alone": false,
+      "test105_evaluation_authorized": false
+    }
+  },
+  "primary_metrics": {
+    "seed_2026": {
+      "nmae": 0.6024544010997213,
+      "obo": 0.30952380952380953,
+      "mae": 3.8333333333333335,
+      "rmse": 5.307227776030219,
+      "exact": 0.14285714285714285
+    },
+    "seed_42": {
+      "nmae": 0.6085621890424846,
+      "obo": 0.32142857142857145,
+      "mae": 3.9047619047619047,
+      "rmse": 5.3718844791323335,
+      "exact": 0.11904761904761904
+    },
+    "two_seed_mean": {
+      "nmae": 0.6055082950711029,
+      "obo": 0.31547619047619047,
+      "mae": 3.869047619047619,
+      "rmse": 5.339556127581276,
+      "exact": 0.13095238095238093
+    },
+    "two_seed_sample_standard_deviation_ddof_1": {
+      "nmae": 0.004318858272377392,
+      "obo": 0.008417937871268433,
+      "mae": 0.05050762722761036,
+      "rmse": 0.0457191932126705,
+      "exact": 0.016835875742536845
+    }
+  },
+  "paired_seed_bootstrap": {
+    "comparison": "seed_2026_minus_seed_42",
+    "pairing_key": "video_id",
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 2026,
+    "rng": "numpy.random.default_rng",
+    "resampling": "sample 84 aligned video rows with replacement for each replicate",
+    "quantiles": [
+      0.025,
+      0.975
+    ],
+    "differences": {
+      "nmae": {
+        "point": -0.006107787942763343,
+        "ci95_low": -0.04380656716709673,
+        "ci95_high": 0.03395823559308777
+      },
+      "obo": {
+        "point": -0.011904761904761918,
+        "ci95_low": -0.05952380952380948,
+        "ci95_high": 0.023809523809523836
+      },
+      "mae": {
+        "point": -0.07142857142857117,
+        "ci95_low": -0.2142857142857144,
+        "ci95_high": 0.059523809523809756
+      },
+      "rmse": {
+        "point": -0.06465670310211458,
+        "ci95_low": -0.17798166797744713,
+        "ci95_high": 0.03750400541008715
+      },
+      "exact": {
+        "point": 0.023809523809523808,
+        "ci95_low": 0.0,
+        "ci95_high": 0.059523809523809534
+      }
+    }
+  },
+  "acceptance_gate": {
+    "required_nmae_at_most": 0.228,
+    "required_obo_at_least": 0.666,
+    "seed_2026_joint_pass": false,
+    "seed_42_joint_pass": false,
+    "two_seed_mean_joint_pass": false,
+    "three_seed_requirement_satisfied": false,
+    "decision": "failed"
+  },
+  "immutable_bindings": {
+    "seed_2026": {
+      "checkpoint_sha256": "7c0ff57331203a230e5aaad6db50e82a1efc51b1f819aa4962f3323139d32d2c",
+      "config_sha256": "12f096d6021911d4f586f66b5741e8d73e07bb5edbba564d0e34c665d68a34f3",
+      "config_fingerprint": "d7a81b4acc44b6148574553803c896d5183817200d7cac5b2621fdb7a87f8614",
+      "prediction_sha256": "264e8c4fe4e74b6b16528f83c3bf56446b15eaef13ed8f2e7e317222ae2f0d22",
+      "evaluation_sha256": "25fa583f969388e0902581b4af9970f2f5de6967dbf4d1160e4ddf3cb55930e3"
+    },
+    "seed_42": {
+      "checkpoint_sha256": "d5770ae00b08fe7580343c001d555e269690af2d84bf69ddd3310e976156517c",
+      "config_sha256": "daefe6684aa01ce659d77ecedeceecef910bcddc8d432dfdadd0d7471086e144",
+      "config_fingerprint": "6a177379f48a2233d5e53df1d7f7c8799f81ba45fa322a55c9b3e58774aeabf0",
+      "prediction_sha256": "03796b9969f641e4f0d24cdb19c0899521e1c4151a0ed87340a68cc1462a1dc3",
+      "evaluation_sha256": "06281f37627e66fe910185feed8c85af90b06eb01834f0dbf8c7db7433aee9a6"
+    },
+    "dev_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "pose_fingerprint": "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116"
+  },
+  "firewall": {
+    "prediction_dev_targets_mounted": false,
+    "scoring_checkpoint_mounted": false,
+    "scoring_dev_pose_mounted": false,
+    "test_identity_mounted": false,
+    "test_pose_mounted": false,
+    "test_targets_mounted": false,
+    "test105_status": "sealed_not_accessed"
+  },
+  "post_dev_diagnostics": {
+    "eligibility": "diagnostic_only_not_valid_for_tuning_or_selection",
+    "shared_zero_valid_pose_samples": 6,
+    "shared_zero_valid_pose_video_ids": [
+      "v_Biking_g16_c02",
+      "v_BreastStroke_g01_c01",
+      "v_BreastStroke_g12_c02",
+      "v_PlayingViolin_g08_c04",
+      "v_Rowing_g01_c03",
+      "v_Rowing_g14_c07"
+    ],
+    "pose_energy_period_at_128_frame_upper_bound": {
+      "seed_2026": 41,
+      "seed_42": 41
+    },
+    "embedding_period_at_most_10_frames": {
+      "seed_2026": 54,
+      "seed_42": 48
+    },
+    "selected_maximum_harmonic_factor_8": {
+      "seed_2026": 52,
+      "seed_42": 47
+    },
+    "median_period_frames": {
+      "seed_2026": {
+        "embedding": 8.129032135009766,
+        "pose_energy": 85.33333587646484,
+        "selected": 49.74980163574219
+      },
+      "seed_42": {
+        "embedding": 8.985221862792969,
+        "pose_energy": 85.33333587646484,
+        "selected": 55.39181327819824
+      }
+    }
+  }
+}

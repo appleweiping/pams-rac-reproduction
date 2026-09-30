@@ -1,0 +1,12 @@
+# Direct pins for the audited modern-compatibility image. Python 3.11 and
+# torch 2.5.1+cu124 are supplied by the digest-pinned base image.
+# This is not a transitive, hash-locked environment specification.
+addict==2.4.0
+einops==0.3.2
+kornia==0.5.11
+mmcv==1.4.0
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+pytest-runner==6.0.1
+timm==0.4.12
+yapf==0.32.0

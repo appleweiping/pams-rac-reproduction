@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "status": "failed_inferred_diagnostic",
+  "classification": "strict single-variable projected-pose vector-ACF development diagnostic",
+  "method_id": "pams-sshead-inferred-projected-pose-vector-acf",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "seed": 2026,
+  "sample_count": 84,
+  "table2_eligible": false,
+  "sealed_test_status": "untouched",
+  "claim_boundary": {
+    "verified_reproduction": false,
+    "eligible_for_paper_table": false,
+    "supports_period_source_repair": true,
+    "passes_frozen_gate": false,
+    "reason": "The single period-source change materially improves the matched seed-2026 development NMAE, MAE, and RMSE, but NMAE 2.380005 and OBO 0.095238 remain far outside the frozen 0.228/0.666 acceptance gate."
+  },
+  "label_free_pretraining_gate": {
+    "classification": "static, time-shuffled, and synthetic projected-pose period-source gate",
+    "thresholds_frozen_before_execution": {
+      "static_confidence_max": 1e-08,
+      "synthetic_relative_period_error_max": 0.03,
+      "synthetic_recovered_fraction_min": 1.0,
+      "shuffled_period_6_to_8_fraction_max": 0.25,
+      "shuffled_modal_period_fraction_max": 0.5
+    },
+    "static_pose": {
+      "estimated_period": 128.0,
+      "confidence": 0.0,
+      "pass": true
+    },
+    "synthetic_counts_2_to_40": {
+      "sample_count": 39,
+      "recovered_fraction": 1.0,
+      "maximum_relative_period_error": 5.2154064192344585e-08,
+      "pass": true
+    },
+    "time_shuffled": {
+      "sample_count": 39,
+      "period_6_to_8_fraction": 0.02564102564102564,
+      "modal_period_fraction": 0.1794871794871795,
+      "pass": true
+    },
+    "overall_pass": true,
+    "development_or_test_targets_accessed": false,
+    "artifact_sha256": "7dcfe46b731e6aa76d2685d0cd981fde2d97b153458123c82176c4c77a781e44"
+  },
+  "configuration_delta": {
+    "generation": "The formal configuration was parsed as YAML, one object field was changed, the result was serialized, and PAMSConfig parsed it again before launch.",
+    "only_structural_change": "period.post_warmup_source",
+    "from": "embedding_velocity_coordinate",
+    "to": "projected_pose_velocity_vector_acf",
+    "structural_diff_count": 1,
+    "default_config_file_sha256": "058c45443b81f6b9861d2896e33544727e8921b7052d61ef331e9ba819be70c8",
+    "default_config_fingerprint": "4aa9ea1b11e9ec92ff7c5e6c6b65396fab6f807e1cdd60fb7e0c42c5567225b4",
+    "config_file_sha256": "560ecbe523fbfc5cbf2522edbee92902632282f407e1f30b1ef2306a25dd96bb",
+    "config_fingerprint": "c3040cc4df79c253a4b38b4553fc0873ab05d930b1ccd609deaecec68a992ce0"
+  },
+  "training_scope": {
+    "train_videos": 337,
+    "development_videos": 84,
+    "development_labels_loaded_during_training": false,
+    "test_identity_videos": 105,
+    "test_labels_loaded": false,
+    "encoder_epochs": 150,
+    "sshead_epochs": 30,
+    "sshead_classification": "inferred_non_author_completion",
+    "loss_scales": [
+      0.5,
+      1.0,
+      1.5
+    ]
+  },
+  "label_firewall": {
+    "train_inputs_sha256": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207",
+    "train_commitment_sha256": "ce39b1c9038bb1506354de010e46a23053b307b852222332f13df3f79d799044",
+    "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "dev_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "test_identity_inputs_sha256": "9eb2a057246b77fc7a1121ba4c9d27bf55177ad2fcd5dbb87237396a4a6015ca",
+    "test_identity_commitment_sha256": "232d3db7ce09018716594a1f1b332eec47b37410a8d3068e662b026ee2dc9c66",
+    "prediction_process_dev_target_mount": false,
+    "prediction_process_test_target_mount": false,
+    "scoring_process_dev_target_mount": true,
+    "scoring_process_test_target_mount": false,
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6"
+  },
+  "metrics": {
+    "nmae": 2.38000481376405,
+    "obo": 0.09523809523809523,
+    "mae": 9.988095238095237,
+    "rmse": 12.629802245558114,
+    "exact": 0.023809523809523808
+  },
+  "bootstrap": {
+    "samples": 10000,
+    "seed": 2026,
+    "confidence_level": 0.95,
+    "pairing": "paired_prediction_target_rows",
+    "confidence_intervals": {
+      "nmae": {
+        "low": 1.8292882692305412,
+        "high": 2.9891399012608213
+      },
+      "obo": {
+        "low": 0.03571428571428571,
+        "high": 0.16666666666666666
+      },
+      "mae": {
+        "low": 8.345238095238095,
+        "high": 11.642857142857142
+      },
+      "rmse": {
+        "low": 10.957629424201748,
+        "high": 14.147616743448165
+      },
+      "exact": {
+        "low": 0.0,
+        "high": 0.05952380952380952
+      }
+    }
+  },
+  "matched_default_comparison": {
+    "difference_definition": "projected_pose_velocity_vector_acf minus embedding_velocity_coordinate",
+    "default_prediction_sha256": "b1a298407ede3a31796c7db0dba13120da84759c17c33fe6f761911c73f7998f",
+    "default_metrics": {
+      "nmae": 4.720313876394541,
+      "obo": 0.05952380952380952,
+      "mae": 18.011904761904763,
+      "rmse": 20.61928131397314,
+      "exact": 0.023809523809523808
+    },
+    "difference": {
+      "nmae": -2.340309062630491,
+      "obo": 0.03571428571428571,
+      "mae": -8.023809523809526,
+      "rmse": -7.989479068415026,
+      "exact": 0.0
+    },
+    "paired_bootstrap_difference_confidence_intervals": {
+      "nmae": {
+        "low": -3.109489401967081,
+        "high": -1.6397014939425651
+      },
+      "obo": {
+        "low": -0.047619047619047616,
+        "high": 0.11904761904761905
+      },
+      "mae": {
+        "low": -10.059523809523808,
+        "high": -6.059523809523812
+      },
+      "rmse": {
+        "low": -9.615951514358272,
+        "high": -6.478898477242254
+      },
+      "exact": {
+        "low": -0.047619047619047616,
+        "high": 0.047619047619047616
+      }
+    },
+    "paired_difference_artifact_sha256": "82b7f0053ede0f761a5dc0d6fc619166d47098ffa76b1432d4b0d3c27de2db8e",
+    "conclusion": "The NMAE, MAE, and RMSE difference intervals exclude zero in the improving direction. The OBO interval includes zero. The repair is material but insufficient."
+  },
+  "diagnostic_gate": {
+    "maximum_nmae": 0.228,
+    "minimum_obo": 0.666,
+    "pass": false
+  },
+  "artifact_run_ids": {
+    "gate": "projected-pose-vector-acf-seed2026-20260729T125500Z-v2",
+    "pipeline": "projected-pose-vector-acf-formal-pipeline-seed2026-20260729T052000Z-v3",
+    "encoder": "projected-pose-vector-acf-formal-train337-dev84-6c52288-seed2026-150ep-20260729T052000Z-v3",
+    "sshead": "projected-pose-vector-acf-formal-sshead-train337-dev84-6c52288-seed2026-30ep-20260729T052000Z-v3",
+    "prediction": "projected-pose-vector-acf-formal-dev-predict-6c52288-seed2026-20260729T051100Z-v1",
+    "evaluation": "projected-pose-vector-acf-formal-dev-score-6c52288-seed2026-20260729T051200Z-v1",
+    "paired_default_audit": "projected-pose-vector-acf-formal-paired-default-audit-seed2026-20260729T051500Z-v1"
+  },
+  "artifact_bindings": {
+    "pipeline_launcher_sha256": "67b3e6ae28f1e30ec527ea0d69007629d585293e4d39c7d073d32be8d1335366",
+    "pipeline_completed_status_sha256": "a38d23ce4ef558b0375a140cdb537873b1e72b87dd6dc75699783167e91ae5d7",
+    "encoder_started_receipt_sha256": "b013ef74ed9fc4785940d7bcdc1a7bca6a86f9a0082e690d24c214e886a3b383",
+    "encoder_checkpoint_sha256": "8c717492b821af9361260484a16bd0576192d39032405576e6fa527c270d7679",
+    "encoder_progress_sha256": "a7be9d2362d3aac0abd84b8b58ada9afce9b92164fcada23caa188216787267d",
+    "encoder_completed_receipt_sha256": "877d070c15a7404cf786dc5d3346ccb16ee5faf06b4dcfaa3d265d1d4c5c762e",
+    "sshead_started_receipt_sha256": "aa82cce2c5644fd0392dc7a81132d93da1d86dc90434efa5f57db50e2a8bec48",
+    "sshead_checkpoint_sha256": "0dcbebf191c18c159cbc7985a5e81ef141f11ed56deafb5172d3851d00bd785a",
+    "sshead_progress_sha256": "2af04b357c35a3772cc0a59404f9009d6a9ffc4e3b0a01cea775c921f99a7de6",
+    "sshead_completed_receipt_sha256": "a04048f2038413456afaf28381a7493af1cb1a5e27a5813a7729aa293415d60e",
+    "training_pose_cache_snapshot_sha256": "94d5186d5bfbbb8a930de64e401016ca1f1b5601667cc88b299d8d59203410fb",
+    "dev_pose_cache_snapshot_sha256": "f36e34059c6d99878c31404a6a63b44d8cf3c5da901a8f6e13e009a25d819208",
+    "prediction_sha256": "8c596c0cbe06d80d1dc9ff770b0662fbb09251c7defc07b71aff20f5bccb9aca",
+    "prediction_receipt_sha256": "4f2fe3b35fba6708dbffde8d57a04122e50de2d1c011f88f0a9d849d8486cca3",
+    "evaluation_sha256": "6e8d725431bf4bd2d221a35ba018a19f327609e01f4eefb0e3cf7f92c3a4e2c5",
+    "evaluation_receipt_sha256": "aba1cd289341ec0a2101b8e2171d2bbe8293690a09bfafdb39eef5a78b36f882",
+    "prediction_code_sha256": "0a3f066d28af2b0c35796eff0dfedba71ad88982cf41c7dc3fe133b5d6b8dcb7"
+  },
+  "runtime": {
+    "training_source_git_sha": "6c52288d6a227bc3040fd672c31039408e2d6696",
+    "prediction_source_git_sha": "6c52288d6a227bc3040fd672c31039408e2d6696",
+    "scoring_source_git_sha": "6c52288d6a227bc3040fd672c31039408e2d6696",
+    "container_image_id": "sha256:022103f69a42ef3e88ee43ddcfbd706dabfdeec6247c257d1d01fda2c0ea2f91",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "container_source_revision": "6c52288d6a227bc3040fd672c31039408e2d6696",
+    "gpu": "NVIDIA RTX A6000",
+    "gpu_index": 1,
+    "cublas_workspace_config": ":4096:8"
+  },
+  "excluded_attempts": [
+    {
+      "attempt": "v1",
+      "status": "aborted_and_excluded",
+      "reason": "The launcher failed to apply the intended configuration mutation and exposed the canonical config SHA. It was terminated after 10 pose-warm-up epochs, before any projected-pose post-warm-up epoch, and produced no completion receipt, prediction, or score.",
+      "observed_config_file_sha256": "058c45443b81f6b9861d2896e33544727e8921b7052d61ef331e9ba819be70c8",
+      "last_epoch": 10,
+      "progress_sha256": "0a65511da65ca72102bcb73dd98297862d8ea98ce30c9a8e15b0a2a6a9ec6695",
+      "audit_receipt_sha256": "767a921f020d4814a31626e5919eb3fc7dd8313b6ee29cb24eec7b601e90c3a5"
+    },
+    {
+      "attempt": "v2",
+      "status": "excluded_before_container_launch",
+      "reason": "A pre-created parsed configuration was read-only, but the copied launcher still attempted to replace it. The container did not launch and no training artifact was produced.",
+      "audit_receipt_sha256": "3c332ac11844100e9647fa53d6cf35afa755302e78406aed939cb3a4776d3a72"
+    }
+  ],
+  "limitations": [
+    "This is a development-only inferred diagnostic, not PAMS-Literal and not a sealed-test result.",
+    "The paper does not disclose the SSHead training objective; this run uses the independent inferred completion.",
+    "The single period-source repair substantially improves NMAE but remains more than ten times above the frozen NMAE gate and has very low OBO.",
+    "Only seed 2026 was run for this diagnostic.",
+    "No test target, test prediction, test evaluation, or test metric was accessed or produced."
+  ]
+}

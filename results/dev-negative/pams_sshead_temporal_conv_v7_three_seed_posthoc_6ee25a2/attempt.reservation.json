@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "attempt_id": "pams-sshead-temporal-conv-v7-seed3407-posthoc-20260729T231000Z-v1",
+  "reserved_utc": "2026-07-29T23:20:01Z",
+  "dataset": "UCFRep",
+  "split": "dev84",
+  "seed": 3407,
+  "classification": "post-hoc-three-seed-variance-follow-up",
+  "pre_registered_success_claim": false,
+  "paper_table_2_claim": false,
+  "reason": "Seeds 42 and 2026 already failed the frozen gate; this extra seed only closes the variance audit.",
+  "source_revision": "6ee25a2e1291c35c563140999e16c5aa65bc8ced",
+  "container_image_id": "sha256:620173fe7a9084d3b1492c3e775ea5f2bc6ac5a6d851d8560727a4969b3aab66",
+  "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+  "config_sha256": "a6926c095a039379d1d1b22931568c6cd05f84a4a0913bccdfc6fc0f2aa9f053",
+  "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+  "test_evaluation_authorized": false
+}

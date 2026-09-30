@@ -1,0 +1,276 @@
+{
+  "schema_version": 1,
+  "status": "failed_dev_pose_stress_diagnostic",
+  "classification": "PAMS dev pose-cache stress diagnostic",
+  "method_id": "pams-sshead-inferred-full-multiscale-seed2026",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "seed": 2026,
+  "sample_count_per_condition": 84,
+  "condition_count": 11,
+  "table_eligible": false,
+  "sealed_test_status": "untouched",
+  "claim_boundary": {
+    "verified_reproduction": false,
+    "robust_model": false,
+    "reason": "The clean checkpoint already fails the reproduction gate by a wide margin. The stress experiment can diagnose invariance and degradation but cannot convert the failed clean model into paper-level evidence."
+  },
+  "protocol_details": {
+    "tune_on_stress_results": false,
+    "clean_replay_matches_source": true,
+    "target_free_prediction_rows": 924,
+    "prediction_loaded_dev_targets": false,
+    "prediction_loaded_test_targets": false,
+    "scoring_loaded_dev_targets": true,
+    "scoring_loaded_test_targets": false,
+    "bootstrap_samples_per_condition": 10000,
+    "bootstrap_seed": 2026,
+    "paired_difference_direction": "condition minus clean",
+    "temporal_speed_definition": "Endpoint-preserving two-segment resampling. The named multiplier applies to the first half and the second half compensates to retain both endpoints; multiplier 2.0 therefore has a zero-speed second half.",
+    "pause_definition": "Freeze the middle 20 percent while accelerating the outside intervals to retain both endpoints.",
+    "occlusion_definition": "For each video, a deterministic contiguous 51-frame interval and 10 of 33 joints are selected; coordinates are zero-filled.",
+    "geometry_reference": "Rotation and scaling use each frame's joint centroid; translation uses 10 percent of the valid coordinate span."
+  },
+  "metrics": {
+    "clean": {
+      "nmae": 4.720313876394541,
+      "obo": 0.05952380952380952,
+      "mae": 18.011904761904763,
+      "rmse": 20.61928131397314
+    },
+    "temporal_speed_pos0p5": {
+      "nmae": 4.753114706516801,
+      "obo": 0.05952380952380952,
+      "mae": 18.047619047619047,
+      "rmse": 20.63053677486477,
+      "paired_vs_clean": {
+        "nmae_difference": 0.03280083012225976,
+        "nmae_95ci": {
+          "low": -0.05231773434898489,
+          "high": 0.1283033360488714
+        },
+        "obo_difference": 0.0,
+        "obo_95ci": {
+          "low": -0.05952380952380952,
+          "high": 0.05952380952380952
+        }
+      }
+    },
+    "temporal_speed_pos2": {
+      "nmae": 5.244713980258932,
+      "obo": 0.0,
+      "mae": 20.071428571428573,
+      "rmse": 21.58923894201086,
+      "paired_vs_clean": {
+        "nmae_difference": 0.5244001038643908,
+        "nmae_95ci": {
+          "low": 0.3120966384805665,
+          "high": 0.7623365944571292
+        },
+        "obo_difference": -0.05952380952380952,
+        "obo_95ci": {
+          "low": -0.11904761904761904,
+          "high": -0.011904761904761904
+        }
+      }
+    },
+    "temporal_pause_middle": {
+      "nmae": 4.631242035536986,
+      "obo": 0.07142857142857142,
+      "mae": 17.785714285714285,
+      "rmse": 20.49738659299905,
+      "paired_vs_clean": {
+        "nmae_difference": -0.08907184085755482,
+        "nmae_95ci": {
+          "low": -0.20244008967223293,
+          "high": 0.012302295918366858
+        },
+        "obo_difference": 0.011904761904761904,
+        "obo_95ci": {
+          "low": -0.047619047619047616,
+          "high": 0.07142857142857142
+        }
+      }
+    },
+    "pose_occlusion": {
+      "nmae": 4.720710701791366,
+      "obo": 0.05952380952380952,
+      "mae": 18.023809523809526,
+      "rmse": 20.631690833925045,
+      "paired_vs_clean": {
+        "nmae_difference": 0.0003968253968249513,
+        "nmae_95ci": {
+          "low": -0.015476190476189977,
+          "high": 0.014285714285714235
+        },
+        "obo_difference": 0.0,
+        "obo_95ci": {
+          "low": 0.0,
+          "high": 0.0
+        }
+      }
+    },
+    "rotation_neg15deg": {
+      "nmae": 4.720313876394541,
+      "obo": 0.05952380952380952,
+      "mae": 18.011904761904763,
+      "rmse": 20.61928131397314,
+      "paired_vs_clean": {
+        "nmae_difference": 0.0,
+        "nmae_95ci": {
+          "low": 0.0,
+          "high": 0.0
+        },
+        "obo_difference": 0.0,
+        "obo_95ci": {
+          "low": 0.0,
+          "high": 0.0
+        }
+      }
+    },
+    "rotation_pos15deg": {
+      "nmae": 4.708409114489779,
+      "obo": 0.05952380952380952,
+      "mae": 17.988095238095237,
+      "rmse": 20.59848584356673,
+      "paired_vs_clean": {
+        "nmae_difference": -0.011904761904761862,
+        "nmae_95ci": {
+          "low": -0.0297619047619051,
+          "high": 0.0
+        },
+        "obo_difference": 0.0,
+        "obo_95ci": {
+          "low": 0.0,
+          "high": 0.0
+        }
+      }
+    },
+    "isotropic_scale_pos0p85": {
+      "nmae": 4.720313876394541,
+      "obo": 0.05952380952380952,
+      "mae": 18.011904761904763,
+      "rmse": 20.61928131397314,
+      "paired_vs_clean": {
+        "nmae_difference": 0.0,
+        "nmae_95ci": {
+          "low": 0.0,
+          "high": 0.0
+        },
+        "obo_difference": 0.0,
+        "obo_95ci": {
+          "low": 0.0,
+          "high": 0.0
+        }
+      }
+    },
+    "isotropic_scale_pos1p15": {
+      "nmae": 4.708409114489779,
+      "obo": 0.05952380952380952,
+      "mae": 17.988095238095237,
+      "rmse": 20.59848584356673,
+      "paired_vs_clean": {
+        "nmae_difference": -0.011904761904761862,
+        "nmae_95ci": {
+          "low": -0.0297619047619051,
+          "high": 0.0
+        },
+        "obo_difference": 0.0,
+        "obo_95ci": {
+          "low": 0.0,
+          "high": 0.0
+        }
+      }
+    },
+    "translation_neg0p1": {
+      "nmae": 4.708409114489779,
+      "obo": 0.05952380952380952,
+      "mae": 17.988095238095237,
+      "rmse": 20.59848584356673,
+      "paired_vs_clean": {
+        "nmae_difference": -0.011904761904761862,
+        "nmae_95ci": {
+          "low": -0.0297619047619051,
+          "high": 0.0
+        },
+        "obo_difference": 0.0,
+        "obo_95ci": {
+          "low": 0.0,
+          "high": 0.0
+        }
+      }
+    },
+    "translation_pos0p1": {
+      "nmae": 4.720313876394541,
+      "obo": 0.05952380952380952,
+      "mae": 18.011904761904763,
+      "rmse": 20.61928131397314,
+      "paired_vs_clean": {
+        "nmae_difference": 0.0,
+        "nmae_95ci": {
+          "low": 0.0,
+          "high": 0.0
+        },
+        "obo_difference": 0.0,
+        "obo_95ci": {
+          "low": 0.0,
+          "high": 0.0
+        }
+      }
+    }
+  },
+  "interpretation": {
+    "significant_degradation": [
+      "The endpoint-preserving 2.0 first-half speed condition worsens NMAE by 0.524400 with a paired 95% CI excluding zero and reduces OBO from 0.059524 to zero."
+    ],
+    "not_significantly_different_from_clean": [
+      "0.5 first-half speed",
+      "20 percent middle pause",
+      "20 percent time by 30 percent joint occlusion"
+    ],
+    "near_or_exact_count_invariance": [
+      "rotation by plus or minus 15 degrees",
+      "isotropic scaling by 0.85 or 1.15",
+      "translation by plus or minus 10 percent"
+    ],
+    "caution": "Geometric count invariance is not evidence of useful robustness because the clean model is already catastrophically inaccurate and many transformations change no rounded count."
+  },
+  "artifact_bindings": {
+    "run_id": "pams-pose-stress-seed2026-00032fa-v1",
+    "source_clean_prediction_sha256": "10628527594f880d58669ee14c0a94938fb9a8d2bffe90f5583385e06efd4082",
+    "source_clean_prediction_receipt_sha256": "e8e760f6c31c11ff80fe2c09726c9e6bce8af2371058857f5af77e21637a8e44",
+    "stress_prediction_sha256": "62c82a642deefebe6b03db6ba6fbdfe0f60511f5cbed5d8ad9c73b26778db7cb",
+    "stress_prediction_bytes": 7906707,
+    "stress_prediction_receipt_sha256": "5ff25ea4431888c2edb992bdf488a63a5cb08d011154576a727210061831128a",
+    "stress_evaluation_sha256": "16785a112e275e44b6accbbb3def675eea6cc8c7f44fafe6b30d154b2ebb2650",
+    "stress_evaluation_bytes": 961899,
+    "stress_evaluation_receipt_sha256": "49ce343df9183493a726a2a2e813be98cba5118dc35791296e099e194d574f14",
+    "stress_config_sha256": "3e87313ff43a1baffd3bb5daff136c495e391ab42390ba8512d610a106d12962",
+    "stress_code_sha256": "807f579accb8fd70de2fce60a2b7a8d07b562fb76f65e655d88693c520b7b1bf",
+    "checkpoint_sha256": "732c1b243c39aa250ef0cda411e1691b8bd8383f110fd95b42d191798c3c2242",
+    "checkpoint_provenance_sha256": "43ec7d970e2be69465b17e70c62179f32d34d0978e2763b99138e3281c4d178b",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6"
+  },
+  "runtime": {
+    "source_git_sha": "00032fa46cc83c8fb8ef14f6faa336f5edd94cf7",
+    "container_image_id": "sha256:cba624b93ab4df3b4fdf8fb1792ca1cc7cf21cee0f3f8c316af72f247b7eeedd",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "gpu": "NVIDIA RTX A6000",
+    "gpu_memory_bytes": 50807570432,
+    "driver": "550.54.14",
+    "cuda_runtime": "12.4",
+    "torch": "2.5.1+cu124",
+    "python": "3.11.10",
+    "server_validation": {
+      "pytest": "31 passed",
+      "mypy": "Success: no issues found",
+      "ruff": "All checks passed"
+    }
+  },
+  "limitations": [
+    "This is a development-only diagnostic on one failed seed-2026 PAMS-SSHead checkpoint.",
+    "The 2.0 speed condition is an endpoint-preserving two-segment warp with a frozen second half, not a globally doubled-duration clip.",
+    "Joint occlusion is represented by zero-filled joint coordinates because PoseSequence exposes only a frame-level validity mask.",
+    "The 105-video sealed test split has no predictions, targets, evaluation, or metrics."
+  ]
+}

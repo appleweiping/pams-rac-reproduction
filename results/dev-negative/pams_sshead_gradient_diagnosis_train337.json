@@ -1,0 +1,389 @@
+{
+  "schema_version": 1,
+  "status": "root_cause_localized",
+  "classification": "label-free train337-only read-only SSHead loss and gradient diagnosis",
+  "protocol": "ucfrep_526",
+  "split": "train",
+  "diagnosed_training_source_git_sha": "ebbc296db11c3d7d06f5fc3090a3487abed55e36",
+  "diagnostic_script": {
+    "path": "scripts/diagnose_sshead_gradients.py",
+    "sha256": "225346fe225059856a9a51d5c1c4993155c7996ebdc20452d990b1f910d6d65e"
+  },
+  "runtime": {
+    "server_classification": "designated_server",
+    "gpu": "physical GPU 1, NVIDIA RTX A6000",
+    "gpu_lock_used": true,
+    "container_image_id": "sha256:6e8105129eade4f6c6aa49a81e2d732e98cba66d7a70cd557c3d39cfc66b7738",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508"
+  },
+  "label_firewall": {
+    "train_rows": 337,
+    "train_inputs_sha256": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207",
+    "train_pose_cache_set_sha256": "34123ac27334ab06852c12254c7e0c046f7d86f3a066c81f9b8751c362dd0cd0",
+    "training_counts_loaded": false,
+    "development_inputs_loaded": false,
+    "development_targets_loaded": false,
+    "test105_accessed": false,
+    "enforcement": "The diagnostic CLI accepts only protocol=ucfrep_526, split=train, and exactly 337 pose-sidecar rows; it has no target argument."
+  },
+  "headline_findings": {
+    "missing_gradient_or_optimizer_wiring_bug": false,
+    "primary_failure": "The historical SSHead consumes post-position-encoding Transformer embeddings, while the pointwise head and phase-free inferred objective permit a nearly video-invariant absolute-position waveform. Adaptive training then reinforces the positional pseudo-period.",
+    "independent_objective_defect": "An exactly constant stream is a positive-loss stationary point with zero gradient for every component and the total objective.",
+    "minor_implementation_bug": "Samples with fewer than two valid frames contribute variance loss 1 with zero gradient and are counted as collapsed streams, diluting the anti-collapse gradient and corrupting collapse diagnostics.",
+    "pre_pe_input_repair_supported": true,
+    "variance_weight_only_repair_supported": false
+  },
+  "constant_stream_stationary_point": {
+    "input": {
+      "shape": [
+        1,
+        256
+      ],
+      "value": 0.0,
+      "target_period_frames": 16.0,
+      "all_frames_valid": true
+    },
+    "components": {
+      "cycle": {
+        "value": 0.0,
+        "stream_gradient_l2": 0.0,
+        "nonzero_gradient_elements": 0
+      },
+      "spectral": {
+        "value": 1.0,
+        "stream_gradient_l2": 0.0,
+        "nonzero_gradient_elements": 0
+      },
+      "variance": {
+        "value": 1.0,
+        "stream_gradient_l2": 0.0,
+        "nonzero_gradient_elements": 0
+      },
+      "smoothness": {
+        "value": 0.0,
+        "stream_gradient_l2": 0.0,
+        "nonzero_gradient_elements": 0
+      },
+      "total": {
+        "value": 1.100000023841858,
+        "stream_gradient_l2": 0.0,
+        "nonzero_gradient_elements": 0
+      }
+    },
+    "interpretation": "relu(1-std) cannot leave exact std=0 because the population-standard-deviation derivative is zero there; the scale-invariant spectral ratio also has zero derivative for the clamped all-zero spectrum."
+  },
+  "three_seed_epoch30_logs": {
+    "adaptive_multiscale_post_pe": [
+      {
+        "seed": 42,
+        "total": 0.337193604304458,
+        "cycle": 0.000013310938493170062,
+        "spectral": 0.23815965422536922,
+        "variance": 0.990202339714288,
+        "smoothness": 0.00004065391313607973,
+        "stream_std_mean": 0.009797661033257268,
+        "stream_std_median": 0.010820415802299976,
+        "stream_std_p10": 0.00723318737000227,
+        "head_grad_rms_max": 0.00148370040208591,
+        "head_grad_to_param_ratio_max": 0.05763553327330421,
+        "zero_grad_steps": 0,
+        "period_confidence_mean": 0.559505989,
+        "period_valid_fraction": 0.9584569733
+      },
+      {
+        "seed": 2026,
+        "total": 0.34411743247898113,
+        "cycle": 0.000008072114152055184,
+        "spectral": 0.24488143017101005,
+        "variance": 0.9922766351204597,
+        "smoothness": 0.000025877954942205,
+        "stream_std_mean": 0.007723374143021751,
+        "stream_std_median": 0.00856126006692648,
+        "stream_std_p10": 0.005380922928452492,
+        "head_grad_rms_max": 0.001766003709469343,
+        "head_grad_to_param_ratio_max": 0.06868213531420811,
+        "zero_grad_steps": 0,
+        "period_confidence_mean": 0.5611481992,
+        "period_valid_fraction": 0.9584569733
+      },
+      {
+        "seed": 3407,
+        "total": 0.2945245843082224,
+        "cycle": 0.00001921089806651644,
+        "spectral": 0.19578196833501585,
+        "variance": 0.9872224732393327,
+        "smoothness": 0.00011531315899028468,
+        "stream_std_mean": 0.012777529814410457,
+        "stream_std_median": 0.014114944264292717,
+        "stream_std_p10": 0.00912130307406187,
+        "head_grad_rms_max": 0.001068579371810134,
+        "head_grad_to_param_ratio_max": 0.04155228059849557,
+        "zero_grad_steps": 0,
+        "period_confidence_mean": 0.5245320323,
+        "period_valid_fraction": 0.9584569733
+      }
+    ],
+    "fixed_period16_single_scale": [
+      {
+        "seed": 42,
+        "total": 0.2631119953949303,
+        "cycle": 0.000001618506538672661,
+        "spectral": 0.16339279202749893,
+        "variance": 0.9971758394283782,
+        "smoothness": 0.0000008392883638375126,
+        "stream_std_mean": 0.0028241504127441597,
+        "stream_std_median": 0.002815667539834976,
+        "stream_std_p10": 0.00265543176792562,
+        "head_grad_rms_max": 0.007221008252516211,
+        "head_grad_to_param_ratio_max": 0.2808259874,
+        "zero_grad_steps": 0
+      },
+      {
+        "seed": 2026,
+        "total": 0.2624227360377326,
+        "cycle": 0.000001077728670281717,
+        "spectral": 0.16264605413823877,
+        "variance": 0.997756068182982,
+        "smoothness": 0.0000005895914921202671,
+        "stream_std_mean": 0.0022439327008417016,
+        "stream_std_median": 0.00226697139441967,
+        "stream_std_p10": 0.0021139653865247963,
+        "head_grad_rms_max": 0.008238655040357177,
+        "head_grad_to_param_ratio_max": 0.3207174774,
+        "zero_grad_steps": 0
+      },
+      {
+        "seed": 3407,
+        "total": 0.2584894777051773,
+        "cycle": 0.000001107158445456419,
+        "spectral": 0.15872163071299872,
+        "variance": 0.9976673810701342,
+        "smoothness": 0.000000627841475057284,
+        "stream_std_mean": 0.0023326266405672854,
+        "stream_std_median": 0.0023413035087287426,
+        "stream_std_p10": 0.002199734700843692,
+        "head_grad_rms_max": 0.007728438253556394,
+        "head_grad_to_param_ratio_max": 0.3014225504,
+        "zero_grad_steps": 0
+      }
+    ],
+    "shared_invalid_stream_diagnostic": {
+      "stream_std_min": 0.0,
+      "collapsed_fraction_1e6": 0.02373887240356083,
+      "zero_std_rows": 8,
+      "train_rows": 337,
+      "interpretation": "The same eight rows have fewer than two valid frames. This metric is not evidence that the trained head produced eight additional collapsed valid streams."
+    }
+  },
+  "representative_train337_gradient_probes": {
+    "fixed_period16_seed2026": {
+      "config_fingerprint": "3978d2ec99f5d29f5ec4a24e9f24c1d0e77b9a339e74baabfd8b4258e05bfdb0",
+      "encoder_checkpoint_sha256": "959fc1959b23ce028806d81769fe7d3a2139f1161bdaf4ecf9d5353addae64a5",
+      "sshead_checkpoint_sha256": "c20f48b424fa86f0bf40e2185ba7324b081940f4ba5b3bcf677d3dce22b343e2",
+      "training_target_period": {
+        "p10": 16.0,
+        "median": 16.0,
+        "p90": 16.0
+      },
+      "initial_head": {
+        "stream_std_mean": 0.0060376,
+        "fully_valid_centered_stream_correlation_median": 0.9976049
+      },
+      "final_head": {
+        "stream_std_mean": 0.002251009137966623,
+        "stream_std_median": 0.002275852020829916,
+        "stream_std_p10": 0.002120875520631671,
+        "zero_or_fewer_than_two_valid_frames": 8,
+        "fully_valid_stream_count": 155,
+        "fully_valid_centered_stream_correlation_mean": 0.99084967,
+        "fully_valid_centered_stream_correlation_median": 0.99190807,
+        "estimated_period_median": 15.0588236,
+        "estimated_period_16_count": 10,
+        "estimated_period_8_count": 0
+      },
+      "head_parameter_change": {
+        "delta_l2": 0.76846,
+        "delta_over_initial": 0.11695
+      },
+      "loss_and_weighted_parameter_gradients": {
+        "cycle": {
+          "unweighted_value": 0.0000010931836535320287,
+          "effective_weight": 1.0,
+          "weighted_parameter_gradient_l2": 0.00002106405602873144,
+          "weighted_parameter_gradient_rms": 8.212060806902562e-8,
+          "cosine_with_total_gradient": 0.57918,
+          "log_scale_directional_derivative": 0.00000218637
+        },
+        "spectral": {
+          "unweighted_value": 0.16606895064034163,
+          "effective_weight": 1.0,
+          "weighted_parameter_gradient_l2": 1.2231286475944663,
+          "weighted_parameter_gradient_rms": 0.004768505559902447,
+          "cosine_with_total_gradient": 0.999999595,
+          "log_scale_directional_derivative": 1.399e-8
+        },
+        "variance": {
+          "unweighted_value": 0.9977489890259875,
+          "effective_weight": 0.1,
+          "weighted_parameter_gradient_l2": 0.001138212417835927,
+          "weighted_parameter_gradient_rms": 0.00000443745,
+          "cosine_with_total_gradient": -0.223402,
+          "log_scale_directional_derivative": -0.000225100878
+        },
+        "smoothness": {
+          "unweighted_value": 5.873550955884072e-7,
+          "effective_weight": 0.01,
+          "weighted_parameter_gradient_l2_approx": 1.0166e-7,
+          "weighted_parameter_gradient_rms_approx": 3.963e-10
+        },
+        "total": {
+          "value": 0.265844943350076,
+          "parameter_gradient_l2": 1.2228861026664593,
+          "parameter_gradient_rms": 0.004767559971,
+          "log_scale_directional_derivative": -0.000222906492
+        }
+      },
+      "spectral_to_weighted_variance_parameter_gradient_l2_ratio": 1074.6049054006894,
+      "selected_scale_sweep": {
+        "1": 0.265844943350076,
+        "16": 0.26274869,
+        "32": 0.25999116,
+        "64": 0.25616423,
+        "128": 0.25526299,
+        "256": 0.28057414
+      }
+    },
+    "adaptive_multiscale_seed2026": {
+      "config_fingerprint": "4aa9ea1b11e9ec92ff7c5e6c6b65396fab6f807e1cdd60fb7e0c42c5567225b4",
+      "encoder_checkpoint_sha256": "ecaf3c2bd54ffc12c396f9da0044b2799917fb8a6f3811547ba9bcab6fe9d45e",
+      "sshead_checkpoint_sha256": "732c1b243c39aa250ef0cda411e1691b8bd8383f110fd95b42d191798c3c2242",
+      "training_target_period": {
+        "p10": 6.56410265,
+        "median": 7.75757599,
+        "p90": 7.75757599,
+        "period_confidence_mean": 0.5611482,
+        "period_valid_fraction": 0.95845697
+      },
+      "initial_head": {
+        "stream_std_mean": 0.00617325,
+        "fully_valid_centered_stream_correlation_median": 0.9979195
+      },
+      "final_head": {
+        "stream_std_mean": 0.007711499718706005,
+        "stream_std_median": 0.008555453270673752,
+        "stream_std_p10": 0.005417722556740045,
+        "zero_or_fewer_than_two_valid_frames": 8,
+        "fully_valid_stream_count": 155,
+        "fully_valid_centered_stream_correlation_mean": 0.99871242,
+        "fully_valid_centered_stream_correlation_median": 0.99884343,
+        "estimated_period_median": 8.0,
+        "estimated_period_8_count": 310,
+        "estimated_period_16_count": 0
+      },
+      "head_parameter_change": {
+        "delta_l2": 0.67909,
+        "delta_over_initial": 0.10335
+      },
+      "loss_and_weighted_parameter_gradients": {
+        "cycle": {
+          "unweighted_value": 0.00000823678864184363,
+          "effective_weight": 1.0,
+          "weighted_parameter_gradient_l2": 0.0000982704,
+          "weighted_parameter_gradient_rms": 3.831e-7,
+          "cosine_with_total_gradient": 0.2821,
+          "log_scale_directional_derivative": 0.0000164736
+        },
+        "spectral": {
+          "unweighted_value": 0.24734388004424665,
+          "effective_weight": 1.0,
+          "weighted_parameter_gradient_l2": 0.22692649890155958,
+          "weighted_parameter_gradient_rms": 0.000884698657,
+          "cosine_with_total_gradient": 0.99984437,
+          "log_scale_directional_derivative": 2.02e-8
+        },
+        "variance": {
+          "unweighted_value": 0.9922884994515326,
+          "effective_weight": 0.1,
+          "weighted_parameter_gradient_l2": 0.0040847071071454435,
+          "weighted_parameter_gradient_rms": 0.0000159247,
+          "cosine_with_total_gradient": -0.00426,
+          "log_scale_directional_derivative": -0.000771149901
+        },
+        "smoothness": {
+          "unweighted_value": 0.000025805527652786198,
+          "effective_weight": 0.01,
+          "weighted_parameter_gradient_l2_approx": 0.0000027646
+        },
+        "total": {
+          "value": 0.3465812272593954,
+          "parameter_gradient_l2": 0.2269017058375459,
+          "parameter_gradient_rms": 0.000884602,
+          "log_scale_directional_derivative": -0.000754141265
+        }
+      },
+      "spectral_to_weighted_variance_parameter_gradient_l2_ratio": 55.555145803378025,
+      "selected_scale_sweep": {
+        "1": 0.3465812272593954,
+        "16": 0.3371802,
+        "32": 0.3313658,
+        "64": 0.3327852,
+        "128": 0.395
+      }
+    }
+  },
+  "code_audit": [
+    {
+      "symbol": "PAMSEncoder._forward_with_pre_pe",
+      "finding": "The diagnosed historical head input was the normalized Transformer embedding after sinusoidal absolute position encoding."
+    },
+    {
+      "symbol": "PeriodHead",
+      "finding": "The 512->128->1 GELU MLP is pointwise and has no temporal operator that can distinguish pose phase from a shared absolute-position template."
+    },
+    {
+      "symbol": "train_sshead",
+      "finding": "The encoder runs under no_grad and the head receives a detached input, but the Period Head itself remains differentiable. Backward, finite-gradient checks, AdamW steps, nonzero log gradients, and approximately 10% parameter movement rule out a missing head-gradient path."
+    },
+    {
+      "symbol": "SSHeadLoss.compute",
+      "finding": "Cycle and spectral terms are confidence-gated; variance is not. The spectral ratio is scale-invariant, the variance hinge has zero derivative at exact std=0, and fewer-than-two-valid-frame rows add a constant variance penalty."
+    },
+    {
+      "symbol": "_valid_stream_standard_deviations",
+      "finding": "Rows with fewer than two valid frames are encoded as std=0 and therefore inflate collapse counts and force stream_std_min=0."
+    }
+  ],
+  "causal_interpretation": {
+    "evidence_against_wiring_bug": [
+      "Every epoch-30 log has zero_grad_steps=0.",
+      "The representative trained heads moved by 10.3% to 11.7% of initial parameter L2.",
+      "Fixed-period training produced a median emitted period near 16.",
+      "Adaptive training produced period 8 for 310 of 337 train videos."
+    ],
+    "evidence_for_positional_template": [
+      "Across 155 fully valid train videos, centered final streams have median pairwise correlation 0.991 for fixed-period and 0.999 for adaptive training.",
+      "Adaptive target periods concentrate near 7.76 frames and the trained head emits period 8 for 310 of 337 videos.",
+      "The adaptive final correlation is even higher than its random-head initial correlation."
+    ],
+    "evidence_for_objective_imbalance": [
+      "At the final fixed-period checkpoint, the weighted spectral parameter gradient is 1074.6 times the weighted variance gradient.",
+      "At the final adaptive checkpoint, the same ratio is 55.6.",
+      "Multiplying the fixed-period stream by 128 raises mean std only to about 0.288 yet slightly lowers total loss; the sampled objective optimum is not at the stated std>=1 margin.",
+      "Because the downstream readout uses relative peak thresholds, amplitude collapse alone does not explain the large count multiplier; the shared high-frequency waveform does."
+    ]
+  },
+  "next_experiment_recommendation": {
+    "first": "Run the already-defined pre-PE SSHead-input variant alone as a one-variable causal experiment.",
+    "do_not_confound_with": "Do not simultaneously select a variance weight using development targets; that would mix the input-source repair with objective tuning.",
+    "parallel_safe_work": "Only synthetic and label-free train337 diagnostics may compare loss candidates while the pre-PE run executes.",
+    "variance_weight_scan_assessment": "Changing variance_weight from 0.1 to 1.0 is unlikely to equalize gradients: the observed ratios imply approximately 5.6 for adaptive and 107 for fixed-period at these checkpoints, with no stable common value.",
+    "candidate_if_pre_pe_is_insufficient": "Skip fewer-than-two-valid-frame rows and replace the linear std hinge with a collapse-safe scale penalty such as a log-ratio hinge or an explicitly constrained/augmented-Lagrangian variance condition. Any candidate must first pass exact-constant, finite-gradient, train period-concentration, stream-correlation, and invalid-row gates without development labels."
+  },
+  "claim_boundary": {
+    "verified_reproduction": false,
+    "sealed_test_result": false,
+    "training_semantics_changed_by_this_diagnosis": false,
+    "conclusion": "This artifact localizes the historical inferred-SSHead failure. It does not claim that the proposed pre-PE or loss repairs meet the paper result."
+  }
+}

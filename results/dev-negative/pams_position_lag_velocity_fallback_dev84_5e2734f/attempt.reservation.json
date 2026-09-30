@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "attempt_id": "plvfdev-s2026-5e2734f-20260730t1946z",
+  "scope": "formal-predev-bound-dev84-predict-and-isolated-score",
+  "seed": 2026,
+  "source_revision": "470d49bd97eef5adad89142d4ffc017125505525",
+  "algorithm_source_revision": "470d49bd97eef5adad89142d4ffc017125505525",
+  "orchestrator_runner_sha256": "3eda6ba4884e735bbf696ebd5c72bbc931377734f3a5e5540a83882d03ebcdfc",
+  "source_export_receipt_sha256": "3ad41d5ebab71a560f730a234ef457c2e61abd384f99d1a4289fd4cd3ac90fdc",
+  "readout_config_sha256": "b3c38341e442765cb709d8ca9c5ecfe541121ea61d1ae35c0ff2cb48b6b09a98",
+  "readout_config_semantic_sha256": "e17b4105f732be1bc4a40b153c0db28729fc0379a5f921ab0a26d3b2301b4233",
+  "formal_predev_artifact_sha256": "f563cffa4235b34e091bf9b93af9123a93fa1d57ee29dc39f54f4feb60e0d928",
+  "container_image_id": "sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005",
+  "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+  "prediction_network": "none",
+  "prediction_targets_mounted": false,
+  "score_network": "none",
+  "score_pose_mounted": false,
+  "score_checkpoint_mounted": false,
+  "test105_evaluation_authorized": false
+}

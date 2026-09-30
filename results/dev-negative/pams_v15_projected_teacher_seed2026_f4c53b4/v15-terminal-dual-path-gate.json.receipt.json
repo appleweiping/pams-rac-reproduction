@@ -1,0 +1,19 @@
+{
+  "artifact_bytes": 746503,
+  "artifact_locator": "v15-terminal-dual-path-gate.json",
+  "artifact_sha256": "0f318d67bc507a1147df469ff983740e3172f16c85326552c79d35d33f1ddae3",
+  "artifact_status": "sshead_training_rejected",
+  "artifact_type": "pams_v15_terminal_encoder_dual_path_gate_receipt",
+  "checkpoint_algorithm_source_git_sha": "df2e7cdfcc91bb436eb99ee10852ddd66ee971e4",
+  "code_files_sha256_commitment": "7561871183bec2a066596c5fee2e397231b2ef4f0f32eda17c9f261f1075092b",
+  "config_sha256": "3e9d641c0e8b4710c3f0542b823b4a51d319765f7e6c72f7f6195f8971fec688",
+  "encoder_checkpoint_sha256": "aa1750154e0ba36d41188cc023bb382db83db9f5c69b1867f310cdc636a48e19",
+  "encoder_progress_sha256": "70226a5f01a3d9e8b688fde53736c397a135c242d8e15ce429a36615552029c4",
+  "gate_code_source_git_sha": "f4c53b4094049cf34f7c23c6978f051a1ce7493b",
+  "hardware_sha256": "eab46fe2baf67f1ee5b801837ee90e47d71b988e7e7950c01a7b8d52cb8983a2",
+  "runtime_sha256": "d1d7f6d6153aebdee3133bff48cfd47f8d959c842cd724cdff5a0de6285ca0f7",
+  "schema_version": 1,
+  "source_export_receipt_sha256": "0235635128894aa24533cde02aa1d5986faaf8f1d1cc39d713eaadca03348588",
+  "sshead_training_authorized": false,
+  "train337_pose_cache_set_sha256": "f32d718ae922120778f535a6a4f467edba79cafeba90373b3a6a55bf11be6ee2"
+}

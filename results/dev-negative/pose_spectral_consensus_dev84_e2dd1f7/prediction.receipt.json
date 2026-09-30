@@ -1,0 +1,25 @@
+{
+  "algorithm_parameters_sha256": "35db0c084cc7c9c414e3fbb7c24180fad809c434390aaf36922acca2f055af6a",
+  "artifact_type": "pose_spectral_consensus_prediction_receipt",
+  "created_at_utc": "2026-07-30T20:42:15Z",
+  "dev_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+  "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+  "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+  "label_firewall": {
+    "gt_count_or_action_oracle_used": false,
+    "prediction_loaded_dev_targets": false,
+    "prediction_loaded_test_identity": false,
+    "prediction_loaded_test_targets": false
+  },
+  "method_id": "pose-spectral-consensus-harmonic-v1",
+  "pose_cache_set_sha256": "681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1",
+  "prediction_bytes": 72985,
+  "prediction_file": "predictions.json",
+  "prediction_sha256": "cdd9be4ceab1ade05e4741042c840273a4d31e2b31c2f2e105950f4202ba2265",
+  "protocol": "ucfrep_526",
+  "record_total": 84,
+  "schema_version": 1,
+  "source_code_sha256": "70cc0a9d5045fb4ac7ac12c73ec36a2c1bd47d3bda76419e4b2444ab661099a3",
+  "source_git_sha": "e2dd1f7db6cba85f6bba4fd9148797a2e657711d",
+  "split": "dev"
+}

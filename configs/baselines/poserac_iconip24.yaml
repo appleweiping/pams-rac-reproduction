@@ -1,0 +1,15 @@
+schema_version: 1
+key: poserac-iconip24
+paper_name: PoseRAC-ICONIP24 (standard-protocol target)
+status: blocked_unimplemented
+implementation: clean_room_architecture_scaffold
+protocol: ucfrep_526_fair
+modality: pose_33x3
+eligible_for_comparison: false
+reason: >-
+  The spatial encoder/decoder architecture has an independently written smoke
+  scaffold, but the disclosed synthetic salient-pose training data, RGB action
+  recognizer, trained checkpoint, and standard UCFRep protocol parity are not
+  available. This method is not PoseRAC-v1 and remains blocked.
+sources:
+  - https://doi.org/10.1007/978-981-96-6588-4_18

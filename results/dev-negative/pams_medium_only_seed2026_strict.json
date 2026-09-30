@@ -1,0 +1,333 @@
+{
+  "schema_version": 1,
+  "status": "failed_inferred_single_expert_ablation",
+  "classification": "PAMS Medium-only dev representation diagnostic",
+  "method_id": "pams-sshead-inferred-medium-only",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "seed": 2026,
+  "sample_count": 84,
+  "paper_table2_eligible": false,
+  "internal_ablation_comparison_eligible": true,
+  "sealed_test_status": "untouched",
+  "claim_boundary": {
+    "verified_reproduction": false,
+    "supports_multi_expert_advantage": false,
+    "reason": "The Medium-only switch is an independently inferred inference ablation, not an author-disclosed implementation detail. On the matched checkpoint, multi-expert consensus has significantly worse NMAE, identical OBO, and changes only 14 of 84 counts."
+  },
+  "ablation": {
+    "training_reused": true,
+    "only_effective_change": "consensus.expert_mode",
+    "reference_value": "multi",
+    "ablation_value": "medium_only",
+    "medium_only_semantics": "Return expert_counts[1] directly, bypassing majority vote and FFT fallback while retaining all three expert outputs.",
+    "training_config_fingerprint": "4aa9ea1b11e9ec92ff7c5e6c6b65396fab6f807e1cdd60fb7e0c42c5567225b4",
+    "effective_inference_config_fingerprint": "6178f48f764e0bc0b176a831799aa58d75a42953615ca2845b814b919dc98df8",
+    "config_file_sha256": "058c45443b81f6b9861d2896e33544727e8921b7052d61ef331e9ba819be70c8",
+    "prediction_schema_version": 2,
+    "selection_mode_recorded_per_row": true,
+    "paper_disclosure_status": "inferred"
+  },
+  "metrics": {
+    "nmae": 4.690327097300619,
+    "obo": 0.05952380952380952,
+    "mae": 17.916666666666668,
+    "rmse": 20.54640508470428,
+    "exact": 0.023809523809523808
+  },
+  "bootstrap": {
+    "samples": 10000,
+    "seed": 2026,
+    "confidence_level": 0.95,
+    "pairing": "paired_prediction_target_rows",
+    "confidence_intervals": {
+      "nmae": {
+        "low": 3.815491901081495,
+        "high": 5.604967046400621
+      },
+      "obo": {
+        "low": 0.011904761904761904,
+        "high": 0.11904761904761904
+      },
+      "mae": {
+        "low": 15.761607142857146,
+        "high": 20.047619047619047
+      },
+      "rmse": {
+        "low": 18.859118989104207,
+        "high": 22.10179372100825
+      },
+      "exact": {
+        "low": 0.0,
+        "high": 0.05952380952380952
+      }
+    }
+  },
+  "matched_multi_expert_comparison": {
+    "reference_record": "pams_multiscale_seed2026_strict.json",
+    "multi_expert_metrics": {
+      "nmae": 4.720313876394541,
+      "obo": 0.05952380952380952,
+      "mae": 18.011904761904763,
+      "rmse": 20.61928131397314,
+      "exact": 0.023809523809523808
+    },
+    "multi_minus_medium": {
+      "nmae": 0.02998677909392189,
+      "obo": 0.0,
+      "mae": 0.0952380952380949,
+      "rmse": 0.07287622926886073,
+      "exact": 0.0
+    },
+    "paired_10000_bootstrap_95ci_multi_minus_medium": {
+      "nmae": {
+        "low": 0.002977288088895171,
+        "high": 0.06429032029478403
+      },
+      "obo": {
+        "low": -0.047619047619047616,
+        "high": 0.047619047619047616
+      },
+      "mae": {
+        "low": -0.02380952380952195,
+        "high": 0.2142857142857153
+      },
+      "rmse": {
+        "low": 0.02348958980541607,
+        "high": 0.1345547894643321
+      },
+      "exact": {
+        "low": -0.03571428571428571,
+        "high": 0.03571428571428571
+      }
+    },
+    "same_count_rows": 70,
+    "changed_count_rows": 14,
+    "medium_lower_absolute_error_rows": 11,
+    "multi_lower_absolute_error_rows": 3,
+    "equal_absolute_error_changed_rows": 0,
+    "conclusion": "The preregistered requirement that multi-expert consensus outperform a single expert is not met. Multi-expert NMAE is worse, with a paired interval entirely above zero; OBO is identical."
+  },
+  "changed_rows": [
+    {
+      "video_id": "v_Biking_g10_c01",
+      "target": 11,
+      "multi_count": 7,
+      "medium_count": 6,
+      "expert_counts": [
+        7,
+        6,
+        3
+      ]
+    },
+    {
+      "video_id": "v_BreastStroke_g02_c01",
+      "target": 5,
+      "multi_count": 7,
+      "medium_count": 6,
+      "expert_counts": [
+        7,
+        6,
+        4
+      ]
+    },
+    {
+      "video_id": "v_CuttingInKitchen_g01_c01",
+      "target": 10,
+      "multi_count": 9,
+      "medium_count": 7,
+      "expert_counts": [
+        9,
+        7,
+        5
+      ]
+    },
+    {
+      "video_id": "v_CuttingInKitchen_g03_c01",
+      "target": 14,
+      "multi_count": 15,
+      "medium_count": 14,
+      "expert_counts": [
+        15,
+        14,
+        7
+      ]
+    },
+    {
+      "video_id": "v_FrontCrawl_g09_c03",
+      "target": 2,
+      "multi_count": 12,
+      "medium_count": 10,
+      "expert_counts": [
+        12,
+        10,
+        3
+      ]
+    },
+    {
+      "video_id": "v_FrontCrawl_g17_c02",
+      "target": 2,
+      "multi_count": 14,
+      "medium_count": 13,
+      "expert_counts": [
+        14,
+        13,
+        7
+      ]
+    },
+    {
+      "video_id": "v_HammerThrow_g05_c02",
+      "target": 2,
+      "multi_count": 29,
+      "medium_count": 28,
+      "expert_counts": [
+        29,
+        28,
+        14
+      ]
+    },
+    {
+      "video_id": "v_HandstandWalking_g05_c05",
+      "target": 12,
+      "multi_count": 23,
+      "medium_count": 22,
+      "expert_counts": [
+        23,
+        22,
+        11
+      ]
+    },
+    {
+      "video_id": "v_HandstandWalking_g07_c01",
+      "target": 8,
+      "multi_count": 28,
+      "medium_count": 27,
+      "expert_counts": [
+        28,
+        27,
+        14
+      ]
+    },
+    {
+      "video_id": "v_Kayaking_g16_c05",
+      "target": 5,
+      "multi_count": 7,
+      "medium_count": 6,
+      "expert_counts": [
+        7,
+        6,
+        3
+      ]
+    },
+    {
+      "video_id": "v_PommelHorse_g14_c02",
+      "target": 6,
+      "multi_count": 6,
+      "medium_count": 4,
+      "expert_counts": [
+        6,
+        4,
+        3
+      ]
+    },
+    {
+      "video_id": "v_SoccerJuggling_g06_c05",
+      "target": 13,
+      "multi_count": 25,
+      "medium_count": 23,
+      "expert_counts": [
+        25,
+        23,
+        11
+      ]
+    },
+    {
+      "video_id": "v_SoccerJuggling_g10_c01",
+      "target": 7,
+      "multi_count": 23,
+      "medium_count": 22,
+      "expert_counts": [
+        23,
+        22,
+        12
+      ]
+    },
+    {
+      "video_id": "v_TrampolineJumping_g14_c02",
+      "target": 6,
+      "multi_count": 16,
+      "medium_count": 15,
+      "expert_counts": [
+        16,
+        15,
+        8
+      ]
+    }
+  ],
+  "training_scope": {
+    "train_videos": 337,
+    "development_videos": 84,
+    "development_labels_loaded_during_training": false,
+    "test_identity_videos": 105,
+    "test_labels_loaded": false,
+    "encoder_epochs": 150,
+    "sshead_epochs": 30,
+    "sshead_classification": "inferred_non_author_completion"
+  },
+  "label_firewall": {
+    "protocol_identity_sha256": "7aaaea4fdd0620cc7abb4f307cf63a9506448540e3d3d920acf70957f6b8b97f",
+    "train_inputs_sha256": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207",
+    "train_commitment_sha256": "ce39b1c9038bb1506354de010e46a23053b307b852222332f13df3f79d799044",
+    "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "dev_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "test_identity_inputs_sha256": "9eb2a057246b77fc7a1121ba4c9d27bf55177ad2fcd5dbb87237396a4a6015ca",
+    "test_identity_commitment_sha256": "232d3db7ce09018716594a1f1b332eec47b37410a8d3068e662b026ee2dc9c66",
+    "prediction_process_target_mount": false,
+    "prediction_process_test_target_mount": false,
+    "scoring_process_dev_target_mount": true,
+    "scoring_process_test_target_mount": false,
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6"
+  },
+  "artifact_run_ids": {
+    "encoder": "matched-full-multiscale-train337-dev84-b0b85f1-seed2026-150ep-20260729T033000Z-v4",
+    "sshead": "matched-full-multiscale-sshead-train337-dev84-b0b85f1-seed2026-30ep-20260729T033000Z-v4",
+    "prediction": "pams-medium-only-dev-predict-adb2dc4-seed2026-20260729-v1",
+    "evaluation": "pams-medium-only-dev-score-adb2dc4-seed2026-20260729-v2"
+  },
+  "artifact_bindings": {
+    "encoder_checkpoint_sha256": "ecaf3c2bd54ffc12c396f9da0044b2799917fb8a6f3811547ba9bcab6fe9d45e",
+    "encoder_progress_sha256": "4884a3d2740eadad375248e872cb5a1d554f2a23dabb418c4380b8e6eb6536a0",
+    "encoder_completed_receipt_sha256": "9dc667fa940576c8ea0da6e683d1db63a64e6614b9b42f60d6f2a8e19188bcbc",
+    "sshead_checkpoint_sha256": "732c1b243c39aa250ef0cda411e1691b8bd8383f110fd95b42d191798c3c2242",
+    "sshead_progress_sha256": "40a9d057d1cbf29041e789885d125c5e6cdd3f9155d30361df946335a6558f54",
+    "sshead_completed_receipt_sha256": "cf3c4337186dfab2df48068075be3f917875b7c830b20d4e66d1e591b0265fec",
+    "training_pose_cache_set_sha256": "34123ac27334ab06852c12254c7e0c046f7d86f3a066c81f9b8751c362dd0cd0",
+    "dev_pose_cache_set_sha256": "2e14cb39a4112f7ee1d10b759d166bb472f41e317e55e773776394331690256c",
+    "dev_pose_cache_snapshot_sha256": "f36e34059c6d99878c31404a6a63b44d8cf3c5da901a8f6e13e009a25d819208",
+    "prediction_sha256": "78aa10ee7afe334f6a0797ab6da554d90cab50a8f7e362412bb2200d9563c6b1",
+    "prediction_receipt_sha256": "0ab9d777ed6547de90d53cd6bf55c849787a15f90d2884e124f7ba1eabe96492",
+    "prediction_code_sha256": "dfad5f5423208de2cbf8dcd88257c55edd367d83230f1f7dacd42fb9c8c0a54d",
+    "evaluation_sha256": "55ac587e7627f9221282f2510c44a3fa8f30f4c74336b9e3061203643b6b5596",
+    "evaluation_receipt_sha256": "e5a4fc54a8ffdfce5b2dba1b0064a0ec1fcc2e326db29c9799c04217317c340a"
+  },
+  "runtime": {
+    "training_source_git_sha": "6c52288d6a227bc3040fd672c31039408e2d6696",
+    "prediction_source_git_sha": "adb2dc4647be3c1da3390578b6b26818913f1fa7",
+    "scoring_source_git_sha": "adb2dc4647be3c1da3390578b6b26818913f1fa7",
+    "checkpoint_container_image_id": "sha256:022103f69a42ef3e88ee43ddcfbd706dabfdeec6247c257d1d01fda2c0ea2f91",
+    "prediction_container_image_id": "sha256:294713c52564a168d2ecd334625aa6afb64cfbd1674e979dd6539e844983d8a6",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "gpu": "NVIDIA RTX A6000"
+  },
+  "diagnostic_gate": {
+    "maximum_nmae": 0.228,
+    "minimum_obo": 0.666,
+    "pass": false
+  },
+  "limitations": [
+    "This is a development-only inferred ablation, not a sealed-test result.",
+    "The paper does not uniquely specify which single expert or how its output replaces consensus.",
+    "PAMS-SSHead itself is an independent completion because the paper discloses no head-training loss.",
+    "The 105-video sealed test split has no predictions, targets, evaluation, or metrics."
+  ]
+}

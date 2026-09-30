@@ -1,0 +1,35 @@
+{
+  "artifact_type": "pams_teacher_period_direct_mount_boundary_audit",
+  "network_mode": {
+    "prediction": "none",
+    "score": "none"
+  },
+  "prediction_has_dev_targets": false,
+  "prediction_has_test_identity_sidecars": true,
+  "prediction_has_test_media_pose_or_labels": false,
+  "prediction_mounts": {
+    "/pams/encoder": false,
+    "/pams/input/config.yaml": false,
+    "/pams/output": true,
+    "/pams/pose-cache": false,
+    "/pams/protocol/dev.inputs.commitment.json": false,
+    "/pams/protocol/dev.inputs.json": false,
+    "/pams/protocol/test-identity.inputs.commitment.json": false,
+    "/pams/protocol/test-identity.inputs.json": false,
+    "/pams/protocol/train.inputs.commitment.json": false,
+    "/pams/protocol/train.inputs.json": false,
+    "/pams/source-export-receipt.json": false,
+    "/workspace": false
+  },
+  "schema_version": 1,
+  "score_has_dev_targets": true,
+  "score_has_pose_or_encoder": false,
+  "score_mounts": {
+    "/pams/frozen/prediction.receipt.json": false,
+    "/pams/frozen/predictions.json": false,
+    "/pams/output": true,
+    "/pams/source-export-receipt.json": false,
+    "/pams/targets/dev.targets.json": false,
+    "/workspace": false
+  }
+}

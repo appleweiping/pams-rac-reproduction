@@ -1,0 +1,522 @@
+{
+  "algorithm": "forward_with_pre_pe -> estimate_period_from_projected_pose -> confidence/valid guard -> half_up((valid_frames-1)/period)",
+  "classification": "pams-teacher-period-direct-inferred-label-free-predev-gate",
+  "config_sha256": "eb4072a195608757cd2542855b33fb000c987f96c94b83a1e448ab78f97e9374",
+  "dev_inputs_mounted": false,
+  "eligible_for_paper_table": false,
+  "encoder_checkpoint_sha256": "6817fe468d76c3fa2182dd831695d6fe3d6da208a2b7f8dfa90cffa6872e8053",
+  "gates": {
+    "synthetic_count_2_40_exact_fraction_gte_1": true,
+    "synthetic_stress_obo_fraction_gte_1": true,
+    "train_period_128_fraction_lte_0_10": true,
+    "train_period_4_fraction_lte_0_10": true,
+    "train_rounded_period_mode_fraction_lte_0_25": true,
+    "zero_confidence_nonzero_count_absent": true
+  },
+  "pose_fingerprint": "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116",
+  "schema_version": 1,
+  "source_revision": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "status": "passed",
+  "synthetic_count_2_40": {
+    "exact_fraction": 1.0,
+    "obo_fraction": 1.0,
+    "records": 39,
+    "rows": [
+      {
+        "confidence": 0.7965690493583679,
+        "period": 128.0,
+        "raw_count": 1.9921875,
+        "rounded_count": 2,
+        "target_count": 2,
+        "valid_frames": 256,
+        "video_id": "count-02"
+      },
+      {
+        "confidence": 0.6640899777412415,
+        "period": 85.33333587646484,
+        "raw_count": 2.9882811609422815,
+        "rounded_count": 3,
+        "target_count": 3,
+        "valid_frames": 256,
+        "video_id": "count-03"
+      },
+      {
+        "confidence": 0.6639654040336609,
+        "period": 64.0,
+        "raw_count": 3.984375,
+        "rounded_count": 4,
+        "target_count": 4,
+        "valid_frames": 256,
+        "video_id": "count-04"
+      },
+      {
+        "confidence": 0.663832426071167,
+        "period": 51.20000076293945,
+        "raw_count": 4.980468675785233,
+        "rounded_count": 5,
+        "target_count": 5,
+        "valid_frames": 256,
+        "video_id": "count-05"
+      },
+      {
+        "confidence": 0.663680374622345,
+        "period": 42.66666793823242,
+        "raw_count": 5.976562321884563,
+        "rounded_count": 6,
+        "target_count": 6,
+        "valid_frames": 256,
+        "video_id": "count-06"
+      },
+      {
+        "confidence": 0.6635056138038635,
+        "period": 36.57143020629883,
+        "raw_count": 6.97265593829799,
+        "rounded_count": 7,
+        "target_count": 7,
+        "valid_frames": 256,
+        "video_id": "count-07"
+      },
+      {
+        "confidence": 0.6633065938949585,
+        "period": 32.0,
+        "raw_count": 7.96875,
+        "rounded_count": 8,
+        "target_count": 8,
+        "valid_frames": 256,
+        "video_id": "count-08"
+      },
+      {
+        "confidence": 0.663082480430603,
+        "period": 28.44444465637207,
+        "raw_count": 8.964843683206709,
+        "rounded_count": 9,
+        "target_count": 9,
+        "valid_frames": 256,
+        "video_id": "count-09"
+      },
+      {
+        "confidence": 0.6628329753875732,
+        "period": 25.600000381469727,
+        "raw_count": 9.960937351570466,
+        "rounded_count": 10,
+        "target_count": 10,
+        "valid_frames": 256,
+        "video_id": "count-10"
+      },
+      {
+        "confidence": 0.6625580191612244,
+        "period": 23.272727966308594,
+        "raw_count": 10.957030923455031,
+        "rounded_count": 11,
+        "target_count": 11,
+        "valid_frames": 256,
+        "video_id": "count-11"
+      },
+      {
+        "confidence": 0.6622573137283325,
+        "period": 21.33333396911621,
+        "raw_count": 11.953124643769126,
+        "rounded_count": 12,
+        "target_count": 12,
+        "valid_frames": 256,
+        "video_id": "count-12"
+      },
+      {
+        "confidence": 0.6619309186935425,
+        "period": 19.69230842590332,
+        "raw_count": 12.949218267604028,
+        "rounded_count": 13,
+        "target_count": 13,
+        "valid_frames": 256,
+        "video_id": "count-13"
+      },
+      {
+        "confidence": 0.6615787148475647,
+        "period": 18.285715103149414,
+        "raw_count": 13.94531187659598,
+        "rounded_count": 14,
+        "target_count": 14,
+        "valid_frames": 256,
+        "video_id": "count-14"
+      },
+      {
+        "confidence": 0.6612008213996887,
+        "period": 17.066667556762695,
+        "raw_count": 14.94140547074498,
+        "rounded_count": 15,
+        "target_count": 15,
+        "valid_frames": 256,
+        "video_id": "count-15"
+      },
+      {
+        "confidence": 0.6607972383499146,
+        "period": 16.0,
+        "raw_count": 15.9375,
+        "rounded_count": 16,
+        "target_count": 16,
+        "valid_frames": 256,
+        "video_id": "count-16"
+      },
+      {
+        "confidence": 0.6603679060935974,
+        "period": 15.058823585510254,
+        "raw_count": 16.933593686917447,
+        "rounded_count": 17,
+        "target_count": 17,
+        "valid_frames": 256,
+        "video_id": "count-17"
+      },
+      {
+        "confidence": 0.6599128842353821,
+        "period": 14.222222328186035,
+        "raw_count": 17.929687366413418,
+        "rounded_count": 18,
+        "target_count": 18,
+        "valid_frames": 256,
+        "video_id": "count-18"
+      },
+      {
+        "confidence": 0.6594322323799133,
+        "period": 13.473684310913086,
+        "raw_count": 18.92578110899194,
+        "rounded_count": 19,
+        "target_count": 19,
+        "valid_frames": 256,
+        "video_id": "count-19"
+      },
+      {
+        "confidence": 0.6589260101318359,
+        "period": 12.800000190734863,
+        "raw_count": 19.921874703140933,
+        "rounded_count": 20,
+        "target_count": 20,
+        "valid_frames": 256,
+        "video_id": "count-20"
+      },
+      {
+        "confidence": 0.6583941578865051,
+        "period": 12.190476417541504,
+        "raw_count": 20.917968360372477,
+        "rounded_count": 21,
+        "target_count": 21,
+        "valid_frames": 256,
+        "video_id": "count-21"
+      },
+      {
+        "confidence": 0.6578369140625,
+        "period": 11.636363983154297,
+        "raw_count": 21.914061846910062,
+        "rounded_count": 22,
+        "target_count": 22,
+        "valid_frames": 256,
+        "video_id": "count-22"
+      },
+      {
+        "confidence": 0.6572540998458862,
+        "period": 11.1304349899292,
+        "raw_count": 22.910155823265093,
+        "rounded_count": 23,
+        "target_count": 23,
+        "valid_frames": 256,
+        "video_id": "count-23"
+      },
+      {
+        "confidence": 0.6566460728645325,
+        "period": 10.666666984558105,
+        "raw_count": 23.90624928753825,
+        "rounded_count": 24,
+        "target_count": 24,
+        "valid_frames": 256,
+        "video_id": "count-24"
+      },
+      {
+        "confidence": 0.6560125350952148,
+        "period": 10.239999771118164,
+        "raw_count": 24.90234430661077,
+        "rounded_count": 25,
+        "target_count": 25,
+        "valid_frames": 256,
+        "video_id": "count-25"
+      },
+      {
+        "confidence": 0.655353844165802,
+        "period": 9.84615421295166,
+        "raw_count": 25.898436535208056,
+        "rounded_count": 26,
+        "target_count": 26,
+        "valid_frames": 256,
+        "video_id": "count-26"
+      },
+      {
+        "confidence": 0.6546699404716492,
+        "period": 9.481481552124023,
+        "raw_count": 26.894531049620127,
+        "rounded_count": 27,
+        "target_count": 27,
+        "valid_frames": 256,
+        "video_id": "count-27"
+      },
+      {
+        "confidence": 0.6539610624313354,
+        "period": 9.142857551574707,
+        "raw_count": 27.89062375319196,
+        "rounded_count": 28,
+        "target_count": 28,
+        "valid_frames": 256,
+        "video_id": "count-28"
+      },
+      {
+        "confidence": 0.653226912021637,
+        "period": 8.82758617401123,
+        "raw_count": 28.886718857611413,
+        "rounded_count": 29,
+        "target_count": 29,
+        "valid_frames": 256,
+        "video_id": "count-29"
+      },
+      {
+        "confidence": 0.6524680256843567,
+        "period": 8.533333778381348,
+        "raw_count": 29.88281094148996,
+        "rounded_count": 30,
+        "target_count": 30,
+        "valid_frames": 256,
+        "video_id": "count-30"
+      },
+      {
+        "confidence": 0.6516841053962708,
+        "period": 8.258064270019531,
+        "raw_count": 30.878907170263147,
+        "rounded_count": 31,
+        "target_count": 31,
+        "valid_frames": 256,
+        "video_id": "count-31"
+      },
+      {
+        "confidence": 0.650875449180603,
+        "period": 8.0,
+        "raw_count": 31.875,
+        "rounded_count": 32,
+        "target_count": 32,
+        "valid_frames": 256,
+        "video_id": "count-32"
+      },
+      {
+        "confidence": 0.6500420570373535,
+        "period": 7.757575988769531,
+        "raw_count": 32.871092770365095,
+        "rounded_count": 33,
+        "target_count": 33,
+        "valid_frames": 256,
+        "video_id": "count-33"
+      },
+      {
+        "confidence": 0.649183988571167,
+        "period": 7.529411792755127,
+        "raw_count": 33.867187373834895,
+        "rounded_count": 34,
+        "target_count": 34,
+        "valid_frames": 256,
+        "video_id": "count-34"
+      },
+      {
+        "confidence": 0.6483014225959778,
+        "period": 7.314285755157471,
+        "raw_count": 34.863281055186235,
+        "rounded_count": 35,
+        "target_count": 35,
+        "valid_frames": 256,
+        "video_id": "count-35"
+      },
+      {
+        "confidence": 0.6473943591117859,
+        "period": 7.111111164093018,
+        "raw_count": 35.859374732826836,
+        "rounded_count": 36,
+        "target_count": 36,
+        "valid_frames": 256,
+        "video_id": "count-36"
+      },
+      {
+        "confidence": 0.64646315574646,
+        "period": 6.918919086456299,
+        "raw_count": 36.85546785756744,
+        "rounded_count": 37,
+        "target_count": 37,
+        "valid_frames": 256,
+        "video_id": "count-37"
+      },
+      {
+        "confidence": 0.6455075740814209,
+        "period": 6.736842155456543,
+        "raw_count": 37.85156221798388,
+        "rounded_count": 38,
+        "target_count": 38,
+        "valid_frames": 256,
+        "video_id": "count-38"
+      },
+      {
+        "confidence": 0.6445278525352478,
+        "period": 6.564102649688721,
+        "raw_count": 38.84765574348422,
+        "rounded_count": 39,
+        "target_count": 39,
+        "valid_frames": 256,
+        "video_id": "count-39"
+      },
+      {
+        "confidence": 0.6435240507125854,
+        "period": 6.400000095367432,
+        "raw_count": 39.843749406281866,
+        "rounded_count": 40,
+        "target_count": 40,
+        "valid_frames": 256,
+        "video_id": "count-40"
+      }
+    ]
+  },
+  "synthetic_stress_count8": {
+    "exact_fraction": 0.8333333333333334,
+    "obo_fraction": 1.0,
+    "records": 12,
+    "rows": [
+      {
+        "case": "clean",
+        "confidence": 0.6633065938949585,
+        "period": 32.0,
+        "raw_count": 7.96875,
+        "rounded_count": 8,
+        "target_count": 8,
+        "valid_frames": 256,
+        "video_id": "clean"
+      },
+      {
+        "case": "variable_speed",
+        "confidence": 0.25735148787498474,
+        "period": 28.44444465637207,
+        "raw_count": 8.964843683206709,
+        "rounded_count": 9,
+        "target_count": 8,
+        "valid_frames": 256,
+        "video_id": "variable_speed"
+      },
+      {
+        "case": "pause",
+        "confidence": 0.4127807021141052,
+        "period": 28.44444465637207,
+        "raw_count": 8.964843683206709,
+        "rounded_count": 9,
+        "target_count": 8,
+        "valid_frames": 256,
+        "video_id": "pause"
+      },
+      {
+        "case": "noise",
+        "confidence": 0.6624587178230286,
+        "period": 32.0,
+        "raw_count": 7.96875,
+        "rounded_count": 8,
+        "target_count": 8,
+        "valid_frames": 256,
+        "video_id": "noise"
+      },
+      {
+        "case": "occlusion",
+        "confidence": 0.6665017604827881,
+        "period": 32.0,
+        "raw_count": 7.96875,
+        "rounded_count": 8,
+        "target_count": 8,
+        "valid_frames": 256,
+        "video_id": "occlusion"
+      },
+      {
+        "case": "rotation_negative",
+        "confidence": 0.663290798664093,
+        "period": 32.0,
+        "raw_count": 7.96875,
+        "rounded_count": 8,
+        "target_count": 8,
+        "valid_frames": 256,
+        "video_id": "rotation_negative"
+      },
+      {
+        "case": "rotation_positive",
+        "confidence": 0.6633024215698242,
+        "period": 32.0,
+        "raw_count": 7.96875,
+        "rounded_count": 8,
+        "target_count": 8,
+        "valid_frames": 256,
+        "video_id": "rotation_positive"
+      },
+      {
+        "case": "scale_low",
+        "confidence": 0.6633065342903137,
+        "period": 32.0,
+        "raw_count": 7.96875,
+        "rounded_count": 8,
+        "target_count": 8,
+        "valid_frames": 256,
+        "video_id": "scale_low"
+      },
+      {
+        "case": "scale_high",
+        "confidence": 0.6633065938949585,
+        "period": 32.0,
+        "raw_count": 7.96875,
+        "rounded_count": 8,
+        "target_count": 8,
+        "valid_frames": 256,
+        "video_id": "scale_high"
+      },
+      {
+        "case": "translation_negative",
+        "confidence": 0.6633065938949585,
+        "period": 32.0,
+        "raw_count": 7.96875,
+        "rounded_count": 8,
+        "target_count": 8,
+        "valid_frames": 256,
+        "video_id": "translation_negative"
+      },
+      {
+        "case": "translation_positive",
+        "confidence": 0.6633065938949585,
+        "period": 32.0,
+        "raw_count": 7.96875,
+        "rounded_count": 8,
+        "target_count": 8,
+        "valid_frames": 256,
+        "video_id": "translation_positive"
+      },
+      {
+        "case": "multiharmonic",
+        "confidence": 0.6486429572105408,
+        "period": 32.0,
+        "raw_count": 7.96875,
+        "rounded_count": 8,
+        "target_count": 8,
+        "valid_frames": 256,
+        "video_id": "multiharmonic"
+      }
+    ]
+  },
+  "targets_mounted": false,
+  "test_inputs_mounted": false,
+  "train337": {
+    "confidence_mean": 0.22581476522526683,
+    "period_128_fraction": 0.09034267912772585,
+    "period_4_fraction": 0.006230529595015576,
+    "period_max": 128.0,
+    "period_median": 21.33333396911621,
+    "period_min": 4.0,
+    "pose_cache_set_sha256": "f32d718ae922120778f535a6a4f467edba79cafeba90373b3a6a55bf11be6ee2",
+    "positive_confidence_records": 321,
+    "raw_count_max": 63.75,
+    "raw_count_median": 10.957030923455031,
+    "records": 337,
+    "rounded_period_mode_fraction": 0.09034267912772585,
+    "zero_confidence_records": 16
+  }
+}

@@ -1,0 +1,12 @@
+schema_version: 1
+key: spectral-proxy
+paper_name: Deterministic spectral proxy (not a paper baseline)
+status: reference_only
+implementation: deterministic_reference
+protocol: synthetic_and_pipeline_smoke
+modality: pose_33x3
+eligible_for_comparison: false
+period:
+  minimum: 4
+  maximum: 128
+warning: Never publish this result under any paper baseline name.

@@ -1,0 +1,13 @@
+{
+  "artifact_type": "pams_position_lag_velocity_fallback_dev_evaluation_receipt",
+  "bootstrap_samples": 10000,
+  "bootstrap_seed": 2026,
+  "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+  "evaluation_bytes": 35993,
+  "evaluation_file": "evaluation.json",
+  "evaluation_sha256": "8fbb5edfc12d5ee3451bf5f608f513e1668f4b81e76b447f5d80d8fc6089d255",
+  "prediction_receipt_sha256": "25f88e783fab5dba45be97842f0a70befc6af890956c320f86675df7a87d5346",
+  "prediction_sha256": "7613e0d57e1be3db986e9581047ef2ed9ae54a711fcf55262b6d7241395e7f75",
+  "schema_version": 1,
+  "test105_evaluation_authorized": false
+}

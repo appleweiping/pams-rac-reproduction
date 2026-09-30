@@ -1,0 +1,33 @@
+{
+  "completed": true,
+  "container_exit_code": 0,
+  "dev_prediction_gate": true,
+  "development_inputs_mounted": false,
+  "development_targets_mounted": false,
+  "mounted_destinations": [
+    "/inputs/pose-train337",
+    "/inputs/train.inputs.json",
+    "/output",
+    "/source"
+  ],
+  "network": "none",
+  "sanitized_source_view": true,
+  "schema_version": 1,
+  "selected_candidate": "xyz.trim0.norm.c1.mean.scale_min",
+  "selected_degenerate_candidate_flag": false,
+  "selected_rank_key": [
+    0,
+    0.0,
+    0.0,
+    0.030882947198275862,
+    0.14661458333333333,
+    1.4201388888888888,
+    -11,
+    "xyz.trim0.norm.c1.mean.scale_min"
+  ],
+  "selector_byte_identical_to_initial_and_replay": true,
+  "selector_bytes": 1050892,
+  "selector_sha256": "0bcad7d0fe270f1e71db465bd2e0f4ac861dfc1167b60283603d4624786e18db",
+  "test105_inputs_mounted": false,
+  "test105_targets_mounted": false
+}

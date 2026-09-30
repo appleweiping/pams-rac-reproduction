@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "artifact_type": "pams_teacher_period_direct_inferred_formula_audit",
+  "classification": "posthoc inferred dev-only formula diagnosis",
+  "method_key": "pams-teacher-period-direct-inferred-v1",
+  "split": "dev84",
+  "sample_count": 84,
+  "paper_table_eligible": false,
+  "test_evaluation_authorized": false,
+  "disclosures": [
+    "This audit is post-hoc and development-only.",
+    "It tests implementation-equivalent count formulas and rounding only; it does not tune an inference rule.",
+    "No test105 row was evaluated, and this artifact is ineligible for the paper table."
+  ],
+  "input_bindings": {
+    "one_off_prediction": {
+      "locator": "one-off/predict/predictions.json",
+      "sha256": "501875b4234b01c80a6c712fd82174540a2856c625ab02f76411be386654853c"
+    },
+    "one_off_evaluation": {
+      "locator": "one-off/score/evaluation.json",
+      "sha256": "1491ad51da7472244cee07afec775a7dcd2e4e3ba6bca908dec5f677205bd105"
+    },
+    "formal_cli_prediction": {
+      "locator": "formal-cli/predict/predictions.json",
+      "sha256": "3de2e518fa5221f2a9f019affdba327fabd40bdde6c361f9ca94995160272a19"
+    },
+    "formal_cli_evaluation": {
+      "locator": "formal-cli/score/evaluation.json",
+      "sha256": "3f7048f3afaaf16d32a8574212c1e029d1b1969717ee05098292a303882eb0c6"
+    },
+    "formal_cli_equivalence": {
+      "locator": "formal-cli/recovery/formal-cli-equivalence.json",
+      "sha256": "4dbd3b90a1d75199daf29d548ab46d2ba3cdf9e5cbf62b0a98a0f522ca110f8a"
+    },
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6"
+  },
+  "observed_inputs": {
+    "valid_frames_distribution": {
+      "0": 6,
+      "256": 78
+    },
+    "positive_confidence_rows": 78,
+    "zero_confidence_rows": 6,
+    "zero_confidence_policy": "raw_count=0 before rounding"
+  },
+  "rounding_definitions": {
+    "half_up": "floor(nonnegative_raw_count + 0.5)",
+    "bankers": "round to nearest with ties to even"
+  },
+  "formula_variants": [
+    {
+      "name": "recorded_raw",
+      "definition": "raw_count stored in the frozen prediction artifact",
+      "max_absolute_raw_difference_vs_recorded": 0.0,
+      "rounded_mismatch_count_vs_recorded": 0,
+      "half_up_vs_bankers_mismatch_count": 0,
+      "metrics_after_half_up": {
+        "nmae": 2.8601196735895007,
+        "mae": 13.30952380952381,
+        "rmse": 19.871012627874375,
+        "obo": 0.16666666666666666,
+        "exact": 0.08333333333333333
+      }
+    },
+    {
+      "name": "valid_span",
+      "definition": "if confidence>0 then (valid_frames-1)/period_frames else 0",
+      "max_absolute_raw_difference_vs_recorded": 0.0,
+      "raw_exact_match_count": 84,
+      "rounded_mismatch_count_vs_recorded": 0,
+      "half_up_vs_bankers_mismatch_count": 0,
+      "metrics_after_half_up": {
+        "nmae": 2.8601196735895007,
+        "mae": 13.30952380952381,
+        "rmse": 19.871012627874375,
+        "obo": 0.16666666666666666,
+        "exact": 0.08333333333333333
+      }
+    },
+    {
+      "name": "valid_length",
+      "definition": "if confidence>0 then valid_frames/period_frames else 0",
+      "max_absolute_raw_difference_vs_recorded": 0.25,
+      "rounded_mismatch_count_vs_recorded": 0,
+      "half_up_vs_bankers_mismatch_count": 0,
+      "metrics_after_half_up": {
+        "nmae": 2.8601196735895007,
+        "mae": 13.30952380952381,
+        "rmse": 19.871012627874375,
+        "obo": 0.16666666666666666,
+        "exact": 0.08333333333333333
+      }
+    },
+    {
+      "name": "sampled_span_255",
+      "definition": "if confidence>0 then 255/period_frames else 0",
+      "max_absolute_raw_difference_vs_recorded": 0.0,
+      "raw_exact_match_count": 84,
+      "rounded_mismatch_count_vs_recorded": 0,
+      "half_up_vs_bankers_mismatch_count": 0,
+      "metrics_after_half_up": {
+        "nmae": 2.8601196735895007,
+        "mae": 13.30952380952381,
+        "rmse": 19.871012627874375,
+        "obo": 0.16666666666666666,
+        "exact": 0.08333333333333333
+      }
+    },
+    {
+      "name": "sampled_length_256",
+      "definition": "if confidence>0 then 256/period_frames else 0",
+      "max_absolute_raw_difference_vs_recorded": 0.25,
+      "rounded_mismatch_count_vs_recorded": 0,
+      "half_up_vs_bankers_mismatch_count": 0,
+      "metrics_after_half_up": {
+        "nmae": 2.8601196735895007,
+        "mae": 13.30952380952381,
+        "rmse": 19.871012627874375,
+        "obo": 0.16666666666666666,
+        "exact": 0.08333333333333333
+      }
+    }
+  ],
+  "aggregate_checks": {
+    "canonical_raw_formula_exact_match_count": 84,
+    "canonical_raw_formula_mismatch_count": 0,
+    "alternative_span_or_length_rounded_mismatch_count": 0,
+    "canonical_half_up_vs_bankers_mismatch_count": 0,
+    "formal_cli_vs_one_off_core_field_mismatch_count": 0,
+    "formal_cli_vs_one_off_metric_mismatch_count": 0
+  },
+  "conclusion": "Neither T-1 versus T, fixed 255 versus 256 sampled-frame conventions, nor half-up versus bankers rounding changes any of the 84 evaluated integer counts. The dev84 failure is therefore not an off-by-one or rounding artifact."
+}

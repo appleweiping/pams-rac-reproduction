@@ -1,0 +1,310 @@
+{
+  "artifact_type": "pams_noabspe_projected_null_predev_gate_v12",
+  "classification": "exploratory-derived target-free candidate protocol",
+  "disclosed_by_pams_authors": false,
+  "eligible_for_paper_table": false,
+  "frame_index_linear_probe": {
+    "algorithm": "A Ridge(alpha=1, solver='lsqr', tol=1e-8) linear probe predicts absolute frame_index/(sequence_length-1). Entire videos are assigned to an 80/20 split by a seeded SHA-256 ordering, and at most 64 valid frames per video are sampled uniformly to balance videos and bound memory.",
+    "available": true,
+    "classification": "inferred diagnostic",
+    "maximum_uniform_valid_frames_per_video": 64,
+    "r2": -0.10773345997247241,
+    "split_unit": "video",
+    "target": "absolute_frame_index_normalized_to_[0,1]",
+    "test_frame_total": 832,
+    "test_video_total": 13,
+    "training_frame_total": 3200,
+    "training_video_total": 50
+  },
+  "gate": {
+    "criteria": {
+      "frame_index_r2": {
+        "operator": "<=",
+        "pass": true,
+        "threshold": 0.1,
+        "value": -0.10773345997247241
+      },
+      "position_invariance_median_cosine": {
+        "operator": ">=",
+        "pass": true,
+        "threshold": 0.95,
+        "value": 1.0
+      },
+      "random_pose_period_confidence": {
+        "operator": "<=",
+        "pass": true,
+        "threshold": 0.1,
+        "value": 0.0
+      },
+      "synthetic_period_median_relative_error": {
+        "operator": "<=",
+        "pass": true,
+        "threshold": 0.1,
+        "value": 0.0
+      },
+      "training_period_top_bin_share": {
+        "operator": "<=",
+        "pass": true,
+        "threshold": 0.25,
+        "value": 0.09375
+      },
+      "zero_pose_period_confidence": {
+        "operator": "<=",
+        "pass": true,
+        "threshold": 0.1,
+        "value": 0.0
+      }
+    },
+    "dev84_prediction_authorized": true,
+    "dev84_scoring_authorized": false,
+    "overall_pass": true,
+    "test105_evaluation_authorized": false,
+    "thresholds_frozen_before_seed3407_training": true
+  },
+  "inputs": {
+    "checkpoint_bytes": 161407502,
+    "checkpoint_sha256": "a5f08e8585cc0666eea265d9c38617d8845f3af0a4cf4fce92b1ef956e62b76d",
+    "checkpoint_stage": "encoder",
+    "checkpoint_training_video_total": 337,
+    "config_bytes": 2108,
+    "config_fingerprint": "e64029a8c1ae1bf258a71eabe03fd35cd9cd3f18bdf0c7e4ae17657cf9c6a13e",
+    "config_sha256": "8295b51171da07138fb0c93cb14b25e52bde0964fb15fbb74868941b7ac07af3",
+    "device_type": "cuda",
+    "diagnostic_seed": 2026,
+    "full_checkpoint_pose_cache_set_verified": true,
+    "full_pose_cache_set_sha256": "f32d718ae922120778f535a6a4f467edba79cafeba90373b3a6a55bf11be6ee2",
+    "pose_fingerprint": "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116",
+    "sample_pose_cache_set_sha256": "f96f53b928ee613586680584168ed8529e78ed3d7ce18750788ded2a5967f5f9",
+    "sampled_training_video_ids_sha256": "23298053157764a2009119db227aa924faef36140c4a49b0c03f1d741ef39e3e",
+    "sampled_training_video_total": 64
+  },
+  "label_firewall": {
+    "accepted_inputs": [
+      "encoder_checkpoint",
+      "exact_v12_experiment_config",
+      "checkpoint_bound_training_pose_cache"
+    ],
+    "action_or_count_label_argument_supported": false,
+    "dataset_manifest_argument_supported": false,
+    "development_input_mounted": false,
+    "development_labels_mounted": false,
+    "development_pose_mounted": false,
+    "label_fields_accessed": [],
+    "sealed_test_input_mounted": false,
+    "sealed_test_labels_mounted": false
+  },
+  "method": {
+    "confidence": "max(0, 1 - empirical_p / alpha)",
+    "empirical_p": "(1 + count(null_stat >= observed_stat)) / (N + 1)",
+    "null": "fixed seeded IID U[0,1] temporal white pose noise",
+    "period_estimator": "projected-pose velocity vector-ACF spectrum",
+    "period_input": "encoder projected_pose_pre_pe",
+    "period_prediction_changed_by_calibration": false,
+    "raw_statistic": "selected bounded-band vector-ACF spectral power share"
+  },
+  "null_distribution": {
+    "alpha": 0.01,
+    "dtype": "little-endian float32",
+    "generation_batch_size": 32,
+    "probe_random_seed_is_disjoint": true,
+    "quantiles": {
+      "q900": 0.21045611947774887,
+      "q950": 0.24144159555435163,
+      "q990": 0.3063212317228317,
+      "q995": 0.33373868808150303,
+      "q999": 0.3785204251110554
+    },
+    "sample_total": 2048,
+    "seed": 73400711,
+    "sha256": "884ccb0c4e88f152dce7ceae52568a4ffdafc1a1230c0fdb0b9f88d012779f54",
+    "summary": {
+      "maximum": 0.4584420621395111,
+      "mean": 0.15110217493202072,
+      "median": 0.1410800665616989,
+      "minimum": 0.06784732639789581,
+      "observations": 2048,
+      "p10": 0.1025378979742527,
+      "p90": 0.21045611947774887,
+      "standard_deviation": 0.04668080059489353
+    }
+  },
+  "position_index_invariance": {
+    "classification": "exploratory-derived target-free candidate protocol",
+    "intervention": "reverse valid position_indices independently per video",
+    "position_encoding_mode": "none",
+    "valid_frame_cosine": {
+      "maximum": 1.000000238418579,
+      "mean": 1.0000000419945174,
+      "median": 1.0,
+      "minimum": 0.9999998211860657,
+      "observations": 16128,
+      "p10": 1.0,
+      "p90": 1.0000001192092896,
+      "standard_deviation": 6.82940632605562e-08
+    }
+  },
+  "protocol_freeze": {
+    "candidate_config_fingerprint": "e64029a8c1ae1bf258a71eabe03fd35cd9cd3f18bdf0c7e4ae17657cf9c6a13e",
+    "derived_from_post_v11_exploration": true,
+    "diagnostic_seed": 2026,
+    "frozen_before_seed3407_training": true,
+    "must_not_rewrite_v11_results": true,
+    "null_sample_total": 2048,
+    "null_seed": 73400711,
+    "required_device_type": "cuda",
+    "sampled_training_video_total": 64,
+    "significance_alpha": 0.01,
+    "white_noise_batch_size": 32
+  },
+  "read_only_verification": {
+    "checkpoint_sha256_unchanged": true,
+    "config_sha256_unchanged": true,
+    "model_or_training_state_updated": false,
+    "pose_cache_write_operations": 0
+  },
+  "schema_version": 1,
+  "synthetic_period_recovery": {
+    "classification": "exploratory-derived target-free candidate protocol",
+    "periods": [
+      4,
+      8,
+      16,
+      32,
+      64,
+      128
+    ],
+    "prediction_period_unchanged_by_calibration": true,
+    "relative_error": {
+      "maximum": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "minimum": 0.0,
+      "observations": 6,
+      "p10": 0.0,
+      "p90": 0.0,
+      "standard_deviation": 0.0
+    },
+    "rows": [
+      {
+        "calibrated_periodicity_confidence": 0.9511957052220595,
+        "empirical_one_sided_p": 0.0004880429477794046,
+        "expected_period_frames": 4,
+        "null_exceedance_total": 0,
+        "predicted_period_frames": 4.0,
+        "raw_peak_share": 0.7980930209159851,
+        "relative_error": 0.0
+      },
+      {
+        "calibrated_periodicity_confidence": 0.9511957052220595,
+        "empirical_one_sided_p": 0.0004880429477794046,
+        "expected_period_frames": 8,
+        "null_exceedance_total": 0,
+        "predicted_period_frames": 8.0,
+        "raw_peak_share": 0.6640843152999878,
+        "relative_error": 0.0
+      },
+      {
+        "calibrated_periodicity_confidence": 0.9511957052220595,
+        "empirical_one_sided_p": 0.0004880429477794046,
+        "expected_period_frames": 16,
+        "null_exceedance_total": 0,
+        "predicted_period_frames": 16.0,
+        "raw_peak_share": 0.6637551188468933,
+        "relative_error": 0.0
+      },
+      {
+        "calibrated_periodicity_confidence": 0.9511957052220595,
+        "empirical_one_sided_p": 0.0004880429477794046,
+        "expected_period_frames": 32,
+        "null_exceedance_total": 0,
+        "predicted_period_frames": 32.0,
+        "raw_peak_share": 0.6638404726982117,
+        "relative_error": 0.0
+      },
+      {
+        "calibrated_periodicity_confidence": 0.9511957052220595,
+        "empirical_one_sided_p": 0.0004880429477794046,
+        "expected_period_frames": 64,
+        "null_exceedance_total": 0,
+        "predicted_period_frames": 64.0,
+        "raw_peak_share": 0.6636250019073486,
+        "relative_error": 0.0
+      },
+      {
+        "calibrated_periodicity_confidence": 0.9511957052220595,
+        "empirical_one_sided_p": 0.0004880429477794046,
+        "expected_period_frames": 128,
+        "null_exceedance_total": 0,
+        "predicted_period_frames": 128.0,
+        "raw_peak_share": 0.8045423030853271,
+        "relative_error": 0.0
+      }
+    ],
+    "truth_source": "deterministic in-run synthetic generation only"
+  },
+  "training_projected_pose_periods": {
+    "classification": "exploratory-derived target-free candidate protocol",
+    "histogram": {
+      "nonzero_bin_frequencies": {
+        "10": 6,
+        "11": 3,
+        "12": 2,
+        "128": 5,
+        "13": 2,
+        "14": 1,
+        "15": 1,
+        "17": 2,
+        "18": 1,
+        "20": 2,
+        "21": 3,
+        "26": 2,
+        "32": 5,
+        "37": 3,
+        "4": 2,
+        "43": 3,
+        "5": 5,
+        "51": 3,
+        "6": 2,
+        "64": 1,
+        "7": 4,
+        "8": 1,
+        "9": 5
+      },
+      "rounding": "floor(period_frames + 0.5)",
+      "top_bin_frequency": 6,
+      "top_bin_period_frames": 10,
+      "top_bin_share": 0.09375
+    },
+    "prediction_period_unchanged_by_calibration": true,
+    "sample_period_frames": {
+      "maximum": 128.0,
+      "mean": 27.533033937215805,
+      "median": 13.84795331954956,
+      "minimum": 4.0,
+      "observations": 64,
+      "p10": 5.5582204341888435,
+      "p90": 51.20000076293945,
+      "standard_deviation": 32.421544961432446
+    }
+  },
+  "zero_and_random_pose_period_probes": {
+    "classification": "exploratory-derived target-free candidate protocol",
+    "frames": 256,
+    "probe_random_seed": 1043755,
+    "probe_random_seed_is_disjoint_from_null_seed": true,
+    "seeded_uniform_random_pose": {
+      "calibrated_periodicity_confidence": 0.0,
+      "empirical_one_sided_p": 0.6207906295754027,
+      "null_exceedance_total": 1271,
+      "period_frames": 4.063492298126221,
+      "raw_peak_share": 0.13092109560966492
+    },
+    "zero_pose": {
+      "calibrated_periodicity_confidence": 0.0,
+      "empirical_one_sided_p": 1.0,
+      "null_exceedance_total": 2048,
+      "period_frames": 128.0,
+      "raw_peak_share": 0.0
+    }
+  }
+}
