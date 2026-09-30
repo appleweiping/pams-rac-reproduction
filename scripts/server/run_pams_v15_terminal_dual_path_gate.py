@@ -1,0 +1,488 @@
+"""Run the frozen train337-only terminal dual-path gate for PAMS-v15.
+
+This read-only gate reuses the committed v14 counterfactual measurement
+implementation without changing its scientific thresholds.  It accepts only
+the exact v15 projected-teacher config, terminal encoder checkpoint and
+progress log, checkpoint-bound train337 pose cache, and exact source-export
+receipt.  Development/test identities, labels, targets, training, and model
+mutation are outside the interface.
+
+Unlike the earlier v14 counterfactual triage, terminal v15 must pass all ten
+frozen projected, post-PE, time-scale, and cross-path criteria before SSHead
+training can be authorized.  No result from this program can authorize
+development or sealed-test access.
+
+The checkpoint algorithm source and this later gate source are independently
+bound by ``PAMS_CONTAINER_SOURCE_REVISION`` and
+``PAMS_GATE_CODE_SOURCE_REVISION`` respectively.
+"""
+
+from __future__ import annotations
+
+import argparse
+import gc
+import hashlib
+import json
+from collections.abc import Mapping, Sequence
+from pathlib import Path
+from typing import Any
+
+import torch
+
+from pams.config import PAMSConfig, load_config
+from pams.data import PoseCacheSetSnapshot
+from pams.diagnostics import (
+    _device,
+    _identifier_commitment,
+    _load_training_poses,
+    _peek_checkpoint,
+    _stable_file_sha256,
+)
+from pams.reproducibility import clean_git_revision, hardware_fingerprint, sha256_json
+from pams.training import load_model_checkpoint, validate_terminal_checkpoint
+
+try:
+    from scripts.server import run_pams_v14_dual_path_counterfactual as _v14
+except ModuleNotFoundError:
+    # Formal runs may mount this runner and all audited gate dependencies in
+    # /gate-code while /workspace remains the checkpoint source export.
+    import run_pams_v14_dual_path_counterfactual as _v14  # type: ignore[no-redef]
+
+_ARTIFACT_TYPE = "pams_v15_terminal_encoder_dual_path_gate"
+_RECEIPT_TYPE = "pams_v15_terminal_encoder_dual_path_gate_receipt"
+_CLASSIFICATION = "inferred target-free read-only terminal v15 gate"
+_EXPECTED_TRAINING_VIDEOS = 337
+_EXPECTED_CONFIG_SHA256 = "3e9d641c0e8b4710c3f0542b823b4a51d319765f7e6c72f7f6195f8971fec688"
+_EXPECTED_CONFIG_FINGERPRINT = "666f01ece7d179d4ac8c61f9d1dc63aee5e8575c0f79a01d5d3d7e20e9d6242b"
+_EXPECTED_POSE_FINGERPRINT = "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116"
+
+
+def _validate_exact_v15_config(
+    config: PAMSConfig,
+    *,
+    config_sha256: str,
+) -> None:
+    actual = {
+        "config_sha256": config_sha256,
+        "config_fingerprint": config.fingerprint,
+        "pose_fingerprint": config.pose_fingerprint,
+        "protocol": config.protocol,
+        "seed": config.seed,
+        "frames": config.data.frames,
+        "training_epochs": config.training.epochs,
+        "post_warmup_source": config.period.post_warmup_source,
+    }
+    expected = {
+        "config_sha256": _EXPECTED_CONFIG_SHA256,
+        "config_fingerprint": _EXPECTED_CONFIG_FINGERPRINT,
+        "pose_fingerprint": _EXPECTED_POSE_FINGERPRINT,
+        "protocol": "ucfrep_526",
+        "seed": 2026,
+        "frames": 256,
+        "training_epochs": 150,
+        "post_warmup_source": "projected_pose_velocity_vector_acf",
+    }
+    if actual != expected:
+        raise ValueError(
+            "terminal dual-path gate requires the exact frozen v15 config: "
+            + json.dumps({"expected": expected, "actual": actual}, sort_keys=True)
+        )
+
+
+def _gate_decision(
+    *,
+    projected_distribution: Mapping[str, Any],
+    projected_time_scale: Mapping[str, Any],
+    post_pe_distribution: Mapping[str, Any],
+    post_pe_time_scale: Mapping[str, Any],
+    cross_path: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Require every unchanged v14 counterfactual criterion at v15 terminal."""
+
+    frozen = _v14._gate_decision(
+        projected_distribution=projected_distribution,
+        projected_time_scale=projected_time_scale,
+        post_pe_distribution=post_pe_distribution,
+        post_pe_time_scale=post_pe_time_scale,
+        cross_path=cross_path,
+    )
+    criteria = frozen["criteria"]
+    if len(criteria) != 10:
+        raise RuntimeError("v14 counterfactual dependency no longer exposes ten criteria")
+    authorized = all(bool(item["pass"]) for item in criteria.values())
+    return {
+        "thresholds_reused_unchanged_from_v14_counterfactual": True,
+        "criteria": criteria,
+        "all_ten_diagnostic_criteria_pass": authorized,
+        "sshead_training_authorization_basis": sorted(criteria),
+        "sshead_training_authorized": authorized,
+        "dev84_prediction_authorized": False,
+        "dev84_scoring_authorized": False,
+        "test105_evaluation_authorized": False,
+    }
+
+
+def _input_identities(paths: Mapping[str, Path]) -> dict[str, tuple[str, int]]:
+    return {name: _stable_file_sha256(path) for name, path in paths.items()}
+
+
+def run_terminal_gate(
+    encoder_checkpoint_path: str | Path,
+    encoder_progress_path: str | Path,
+    config_path: str | Path,
+    pose_cache_dir: str | Path,
+    source_receipt_path: str | Path,
+    *,
+    device: str | torch.device | None = None,
+    batch_size: int = 32,
+) -> dict[str, Any]:
+    """Evaluate the terminal v15 encoder on checkpoint-bound train337 only."""
+
+    if (
+        isinstance(batch_size, bool)
+        or not isinstance(batch_size, int)
+        or batch_size < 1
+        or batch_size > 32
+    ):
+        raise ValueError("batch_size must be an integer in [1, 32]")
+    paths = {
+        "encoder_checkpoint": Path(encoder_checkpoint_path),
+        "encoder_progress": Path(encoder_progress_path),
+        "config": Path(config_path),
+        "source_export_receipt": Path(source_receipt_path),
+        "v15_terminal_gate_runner": Path(__file__),
+        "v14_counterfactual_dependency": Path(_v14.__file__),
+        "final_gate_dependency": Path(_v14._final_gate.__file__),
+        "epoch11_gate_dependency": Path(_v14._epoch11_gate.__file__),
+    }
+    identities = _input_identities(paths)
+    _v14._validate_source_receipt_argument(
+        paths["source_export_receipt"],
+        receipt_sha256=identities["source_export_receipt"][0],
+    )
+    gate_code_source_git_sha = _v14._gate_code_source_revision()
+    config = load_config(paths["config"])
+    _validate_exact_v15_config(
+        config,
+        config_sha256=identities["config"][0],
+    )
+    stage, provenance = _peek_checkpoint(paths["encoder_checkpoint"], config)
+    if stage != "encoder":
+        raise ValueError("v15 terminal gate requires an encoder checkpoint")
+    if len(provenance.training_video_ids) != _EXPECTED_TRAINING_VIDEOS:
+        raise ValueError("v15 terminal gate requires exactly train337")
+    if provenance.upstream_encoder_checkpoint_sha256 is not None:
+        raise ValueError("encoder provenance unexpectedly names an upstream checkpoint")
+    if provenance.container_image_id is None or provenance.container_environment_sha256 is None:
+        raise ValueError("v15 terminal gate requires formal container provenance")
+    validate_terminal_checkpoint(
+        paths["encoder_checkpoint"],
+        config,
+        expected_stage="encoder",
+        expected_provenance=provenance,
+        progress_path=paths["encoder_progress"],
+    )
+    algorithm_source_git_sha = clean_git_revision(Path.cwd())
+    runtime_container = _v14._validate_runtime_binding(
+        provenance,
+        source_git_sha=algorithm_source_git_sha,
+    )
+    resolved_device = _device(device)
+
+    sequences, selected_receipts, full_receipts, selected_ids = _load_training_poses(
+        pose_cache_dir=Path(pose_cache_dir),
+        provenance=provenance,
+        config=config,
+        sample_size=0,
+        seed=config.seed,
+    )
+    if len(sequences) != _EXPECTED_TRAINING_VIDEOS:
+        raise RuntimeError("checkpoint-bound pose loader did not return train337")
+    if any(sequence.num_frames != config.data.frames for sequence in sequences):
+        raise ValueError("every v15 training pose must contain exactly 256 frames")
+    selected_snapshot = PoseCacheSetSnapshot(
+        pose_fingerprint=config.pose_fingerprint,
+        entries=selected_receipts,
+    )
+    full_snapshot = PoseCacheSetSnapshot(
+        pose_fingerprint=config.pose_fingerprint,
+        entries=full_receipts,
+    )
+    if selected_snapshot.fingerprint != full_snapshot.fingerprint:
+        raise RuntimeError("full train337 selection and pose snapshots differ")
+    if full_snapshot.fingerprint != provenance.pose_cache_set_sha256:
+        raise ValueError("train337 pose-cache set differs from checkpoint provenance")
+
+    model = load_model_checkpoint(
+        paths["encoder_checkpoint"],
+        config,
+        device=resolved_device,
+        expected_stage="encoder",
+        expected_provenance=provenance,
+    ).eval()
+    baseline = _v14._encode_dual_paths(
+        model,
+        sequences,
+        config=config,
+        device=resolved_device,
+        batch_size=batch_size,
+    )
+    projected_distribution = _v14._distribution(
+        baseline["projected_pre_pe"],
+        minimum=config.period.minimum,
+        maximum=config.period.maximum,
+    )
+    post_pe_distribution = _v14._distribution(
+        baseline["post_pe"],
+        minimum=config.period.minimum,
+        maximum=config.period.maximum,
+    )
+    time_scale = _v14._time_scale_consistency(
+        model,
+        sequences,
+        baseline,
+        config=config,
+        device=resolved_device,
+        batch_size=batch_size,
+    )
+    cross_path = _v14._cross_path_comparison(
+        baseline["projected_pre_pe"],
+        baseline["post_pe"],
+    )
+    decision = _gate_decision(
+        projected_distribution=projected_distribution,
+        projected_time_scale=time_scale["projected_pre_pe"],
+        post_pe_distribution=post_pe_distribution,
+        post_pe_time_scale=time_scale["post_pe"],
+        cross_path=cross_path,
+    )
+
+    _, _, final_receipts, final_ids = _load_training_poses(
+        pose_cache_dir=Path(pose_cache_dir),
+        provenance=provenance,
+        config=config,
+        sample_size=2,
+        seed=config.seed,
+    )
+    final_snapshot = PoseCacheSetSnapshot(
+        pose_fingerprint=config.pose_fingerprint,
+        entries=final_receipts,
+    )
+    if final_ids != selected_ids[:2]:
+        raise RuntimeError("train337 pose selection changed during terminal gate")
+    if final_snapshot.fingerprint != full_snapshot.fingerprint:
+        raise RuntimeError("train337 pose cache changed during terminal gate")
+    _v14._require_unchanged(paths, identities)
+    if clean_git_revision(Path.cwd()) != algorithm_source_git_sha:
+        raise RuntimeError("algorithm source changed during terminal gate")
+
+    hardware = hardware_fingerprint()
+    runtime = _v14._runtime_provenance(
+        runner_sha256=identities["v15_terminal_gate_runner"][0],
+        device=resolved_device,
+    )
+    expected_container = {
+        "PAMS_CONTAINER_IMAGE_ID": runtime_container["image_id"],
+        "PAMS_CONTAINER_ENVIRONMENT_SHA256": runtime_container["environment_sha256"],
+        "PAMS_CONTAINER_SOURCE_REVISION": runtime_container["source_revision"],
+    }
+    if runtime["container"] != expected_container:
+        raise RuntimeError("runtime provenance changed while it was recorded")
+    runtime["algorithm_source_git_sha"] = algorithm_source_git_sha
+    runtime["gate_code_source_git_sha"] = gate_code_source_git_sha
+    runtime["source_identity_model"] = (
+        "checkpoint algorithm source and external terminal-gate source are independently bound"
+    )
+    code_names = (
+        "v15_terminal_gate_runner",
+        "v14_counterfactual_dependency",
+        "final_gate_dependency",
+        "epoch11_gate_dependency",
+    )
+    code_files_sha256 = {name: identities[name][0] for name in code_names}
+    payload = {
+        "schema_version": 1,
+        "artifact_type": _ARTIFACT_TYPE,
+        "status": (
+            "sshead_training_authorized"
+            if decision["sshead_training_authorized"]
+            else "sshead_training_rejected"
+        ),
+        "classification": _CLASSIFICATION,
+        "disclosed_by_pams_authors": False,
+        "eligible_for_paper_table": False,
+        "protocol": config.protocol,
+        "seed": config.seed,
+        "label_firewall": {
+            "accepted_scientific_inputs": [
+                "exact_v15_experiment_config",
+                "terminal_v15_encoder_checkpoint_and_progress",
+                "checkpoint_bound_train337_pose_cache",
+                "exact_checkpoint_algorithm_source_export_receipt",
+            ],
+            "dataset_manifest_argument_supported": False,
+            "development_identity_media_pose_or_target_argument_supported": False,
+            "sealed_test_identity_media_pose_or_target_argument_supported": False,
+            "action_class_argument_supported": False,
+            "repetition_count_argument_supported": False,
+            "external_label_fields_accessed": [],
+            "training_interface_supported": False,
+        },
+        "inputs": {
+            **{f"{name}_sha256": identity[0] for name, identity in identities.items()},
+            **{f"{name}_bytes": identity[1] for name, identity in identities.items()},
+            "config_fingerprint": config.fingerprint,
+            "pose_fingerprint": config.pose_fingerprint,
+            "encoder_provenance": provenance.to_dict(),
+            "train337_video_total": len(selected_ids),
+            "train337_video_ids_sha256": _identifier_commitment(selected_ids),
+            "train337_pose_cache_set_sha256": full_snapshot.fingerprint,
+            "checkpoint_algorithm_source_git_sha": algorithm_source_git_sha,
+            "gate_code_source_git_sha": gate_code_source_git_sha,
+            "code_files_sha256": code_files_sha256,
+            "code_files_sha256_commitment": sha256_json(code_files_sha256),
+            "read_only_post_run_identity_verified": True,
+        },
+        "paths": {
+            "projected_pose_velocity_vector_acf": {
+                "feature_source": ("encoder.input_projection output before positional encoding"),
+                "distribution": projected_distribution,
+                "time_scale_consistency": time_scale["projected_pre_pe"],
+            },
+            "embedding_velocity_vector_acf": {
+                "feature_source": (
+                    "L2-normalized Transformer output after absolute positional encoding"
+                ),
+                "distribution": post_pe_distribution,
+                "time_scale_consistency": time_scale["post_pe"],
+            },
+        },
+        "cross_path_comparison": cross_path,
+        "gate": decision,
+        "scientific_caveats": [
+            (
+                "All ten criteria and thresholds are the unchanged independently "
+                "inferred v14 counterfactual diagnostics, not author-disclosed validation."
+            ),
+            (
+                "At v15 terminal, all ten criteria must pass before SSHead "
+                "training can begin; no projected-only exception remains."
+            ),
+            (
+                "Development and sealed-test access remain unauthorized "
+                "regardless of every diagnostic result."
+            ),
+            (
+                "Passing permits only the separately audited SSHead training "
+                "stage and does not establish count accuracy."
+            ),
+        ],
+        "hardware": hardware,
+        "hardware_sha256": sha256_json(hardware),
+        "runtime": runtime,
+        "runtime_sha256": sha256_json(runtime),
+        "read_only_verification": {
+            "all_file_inputs_unchanged": True,
+            "train337_pose_cache_set_sha256_unchanged": True,
+            "checkpoint_algorithm_source_git_sha_unchanged": True,
+            "model_or_optimizer_state_updated": False,
+            "training_steps_executed": 0,
+            "pose_cache_write_operations": 0,
+        },
+    }
+    del model
+    gc.collect()
+    if resolved_device.type == "cuda":
+        torch.cuda.empty_cache()
+    return payload
+
+
+def _receipt_path(output: Path) -> Path:
+    return Path(str(output) + ".receipt.json")
+
+
+def _write_artifact_and_receipt(
+    output: Path,
+    payload: Mapping[str, Any],
+) -> tuple[Path, str]:
+    receipt_path = _receipt_path(output)
+    if output.exists():
+        raise FileExistsError(f"refusing to overwrite gate artifact: {output}")
+    if receipt_path.exists():
+        raise FileExistsError(f"refusing to overwrite gate receipt: {receipt_path}")
+    artifact = _v14._encoded_json(payload)
+    artifact_sha256 = hashlib.sha256(artifact).hexdigest()
+    _v14._write_new_regular_file(output, artifact)
+    receipt = {
+        "schema_version": 1,
+        "artifact_type": _RECEIPT_TYPE,
+        "artifact_locator": output.name,
+        "artifact_sha256": artifact_sha256,
+        "artifact_bytes": len(artifact),
+        "artifact_status": payload["status"],
+        "sshead_training_authorized": payload["gate"]["sshead_training_authorized"],
+        "encoder_checkpoint_sha256": payload["inputs"]["encoder_checkpoint_sha256"],
+        "encoder_progress_sha256": payload["inputs"]["encoder_progress_sha256"],
+        "config_sha256": payload["inputs"]["config_sha256"],
+        "source_export_receipt_sha256": payload["inputs"]["source_export_receipt_sha256"],
+        "train337_pose_cache_set_sha256": payload["inputs"]["train337_pose_cache_set_sha256"],
+        "checkpoint_algorithm_source_git_sha": payload["inputs"][
+            "checkpoint_algorithm_source_git_sha"
+        ],
+        "gate_code_source_git_sha": payload["inputs"]["gate_code_source_git_sha"],
+        "code_files_sha256_commitment": payload["inputs"]["code_files_sha256_commitment"],
+        "hardware_sha256": payload["hardware_sha256"],
+        "runtime_sha256": payload["runtime_sha256"],
+    }
+    _v14._write_new_regular_file(receipt_path, _v14._encoded_json(receipt))
+    return receipt_path, artifact_sha256
+
+
+def _parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--encoder-checkpoint", type=Path, required=True)
+    parser.add_argument("--encoder-progress", type=Path, required=True)
+    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--pose-cache-dir", type=Path, required=True)
+    parser.add_argument("--source-receipt", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--device", default="auto")
+    parser.add_argument("--batch-size", type=int, default=32)
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    arguments = _parse_arguments(argv)
+    receipt_path = _receipt_path(arguments.output)
+    if arguments.output.exists() or receipt_path.exists():
+        raise FileExistsError("gate output and receipt destinations must both be new")
+    payload = run_terminal_gate(
+        arguments.encoder_checkpoint,
+        arguments.encoder_progress,
+        arguments.config,
+        arguments.pose_cache_dir,
+        arguments.source_receipt,
+        device=arguments.device,
+        batch_size=arguments.batch_size,
+    )
+    receipt_path, artifact_sha256 = _write_artifact_and_receipt(
+        arguments.output,
+        payload,
+    )
+    authorized = payload["gate"]["sshead_training_authorized"]
+    print(
+        json.dumps(
+            {
+                "artifact_sha256": artifact_sha256,
+                "output": str(arguments.output),
+                "receipt": str(receipt_path),
+                "sshead_training_authorized": authorized,
+            },
+            sort_keys=True,
+        )
+    )
+    return 0 if authorized else 3
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

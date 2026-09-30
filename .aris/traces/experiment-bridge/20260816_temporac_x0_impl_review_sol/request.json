@@ -1,0 +1,22 @@
+{
+  "call_number": 1,
+  "files_referenced": [
+    "refine-logs/temporac/FINAL_PROPOSAL.md#section-6.1",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE.md",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE.json",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE_REVIEW.md",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE_REVIEW.json",
+    "src/pams/temporac/contract.py",
+    "src/pams/temporac/x0.py",
+    "tests/temporac/test_x0.py",
+    "tests/temporac/test_x0_manifest.py",
+    "scripts/experiments/generate_temporac_x0_manifest_v4.py",
+    "data/temporac_p00_v4/x0_candidate_20260816/"
+  ],
+  "model": "gpt-5.6-sol",
+  "prompt": "Fresh zero-context review canonical TempoRAC X0 implementation/artifact in D:/Project/rac-aris-fullrun-icassp27. Read the new proposal SHA-256 3b265 Section 6.1, Amendment 001 and its ACCEPT review, contract.py, x0.py, both X0 tests, the generator, and every candidate byte/receipt. Independently verify exact whole-bracket and tangent outer multiply order, exact 4096x34 reduction and literal FFT, and no F9+ drift. In Docker linux/amd64 CPython 3.12.4 NumPy 2.1.0 SciPy 1.14.1 rerun all 40x64 candidates and the generator into an independent temporary directory; compare manifest, replay, witness, environment, and receipt exact bytes/hashes; verify non-overwrite, closed schema, authoritative false, and empty authority. Run targeted and full tests, ruff, and mypy. Do not read old oral summaries and do not modify source, Git, server, natural data, or paper. Persist the mandated Markdown/JSON and one-event trace. Verdict must be PASS, REVISE, or BLOCKED with gpt-5.6-sol/openai/openai/same-family/provisional fields, and explicitly keep P2=0, S0=0, launch=0 even for PASS.",
+  "purpose": "temporac-x0-implementation-candidate-review",
+  "reasoning_effort": "inherited",
+  "timestamp": "2026-08-16T08:17:00+08:00",
+  "tool": "spawn_agent"
+}

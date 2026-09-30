@@ -1,0 +1,900 @@
+{
+  "artifact_type": "pams_position_lag_velocity_fallback_dev_predictions",
+  "batch_sizes": [
+    32,
+    32,
+    20
+  ],
+  "classification": "inferred detrended near-best lag-ACF fundamental with projected-velocity fallback predev diagnostic",
+  "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+  "dev_pose_cache_set_sha256": "681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1",
+  "eligible_for_paper_table": false,
+  "encoder_checkpoint_sha256": "6817fe468d76c3fa2182dd831695d6fe3d6da208a2b7f8dfa90cffa6872e8053",
+  "formal_predev_artifact_sha256": "f563cffa4235b34e091bf9b93af9123a93fa1d57ee29dc39f54f4feb60e0d928",
+  "hardware": {
+    "cuda_runtime": "12.4",
+    "cudnn": 90100,
+    "gpus": [
+      {
+        "capability": "8.6",
+        "index": 0,
+        "name": "NVIDIA RTX A6000",
+        "total_memory_bytes": 50807570432
+      }
+    ],
+    "logical_cpu_count": 40,
+    "nvidia_driver": {
+      "status": "available",
+      "versions": [
+        "550.54.14"
+      ]
+    },
+    "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.35",
+    "processor": "x86_64",
+    "python": "3.11.10",
+    "torch": "2.5.1+cu124"
+  },
+  "mount_audit": {
+    "checkpoint_mounted": true,
+    "dev84_identity_mounted": true,
+    "dev84_pose_mounted": true,
+    "dev84_targets_mounted": false,
+    "network": "none",
+    "readout_config_mounted": true,
+    "source_mounted": true,
+    "test105_identity_mounted": false,
+    "test105_labels_mounted": false,
+    "test105_media_mounted": false,
+    "test105_pose_mounted": false
+  },
+  "protocol": "ucfrep_526",
+  "readout_config_semantic_sha256": "e17b4105f732be1bc4a40b153c0db28729fc0379a5f921ab0a26d3b2301b4233",
+  "readout_config_sha256": "b3c38341e442765cb709d8ca9c5ecfe541121ea61d1ae35c0ff2cb48b6b09a98",
+  "record_total": 84,
+  "records": [
+    {
+      "confidence": 0.2510034143924713,
+      "period_frames": 113.0,
+      "raw_count": 2.256637168141593,
+      "rounded_count": 2,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_BabyCrawling_g02_c01"
+    },
+    {
+      "confidence": 0.14404630661010742,
+      "period_frames": 15.0,
+      "raw_count": 17.0,
+      "rounded_count": 17,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_BabyCrawling_g07_c01"
+    },
+    {
+      "confidence": 0.08216128498315811,
+      "period_frames": 64.0,
+      "raw_count": 3.984375,
+      "rounded_count": 4,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_BabyCrawling_g11_c04"
+    },
+    {
+      "confidence": 0.18820756673812866,
+      "period_frames": 87.0,
+      "raw_count": 2.9310344827586206,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_BabyCrawling_g13_c06"
+    },
+    {
+      "confidence": 0.21431072056293488,
+      "period_frames": 57.0,
+      "raw_count": 4.473684210526316,
+      "rounded_count": 4,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_BenchPress_g04_c03"
+    },
+    {
+      "confidence": 0.14186052978038788,
+      "period_frames": 28.44444465637207,
+      "raw_count": 8.964843683206709,
+      "rounded_count": 9,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_BenchPress_g11_c01"
+    },
+    {
+      "confidence": 0.30433905124664307,
+      "period_frames": 87.0,
+      "raw_count": 2.9310344827586206,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_BenchPress_g15_c01"
+    },
+    {
+      "confidence": 0.2166012078523636,
+      "period_frames": 21.33333396911621,
+      "raw_count": 11.953124643769126,
+      "rounded_count": 12,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_BenchPress_g17_c01"
+    },
+    {
+      "confidence": 0.26368656754493713,
+      "period_frames": 21.33333396911621,
+      "raw_count": 11.953124643769126,
+      "rounded_count": 12,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_Biking_g01_c01"
+    },
+    {
+      "confidence": 0.4262567162513733,
+      "period_frames": 109.0,
+      "raw_count": 2.3394495412844036,
+      "rounded_count": 2,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_Biking_g05_c01"
+    },
+    {
+      "confidence": 0.322889506816864,
+      "period_frames": 128.0,
+      "raw_count": 1.9921875,
+      "rounded_count": 2,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_Biking_g10_c01"
+    },
+    {
+      "confidence": 0.0,
+      "period_frames": 4.0,
+      "raw_count": 0.0,
+      "rounded_count": 0,
+      "sampled_frames": 256,
+      "selection_source": "no-evidence",
+      "valid_frames": 0,
+      "video_id": "v_Biking_g16_c02"
+    },
+    {
+      "confidence": 0.698651134967804,
+      "period_frames": 69.0,
+      "raw_count": 3.6956521739130435,
+      "rounded_count": 4,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_BodyWeightSquats_g03_c01"
+    },
+    {
+      "confidence": 0.6941949129104614,
+      "period_frames": 48.0,
+      "raw_count": 5.3125,
+      "rounded_count": 5,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_BodyWeightSquats_g10_c01"
+    },
+    {
+      "confidence": 0.5952478051185608,
+      "period_frames": 84.0,
+      "raw_count": 3.0357142857142856,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_BodyWeightSquats_g12_c01"
+    },
+    {
+      "confidence": 0.7022402286529541,
+      "period_frames": 68.0,
+      "raw_count": 3.75,
+      "rounded_count": 4,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_BodyWeightSquats_g19_c01"
+    },
+    {
+      "confidence": 0.0,
+      "period_frames": 4.0,
+      "raw_count": 0.0,
+      "rounded_count": 0,
+      "sampled_frames": 256,
+      "selection_source": "no-evidence",
+      "valid_frames": 0,
+      "video_id": "v_BreastStroke_g01_c01"
+    },
+    {
+      "confidence": 0.31238287687301636,
+      "period_frames": 85.33333587646484,
+      "raw_count": 2.9882811609422815,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_BreastStroke_g02_c01"
+    },
+    {
+      "confidence": 0.8361746072769165,
+      "period_frames": 128.0,
+      "raw_count": 1.9921875,
+      "rounded_count": 2,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_BreastStroke_g10_c02"
+    },
+    {
+      "confidence": 0.0,
+      "period_frames": 4.0,
+      "raw_count": 0.0,
+      "rounded_count": 0,
+      "sampled_frames": 256,
+      "selection_source": "no-evidence",
+      "valid_frames": 0,
+      "video_id": "v_BreastStroke_g12_c02"
+    },
+    {
+      "confidence": 0.0094292052090168,
+      "period_frames": 111.0,
+      "raw_count": 2.2972972972972974,
+      "rounded_count": 2,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_CuttingInKitchen_g01_c01"
+    },
+    {
+      "confidence": 0.3057517409324646,
+      "period_frames": 51.20000076293945,
+      "raw_count": 4.980468675785233,
+      "rounded_count": 5,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_CuttingInKitchen_g02_c01"
+    },
+    {
+      "confidence": 0.11407224833965302,
+      "period_frames": 121.0,
+      "raw_count": 2.1074380165289255,
+      "rounded_count": 2,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_CuttingInKitchen_g03_c01"
+    },
+    {
+      "confidence": 0.24319960176944733,
+      "period_frames": 28.44444465637207,
+      "raw_count": 8.964843683206709,
+      "rounded_count": 9,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_FrontCrawl_g09_c03"
+    },
+    {
+      "confidence": 0.3356657922267914,
+      "period_frames": 98.0,
+      "raw_count": 2.6020408163265305,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_FrontCrawl_g11_c02"
+    },
+    {
+      "confidence": 0.9114270210266113,
+      "period_frames": 128.0,
+      "raw_count": 1.9921875,
+      "rounded_count": 2,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_FrontCrawl_g15_c04"
+    },
+    {
+      "confidence": 0.2091924250125885,
+      "period_frames": 32.0,
+      "raw_count": 7.96875,
+      "rounded_count": 8,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_FrontCrawl_g17_c02"
+    },
+    {
+      "confidence": 0.10631249845027924,
+      "period_frames": 62.0,
+      "raw_count": 4.112903225806452,
+      "rounded_count": 4,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_HammerThrow_g05_c02"
+    },
+    {
+      "confidence": 0.06897402554750443,
+      "period_frames": 25.0,
+      "raw_count": 10.2,
+      "rounded_count": 10,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_HammerThrow_g06_c04"
+    },
+    {
+      "confidence": 0.06570522487163544,
+      "period_frames": 65.0,
+      "raw_count": 3.923076923076923,
+      "rounded_count": 4,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_HammerThrow_g08_c01"
+    },
+    {
+      "confidence": 0.1886458545923233,
+      "period_frames": 11.0,
+      "raw_count": 23.181818181818183,
+      "rounded_count": 23,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_HammerThrow_g19_c06"
+    },
+    {
+      "confidence": 0.2214602380990982,
+      "period_frames": 22.0,
+      "raw_count": 11.590909090909092,
+      "rounded_count": 12,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_Hammering_g01_c01"
+    },
+    {
+      "confidence": 0.13042353093624115,
+      "period_frames": 111.0,
+      "raw_count": 2.2972972972972974,
+      "rounded_count": 2,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_Hammering_g06_c03"
+    },
+    {
+      "confidence": 0.2875592112541199,
+      "period_frames": 19.0,
+      "raw_count": 13.421052631578947,
+      "rounded_count": 13,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_Hammering_g10_c01"
+    },
+    {
+      "confidence": 0.5714519023895264,
+      "period_frames": 57.0,
+      "raw_count": 4.473684210526316,
+      "rounded_count": 4,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_Hammering_g17_c01"
+    },
+    {
+      "confidence": 0.15933716297149658,
+      "period_frames": 42.66666793823242,
+      "raw_count": 5.976562321884563,
+      "rounded_count": 6,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_HandStandPushups_g02_c04"
+    },
+    {
+      "confidence": 0.20278160274028778,
+      "period_frames": 64.0,
+      "raw_count": 3.984375,
+      "rounded_count": 4,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_HandStandPushups_g06_c02"
+    },
+    {
+      "confidence": 0.46505606174468994,
+      "period_frames": 63.0,
+      "raw_count": 4.0476190476190474,
+      "rounded_count": 4,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_HandStandPushups_g12_c07"
+    },
+    {
+      "confidence": 0.41553542017936707,
+      "period_frames": 55.0,
+      "raw_count": 4.636363636363637,
+      "rounded_count": 5,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_HandStandPushups_g13_c07"
+    },
+    {
+      "confidence": 0.0850285142660141,
+      "period_frames": 42.0,
+      "raw_count": 6.071428571428571,
+      "rounded_count": 6,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_HandstandWalking_g03_c04"
+    },
+    {
+      "confidence": 0.04716752842068672,
+      "period_frames": 39.0,
+      "raw_count": 6.538461538461538,
+      "rounded_count": 7,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_HandstandWalking_g05_c05"
+    },
+    {
+      "confidence": 0.05012669414281845,
+      "period_frames": 27.0,
+      "raw_count": 9.444444444444445,
+      "rounded_count": 9,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_HandstandWalking_g07_c01"
+    },
+    {
+      "confidence": 0.060638170689344406,
+      "period_frames": 38.0,
+      "raw_count": 6.7105263157894735,
+      "rounded_count": 7,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_HandstandWalking_g19_c03"
+    },
+    {
+      "confidence": 0.3780762553215027,
+      "period_frames": 29.0,
+      "raw_count": 8.793103448275861,
+      "rounded_count": 9,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_HulaHoop_g09_c01"
+    },
+    {
+      "confidence": 0.2569766640663147,
+      "period_frames": 18.285715103149414,
+      "raw_count": 13.94531187659598,
+      "rounded_count": 14,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_HulaHoop_g12_c01"
+    },
+    {
+      "confidence": 0.1244155690073967,
+      "period_frames": 10.239999771118164,
+      "raw_count": 24.90234430661077,
+      "rounded_count": 25,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_HulaHoop_g15_c05"
+    },
+    {
+      "confidence": 0.263895720243454,
+      "period_frames": 59.0,
+      "raw_count": 4.322033898305085,
+      "rounded_count": 4,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_HulaHoop_g17_c02"
+    },
+    {
+      "confidence": 0.2167365550994873,
+      "period_frames": 5.0,
+      "raw_count": 51.0,
+      "rounded_count": 51,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_JumpRope_g02_c07"
+    },
+    {
+      "confidence": 0.4601205885410309,
+      "period_frames": 42.0,
+      "raw_count": 6.071428571428571,
+      "rounded_count": 6,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_JumpRope_g03_c04"
+    },
+    {
+      "confidence": 0.18110069632530212,
+      "period_frames": 6.0,
+      "raw_count": 42.5,
+      "rounded_count": 43,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_JumpRope_g15_c01"
+    },
+    {
+      "confidence": 0.7744640111923218,
+      "period_frames": 85.0,
+      "raw_count": 3.0,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_JumpingJack_g01_c01"
+    },
+    {
+      "confidence": 0.849227249622345,
+      "period_frames": 86.0,
+      "raw_count": 2.9651162790697674,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_JumpingJack_g09_c01"
+    },
+    {
+      "confidence": 0.41060683131217957,
+      "period_frames": 80.0,
+      "raw_count": 3.1875,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_JumpingJack_g13_c02"
+    },
+    {
+      "confidence": 0.7781941890716553,
+      "period_frames": 83.0,
+      "raw_count": 3.072289156626506,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_JumpingJack_g18_c04"
+    },
+    {
+      "confidence": 0.4929114282131195,
+      "period_frames": 85.33333587646484,
+      "raw_count": 2.9882811609422815,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_Kayaking_g10_c04"
+    },
+    {
+      "confidence": 0.14380639791488647,
+      "period_frames": 49.0,
+      "raw_count": 5.204081632653061,
+      "rounded_count": 5,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_Kayaking_g16_c05"
+    },
+    {
+      "confidence": 0.8277723789215088,
+      "period_frames": 128.0,
+      "raw_count": 1.9921875,
+      "rounded_count": 2,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_Kayaking_g17_c04"
+    },
+    {
+      "confidence": 0.08970534801483154,
+      "period_frames": 72.0,
+      "raw_count": 3.5416666666666665,
+      "rounded_count": 4,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_PlayingCello_g03_c04"
+    },
+    {
+      "confidence": 0.07841189950704575,
+      "period_frames": 111.0,
+      "raw_count": 2.2972972972972974,
+      "rounded_count": 2,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_PlayingCello_g05_c02"
+    },
+    {
+      "confidence": 0.1728169173002243,
+      "period_frames": 21.0,
+      "raw_count": 12.142857142857142,
+      "rounded_count": 12,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_PlayingCello_g08_c03"
+    },
+    {
+      "confidence": 0.1680530160665512,
+      "period_frames": 78.0,
+      "raw_count": 3.269230769230769,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_PlayingCello_g18_c03"
+    },
+    {
+      "confidence": 0.1360224038362503,
+      "period_frames": 112.0,
+      "raw_count": 2.2767857142857144,
+      "rounded_count": 2,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_PlayingViolin_g06_c04"
+    },
+    {
+      "confidence": 0.0,
+      "period_frames": 4.0,
+      "raw_count": 0.0,
+      "rounded_count": 0,
+      "sampled_frames": 256,
+      "selection_source": "no-evidence",
+      "valid_frames": 0,
+      "video_id": "v_PlayingViolin_g08_c04"
+    },
+    {
+      "confidence": 0.20790977776050568,
+      "period_frames": 21.0,
+      "raw_count": 12.142857142857142,
+      "rounded_count": 12,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_PlayingViolin_g19_c03"
+    },
+    {
+      "confidence": 0.09424444288015366,
+      "period_frames": 17.0,
+      "raw_count": 15.0,
+      "rounded_count": 15,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_PlayingViolin_g20_c04"
+    },
+    {
+      "confidence": 0.09510324150323868,
+      "period_frames": 11.1304349899292,
+      "raw_count": 22.910155823265093,
+      "rounded_count": 23,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_PommelHorse_g04_c05"
+    },
+    {
+      "confidence": 0.23870794475078583,
+      "period_frames": 94.0,
+      "raw_count": 2.7127659574468086,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_PommelHorse_g07_c06"
+    },
+    {
+      "confidence": 0.47942227125167847,
+      "period_frames": 85.33333587646484,
+      "raw_count": 2.9882811609422815,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_PommelHorse_g14_c02"
+    },
+    {
+      "confidence": 0.0,
+      "period_frames": 4.0,
+      "raw_count": 0.0,
+      "rounded_count": 0,
+      "sampled_frames": 256,
+      "selection_source": "no-evidence",
+      "valid_frames": 0,
+      "video_id": "v_Rowing_g01_c03"
+    },
+    {
+      "confidence": 0.5720287561416626,
+      "period_frames": 103.0,
+      "raw_count": 2.4757281553398056,
+      "rounded_count": 2,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_Rowing_g11_c02"
+    },
+    {
+      "confidence": 0.0,
+      "period_frames": 4.0,
+      "raw_count": 0.0,
+      "rounded_count": 0,
+      "sampled_frames": 256,
+      "selection_source": "no-evidence",
+      "valid_frames": 0,
+      "video_id": "v_Rowing_g14_c07"
+    },
+    {
+      "confidence": 0.0952705666422844,
+      "period_frames": 84.0,
+      "raw_count": 3.0357142857142856,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_ShavingBeard_g02_c07"
+    },
+    {
+      "confidence": 0.10655277222394943,
+      "period_frames": 68.0,
+      "raw_count": 3.75,
+      "rounded_count": 4,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_ShavingBeard_g07_c04"
+    },
+    {
+      "confidence": 0.3884265124797821,
+      "period_frames": 14.0,
+      "raw_count": 18.214285714285715,
+      "rounded_count": 18,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_ShavingBeard_g15_c07"
+    },
+    {
+      "confidence": 0.17368318140506744,
+      "period_frames": 28.0,
+      "raw_count": 9.107142857142858,
+      "rounded_count": 9,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_ShavingBeard_g17_c07"
+    },
+    {
+      "confidence": 0.012409526854753494,
+      "period_frames": 83.0,
+      "raw_count": 3.072289156626506,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_SoccerJuggling_g06_c05"
+    },
+    {
+      "confidence": 0.002751516178250313,
+      "period_frames": 41.0,
+      "raw_count": 6.219512195121951,
+      "rounded_count": 6,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_SoccerJuggling_g10_c01"
+    },
+    {
+      "confidence": 0.11703759431838989,
+      "period_frames": 70.0,
+      "raw_count": 3.642857142857143,
+      "rounded_count": 4,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_SoccerJuggling_g18_c05"
+    },
+    {
+      "confidence": 0.6877288222312927,
+      "period_frames": 38.0,
+      "raw_count": 6.7105263157894735,
+      "rounded_count": 7,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_TableTennisShot_g05_c03"
+    },
+    {
+      "confidence": 0.4916350543498993,
+      "period_frames": 83.0,
+      "raw_count": 3.072289156626506,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_TableTennisShot_g19_c07"
+    },
+    {
+      "confidence": 0.5273084044456482,
+      "period_frames": 52.0,
+      "raw_count": 4.903846153846154,
+      "rounded_count": 5,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_TableTennisShot_g20_c03"
+    },
+    {
+      "confidence": 0.21517325937747955,
+      "period_frames": 51.20000076293945,
+      "raw_count": 4.980468675785233,
+      "rounded_count": 5,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_TrampolineJumping_g12_c02"
+    },
+    {
+      "confidence": 0.40137583017349243,
+      "period_frames": 94.0,
+      "raw_count": 2.7127659574468086,
+      "rounded_count": 3,
+      "sampled_frames": 256,
+      "selection_source": "detrended-position-lag-acf",
+      "valid_frames": 256,
+      "video_id": "v_TrampolineJumping_g14_c02"
+    },
+    {
+      "confidence": 0.07974305003881454,
+      "period_frames": 11.1304349899292,
+      "raw_count": 22.910155823265093,
+      "rounded_count": 23,
+      "sampled_frames": 256,
+      "selection_source": "projected-velocity-spectrum-fallback",
+      "valid_frames": 256,
+      "video_id": "v_TrampolineJumping_g17_c02"
+    }
+  ],
+  "schema_version": 1,
+  "seed": 2026,
+  "source_revision": "470d49bd97eef5adad89142d4ffc017125505525",
+  "split": "dev"
+}

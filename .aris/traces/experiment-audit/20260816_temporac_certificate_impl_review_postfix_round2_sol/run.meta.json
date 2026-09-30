@@ -1,0 +1,12 @@
+{
+  "acceptance_status": "provisional",
+  "executor": "codex",
+  "executor_family": "openai",
+  "executor_model": "gpt-5.6-sol",
+  "fresh_context": true,
+  "project_dir": "D:\\Project\\rac-aris-fullrun-icassp27",
+  "review_independence": "same-family",
+  "run_id": "20260816_temporac_certificate_impl_review_postfix_round2_sol",
+  "skill": "experiment-audit",
+  "started_at": "2026-08-16T09:30:00+08:00"
+}

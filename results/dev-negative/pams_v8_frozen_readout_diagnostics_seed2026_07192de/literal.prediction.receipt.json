@@ -1,0 +1,88 @@
+{
+  "ablation_status": "default multi-expert",
+  "artifact_type": "pams_checkpoint_dev_prediction_receipt",
+  "checkpoint_completion_receipt_sha256": "f4815e1961ba883c23ef479ddcdef44aea5cad8a50d54e17b8e6a4cccc613f3d",
+  "checkpoint_progress_sha256": "aadc8f9bf067b3489efcd80db43c42cf09dba3477c2976bbc16571ff31684622",
+  "checkpoint_sha256": "6817fe468d76c3fa2182dd831695d6fe3d6da208a2b7f8dfa90cffa6872e8053",
+  "command": [
+    "/workspace/src/pams/__main__.py",
+    "evaluate",
+    "dev-predict",
+    "/pams/upstream/encoder/encoder.pt",
+    "/pams/protocol/train.inputs.json",
+    "/pams/pose-cache",
+    "/pams/output/run",
+    "--checkpoint-progress",
+    "/pams/upstream/encoder/logs/encoder.jsonl",
+    "--checkpoint-completion-receipt",
+    "/pams/upstream/encoder/manifests/20260730T025521Z-e6e6a2f657aa.completed.json",
+    "--input-commitment",
+    "/pams/protocol/train.inputs.commitment.json",
+    "--dev-inputs",
+    "/pams/protocol/dev.inputs.json",
+    "--dev-input-commitment",
+    "/pams/protocol/dev.inputs.commitment.json",
+    "--test-identity-inputs",
+    "/pams/protocol/test-identity.inputs.json",
+    "--test-identity-commitment",
+    "/pams/protocol/test-identity.inputs.commitment.json",
+    "--variant",
+    "literal",
+    "--config",
+    "/pams/input/config.yaml",
+    "--device",
+    "cuda:0"
+  ],
+  "config_fingerprint": "eaf9e2ce6047c4a13c13daaef10af1ae288542ad94ff9fb513d19e225912adf2",
+  "consensus_expert_mode": "multi",
+  "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+  "dev_pose_cache_set_sha256": "681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1",
+  "dev_pose_cache_snapshot_sha256": "14c290d86097b572cd544853f9d9c8bde379a3e53d7b637b22b66c6fbe1bb417",
+  "hardware": {
+    "container": {
+      "environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+      "image_id": "sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005",
+      "source_revision": "07192debb7f5748c53a1c6d4f0c0d3f16228e229"
+    },
+    "cuda_runtime": "12.4",
+    "cudnn": 90100,
+    "gpus": [
+      {
+        "capability": "8.6",
+        "index": 0,
+        "name": "NVIDIA RTX A6000",
+        "total_memory_bytes": 50807570432
+      }
+    ],
+    "logical_cpu_count": 40,
+    "nvidia_driver": {
+      "status": "available",
+      "versions": [
+        "550.54.14"
+      ]
+    },
+    "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.35",
+    "processor": "x86_64",
+    "python": "3.11.10",
+    "torch": "2.5.1+cu124"
+  },
+  "method_key": "pams-literal",
+  "prediction_bytes": 652750,
+  "prediction_code_sha256": "11909d0a6d7d45f898b6f94bc0d457053a230b18f9b708a12b4f425a7217beec",
+  "prediction_container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+  "prediction_container_image_id": "sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005",
+  "prediction_file": "predictions.json",
+  "prediction_sha256": "b2e347895b9aa676deb5bb7fc86a6cf59930f969c78d59f9e3ab43ea1b0579da",
+  "prediction_source_git_sha": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "protocol": "ucfrep_526",
+  "protocol_identity_sha256": "7aaaea4fdd0620cc7abb4f307cf63a9506448540e3d3d920acf70957f6b8b97f",
+  "schema_version": 2,
+  "split": "dev",
+  "training_config_fingerprint": "eaf9e2ce6047c4a13c13daaef10af1ae288542ad94ff9fb513d19e225912adf2",
+  "training_identity_sha256": "177e3a70e6fb272bac7c976e9700f70355bc30adb3990dc1276485c3e0cbddd6",
+  "training_pose_cache_set_sha256": "f32d718ae922120778f535a6a4f467edba79cafeba90373b3a6a55bf11be6ee2",
+  "upstream_encoder_checkpoint_sha256": null,
+  "upstream_encoder_completion_receipt_sha256": null,
+  "upstream_encoder_progress_sha256": null,
+  "variant": "literal"
+}

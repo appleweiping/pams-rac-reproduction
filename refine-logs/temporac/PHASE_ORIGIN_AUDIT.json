@@ -1,0 +1,266 @@
+{
+  "audit_id": "20260815_temporac_phase_origin_sol",
+  "metadata": {
+    "reviewer_model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "fresh_context": true,
+    "review_scope": "global phase-origin and one-final-peak-per-primitive-cycle audit",
+    "integral_decoder_replacement_designed": false,
+    "restricted_data_accessed": false
+  },
+  "inputs": [
+    {
+      "path": "refine-logs/temporac/round-0-initial-proposal.md",
+      "sha256": "654fbbc0038a7c74ffd73295ccb5a0bca533ccbee3b527b2c7804b528abe6fb2"
+    },
+    {
+      "path": "refine-logs/temporac/round-1-review.md",
+      "sha256": "09d7397e819052be4f20c99ddbc75c77fc5b5665448c008cc1ca6a1edc539bd7"
+    },
+    {
+      "path": "idea-stage/TEMPORAC_CANONICAL_REVIEW_BRIEF.md",
+      "sha256": "63b84447a6af9c4228bd5f93787b7cab0da4e9e96ac7258d7217e14ce915ba08"
+    },
+    {
+      "path": "idea-stage/TEMPORAC_RESEARCH_REVIEW.md",
+      "sha256": "ebfbb5cb5ff3963daf70156082bfeefc3832aa4932d3699aa40f7cb2b52012a9"
+    }
+  ],
+  "bottom_line": {
+    "repair_status": "conditionally_valid",
+    "rotation_gauge_removed": true,
+    "rotation_gauge_condition": "The circular-mean weights are physical-state-derived, the weighted resultant is nonzero, and alternate teacher phases differ only by a constant S1 rotation.",
+    "monotone_warp_invariance": "conditional_on_phase_traversal_measure_weighting_and_warp_invariant_state_projection",
+    "uniform_sample_weighting_valid": false,
+    "repeated_identical_complete_cycles_invariant": true,
+    "partial_cycle_invariance": false,
+    "full_orientation_preserving_phase_reparameterization_gauge_removed": false,
+    "human_repetition_convention_identified": false
+  },
+  "assumptions": [
+    {
+      "id": "A1",
+      "name": "primitive_embedded_orbit",
+      "statement": "The complete masked delay-state orbit is an embedded S1 with trivial rotational stabilizer, and one human repetition is assumed to equal one forward traversal."
+    },
+    {
+      "id": "A2",
+      "name": "teacher_topology",
+      "statement": "For fixed content, the memoryless teacher restricted to the orbit is an orientation-preserving degree-one homeomorphism with no decoder or static-code bypass."
+    },
+    {
+      "id": "A3",
+      "name": "cross_view_phase_stability",
+      "statement": "Sampling, cycle count, or static-code changes alter corresponding teacher phases by at most a constant rotation, not a nonlinear circle homeomorphism."
+    },
+    {
+      "id": "A4",
+      "name": "projection_validity",
+      "statement": "The projection is fixed independently of the teacher, valid on fixed mask support, and invariant at corresponding physical states under all allowed warps."
+    },
+    {
+      "id": "A5",
+      "name": "unique_landmark",
+      "statement": "The projected score has one isolated global maximum per primitive orbit; repeated occurrences across cycles are allowed, but separated within-cycle maxima are not."
+    },
+    {
+      "id": "A6",
+      "name": "complete_support",
+      "statement": "At least one uninterrupted complete orbit traversal is observed."
+    },
+    {
+      "id": "A7",
+      "name": "sampling_no_alias",
+      "statement": "Each valid adjacent interval contains less than one quarter of a true traversal and cannot hide an integer number of cycles."
+    },
+    {
+      "id": "A8",
+      "name": "positive_orientation",
+      "statement": "Warps preserve orientation; pauses have constant phase; time reversal is outside the contract."
+    },
+    {
+      "id": "A9",
+      "name": "origin_concentration",
+      "statement": "Circular concentration, landmark uniqueness, and cross-cycle stability satisfy every preregistered threshold."
+    }
+  ],
+  "theorem": {
+    "origin_formula": "For each complete traversal j, c_j = integral exp(kappa(s-smax_j)) z dA / integral exp(kappa(s-smax_j)) dA; C = mean_j c_j; o = C/|C|; z_canonical = z conjugate(o).",
+    "rotation_equivariance": "If z'=exp(i beta)z, then C'=exp(i beta)C, o'=exp(i beta)o, and z'_canonical=z_canonical.",
+    "warp_invariance": "The Riemann-Stieltjes integral with respect to unwrapped phase traversal measure dA is invariant to orientation-preserving time reparameterization.",
+    "repetition_invariance": "Equal per-complete-cycle normalization makes identical repeated cycles contribute identical c_j values; adding an identical cycle does not move o.",
+    "crossing_result": "A positive degree-one traversal has exactly one half-open integer crossing on every complete orbit traversal.",
+    "decoder_result": "Exactly one connected supra-0.5 component per target, separated by sub-0.5 valleys with no extras, is sufficient for the single connected-component decoder to return the event count.",
+    "limitation": "A finite-kappa circular mean is not invariant to a general orientation-preserving nonlinear reparameterization of S1."
+  },
+  "algorithm": [
+    {
+      "stage": "preprocess",
+      "steps": [
+        "Collapse adjacent duplicate source clocks before delay-state construction.",
+        "Use deterministic mask/confidence-weighted aggregation.",
+        "Abstain on conflicting or noncontiguous duplicate clocks.",
+        "Split into maximal valid segments and never unwrap or connect components across gaps."
+      ]
+    },
+    {
+      "stage": "fixed_projection",
+      "formula": "s_t = sum_d m_td a_d (y_td-mu_d)/sigma_d / (sqrt(sum_d m_td a_d^2)+epsilon_p)",
+      "numeric_type": "float64",
+      "guard": "All nonzero projection support must be observed and warp-invariant; raw velocity magnitude and fixed-frame lags require a passing correspondence test."
+    },
+    {
+      "stage": "teacher_phase",
+      "formula": "delta_t = atan2(det(z_t,z_t+1), dot(z_t,z_t+1))/(2*pi)",
+      "steps": [
+        "Normalize z with an epsilon-protected L2 norm.",
+        "Use compensated float64 accumulation.",
+        "Partition cumulative progress into complete intervals [j,j+1].",
+        "Split boundary edges deterministically and exclude trailing partial intervals."
+      ]
+    },
+    {
+      "stage": "stable_origin",
+      "formula": "ell_b=log(lambda_b)+kappa(s_b-smax_j); c_j=sum exp(ell_b-L_j)z_b/sum exp(ell_b-L_j); C=mean_j c_j; o=C/|C|",
+      "steps": [
+        "Use phase-length quadrature rather than sample counts.",
+        "Use normalized spherical phase midpoints.",
+        "Subtract the largest log weight before exponentiation.",
+        "Use pairwise or compensated sums and equal per-cycle normalization."
+      ]
+    },
+    {
+      "stage": "canonicalize_and_pulse",
+      "formula": "z_canonical=z*conjugate(o); e_t=floor(S_tau(A_t+1))-floor(S_tau(A_t)) with A_t+1=A_t+delta_t and tau=1e-7 cycles",
+      "guards": [
+        "Accept only pulse differences in {0,1}.",
+        "Abstain on backward seam crossing or multiple crossing.",
+        "Require pulse equality for tau in {1e-8,1e-7,1e-6}."
+      ]
+    },
+    {
+      "stage": "nola_and_decode",
+      "formula": "R_e=sum_l a_le r_le/(sum_l a_le+1e-8)",
+      "steps": [
+        "Require finite denominator at least 1e-3.",
+        "Exclude padding and invalid edges.",
+        "Split at invalid gaps.",
+        "Threshold once at 0.5 and count connected components once per identity.",
+        "Choose the lower-index midpoint of a maximal plateau.",
+        "Do not use NMS, a learned distance, or an integral fallback."
+      ]
+    }
+  ],
+  "thresholds": {
+    "suite_size_minimum": 256,
+    "topology_origin": {
+      "degree_plus_one_noisy_unseen_min_fraction": 0.95,
+      "degree_plus_one_noiseless_supported_min_fraction": 1.0,
+      "combined_bad_degree_or_harmonic_max_fraction": 0.05,
+      "phase_state_collision_max_fraction": 0.01,
+      "per_edge_delta_min_cycles": -1e-12,
+      "per_edge_delta_max_exclusive_cycles": 0.25,
+      "minimum_complete_intervals": 1,
+      "per_cycle_resultant_min": 0.95,
+      "aggregate_resultant_min": 0.95,
+      "landmark_phase_coherence_min": 0.99,
+      "landmark_exclusion_radius_cycles": 0.10,
+      "normalized_peak_margin_min": 0.10,
+      "high_score_component_diameter_max_cycles": 0.05,
+      "origin_to_peak_max_cycles": 0.05,
+      "leave_one_cycle_out_origin_variation_max_cycles": 0.01
+    },
+    "gauge_resampling_repetition": {
+      "rotation_grid_minimum": 64,
+      "rotation_canonical_phase_error_max_cycles": 1e-10,
+      "rotation_pulses_bit_identical": true,
+      "samples_per_cycle": [32, 48, 64, 96, 128, 256],
+      "warp_speed_ratio_range": [0.25, 4.0],
+      "matched_origin_error_max_cycles": 0.005,
+      "matched_canonical_phase_error_max_cycles": 0.01,
+      "complete_cycle_count_exactly_equal": true,
+      "crossing_location_error_max_cycles": 0.01,
+      "repeat_counts": [1, 2, 3, 7],
+      "boundary_tail_cycles": [0.0, 0.2, 0.8],
+      "exact_repeat_origin_change_max_cycles": 1e-10,
+      "partial_clip_cycles_must_abstain": [0.1, 0.25, 0.5, 0.9]
+    },
+    "symmetry_masks_clocks": {
+      "ambiguous_landmarks_abstention_fraction": 1.0,
+      "q_fold_symmetry_abstention_fraction": 1.0,
+      "time_reversal_abstention_fraction": 1.0,
+      "pause_phase_count_minimum": 16,
+      "pause_lengths": [1, 4, 16, 64, 128],
+      "pause_origin_change_max_cycles": 0.005,
+      "pause_extra_pulses": 0
+    },
+    "pulse_nola_decoder": {
+      "window_grid_shifts": 32,
+      "event_spacings_valid_edges": [4, 5, 8, 16, 32, 64, 127, 128, 129],
+      "target_match_radius_edges": 1,
+      "components_per_target": 1,
+      "extra_components": 0,
+      "event_core_min": 0.60,
+      "separating_valley_max": 0.40,
+      "decoder_count_grid_invariant": true,
+      "nola_denominator_min": 0.001,
+      "threshold": 0.5
+    }
+  },
+  "counterexamples": [
+    "Uniform sample-weighted means move when one side of the landmark is oversampled.",
+    "Velocity magnitude and fixed-frame delay lags are clock-blind but warp-variant.",
+    "Antipodal or near-tied projection maxima make the origin undefined or unstable.",
+    "A general orientation-preserving phase homeomorphism preserves degree and reconstruction but changes a finite-width mean seam.",
+    "A self-intersection in the complete masked delay state is not distinguishable by a memoryless teacher.",
+    "Observable q-fold symmetry can produce q primitive orbit traversals per human-labelled repetition.",
+    "A partial observed arc does not reveal the unseen global projection maximum or boundary convention.",
+    "A pause and one or more hidden complete cycles can have identical sampled endpoints and modulo phase.",
+    "Missing gaps can hide an arbitrary number of repetitions.",
+    "Time reversal changes increment sign and is not handled by the positive crossing rule.",
+    "Pause entry and exit can create off-orbit delay-state transients.",
+    "Static codes can induce nonlinear phase deformations rather than constant rotations.",
+    "Disjoint window pulses can average below threshold after NOLA.",
+    "Broad window responses can bridge an inter-event valley after NOLA.",
+    "Changing masks can create a mask-driven rather than pose-driven landmark."
+  ],
+  "kill_conditions": [
+    "Nontrivial orbit symmetry or unresolved complete-delay-state collision.",
+    "No uninterrupted complete valid traversal.",
+    "Nonunique or unstable projected landmark.",
+    "Origin concentration or warp/repetition invariance below threshold.",
+    "Unsupported clock gaps or an indefensible no-hidden-cycle acquisition assumption.",
+    "Backward seam crossing, time reversal, or pause transient.",
+    "Any split, merge, or miss in the held-out threshold-0.5 pulse gate.",
+    "Teacher-only natural mismatch between the observable primitive orbit and evaluator repetition unit."
+  ],
+  "unidentifiable_human_conventions": [
+    "Whether left and right subcycles count separately.",
+    "Whether multiple primitive orbit traversals form one named action.",
+    "Where the repetition begins.",
+    "Whether boundary partials count.",
+    "Whether a pause terminates, suspends, or restarts a repetition.",
+    "How mirrored or symmetric states are grouped."
+  ],
+  "verdict": {
+    "status": "conditionally_scientifically_defensible",
+    "defensible_claim": "For a gap-free, sufficiently sampled, forward traversal of an identifiable primitive masked-delay-state orbit with a unique frozen pose landmark, the system emits one final threshold-0.5 connected component per observed orbit traversal after NOLA.",
+    "unconditional_one_peak_per_human_repetition_defensible": false,
+    "benchmark_totality_warning": "If the benchmark requires a count for every finite, gappy, possibly partial track, the strict theorem does not cover the benchmark.",
+    "pilot_condition": "Report abstention and coverage, validate teacher-only counts without tuning, and treat any human-convention mismatch as terminal."
+  },
+  "artifact_status": {
+    "markdown_contains_full_raw_response": true,
+    "trace_response_matches_markdown": true,
+    "utf8_no_bom": true,
+    "json_valid": true,
+    "input_rehash_at_finalization_required": true,
+    "output_scope": [
+      "refine-logs/temporac/PHASE_ORIGIN_AUDIT.md",
+      "refine-logs/temporac/PHASE_ORIGIN_AUDIT.json",
+      ".aris/traces/research-refine/20260815_temporac_phase_origin_sol/"
+    ]
+  }
+}

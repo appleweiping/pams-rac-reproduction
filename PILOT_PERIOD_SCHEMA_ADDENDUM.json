@@ -1,0 +1,335 @@
+{
+  "schema_version": "rac.pilot_period_schema_addendum.v1",
+  "audit_id": "PILOT_PERIOD_SCHEMA_ADDENDUM_20260815",
+  "as_of_date": "2026-08-15",
+  "verdict": "CONDITIONAL_PILOT_ONLY",
+  "scope": {
+    "mode": "read_only",
+    "included": [
+      "raw MultiRep train annotations",
+      "raw MultiRep validation annotations",
+      "v44 train and validation pickle schema",
+      "v44 converter source",
+      "v44 runner source",
+      "official MultiCounter+ preprocessing and evaluator source"
+    ],
+    "no_test_attestation": {
+      "sealed_or_official_test_gt_opened": false,
+      "test_predictions_opened": false,
+      "heldout_report_opened": false,
+      "results_directory_opened": false,
+      "test_artifact_hashed": false,
+      "test_artifact_deserialized": false
+    },
+    "server_writes": false,
+    "training_or_evaluation_started": false,
+    "credentials_recorded": false
+  },
+  "catalog_hash_definition": "SHA256 of canonical JSON over sorted [relative_path,file_sha256] pairs",
+  "content_multiset_hash_definition": "SHA256 of canonical JSON over sorted file SHA256 values without paths",
+  "annotation_catalogs": {
+    "train": {
+      "path_pattern": "<MotionBERT-root>/data/train/<sample>/<sample>.json",
+      "annotation_files": 794,
+      "tracks": 1878,
+      "period_intervals": 26010,
+      "source_length_min": 169,
+      "source_length_max": 2640,
+      "period_span_min": 3,
+      "period_span_max": 188,
+      "period_end_equals_source_length": 27,
+      "catalog_sha256": "c80f3ce837c28d9e5f2929e41b69c596f8ec1abdc32db7be72b93d8971a65ee6",
+      "content_multiset_sha256": "c4c2a119cbb8cd392ff6550115136247d81a37a252771c72b400b70d9ae63d12"
+    },
+    "val": {
+      "path_pattern": "<MotionBERT-root>/data/val/<sample>/<sample>.json",
+      "annotation_files": 183,
+      "tracks": 486,
+      "period_intervals": 9052,
+      "source_length_min": 250,
+      "source_length_max": 1829,
+      "period_span_min": 11,
+      "period_span_max": 246,
+      "period_end_equals_source_length": 5,
+      "catalog_sha256": "be42cf759241039c7fd427633135b16c44c18189bec0284608635ee45191f2f2",
+      "content_multiset_sha256": "f48d8257e1003ba9044ce9fda0396cf139ed24aeed2f5d79dcc6c058283452b5"
+    }
+  },
+  "raw_annotation_schema": {
+    "video_fields": {
+      "length": "int",
+      "width": "int",
+      "height": "int",
+      "video_name": "str; audit/evaluator identity only"
+    },
+    "object_fields": {
+      "bbox": {
+        "type": "list[list[number]]",
+        "shape": "[source_length,4]",
+        "privilege": "evaluator_or_audit_only"
+      },
+      "count": {
+        "type": "int",
+        "shape": "scalar",
+        "privilege": "evaluator_only"
+      },
+      "period": {
+        "type": "list[list[int,int]]",
+        "shape": "[num_cycles,2]",
+        "granularity": "per_cycle",
+        "clock": "source_frame_boundary",
+        "unit": "source_frame_units",
+        "interval_semantics": "[start,end)",
+        "duration": "end-start",
+        "privilege": "evaluator_period_vault_only"
+      },
+      "periodicity": {
+        "type": "list",
+        "observed_state": "empty_for_every_audited_train_val_track",
+        "privilege": "evaluator_or_audit_only",
+        "usable_for_p_eval": false
+      }
+    },
+    "integrity_counts": {
+      "count_equals_period_length_tracks": {
+        "train": 1878,
+        "val": 486
+      },
+      "malformed_period_entries": 0,
+      "missing_period_fields": 0,
+      "empty_period_lists": 0,
+      "fractional_period_endpoints": 0,
+      "zero_duration_periods": 0,
+      "negative_duration_periods": 0,
+      "unsorted_period_entries": 0,
+      "overlapping_period_entries": 0,
+      "out_of_boundary_domain_entries": 0
+    }
+  },
+  "p_eval_contract": {
+    "input": "C_p = annotation[object_id]['period']",
+    "source_length": "L = int(annotation['length'])",
+    "validity_rule": "C_p is non-empty and every item is exactly two Python ints satisfying 0 <= s < e <= L",
+    "invalid_policy": "global_gate_failure; never filter a track and never fall back",
+    "span_rule": "D_p,k = float64(e_p,k - s_p,k)",
+    "formula": "P_eval,p = numpy.median(numpy.asarray([e-s for [s,e] in C_p], dtype=numpy.float64))",
+    "aggregation": "NumPy default median; for even K, arithmetic mean of the two central sorted spans",
+    "unit": "source_frame_boundary_units",
+    "forbidden_alternatives": [
+      "inclusive end or plus-one duration",
+      "harmonic mean",
+      "weighted median",
+      "trimmed statistic",
+      "action-conditioned branch",
+      "count fallback",
+      "density fallback",
+      "periodicity fallback",
+      "bbox-derived fallback",
+      "development-selected alternative"
+    ],
+    "count_relation_use": "vault_integrity_receipt_only; count is not an input to P_eval",
+    "freeze_order": "compute only in a separately permissioned evaluator after predictions and selector traces are immutable"
+  },
+  "harmonic_gate": {
+    "predicted_track_period": "hat_P_p = NumPy median of valid pre-vault window selector outputs in source-frame units",
+    "classes": [
+      0.5,
+      1.0,
+      2.0
+    ],
+    "distance": "d_p,h = abs(hat_P_p / (h * P_eval,p) - 1)",
+    "relative_tolerance": 0.1,
+    "no_match_class": "off-grid",
+    "nonfinite_class": "off-grid",
+    "correction_allowed": false,
+    "filtering_allowed": false,
+    "rerun_or_retune_allowed": false
+  },
+  "clock_contract": {
+    "sample_index_formula": "q_j = clip(round(j*(L-1)/(T-1)),0,L-1)",
+    "target_length": 320,
+    "sample_clock_semantics": "sampled source-frame centers in [0,L-1]",
+    "label_clock_semantics": "source-frame boundaries in [0,L]",
+    "conversion_rule": "selector must emit source-clock periods directly after duplicate-clock collapse and valid-cell interpolation",
+    "inverse_index_lookup_allowed": false,
+    "label_resampling_allowed": false,
+    "uniform_grid_period_policy": "fail_closed",
+    "forbidden_conversion_branches": [
+      "T/L",
+      "(T-1)/(L-1)",
+      "nearest sampled index",
+      "data-dependent conversion"
+    ],
+    "observed_v44": {
+      "train": {
+        "videos": 110,
+        "tracks": 268,
+        "q_dtype": "int64",
+        "q_shape": [
+          320
+        ],
+        "nondecreasing_videos": 110,
+        "correct_endpoint_videos": 110,
+        "videos_with_duplicate_q": 45
+      },
+      "val": {
+        "videos": 51,
+        "tracks": 134,
+        "q_dtype": "int64",
+        "q_shape": [
+          320
+        ],
+        "nondecreasing_videos": 51,
+        "correct_endpoint_videos": 51,
+        "videos_with_duplicate_q": 0
+      }
+    }
+  },
+  "source_code_evidence": [
+    {
+      "repository": "MotionBERT-main",
+      "commit": "e9e8399957daf8c95fbfef21b2db91c7b4a8b279",
+      "path": "tools/convert_multirep_alphapose_to_counting_v44.py",
+      "sha256": "5a9b148f398e43ac11eac7b54468a0cb22ba2ea63622a962feaa9fdb3cd05e60",
+      "line_evidence": {
+        "periods_to_density_and_count_fallback": "131-156",
+        "sample_indices": "159-163",
+        "annotation_load": "251-260",
+        "sample_motion_and_masks": "341-344",
+        "count_and_period_read": "355-360",
+        "output_fields": "416-447"
+      }
+    },
+    {
+      "repository": "MotionBERT-main",
+      "commit": "e9e8399957daf8c95fbfef21b2db91c7b4a8b279",
+      "path": "run_mpcounter_v44.py",
+      "sha256": "ec6b8ee58dd163b86be49f3e7a3461b449c65000184ad498b367e085e71261c6",
+      "line_evidence": {
+        "normalise_positive_periods": "929-946",
+        "interval_iou": "949-956",
+        "density_proposals": "1002-1076",
+        "local_period_metrics": "1079-1156"
+      },
+      "metric_verdict": "diagnostic_only_not_official_faithful"
+    },
+    {
+      "repository": "MultiCounterPlus",
+      "commit": "d15c767d82dac2f7a5df9fde1d7f6b5a4f491062",
+      "path": "data_pre/video2frames.py",
+      "sha256": "ebf4dc08d18070e65d891b6faa5929de7e8f78c000cb4cd98d222ebf19d581aa",
+      "line_evidence": {
+        "half_open_period_length_and_fill": "21-30",
+        "inconsistent_derived_binary_end_check": "105-110"
+      }
+    },
+    {
+      "repository": "MultiCounterPlus",
+      "commit": "d15c767d82dac2f7a5df9fde1d7f6b5a4f491062",
+      "path": "mmdet/datasets/multirep_eval_api.py",
+      "sha256": "c10a3a56704d8bdf1ba55a2681570dc77371089ecb73c71c56102d26eca1386c",
+      "line_evidence": {
+        "period_ap_inputs": "534-564",
+        "temporal_matching_and_ap": "566-648",
+        "continuous_span_tiou": "650-677"
+      },
+      "metric_verdict": "official_reference_implementation"
+    }
+  ],
+  "v44_feature_schema": {
+    "train_pickle_sha256": "c96fc1dfa233ec4bf1af19e7480ee8c721f4cddee9f121185f4e494c7244e1eb",
+    "val_pickle_sha256": "4064ef24dc2970e9b07de8adddf1ecd4932aecb90453a67b4f90d7bd35d10251",
+    "persisted_allowlist": {
+      "motion": "float32[P,320,17,3]",
+      "person_mask": "bool[P]",
+      "frame_mask": "bool[P,320]",
+      "sampled_frame_indices": "int64[320]",
+      "source_length": "int",
+      "opaque_sample_key": "opaque non-semantic digest; join only; never embedded",
+      "local_person_slot": "local int; state routing only; never embedded"
+    },
+    "derived_runtime_mask": "joint_valid_mask from the frozen confidence rule before pose zeroing"
+  },
+  "k4": {
+    "timestamp_no_pose": {
+      "status": "SCHEMA_FREEZABLE",
+      "pose_rule": "derive masks first, then set all x, y, and confidence pose channels to zero",
+      "allowed_runtime_fields": [
+        "person_mask",
+        "frame_mask",
+        "joint_valid_mask",
+        "sampled_frame_indices",
+        "source_length",
+        "exact preregistered online warp metadata already visible to treatment"
+      ],
+      "nonfeature_routing_fields": [
+        "opaque_sample_key",
+        "local_person_slot"
+      ],
+      "parameter_rule": "same schedule, seeds, state/reset policy, and matched trainable capacity wherever representable"
+    },
+    "nuisance_only": {
+      "status": "OPEN_NUISANCE_SCHEMA",
+      "reason": "current v44 artifacts do not persist legitimate per-example crop, resampler, or augmentation nuisance fields",
+      "required_freeze": [
+        "exact nuisance names, types, shapes, ranges, and normalization",
+        "visibility parity between treatment and control",
+        "deterministic fixed same-capacity adapter",
+        "receipt excluding labels, identities, evaluator outputs, and development metrics"
+      ],
+      "claim_closed": false
+    }
+  },
+  "forbidden_model_fields": [
+    "count_gt",
+    "density_gt",
+    "raw count",
+    "period",
+    "periodicity",
+    "cycle or boundary labels",
+    "raw or derived GT boxes",
+    "source_json",
+    "source_json_sha256",
+    "source_alphapose_json",
+    "source_alphapose_json_sha256",
+    "video_name",
+    "source IDs",
+    "canonical IDs",
+    "source split",
+    "filenames",
+    "paths",
+    "source hashes",
+    "object_ids",
+    "person_object_ids",
+    "object_mapping",
+    "association structures",
+    "detector identity records",
+    "gt_object_pose_coverage",
+    "gt_bbox_assisted_pose_association",
+    "evaluator periods",
+    "count metrics",
+    "component labels",
+    "development errors",
+    "harmonic classifications"
+  ],
+  "audit_only_fields": [
+    "source/component split manifest",
+    "file and shard checksums",
+    "converter version",
+    "association receipts",
+    "opaque evaluator join map before de-identification"
+  ],
+  "next_gate": [
+    "implement and checksum-freeze the non-executable feature packer",
+    "create a separately permissioned evaluator vault",
+    "pass the count-blind source-disjoint eligibility and component assertions",
+    "freeze the exact nuisance-only K4 runtime schema and matched-capacity adapter",
+    "validate the official evaluator wrapper and normalized count fixture"
+  ],
+  "claims_authorized": {
+    "result_claim": false,
+    "submission_ready": false,
+    "novelty_clearance": false,
+    "performance_claim": false
+  }
+}

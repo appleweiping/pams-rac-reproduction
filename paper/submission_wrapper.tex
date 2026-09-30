@@ -1,0 +1,8 @@
+% Do not compile this wrapper directly. The submission validator must confirm
+% the official 2027 kit, a complete private author roster, eligible
+% evidence bindings, and all required audits.
+\def\RACsubmission{1}
+\InputIfFileExists{private/author_metadata.tex}{}{%
+  \PackageError{rac-paper}{Private author metadata is missing}%
+    {Create the ignored file only after every author confirms the roster.}}
+\input{main.tex}

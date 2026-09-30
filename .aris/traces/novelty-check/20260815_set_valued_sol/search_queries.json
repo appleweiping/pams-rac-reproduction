@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_set_valued_sol",
+  "searched_at": "2026-08-15",
+  "external_cutoff": "2026-08-15",
+  "local_pdf_scan": {"papers_found": 0, "effect": "No local external-paper full text contributed to the verdict."},
+  "batches": [
+    {
+      "claim_id": "C1",
+      "queries": [
+        "2024 2025 2026 repetitive action counting missing pose uncertainty interval prediction skeleton",
+        "\"repetition counting\" \"prediction interval\" pose OR skeleton",
+        "\"set-valued\" \"repetition counting\" missing data",
+        "site:arxiv.org repetition counting uncertainty missing pose skeleton interval"
+      ],
+      "urls_opened": [
+        "https://doi.org/10.1109/ACCESS.2025.3624029",
+        "https://kimbabmoowoo.github.io/publication/Journal/sstrac-2025.pdf",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC10692053/",
+        "https://openaccess.thecvf.com/content/CVPR2026F/html/Gao_Count_What_Repeats_Period-Adaptive_Multi-Scale_Consistency_for_Self-Supervised_Repetitive_Action_CVPRF_2026_paper.html",
+        "https://journals.sagepub.com/doi/pdf/10.3233/FAIA240494",
+        "https://ieeexplore.ieee.org/document/11421441/"
+      ],
+      "context": "Direct endpoint not found in checked sources. SSTRAC and Viewpoint-Invariant repair/interpolate then point-count; PAMS point-counts without count labels; MultiCounter/+ supervise per-person point outputs."
+    },
+    {
+      "claim_id": "C2",
+      "queries": [
+        "2024 2025 2026 nested mask prediction intervals missing covariates monotonic uncertainty sets",
+        "\"nested masks\" uncertainty interval missing data machine learning",
+        "conformal prediction missing covariates nested missingness sets monotonic width",
+        "site:arxiv.org 2026 \"missing covariates\" conformal prediction sets"
+      ],
+      "urls_opened": [
+        "https://proceedings.mlr.press/v202/zaffran23a.html",
+        "https://proceedings.mlr.press/v202/zaffran23a/zaffran23a.pdf",
+        "https://arxiv.org/abs/2405.15641",
+        "https://arxiv.org/pdf/2405.15641",
+        "https://openreview.net/pdf?id=FiQAQSTXZn",
+        "https://arxiv.org/abs/2608.07183"
+      ],
+      "context": "Nested-mask predictive sets, interval-length isotonicity and mask-conditional validity are occupied. Pointwise widening is assumption-dependent; coverage methods use response-labeled calibration."
+    },
+    {
+      "claim_id": "C3",
+      "queries": [
+        "2024 2025 2026 conformal prediction intervals count data event count time series",
+        "\"prediction interval\" \"event count\" missing observations time series",
+        "\"partial identification\" count missing data time series observations",
+        "site:arxiv.org set-valued count prediction missing time series 2026"
+      ],
+      "urls_opened": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC7611043/",
+        "https://arxiv.org/abs/1907.11555",
+        "https://proceedings.mlr.press/v238/xu24b.html",
+        "https://proceedings.mlr.press/v238/xu24b/xu24b.pdf",
+        "https://arxiv.org/abs/2601.04192",
+        "https://arxiv.org/abs/2602.16061"
+      ],
+      "context": "Count intervals/UQ exist and use ground-truth targets, labeled calibration or parametric inference. Self-containment against a model estimate is not outcome coverage."
+    },
+    {
+      "claim_id": "C4",
+      "queries": [
+        "2024 2025 2026 human pose estimation uncertainty prediction sets missing joints conformal",
+        "site:arxiv.org human pose uncertainty set missing joints occlusion 2026",
+        "site:arxiv.org repetitive action counting uncertainty 2026 pose",
+        "2026 arXiv repetition counting occlusion missing skeleton uncertainty interval"
+      ],
+      "urls_opened": [
+        "https://proceedings.mlr.press/v267/zhang25g.html",
+        "https://arxiv.org/abs/2412.10431",
+        "https://openreview.net/pdf?id=v7ebdKPTnG",
+        "https://arxiv.org/abs/2608.07183",
+        "https://arxiv.org/abs/2602.16061"
+      ],
+      "context": "Pose UQ, missing-input prediction sets and formal partial identification exist, but no checked source maps missing pose directly to a RAC count set. Terminology remains conditional on proof."
+    },
+    {
+      "claim_id": "RECENT_SIX_MONTHS",
+      "window": "2026-02-15/2026-08-15",
+      "queries": [
+        "repetitive action counting uncertainty interval pose skeleton",
+        "conformal prediction missing covariates mask conditional nested",
+        "partial identification missing time series count interval",
+        "human pose uncertainty missing joints prediction sets",
+        "site:arxiv.org/abs/ repetition counting missing skeleton uncertainty interval after:2026-02-15"
+      ],
+      "urls_opened": [
+        "https://openreview.net/pdf?id=FiQAQSTXZn",
+        "https://arxiv.org/abs/2608.07183",
+        "https://arxiv.org/abs/2602.16061",
+        "https://arxiv.org/abs/2601.04192",
+        "https://openaccess.thecvf.com/content/CVPR2026F/html/Gao_Count_What_Repeats_Period-Adaptive_Multi-Scale_Consistency_for_Self-Supervised_Repetitive_Action_CVPRF_2026_paper.html"
+      ],
+      "context": "Recent sources reinforce general missing-input UQ and count-interval boundaries but do not directly disclose the target RAC endpoint."
+    }
+  ],
+  "negative_evidence_rule": "Failure to find a direct hit was not treated as proof of novelty."
+}

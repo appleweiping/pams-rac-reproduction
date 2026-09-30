@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "verdict": "PASS",
+  "source": "sections/3_method.tex",
+  "checks": [
+    {
+      "id": "exactly_four_display_equation_groups",
+      "status": "PASS",
+      "detail": 4
+    },
+    {
+      "id": "equation_1_contains_no_punctuation",
+      "status": "PASS",
+      "detail": []
+    },
+    {
+      "id": "equation_1_explanation_flush_left",
+      "status": "PASS",
+      "detail": "\\noindent Here $\\Bset$ denotes the binary alphabet. The shared $\\theta$ does"
+    },
+    {
+      "id": "equation_1_no_trailing_punctuation",
+      "status": "PASS"
+    },
+    {
+      "id": "equation_2_contains_no_punctuation",
+      "status": "PASS",
+      "detail": []
+    },
+    {
+      "id": "equation_2_explanation_flush_left",
+      "status": "PASS",
+      "detail": "\\noindent Indices $(i,\\ell)$ expose within-track drift. Projection, centering,"
+    },
+    {
+      "id": "equation_2_no_trailing_punctuation",
+      "status": "PASS"
+    },
+    {
+      "id": "equation_3_contains_no_punctuation",
+      "status": "PASS",
+      "detail": []
+    },
+    {
+      "id": "equation_3_explanation_flush_left",
+      "status": "PASS",
+      "detail": "\\noindent Soft weights retain uncertainty at tempo transitions. Router inputs,"
+    },
+    {
+      "id": "equation_3_no_trailing_punctuation",
+      "status": "PASS"
+    },
+    {
+      "id": "equation_4_contains_no_punctuation",
+      "status": "PASS",
+      "detail": []
+    },
+    {
+      "id": "equation_4_explanation_flush_left",
+      "status": "PASS",
+      "detail": "\\noindent This order avoids counting every window independently; it does not"
+    },
+    {
+      "id": "equation_4_no_trailing_punctuation",
+      "status": "PASS"
+    }
+  ]
+}

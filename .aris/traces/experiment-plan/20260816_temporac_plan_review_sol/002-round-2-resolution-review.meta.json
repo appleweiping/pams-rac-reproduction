@@ -1,0 +1,33 @@
+{
+  "schema": "aris.trace.turn.v1",
+  "skill": "experiment-plan",
+  "run_id": "20260816_temporac_plan_review_sol",
+  "turn_id": "002-round-2-resolution-review",
+  "continuation": true,
+  "reviewer": {
+    "model": "gpt-5.6-sol",
+    "family": "openai",
+    "independence": "same-family",
+    "acceptance_status": "provisional"
+  },
+  "request": {
+    "path": ".aris/traces/experiment-plan/20260816_temporac_plan_review_sol/002-round-2-resolution-review.request.json",
+    "sha256": "fc2cf257c066b3e90df9db1fa4036d75672c4949b8152298674cd0084343c0ca",
+    "bytes": 1406
+  },
+  "response": {
+    "path": ".aris/traces/experiment-plan/20260816_temporac_plan_review_sol/002-round-2-resolution-review.response.md",
+    "sha256": "1f4eb3f42427dfdbaefc74512f96f17b09c3f91930b982e954c0fb8d755e3d8d",
+    "bytes": 5987,
+    "canonical_markdown_byte_identical": true
+  },
+  "structured_review": {
+    "path": "refine-logs/EXPERIMENT_PLAN_REVIEW_ROUND2.json",
+    "sha256": "f9f115fad2b6e8a7117e2682fe15b4f0f7e3206cd55b7dde8d5027b503153519",
+    "bytes": 7593
+  },
+  "verdict": "PASS",
+  "p00_release_ready_under_plan": true,
+  "remaining_plan_blocking_issue_count": 0,
+  "execution_authority": false
+}

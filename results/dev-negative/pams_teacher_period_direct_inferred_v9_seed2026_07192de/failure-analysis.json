@@ -1,0 +1,266 @@
+{
+  "schema_version": 1,
+  "artifact_type": "pams_teacher_period_direct_inferred_failure_analysis",
+  "classification": "posthoc inferred dev-only negative-result diagnosis",
+  "method_key": "pams-teacher-period-direct-inferred-v1",
+  "split": "dev84",
+  "sample_count": 84,
+  "paper_table_eligible": false,
+  "test_evaluation_authorized": false,
+  "disclosures": [
+    "This is an independently inferred post-hoc diagnostic, not an author-disclosed PAMS readout.",
+    "All statistics use the fixed UCFRep dev84 rows after target-free prediction; no test105 row was evaluated.",
+    "This diagnostic is development-only and permanently ineligible for the paper comparison table.",
+    "The harmonic categories below are descriptive post-hoc failure categories, not tuned inference rules."
+  ],
+  "input_bindings": {
+    "one_off_prediction": {
+      "locator": "one-off/predict/predictions.json",
+      "sha256": "501875b4234b01c80a6c712fd82174540a2856c625ab02f76411be386654853c"
+    },
+    "one_off_evaluation": {
+      "locator": "one-off/score/evaluation.json",
+      "sha256": "1491ad51da7472244cee07afec775a7dcd2e4e3ba6bca908dec5f677205bd105"
+    },
+    "formal_cli_prediction": {
+      "locator": "formal-cli/predict/predictions.json",
+      "sha256": "3de2e518fa5221f2a9f019affdba327fabd40bdde6c361f9ca94995160272a19"
+    },
+    "formal_cli_evaluation": {
+      "locator": "formal-cli/score/evaluation.json",
+      "sha256": "3f7048f3afaaf16d32a8574212c1e029d1b1969717ee05098292a303882eb0c6"
+    },
+    "formal_cli_equivalence": {
+      "locator": "formal-cli/recovery/formal-cli-equivalence.json",
+      "sha256": "4dbd3b90a1d75199daf29d548ab46d2ba3cdf9e5cbf62b0a98a0f522ca110f8a"
+    },
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6"
+  },
+  "formal_cli_equivalence": {
+    "record_total": 84,
+    "compared_fields": [
+      "video_id",
+      "video_sha256",
+      "raw_count",
+      "rounded_count",
+      "period_frames",
+      "confidence",
+      "valid_frames"
+    ],
+    "all_prediction_fields_exact": true,
+    "all_metrics_exact": true,
+    "field_mismatch_total": 0,
+    "max_absolute_numeric_difference": 0.0
+  },
+  "reported_metrics_recomputed": {
+    "nmae": 2.8601196735895007,
+    "mae": 13.30952380952381,
+    "rmse": 19.871012627874375,
+    "obo": 0.16666666666666666,
+    "exact": 0.08333333333333333,
+    "absolute_error_sum": 1118,
+    "normalized_absolute_error_sum": 240.25005258151805
+  },
+  "directional_error": {
+    "over_count": {
+      "samples": 60,
+      "fraction": 0.7142857142857143,
+      "absolute_error_sum": 1056,
+      "absolute_error_share": 0.9445438282647585,
+      "normalized_absolute_error_sum": 229.25806123952677,
+      "normalized_absolute_error_share": 0.9542477047397872,
+      "mae": 17.6,
+      "nmae": 3.8209676873254463,
+      "obo": 0.06666666666666667
+    },
+    "exact_count": {
+      "samples": 7,
+      "fraction": 0.08333333333333333
+    },
+    "under_count": {
+      "samples": 17,
+      "fraction": 0.20238095238095238,
+      "absolute_error_sum": 62,
+      "absolute_error_share": 0.0554561717352415,
+      "normalized_absolute_error_sum": 10.991991341991342,
+      "normalized_absolute_error_share": 0.0457522952602128,
+      "mae": 3.6470588235294117,
+      "nmae": 0.6465877259994908,
+      "obo": 0.17647058823529413
+    }
+  },
+  "prediction_to_target_ratio": {
+    "rounded_count_over_target_quantiles": {
+      "q0": 0.0,
+      "q25": 1.0,
+      "median": 2.2291666666666665,
+      "q75": 4.729166666666667,
+      "q100": 23.0
+    },
+    "raw_count_over_target_quantiles": {
+      "q0": 0.0,
+      "q25": 0.9960937351570467,
+      "median": 2.2204589284820058,
+      "q75": 4.710693201243437,
+      "q100": 22.910155823265093
+    },
+    "raw_prediction_target_spearman": 0.3099818631124503,
+    "rounded_prediction_target_spearman": 0.3099818631124503,
+    "spearman_tie_handling": "average ranks"
+  },
+  "harmonic_alias_diagnosis": {
+    "overcount_integer_multiple_definition": "For rounded_count > target, let r=raw_count/target and choose the nearest integer k in [2,7]; match when abs(r-k)/k <= 0.20.",
+    "overcount_integer_multiple_matches": 38,
+    "overcount_samples": 60,
+    "overcount_match_fraction": 0.6333333333333333,
+    "overcount_matches_by_k": {
+      "2": 9,
+      "3": 7,
+      "4": 8,
+      "5": 4,
+      "6": 6,
+      "7": 4
+    },
+    "undercount_reciprocal_definition": "For 0 < raw_count < target, let r=raw_count/target and choose the nearest reciprocal 1/k for k in [2,7]; match when abs(r-1/k)/(1/k) <= 0.10.",
+    "undercount_reciprocal_matches": 5,
+    "undercount_samples": 17,
+    "undercount_match_fraction": 0.29411764705882354,
+    "undercount_matches_by_k": {
+      "2": 4,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 1,
+      "7": 0
+    },
+    "interpretation": "The dominant failure is consistent with selection of higher-frequency harmonics: overcounts dominate both sample count and error mass, and 38 of 60 overcounts lie within the disclosed broad integer-multiple diagnostic band. This is evidence for a harmonic/high-frequency aliasing bottleneck, not proof of a unique causal mechanism."
+  },
+  "confidence_diagnosis": {
+    "confidence_vs_normalized_absolute_error_spearman_all_rows": -0.4477901509036198,
+    "confidence_vs_normalized_absolute_error_spearman_positive_confidence_only": -0.5394657370600353,
+    "spearman_tie_handling": "average ranks",
+    "buckets": [
+      {
+        "range": "confidence == 0",
+        "samples": 6,
+        "over_count_samples": 0,
+        "nmae": 1.0,
+        "mae": 4.833333333333333,
+        "obo": 0.0,
+        "exact": 0.0,
+        "absolute_error_sum": 29
+      },
+      {
+        "range": "0 < confidence <= 0.10",
+        "samples": 13,
+        "over_count_samples": 13,
+        "nmae": 5.669354043392504,
+        "mae": 27.53846153846154,
+        "obo": 0.0,
+        "exact": 0.0,
+        "absolute_error_sum": 358
+      },
+      {
+        "range": "0.10 < confidence <= 0.20",
+        "samples": 27,
+        "nmae": 4.265726043503822,
+        "mae": 18.62962962962963,
+        "obo": 0.14814814814814814,
+        "exact": 0.07407407407407407,
+        "absolute_error_sum": 503
+      },
+      {
+        "range": "confidence > 0.20",
+        "samples": 38,
+        "nmae": 1.194048601126641,
+        "mae": 6.0,
+        "obo": 0.2631578947368421,
+        "exact": 0.13157894736842105,
+        "absolute_error_sum": 228
+      }
+    ],
+    "interpretation": "Confidence is directionally informative but is not a calibrated correctness probability. In particular, every positive-confidence row at or below 0.10 is an overcount and none is OBO."
+  },
+  "mask_diagnosis": {
+    "valid_frame_values_observed": [
+      0,
+      256
+    ],
+    "all_invalid_rows": {
+      "samples": 6,
+      "absolute_error_sum": 29,
+      "absolute_error_share": 0.0259391771019678,
+      "normalized_absolute_error_sum": 6.0,
+      "normalized_absolute_error_share": 0.02497397996599468,
+      "nmae": 1.0,
+      "obo": 0.0
+    },
+    "valid_only_rows": {
+      "samples": 78,
+      "absolute_error_sum": 1089,
+      "nmae": 3.003205802327155,
+      "mae": 13.961538461538462,
+      "obo": 0.1794871794871795,
+      "exact": 0.08974358974358974
+    },
+    "interpretation": "All-invalid clips are failures but explain only 2.59% of total absolute error; excluding them makes NMAE worse, so missing-pose handling is not the principal cause."
+  },
+  "largest_absolute_error_rows": [
+    {
+      "video_id": "v_ShavingBeard_g17_c07",
+      "action": "ShavingBeard",
+      "target": 6,
+      "rounded_count": 61,
+      "raw_count": 60.76172214532581,
+      "absolute_error": 55,
+      "normalized_absolute_error": 9.166666666666666,
+      "period_frames": 4.196721076965332,
+      "confidence": 0.08344877511262894
+    },
+    {
+      "video_id": "v_HandstandWalking_g19_c03",
+      "action": "HandstandWalking",
+      "target": 5,
+      "rounded_count": 56,
+      "raw_count": 55.78124750638392,
+      "absolute_error": 51,
+      "normalized_absolute_error": 10.2,
+      "period_frames": 4.5714287757873535,
+      "confidence": 0.0727529227733612
+    },
+    {
+      "video_id": "v_BabyCrawling_g13_c06",
+      "action": "BabyCrawling",
+      "target": 5,
+      "rounded_count": 53,
+      "raw_count": 52.79296796332348,
+      "absolute_error": 48,
+      "normalized_absolute_error": 9.6,
+      "period_frames": 4.830188751220703,
+      "confidence": 0.08330748230218887
+    },
+    {
+      "video_id": "v_HandstandWalking_g05_c05",
+      "action": "HandstandWalking",
+      "target": 12,
+      "rounded_count": 59,
+      "raw_count": 58.76953114053322,
+      "absolute_error": 47,
+      "normalized_absolute_error": 3.9166666666666665,
+      "period_frames": 4.338983058929443,
+      "confidence": 0.14256273210048676
+    },
+    {
+      "video_id": "v_SoccerJuggling_g18_c05",
+      "action": "SoccerJuggling",
+      "target": 18,
+      "rounded_count": 64,
+      "raw_count": 63.75,
+      "absolute_error": 46,
+      "normalized_absolute_error": 2.5555555555555554,
+      "period_frames": 4.0,
+      "confidence": 0.11964769661426544
+    }
+  ],
+  "conclusion": "PAMS-TeacherPeriodDirect-inferred fails badly on dev84. The error is overcount-dominated and consistent with high-frequency harmonic aliasing. The separate formula audit rules out a one-frame-span or half-up-versus-bankers explanation. These negative results do not authorize teacher-based head training or test105 evaluation."
+}

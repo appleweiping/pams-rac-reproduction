@@ -1,0 +1,59 @@
+schema_version: 1
+key: ucfrep_pose_110
+dataset:
+  name: UCFRep-pose
+  total_videos: 110
+  action_classes: 5
+  source: MiracleDance/PoseRAC
+  videos_in_repository: false
+splits:
+  train_pool:
+    count: 89
+    id_manifest: data/splits/ucfrep_pose_110_train_89.txt
+  sealed_test:
+    count: 21
+    id_manifest: data/splits/ucfrep_pose_110_test_21.txt
+    evaluation_attempts: 1
+  development:
+    train_count: 71
+    dev_count: 18
+    source_partition: train_pool
+    algorithm: pams.data.deterministic_stratified_split
+    seed: 2026
+    stratification_fields: [action, count_bin]
+    count_bins:
+      - {minimum: 1, maximum: 5}
+      - {minimum: 6, maximum: 10}
+      - {minimum: 11, maximum: 20}
+      - {minimum: 21, maximum: 40}
+      - {minimum: 41, maximum: null}
+    train_id_manifest: data/splits/ucfrep_pose_110_train_71.txt
+    dev_id_manifest: data/splits/ucfrep_pose_110_dev_18.txt
+  final_training:
+    count: 89
+    source_partition: train_pool
+seeds: [42, 2026, 3407]
+split_integrity:
+  preserve_source_manifest_order: true
+  reject_duplicate_ids: true
+  reject_cross_split_overlap: true
+  require_materialized_manifest_sha256: true
+  state_before_materialization: unverified
+failure_policy:
+  required_prediction_count: 21
+  failed_decode: disqualify_incomplete_run
+  failed_pose: retain_video_with_zero_pose_and_valid_mask_false
+label_firewall:
+  self_supervised_train_fields: [video_id, pose, valid_mask, fps]
+  forbidden_train_fields: [count, test_action, cycle_boundary]
+  split_compiler_may_read_train_labels: [action, count]
+  development_labels: post_freeze_diagnostic_only
+  sealed_test_labels: evaluator_only
+  training_only_salient_pose_annotations:
+    allowed_video_count: 89
+    test_annotations_forbidden: true
+  oracle_action_class:
+    table: source_diagnostic_only
+    fair_table_allowed: false
+  ground_truth_count_oracle:
+    allowed: false

@@ -1,0 +1,257 @@
+{
+  "acceptance_status": "provisional",
+  "authoritative": false,
+  "authority": {
+    "P2": 0,
+    "P3": 0,
+    "S0": 0,
+    "capability": 0,
+    "data": 0,
+    "gate": 0,
+    "git": 0,
+    "gpu": 0,
+    "heldout": 0,
+    "launch": 0,
+    "paper_claim": 0,
+    "results": 0,
+    "sealed": 0,
+    "server": 0,
+    "test": 0,
+    "training": 0
+  },
+  "authorizes": [],
+  "binding_verification": {
+    "all_declared_bindings_match": true,
+    "declared_binding_count": 16,
+    "json_markdown_binding_maps_equal": true,
+    "omitted_relevant_dependencies": {
+      "src/pams/temporac/metrics.py": "1dadf08e89330bed2ab773afda05bffcb3fe2252b0d3e23c0bcc18c2c3b049dd",
+      "src/pams/temporac/prediction.py": "7c57725240e83b7c06227a3b27e5f3cadb4590170488e5e126180caba8c13808",
+      "src/pams/temporac/quadrature.py": "44f4b91dc4d5631442982732177a6f57726c0b8f42594380b5a75f2209efc2f3",
+      "src/pams/temporac/runtime.py": "9421661046ee686508607529ed972b087e724c2c3a5c487e220c2f8e4038a0c8",
+      "src/pams/temporac/training.py": "0af8ecbadfcda43d2b9f60853c99210b316786ff4310ed5d0a32d9e366f627a4",
+      "src/pams/temporac/x0.py": "5f4585425a83bf63779265db9004d210c5c2875a579ebc9a6c51297eb647c7a2"
+    }
+  },
+  "blocking_issue_count": 7,
+  "blocking_issues": [
+    {
+      "attack": "Keep valid checkpoint and run receipts, replace finite score scalars so an arbitrary checkpoint wins, and issue a matching canonical selection receipt; no specified check rederives a score.",
+      "closure": [
+        "R2-F1"
+      ],
+      "evidence": [
+        "Amendment005 MD 176-194 defines score rows without a score-evaluation artifact or receipt",
+        "Amendment005 MD 226-231 omits tune-evaluation evidence from SelectedTeacher construction inputs",
+        "FINAL_PROPOSAL MD 1232-1239 run receipt keys contain no score/index commitment"
+      ],
+      "id": "A005-B1",
+      "required_revision": "Define and precommit a deterministic per-checkpoint tune-evaluation preimage/receipt with exact tune inventory, code/config/environment/checkpoint binding, denominators, reductions, and nonnegative score domains; independently rederive all 120 rows.",
+      "severity": "blocking",
+      "title": "The 120-row selection scores have no authority-bearing source"
+    },
+    {
+      "attack": "Supply syntactically closed nonwinner receipts with declared artifact hashes/member ledgers while withholding the 119 nonwinner artifacts; the loader cannot recompute those ledgers.",
+      "closure": [
+        "R2-F1"
+      ],
+      "evidence": [
+        "Amendment005 MD 160-165 requires each member ledger to be recomputed from artifact bytes",
+        "Amendment005 MD 226-231 supplies only the globally selected artifact",
+        "Amendment005 MD 233-238 claims every Section 4-6 artifact/inventory check"
+      ],
+      "id": "A005-B2",
+      "required_revision": "Provide all 120 exact artifacts or a previously authority-bearing complete artifact/member inventory that makes every claimed check executable; fully freeze CPU dispatch and thread settings for bytewise replay.",
+      "severity": "blocking",
+      "title": "The loader cannot verify 119 checkpoint member inventories"
+    },
+    {
+      "attack": "Change, reject, or supersede Amendment005 while retaining receipts whose contract field names only the old proposal, or drift an omitted imported module without changing any declared bound input.",
+      "closure": [
+        "R2-F1",
+        "R2-F2"
+      ],
+      "evidence": [
+        "Amendment005 MD 153 and 316 hard-code the old proposal digest",
+        "Amendment005 MD 198-214 and 348-367 do not define the selection/root-index contract_sha256 value",
+        "contract.py line 10 contains only 3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+        "preprocess.py and certify.py import omitted quadrature.py; certify.py imports omitted x0.py; evaluator.py imports omitted metrics.py"
+      ],
+      "id": "A005-B3",
+      "required_revision": "Define and propagate one noncircular effective-contract digest over accepted proposal/amendment bytes, assign every contract_sha256 field exactly, and bind the complete executed/imported source and test closure.",
+      "severity": "blocking",
+      "title": "New receipts are not bound to the effective amended contract"
+    },
+    {
+      "attack": "Submit a sorted digest multiset derived from an ad hoc incomplete prediction/checkpoint/target inventory; without frozen index schemas/counts/associations, the verifier has no unique expected multiset. Ambiguous inclusion of the containing G5a receipt can also create a self-cycle.",
+      "closure": [
+        "R2-F2"
+      ],
+      "evidence": [
+        "Amendment005 MD 359-366 delegates completeness to unnamed frozen indexes",
+        "FINAL_PROPOSAL MD 1247-1277 names aggregate roots without closing most root preimages",
+        "No current source or reviewed plan/tracker defines temporac.g5a-receipt-root-index.v4 or the contributing index schemas"
+      ],
+      "id": "A005-B4",
+      "required_revision": "Freeze every contributing index/root byte preimage, row schema, order, class count, identity association, and multiplicity; define the acyclic receipt edge list and explicitly exclude containing/future receipts.",
+      "severity": "blocking",
+      "title": "The G5a receipt-root index is not a closed DAG"
+    },
+    {
+      "attack": "At G5a choose any later development subset satisfying 108 identities/eight components and omit other actually certified identities; K7 replays only submitted rows. A same-identity alternate feature can also form a self-consistent rederived target because exact population-row feature equality is not stated.",
+      "closure": [
+        "R2-F2",
+        "R2-F3"
+      ],
+      "evidence": [
+        "Amendment005 MD 314-344 first defines the certified-development index at G5a",
+        "Amendment005 MD 376-395 replays only index rows",
+        "Amendment005 MD 420-434 asserts but does not independently commit the K1 sequence",
+        "No closed K1 coverage index/receipt schema is defined"
+      ],
+      "id": "A005-B5",
+      "required_revision": "Commit a closed K1 all-identity certification/coverage index and require exact G5a projection equality, or recertify all exact 134 development identities at K7; bind every feature receipt/component key to its exact population-manifest row.",
+      "severity": "blocking",
+      "title": "Cdev and same-identity feature provenance are not frozen at K1"
+    },
+    {
+      "attack": "Relabel component_token for development prediction envelopes while preserving all 9,648 identities, arms, seeds, conditions, artifacts, and counts; current metric construction forwards that token to the component bootstrap.",
+      "closure": [
+        "R2-F3"
+      ],
+      "evidence": [
+        "Amendment005 MD 404-438 validates identity/product equality but does not bind all prediction components",
+        "evaluator.py lines 87-105 accepts caller ASCII component_token",
+        "evaluator.py lines 323-345 forwards component_token into CountMetricRow"
+      ],
+      "id": "A005-B6",
+      "required_revision": "Derive every prediction component key from the exact population manifest inside the evaluator, enforce it across all 24 envelopes per identity, and reject caller component labels.",
+      "severity": "blocking",
+      "title": "Prediction metric component membership remains caller-controlled"
+    },
+    {
+      "attack": "Either access the vault before the grant is consumed, violating the data firewall, or delay consumption until after G5b, making a failed vault join retryable.",
+      "closure": [
+        "R2-F3"
+      ],
+      "evidence": [
+        "Amendment005 MD 406-418 makes vault equality mandatory before capability consumption",
+        "FINAL_PROPOSAL MD 1368-1374 consumes the grant when the evaluator process starts and runs G5b afterward",
+        "EXPERIMENT_PLAN MD 143 and 216 preserve grant then G5b then K7"
+      ],
+      "id": "A005-B7",
+      "required_revision": "Validate non-vault commitments pre-consumption, consume atomically at evaluator-process start, validate the actual vault and derive cardinality in G5b with failure burning the grant, then run K7 only after G5b PASS.",
+      "severity": "blocking",
+      "title": "The pre-consumption vault requirement contradicts F23"
+    }
+  ],
+  "byte_validation": {
+    "json_bom": false,
+    "json_cr_count": 0,
+    "json_duplicate_keys": [],
+    "json_terminal_lf_count": 1,
+    "json_utf8_strict": true,
+    "markdown_bom": false,
+    "markdown_cr_count": 0,
+    "markdown_terminal_lf_count": 1,
+    "markdown_utf8_strict": true
+  },
+  "closure_assessment": {
+    "R2-F1": {
+      "blocking_issue_ids": [
+        "A005-B1",
+        "A005-B2",
+        "A005-B3"
+      ],
+      "status": "REVISE"
+    },
+    "R2-F2": {
+      "blocking_issue_ids": [
+        "A005-B3",
+        "A005-B4",
+        "A005-B5"
+      ],
+      "status": "REVISE"
+    },
+    "R2-F3": {
+      "blocking_issue_ids": [
+        "A005-B5",
+        "A005-B6",
+        "A005-B7"
+      ],
+      "status": "REVISE",
+      "validated_semantics": "P402 is exact 268 train plus 134 development; predictions/vault use all 402 and 9648 envelopes; Cdev is only the K1-certified subset of the exact 134 development identities with floors 108 and 8; K7 metrics retain all 134 development identities including stubs"
+    },
+    "R2-F4": {
+      "blocking_issue_ids": [],
+      "hardening": "For a generic Mapping, snapshot to a plain dict first, validate that snapshot, then canonicalize the same snapshot to avoid a stateful-mapping TOCTOU gap.",
+      "status": "SPECIFICATION_CLOSURE_PRESENT"
+    }
+  },
+  "current_implementation": {
+    "code_or_tests_modified": false,
+    "gate_bearing_tests_executed": false,
+    "implementation_acceptance": false,
+    "new_schemas_or_selected_teacher_present": false,
+    "state_dict_feasibility_probe": {
+      "deterministic_npz_bytes": 1012518,
+      "member_count": 16,
+      "names_shapes_dtypes_match_amendment": true,
+      "non_authorizing": true
+    }
+  },
+  "date": "2026-08-16",
+  "independence_verified": false,
+  "non_expansion": {
+    "algorithm_changed": false,
+    "claim_changed": false,
+    "dataset_scope_changed": false,
+    "g5a_receipt_key_set_changed": false,
+    "jobs_changed": false,
+    "paper_visible_blocks_changed": false,
+    "resource_ceiling_changed": false,
+    "target_receipt_key_set_changed": false,
+    "thresholds_changed": false
+  },
+  "purpose": "temporac-certificate-amendment-005-fresh-normative-review",
+  "review_class": "same-family provisional",
+  "reviewed_inputs": {
+    "amendment_json": {
+      "bytes": 24383,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.json",
+      "sha256": "5ea02ae5ccb7ea0f1771222f254ded74318fdb4bc96a5655d5de58a66d7878a2"
+    },
+    "amendment_markdown": {
+      "bytes": 25001,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.md",
+      "sha256": "fa5ef054de0e243a030905b7a9d0e302aa442cb61b4d39012eaae6dca05a6869"
+    },
+    "declared_bindings": {
+      "refine-logs/EXPERIMENT_PLAN.md": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e",
+      "refine-logs/EXPERIMENT_TRACKER.md": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b",
+      "refine-logs/temporac/FINAL_PROPOSAL.md": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+      "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_ROUND2_20260816.json": "144d2f22f4f75166b8cbefe54157d08690408979dd7cb34ef8c97e1738432872",
+      "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_ROUND2_20260816.md": "93a9cae771b34c185b9057286794b894d615aec5424011df145aaf8900f008d8",
+      "src/pams/temporac/certify.py": "468ce8418bff0f43582d341f3e1b8064cf1c429301d1f56be84b8e13ad59a3f1",
+      "src/pams/temporac/contract.py": "5ab8fb62dc558ba78e95fc07e52c1f1a1afbff5b1c5003834079eea6143d745f",
+      "src/pams/temporac/evaluator.py": "f981c6c7061c3388f06ef39466ef98192e65c62c501821be2b211f903cfaf9de",
+      "src/pams/temporac/feature_io.py": "f54f17ca204c242d304314f4280e7540c28588e86ea588a405fff02176b95428",
+      "src/pams/temporac/gates.py": "b6c9d7432443d7ad36738a81700746709fd571d475514aa6f1bbcd39be744b4a",
+      "src/pams/temporac/hashio.py": "aa460d5de51f107b2fc6b2ad171747e0da38a87cf30f82a869a335c268f1d613",
+      "src/pams/temporac/preprocess.py": "042b5cae1917359cb5596837c81c0e36658ff99a6a8fd6f2602b478ca6f98bc3",
+      "src/pams/temporac/receipts.py": "564039b5d37a4a2759544a9ae65f267b57d7f6c1e46bca812ae5ed4f4a2c17e4",
+      "src/pams/temporac/teacher.py": "30575fa64875aa6b77de157cf6af348b3b7900851a1c1742993842eea7928b30",
+      "src/pams/temporac/trusted_packer.py": "40d6e3d5be1b26b7ba0f0f7aadf8da7496c95c4e829face5c7e9faaee2cdf94e",
+      "src/pams/temporac/types.py": "4249eac2738f5b2edf53f38cbb681dffae609c151d493dd03b625fe10ad4c3ca"
+    }
+  },
+  "reviewer": {
+    "agent_id": "/root/temporac_certificate_amendment005_review",
+    "executor_family": "openai",
+    "family_relation": "same",
+    "model": "gpt-5.6-sol",
+    "reviewer_family": "openai"
+  },
+  "schema": "temporac.contract-amendment-review.v1",
+  "verdict": "REVISE"
+}

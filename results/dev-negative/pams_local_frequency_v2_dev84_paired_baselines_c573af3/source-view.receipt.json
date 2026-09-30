@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "artifact_type": "evaluation_only_source_view_receipt",
+  "git_sha": "c573af33876591f29aaab6f272b96b809256ca77",
+  "file_total": 1,
+  "files": [
+    {
+      "path": "scripts/compare_dev84_evaluations.py",
+      "sha256": "f0c39328e33fd034b58babd1475f1d9ca78d3b857e5bc0d5f0a963248ba096f4",
+      "bytes": 17523
+    }
+  ],
+  "dataset_manifest_absent": true,
+  "pose_and_video_absent": true,
+  "test105_absent": true
+}

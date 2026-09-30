@@ -1,0 +1,330 @@
+{
+  "acceptance_status": "provisional",
+  "active_effective_contract": {
+    "bytes": 665,
+    "prospective_round8_digest_assigned": false,
+    "prospective_round8_status": "REJECTED_UNASSIGNED",
+    "schema": "temporac.effective-contract-index.v4",
+    "sha256": "c203f4aab00879acf041b90829f0124d0b1de231294f191b03f3166f728e3d5c",
+    "status": "ROUND6_REMAINS_ACTIVE"
+  },
+  "authoritative": false,
+  "authority": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P2-METRIC": 0,
+    "P3": 0,
+    "S0": 0,
+    "capability": 0,
+    "data": 0,
+    "evaluator": 0,
+    "gate": 0,
+    "git": 0,
+    "gpu": 0,
+    "heldout": 0,
+    "launch": 0,
+    "paper_claim": 0,
+    "result": 0,
+    "sealed": 0,
+    "server": 0,
+    "test": 0,
+    "training": 0
+  },
+  "authorizes": [],
+  "binding_verification": {
+    "all_declared_bindings_match": true,
+    "all_lineage_records_match_at_initial_snapshot": true,
+    "current_runtime_bootstrap_binding_count": 4,
+    "current_source_binding_count": 24,
+    "current_test_binding_count": 19,
+    "declared_binding_count": 76,
+    "declared_lineage_path_hash_record_count": 49,
+    "final_mismatch_count": 0,
+    "initial_rehash_all_match": true,
+    "planning_review_and_postfix_binding_count": 29,
+    "terminal_expected_lineage_output_mutation_path_count": 1,
+    "terminal_expected_lineage_record_mismatch_count": 2,
+    "terminal_lineage_output_mutation": {
+      "expected_opening_sha256": "f198e2db46d594df0a7cd435506b9d09c904d11e3e0be0283dc6ffcb99c91342",
+      "path": ".aris/traces/research-refine/20260816_temporac_certificate_amendment005_review_sol/run.meta.json",
+      "reason": "authorized turn-008 continuation append"
+    },
+    "terminal_rehash_all_match": true,
+    "terminal_unexpected_lineage_mismatch_count": 0,
+    "timestamped_and_fixed_aliases_byte_identical": true
+  },
+  "blocking_issue_count": 4,
+  "blocking_issues": [
+    {
+      "affected_intended_closures": [
+        "R7-B2"
+      ],
+      "evidence": [
+        "current JSON line 7774 delegates every ordinary publication error to an undefined exact cleanup",
+        "current JSON line 7757 requires permanent cross-process ROOT_POISONED after cleanup failure without a durable poison or generation marker",
+        "current JSON line 7758 cleans stale temps before current-request classification while lines 7661-7662 promise zero mutation for committed-nonreplayable and invalid-prefix outcomes",
+        "current JSON lines 7035-7044 and 7119 reuse the same incomplete recovery profile for native-build content"
+      ],
+      "id": "A005-R8-B1",
+      "minimal_fix": "Define a closed NO_TEMP/TEMP_OPEN/TEMP_CLOSED/FINAL_RENAMED error-cleanup machine with exact close, unlink, sync, absence-proof and first-error order; close and EBADF-prove every transient FD; use validate-only then cleanup scan passes; make transient cleanup failure current-request-only or persist a P00-bound poison/generation journal; bind temp PID/start-time fields and reconcile zero-mutation semantics.",
+      "severity": "BLOCKER",
+      "summary": "Controller and native-build durability do not define all failure prefixes or an observable recovery state."
+    },
+    {
+      "affected_intended_closures": [
+        "R7-B3"
+      ],
+      "evidence": [
+        "current JSON line 9494 and mirrors 15681,17638,18459 close the temp before an ambiguous chmod0444 and rename",
+        "recovery accepts only mode0600 temp, so a crash after the mode change leaves a protocol-created mode0444 temp that poisons the root",
+        "accepted RENAME_NOREPLACE EEXIST does not require own-loser-temp unlink, shard fsync, ENOENT proof and winner revalidation",
+        "root and shards are root:root mode0555 but publisher euid,egid,fsuid,fsgid,groups,capability and child-drop authority are not frozen"
+      ],
+      "id": "A005-R8-B2",
+      "minimal_fix": "Freeze one same-dirfd openat/write/sync/fchmod/fstat/renameat2/dir-fsync/close/reopen algorithm with explicit flags, umask, EINTR and object identity; recover both mode0600 and mode0444 temp phases; clean and prove absence of every EEXIST loser; bind publisher filesystem credentials/capabilities and mandatory child privilege drop, or use a fixed writer-owned layout.",
+      "severity": "BLOCKER",
+      "summary": "The authority-bearing stage-input CAS publisher has an unrecoverable crash prefix and no closed mutation privilege lifecycle."
+    },
+    {
+      "affected_intended_closures": [
+        "R7-B5"
+      ],
+      "evidence": [
+        "current JSON lines 8830/25331 and 9165/25666 require eventual complete group-recipe equality but no next-row cursor comparison before resume",
+        "an individually reviewed provider/effect in the wrong group, order or multiplicity can execute before group-EXIT rejection",
+        "current JSON lines 8921-8990/25422-25507 define args only for clone, exec, exit and direct mapping calls although the syscall table permits REVIEWED_PASSTHROUGH",
+        "the claimed proc-mem write rejection lacks open,dup,fcntl,close,write,pwrite,writev,io_uring schemas and a tracee FD-to-path state"
+      ],
+      "id": "A005-R8-B3",
+      "minimal_fix": "Compare each deterministically flattened effect to the next exact precommitted recipe row while all tasks remain stopped and before resume, advance a persisted cursor only on success, and require exact EXIT exhaustion. Define exact args for every returning syscall plus context-sensitive FD/path and asynchronous-write closure, or reject all unmodeled indirect surfaces.",
+      "severity": "BLOCKER",
+      "summary": "Ptrace can resume uncommitted ordered effects, and its complete-returning-syscall claim lacks an executable argument and FD authority ABI."
+    },
+    {
+      "affected_intended_closures": [
+        "R7-B6"
+      ],
+      "evidence": [
+        "current JSON lines 5807 and 25708 use emitter in runtime catalog selection",
+        "the seven-key raw rows at lines 6506-6516 and 26277-26290 contain no emitter or call-site state",
+        "Py_AuditHookFunction receives event,args,userData but not a source emitter",
+        "catalog uniqueness includes emitter, so cross-emitter rows may share every observable selector value"
+      ],
+      "id": "A005-R8-B4",
+      "minimal_fix": "Remove emitter from runtime selection and require uniqueness over event,arity,exact type vector,current stage and outcome while retaining emitter as static metadata, or add a closed precommitted runtime call-site/emitter_state to the raw evidence. Add cross-emitter collision and substitution tests.",
+      "severity": "BLOCKER",
+      "summary": "Audit definition selection depends on emitter authority that the runtime callback and raw evidence do not expose."
+    }
+  ],
+  "byte_validation": {
+    "archived_round7_pair_unchanged": true,
+    "current_json_appendix_byte_identical": true,
+    "current_json_bom": false,
+    "current_json_cr_count": 0,
+    "current_json_duplicate_keys": [],
+    "current_json_keys_recursively_sorted": true,
+    "current_json_nonfinite_or_negative_zero": [],
+    "current_json_terminal_lf_count": 1,
+    "current_json_utf8_strict": true,
+    "current_markdown_bom": false,
+    "current_markdown_cr_count": 0,
+    "current_markdown_terminal_lf_count": 1,
+    "current_markdown_utf8_strict": true,
+    "fixed_and_timestamped_pairs_byte_identical": true
+  },
+  "closure_assessment": {
+    "R7-B1": {
+      "blocking_issue_ids": [],
+      "positive": "Exactly one physical-entry FD6 FIONREAD occurs before output and must be zero; all three later readbacks carry null and forbid FIONREAD; twin equality retains no scheduler-dependent value.",
+      "status": "CLOSED"
+    },
+    "R7-B2": {
+      "blocking_issue_ids": [
+        "A005-R8-B1"
+      ],
+      "status": "OPEN"
+    },
+    "R7-B3": {
+      "blocking_issue_ids": [
+        "A005-R8-B2"
+      ],
+      "positive": "The 57 recipes, 1034 rows, 35 validators, 63 used content triples and G5A/G5B/K7 same-instance row algebra close the former undefined stage-index defect.",
+      "status": "OPEN"
+    },
+    "R7-B4": {
+      "blocking_issue_ids": [],
+      "positive": "Generated discovery has 13 keys including exact exec args and code authority; trusted/origin rows have 14; immediate adjacency and recursive code projection bind the consumed code object.",
+      "status": "CLOSED"
+    },
+    "R7-B5": {
+      "blocking_issue_ids": [
+        "A005-R8-B3"
+      ],
+      "positive": "Parent-owned ptrace, attach/bootstrap, task, clone, terminal, stop-world, mapping-state, provider and join structures are otherwise coherent.",
+      "status": "OPEN"
+    },
+    "R7-B6": {
+      "blocking_issue_ids": [
+        "A005-R8-B4"
+      ],
+      "positive": "The finite codec/dedicated registry, four dedicated projection digests, 33 child stages and P00/P06/attestation chronology otherwise recompute and are acyclic.",
+      "status": "OPEN"
+    },
+    "RECEIPT_DAG": {
+      "blocking_issue_ids": [],
+      "positive": "The pre-G5a projection remains exactly 54 unique owners and 106 backward direct edges, including ordered K1 G0/G1, X0I/K3/K4 and NATP/K6 lineage.",
+      "status": "NO_REGRESSION"
+    },
+    "ROUND6_SCIENCE_AND_INTERFACE": {
+      "blocking_issue_ids": [],
+      "positive": "Checkpoint/tune/score, CPU replay, K1/Cdev/population, prediction/target/K7, capability order, data firewall, G5a roots and F4 MappingProxy semantics are unchanged.",
+      "status": "NO_REGRESSION"
+    },
+    "SCIENCE_JOBS_DATA_CLAIMS": {
+      "blocking_issue_ids": [],
+      "positive": "Algorithm, thresholds, 27 jobs, 93-hour plan/100-hour ceiling, data scope, metrics, paper-visible blocks and claims are unchanged.",
+      "status": "NO_REGRESSION"
+    }
+  },
+  "current_implementation": {
+    "code_or_tests_modified_by_reviewer": false,
+    "current_source_implements_round8_runtime": false,
+    "future_runtime_or_build_executed": false,
+    "gate_bearing_tests_executed": false,
+    "implementation_acceptance": false,
+    "mechanical_review_checks_only": true,
+    "runtime_bootstrap_and_source_file_count_read": 28,
+    "test_file_count_read": 19
+  },
+  "date": "2026-08-17",
+  "independence_verified": false,
+  "mechanical_verification": {
+    "active_effective_contract_acyclic": true,
+    "active_effective_contract_rederived": true,
+    "audit_child_stage_count": 33,
+    "audit_projection_static_digests_match": true,
+    "base_role_count": 19,
+    "base_roles_unique": true,
+    "content_registry_bytes": 20156,
+    "content_registry_sha256": "a39425efbfcb00e19086c365204a1408f4ea4af90454bf9dcfe4366a014e803c",
+    "dispatch_owner_count": 57,
+    "dispatch_owners_unique": true,
+    "dispatch_prefix_equals_receipt_roster": true,
+    "dispatch_recipe_count": 57,
+    "dispatch_recipe_row_count": 1034,
+    "dispatch_suffix": [
+      "G5A-COMMIT",
+      "G5B-JOIN",
+      "K7-FINAL"
+    ],
+    "failure_stage_count": 46,
+    "failure_stage_count_change_is_permitted_provenance_enum_expansion": true,
+    "failure_stages_unique": true,
+    "final_role_count": 24,
+    "final_roles_begin_with_exact_base": true,
+    "final_roles_unique": true,
+    "normalized_event_token_count": 16,
+    "normalized_event_tokens_unique": true,
+    "origin_kind_count": 13,
+    "origin_kinds_unique": true,
+    "pre_g5a_dag_acyclic": true,
+    "pre_g5a_direct_edge_count": 106,
+    "pre_g5a_owner_count": 54,
+    "prospective_round8_index_acyclic_recipe": true,
+    "prospective_round8_index_constructed": false,
+    "pyconfig_field_count": 64,
+    "pypreconfig_field_count": 10,
+    "stage_content_used_triple_count": 63,
+    "stage_validator_count": 35
+  },
+  "non_expansion": {
+    "algorithm_changed": false,
+    "claims_changed": false,
+    "data_accessed": false,
+    "data_scope_changed": false,
+    "experiments_run": false,
+    "git_modified": false,
+    "jobs_changed": false,
+    "manifest_modified": false,
+    "paper_modified": false,
+    "proposal_plan_tracker_modified": false,
+    "resource_budget_changed": false,
+    "server_accessed": false,
+    "source_or_tests_modified": false,
+    "thresholds_changed": false,
+    "training_started": false
+  },
+  "purpose": "temporac-certificate-amendment-005-round8-normative-review",
+  "review_round": 8,
+  "reviewed_inputs": {
+    "archived_rejected_round7_json": {
+      "bytes": 582615,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260817_053246.json",
+      "sha256": "31c6ad83f61214b1f49b83321116bbe53ec8eb2fb5c463afd552e0ace418de17"
+    },
+    "archived_rejected_round7_markdown": {
+      "bytes": 629249,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260817_053246.md",
+      "sha256": "217ad51f4ea02f511777a63f0158f8f2864f4a786e201fa06cadbb5872ece751"
+    },
+    "canonical_proposal": {
+      "bytes": 79366,
+      "path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+      "sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"
+    },
+    "current_fixed_alias_json": {
+      "bytes": 1613302,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.json",
+      "sha256": "b135fc10c01aa6611af131d44b5ca762d802df514184ba6c76dfe5b6c7a80ef0"
+    },
+    "current_fixed_alias_markdown": {
+      "bytes": 1638523,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.md",
+      "sha256": "6e0ce987d88c1d3f7abbaec47d28630efdc9a3012c7192da6b692feb9f55d981"
+    },
+    "current_timestamped_json": {
+      "bytes": 1613302,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260817_062337.json",
+      "sha256": "b135fc10c01aa6611af131d44b5ca762d802df514184ba6c76dfe5b6c7a80ef0"
+    },
+    "current_timestamped_markdown": {
+      "bytes": 1638523,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260817_062337.md",
+      "sha256": "6e0ce987d88c1d3f7abbaec47d28630efdc9a3012c7192da6b692feb9f55d981"
+    },
+    "experiment_plan": {
+      "bytes": 34198,
+      "path": "refine-logs/EXPERIMENT_PLAN.md",
+      "sha256": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e"
+    },
+    "experiment_tracker": {
+      "bytes": 22360,
+      "path": "refine-logs/EXPERIMENT_TRACKER.md",
+      "sha256": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b"
+    },
+    "round7_review_json": {
+      "bytes": 16645,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND7.json",
+      "sha256": "dfaed588a8eac96edf76a669565fb0c616232d57155e04b19da059c6d65eb078"
+    },
+    "round7_review_markdown": {
+      "bytes": 21368,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND7.md",
+      "sha256": "e18cdebf5b1860b3977622a83f94b77b40633190ccf14fb6cff25ff498ad6ea7"
+    }
+  },
+  "reviewer": {
+    "acceptance_status": "provisional",
+    "agent_id": "/root/temporac_certificate_amendment005_review",
+    "executor_family": "openai",
+    "family_relation": "same",
+    "fresh_reread": true,
+    "independence": "same-family",
+    "model": "gpt-5.6-sol",
+    "same_reviewer_continuation": true,
+    "tier": "ultra"
+  },
+  "schema": "temporac.contract-amendment-review.v1",
+  "verdict": "REVISE"
+}

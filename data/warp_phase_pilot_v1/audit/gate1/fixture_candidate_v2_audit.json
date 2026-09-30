@@ -1,0 +1,300 @@
+{
+  "acceptance_status": "provisional",
+  "amendment_status": "PROPOSED_PENDING_FRESH_REVIEW",
+  "artifact_integrity_status": "BLOCKED",
+  "artifact_integrity_status_detail": "BLOCKED_PROVENANCE_REPAIR_REQUIRED",
+  "artifact_type": "warp_phase_fixture_candidate_v2_fresh_numerical_audit",
+  "authorizes": [],
+  "candidate_freeze_created": false,
+  "date": "2026-08-15",
+  "gate1_status": "NOT_EVALUATED",
+  "gate2_status": "FAIL",
+  "numerical_candidate_disposition": "PASS_FREEZE_CANDIDATE_AFTER_PROVENANCE_REPAIR",
+  "review_independence": "same-family",
+  "reviewer_model": "gpt-5.6-sol",
+  "training_authorized": false,
+  "bindings": {
+    "candidate_receipt_sha256": "5b18a1f8025cc81b576b72d99a64930734395da2e4ee855015be10a11d08862f",
+    "execution_contract_sha256": "70f80912e4b9693fae9e859eb12f90cc754b7d523b59af766879518770d69b2e",
+    "fixture_environment_lock_sha256": "c278c77b27467f5928fa37d2fc79580dc58ec5d55cf98eee89f7e69e77d947a0",
+    "fixture_environment_receipt_sha256": "49dce1131bbcce0fb4d0881f6527a00ca591962f785414c8ec4305e117e87ee8",
+    "generator_source_sha256": "7af1dac0ce246979d608b3db8e9fcaef9fe18dbfe2a5ecc803616e30919bb4ce",
+    "gates_source_sha256": "52d573a0fa98233627cb6344de075887431b1cbe0659b48756fd48085f7429cd",
+    "pack_sha256": "c6dbe56df7b4f7d427ce1f51d5d818ad0e46dcfbf6e1550e0d77116435760196",
+    "proposed_amendment_json_sha256": "d5227f04af4452c2224d3a6b0a8342a7a02aa18edf6b5452e9e06290636bc1c9",
+    "proposed_amendment_markdown_sha256": "25fe82bbcad386b42e4c5a95a762d1f84e4c926796655f02ba5d2ab8ae7dc484",
+    "selector_source_sha256": "73b31b7d6c58a67efa8542df754971a58926d783258c9776269ec06765dafa0e",
+    "selector_tests_sha256": "2649006bf953e0dfa2190bf63d37420f502aec9c78f0f80a7b0989957bc2d893",
+    "gate_tests_sha256": "e623777e26aabbfb56164695c980d015e0394a0cfa0490e1544032373d6f550e"
+  },
+  "candidate_v2": {
+    "candidate_receipt_canonical_json": true,
+    "candidate_receipt_sha256": "5b18a1f8025cc81b576b72d99a64930734395da2e4ee855015be10a11d08862f",
+    "fixture_count": 1000,
+    "member_count": 23,
+    "member_hashes_match_receipt": true,
+    "member_order_matches_receipt": true,
+    "member_sha256": {
+      "candidate_period.npy": "779f2d96201659204af4cf3a697a143fe7bf6d5642548022c7743b18fd3ee02d",
+      "category.npy": "3d99037d1234d3b718154f689abdb230ba64f66b66901f3e84642c160e7bdf2c",
+      "expected_acf.npy": "56e290215290200693ef2a3c54ca02b4e55a81a9b18ba6021e7e61e68edbe745",
+      "expected_fft_mask.npy": "9b00aa3887ae4a4ca14d190f50eeb1ae13720fa6b7ee412a174bef288900563f",
+      "expected_fft_power.npy": "2a428e2e1df181d633d9c5311bb3e8fac1fbd1453bb8fd64244c3aa018c07787",
+      "expected_fft_x.npy": "bb636462ed11f6bd487f393573f4d0c38c3ee0b85bce1813c3d713f97febffc7",
+      "expected_first64_selected_period.npy": "d06614ab74ebce3f2e2bffd8d4b222ad6aa44c971153e485a1c10aa357fff8f3",
+      "expected_harmonic_power.npy": "e5fba4d463bd6da91fca9ce922dcdd4ad357fe9efdc89537aa5cdb857a90677a",
+      "expected_last64_selected_period.npy": "dfe6d509027d9e92afbce34e4d02ad859fad037427ae8107cad1fdc74e66225d",
+      "expected_local_max.npy": "469fd24fc57d3d2b4955a017f224c60de9cc4d33734bc60c4cf308ac038f2688",
+      "expected_parent_accept.npy": "e342996975e175db7f97803b68bca2191ec58b9e492bed2272a20865ef8810ab",
+      "expected_reversal_selected_period.npy": "a9f81b59cfc868c04436fc78a5f36b43cae1077f782d472d1d18fba62f8a913a",
+      "expected_score.npy": "f92dd7772504b501dd5b4cc14b26f00603cd0eb710294e58e7438ba28a983162",
+      "expected_score_valid.npy": "203e13cd312a46280fbdca1db5e5b25543f18033c4ad17a1042018c41d6c8d13",
+      "expected_selected_period.npy": "96a804cce7a081acfa10ebb8a31304a048b38a87994876db1c03c5e33ed3fccd",
+      "expected_weak_selected_period.npy": "3a8cb3f72b1d73f8df998ffe7435f4fe4a9ec0b39076462d76a397c5818db45a",
+      "joint_mask.npy": "7cdb558af9a93fad5d05c49524e4b001c2377f1586f0eab055f8ef6cb9e87a9f",
+      "metadata.json": "57942038ac85dd718cea0a36eb9db008e337447239664aec8775806def005d12",
+      "pose.npy": "585802280545c72c62216041e3f02cda17fa935e59d249e949d36717ccfe57cc",
+      "q.npy": "6c04e35e72e95f115f445334f17a3d04dba1e10248859e2c970c41849b914c4f",
+      "semantic_period.npy": "2ede10cbae56adcea2f84230b8b9acb624dbf500a372bff600bb0d2355ea519d",
+      "weak_joint_mask.npy": "4d1abb19ab73160eae6cc3352f6983bc19139b7e49e61ed325ca14d31854f13e",
+      "weak_pose.npy": "e72a33c1efc29d1c91f1bee4254e5da40d02e081de93c972cdc33e51a852904e"
+    },
+    "metadata_canonical_json": true,
+    "npy": {
+      "array_count": 22,
+      "all_c_order": true,
+      "all_float_members_finite": true,
+      "all_headers_match_metadata": true,
+      "all_non_object": true,
+      "all_payload_lengths_exact": true,
+      "all_version": "2.0",
+      "explicit_little_endian_multibyte": true,
+      "uint8_endian_neutral": true
+    },
+    "pack_hash_algorithm": "sha256(sorted(filename_utf8 || 0x00 || file_bytes || 0x0a))",
+    "pack_sha256": "c6dbe56df7b4f7d427ce1f51d5d818ad0e46dcfbf6e1550e0d77116435760196",
+    "pack_sha256_recomputed": true
+  },
+  "environment": {
+    "architecture": "AMD64",
+    "endianness": "little",
+    "installer_version": "uv 0.11.21",
+    "interpreter_sha256": "1a6b3a5b57d95882cc436344c74b1179bd6bb37126dddd52f38d00e02284c702",
+    "live_runtime_matches_lock": true,
+    "lock_canonical_json": true,
+    "lock_detached_receipt_matches": true,
+    "lock_sha256": "c278c77b27467f5928fa37d2fc79580dc58ec5d55cf98eee89f7e69e77d947a0",
+    "numpy_version": "2.4.6",
+    "numpy_wheel": "numpy-2.4.6-cp312-cp312-win_amd64.whl",
+    "numpy_wheel_sha256": "d8e8286dd7cea7895157318d1b91cdacac64c479f3cbc8dce548331728484751",
+    "numpy_wheel_sha256_pypi_release_json_match": true,
+    "numpy_wheel_verification_url": "https://pypi.org/pypi/numpy/2.4.6/json",
+    "os": "Windows",
+    "pcg64_witness_sha256": "22cf6053f9a31cee979636aa1f1f629b890a4a88956d42c99d5bfb4333e3bcc0",
+    "python_implementation": "CPython",
+    "python_version": "3.12.13",
+    "receipt_canonical_json": true,
+    "receipt_fields_match_lock": true,
+    "receipt_sha256": "49dce1131bbcce0fb4d0881f6527a00ca591962f785414c8ec4305e117e87ee8",
+    "source_sha256_matches_generator": true
+  },
+  "raw_replay": {
+    "category_mismatches": 0,
+    "exact": true,
+    "joint_mask_mismatches": 0,
+    "maximum_absolute_pose_difference": 0.0,
+    "maximum_absolute_semantic_period_difference": 0.0,
+    "maximum_absolute_weak_pose_difference": 0.0,
+    "pose_mismatches": 0,
+    "replayed_fixture_count": 1000,
+    "semantic_period_mismatches": 0,
+    "weak_joint_mask_mismatches": 0,
+    "weak_pose_mismatches": 0
+  },
+  "selector_replay": {
+    "all_recomputed_arrays_match": true,
+    "canonical_diagnostic_rows_recomputed": 1000,
+    "canonical_diagnostics_unavailable": 0,
+    "decision_invocations_recomputed": 5000,
+    "diagnostic_mismatch_counts": {
+      "expected_acf.npy": 0,
+      "expected_fft_mask.npy": 0,
+      "expected_fft_power.npy": 0,
+      "expected_fft_x.npy": 0,
+      "expected_harmonic_power.npy": 0,
+      "expected_local_max.npy": 0,
+      "expected_score.npy": 0,
+      "expected_score_valid.npy": 0
+    },
+    "failed_canonical": {
+      "count": 240,
+      "failed_id_list_encoding": "ascending fixture IDs as raw little-endian uint16 C-order bytes",
+      "failed_id_list_sha256": "4278935bd643aa5880e45436302fe04cddf98915ca7236e7214c8cd86b027fa3",
+      "rows_with_correct_nonzero_fft_power": 240,
+      "rows_with_correct_nonzero_valid_acf": 70,
+      "rows_with_correct_nonzero_valid_harmonic_power": 70,
+      "rows_with_correct_nonzero_valid_score": 70,
+      "rows_with_nonzero_score_valid_mask": 70,
+      "rows_with_no_valid_candidate_and_correct_zero_fill": 170,
+      "rows_with_nonzero_local_max": 0
+    },
+    "parent_accept_count": 12,
+    "parent_accept_mismatches": 0,
+    "selected_period_mismatch_counts": {
+      "expected_first64_selected_period.npy": 0,
+      "expected_last64_selected_period.npy": 0,
+      "expected_reversal_selected_period.npy": 0,
+      "expected_selected_period.npy": 0,
+      "expected_weak_selected_period.npy": 0
+    }
+  },
+  "population_preservation": {
+    "candidate_v1_comparison_was_independent_of_candidate_v1_audit": true,
+    "category_hash_unchanged": true,
+    "clean_mask_hash_unchanged": true,
+    "clean_pose_hash_unchanged": true,
+    "five_selected_period_hashes_unchanged": true,
+    "q_hash_unchanged": true,
+    "semantic_period_hash_unchanged": true,
+    "weak_mask_hash_unchanged": true,
+    "weak_pose_hash_unchanged": true
+  },
+  "gate2": {
+    "checks": {
+      "agreement_gte_950": false,
+      "double_overall_lte_20": false,
+      "double_symmetric_lte_12": false,
+      "half_overall_lte_20": false,
+      "half_symmetric_lte_12": false
+    },
+    "counts": {
+      "canonical_weak_agreement": 246,
+      "double_overall": 144,
+      "double_symmetric": 66,
+      "half_overall": 55,
+      "half_symmetric": 50
+    },
+    "inclusive_relative_tolerance": 0.1,
+    "status": "FAIL"
+  },
+  "candidate_v1_preservation": {
+    "candidate_directory_bytes_untouched": true,
+    "candidate_receipt_canonical_json": true,
+    "candidate_receipt_sha256": "f5e03b431f47f2ae0c1e52f40955fbcb70b97642e52969178ffcfa3140f6c5ce",
+    "generic_environment_lock_still_matches_v1": false,
+    "member_hashes_match_candidate_receipt": true,
+    "pack_sha256": "b2c791f9aac1d86c0849fa74b00b4e605fe21120f9d188f4ec0b304d7052f173",
+    "pack_sha256_recomputed": true,
+    "v1_bound_environment_lock_sha256": "5b1d1bd864cb87a16fc97843515d0d6cd8063be5ad1adfb857ea4da42bd2e27b",
+    "v1_bound_environment_receipt_sha256": "88ff454646c72aaf4a8e991f0773ae5bee2f28ea657a5401c1048d88adc46705"
+  },
+  "provenance_repair": {
+    "blocking_condition": "generic fixture environment lock and receipt paths were replaced in place for v2, breaking candidate-v1 external-path resolvability",
+    "exact_v1_bytes_reconstructed_without_prior_audit": true,
+    "required_before_freeze": true,
+    "steps": [
+      {
+        "action": "persist current bytes without reserialization",
+        "path": "data/warp_phase_pilot_v1/audit/gate1/fixture_environment.candidate-20260815-sol-v2.receipt.json",
+        "sha256": "49dce1131bbcce0fb4d0881f6527a00ca591962f785414c8ec4305e117e87ee8"
+      },
+      {
+        "action": "persist current bytes without reserialization",
+        "path": "data/warp_phase_pilot_v1/audit/gate1/fixture_environment.candidate-20260815-sol-v2.lock.json",
+        "sha256": "c278c77b27467f5928fa37d2fc79580dc58ec5d55cf98eee89f7e69e77d947a0"
+      },
+      {
+        "action": "restore exact v1 canonical bytes",
+        "path": "data/warp_phase_pilot_v1/audit/gate1/fixture_environment.receipt.json",
+        "sha256": "88ff454646c72aaf4a8e991f0773ae5bee2f28ea657a5401c1048d88adc46705"
+      },
+      {
+        "action": "restore exact v1 canonical bytes",
+        "path": "data/warp_phase_pilot_v1/audit/gate1/fixture_environment.lock.json",
+        "sha256": "5b1d1bd864cb87a16fc97843515d0d6cd8063be5ad1adfb857ea4da42bd2e27b"
+      },
+      {
+        "action": "hash-confirm all four environment paths and point Gate-1 consumption to the v2-specific lock before issuing a canonical pack freeze receipt"
+      }
+    ],
+    "v1_reconstruction": {
+      "environment_receipt_source_sha256": "8a12a188c95d38f8958553e10ee06df6920c372e78eef2c2de575e7b8d6eb572",
+      "environment_receipt_sha256": "88ff454646c72aaf4a8e991f0773ae5bee2f28ea657a5401c1048d88adc46705",
+      "environment_lock_detached_receipt_sha256": "88ff454646c72aaf4a8e991f0773ae5bee2f28ea657a5401c1048d88adc46705",
+      "environment_lock_sha256": "5b1d1bd864cb87a16fc97843515d0d6cd8063be5ad1adfb857ea4da42bd2e27b",
+      "environment_lock_source_sha256": "8a12a188c95d38f8958553e10ee06df6920c372e78eef2c2de575e7b8d6eb572"
+    }
+  },
+  "proposed_freeze_receipt": {
+    "canonical_json_byte_length": 2334,
+    "canonical_json_sha256": "191a1689197f7e9a3eb965ee0dc0e52fa58e9d8485c097c9e601162fad24cd19",
+    "create_only_after_provenance_repair": true,
+    "created_by_this_audit": false,
+    "payload": {
+      "generator_source_sha256": "7af1dac0ce246979d608b3db8e9fcaef9fe18dbfe2a5ecc803616e30919bb4ce",
+      "members": {
+        "candidate_period.npy": "779f2d96201659204af4cf3a697a143fe7bf6d5642548022c7743b18fd3ee02d",
+        "category.npy": "3d99037d1234d3b718154f689abdb230ba64f66b66901f3e84642c160e7bdf2c",
+        "expected_acf.npy": "56e290215290200693ef2a3c54ca02b4e55a81a9b18ba6021e7e61e68edbe745",
+        "expected_fft_mask.npy": "9b00aa3887ae4a4ca14d190f50eeb1ae13720fa6b7ee412a174bef288900563f",
+        "expected_fft_power.npy": "2a428e2e1df181d633d9c5311bb3e8fac1fbd1453bb8fd64244c3aa018c07787",
+        "expected_fft_x.npy": "bb636462ed11f6bd487f393573f4d0c38c3ee0b85bce1813c3d713f97febffc7",
+        "expected_first64_selected_period.npy": "d06614ab74ebce3f2e2bffd8d4b222ad6aa44c971153e485a1c10aa357fff8f3",
+        "expected_harmonic_power.npy": "e5fba4d463bd6da91fca9ce922dcdd4ad357fe9efdc89537aa5cdb857a90677a",
+        "expected_last64_selected_period.npy": "dfe6d509027d9e92afbce34e4d02ad859fad037427ae8107cad1fdc74e66225d",
+        "expected_local_max.npy": "469fd24fc57d3d2b4955a017f224c60de9cc4d33734bc60c4cf308ac038f2688",
+        "expected_parent_accept.npy": "e342996975e175db7f97803b68bca2191ec58b9e492bed2272a20865ef8810ab",
+        "expected_reversal_selected_period.npy": "a9f81b59cfc868c04436fc78a5f36b43cae1077f782d472d1d18fba62f8a913a",
+        "expected_score.npy": "f92dd7772504b501dd5b4cc14b26f00603cd0eb710294e58e7438ba28a983162",
+        "expected_score_valid.npy": "203e13cd312a46280fbdca1db5e5b25543f18033c4ad17a1042018c41d6c8d13",
+        "expected_selected_period.npy": "96a804cce7a081acfa10ebb8a31304a048b38a87994876db1c03c5e33ed3fccd",
+        "expected_weak_selected_period.npy": "3a8cb3f72b1d73f8df998ffe7435f4fe4a9ec0b39076462d76a397c5818db45a",
+        "joint_mask.npy": "7cdb558af9a93fad5d05c49524e4b001c2377f1586f0eab055f8ef6cb9e87a9f",
+        "metadata.json": "57942038ac85dd718cea0a36eb9db008e337447239664aec8775806def005d12",
+        "pose.npy": "585802280545c72c62216041e3f02cda17fa935e59d249e949d36717ccfe57cc",
+        "q.npy": "6c04e35e72e95f115f445334f17a3d04dba1e10248859e2c970c41849b914c4f",
+        "semantic_period.npy": "2ede10cbae56adcea2f84230b8b9acb624dbf500a372bff600bb0d2355ea519d",
+        "weak_joint_mask.npy": "4d1abb19ab73160eae6cc3352f6983bc19139b7e49e61ed325ca14d31854f13e",
+        "weak_pose.npy": "e72a33c1efc29d1c91f1bee4254e5da40d02e081de93c972cdc33e51a852904e"
+      },
+      "pack_sha256": "c6dbe56df7b4f7d427ce1f51d5d818ad0e46dcfbf6e1550e0d77116435760196",
+      "role": "canonical_fixture_pack",
+      "schema_version": 1
+    }
+  },
+  "validation": {
+    "dedicated_fixture_environment": {
+      "numpy_version": "2.4.6",
+      "raw_fixture_rows": 1000,
+      "selector_decisions": 5000,
+      "status": "PASS"
+    },
+    "targeted_tests": {
+      "passed": 13,
+      "seconds": 0.65,
+      "status": "PASS"
+    },
+    "training_consumption_environment": {
+      "k4_sha256": "5e2f35a11bd8a376e44d5ad7d3e5067a0bb5a03e2d61edd84f5f5bfd6cf351ec",
+      "numpy_version": "1.26.4",
+      "pcg64_witness_sha256": "22cf6053f9a31cee979636aa1f1f629b890a4a88956d42c99d5bfb4333e3bcc0",
+      "ten_case_recomputation": "PASS"
+    }
+  },
+  "scope": {
+    "accessed_git": false,
+    "accessed_heldout_data": false,
+    "accessed_real_data": false,
+    "accessed_results": false,
+    "accessed_sealed_data": false,
+    "accessed_server_data": false,
+    "accessed_test_data": false,
+    "candidate_modified": false,
+    "candidate_v1_audit_relied_upon": false,
+    "candidate_v1_modified": false,
+    "code_or_document_modified": false,
+    "claims_authorized": false,
+    "training_authorized": false
+  },
+  "test_coverage_caveat": "The current selector regression test reads candidate-v1 and asserts in-memory diagnostic preservation rather than directly checking v2 serialized diagnostics; this audit independently checked every v2 row."
+}

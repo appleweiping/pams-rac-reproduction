@@ -1,0 +1,525 @@
+{
+  "schema_version": "1.0",
+  "review_id": "20260815_temporac_canonical_sol",
+  "review_type": "canonical_research_review",
+  "as_of_date": "2026-08-15",
+  "reviewer": {
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "ultra",
+    "family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "fresh_context": true,
+    "role": "fresh zero-context ARIS research reviewer"
+  },
+  "scope": {
+    "venue": "ICASSP 2027",
+    "decision_stage": "authorization of one bounded development pilot, not submission readiness",
+    "canonical_method": "TempoRAC: Identity-Indexed Local Tempo Routing for Multi-Person Repetition Counting",
+    "canonical_properties": [
+      "one pose encoder shared by every supplied identity",
+      "fast, medium, and slow learned response experts shared across identities",
+      "temporal state and reconstruction buffers private to each identity",
+      "masked source-clock-aware tempo evidence estimated independently in overlapping local windows",
+      "soft expert routing and response fusion before discrete counting",
+      "positive-taper normalized overlap-add per identity",
+      "exactly one decoder invocation per complete identity and no summation of independent window counts"
+    ],
+    "excluded_substitutes": [
+      "WARP-PHASE",
+      "set-valued missing-pose pivot",
+      "scene-level counter",
+      "per-person copies of a complete model",
+      "hard ACF/FFT pseudo-period as truth"
+    ],
+    "web_search_performed": false
+  },
+  "verdict": {
+    "code": "ADVANCE_ONE_KILL_ORIENTED_PILOT",
+    "conditional": true,
+    "novelty_cleared": false,
+    "paper_claims_authorized": false,
+    "server_run_authorized": false,
+    "submission_ready": false,
+    "implementation_freeze_authorized": false,
+    "allowed_now": [
+      "freeze the exact scientific contract",
+      "implement unit tests for the seven canonical invariants",
+      "run the frozen synthetic primitive-orbit topology and harmonic kill gate",
+      "build and audit the physical feature/label separation"
+    ],
+    "allowed_after_k0_through_k6": "one three-seed GT-bbox-assisted AlphaPose supplied-track development pilot",
+    "failure_disposition": "REJECT the canonical method; do not substitute WARP-PHASE or a backup pivot without a new review",
+    "rationale": "The exact conjunction is weakly distinguishable and highly falsifiable, but the supplied response objective does not identify one physical repetition. A primitive-orbit left-inverse gauge can conditionally fix the response unit while preserving all seven properties. That assumption must pass synthetic topology, harmonic, shortcut, and teacher-redundancy gates before any natural-data pilot."
+  },
+  "scores": {
+    "scale": "1-10, higher is stronger; scores apply to the supplied pre-contract proposal",
+    "novelty": {
+      "score": 4,
+      "reason": "Every component is established; only the exact conjunction and a possible non-additive interaction remain, with unresolved TWCRAC overlap."
+    },
+    "specificity": {
+      "score": 5,
+      "reason": "Seven inference invariants are clear, but the response unit, expert state, gradient paths, and decoder calibration were open."
+    },
+    "falsifiability": {
+      "score": 9,
+      "reason": "Topology, harmonic, routing, state-isolation, NOLA, shortcut, and matched-baseline gates can decisively kill the method."
+    },
+    "protocol_integrity": {
+      "score": 3,
+      "reason": "The usable cache is partial, GT-bbox-assisted, label-mixed, and supplied-track only, with zero eligible method results."
+    },
+    "feasibility": {
+      "score": 5,
+      "reason": "A bounded implementation is possible, but no current tree implements it and the PAMS path lacks the required COCO-17, multi-identity, and source-clock graph."
+    },
+    "icassp_fit": {
+      "score": 7,
+      "reason": "Local time-frequency evidence, response-rate reconstruction, and overlap-add fit signal processing if the paper remains narrow and mechanism-led."
+    }
+  },
+  "evidence_status": {
+    "canonical_implementation_exists": false,
+    "eligible_method_results": 0,
+    "frozen_response_objective_exists": false,
+    "physical_feature_label_split_exists": false,
+    "predicted_track_evidence_exists": false,
+    "full_twcrac_method_overlap_closed": false,
+    "current_pams_semantics": "single-person dominant-pose encoder plus inferred scalar head and deterministic peak-consensus readout",
+    "warp_phase_status": "terminal selector-stability failure before real-data training; zero efficacy evidence",
+    "historical_server_results_eligible": false
+  },
+  "novelty_adjudication": [
+    {
+      "prior": "MultiCounter",
+      "occupied": "MRAC, instance-indexed temporal modeling, period localization, and per-person counts",
+      "residual": "none for task definition, asynchronous people, variable periods, or per-person output"
+    },
+    {
+      "prior": "MultiCounter+",
+      "occupied": "unified MRAC, spatial-temporal consistency, long-short period awareness, and synthetic pretraining",
+      "residual": "only the no-human-per-person-count/period objective plus local response-routing conjunction"
+    },
+    {
+      "prior": "PAMS",
+      "occupied": "pose periodic SSL, period-adaptive multi-scale consistency, localized internal-tempo stress, and inference-time peak consensus",
+      "residual": "learned shared response functions with relative per-window routing, if specialization is causally demonstrated"
+    },
+    {
+      "prior": "RepNet",
+      "occupied": "temporal self-similarity, synthetic repetitions, and per-frame period and periodicity",
+      "residual": "none for time-varying period or response-then-count"
+    },
+    {
+      "prior": "TWCRAC",
+      "occupied": "pose, time-window-cycle framing, intra-video TCC, local periodic statistics, dynamic thresholds, and non-stationary motion",
+      "residual": "unresolved until the complete method is inspected"
+    },
+    {
+      "prior": "HTRM-Net",
+      "occupied": "local temporal context, non-uniform periods, interruptions, and multi-scale temporal-relation fusion",
+      "residual": "identity-indexed shared learned responses with pre-decode fusion and reconstruction"
+    },
+    {
+      "prior": "generic mixture of experts",
+      "occupied": "shared experts, soft gates, load balancing, and specialization",
+      "residual": "no component novelty; only a task-specific causal effect"
+    },
+    {
+      "prior": "WOLA/NOLA",
+      "occupied": "weighted normalized overlap-add reconstruction",
+      "residual": "only the experimentally verified ordering of response fusion, reconstruction, and one decode"
+    }
+  ],
+  "identifiability": {
+    "current_proposed_route_identifiable": false,
+    "failure_symmetries": [
+      "zero or constant response when reconstruction bypasses the response",
+      "arbitrary phase offset",
+      "positive response-scale exchange with a learned decoder",
+      "integer phase winding and half/double/higher-harmonic solutions",
+      "expert permutation and router-expert gauge",
+      "clock or warp-metadata shortcuts",
+      "human annotation conventions not determined by observable pose"
+    ],
+    "reason": "Paired monotone-warp consistency, routing consistency, response consistency, and unconstrained motion reconstruction do not define one response unit as one physical repetition.",
+    "conditional_assumption": "Valid clock-blind pose delay states form a primitive S1 orbit with trivial rotational stabilizer for one annotated repetition.",
+    "conditional_theorem": "If a memoryless phase map f from the primitive orbit to S1 has a continuous left inverse G because G composed with f is the identity, then f is injective and has degree plus or minus one. Non-negative temporal orientation fixes degree plus one. Integer harmonics are not injective and subharmonics are not single-valued continuous maps on the primitive circle.",
+    "limitation": "Approximate reconstruction and real action semantics do not guarantee the theorem's assumptions. Alternating limbs, self-intersections, interruptions, noise, and annotation conventions may violate them.",
+    "failure_consequence": "Reject the no-human-count/period response route. The minimum extra information would be a boundary pair, period, or count convention, which violates the canonical supervision constraint."
+  },
+  "minimal_scientific_contract": {
+    "input_clock": {
+      "pose": "COCO-17 root-relative, scale-normalized coordinates, confidence, bones, signed differences, joint masks, and frame masks",
+      "clock": "sampled_frame_indices only",
+      "duplicate_policy": "mask-weighted collapse before temporal modeling",
+      "valid_edge": "both endpoints valid and positive source-frame delta",
+      "window_samples": 128,
+      "hop_samples": 32,
+      "padding_contributes": false,
+      "identity_keys_are_tensor_features": false
+    },
+    "phase_teacher": {
+      "role": "training-only response-unit gauge, not an inference substitute or paper contribution",
+      "input": "memoryless clock-blind local delay state and one static per-track content vector",
+      "forbidden_inputs": [
+        "absolute positional encoding",
+        "source timestamp value",
+        "window index",
+        "recurrent state",
+        "warp parameters",
+        "identity key",
+        "human count, period, boundary, or density"
+      ],
+      "decoder_input": "phase on S1 plus the static content vector only; no residual or time bypass",
+      "loss": "L_teacher = L_inv + lambda_v L_view + lambda_o L_orient + lambda_a L_alias",
+      "left_inverse_loss": "joint-mask-normalized Huber reconstruction of the delay state",
+      "view_loss": "one minus phase-vector dot product at exact paired monotone-warp correspondences",
+      "orientation_loss": "ReLU of negative signed circular increments",
+      "alias_loss": "ReLU of absolute signed increment minus 0.25 cycles per valid edge",
+      "weights_selected_from": "frozen synthetic primitive-orbit suite before natural development labels",
+      "frozen_before_student_training": true
+    },
+    "shared_encoder": {
+      "calls": "once per complete identity track",
+      "parameters_shared_across_people": true,
+      "pams_tcc": "optional initialization only; inferred SSHead excluded; initialization must be ablated"
+    },
+    "tempo_evidence": {
+      "scope": "independent per overlapping window",
+      "signal": "root-relative pose/delay features without full-track contextual leakage",
+      "operators": [
+        "mask-normalized non-circular vector ACF",
+        "Hann-weighted non-uniform DFT on source-frame clocks"
+      ],
+      "retained": "full normalized ACF and spectral distributions",
+      "hard_period_or_argmax_used": false,
+      "fusion": "normalized geometric mean on a common frequency grid",
+      "log_tempo": "expectation of log frequency",
+      "confidence": "valid-pair coverage times ACF/FFT Bhattacharyya agreement times one minus normalized entropy",
+      "track_reference": "stop-gradient confidence-weighted median",
+      "relative_coordinate": "window log-tempo minus track reference"
+    },
+    "router": {
+      "trainable_in_pilot": false,
+      "latent_residual_present": false,
+      "anchors_log_frequency": [
+        "-log(2)",
+        "0",
+        "+log(2)"
+      ],
+      "sigma": "log(2)/2",
+      "low_confidence_mixture": [
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "formula": "g = (1-gamma)*uniform + gamma*softmax(-(z-mu)^2/(2*sigma^2))",
+      "reason_for_fixed_router": "prevents the router from ignoring the claimed tempo evidence and keeps the first pilot causal"
+    },
+    "experts_and_state": {
+      "expert_names": [
+        "slow",
+        "medium",
+        "fast"
+      ],
+      "parameters_shared_across_people": true,
+      "capacity_matched": true,
+      "pilot_architecture": "two-block causal depthwise-separable TCN, width 64, kernel 5",
+      "dilations_slow_medium_fast": [
+        4,
+        2,
+        1
+      ],
+      "output": "non-negative edge rate in cycles per source frame via softplus",
+      "state_policy": "advance once over each full identity; cache left context per identity and expert; windows read outputs and never recommit overlapping samples",
+      "cross_person_state_or_statistics": false
+    },
+    "response_and_reconstruction": {
+      "fusion": "window response is the soft gate-weighted sum of expert edge-rate responses",
+      "taper": "0.001 + 0.999*sin^2(pi*(edge+0.5)/window_edges)",
+      "epsilon": 1e-8,
+      "normalized_overlap_add": true,
+      "padding_excluded": true,
+      "duplicate_or_zero_duration_edges_excluded": true
+    },
+    "decoder": {
+      "learned": false,
+      "thresholded": false,
+      "rounded_for_primary_metric": false,
+      "formula": "sum over valid unique edges of reconstructed_rate times positive source-frame delta",
+      "calls": "exactly once per complete identity",
+      "window_counts_summed": false
+    },
+    "student_loss": {
+      "teacher_rate": "stop-gradient max(signed_phase_increment,0)/source_frame_delta",
+      "track_term": "source-duration-weighted Huber between reconstructed full-track response and teacher rate",
+      "head_term": "taper-, gate-, mask-, and source-duration-weighted Huber between each expert response and teacher rate",
+      "total": "L_track + lambda_h L_head",
+      "excluded_terms": [
+        "human count loss",
+        "human period loss",
+        "cycle-boundary loss",
+        "density loss",
+        "learned decoder loss",
+        "routing-consistency loss",
+        "load-balancing penalty",
+        "seam auxiliary loss",
+        "WARP-PHASE objective"
+      ]
+    },
+    "gradient_contract": [
+      "Optional PAMS-TCC stage updates only the shared encoder and is initialization evidence only.",
+      "Teacher loss updates only the memoryless phase map, delay-state decoder, and static-content encoder.",
+      "Teacher parameters and hash are frozen before TempoRAC training.",
+      "TempoRAC loss updates the shared encoder, three shared experts, and identity-private state projections through response fusion and NOLA.",
+      "TempoRAC loss cannot update the teacher, tempo distributions, track reference, router, taper, clocks, masks, window starts, identity keys, or decoder.",
+      "No evaluator target, count-based early stopping, calibration, or label-derived checkpoint selection is permitted.",
+      "A fresh graph is built per full-identity batch; state is not detached at window boundaries and never persists across optimizer steps."
+    ]
+  },
+  "mandatory_controls": [
+    "primitive-orbit teacher-only inference count",
+    "one response head matched to the total expert parameter and FLOP budget",
+    "three experts with uniform routing",
+    "hard local routing using the same cue",
+    "soft track-global routing with every other component unchanged",
+    "canonical soft window-local routing",
+    "window-local routing with cue blocked to neutral and shuffled within track",
+    "independent window decode and sum versus positive NOLA then one decode",
+    "stateless, shared-scene, identity-private, reset-at-window, and shuffled-identity-key state variants",
+    "PAMS and Track-PAMS on identical supplied tracks",
+    "PAMS-TCC initialization versus identical training without it",
+    "RepNet only in a genuinely input- and protocol-matched block; MultiCounter, MultiCounter+, HTRM-Net, and TWCRAC contextual otherwise"
+  ],
+  "kill_gates": [
+    {
+      "id": "K0",
+      "name": "firewall_protocol",
+      "criteria": "Feature-only shards, separately permissioned label vault, forbidden-key scan, exact hashes, zero train/dev canonical-source overlap, and no test/sealed/heldout/result path reachable.",
+      "failure_action": "stop before any data-bearing training or pilot; pure contract and synthetic unit work may continue"
+    },
+    {
+      "id": "K1",
+      "name": "topology_identifiability",
+      "criteria": "On frozen synthetic primitive S1 orbits and unseen resamplers: at least 95% degree +1; at most 5% combined half/double/higher-harmonic lock; at most 1% negative edges; at most 1% latent collisions; at most 2% count-mass error; reconstruction below the frozen left-inverse tolerance.",
+      "failure_action": "reject the count/period-annotation-free response route without tuning on natural counts"
+    },
+    {
+      "id": "K2",
+      "name": "seven_invariants",
+      "criteria": "Shared parameter identities, private state/buffer keys, outside-window cue isolation, simplex soft gates, fusion before decode, positive finite NOLA coverage, and decoder calls equal complete identity count.",
+      "failure_action": "implementation is not TempoRAC; stop"
+    },
+    {
+      "id": "K3",
+      "name": "shortcut_resistance",
+      "criteria": "No-pose, timestamp/position-only, warp-metadata, track-length/confidence-only, and matched-time pose-shuffle controls retain less than 10% of canonical gain; unseen interpolation preserves at least 80%.",
+      "failure_action": "reject as clock, augmentation, or metadata shortcut"
+    },
+    {
+      "id": "K4",
+      "name": "expert_mechanism",
+      "criteria": "Each expert receives at least 10% effective mass on the balanced synthetic tempo suite and beats the capacity-matched one-head model in its assigned unseen-resampler region with paired interval above zero; cue shuffling removes at least 80% of local-over-global gain.",
+      "failure_action": "kill routing and specialization contribution"
+    },
+    {
+      "id": "K5",
+      "name": "reconstruction_ordering",
+      "criteria": "Shifted-grid count mass changes by at most 0.5%; positive NOLA reduces boundary duplicate or miss error versus independent window decoding; padding and duplicate clocks contribute exactly zero.",
+      "failure_action": "kill reconstruction mechanism claim"
+    },
+    {
+      "id": "K6",
+      "name": "identity_isolation",
+      "criteria": "A one-person tempo intervention with all other track bytes fixed changes untouched state, response, and count by at most 1e-6 in deterministic evaluation; shuffled keys cause the preregistered failure.",
+      "failure_action": "implementation failure and no private-state claim"
+    },
+    {
+      "id": "K7",
+      "name": "pilot_efficacy",
+      "criteria": "At least 5% relative video-first AvgMAE reduction versus the strongest matched nonlocal/control model under frozen piecewise drift, paired source-component bootstrap lower bound above zero, clean stationary AvgMAE upper bound no worse than +0.02, and three independent seeds.",
+      "failure_action": "kill canonical method; no backup substitution"
+    },
+    {
+      "id": "K8",
+      "name": "closest_prior_and_teacher",
+      "criteria": "TempoRAC exceeds teacher-only inference, one-head, Track-PAMS/PAMS, and every matched closest prior beyond uncertainty.",
+      "failure_action": "no residual method contribution"
+    },
+    {
+      "id": "K9",
+      "name": "literature_and_title_closure",
+      "criteria": "Complete TWCRAC inspected with no equivalent contribution and title/acronym collision check passed.",
+      "failure_action": "no novelty or title freeze"
+    }
+  ],
+  "protocol": {
+    "permitted_name": "GT-bbox-assisted AlphaPose supplied-track partial-cache development pilot",
+    "primary_endpoint": "paired source-component change in video-first AvgMAE under frozen piecewise within-track tempo drift",
+    "secondary_metrics": [
+      "video-first AvgOBO",
+      "supplied-track Period-mAP/AP50/AP75 only when the temporal evaluator contract is satisfied",
+      "clean-to-warp degradation",
+      "routing entropy and expert usage",
+      "teacher reconstruction and topology diagnostics",
+      "untouched-identity response and count change"
+    ],
+    "seeds": 3,
+    "uncertainty": "paired canonical-source-component bootstrap 95% intervals plus sample standard deviation across full runs",
+    "forbidden_interpretations": [
+      "official MultiRep main result",
+      "predicted-track MRAC",
+      "end-to-end counting",
+      "direct ranking against native MultiCounter or MultiCounter+ values",
+      "HOTA, IDF1, or ID-switch evidence",
+      "annotation-free or label-free training",
+      "submission-ready evidence"
+    ],
+    "power_warning": "The 51-video, 9-component development cache may be underpowered. An inconclusive interval fails advancement rather than weakening the gate."
+  },
+  "claim_boundary": {
+    "maximum_if_all_gates_pass": "We study whether identity-indexed, window-local soft tempo routing among shared pose-response experts improves supplied-track multi-person repetition counting under within-track tempo drift, using a counting objective that reads no human per-person count or period annotations, with response fusion and positive normalized overlap-add before one fixed per-track decode.",
+    "forbidden": [
+      "any first claim",
+      "annotation-free",
+      "label-free",
+      "end-to-end",
+      "state of the art",
+      "constant-time",
+      "first local-tempo method",
+      "first identity-aware counter",
+      "first learned experts",
+      "novel ACF or FFT",
+      "novel mixture of experts",
+      "novel private state",
+      "novel NOLA or WOLA",
+      "novel response decoding",
+      "novel one-decode ordering by itself"
+    ]
+  },
+  "evidence_authority": [
+    {
+      "evidence": "idea-stage/TEMPORAC_CANONICAL_REVIEW_BRIEF.md and RESEARCH_BRIEF.md",
+      "authority": "intended scope and non-negotiable properties only",
+      "not_authority_for": "implementation or efficacy"
+    },
+    {
+      "evidence": "paper/evidence/method_manifest.yaml, SERVER_METHOD_INVENTORY.md, and inspected src/pams implementation",
+      "authority": "current implementation absence and local PAMS semantics",
+      "not_authority_for": "future feasibility or performance"
+    },
+    {
+      "evidence": "EXPERIMENT_AUDIT.md and PILOT_DATA_SCHEMA_AUDIT.md",
+      "authority": "negative and protocol evidence",
+      "not_authority_for": "TempoRAC efficacy"
+    },
+    {
+      "evidence": "idea-stage/NOVELTY_CHECK.json",
+      "authority": "same-family provisional primary-source ledger that caps novelty claims",
+      "not_authority_for": "closing inaccessible TWCRAC full-method overlap"
+    },
+    {
+      "evidence": "CLAIMS_FROM_RESULTS_WARP_PHASE.md",
+      "authority": "terminal failure and zero efficacy for WARP-PHASE only",
+      "not_authority_for": "replacing or refuting canonical TempoRAC"
+    },
+    {
+      "evidence": "kill-argument attack and defense",
+      "authority": "current artifact readiness and specification gaps",
+      "not_authority_for": "future success"
+    },
+    {
+      "evidence": "v46, v62, v63, historical results",
+      "authority": "none for canonical efficacy or novelty",
+      "not_authority_for": "any TempoRAC claim"
+    }
+  ],
+  "input_ledger": [
+    {
+      "path": "idea-stage/TEMPORAC_CANONICAL_REVIEW_BRIEF.md",
+      "sha256": "63b84447a6af9c4228bd5f93787b7cab0da4e9e96ac7258d7217e14ce915ba08"
+    },
+    {
+      "path": "RESEARCH_BRIEF.md",
+      "sha256": "f5b9d75fc2415a03ba250279edf1e47af978341b7b9d7eef892f2d43a56b7c37"
+    },
+    {
+      "path": "idea-stage/IDEA_REPORT.md",
+      "sha256": "6105bcc49d1a4756b7927e87f02d3b38d23ed0d6115f344409d7d8a68c0d2610"
+    },
+    {
+      "path": "idea-stage/NOVELTY_CHECK.json",
+      "sha256": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5"
+    },
+    {
+      "path": "idea-stage/RESEARCH_REVIEW.json",
+      "sha256": "fbc2462303c3ddcb4b23ef4cbf4f81b01a863ff433c6a58dec3f8cd99790caa3"
+    },
+    {
+      "path": "SERVER_METHOD_INVENTORY.md",
+      "sha256": "0cda0704f64434296049d18c35e97fd267a0a7168300152e97b142d6ecc363a6"
+    },
+    {
+      "path": "EXPERIMENT_AUDIT.md",
+      "sha256": "2ac7fe4a1a8208287394a2ac4c1771aa0faf30e14319bef8144e509f876f0820"
+    },
+    {
+      "path": "PILOT_DATA_SCHEMA_AUDIT.md",
+      "sha256": "7058981e8eb37622c09f5808a4b1329bc7cd133f474101723f15e5e4273eab25"
+    },
+    {
+      "path": "CLAIMS_FROM_RESULTS_WARP_PHASE.md",
+      "sha256": "f2786fc8adc1a688a1973dfc78e5526b0efd0ad961220cf662713baa83731b3b"
+    },
+    {
+      "path": "paper/.aris/traces/kill-argument-icassp/final/attack.md",
+      "sha256": "e4ad358e3e1ec4bcc15e0bcbd980716ce71174bce71ad0123c37cb352de956b9"
+    },
+    {
+      "path": "paper/.aris/traces/kill-argument-icassp/final/defense.md",
+      "sha256": "8344a96bad1dd6b785b1dd83e0319df611716b4d2a723acb73bce4163a7bb0d1"
+    },
+    {
+      "path": "paper/evidence/method_manifest.yaml",
+      "sha256": "514d25ceb51d97930f02a14c70d96962ff7acdcb28c712fa80c1f03a9ea1d579"
+    },
+    {
+      "path": "src/pams/model.py",
+      "sha256": "155780de100e66dbae608e15e1e6eaf7a8c335b6781c265566cec0317d81310d"
+    },
+    {
+      "path": "src/pams/losses.py",
+      "sha256": "72420302d1402de83ad8cfa2c11066f9d08470b2ef683cdeed7f91c36f5b11f9"
+    },
+    {
+      "path": "src/pams/period.py",
+      "sha256": "1c46f31d208a630bcb30101d47a8d22a0a3abaf6a4bed85941225d47a4b88b40"
+    },
+    {
+      "path": "src/pams/consensus.py",
+      "sha256": "29498df4156cac109496362d13b7cc7fc0de416a9b7d8a4831181abcc937cc34"
+    },
+    {
+      "path": "src/pams/training.py",
+      "sha256": "dc02986346d581ac20bf4cccdfedc77d9185dd09985285b02210a398aa7d05f2"
+    },
+    {
+      "path": "src/pams/types.py",
+      "sha256": "78c2ad53e98856425492a1711faa62fc2bb7764767dc48a22f7c4d5e043a3e31"
+    },
+    {
+      "path": "src/pams/pose.py",
+      "sha256": "e79e9d628685b8703e4dbe68adbe8721e55efb9665b64550c2239d397b9f5c80"
+    }
+  ],
+  "final_direction": {
+    "canonical_method_retained": true,
+    "warp_phase_substituted": false,
+    "backup_pivot_substituted": false,
+    "next_step": "freeze this contract, pass K0-K6, then run at most one K7 supplied-track development pilot",
+    "stop_rule": "Any topology, teacher-redundancy, matched-baseline, protocol, or primary-endpoint failure terminates the canonical idea.",
+    "status": "same-family provisional; no novelty clearance; no eligible performance evidence"
+  }
+}

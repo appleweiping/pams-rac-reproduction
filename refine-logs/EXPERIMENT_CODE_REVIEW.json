@@ -1,0 +1,291 @@
+{
+  "schema_version": "1.0",
+  "artifact_type": "warp_phase_experiment_code_review",
+  "generated_at": "2026-08-15T17:54:51.4067553+08:00",
+  "snapshot_frozen_at": "2026-08-15T17:54:51.4067553+08:00",
+  "verdict": "BLOCKED",
+  "implementation_disposition": "REVISE",
+  "launch_authorized": false,
+  "authorizes": [],
+  "reviewer": {
+    "agent_id": "/root/warp_phase_code_review",
+    "model": "gpt-5.6-sol",
+    "family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional"
+  },
+  "scope": {
+    "kind": "local_read_only_scientific_and_engineering_code_review",
+    "accessed_server": false,
+    "accessed_real_train": false,
+    "accessed_real_validation": false,
+    "accessed_test": false,
+    "accessed_sealed": false,
+    "accessed_heldout": false,
+    "accessed_results": false,
+    "ran_experiment": false,
+    "ran_training": false,
+    "ran_prediction": false,
+    "ran_evaluation": false,
+    "inspected_candidate_fixture_only": true
+  },
+  "summary": "The exact current candidate is not semantically freeze-valid, genuinely fails every Gate 2 threshold, and cannot authorize server execution. Gate 0-3 and the actual training transition are absent or blocked. Passing unit/static checks do not cover these decision-bearing failures.",
+  "server_execution": {
+    "possible_now": false,
+    "training_authorized": false,
+    "basis": [
+      "current candidate loses diagnostics on failure rows and cannot pass mandatory ten-case Gate 1 recomputation",
+      "current candidate fails all Gate 2 aggregate thresholds",
+      "Gate 0 typed v44 adapter and real separation/import receipts are missing",
+      "Gate 1 complete witness schema is missing",
+      "Gate 2 pre-drawn perturbation API and order receipt are missing",
+      "Gate 3 prediction schema and three tiny GPU receipts are missing",
+      "train command is a permanently blocked feature-inventory preflight, not a training transition",
+      "local preflight records CPython 3.10.15 whereas the contract requires CPython 3.12.13",
+      "a fresh output-space receipt and nonzero launch authorization are required"
+    ]
+  },
+  "findings": {
+    "CRITICAL": [
+      {
+        "id": "C1",
+        "title": "Fixture failure rows lose the diagnostic oracle and mandatory Gate 1 recomputation cannot handle -1 outcomes",
+        "evidence": [
+          "generator fills expected diagnostics only when select_support_period succeeds",
+          "all 240 canonical -1 rows have all-zero expected_fft_x, expected_fft_mask, expected_fft_power, and expected_score_valid",
+          "mandatory IDs 0, 150, 250, and 900 raise SelectorError before the verifier can compare expected -1",
+          "the pack has no all-valid row and no span-126 P=63 row selecting 63, so the normative deterministic FFT witness trio is absent"
+        ],
+        "locations": [
+          "scripts/experiments/generate_warp_phase_fixture_pack.py:416",
+          "scripts/experiments/generate_warp_phase_fixture_pack.py:435",
+          "scripts/experiments/generate_warp_phase_fixture_pack.py:464",
+          "scripts/experiments/generate_warp_phase_fixture_pack.py:523",
+          "src/pams/warp_phase/gates.py:743",
+          "refine-logs/EXPERIMENT_EXECUTION_CONTRACT.md:190",
+          "refine-logs/FINAL_PROPOSAL.md:142"
+        ],
+        "required_resolution": "Preserve diagnostics for legitimate no-selection outcomes, explicitly verify success and failure result types, add the exact deterministic FFT witnesses, and do not freeze the current bytes as valid."
+      },
+      {
+        "id": "C2",
+        "title": "Immutable candidate genuinely fails K5/Gate 2",
+        "evidence": {
+          "agreement": "246/1000 < 950/1000",
+          "half_overall": "55 > 20",
+          "double_overall": "144 > 20",
+          "half_symmetric": "50/250 > 12/250",
+          "double_symmetric": "66/250 > 12/250"
+        },
+        "required_resolution": "Treat the exact candidate as a scientific failure; do not repair, redraw, regenerate, or alter thresholds under the current immutable protocol."
+      },
+      {
+        "id": "C3",
+        "title": "No gate chain or executable training transition can authorize server launch",
+        "evidence": [
+          "Gate 0, Gate 1, Gate 2, and Gate 3 receipts remain BLOCKED with empty authorizes lists",
+          "training_authorized is false",
+          "train only inventories feature shards and returns BLOCKED",
+          "actual train, predict, evaluate, and K4 execution paths are absent"
+        ],
+        "locations": [
+          "configs/experiments/warp_phase_pilot_v1.yaml:5",
+          "src/pams/warp_phase/gates.py:857",
+          "src/pams/warp_phase/gates.py:900",
+          "src/pams/warp_phase/gates.py:978",
+          "src/pams/warp_phase/training.py:75"
+        ],
+        "required_resolution": "Close Gates 0-3, freeze the complete command/receipt graph, and implement an authorization-consuming training transition before any server launch."
+      }
+    ],
+    "MAJOR": [
+      {
+        "id": "M1",
+        "title": "Invalid-frame pose values leak through temporal convolutions into valid-frame phases",
+        "evidence": "Changing only pose at a frame_mask=false clock changed valid-frame phases; max absolute difference 1.9523284435272217.",
+        "locations": ["src/pams/warp_phase/model.py:127", "src/pams/warp_phase/model.py:152"],
+        "required_resolution": "Apply frame validity to model input channels before convolution and add an invariance regression."
+      },
+      {
+        "id": "M2",
+        "title": "Gate 1 validates environment hash syntax but not detached artifact provenance",
+        "locations": ["src/pams/warp_phase/gates.py:469", "src/pams/warp_phase/gates.py:821"],
+        "required_resolution": "Hash and verify the detached receipt, interpreter, wheel, generator, selector, metadata, and pack bindings before marking checks true."
+      },
+      {
+        "id": "M3",
+        "title": "Blocked gate/train commands return process success",
+        "locations": ["src/pams/warp_phase/cli.py:87", "src/pams/warp_phase/cli.py:111", "src/pams/warp_phase/cli.py:140", "src/pams/warp_phase/cli.py:167", "src/pams/warp_phase/cli.py:182"],
+        "required_resolution": "Use and test nonzero exit status for BLOCKED and FAIL while still writing the structured receipt."
+      },
+      {
+        "id": "M4",
+        "title": "Executable CLI/config/K4 workflow is incomplete",
+        "required_resolution": "Bind the exact experiment config and implement pack, pre-draw, selector, train, predict, evaluate, K4 controls, scheduler, and receipt-chain commands."
+      },
+      {
+        "id": "M5",
+        "title": "Feature/vault separation is not an enforced privilege boundary and identity publication is non-atomic",
+        "locations": ["src/pams/warp_phase/packing.py:148", "src/pams/warp_phase/packing.py:804"],
+        "required_resolution": "Produce an OS-principal/ACL separation receipt and atomically publish fully validated identity outputs."
+      },
+      {
+        "id": "M6",
+        "title": "Tests miss the decision-bearing fixture, gate, mask-isolation, provenance, and CLI-exit failures",
+        "required_resolution": "Add exact-candidate Gate 1/2, failure-oracle, normative FFT witness, invalid-frame isolation, detached provenance, and blocked-exit tests."
+      }
+    ],
+    "MINOR": [
+      {
+        "id": "N1",
+        "title": "Gate 2 receipt conflates immutable pack integrity with threshold success and reduces the failure to an exception type",
+        "location": "src/pams/warp_phase/gates.py:922",
+        "required_resolution": "Record pack integrity and each scientific threshold independently, preserving exact failure details."
+      },
+      {
+        "id": "N2",
+        "title": "Official evaluator parity is correctly narrow but remains source-receipt provisional",
+        "locations": ["src/pams/warp_phase/evaluator.py:338", "tests/test_warp_phase_evaluator.py:177"],
+        "required_resolution": "Keep the supplied-track temporal-only disclaimer and add primary-source verification if stronger parity is claimed."
+      }
+    ]
+  },
+  "confirmed_correct": [
+    "canonical source hash is verified on stable bytes before pickle.loads executes the first opcode",
+    "feature ZIP/NPY schema is pre-inspected and loading uses allow_pickle=False",
+    "training imports the feature reader without evaluator-vault imports",
+    "trainable parameter count is exactly 225026",
+    "optimizer accumulation performs four fresh backwards, loss division by four, one clip, and one AdamW step",
+    "signed overlap, warp/mask, K1/K4 formula, NOLA/decode, count metric, and narrow temporal evaluator primitives pass targeted tests",
+    "all current gate and training receipts authorize nothing"
+  ],
+  "candidate_fixture": {
+    "candidate_receipt_sha256": "f5e03b431f47f2ae0c1e52f40955fbcb70b97642e52969178ffcfa3140f6c5ce",
+    "pack_sha256": "b2c791f9aac1d86c0849fa74b00b4e605fe21120f9d188f4ec0b304d7052f173",
+    "authoritative": false,
+    "freeze_valid": false,
+    "gate1_valid": false,
+    "gate2_status": "FAIL",
+    "canonical_failure_rows": 240,
+    "zeroed_failure_diagnostic_rows": 240,
+    "mandatory_ten_case_outcomes": {
+      "0": -1,
+      "150": -1,
+      "250": -1,
+      "375": 48,
+      "500": 22,
+      "600": 18,
+      "700": 11,
+      "800": 8,
+      "900": -1,
+      "999": 54
+    }
+  },
+  "verification": [
+    {
+      "kind": "pytest",
+      "scope": "all tests/test_warp_phase_*.py plus tests/test_cli.py",
+      "result": "118 passed, 1 skipped in 54.31s",
+      "status": "PASS"
+    },
+    {
+      "kind": "ruff",
+      "scope": "src/pams/warp_phase, generator, CLI attachment, and relevant tests",
+      "result": "All checks passed",
+      "status": "PASS"
+    },
+    {
+      "kind": "mypy",
+      "scope": "src/pams/warp_phase and generator",
+      "result": "Success: no issues found in 15 source files",
+      "status": "PASS"
+    },
+    {
+      "kind": "fixture_diagnostic",
+      "result": "240/240 canonical -1 rows have zero expected_fft_x, expected_fft_mask, expected_fft_power, and expected_score_valid",
+      "status": "FAIL"
+    },
+    {
+      "kind": "model_mask_isolation",
+      "result": "valid-frame phase max absolute difference 1.9523284435272217 after modifying only invalid-frame pose",
+      "status": "FAIL"
+    }
+  ],
+  "hashes": {
+    "review_inputs": {
+      "refine-logs/FINAL_PROPOSAL.md": "e8ff129b3a67ac07be0e5ff1af09555bb26f000e7cde9315b13493733cda6418",
+      "refine-logs/EXPERIMENT_EXECUTION_CONTRACT.md": "70f80912e4b9693fae9e859eb12f90cc754b7d523b59af766879518770d69b2e",
+      "refine-logs/EXPERIMENT_PLAN.md": "020626027a73939f3fd4dfa479e6592699d19f652da592682b90d9235724ce5c",
+      "configs/experiments/warp_phase_pilot_v1.yaml": "e59fb34599eaece41545c237b18871b5a206046e53fb1246795f9dcb3d681063",
+      "PILOT_PERIOD_SCHEMA_ADDENDUM.md": "49edcfe25c302c2b55b8e65bc18e1cb7febe25cc8b76698d631fa24150d4b0b5",
+      "PILOT_DATA_SCHEMA_AUDIT.md": "7058981e8eb37622c09f5808a4b1329bc7cd133f474101723f15e5e4273eab25",
+      "refine-logs/SERVER_PREFLIGHT.md": "f3b254fe2ce7bf7f61fbc6bf3f416ef7e86f8230d1f484259b668ed23c66444b",
+      ".aris/compute/output-budget.json": "86e8c76e1cc0f59e6c8931a7060021ecf4dc6feb03ac9a0ab6ab3c425aa3e226",
+      ".aris/compute/provider-env.json": "ca7e25e8e84d01fd5a71b4d0f33b7338742edc566b5ad5dca8e54c18b7545e1d"
+    },
+    "source": {
+      "scripts/experiments/generate_warp_phase_fixture_pack.py": "8a12a188c95d38f8958553e10ee06df6920c372e78eef2c2de575e7b8d6eb572",
+      "src/pams/cli.py": "e8fe3e2b48b78e4e122329df333137e74948991ce9600ec8cbaad26b99d30425",
+      "src/pams/warp_phase/__init__.py": "2d01dcad26cb54acad8703e085b4a5ec70e3b9978eb99284d0064931b62b5428",
+      "src/pams/warp_phase/cli.py": "69a1057652a2ca34483ca56be7279648fc5c5d05f47bceca57ea5b9f6bc98085",
+      "src/pams/warp_phase/config.py": "e5fb87339700ce9f42de67188d7ad8ff86108c23726f03632e79e9654ca44046",
+      "src/pams/warp_phase/data.py": "c3b460b66195a11ea6d580a4fc56c0441daab7d8b5c7f3ab7aecf18e508ce619",
+      "src/pams/warp_phase/decode.py": "915696ee7d747ab94c70e730465ca255ce7748e1b9277be55fc1f3e19db1e0a9",
+      "src/pams/warp_phase/evaluator.py": "82f6e46e58f15e21e020e031e8bdffd24e884816ca8be0740d440c447e20f38c",
+      "src/pams/warp_phase/gates.py": "be850809457dba85862b45631b89e068d23517699587ea13a0f2179fe44ac6c5",
+      "src/pams/warp_phase/losses.py": "26c2ba3d737a4ac622c72886d1bec36267558c499c38d3e0f2919c3464b071ff",
+      "src/pams/warp_phase/model.py": "17198bb0e437041c4e871d3c8545507e8dd063c7cb85b527a23185cda57842a4",
+      "src/pams/warp_phase/packing.py": "768858313a870d09663f68335b2d3978893eb8b6fcdad683dadfaeb57b9f1982",
+      "src/pams/warp_phase/selector.py": "8a318f82ff9e739e3889940a575d8d3594a04349f2cd9881b9f1974ead25ceb2",
+      "src/pams/warp_phase/training.py": "687cc8ad93e66256fae592ca3782d0f9adb18bed2d3acd97e4c3213dd043bef7",
+      "src/pams/warp_phase/types.py": "d9ee7e7c8e2b00960e9909670f6ebb5835f695e39337e7214e56c80a1f91aa75",
+      "src/pams/warp_phase/warp.py": "fdb1e39411b1fe468c48510aec900473d6d58ccc10bc4e47192ee857fad24956"
+    },
+    "tests": {
+      "tests/test_cli.py": "34a43f3be2f2e1f75f30bfc5917f978bcbf771c1ab0ad9d92128e2e77861112f",
+      "tests/test_warp_phase_config.py": "1f56d014a86410f97c1d2a7c8a44edba78d4a5521bdaaebb43e16a738df23062",
+      "tests/test_warp_phase_data.py": "d0afb51ce24b08cd3f39bc3bf78f08f311ad05e42630d53d77479e166314fbfd",
+      "tests/test_warp_phase_decode.py": "d5a7e7cdbcffa4d440e0c76ce7eec5c70238f54bff602de28ed6504a711dd061",
+      "tests/test_warp_phase_evaluator.py": "290d3c296ef6904d48de9b97704527661f65365655cbf986748c5cf1c5aa013c",
+      "tests/test_warp_phase_gates.py": "121e80e1da19edebd6bc08e4476eda8c170b83648e426ba1c6c4a6fbef41d891",
+      "tests/test_warp_phase_model.py": "469b66610dff3aef0fea7f1bf31f12a064e99bac8565e76a6b78d977960daef3",
+      "tests/test_warp_phase_packing.py": "a7d98fc6a1e44f6b9cf45716077245777da814f2f39a2c3e6fb6e81a21b64ddb",
+      "tests/test_warp_phase_selector.py": "1196ab579c05647ab103e6fb6aa376d3cbcd994735306c9422832fddf3071adb",
+      "tests/test_warp_phase_training.py": "5efc2c0a9c4005c107b8c1ef1ddd5be6697e4438c21e9eab5285e57e73e9919f",
+      "tests/test_warp_phase_warp_loss.py": "1ee95528feed9125eaa4a5db258f32a51cdb67de8829190b7698af8e69bc7771"
+    },
+    "candidate_and_audit": {
+      "data/warp_phase_pilot_v1/audit/gate1/candidate-20260815-sol/candidate_receipt.json": "f5e03b431f47f2ae0c1e52f40955fbcb70b97642e52969178ffcfa3140f6c5ce",
+      "data/warp_phase_pilot_v1/audit/gate1/candidate-20260815-sol/pack/metadata.json": "9a9db9422ef920fff7d39ac8ea0541ae0d81280282a6b09d95205419f337f6f8",
+      "data/warp_phase_pilot_v1/audit/gate1/fixture_candidate_audit.json": "5e7df8b6f4033b4162fc359cf67628fa00921276428fc1aaad49d92ff3d8e305",
+      "data/warp_phase_pilot_v1/audit/gate1/fixture_candidate_audit.md": "5ee2d4181619705760a7e3e02c69c42c96ea864fac7a2b34e56d30c68d6209f2",
+      "data/warp_phase_pilot_v1/audit/gate1/fixture_environment.lock.json": "5b1d1bd864cb87a16fc97843515d0d6cd8063be5ad1adfb857ea4da42bd2e27b",
+      "data/warp_phase_pilot_v1/audit/gate1/fixture_environment.receipt.json": "88ff454646c72aaf4a8e991f0773ae5bee2f28ea657a5401c1048d88adc46705"
+    },
+    "candidate_pack_members": {
+      "candidate_period.npy": "779f2d96201659204af4cf3a697a143fe7bf6d5642548022c7743b18fd3ee02d",
+      "category.npy": "3d99037d1234d3b718154f689abdb230ba64f66b66901f3e84642c160e7bdf2c",
+      "expected_acf.npy": "c21e82d517e3bcebf377bb95fac357ee076219fadb9dfa106b43488bd7bb9179",
+      "expected_fft_mask.npy": "797c6334c2d3cb541e96ee7385fc854d5aeb6bccb647b986f80f34f4f0dbcc72",
+      "expected_fft_power.npy": "6fa92e47ba4638f336e1f8d108a2a0fefb8950b5e5f5258f46deb0b5460cd4f7",
+      "expected_fft_x.npy": "aeaa48da0496d6b4641c188d24309b1db2fdc57130f70597fff7cf92c51d0e30",
+      "expected_first64_selected_period.npy": "d06614ab74ebce3f2e2bffd8d4b222ad6aa44c971153e485a1c10aa357fff8f3",
+      "expected_harmonic_power.npy": "8a419371a8fca879f123b4f33811af91206ed9486321996a4453d6fdbcca4748",
+      "expected_last64_selected_period.npy": "dfe6d509027d9e92afbce34e4d02ad859fad037427ae8107cad1fdc74e66225d",
+      "expected_local_max.npy": "469fd24fc57d3d2b4955a017f224c60de9cc4d33734bc60c4cf308ac038f2688",
+      "expected_parent_accept.npy": "e342996975e175db7f97803b68bca2191ec58b9e492bed2272a20865ef8810ab",
+      "expected_reversal_selected_period.npy": "a9f81b59cfc868c04436fc78a5f36b43cae1077f782d472d1d18fba62f8a913a",
+      "expected_score.npy": "3f64c40d4e6077f2bcf7333bce848d9921019a9bd9a3d83b51244e2df0fefabe",
+      "expected_score_valid.npy": "dbe24e9f97aebac1d2e18f560957e0068f7398379e672fdc6dd9661830d3c2b8",
+      "expected_selected_period.npy": "96a804cce7a081acfa10ebb8a31304a048b38a87994876db1c03c5e33ed3fccd",
+      "expected_weak_selected_period.npy": "3a8cb3f72b1d73f8df998ffe7435f4fe4a9ec0b39076462d76a397c5818db45a",
+      "joint_mask.npy": "7cdb558af9a93fad5d05c49524e4b001c2377f1586f0eab055f8ef6cb9e87a9f",
+      "pose.npy": "585802280545c72c62216041e3f02cda17fa935e59d249e949d36717ccfe57cc",
+      "q.npy": "6c04e35e72e95f115f445334f17a3d04dba1e10248859e2c970c41849b914c4f",
+      "semantic_period.npy": "2ede10cbae56adcea2f84230b8b9acb624dbf500a372bff600bb0d2355ea519d",
+      "weak_joint_mask.npy": "4d1abb19ab73160eae6cc3352f6983bc19139b7e49e61ed325ca14d31854f13e",
+      "weak_pose.npy": "e72a33c1efc29d1c91f1bee4254e5da40d02e081de93c972cdc33e51a852904e"
+    },
+    "candidate_pack_aggregate_sha256": "b2c791f9aac1d86c0849fa74b00b4e605fe21120f9d188f4ec0b304d7052f173"
+  }
+}

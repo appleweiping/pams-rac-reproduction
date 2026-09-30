@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "artifact": "paper/main_round1.pdf",
+  "source_pdf_sha256": "0e521ad303b21fbb98d7c3ea52cb2aec2c5376ea07400986bb1721b0ca3c9a17",
+  "framework_pdf_sha256": "ebf76174bbfa52e9fada50f3bebc2b56f07aad91818adbb9ebef84e5249bc8a7",
+  "render": {
+    "directory": "paper/rendered/round1",
+    "dpi": 160,
+    "pages_inspected": [1, 2, 3, 4, 5]
+  },
+  "checks": {
+    "clipping": "PASS",
+    "overlap": "PASS",
+    "formula_legibility": "PASS",
+    "figure_legibility": "PASS",
+    "table_legibility": "PASS",
+    "draft_markers_visible": "PASS",
+    "page_5_references_only": "PASS",
+    "font_embedding": "PASS"
+  },
+  "status": "PASS",
+  "submission_ready": false,
+  "note": "All five pages were inspected after Round-1 revisions; evidence readiness remains blocked."
+}

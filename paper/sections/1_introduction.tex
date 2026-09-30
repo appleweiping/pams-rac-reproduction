@@ -1,0 +1,86 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Person-wise repetition counts matter whenever several people exercise,
+rehabilitate, train, or perform repetitive work in the same scene. A single
+scene total cannot say who completed each repetition, paused, or changed pace.
+We therefore study multi-person repetition counting from supplied
+identity-indexed pose tracks. For $N$ tracks, the primary output is a vector
+of $N$ counts; their sum is only a diagnostic. The signal is difficult because
+people move asynchronously, a person's period may change inside one track, and
+occlusion creates irregular missing intervals.
+The primary claim is conditional on supplied persistent identity tracks;
+predicted-track experiments separately measure departures from that assumption.
+
+\begin{figure*}[t]
+  \centering
+  \TaskMotivationGraphic
+  \caption{Task motivation reproduced in full from the project's editable
+  introduction deck. The drawing contrasts a mixed scene response with the
+  desired person-wise responses under asynchronous motion and changing pace.
+  Panel (b) is a naive scene-level adaptation rather than an attributed prior
+  method. All curves and counts are schematic and are not measurements.}
+  \label{fig:task-motivation}
+\end{figure*}
+
+Early work addressed live and real-world repetition counting
+\cite{levy2015live,runia2018realworld}; later temporal similarity and correlation
+models include RepNet and TransRAC
+\cite{dwibedi2020repnet,hu2022transrac}. PoseRAC emphasizes salient poses
+\cite{yao2025poserac}, while PAMS learns period-adaptive multi-scale consistency
+from pose sequences without count labels in its counting objective
+\cite{gao2026pams}. MultiCounter establishes multi-person counting in
+untrimmed video \cite{tang2024multicounter}; MultiCounter+ further models
+spatiotemporal consistency and long-versus-short repetition regimes
+\cite{tang2026multicounterplus}. These advances cover multi-person outputs,
+pose-driven counting, low-label objectives, and broad period adaptation. They
+do not, however, resolve the narrower signal problem considered here: routing
+each overlapping window of each supplied identity track according to tempo
+that changes within that track, then reconstructing one response before count
+decoding. Recent counters also explore dynamic queries and decoupled
+spatiotemporal attention \cite{ma2026detrc,wang2026d2stx}; those architectural
+directions are complementary to the identity-local temporal scale selection
+studied here. Windowed spectral estimation, frequency analysis under irregular
+sampling, short-time transform reconstruction, and learned expert routing are established
+ideas \cite{welch1967fft,lomb1976unequal,griffin1984stft,shazeer2017moe}; no one
+of them is claimed as novel here. Our narrower, result-free hypothesis is that
+identity-local tempo routing plus reconstruct-before-decode is more robust to
+within-track tempo changes than a parameter-matched global-tempo counter while
+preserving behavior on stationary tracks.
+
+The proposed formulation separates inter-person asynchrony from intra-person
+nonstationarity. Each pose track is a masked multidimensional signal with
+identity-indexed state, whereas learned encoder and expert parameters are
+shared across people. The intended counting objective uses neither person-wise
+count labels nor person-wise period labels, but this qualifier does not extend
+to the perception stack: pose estimators and trackers may use externally
+supervised training data. The exact supervision path, including model
+selection and calibration, remains \SyncRequired{supervision firewall} until
+the collaborator implementation is frozen. Selecting a global long-versus-short
+regime differs from allowing several pace changes inside one identity
+trajectory. Mask-aware local estimation also exposes missing observations
+instead of conflating invalid frames with stationary motion. These distinctions
+drive both the reconstruction invariant and the planned diagnostic.
+
+Our signal path follows a fixed order. A shared encoder represents overlapping
+masked windows; local autocorrelation and Fourier evidence estimate period and
+confidence; a soft router mixes fast, medium, and slow shared response experts;
+normalized overlap-add reconstructs one response per identity; and one
+trajectory-level decoder processes it once. Figure~\ref{fig:framework} shows
+the conceptual specification. The local worktree does not yet contain this
+multi-person implementation, so the router, experts, reconstruction, decoder,
+and auxiliary objectives remain synchronization-required interfaces.
+
+The pre-results manuscript makes three falsifiable contributions:
+\begin{itemize}
+  \setlength\itemsep{0pt}
+  \setlength\parskip{0pt}
+  \item It formulates person-wise counting as inference on identity-indexed,
+  masked, nonstationary pose signals, with scene totals kept diagnostic.
+  \item It specifies window-local tempo evidence, soft routing over shared
+  response experts, normalized reconstruction, and one decode per track; every
+  source-sensitive interface is explicitly marked for synchronization.
+  \item It specifies planned protocol-separated comparisons, paired mechanism
+  ablations, and a piecewise time-warp diagnostic. Empirical claims remain
+  disabled until frozen MultiRep artifacts pass the evidence gates.
+\end{itemize}

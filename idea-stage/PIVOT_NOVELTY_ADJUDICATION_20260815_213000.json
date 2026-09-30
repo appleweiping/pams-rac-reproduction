@@ -1,0 +1,317 @@
+{
+  "schema_version": "aris.novelty_check.pivot_adjudication.v1",
+  "adjudication_id": "20260815_pivot_adjudication_sol",
+  "generated_at": "2026-08-15T21:30:00+08:00",
+  "reviewer": {
+    "reviewer_model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "reviewer_reasoning": "ultra",
+    "fresh_context": false,
+    "nonfresh_reason": "agent_thread_lifetime_limit",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "role": "continuation ARIS pivot novelty adjudicator"
+  },
+  "scope": {
+    "decision": "Whether zero or one pivot candidate may enter research-review.",
+    "backup_pivot_only": true,
+    "route_scope": "BACKUP_ONLY",
+    "canonical_paper_anchor_label": "original TempoRAC anchor",
+    "canonical_paper_anchor": "identity-indexed window-local tempo routing",
+    "may_replace_canonical_paper_anchor": false,
+    "may_change_paper_title_method_or_implementation_mainline": false,
+    "candidate_count": 2,
+    "allowed_verdicts": [
+      "ADVANCE_ONE_TO_RESEARCH_REVIEW_PROVISIONAL",
+      "ABANDON_BOTH_SECOND_PIVOT_REQUIRED"
+    ],
+    "external_search_performed": false,
+    "evidence_frozen_to_declared_inputs": true,
+    "research_review_started": false,
+    "g0_or_experiment_gate_authorized": false,
+    "implementation_authorized": false,
+    "training_authorized": false,
+    "server_access_or_launch_authorized": false,
+    "paper_or_novelty_claim_authorized": false,
+    "manifest_modified": false,
+    "idea_report_modified": false,
+    "events_modified": false
+  },
+  "input_sha256": {
+    ".agents/skills/novelty-check/SKILL.md": "998e801ab4d5dedabf643364680befe05023f4b819f44734db6ad67c2128b801",
+    ".agents/skills/shared-references/review-tracing.md": "4f4936984391da87464b8e8bf6f7c984f3f186e8fdc42890d0ac999b5e2024dc",
+    ".agents/skills/shared-references/integration-contract.md": "5d393c31b36e98ae99c17ab9cf5879853c0cb595bbd9f4973ffe7bcd6549f4e7",
+    "idea-stage/PIVOT_LITERATURE_LANDSCAPE.md": "83597adb68934d1dafa81087024e4871f52a8850f5b7f64fe8cf636d9028e781",
+    "idea-stage/PIVOT_LITERATURE_LANDSCAPE.json": "eb5890a471cb0646584f4636c0621b66bc94b7cf6095614b9fc233711da8846f",
+    "idea-stage/PIVOT_IDEA_JURY.json": "cac5b3d0217854d886223934724075f2cadd5a2b08f866bc1194ec4f5b09f800",
+    "idea-stage/NOVELTY_SET_VALUED.md": "42241e7ff0c8fe9889b5c65d854d9529693225793ad554b1f970f2fd81660913",
+    "idea-stage/NOVELTY_SET_VALUED.json": "34d89914fc418749589867122075fe441f314d13f9f256303b4f2df9504bdbbc",
+    "idea-stage/NOVELTY_FRAGMENT_TRANSPORT.md": "f406bf1919e7d007e6b7b2e286feb8d9518057108fe18fa69ebdea1da5865381",
+    "idea-stage/NOVELTY_FRAGMENT_TRANSPORT.json": "3a1f715332a87ba948427cdde8e97466474fa665983809f6953e0e5f53edbc66",
+    "idea-stage/IDEA_REPORT.md": "6105bcc49d1a4756b7927e87f02d3b38d23ed0d6115f344409d7d8a68c0d2610",
+    "idea-stage/NOVELTY_CHECK.json": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5",
+    "idea-stage/RESEARCH_REVIEW.json": "fbc2462303c3ddcb4b23ef4cbf4f81b01a863ff433c6a58dec3f8cd99790caa3",
+    "CLAIMS_FROM_RESULTS_WARP_PHASE.md": "f2786fc8adc1a688a1973dfc78e5526b0efd0ad961220cf662713baa83731b3b",
+    "CLAIMS_FROM_RESULTS_WARP_PHASE.json": "82b3cd6b687d7a4aee8ef3b9c5c6e8159c2a1ee68d75bf94b85bc7430676bb85",
+    "EXPERIMENT_AUDIT_WARP_PHASE.md": "770ea5d9c86fce3a88a1f859434edeec893eec2d1b326cf95ec33a6112ac8e7c",
+    "EXPERIMENT_AUDIT_WARP_PHASE.json": "457d09da6b4c7c7a9e7734e21bc3564f2d2a66dc610cc549fc70203b7fdfd7ed",
+    "RESEARCH_BRIEF.md": "f5b9d75fc2415a03ba250279edf1e47af978341b7b9d7eef892f2d43a56b7c37"
+  },
+  "verdict": {
+    "enum": "ADVANCE_ONE_TO_RESEARCH_REVIEW_PROVISIONAL",
+    "route_scope": "BACKUP_ONLY",
+    "canonical_original_temporac_anchor_preserved": true,
+    "selected_count": 1,
+    "selected": [
+      "set-valued-counting-pose-missingness"
+    ],
+    "not_selected": [
+      "fragment-boundary-count-mass-transport"
+    ],
+    "novelty_confirmed": false,
+    "authorized_next_step": "research-review_only",
+    "research_review_launched": false,
+    "confidence": "medium_low",
+    "confidence_basis": "The task-specific endpoint is not directly disclosed in the frozen checked corpus, but component novelty is weak, multiple near-prior families are crowded, important full-text limits remain, and this is a same-family non-fresh continuation."
+  },
+  "decision_rule": {
+    "advance_threshold": "A candidate may enter research-review only if a narrow task-specific residual can be stated without claiming established components, the residual is falsifiable and scientifically meaningful in either direction, and research-review can still kill it before implementation.",
+    "non_rule": "Failure to locate an exact isomorph is not novelty confirmation and is not sufficient by itself.",
+    "stage_effect": "Advance means only that one hostile research-review is warranted. It does not mean novelty clearance, method acceptance, protocol clearance, G0 authority, or experiment authority."
+  },
+  "candidate_adjudications": [
+    {
+      "candidate": "fragment-boundary-count-mass-transport",
+      "selected": false,
+      "disposition": "ABANDON",
+      "fixed_disposition": true,
+      "primary_method_status": "abandoned",
+      "diagnostic_status": "conceptual diagnostic only; no diagnostic implementation is authorized here",
+      "score_from_candidate_audit": 3.9,
+      "reasoning": [
+        "The two central bridges are already established: endpoint/gap repair in tracking and additive density/count conservation in counting.",
+        "Synthetic intact-versus-fragment consistency, wrong-identity negatives, and residual abstention are generic devices.",
+        "The frozen intact response is a pseudo-target that can preserve the base counter's bias, and endpoint states do not identify cycles hidden in long or phase-ambiguous gaps.",
+        "The exact five-part conjunction was not found, but checklist conjunction does not overcome the obvious-combination objection.",
+        "Incomplete MultiCounter+ and TWCRAC full-text access is handled fail-closed, not as evidence for novelty."
+      ],
+      "claim_cap": "At most, a future owner-authorized diagnostic could study compositional failure of a frozen supplied-track response under synthetic fragmentation. It may not be the pivot2 primary method or an automatic fallback.",
+      "reopening_rule": "No reopening through this adjudication. A future diagnostic would require an explicit new authorization and cannot change the ABANDON disposition as a primary novelty candidate."
+    },
+    {
+      "candidate": "set-valued-counting-pose-missingness",
+      "selected": true,
+      "disposition": "ADVANCE_TO_RESEARCH_REVIEW_PROVISIONAL",
+      "primary_method_status": "not accepted; one hostile research-review authorized",
+      "score_from_candidate_audit": 5.6,
+      "narrow_residual": "For one supplied, partially observed pose track, define an explicit nested feasible coordinate set, propagate that set through one frozen analytic repetition-response map, and return the exact attainable discrete count set or a certified outer count bound; then ask whether the returned set remains informative as controlled pose information is removed, while the learner-side counting objective uses no per-person count or period labels.",
+      "why_the_residual_is_barely_sufficient_for_research_review": [
+        "The frozen corpus did not directly disclose this exact pose-missingness-to-repetition-count-set endpoint, while direct RAC neighbors repair or interpolate pose and emit point counts.",
+        "The residual can be stated without claiming that count uncertainty, conformal prediction, nested masks, pose uncertainty, pose repair, occlusion robustness, self-supervised periodicity, or MRAC is new.",
+        "The question is falsifiable and matters in either direction: a sound useful set would support a narrow task-level contribution, while inevitable vacuity or unsound propagation would be a scientifically meaningful negative.",
+        "Research-review is the correct next gate for deciding whether the formal estimand, admissible set, label contract, and ICASSP-sized story are coherent before any implementation."
+      ],
+      "novelty_status": "unconfirmed_narrow_residual_only",
+      "claim_cap_before_research_review": "We propose to review the scientific coherence of set-valued repetition counting under controlled pose missingness on supplied tracks. No novelty or performance claim is licensed."
+    }
+  ],
+  "highest_strength_objection_to_selected": {
+    "summary": "A hostile reviewer can reasonably call the candidate an application of established missing-covariate uncertainty sets and conformal prediction to an established skeleton-RAC setting, with pose uncertainty or repair upstream and generic count uncertainty downstream.",
+    "prior_families": [
+      {
+        "family": "generic_count_uncertainty",
+        "examples_in_frozen_evidence": [
+          "As Easy as 1, 2... 4? Uncertainty in Counting Tasks for Medical Imaging",
+          "UNIC",
+          "Prediction Intervals for Interim Events"
+        ],
+        "effect": "Blocks first count interval, first uncertainty-aware counting, and generic count-UQ claims."
+      },
+      {
+        "family": "missing_covariate_prediction_sets",
+        "examples_in_frozen_evidence": [
+          "Conformal Prediction with Missing Values",
+          "Predictive Uncertainty Quantification with Missing Covariates",
+          "Mask-Conditional Conformal Prediction",
+          "Conformal Fusion Under Missing Modalities"
+        ],
+        "effect": "Blocks nested-mask, missing-input-widens-set, mask-conditional validity, and generic conformal claims."
+      },
+      {
+        "family": "pose_uncertainty_and_pose_repair",
+        "examples_in_frozen_evidence": [
+          "CHAMP",
+          "CUPS",
+          "Toward Reliable Human Pose Forecasting With Uncertainty",
+          "SSTRAC",
+          "Viewpoint-Invariant Exercise Repetition Counting"
+        ],
+        "effect": "Blocks pose-set, pose-UQ, missing-pose repair, and occlusion-robust RAC claims."
+      },
+      {
+        "family": "partial_identification",
+        "examples_in_frozen_evidence": [
+          "Partial Identification under Missing Data Using Weak Shadow Variables from Pretrained Models"
+        ],
+        "effect": "Blocks partial-identification or sharp-bound terminology without a defined estimand, admissible-data model, validity proof, and sharpness proof."
+      }
+    ],
+    "application_obviousness_risk": "high",
+    "answer": "The residual is not strong enough for novelty clearance or implementation, but it is just strong enough for one adversarial research-review because the task-level count functional, exact set propagation, and non-vacuity question can be isolated and killed before engineering work."
+  },
+  "coverage_and_label_semantics": {
+    "self_containment": {
+      "definition": "Whether a masked-input output set contains the same method's frozen full-observation point estimate.",
+      "ruling": "Engineering self-consistency only.",
+      "not_equal_to": [
+        "true-count coverage",
+        "calibration",
+        "conformal validity",
+        "mask-conditional coverage",
+        "partial identification"
+      ]
+    },
+    "truth_coverage": {
+      "definition": "Whether the output set contains the real repetition count.",
+      "ruling": "Requires outcome labels for empirical scoring, or a valid set-membership theorem tying the latent pose and count functional to truth. A post-freeze empirical rate is not a finite-sample guarantee."
+    },
+    "no_count_label_tension": {
+      "ruling": "The learner-side prohibition on per-person count and period labels is compatible with deterministic set propagation, but incompatible with claiming calibrated count coverage unless labeled calibration is added under declared assumptions.",
+      "forced_choice": "Either retain the no-count-label counting objective and limit the output to an exact/certified set-membership or sensitivity statement, or add labeled calibration and relinquish any stronger no-count-label system claim. The candidate may not claim both label-free calibration and true-count coverage."
+    },
+    "partial_identification": {
+      "ruling": "Forbidden unless research-review can define the estimand and admissible data-generating restrictions and can state a validity argument; sharpness additionally requires attainability. Otherwise use sensitivity envelope or feasible-set count range."
+    },
+    "nestedness": {
+      "ruling": "Nested input/output sets are a structural correctness property, not a novelty or coverage result."
+    }
+  },
+  "research_review_mandate": {
+    "authorized": true,
+    "launched": false,
+    "candidate": "set-valued-counting-pose-missingness",
+    "questions": [
+      "Can the contribution be stated as a non-obvious task-level signal-processing principle rather than applying generic missing-covariate UQ to skeleton RAC?",
+      "What is the exact estimand, feasible pose set, and output object: exact attainable count set, certified outer bound, or heuristic sensitivity envelope?",
+      "Can the nonlinear repetition operator be propagated without under-approximating attainable counts, and what assumptions make the latent missing pose belong to the feasible set?",
+      "Can the scientific story remain coherent without claiming calibration, conformal validity, partial identification, or real-occlusion robustness?",
+      "How are learner-side labels, any calibration labels, and evaluator-only post-freeze truth scoring separated?",
+      "Is non-vacuity defined against a preregistered trivial count range across random-joint, contiguous-frame, limb-block, and confidence-correlated missingness families?",
+      "Can the entire residual and its strongest prior comparisons fit an ICASSP 4+1 page paper without adding a crowded module stack?",
+      "Do incomplete MultiCounter+, TWCRAC, or final latent-conformal full texts leave a claim-blocking overlap that forces a second pivot?"
+    ],
+    "required_output": "A research-review verdict that either rejects/second-pivots the candidate or freezes one coherent residual, terminology cap, label contract, comparator family, and kill-oriented protocol. It may not authorize implementation by itself unless a later explicit workflow grants that authority."
+  },
+  "kill_conditions": [
+    {
+      "id": "K-SET-1",
+      "condition": "Research-review cannot state the contribution without claiming generic count uncertainty, missing-covariate conformal prediction, pose uncertainty/repair, nested masking, occlusion robustness, or MRAC.",
+      "action": "ABANDON and require a second pivot."
+    },
+    {
+      "id": "K-SET-2",
+      "condition": "The proposal treats full-observation self-containment as true-count coverage, calibration, conformal validity, or evidence of correctness against truth.",
+      "action": "ABANDON; semantic conflation is fatal."
+    },
+    {
+      "id": "K-SET-3",
+      "condition": "The intended claim requires calibrated or mask-conditional true-count coverage while learner-side count labels remain forbidden and no labeled calibration protocol with explicit assumptions is allowed.",
+      "action": "ABANDON the claimed contribution or explicitly relinquish the no-count-label system claim; both cannot be retained."
+    },
+    {
+      "id": "K-SET-4",
+      "condition": "No explicit admissible pose set and latent-pose membership assumption can be stated, or the nonlinear counter cannot yield an exact attainable set or certified outer bound without under-coverage.",
+      "action": "Reject the method claim; at most retain a heuristic sensitivity diagnostic outside the selected novelty route."
+    },
+    {
+      "id": "K-SET-5",
+      "condition": "The only defensible output is a range as wide as a trivial feasible count range, or no preregistered width/non-vacuity comparison can be defined at matched empirical truth containment or clearly labeled self-containment.",
+      "action": "ABANDON for vacuity."
+    },
+    {
+      "id": "K-SET-6",
+      "condition": "The proposal infers real-occlusion, detector-failure, or MNAR robustness from random masks alone.",
+      "action": "Kill those claims; if they are the only significance argument, require a second pivot."
+    },
+    {
+      "id": "K-SET-7",
+      "condition": "A checked or newly obtained primary full text discloses equivalent missing-pose-to-repetition-count set propagation, or removes the ability to state a task-specific residual.",
+      "action": "ABANDON; exact-search absence never overrides direct disclosure."
+    },
+    {
+      "id": "K-SET-8",
+      "condition": "The research-review requires additional learned experts, tracking innovations, phase machinery, dynamic thresholds, or multiple auxiliary modules to make the story persuasive.",
+      "action": "ABANDON or second-pivot; do not build a crowded rescue stack."
+    }
+  ],
+  "authorization_boundary": {
+    "canonical_paper_anchor": {
+      "label": "original TempoRAC anchor",
+      "name": "identity-indexed window-local tempo routing",
+      "status": "preserved",
+      "backup_pivot_may_replace": false,
+      "paper_title_method_or_implementation_mainline_change_authorized": false,
+      "note": "This adjudication evaluates a backup pivot only. Even provisional advancement means only that the backup may receive an independent research-review."
+    },
+    "research_review": {
+      "authorized": true,
+      "candidate_count": 1,
+      "candidate": "set-valued-counting-pose-missingness"
+    },
+    "research_review_execution": {
+      "started_by_this_adjudication": false
+    },
+    "g0": {
+      "authorized": false,
+      "note": "The candidate-specific novelty report proposed G0_SET_SEMANTICS_AND_NONVACUITY, but this total adjudication does not authorize or launch it. Stage ordering requires research-review first."
+    },
+    "implementation": {
+      "authorized": false
+    },
+    "local_or_server_training": {
+      "authorized": false
+    },
+    "server_test_sealed_heldout_results_access": {
+      "authorized": false
+    },
+    "paper_or_novelty_claim": {
+      "authorized": false
+    },
+    "fragment_diagnostic": {
+      "authorized": false
+    }
+  },
+  "warp_phase_failure_memory": {
+    "candidate": "WARP-PHASE",
+    "status": "terminal",
+    "result_to_claim_route": "pivot",
+    "integrity_audit_verdict": "FAIL",
+    "immutable_gate2_vector": [
+      246,
+      55,
+      144,
+      50,
+      66
+    ],
+    "eligible_efficacy_results": 0,
+    "prohibited_actions": [
+      "threshold tuning",
+      "fixture replacement",
+      "harmonic correction",
+      "Gate-2 retry",
+      "real-track continuation",
+      "local or server training",
+      "resurrection through either pivot candidate"
+    ],
+    "effect": "No WARP result supplies positive efficacy or novelty evidence to pivot2. The set-valued candidate must stand on a distinct evidence chain."
+  },
+  "limitations": [
+    "This is a same-family, non-fresh continuation and remains provisional.",
+    "The novelty-check skill's fresh-agent verification phase was not run because the task explicitly required continuation metadata under agent_thread_lifetime_limit.",
+    "No new external search was performed; the adjudication is frozen to the declared literature landscape and candidate audits.",
+    "Failure to find an exact isomorph is not novelty confirmation.",
+    "MultiCounter+, TWCRAC, SRITrack, and the final latent-conformal motion paper retain full-text limitations in the frozen evidence.",
+    "The original RESEARCH_REVIEW.json concerns the terminal WARP-era proposal and grants no authority to pivot2.",
+    "No implementation, experiment, training, result inspection, server access, restricted-data access, research-review launch, MANIFEST edit, IDEA_REPORT edit, or events append occurred."
+  ]
+}

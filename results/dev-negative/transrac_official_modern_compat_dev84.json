@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "status": "partial_reproduction",
+  "classification": "TransRAC official checkpoint / modern compatibility / local 84-dev sanity",
+  "method_id": "transrac-official-modern-compat-repcounta",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "sample_count": 84,
+  "sealed_test_status": "untouched",
+  "eligible_for_original_paper_table": false,
+  "original_protocol_parity": false,
+  "current_code_compatibility": {
+    "historical_prediction_sha256": "d108ad349a7c1562814f68d8e99dff175b4bca2fba521291e15e23a4603e13ec",
+    "historical_adapter_sha256": "f5dcc9f2915c7d05d245ab95351d14e4b645333f311871ba645a3413fb09e463",
+    "current_runner_source_git_sha": "b0b85f113a9ec752585eb0d054175ad50397c4cc",
+    "current_runner_code_sha256": "2a602610d78a22d9e46227e4753f880941099bc23fb37141265ab0f46a6af64b",
+    "current_scorer_code_sha256": "4e7e7948da9853608312ee57ba6e1efa087434116d6f4e0cb2eda31d78b4ff47",
+    "compatible": true,
+    "failure_class": null,
+    "raw_prediction_values_identical_to_historical": true,
+    "rounded_prediction_values_identical_to_historical": true,
+    "maximum_raw_count_absolute_difference": 0.0,
+    "interpretation": "A clean current-code runner-to-scorer rerun reproduced all 84 historical raw and rounded prediction values exactly and emitted the same metrics.",
+    "requires_current_runner_rerun": false
+  },
+  "label_boundary": {
+    "prediction_labels_loaded": false,
+    "prediction_scoring_performed": false,
+    "scoring_process_loaded_targets_after_prediction_and_receipt_validation": true
+  },
+  "run_outcome": {
+    "decode_ok_total": 84,
+    "failure_total": 0,
+    "nonfinite_output_total": 0,
+    "historical_inference_seconds_total": 160.388,
+    "historical_external_gpu_peak_mib": 895
+  },
+  "metrics": {
+    "nmae_rounded": 0.6906921109815201,
+    "obo_rounded": 0.2857142857142857,
+    "mae_raw_prediction": 3.8689342680431547,
+    "rmse_raw_prediction": 5.440844583614941,
+    "mae_rounded": 3.869047619047619,
+    "rmse_rounded": 5.445618597070667,
+    "exact_rounded": 0.08333333333333333
+  },
+  "bootstrap": {
+    "samples": 10000,
+    "seed": 2026,
+    "confidence_level": 0.95,
+    "interval_method": "paired_percentile",
+    "confidence_intervals": {
+      "nmae_rounded": {
+        "low": 0.5620691898755322,
+        "high": 0.8483394597841948
+      },
+      "obo_rounded": {
+        "low": 0.19047619047619047,
+        "high": 0.38095238095238093
+      },
+      "mae_raw_prediction": {
+        "low": 3.095347377232143,
+        "high": 4.729897707984561
+      },
+      "rmse_raw_prediction": {
+        "low": 4.097992070458071,
+        "high": 6.838203587306964
+      },
+      "mae_rounded": {
+        "low": 3.0952380952380953,
+        "high": 4.726190476190476
+      },
+      "rmse_rounded": {
+        "low": 4.098453534827444,
+        "high": 6.856544491402671
+      },
+      "exact_rounded": {
+        "low": 0.023809523809523808,
+        "high": 0.14285714285714285
+      }
+    }
+  },
+  "official_assets": {
+    "source_repository": "https://github.com/SvipRepetitionCounting/TransRAC",
+    "source_commit": "68bdd4daa60ed7c3174a7f6bf86f6537b6fa0979",
+    "source_archive_bytes": 33386001,
+    "source_archive_sha256": "b3ec4563f28ff251a87c789de6a0270a709d8656fdc7ec3280648619de10e4ed",
+    "source_tree_files": 498,
+    "source_tree_bytes": 35917768,
+    "source_tree_sha256": "2ca6ee835e7f0beb1c505fd7a2d061981c86d023d83b982a5f79da41837d1547",
+    "source_license_file_sha256": "ae5e6184c04d6c36e58a8f1c875f3dd3ab4a25a5884ccf41d40bad2dd634a111",
+    "backbone_sha256": "9950e3be6b0b3763f80575dfbbe7db7cbeb18345e32363b73e8d44952ef76acc",
+    "checkpoint_sha256": "32311c4f08bfb1988bfaede8a4691eba5cd5db6928478ee1f26f527e10341a80",
+    "checkpoint_filename_epoch_token": 171,
+    "checkpoint_payload_epoch": 174,
+    "checkpoint_state_dict_keys": 230,
+    "checkpoint_missing_keys": 0,
+    "checkpoint_unexpected_keys": 0,
+    "third_party_assets_redistributed": false
+  },
+  "runtime": {
+    "python": "3.11.10",
+    "torch": "2.5.1+cu124",
+    "cuda_runtime": "12.4",
+    "mmcv": "1.4.0",
+    "timm": "0.4.12",
+    "einops": "0.3.2",
+    "kornia": "0.5.11",
+    "gpu": "NVIDIA RTX A6000",
+    "container_image_digest": "sha256:ea96abe0e7d17cf4720343e5867256aacd5209aca738087ec92f62b9fe31ff51"
+  },
+  "artifact_bindings": {
+    "input_manifest_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "input_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "input_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "input_sidecar_fingerprint_sha256": "d1349cff6913345899db288c11aa991419cdd2572a124f3dda6aa2aba35fb81d",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "current_config_sha256": "7086011c87c02ccbde56353835b2bf0216cde9994246325bf8e0739aea2232a0",
+    "current_prediction_sha256": "eaab2ae6d844392764ac56849a18d39b7fb7ec7b757ee4e03ceb19f1b219659b",
+    "current_prediction_receipt_sha256": "61e7718026c4c8af58eff17db71fe45e41878112c7d2dfbb1dc25f1a9b9c7e5a",
+    "current_evaluation_sha256": "fa6e8c627fa5e443ebfcaba7d45e007d4b800e81196fcec28e778f29438f9218",
+    "current_evaluation_receipt_sha256": "792c4a9a38df6a1a8f0c27d8dcc0fc3af1f9ad0a0960dc7f0bc9ec621da469a7",
+    "historical_staging_receipt_sha256": "6ab619da82158106f896461462cd3325f80439b4711dcf72c7e7ebac15cc6de2",
+    "historical_prediction_adapter_sha256": "f5dcc9f2915c7d05d245ab95351d14e4b645333f311871ba645a3413fb09e463",
+    "historical_prediction_sha256": "d108ad349a7c1562814f68d8e99dff175b4bca2fba521291e15e23a4603e13ec",
+    "historical_prediction_receipt_sha256": "fa756ebf3ebfebfdfbe575e8d0d6094f233a6a02f6f2f1c256e0f7a1c8f30b4f",
+    "historical_prediction_validation_sha256": "760bae7f240115832c9f380f33960bf637e707715a0e4417f722bd8972f8a74b",
+    "historical_server_scorer_sha256": "8a75395df3148993fdcca17b688ad82535c76c866418172df88fc9fa2b591f5e",
+    "historical_evaluation_sha256": "49b2b292e3cd2189593e7f45e37f4bada49bc1b1b0a4820a97364ee002609e79",
+    "historical_evaluation_receipt_sha256": "30561ff3360995f0b98e52beeb7ec46833bb626d847a0b78910d4c87c9f4f059"
+  },
+  "limitations": [
+    "This is development-only sanity evidence, not a sealed-test or paper-table result.",
+    "The historical prediction artifact uses a pre-integration schema; the current strict runner and scorer independently reconstructed the same 84 raw and rounded values in a new schema.",
+    "The released source requirements are internally inconsistent; this run used a modern compatibility stack.",
+    "The independent label-free adapter invokes only the official VideoRead and TransferModel paths and does not reproduce the released evaluator's label access or count-plus-0.1 metric.",
+    "The official repository's LICENSE file and README license badge/link disagree, so no third-party source, weights, videos, or raw predictions are redistributed.",
+    "Raw per-video predictions remain private; the listed digests bind the audited operator artifacts but do not make this compact record independently sufficient to recompute the metrics."
+  ]
+}

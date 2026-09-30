@@ -1,0 +1,45 @@
+{
+  "blockers": [
+    "complete author roster, affiliations, and emails are not confirmed",
+    "private author and venue attestations are incomplete"
+  ],
+  "checks": [
+    {
+      "detail": "all required definitions are present",
+      "id": "required_private_definitions",
+      "status": "PASS"
+    },
+    {
+      "detail": "private metadata remains incomplete",
+      "id": "metadata_complete",
+      "status": "BLOCKED"
+    },
+    {
+      "detail": "attestations missing or incomplete",
+      "id": "author_attestations",
+      "status": "BLOCKED"
+    },
+    {
+      "detail": "leak_files=0",
+      "id": "tracked_tree_privacy",
+      "status": "PASS"
+    },
+    {
+      "detail": "leak_pdfs=0",
+      "id": "draft_pdf_privacy",
+      "status": "PASS"
+    }
+  ],
+  "gate": "author_metadata",
+  "mode": "draft",
+  "privacy": {
+    "draft_pdf_leak_count": 0,
+    "draft_pdf_leak_paths": [],
+    "private_values_emitted": false,
+    "tracked_leak_count": 0,
+    "tracked_leak_paths": []
+  },
+  "schema_version": "1.0",
+  "status": "PROVISIONAL",
+  "submission_ready": false
+}

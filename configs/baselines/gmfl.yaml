@@ -1,0 +1,13 @@
+schema_version: 1
+key: gmfl
+paper_name: GMFL
+status: blocked_unimplemented
+implementation: clean_room_pending
+protocols:
+  source_faithful: ucfrep_pose_110_source
+  fair_target: ucfrep_pose_110_fair
+modality: pose_coordinate_distance_angle
+eligible_for_comparison: false
+reason: No public implementation was located; all branches require clean-room work.
+sources:
+  - https://arxiv.org/abs/2409.00330

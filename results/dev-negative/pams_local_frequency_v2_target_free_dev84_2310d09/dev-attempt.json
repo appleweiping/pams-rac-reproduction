@@ -1,0 +1,27 @@
+{
+  "classification": "selector-exact-bound exploratory dev84 prediction; paper-table-ineligible",
+  "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+  "container_image_id": "sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005",
+  "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+  "dev_runner_sha256": "f3c531d9ee33909b98a3307ddcab45bd1a58aced133eb249f9936aefc11f9577",
+  "git_sha": "2310d093603ffc031e74ca6a5fbc582471f0a78e",
+  "pose_view_receipt_sha256": "820fd7bbf27563c069be2dd4ee264d636c352260671a6fc71cd0b80ead083e9c",
+  "predict_source_view_receipt_sha256": "2a899cfc4846f598dc19fa4d7a0e453601c0b91649f1f3afbf268a78b7d1d06a",
+  "prediction_mount_policy": {
+    "dev_inputs": true,
+    "dev_pose_84_only": true,
+    "dev_targets": false,
+    "network": "none",
+    "selector_artifact": true,
+    "selector_source": true,
+    "test105_anything": false
+  },
+  "prediction_worker_total": 1,
+  "run_id": "lfv2dev-2310d09-20260730T234638Z",
+  "schema_version": 1,
+  "score_not_yet_created": true,
+  "score_source_view_receipt_sha256": "7e06dca82ba00eb055de2cda790d261760192ddca74dec992921c8194df1c721",
+  "selector_sha256": "0bcad7d0fe270f1e71db465bd2e0f4ac861dfc1167b60283603d4624786e18db",
+  "source_bundle_sha256": "fbde109139b476b4b808745fb8d3f7d4e96b696506f048b8f5044159a97f35e7",
+  "test105_evaluation_authorized": false
+}

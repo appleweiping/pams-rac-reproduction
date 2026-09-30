@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# The project is intentionally not baked into the environment image.  Resolve
+# the mounted, version-controlled source through PYTHONPATH on every invocation.
+exec python -m pams "$@"

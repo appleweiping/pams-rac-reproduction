@@ -1,0 +1,1552 @@
+{
+  "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE",
+  "amendment_round": 2,
+  "authority": {
+    "P2": 0,
+    "P3": 0,
+    "S0": 0,
+    "capability": 0,
+    "data": 0,
+    "evaluator": 0,
+    "gate": 0,
+    "git": 0,
+    "gpu": 0,
+    "heldout": 0,
+    "launch": 0,
+    "p0": 0,
+    "p1": 0,
+    "p2_metric": 0,
+    "paper_claim": 0,
+    "results": 0,
+    "sealed": 0,
+    "server": 0,
+    "test": 0,
+    "training": 0
+  },
+  "bindings": {
+    "current_source_snapshot_non_authorizing": {
+      "src/pams/temporac/__init__.py": "e3f71c2d85974ac3f635f76ee61f8e1f793b9bc251b25ff4336563d4da52c2a3",
+      "src/pams/temporac/certify.py": "468ce8418bff0f43582d341f3e1b8064cf1c429301d1f56be84b8e13ad59a3f1",
+      "src/pams/temporac/contract.py": "5ab8fb62dc558ba78e95fc07e52c1f1a1afbff5b1c5003834079eea6143d745f",
+      "src/pams/temporac/cue.py": "702784bef27db94c1dc027d036a64d7461ae618613baec5e68061254f98569c7",
+      "src/pams/temporac/decode.py": "766cd6ca4b9e133041bd602f50fde840ec7caadd376bd6851799583d44f31f5e",
+      "src/pams/temporac/evaluator.py": "f981c6c7061c3388f06ef39466ef98192e65c62c501821be2b211f903cfaf9de",
+      "src/pams/temporac/feature_io.py": "f54f17ca204c242d304314f4280e7540c28588e86ea588a405fff02176b95428",
+      "src/pams/temporac/fixtures.py": "979b8cee4fed117f5471cf399794f615c60eae52dbba2c946109ff836206b464",
+      "src/pams/temporac/gates.py": "b6c9d7432443d7ad36738a81700746709fd571d475514aa6f1bbcd39be744b4a",
+      "src/pams/temporac/hashio.py": "aa460d5de51f107b2fc6b2ad171747e0da38a87cf30f82a869a335c268f1d613",
+      "src/pams/temporac/metrics.py": "1dadf08e89330bed2ab773afda05bffcb3fe2252b0d3e23c0bcc18c2c3b049dd",
+      "src/pams/temporac/nola.py": "ad6a13203f09c13a37a854333d4458ca8ce5a03bb186c0946f014a4e8cb9a637",
+      "src/pams/temporac/objective.py": "09a77231a48a869cbc83e0aa1aa2502f86f4abbcbab8c84f2b2c5abbd729ac87",
+      "src/pams/temporac/prediction.py": "7c57725240e83b7c06227a3b27e5f3cadb4590170488e5e126180caba8c13808",
+      "src/pams/temporac/preprocess.py": "042b5cae1917359cb5596837c81c0e36658ff99a6a8fd6f2602b478ca6f98bc3",
+      "src/pams/temporac/quadrature.py": "44f4b91dc4d5631442982732177a6f57726c0b8f42594380b5a75f2209efc2f3",
+      "src/pams/temporac/receipts.py": "564039b5d37a4a2759544a9ae65f267b57d7f6c1e46bca812ae5ed4f4a2c17e4",
+      "src/pams/temporac/response.py": "04df32d6e2e4061d86d813f611fb9ff277f2be8312af4efbc7219785af02f9bd",
+      "src/pams/temporac/runtime.py": "9421661046ee686508607529ed972b087e724c2c3a5c487e220c2f8e4038a0c8",
+      "src/pams/temporac/teacher.py": "30575fa64875aa6b77de157cf6af348b3b7900851a1c1742993842eea7928b30",
+      "src/pams/temporac/training.py": "0af8ecbadfcda43d2b9f60853c99210b316786ff4310ed5d0a32d9e366f627a4",
+      "src/pams/temporac/trusted_packer.py": "40d6e3d5be1b26b7ba0f0f7aadf8da7496c95c4e829face5c7e9faaee2cdf94e",
+      "src/pams/temporac/types.py": "4249eac2738f5b2edf53f38cbb681dffae609c151d493dd03b625fe10ad4c3ca",
+      "src/pams/temporac/x0.py": "5f4585425a83bf63779265db9004d210c5c2875a579ebc9a6c51297eb647c7a2"
+    },
+    "current_test_snapshot_non_authorizing": {
+      "tests/temporac/__init__.py": "dd07192e3b73d582dfb5f0325cfafd7462040c76574ad8241a661fdc4713a24e",
+      "tests/temporac/test_certificate_artifact.py": "f2b0ef6e6d977bf3532595147fba89b611258063ee5e36e30657c31c62e56c20",
+      "tests/temporac/test_certificate_tau.py": "f7e2f25ab93226568910b856167e441037213ba3dd937d6915587037b7c6a94b",
+      "tests/temporac/test_contract_hashio.py": "524c9ddf04e8cd29735c2c7d958f5f9e31afd8fea0bb3b6068a09b2de75b7104",
+      "tests/temporac/test_feature_io_firewall.py": "f049e54c7254a848dc6cdd10afb853c5538fd8ecabd02b86950eb77d8a74c12b",
+      "tests/temporac/test_gates_fixtures.py": "69690aba7eb366471a28bb7406fd1411964d271ecd250834151243bb8a7c299f",
+      "tests/temporac/test_metrics_evaluator.py": "a6f4aa275796b06162cac863674205d85b07adc46f89bc8d9821c48d17440fc6",
+      "tests/temporac/test_nola_decode.py": "80586866a9293e892c2cab1ca7318b97d341c2aa5990f7e1a31695f18376ff0b",
+      "tests/temporac/test_objective_runtime.py": "cc3685e2bf53ed7535addb1c09f08e0520dbd9143ba5d44da1cca28761107fa5",
+      "tests/temporac/test_operator_manifest.py": "627e58cbb65be96de7d17cd56e8c12c179c2d1c3e11612f0aea5cf79eecdb5de",
+      "tests/temporac/test_prediction_identity.py": "7967b11ee6585c2664fa4f39f5a9d9798ab407317f0d4efcf790f8d7a7bd5148",
+      "tests/temporac/test_prediction_receipts.py": "25fe8cc8696ab6c4108ba909b2f315c83b674fbe6ec9a770e6b7f6e449b410d4",
+      "tests/temporac/test_preprocess_geometry.py": "2edda5c593992c32aca30452340fce357930262978e331d37b6e5d55d3eb3b3f",
+      "tests/temporac/test_quadrature_cue.py": "4b7f977cbd31dc441ac021666bbc036b1d7de505ee884445df356b57b88374b6",
+      "tests/temporac/test_response_invariants.py": "b2e88e011bb06b9e21011ff252b630ffcbfcbe53a29638f8983b563f00ffae63",
+      "tests/temporac/test_teacher_certificate.py": "a5dc0bff236f417ab570193e46542b693d0f201fedd91693e6c572a70d20e012",
+      "tests/temporac/test_training_fresh_graph.py": "52b9f266173fec04152240d629dbf651aadd5b85d5839abcfe9f16fedc608845",
+      "tests/temporac/test_x0.py": "90206f53c7fffeabe9bcb3d6374fd60d3c51c69a7d1137df0cba797b583d1ef8",
+      "tests/temporac/test_x0_manifest.py": "074bb8df9dce5d1ea9e987499dac0d8824e1803a5f4bdc32495bd957e8c4c6a3"
+    },
+    "planning_and_review": {
+      "refine-logs/EXPERIMENT_PLAN.md": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e",
+      "refine-logs/EXPERIMENT_TRACKER.md": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b",
+      "refine-logs/temporac/FINAL_PROPOSAL.md": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+      "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_ROUND2_20260816.json": "144d2f22f4f75166b8cbefe54157d08690408979dd7cb34ef8c97e1738432872",
+      "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_ROUND2_20260816.md": "93a9cae771b34c185b9057286794b894d615aec5424011df145aaf8900f008d8"
+    }
+  },
+  "canonical_bytes": {
+    "H": "SHA256(tag_ASCII || 0x00 || for each field: uint64_be(byte_length) || field_bytes)",
+    "array_raw_hash": "SHA-256 over exact C-order element bytes with no filename, shape prefix, NPY header, or LF",
+    "artifact_hash": "SHA-256 over the complete exact artifact bytes",
+    "float_rules": "finite IEEE-754 binary64 only in JSON score fields; parsed binary64 bits must equal recomputation; mathematical zero is encoded as +0.0 and -0.0 is rejected",
+    "hash_format": "64 lowercase hexadecimal SHA-256",
+    "integer_rules": "range-check before encoding; counts and byte lengths are JSON integers; no float substitute",
+    "json": "UTF-8 without BOM; object keys lexicographically sorted; separators comma and colon; ensure_ascii=false; allow_nan=false; duplicate keys forbidden; exactly one terminal LF",
+    "member_hash": "SHA-256 over the complete exact NPY-v2.0 member bytes",
+    "member_ledger_closed_keys": [
+      "bytes",
+      "dtype",
+      "name",
+      "sha256",
+      "shape"
+    ],
+    "npz": "unique deterministic ZIP_STORED archive; flat ASCII member names with .npy suffix in bytewise ASCII order; NPY v2.0; allow_pickle=false; fixed DOS 1980-01-01 timestamp; flags, extra, comment, external attributes all zero; no duplicate, directory, encrypted, compressed, ZIP64, trailing, or extra member; load then reserialize must be byte-identical",
+    "receipt_hash": "SHA-256 over the complete canonical JSON bytes including the single terminal LF"
+  },
+  "closed_indexes_and_roots": {
+    "aggregate_preimage_rule": "Every H field is the complete exact canonical index bytes unless explicitly stated raw32 or ASCII. A digest list, filesystem enumeration, path string, object iteration order, or caller count is never a substitute.",
+    "certified_development_index": {
+      "equality": "The certified-index identity order, target-count identity order, and evaluator actual typed CertifiedDevelopmentTarget evidence order all equal exact Cdev. Row identities, component keys, feature receipts/artifacts, natural inputs, selection, selected teacher, and target bytes equal corresponding K1/population/target evidence. No caller subset and no post-K1 filtering.",
+      "identity_set": "exact Cdev = exact val/CERTIFIED projection of the frozen K1 outcome index",
+      "order": "opaque key bytes then slot",
+      "row_closed_keys": [
+        "component_key_hex",
+        "feature_artifact_sha256",
+        "feature_receipt_sha256",
+        "k1_outcome_row_sha256",
+        "natural_input_receipt_sha256",
+        "opaque_key_hex",
+        "population_row_sha256",
+        "selection_receipt_sha256",
+        "selected_checkpoint_artifact_sha256",
+        "selected_checkpoint_receipt_sha256",
+        "slot",
+        "target_artifact_sha256",
+        "target_receipt_sha256"
+      ],
+      "schema": "temporac.certified-development-index.v4",
+      "target_count": "Existing target_count_root rows are exactly this identity order projected to opaque_key_hex, slot, and integer sum of pulse bits from the bytewise-verified target.",
+      "top_level_closed_keys": [
+        "contract_sha256",
+        "k1_outcome_index_sha256",
+        "population_manifest_sha256",
+        "rows",
+        "schema"
+      ]
+    },
+    "checkpoint_index": {
+      "exact_inventory": "120 teacher rows at steps 500..20000 plus 480 response rows at steps 500..10000",
+      "family_rules": "family is exact ASCII teacher or response; teacher rows have exact checkpoint/evaluation digests and agree with the 120-row evidence index; response rows use null for those three surrounding fields and are bound by their exact existing run receipt ordered_checkpoint_sha256 entry",
+      "order": "decoded ASCII job_name_hex ascending, then numeric step ascending",
+      "replay": "At K7 all 120 teacher artifact members are parsed/rehashed/reserialized; no aggregate digest replaces any exact artifact. Response rows are checked against all 24 completed run receipts without adding jobs.",
+      "root": "checkpoint_root_sha256=H(temporac.checkpoint-root.v4, exact checkpoint-index bytes)",
+      "row_closed_keys": [
+        "artifact_sha256",
+        "checkpoint_receipt_sha256_or_null",
+        "family",
+        "job_name_hex",
+        "run_receipt_sha256",
+        "seed",
+        "step",
+        "tune_evaluation_artifact_sha256_or_null",
+        "tune_evaluation_receipt_sha256_or_null"
+      ],
+      "row_count": 600,
+      "schema": "temporac.checkpoint-index.v4",
+      "top_level_closed_keys": [
+        "contract_sha256",
+        "rows",
+        "schema",
+        "score_index_sha256",
+        "selection_receipt_sha256",
+        "teacher_checkpoint_evidence_index_sha256"
+      ]
+    },
+    "feature_index": {
+      "order": "population order",
+      "root": "feature_root_sha256=H(temporac.feature-root.v4, exact feature-index bytes)",
+      "row_closed_keys": [
+        "feature_artifact_sha256_or_null",
+        "feature_receipt_sha256_or_null",
+        "opaque_key_hex",
+        "population_row_sha256",
+        "slot",
+        "split"
+      ],
+      "row_count": 402,
+      "schema": "temporac.feature-index.v4",
+      "semantics": "Each nonnull receipt digest equals the same population row and yields the named artifact digest; null pairs match exactly. No extra feature receipt is admitted.",
+      "top_level_closed_keys": [
+        "contract_sha256",
+        "population_manifest_sha256",
+        "rows",
+        "schema"
+      ]
+    },
+    "g5a_root_index": {
+      "index_classes_ascii_order": [
+        "certified-development",
+        "checkpoint",
+        "feature",
+        "k1-outcome",
+        "prediction-clean",
+        "prediction-drift",
+        "score",
+        "target",
+        "teacher-checkpoint-evidence"
+      ],
+      "index_row_closed_keys": [
+        "bytes",
+        "class",
+        "sha256"
+      ],
+      "receipt_root": "existing G5a receipt_root_sha256=H(temporac.receipt-root.v4, exact complete g5a root-index bytes)",
+      "schema": "temporac.g5a-receipt-root-index.v4",
+      "top_level_closed_keys": [
+        "contract_sha256",
+        "indexes",
+        "receipt_dag_bytes",
+        "receipt_dag_sha256",
+        "schema"
+      ],
+      "validation": "For every row, verifier receives exact canonical index bytes, requires positive byte count and SHA-256 equality, exact class multiplicity one, class order, schema, cross-index foreign keys, cardinality, and no unlisted index."
+    },
+    "population": {
+      "artifact": "existing exact 402-row population manifest",
+      "cardinality": "268 train plus 134 val equals 402",
+      "digest": "population_manifest_sha256=SHA-256(exact canonical manifest bytes)",
+      "order": "train then val, opaque key bytes, slot",
+      "row_keys": [
+        "component_key_hex",
+        "eligible",
+        "feature_receipt_sha256_or_null",
+        "opaque_key_hex",
+        "reason_codes",
+        "slot",
+        "source_binding_sha256",
+        "split"
+      ]
+    },
+    "prediction_indexes": {
+      "arms": [
+        "local",
+        "global",
+        "uniform",
+        "capacity-control"
+      ],
+      "combined_row_count": 9648,
+      "component_rule": "component_key_hex and population_row_sha256 are derived inside the index builder and evaluator from the exact manifest row. No prediction envelope/API caller component token is accepted; all 24 envelopes for an identity inherit one identical manifest component.",
+      "conditions": [
+        "natural-clean",
+        "natural-drift"
+      ],
+      "exact_product": "402 identities x 4 arms x 3 seeds x 2 conditions, one artifact and receipt per cell, no missing/extra/duplicate",
+      "order": "population order, then arm in listed order, seed ascending; condition is fixed by its index",
+      "per_condition_row_count": 4824,
+      "roots": [
+        "prediction_clean_root_sha256=H(temporac.prediction-root.v4, ASCII natural-clean, exact clean index bytes)",
+        "prediction_drift_root_sha256=H(temporac.prediction-root.v4, ASCII natural-drift, exact drift index bytes)",
+        "capability prediction_root_sha256 remains H(temporac.prediction-pair-root.v4, raw32(clean root), raw32(drift root))"
+      ],
+      "row_closed_keys": [
+        "arm",
+        "artifact_sha256",
+        "component_key_hex",
+        "condition",
+        "opaque_key_hex",
+        "population_row_sha256",
+        "receipt_sha256",
+        "seed",
+        "slot",
+        "split"
+      ],
+      "schema": "temporac.prediction-index.v4",
+      "seeds": [
+        20260815,
+        20260816,
+        20260817
+      ],
+      "top_level_closed_keys": [
+        "condition",
+        "contract_sha256",
+        "population_manifest_sha256",
+        "rows",
+        "schema"
+      ]
+    },
+    "target_index": {
+      "consistency": "Each target artifact is unchanged seven-member temporac target NPZ; each receipt is unchanged ten-key temporac.target-receipt.v4; teacher digest is the selected artifact digest; no abstention target exists.",
+      "inventory": "Every exact X0 target required by the proposal (3808 rows) plus every and only natural CERTIFIED row in the frozen K1 outcome index.",
+      "order": "source_kind numeric, decoded source key bytes, numeric source_unit_index",
+      "row_closed_keys": [
+        "artifact_sha256",
+        "receipt_sha256",
+        "source_key_hex",
+        "source_kind",
+        "source_unit_index",
+        "teacher_sha256"
+      ],
+      "schema": "temporac.target-index.v4",
+      "top_level_closed_keys": [
+        "contract_sha256",
+        "k1_outcome_index_sha256",
+        "rows",
+        "schema"
+      ]
+    }
+  },
+  "cpu_replay_environment": {
+    "digest_binding": "environment_sha256 is SHA-256 of complete exact environment artifact bytes and must agree in every checkpoint, tune, selection, G1, G5a, and K7 object.",
+    "elf_index": {
+      "closed_keys": [
+        "contract_sha256",
+        "rows",
+        "schema"
+      ],
+      "note": "Paths are evidence inside the sealed environment lock and are not substituted for bytes or hashes.",
+      "order": "ASCII normalized absolute loader path",
+      "row_closed_keys": [
+        "build_id_or_null",
+        "bytes",
+        "path",
+        "sha256",
+        "soname"
+      ],
+      "schema": "temporac.cpu-elf-index.v4"
+    },
+    "field_schemas": {
+      "architecture": {
+        "closed_keys": [
+          "byteorder",
+          "machine",
+          "platform_tag",
+          "pointer_bits"
+        ],
+        "types": "three nonempty ASCII strings plus pointer_bits positive integer; byteorder is exact little"
+      },
+      "autocast": {
+        "closed_keys": [
+          "cpu_dtype",
+          "cpu_enabled",
+          "cuda_dtype",
+          "cuda_enabled"
+        ],
+        "types": "dtype names are nonempty ASCII and enabled fields are booleans; both enabled values must be false"
+      },
+      "blas": {
+        "closed_keys": [
+          "configuration_sha256",
+          "library_sha256",
+          "threading_layer",
+          "vendor",
+          "version"
+        ],
+        "types": "hashes bind exact configuration bytes and loaded library bytes; other fields are nonempty ASCII"
+      },
+      "cpu_dispatch": {
+        "closed_keys": [
+          "numpy_baseline",
+          "numpy_found",
+          "numpy_not_found",
+          "onednn_primitive_isa",
+          "torch_cpu_capability",
+          "torch_dispatch_sha256"
+        ],
+        "types": "ISA lists are ASCII arrays in provider order; digest binds exact Torch dispatch report bytes; scalar values are nonempty ASCII"
+      },
+      "cpu_isa": {
+        "closed_keys": [
+          "cpu_model",
+          "flags_sha256",
+          "microcode_sha256",
+          "ordered_flags"
+        ],
+        "types": "model is nonempty ASCII, ordered_flags is a duplicate-free ASCII array in probe order, and hashes bind exact sanitized probe bytes"
+      },
+      "determinism": {
+        "closed_keys": [
+          "cudnn_allow_tf32",
+          "cudnn_benchmark",
+          "cudnn_deterministic",
+          "cuda_matmul_allow_tf32",
+          "matmul_precision",
+          "pythonhashseed",
+          "torch_deterministic_algorithms",
+          "torch_deterministic_warn_only"
+        ],
+        "types": "flags are booleans, matmul_precision is exact highest, pythonhashseed is exact ASCII 0; deterministic algorithms true, warn_only false, both TF32 flags false"
+      },
+      "environment_variables": {
+        "closed_keys": [
+          "BLIS_NUM_THREADS",
+          "MKL_DYNAMIC",
+          "MKL_NUM_THREADS",
+          "NUMEXPR_NUM_THREADS",
+          "OMP_DYNAMIC",
+          "OMP_NUM_THREADS",
+          "OPENBLAS_NUM_THREADS",
+          "VECLIB_MAXIMUM_THREADS"
+        ],
+        "types": "exact ASCII values; all thread counts are 1 and both dynamic flags are FALSE"
+      },
+      "numpy": {
+        "closed_keys": [
+          "configuration_sha256",
+          "version",
+          "wheel_sha256"
+        ],
+        "types": "version is nonempty ASCII; hashes bind exact provider report and exact wheel-index row"
+      },
+      "onednn": {
+        "closed_keys": [
+          "build_sha256",
+          "enabled",
+          "primitive_isa",
+          "version"
+        ],
+        "types": "enabled is boolean; other fields are nonempty ASCII or exact build-report digest"
+      },
+      "python": {
+        "closed_keys": [
+          "abi_tag",
+          "build",
+          "compiler",
+          "executable_sha256",
+          "implementation",
+          "version"
+        ],
+        "types": "five nonempty ASCII strings and exact interpreter-file digest"
+      },
+      "scipy": {
+        "closed_keys": [
+          "configuration_sha256",
+          "version",
+          "wheel_sha256"
+        ],
+        "types": "version is nonempty ASCII; hashes bind exact provider report and exact wheel-index row"
+      },
+      "threads": {
+        "closed_keys": [
+          "affinity_sha256",
+          "blis",
+          "mkl",
+          "numexpr",
+          "omp",
+          "openblas",
+          "torch_interop",
+          "torch_intraop",
+          "veclib"
+        ],
+        "types": "eight thread counts are exact integer one; affinity_sha256 binds the exact sanitized CPU affinity report"
+      },
+      "torch": {
+        "closed_keys": [
+          "build_config_sha256",
+          "cpu_capability",
+          "cuda_available",
+          "git_version",
+          "version",
+          "wheel_sha256"
+        ],
+        "types": "cuda_available is boolean but execution remains CPU-only; strings are nonempty ASCII and hashes bind exact build report and wheel-index row"
+      }
+    },
+    "frozen_execution": [
+      "CPU only and float32 model parameters/operations",
+      "torch.set_num_threads(1) and torch.set_num_interop_threads(1)",
+      "OMP_NUM_THREADS=MKL_NUM_THREADS=OPENBLAS_NUM_THREADS=NUMEXPR_NUM_THREADS=VECLIB_MAXIMUM_THREADS=BLIS_NUM_THREADS=1",
+      "OMP_DYNAMIC=FALSE and MKL_DYNAMIC=FALSE",
+      "TempoRACTeacher.eval() and torch.inference_mode()",
+      "no batching, padding, vectorization across views/runs, autocast, GradScaler, bfloat16, GPU, CUDA kernel, or TF32",
+      "torch.use_deterministic_algorithms(true), matmul precision highest, and all recorded deterministic flags exact"
+    ],
+    "population_rule": "P3 must populate every actual value from a fresh preflight and serialize the exact artifact. Missing, placeholder, null where not expressly allowed, inferred, or fabricated values fail.",
+    "required_bindings": [
+      "exact Python implementation/version/configuration/interpreter ELF",
+      "exact Torch, NumPy, and SciPy distribution versions and wheel bytes",
+      "complete installed wheel index for imported packages",
+      "complete ELF/shared-library index for interpreter, Python native extensions, BLAS, OpenMP, oneDNN, libc, libm, libstdc++, and transitive loaded objects",
+      "BLAS vendor/build/config and oneDNN version/build/primitive ISA",
+      "CPU architecture, model, microcode-visible flags, ISA feature list, Torch CPU capability and dispatch tables",
+      "thread counts and affinity plus environment-variable values",
+      "deterministic-algorithm flags, matmul precision, autocast state, CUDA availability/use, and TF32 flags"
+    ],
+    "schema": "temporac.cpu-replay-environment.v4",
+    "status": "FUTURE_P3_VALUE_REQUIRED_NOT_PRESENT",
+    "top_level_closed_keys": [
+      "architecture",
+      "autocast",
+      "blas",
+      "code_index_sha256",
+      "contract_sha256",
+      "cpu_dispatch",
+      "cpu_isa",
+      "determinism",
+      "elf_index_sha256",
+      "environment_variables",
+      "numpy",
+      "onednn",
+      "platform_system",
+      "python",
+      "schema",
+      "scipy",
+      "threads",
+      "torch",
+      "wheel_index_sha256"
+    ],
+    "wheel_index": {
+      "closed_keys": [
+        "contract_sha256",
+        "rows",
+        "schema"
+      ],
+      "order": "ASCII distribution then filename",
+      "row_closed_keys": [
+        "bytes",
+        "distribution",
+        "filename",
+        "sha256",
+        "version"
+      ],
+      "schema": "temporac.cpu-wheel-index.v4"
+    }
+  },
+  "disposition": {
+    "final_status": "PROPOSED_PENDING_ROUND2_REVIEW",
+    "implementation_required_after_acceptance": "A later separately authorized implementation/review must create the effective-contract, code, environment, artifacts, receipts, indexes, tests, and replay evidence. Current source is only a bound non-authorizing snapshot.",
+    "no_actions_taken": [
+      "no code or test change",
+      "no plan, tracker, proposal, review, MANIFEST, or Git change",
+      "no server, data, trace, sealed, heldout, vault, result, checkpoint, prediction, target, evaluator, training, or test execution",
+      "no authority, launch, gate, claim, or result"
+    ],
+    "review_required": "A fresh independent Round2 specification review must inspect the exact versioned MD/JSON pair and all seven official closures before any implementation work."
+  },
+  "effective_contract": {
+    "circularity_policy": "No placeholder, null, guessed value, amendment self-hash, accepted-review self-reference, or fixpoint is permitted.",
+    "closed_keys": [
+      "rows",
+      "schema"
+    ],
+    "construction": [
+      "The index does not exist until an independent fresh Round2 review accepts the exact versioned amendment pair.",
+      "Each row binds the positive exact byte count and SHA-256 of the complete named bytes; rows occur only in the listed role order.",
+      "contract_sha256 is SHA-256 of the complete canonical effective-contract index bytes, including LF.",
+      "The index itself has no contract_sha256 field. None of the five constituent documents may contain the resulting digest.",
+      "Every later artifact, receipt, index, code lock, environment lock, target contract member, G5a field, and K7 replay uses this one digest; the old proposal digest alone is invalid after acceptance.",
+      "The mutable fixed-name amendment aliases are never effective-contract constituents."
+    ],
+    "current_value": "UNASSIGNED_UNTIL_ACCEPTED_REVIEW",
+    "role_order": [
+      {
+        "path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+        "role": "canonical_proposal"
+      },
+      {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_121046.md",
+        "role": "amendment_markdown"
+      },
+      {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_121046.json",
+        "role": "amendment_json"
+      },
+      {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND2.md",
+        "role": "accepted_review_markdown"
+      },
+      {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND2.json",
+        "role": "accepted_review_json"
+      }
+    ],
+    "row_closed_keys": [
+      "bytes",
+      "role",
+      "sha256"
+    ],
+    "schema": "temporac.effective-contract-index.v4"
+  },
+  "executed_code_closure": {
+    "closed_keys": [
+      "contract_sha256",
+      "rows",
+      "schema",
+      "trace_sha256"
+    ],
+    "completeness": [
+      "Rows are the complete union of the static Python import closure and the dynamic import/load/open/mmap/exec closure for every P0, P1, P2, P2-METRIC, P3, training, tune replay, prediction, G5a, G5b, and K7 entry point.",
+      "At minimum the package initializer and x0, quadrature, preprocess, teacher, certify, runtime, training, types, hashio, receipts, feature_io, prediction, metrics, evaluator, gates, plus every other current pams.temporac module and every executed TempoRAC test are present.",
+      "A fully instrumented trace records sequence, operation, normalized origin, and digest for dynamic imports, loader origins, open/mmap/exec, and ctypes/dlopen. Every repository file seen in the trace has exactly one matching code-index row and every row is reached by static closure or trace.",
+      "Unresolved dynamic origin, namespace ambiguity, generated executable bytes, eval/exec source absent from the index, or an extra/missing row fails.",
+      "Interpreter, wheels, shared libraries, BLAS, OpenMP, and oneDNN binaries are environment artifacts, not silently represented by the repository code index."
+    ],
+    "current_snapshot_note": "The hashes bound in this amendment document identify the reviewed current snapshot only. They are not a future code index and create no implementation authority.",
+    "digest_binding": "code_index_sha256 and the existing G5a code_sha256 are SHA-256 of the exact canonical code-index bytes.",
+    "mandatory_minimum_paths": [
+      "src/pams/temporac/__init__.py",
+      "src/pams/temporac/certify.py",
+      "src/pams/temporac/contract.py",
+      "src/pams/temporac/cue.py",
+      "src/pams/temporac/decode.py",
+      "src/pams/temporac/evaluator.py",
+      "src/pams/temporac/feature_io.py",
+      "src/pams/temporac/fixtures.py",
+      "src/pams/temporac/gates.py",
+      "src/pams/temporac/hashio.py",
+      "src/pams/temporac/metrics.py",
+      "src/pams/temporac/nola.py",
+      "src/pams/temporac/objective.py",
+      "src/pams/temporac/prediction.py",
+      "src/pams/temporac/preprocess.py",
+      "src/pams/temporac/quadrature.py",
+      "src/pams/temporac/receipts.py",
+      "src/pams/temporac/response.py",
+      "src/pams/temporac/runtime.py",
+      "src/pams/temporac/teacher.py",
+      "src/pams/temporac/training.py",
+      "src/pams/temporac/trusted_packer.py",
+      "src/pams/temporac/types.py",
+      "src/pams/temporac/x0.py",
+      "tests/temporac/__init__.py",
+      "tests/temporac/test_certificate_artifact.py",
+      "tests/temporac/test_certificate_tau.py",
+      "tests/temporac/test_contract_hashio.py",
+      "tests/temporac/test_feature_io_firewall.py",
+      "tests/temporac/test_gates_fixtures.py",
+      "tests/temporac/test_metrics_evaluator.py",
+      "tests/temporac/test_nola_decode.py",
+      "tests/temporac/test_objective_runtime.py",
+      "tests/temporac/test_operator_manifest.py",
+      "tests/temporac/test_prediction_identity.py",
+      "tests/temporac/test_prediction_receipts.py",
+      "tests/temporac/test_preprocess_geometry.py",
+      "tests/temporac/test_quadrature_cue.py",
+      "tests/temporac/test_response_invariants.py",
+      "tests/temporac/test_teacher_certificate.py",
+      "tests/temporac/test_training_fresh_graph.py",
+      "tests/temporac/test_x0_manifest.py",
+      "tests/temporac/test_x0.py"
+    ],
+    "order": "strict bytewise ASCII order of normalized repository-relative POSIX paths",
+    "path_rules": "regular non-symlink files only; literal paths; no glob; no directory hash standing in for files; duplicate/case-aliased path forbidden",
+    "row_closed_keys": [
+      "bytes",
+      "path",
+      "sha256"
+    ],
+    "schema": "temporac.executed-code-index.v4",
+    "trace_schema": {
+      "closed_keys": [
+        "contract_sha256",
+        "events",
+        "schema"
+      ],
+      "event_closed_keys": [
+        "operation",
+        "path",
+        "sequence",
+        "sha256"
+      ],
+      "event_order": "strict increasing zero-based sequence",
+      "schema": "temporac.executed-code-trace.v4"
+    }
+  },
+  "f4_mapping_composition": {
+    "exact_keys": [
+      "attack_expected_global_fail_sha256",
+      "evaluator_code_sha256",
+      "expected_output_sha256",
+      "fixture_input_sha256",
+      "schema",
+      "status"
+    ],
+    "schema": "temporac.count-metric-fixture-receipt.v1",
+    "snapshot_algorithm": [
+      "The consumer accepts collections.abc.Mapping directly, including MappingProxyType. Its first operation after the Mapping type check calls items once, exhausts that pass into exactly six pairs, rejects duplicate/missing/extra/non-string keys, and creates plain dict S before any semantic validation.",
+      "Inside the same guarded snapshot operation, call items once more into probe T. T must contain the same six unique keys and exact string values as S in fixed key order. Any exception, duplicate, missing/extra key, type drift, or changed value is a TOCTOU failure.",
+      "After the stability probe, never read the caller mapping again.",
+      "Validate only S, then canonicalize only that same S, then hash/consume those bytes. Validation of the caller object followed by later materialization is forbidden.",
+      "consumer(count_metric_fixture_receipt(...)) must work with no caller dict conversion; its bytes equal an ordinary stable dict with the same six pairs."
+    ]
+  },
+  "family_status": "same-family provisional",
+  "g5a_and_capability": {
+    "consume": "At the non-resumable evaluator process start, atomically consume the one-use grant before any vault access. Persist the consumed state so crash, exception, G5b failure, K7 failure, or process death cannot restore it.",
+    "fixed_values": [
+      "stub_inclusive_artifact_count is integer 9648",
+      "population manifest has exact P402",
+      "checkpoint, feature, prediction, receipt, and target-count roots are recomputed from the exact preimages in this amendment",
+      "code_sha256 equals exact executed-code-index SHA-256",
+      "contract_sha256 equals future effective-contract-index SHA-256",
+      "environment_sha256 equals exact populated CPU replay environment SHA-256",
+      "evaluator_code_sha256 remains the exact P2/S0-bound evaluator implementation byte hash",
+      "target_count root contains exactly Cdev and no later subset"
+    ],
+    "forbidden": "No training credential, optimizer entry point, score rewrite, vault-derived selection, or evaluator-to-training return path exists.",
+    "g5a_schema": "temporac.g5a-receipt.v4",
+    "g5b": [
+      "Only the same consumed process opens the actual committed vault.",
+      "Validate exact vault bytes/root and join commitment, exact bijection with P402, no duplicate/extra/missing identity, manifest-derived component association, positive integer human count and period units, and derive join_cardinality from the verified rows.",
+      "G5b PASS requires derived cardinality exactly 402. Any failure burns the grant and forbids retry/resume/restart under it."
+    ],
+    "k7_order": "K7 begins only after exact G5b PASS in that same process. It first performs one global 120-checkpoint selection replay, then per-Cdev certificate/target replay, then existing metrics over all 134 development identities including zero-estimate stubs.",
+    "preconsume": [
+      "Validate only non-vault immutable commitments: effective contract, code/environment locks, G5a and grant/ledger bytes, P2-METRIC/S0 binding, population P402, all closed indexes/roots/DAG, exact 9648 prediction product, frozen K1 outcome/Cdev evidence, target counts, and capability invocation_count=1.",
+      "Before consumption, do not open, stat, hash, enumerate, deserialize, map, or obtain a filesystem handle for the evaluator vault. A supplied vault row or caller cardinality is not a preconsume input.",
+      "If any non-vault check fails, do not consume and do not open the vault."
+    ],
+    "unchanged_exact_keys": [
+      "checkpoint_root_sha256",
+      "code_sha256",
+      "contract_sha256",
+      "environment_sha256",
+      "evaluator_code_sha256",
+      "feature_root_sha256",
+      "population_manifest_sha256",
+      "prediction_clean_root_sha256",
+      "prediction_drift_root_sha256",
+      "receipt_root_sha256",
+      "schema",
+      "stub_inclusive_artifact_count",
+      "target_count_root_sha256",
+      "vault_join_commitment_sha256"
+    ]
+  },
+  "generated_at": "2026-08-16T12:10:46+08:00",
+  "k1_closed_outcome": {
+    "coverage": [
+      "All canonical K1 identity/component ratios remain at least ceil(0.8*their frozen G0-eligible denominators) for train and development.",
+      "The retained Amendment005 development floors also require at least 108 certified development identities and at least eight certified development components.",
+      "Cdev is exactly the ordered val/CERTIFIED projection of this frozen 402-row index. It is not all 402, not necessarily all 134 development identities, and cannot be a later subset.",
+      "K2 publishes exactly the target bytes whose hashes were frozen at K1; no regenerated substitute is accepted."
+    ],
+    "receipt": {
+      "closed_keys": [
+        "contract_sha256",
+        "development_certified_component_count",
+        "development_certified_identity_count",
+        "outcome_index_bytes",
+        "outcome_index_sha256",
+        "schema",
+        "status",
+        "train_certified_component_count",
+        "train_certified_identity_count"
+      ],
+      "exact_key_count": 9,
+      "schema": "temporac.k1-certificate-outcome-receipt.v4",
+      "status": "PASS only when canonical K1 equal-coverage requirements and the retained development floors are satisfied"
+    },
+    "row_closed_keys": [
+      "certificate_reasons",
+      "certificate_status",
+      "component_key_hex",
+      "eligible",
+      "feature_artifact_sha256_or_null",
+      "feature_receipt_sha256_or_null",
+      "natural_input_receipt_sha256_or_null",
+      "opaque_key_hex",
+      "population_row_sha256",
+      "slot",
+      "split",
+      "target_artifact_sha256_or_null",
+      "target_receipt_sha256_or_null"
+    ],
+    "row_count": 402,
+    "row_order": "exact population manifest order: train then val, opaque key bytes, slot",
+    "row_semantics": [
+      "population_row_sha256 hashes the exact standalone canonical eight-key population row bytes including LF.",
+      "split, identity, component, eligible, reason codes, and feature_receipt_sha256_or_null equal the same exact population row. When the population feature receipt is nonnull, load it and derive feature_artifact_sha256_or_null from that receipt; when null both feature fields are null.",
+      "For eligible=false, certificate_status is NOT_EVALUATED, certificate_reasons equals the frozen nonempty G0/K0 reason vector, natural input is null, and target pair is null.",
+      "For eligible=true, certificate_status is ABSTAIN with the exact nonempty certificate reason vector or CERTIFIED with an empty vector. Natural input is null only when the ordered natural inference terminates before teacher output, including LANDMARK; otherwise its exact receipt digest is nonnull.",
+      "Target artifact and receipt digests are both nonnull iff status=CERTIFIED; K1 constructs their exact bytes in protected memory and hashes them before K2 publication. Otherwise both are null. This preserves F23 and creates no partial target.",
+      "Any population omission, duplication, identity/component/feature swap, later recertification rewrite, or status/null inconsistency fails."
+    ],
+    "schema": "temporac.k1-certificate-outcome-index.v4",
+    "top_level_closed_keys": [
+      "contract_sha256",
+      "population_manifest_sha256",
+      "rows",
+      "schema"
+    ]
+  },
+  "k7_target_rederivation": {
+    "failure": "Any mismatch is K7 FAIL after capability consumption. The ten-key target receipt is sufficient because the surrounding K1/certified-development/target indexes and typed receipt DAG bind exact feature, natural input, selection, and target bytes; no target receipt schema amendment is made.",
+    "per_cdev_steps": [
+      "Locate the exact K1 outcome, population, feature, certified-development, and target index rows and require all foreign keys and identities equal.",
+      "Load exact feature artifact/receipt and rerun canonical natural inference with the one globally replayed SelectedTeacher; require rebuilt natural-input receipt bytes and phase/reconstruction raw hashes equal.",
+      "Construct the typed certificate track internally and run full certify_target. Caller phase, reconstruction, bounds, static code, teacher digest, component, status, or target is never accepted.",
+      "Require CERTIFIED, rebuild the unchanged seven-member target NPZ and unchanged ten-key target receipt using the effective contract digest and exact selected checkpoint artifact digest.",
+      "Require rebuilt target NPZ bytes and receipt JSON bytes byte-for-byte equal the indexed/K1 artifacts. Digest equality without supplied exact bytes is insufficient."
+    ],
+    "target_schema_unchanged": {
+      "artifact_members": [
+        "chi <f8[E]",
+        "contract_sha256 |u1[32]",
+        "edge_mask |u1[E]",
+        "pulse |u1[E]",
+        "source_kind |u1[1]",
+        "target_mask |u1[E]",
+        "teacher_sha256 |u1[32]"
+      ],
+      "receipt_closed_keys": [
+        "artifact_bytes",
+        "artifact_sha256",
+        "certificate_status",
+        "contract_sha256",
+        "members",
+        "schema",
+        "source_key_hex",
+        "source_kind",
+        "source_unit_index",
+        "teacher_sha256"
+      ]
+    }
+  },
+  "lineage": {
+    "canonical_proposal": {
+      "path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+      "sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"
+    },
+    "fixed_pair_paths": [
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.md",
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.json"
+    ],
+    "rejected_round1_pair_archived_byte_identically": [
+      {
+        "bytes": 25001,
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_110212.md",
+        "sha256": "fa5ef054de0e243a030905b7a9d0e302aa442cb61b4d39012eaae6dca05a6869"
+      },
+      {
+        "bytes": 24383,
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_110212.json",
+        "sha256": "5ea02ae5ccb7ea0f1771222f254ded74318fdb4bc96a5655d5de58a66d7878a2"
+      }
+    ],
+    "round1_fresh_review": [
+      {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW.md",
+        "sha256": "35e7f3814759911da256605597a787e86ee5e199ecfded7cc1770a112ccea13d"
+      },
+      {
+        "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW.json",
+        "sha256": "5ccd5c66c93f0791c74f5159d9daeaf2b7314c691dd2f25705b4888da565fa2c"
+      }
+    ],
+    "round1_reviewer_trace": [
+      {
+        "path": ".aris/traces/research-refine/20260816_temporac_certificate_amendment005_review_sol/meta.json",
+        "sha256": "21a37e19089b7b6f3af50ff0618d3b111165ae8822b4da739c2e997b3c2e73da"
+      },
+      {
+        "path": ".aris/traces/research-refine/20260816_temporac_certificate_amendment005_review_sol/request.json",
+        "sha256": "d164f82b8ca544c465791daaedf41f40deceb138c339943b7b255d62e4bd348b"
+      },
+      {
+        "path": ".aris/traces/research-refine/20260816_temporac_certificate_amendment005_review_sol/response.md",
+        "sha256": "35e7f3814759911da256605597a787e86ee5e199ecfded7cc1770a112ccea13d"
+      },
+      {
+        "path": ".aris/traces/research-refine/20260816_temporac_certificate_amendment005_review_sol/run.meta.json",
+        "sha256": "2b086b41942ef8badc2dfbd31a993630be2620b4bb15033a4bfd52213533a013"
+      }
+    ],
+    "round2_versioned_pair_paths": [
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_121046.md",
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_121046.json"
+    ]
+  },
+  "natural_inference": {
+    "builder_inputs": [
+      "validated typed FeatureRecord plus exact feature artifact/receipt bytes",
+      "one typed SelectedTeacher created by the global replay"
+    ],
+    "exact_order": [
+      "Validate feature artifact, feature receipt, identity, source binding, and exact population-manifest row.",
+      "Run canonical preprocess_identity once. teacher_input is exact C-order <f4[T,215]; continuous is columns 0:149 converted once to C-order <f8[T,149]; use the same canonical geometry, clocks, masks, run bounds, and binary64 edge lengths.",
+      "For every run in run order, before any teacher call, run the geometry-only two-stage integer_landmarks rule. If any run has fewer than three retained landmarks, immediately return ABSTAIN reasons [11] and create no natural-certificate-input receipt, teacher-output artifact, target artifact, or target receipt.",
+      "Within the same run, consecutive retained landmarks alone form ordered traversal edge bounds [L_j,L_(j+1)); no cross-run or nonconsecutive bound.",
+      "For each run independently compute F5 from continuous[149], edge_lengths, and these bounds. Visit traversals in order and subedges left-to-right; use normative Neumaier for every denominator and numerator. Mean term is lambda*((A+B)/2); second moment is lambda*(((A*A+A*B)+B*B)/3) in the written binary64 order. Equal-average traversal means/seconds with Neumaier; s=sqrt(max(qbar-mbar*mbar,+0.0)); concatenate [mbar,s] C-order <f8[298].",
+      "Cast each complete run static vector once to C-order <f4[298]. In run order issue one CPU float32 TempoRACTeacher forward for that run's exact <f4[Trun,215] input; no batch or padding. Use the exact environment, eval, inference_mode, one thread, no autocast/TF32.",
+      "Validate finite float32 outputs, place them in canonical run/sample order, and cast each complete assembled C-order output exactly once to <f8[T,2] and <f8[T,149]. Every retained sample must belong to exactly one run; overlap, uncovered retained sample, or synthetic fill fails.",
+      "Hash exact raw C-order float64 output bytes, build the unchanged natural-certificate-input receipt, bind the typed certificate track, run full certify_target, and either emit no target on ABSTAIN or the unchanged target NPZ/receipt on CERTIFIED."
+    ],
+    "f5_definition": "This section is the unique natural F5 interface. Current helper names are not authority; any implementation using ordinary np.sum, pairwise/reordered reduction, identity-wide static pooling, teacher-derived landmarks, or caller bounds is nonconforming.",
+    "forbidden_parameters": [
+      "selected_teacher_sha256",
+      "phase",
+      "reconstruction",
+      "static_code",
+      "traversal_bounds",
+      "checkpoint digest without artifact",
+      "caller module or state_dict"
+    ],
+    "natural_input_receipt": {
+      "closed_keys": [
+        "continuous_mask_sha256",
+        "continuous_sha256",
+        "feature_artifact_sha256",
+        "feature_receipt_sha256",
+        "geometry_sha256",
+        "opaque_key_hex",
+        "phase_sha256",
+        "reconstruction_sha256",
+        "run_bounds_sha256",
+        "sampled_source_clock_sha256",
+        "schema",
+        "slot",
+        "source_binding_sha256",
+        "teacher_input_sha256",
+        "teacher_sha256"
+      ],
+      "exact_key_count": 15,
+      "schema": "temporac.natural-certificate-input.v4",
+      "teacher_binding": "teacher_sha256 is SHA-256 of exact selected checkpoint artifact bytes; phase/reconstruction hashes are post-cast float64 raw bytes; static vectors and traversal bounds are independently rederived and are not caller evidence"
+    },
+    "output_type": "NaturalTeacherOutput is an opaque immutable package-private value built only by the canonical builder and contains the post-cast phase/reconstruction arrays, their rebuilt natural-input receipt bytes, and the SelectedTeacher provenance handle; no public constructor accepts arrays or digests."
+  },
+  "receipt_dag": {
+    "acyclicity": "Edges point from a receipt to an already-existing dependency. Topological sort over exact nodes must consume every node. The containing G5a object can never be a node or dependency, so receipt_root_sha256 has no self-cycle.",
+    "completeness": "Expected nodes and edges are derived only from the exact closed indexes, effective-plan gate inventory, and receipt payload foreign keys. Every named receipt byte payload is supplied and hash/closed-schema validated. Any missing, extra, duplicate, wrong class, wrong owner, dangling reference, multiplicity mismatch, or directed cycle fails.",
+    "edge_closed_keys": [
+      "from_receipt_sha256",
+      "role",
+      "to_receipt_sha256"
+    ],
+    "edge_order": "decoded from digest, ASCII role, decoded to digest",
+    "exact_class_multiplicity": [
+      "teacher-tune-input: 1",
+      "teacher-checkpoint: 120",
+      "teacher-tune-evaluation: 120",
+      "teacher-selection: 1",
+      "g1-teacher-selection: 1",
+      "k1-certificate-outcome: 1",
+      "run: exactly 27, comprising three teacher and 24 response run receipts",
+      "prediction: exactly 9648",
+      "feature: exactly the nonnull feature receipts in the 402-row feature index",
+      "natural-certificate-input: exactly the nonnull natural input receipts in the 402-row K1 outcome index",
+      "target: exactly all rows of the target index",
+      "pre-g5a gate/fixture: exactly each accepted P0, P1, P2, P2-METRIC, P3, S0, G0, K0, G2, K2, G3, G4, K5, and K6 receipt required by the effective plan; G1 and K1 are represented only by their exact singleton receipt classes above; each owner is the exact gate name"
+    ],
+    "explicit_exclusions": [
+      "the containing temporac.g5a-receipt.v4 receipt",
+      "the G5a root index itself",
+      "capability-request ledger record",
+      "capability grant",
+      "G5b receipt",
+      "K7 receipt",
+      "metric payload",
+      "any post-G5a, future, retry, or result receipt"
+    ],
+    "node_class_tokens": [
+      "feature",
+      "g1-teacher-selection",
+      "k1-certificate-outcome",
+      "natural-certificate-input",
+      "pre-g5a-gate-fixture",
+      "prediction",
+      "run",
+      "target",
+      "teacher-checkpoint",
+      "teacher-selection",
+      "teacher-tune-evaluation",
+      "teacher-tune-input"
+    ],
+    "node_closed_keys": [
+      "class",
+      "owner_key",
+      "receipt_sha256"
+    ],
+    "node_order": "ASCII class, ASCII owner_key, then decoded raw receipt digest",
+    "owner_key_encoding": "owner_key is lowercase H_hex(temporac.receipt-owner.v4, class ASCII, then the exact typed owner fields below); it is never a slash-joined or caller string",
+    "owner_key_rules": [
+      "feature and natural input: class, split ASCII, raw32 opaque key, uint64_be(slot)",
+      "teacher checkpoint and tune evaluation: class, uint64_be(seed), uint32_be(step)",
+      "run: class, exact decoded job-name bytes, uint64_be(seed)",
+      "prediction: class, split ASCII, raw32 opaque key, uint64_be(slot), arm ASCII, uint64_be(seed), condition ASCII",
+      "target: class, uint8 source_kind, raw32 source key, uint64_be(source_unit_index)",
+      "teacher tune input, selection, G1, K1, and gate/fixture singletons: class, exact schema or gate-name ASCII"
+    ],
+    "required_edges": [
+      "teacher checkpoint -> teacher run",
+      "teacher tune evaluation -> teacher checkpoint and teacher tune input",
+      "teacher selection -> every per-seed winner checkpoint receipt and teacher tune input",
+      "G1 -> teacher selection, all three teacher runs, and teacher tune input; its payload separately commits the non-receipt checkpoint-evidence index",
+      "natural input -> feature and teacher selection",
+      "target -> its natural input when natural, and teacher selection",
+      "prediction -> feature and owning response run; the payload separately commits the non-receipt checkpoint artifact digest",
+      "K1 -> every K1-referenced feature, natural input, and target",
+      "pre-G5a gate receipts -> their exact effective-plan upstream receipts"
+    ],
+    "role_tokens": [
+      "checkpoint.run",
+      "evaluation.checkpoint",
+      "evaluation.tune-input",
+      "g1.selection",
+      "g1.teacher-run",
+      "g1.tune-input",
+      "gate.upstream",
+      "k1.feature",
+      "k1.natural-input",
+      "k1.target",
+      "natural-input.feature",
+      "natural-input.selection",
+      "prediction.feature",
+      "prediction.run",
+      "selection.per-seed-winner",
+      "selection.tune-input",
+      "target.natural-input",
+      "target.selection"
+    ],
+    "schema": "temporac.receipt-dag.v4",
+    "top_level_closed_keys": [
+      "contract_sha256",
+      "edges",
+      "nodes",
+      "schema"
+    ]
+  },
+  "required_test_contract": {
+    "mapping_to_official_findings": {
+      "A005-B1": "shared exact tune input, per-checkpoint output/evaluation receipt, complete F11 score semantics, exact eight-key score rows, and authority-bearing G1 replay",
+      "A005-B2": "all 120 exact checkpoint artifacts and all 120 tune outputs retained and member/output replayed under a fully populated exact CPU environment",
+      "A005-B3": "noncircular five-role effective-contract index plus complete executed/imported code/test closure and future P3 environment lock",
+      "A005-B4": "all contributing indexes, exact tagged roots, typed owner/class receipt DAG, derived multiplicities, and explicit self/future exclusions",
+      "A005-B5": "402-row K1 outcome index/receipt, exact Cdev projection equality, exact population-row and same-feature provenance, and K1-to-K2 byte binding",
+      "A005-B6": "prediction index binds manifest component for every one of 9648 rows; evaluator derives it and accepts no caller component token",
+      "A005-B7": "non-vault preconsume checks, atomic burn at process start, same-process G5b vault validation, and K7 only after PASS"
+    },
+    "negatives": [
+      "missing, extra, duplicate, substituted, or tampered winning or losing checkpoint artifact/receipt/output/evaluation receipt",
+      "score swap, edited decimal with different binary64 bits, -0.0, nonfinite/negative score, incomplete 120 grid, wrong seed/step, wrong precedence, or analytic certificate_track shortcut",
+      "batching/padding views, wrong view order, tune input member/offset/count/cap mismatch, CPU dispatch/thread/autocast/TF32 drift, code-index or environment mismatch",
+      "effective-contract old proposal digest, amendment self-hash, missing accepted review, wrong role order, missing imported source/test, unresolved dynamic origin, or extra code row",
+      "K1 omission/duplicate/status rewrite, post-K1 Cdev subset, feature receipt/artifact swap, component swap, natural-input swap, target swap, or K2 bytes differing from K1 hashes",
+      "prediction subset/duplicate/extra, caller component label, per-envelope component relabel, wrong manifest row, or incorrect 9648 product",
+      "receipt DAG self-cycle, containing G5a/capability/future receipt, missing/extra node or edge, wrong class/owner/multiplicity, dangling reference, or non-topological dependency",
+      "vault open/stat/hash/enumeration before consumption, caller cardinality, population/vault mismatch, invalid count/period, G5b failure followed by retry/resume/restart, or K7 before G5b PASS",
+      "caller selected_teacher_sha256/phase/reconstruction/static/bounds injection, fewer-than-three-landmark teacher call, ordinary/reordered F5 sum, nonstrict loader, output hash without byte replay, or target digest-only acceptance",
+      "stateful mapping changing keys/values between snapshot passes, malformed six-key mapping, or consumer rereading the mapping after snapshot"
+    ],
+    "positives": [
+      "independent two-process rebuild of shared tune input and all 120 checkpoint outputs/evaluation receipts yields byte-identical evidence and the same selection",
+      "all 120 checkpoint artifacts strict-load, member-replay, and reserialize byte-identically under the exact CPU environment",
+      "effective-contract index is built only after accepted review and every downstream contract field equals it",
+      "402-row K1 outcome projection equals G5a certified-development index and target-count evidence",
+      "402 identities cross four arms, three seeds, and two conditions to exactly 9648 prediction rows with manifest-derived components",
+      "preconsume performs zero vault filesystem operations; consumed process produces G5b PASS cardinality 402 and then K7",
+      "direct MappingProxy builder-to-consumer composition yields canonical bytes equal a plain dict",
+      "K7 once-global selection replay plus per-Cdev natural/target replay yields byte-identical targets"
+    ],
+    "status": "SPECIFIED_NOT_RUN"
+  },
+  "scope_lock": {
+    "dominant_method_count": 1,
+    "forbidden_expansion": [
+      "no new algorithm, trainable component, dataset, identity, arm, seed, condition, job, GPU hour, threshold, result, claim, or evaluator access",
+      "no migration of natural development data into checkpoint selection",
+      "no authority follows from this document or its hashes"
+    ],
+    "g5a_receipt_key_count": 14,
+    "hard_a6000_hour_ceiling": 100,
+    "natural_development_identity_count": 134,
+    "planned_a6000_hours": 93,
+    "prediction_envelope_count": 9648,
+    "prediction_identity_count": 402,
+    "response_checkpoint_count": 480,
+    "response_jobs": 24,
+    "target_npz_member_count": 7,
+    "target_receipt_key_count": 10,
+    "teacher_checkpoint_count": 120,
+    "teacher_jobs": 3,
+    "training_job_count": 27,
+    "unchanged": [
+      "problem anchor and claims",
+      "data and split boundary",
+      "27 exact job names and three seeds",
+      "fixed optimizer steps and checkpoint cadence",
+      "93 planned A6000-hours and 100-hour ceiling",
+      "all scientific thresholds and kill semantics",
+      "four prediction arms and two conditions",
+      "existing seven-member target artifact",
+      "existing ten-key temporac.target-receipt.v4",
+      "existing fourteen-key temporac.g5a-receipt.v4",
+      "one-use capability and non-resumable evaluator"
+    ]
+  },
+  "score_and_selection": {
+    "g1_receipt": {
+      "closed_keys": [
+        "code_index_sha256",
+        "contract_sha256",
+        "environment_sha256",
+        "schema",
+        "score_index_sha256",
+        "selection_receipt_sha256",
+        "status",
+        "teacher_checkpoint_evidence_index_sha256",
+        "teacher_run_receipt_sha256",
+        "teacher_tune_input_receipt_sha256"
+      ],
+      "exact_key_count": 10,
+      "schema": "temporac.g1-teacher-selection-receipt.v4",
+      "status": "PASS only after all three existing run receipts and all 120 complete evidence rows independently replay"
+    },
+    "global_k7_replay": [
+      "After G5b PASS and before any per-identity K7 replay, perform this selection replay exactly once for the evaluator process.",
+      "Rebuild and byte-verify the shared tune input; validate all three run receipts; load and member-replay all 120 checkpoint artifacts; rerun all 120x56 forwards; require every tune output NPZ and evaluation receipt byte-identical; require every score-row binary64 bit; rerun per-seed and global precedence; and require selection and G1 receipt bytes.",
+      "Only this replay constructs one typed SelectedTeacher. All 120 checkpoint artifacts/receipts, 120 tune output artifacts/evaluation receipts, the shared tune input artifact/receipt, score index, selection receipt, evidence index, G1 receipt, and three run receipts are required. A missing or tampered loser fails before per-identity replay."
+    ],
+    "global_selection": "From the three per-seed winners choose lexicographic minimum (tune_abstentions,mean_masked_reconstruction,tune_objective,seed), exactly as the proposal.",
+    "per_seed_selection": "For each seed discard a row when negative_edge_fraction>0.01 or any required value/evidence is invalid; choose lexicographic minimum (tune_objective,step). Missing all candidates for a seed fails G1.",
+    "score_index": {
+      "complete_grid": "seeds 20260815, 20260816, 20260817 crossed with steps 500,1000,...,20000 exactly once",
+      "order": "seed numeric ascending, then completed step numeric ascending",
+      "row_closed_keys": [
+        "checkpoint_receipt_sha256",
+        "mean_masked_reconstruction",
+        "negative_edge_fraction",
+        "seed",
+        "step",
+        "tune_abstentions",
+        "tune_evaluation_receipt_sha256",
+        "tune_objective"
+      ],
+      "row_count": 120,
+      "row_exact_key_count": 8,
+      "schema": "temporac.teacher-score-index.v4",
+      "score_rule": "Each score field mirrors the named tune-evaluation receipt. Parse JSON numbers to binary64 and require exact IEEE-754 bits equal independent recomputation; -0.0, NaN, infinity, string numbers, rounding tolerance, or caller rewrite fails.",
+      "top_level_closed_keys": [
+        "rows",
+        "schema"
+      ]
+    },
+    "selected_teacher_type": "SelectedTeacher is an opaque package-private capability containing the freshly strict-loaded eval-mode CPU module plus immutable checkpoint artifact/receipt, selection receipt, score-index, code-index, effective-contract, and environment digests. Its constructor is private to the successful one-global selection replay and it cannot be deserialized from a digest.",
+    "selection_receipt": {
+      "closed_keys": [
+        "code_index_sha256",
+        "contract_sha256",
+        "environment_sha256",
+        "per_seed_winner_checkpoint_receipt_sha256",
+        "schema",
+        "score_index_bytes",
+        "score_index_sha256",
+        "selected_checkpoint_artifact_sha256",
+        "selected_checkpoint_receipt_sha256",
+        "teacher_tune_input_artifact_sha256",
+        "teacher_tune_input_receipt_sha256"
+      ],
+      "exact_key_count": 11,
+      "per_seed_winner_order": "three checkpoint-receipt digests in seed order 20260815, 20260816, 20260817",
+      "schema": "temporac.teacher-selection-receipt.v4"
+    },
+    "teacher_checkpoint_evidence_index": {
+      "order": "seed then step",
+      "retention": "Every named checkpoint artifact/receipt and tune output/evaluation receipt remains immutable and readable through K7.",
+      "row_closed_keys": [
+        "checkpoint_artifact_sha256",
+        "checkpoint_receipt_sha256",
+        "job_name_hex",
+        "seed",
+        "step",
+        "tune_output_artifact_sha256",
+        "tune_evaluation_receipt_sha256"
+      ],
+      "row_count": 120,
+      "schema": "temporac.teacher-checkpoint-evidence-index.v4",
+      "top_level_closed_keys": [
+        "contract_sha256",
+        "rows",
+        "schema",
+        "teacher_run_receipt_sha256",
+        "teacher_tune_input_receipt_sha256"
+      ]
+    }
+  },
+  "status": "PROPOSED_PENDING_ROUND2_REVIEW",
+  "teacher_checkpoint": {
+    "artifact": "deterministic uncompressed sorted NPZ with exactly 16 state_dict members; every array NPY v2.0 C-order <f4; no pickle or extra member",
+    "artifact_count": 120,
+    "checkpoint_steps": [
+      500,
+      1000,
+      1500,
+      2000,
+      2500,
+      3000,
+      3500,
+      4000,
+      4500,
+      5000,
+      5500,
+      6000,
+      6500,
+      7000,
+      7500,
+      8000,
+      8500,
+      9000,
+      9500,
+      10000,
+      10500,
+      11000,
+      11500,
+      12000,
+      12500,
+      13000,
+      13500,
+      14000,
+      14500,
+      15000,
+      15500,
+      16000,
+      16500,
+      17000,
+      17500,
+      18000,
+      18500,
+      19000,
+      19500,
+      20000
+    ],
+    "loader": [
+      "Read exact artifact and receipt bytes, recompute both hashes, validate the closed receipt and exact code/config/effective-contract/environment/run/job/seed/step bindings.",
+      "Parse with allow_pickle=false and the checkpoint-specific 2 MiB archive cap; recompute every NPY member byte ledger; require exact sorted names, shapes, <f4 dtype, C order, finiteness, and no extra key.",
+      "Instantiate a fresh CPU TempoRACTeacher in the bound environment, copy no caller module or state object, strict-load all 16 members, reserialize the loaded state with the same writer, and require byte-for-byte equality with the input artifact.",
+      "Set eval mode; gradients disabled. teacher_sha256 is only SHA-256 of these complete exact checkpoint bytes.",
+      "A digest, caller state_dict, untyped module, cached phase, or cached reconstruction cannot construct SelectedTeacher."
+    ],
+    "members": [
+      {
+        "dtype": "<f4",
+        "name": "phase.layers.0.bias",
+        "shape": [
+          256
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "phase.layers.0.weight",
+        "shape": [
+          256,
+          247
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "phase.layers.2.bias",
+        "shape": [
+          128
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "phase.layers.2.weight",
+        "shape": [
+          128,
+          256
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "phase.layers.4.bias",
+        "shape": [
+          2
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "phase.layers.4.weight",
+        "shape": [
+          2,
+          128
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "reconstruction.layers.0.bias",
+        "shape": [
+          256
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "reconstruction.layers.0.weight",
+        "shape": [
+          256,
+          34
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "reconstruction.layers.2.bias",
+        "shape": [
+          256
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "reconstruction.layers.2.weight",
+        "shape": [
+          256,
+          256
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "reconstruction.layers.4.bias",
+        "shape": [
+          149
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "reconstruction.layers.4.weight",
+        "shape": [
+          149,
+          256
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "static.layers.0.bias",
+        "shape": [
+          128
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "static.layers.0.weight",
+        "shape": [
+          128,
+          298
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "static.layers.2.bias",
+        "shape": [
+          32
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "static.layers.2.weight",
+        "shape": [
+          32,
+          128
+        ]
+      }
+    ],
+    "raw_payload_bytes": 1008348,
+    "receipt": {
+      "closed_keys": [
+        "artifact_bytes",
+        "artifact_sha256",
+        "code_index_sha256",
+        "config_sha256",
+        "contract_sha256",
+        "environment_sha256",
+        "job_name_hex",
+        "members",
+        "run_receipt_sha256",
+        "schema",
+        "seed",
+        "step"
+      ],
+      "exact_key_count": 12,
+      "member_closed_keys": [
+        "bytes",
+        "dtype",
+        "name",
+        "sha256",
+        "shape"
+      ],
+      "schema": "temporac.teacher-checkpoint-receipt.v4"
+    },
+    "schema": "temporac.teacher-checkpoint.v4",
+    "schema_specific_archive_cap_bytes": 2097152,
+    "seeds": [
+      20260815,
+      20260816,
+      20260817
+    ]
+  },
+  "teacher_tune_input": {
+    "construction": [
+      "Rebuild all 56 canonical X0 tune views from the exact 40-row X0 manifest and effective code/config/environment; bytewise equality with the shared artifact is mandatory at G1 and again in the one global K7 selection replay.",
+      "sample_offsets[0]=0, sample_offsets[56]=25680, entries strictly increase, and view v owns samples [sample_offsets[v],sample_offsets[v+1]).",
+      "edge_offsets[v]=sample_offsets[v]-v; view v owns analytic edge rows [edge_offsets[v],edge_offsets[v+1]). This derives all 56 per-view E_v=N_v-1 partitions without another member.",
+      "Each traversal bound is relative to its view sample slice and denotes the half-open owned edge interval [left,right), with samples left through right; exactly ten ordered complete traversals per view.",
+      "teacher_input is the canonical C-order float32 215-channel F4 input. static_features is the one-time C-order float32 cast of the normative F5 binary64 298-vector for the same view.",
+      "analytic_chi and analytic_pulse are used only for the X0 certify_target analytic equality checks; they never substitute for checkpoint phase or reconstruction."
+    ],
+    "edge_count": 25624,
+    "forbidden_inputs": "natural rows, evaluator labels, count, period, density, boundary, bbox, supplied identity names, or any teacher output",
+    "members": [
+      {
+        "dtype": "<f8",
+        "name": "analytic_chi",
+        "shape": [
+          25624
+        ]
+      },
+      {
+        "dtype": "|u1",
+        "name": "analytic_pulse",
+        "shape": [
+          25624
+        ]
+      },
+      {
+        "dtype": "<i8",
+        "name": "sample_offsets",
+        "shape": [
+          57
+        ]
+      },
+      {
+        "dtype": "<i8",
+        "name": "sampled_source_clock",
+        "shape": [
+          25680
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "static_features",
+        "shape": [
+          56,
+          298
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "teacher_input",
+        "shape": [
+          25680,
+          215
+        ]
+      },
+      {
+        "dtype": "<i4",
+        "name": "traversal_bounds",
+        "shape": [
+          56,
+          10,
+          2
+        ]
+      }
+    ],
+    "raw_payload_bytes": 22592544,
+    "receipt": {
+      "closed_keys": [
+        "artifact_bytes",
+        "artifact_sha256",
+        "code_index_sha256",
+        "config_sha256",
+        "contract_sha256",
+        "environment_sha256",
+        "members",
+        "schema",
+        "x0_manifest_sha256"
+      ],
+      "exact_key_count": 9,
+      "member_closed_keys": [
+        "bytes",
+        "dtype",
+        "name",
+        "sha256",
+        "shape"
+      ],
+      "schema": "temporac.teacher-tune-input-receipt.v4",
+      "validation": "artifact byte count/hash, exact seven member ledger, view roster, X0 manifest, code/config/effective-contract/environment, raw payload, archive cap, semantic partitions, and deterministic reserialization all match"
+    },
+    "sample_count": 25680,
+    "schema": "temporac.teacher-tune-input.v4",
+    "schema_specific_archive_cap_bytes": 33554432,
+    "view_count": 56,
+    "view_order": "source_id 24 through 31 outer, block_index 0 through 6 inner; linear resampler and direct offset 0 only; view v=(source_id-24)*7+block_index"
+  },
+  "tune_output_and_scoring": {
+    "evaluation_execution": [
+      "For every checkpoint, load through the strict checkpoint loader and load the independently rebuilt-and-byte-verified shared tune-input artifact.",
+      "Visit views v=0 through 55. For each view issue exactly one CPU float32 forward call using teacher_input[sample_offsets[v]:sample_offsets[v+1]] and static_features[v]. No cross-view batch, padding, or cached output is allowed.",
+      "Use eval plus inference_mode, one intra-op thread, one inter-op thread, no autocast/TF32, and the exact environment lock.",
+      "Concatenate output rows only in view/sample order into the exact two-member output NPZ. Require shapes, C order, finiteness, deterministic reserialization, raw payload, and 16 MiB cap.",
+      "The full typed X0 track for each view is reconstructed from tune input plus that checkpoint output. Every tune abstention invokes the complete certify_target path, including analytic chi/pulse equality; the analytic certificate_track shortcut is forbidden."
+    ],
+    "evaluation_receipt": {
+      "closed_keys": [
+        "artifact_bytes",
+        "artifact_sha256",
+        "checkpoint_receipt_sha256",
+        "code_index_sha256",
+        "config_sha256",
+        "contract_sha256",
+        "environment_sha256",
+        "members",
+        "schema",
+        "scores",
+        "seed",
+        "step",
+        "teacher_tune_input_receipt_sha256"
+      ],
+      "exact_key_count": 13,
+      "independence": "This receipt is built from the recomputed output artifact and score arithmetic, not copied from the score index. Its hash is the authority-bearing provenance named by one score row.",
+      "member_closed_keys": [
+        "bytes",
+        "dtype",
+        "name",
+        "sha256",
+        "shape"
+      ],
+      "schema": "temporac.teacher-tune-evaluation-receipt.v4",
+      "scores_closed_keys": [
+        "mean_masked_reconstruction",
+        "negative_edge_fraction",
+        "tune_abstentions",
+        "tune_objective"
+      ]
+    },
+    "exact_reductions": {
+      "correspondence": [
+        "For each nonreference block 1 through 6, evaluate the 128 fractions (j+1/2)/128 in j order against block 0 using F9 inversion, right-tie ownership, shortest signed principal-arc interpolation, and term 1-dot.",
+        "Neumaier equal-average fraction, traversal, nonreference block, then source_id in that order."
+      ],
+      "domains": "tune_abstentions is an integer in [0,56]; negative_edge_fraction is finite in [0,1]; mean_masked_reconstruction and tune_objective are finite, nonnegative binary64; every computed zero is canonical +0.0.",
+      "negative_edge_fraction": "Count, with integer arithmetic, every traversal-owned valid edge whose increment is strictly less than -1e-12 and divide once in binary64 by the positive integer count of all traversal-owned valid edges. Do not average ratios by view.",
+      "neumaier": "For ordered binary64 terms x: t=s+x; compensation adds (s-t)+x when abs(s)>=abs(x), otherwise (x-t)+s; final value s+compensation. Empty or nonpositive denominator fails.",
+      "phase_penalties": [
+        "A traversal owns edges e=left through right-1 exactly once. Valid means the existing F11 observed-retained-edge predicate holds and both normalized phase endpoints are finite.",
+        "For each owned valid edge in increasing e, compute the F11 signed principal increment in cycles. Neumaier-average edge, traversal, block, then source.",
+        "orientation is mean ReLU(-increment); alias is mean ReLU(abs(increment)-0.25)."
+      ],
+      "reconstruction": [
+        "Use F11 Huber delta 0.05 against the exact first 149 tune-input channels and their masks derived from the last 66 teacher-input mask channels.",
+        "Within each traversal, sample indices increase; at each sample channels 0 through 148 are the innermost order. Neumaier-sum only masked channel losses and divide by the positive integer mask count.",
+        "Neumaier equal-average traversal 0 through 9, then block 0 through 6, then source_id 24 through 31. This value is mean_masked_reconstruction and is exactly the F11 L_rec on the tune inventory."
+      ],
+      "tune_abstentions": "Count integer ABSTAIN results from full certify_target over all 56 views. Partial checks, phase-only checks, analytic phase/reconstruction, or certificate_track are not tune outputs.",
+      "tune_objective": "The complete F11 value is L_rec + L_corr + 0.25*orientation + 0.25*alias in that written binary64 operation order."
+    },
+    "output_count": 120,
+    "output_members": [
+      {
+        "dtype": "<f4",
+        "name": "phase",
+        "shape": [
+          25680,
+          2
+        ]
+      },
+      {
+        "dtype": "<f4",
+        "name": "reconstruction",
+        "shape": [
+          25680,
+          149
+        ]
+      }
+    ],
+    "output_raw_payload_bytes": 15510720,
+    "output_schema": "temporac.teacher-tune-output.v4",
+    "output_schema_specific_archive_cap_bytes": 16777216,
+    "typed_view_reconstruction": "For view v, continuous is teacher_input slice columns 0:149 cast once to C-order <f8; continuous_mask is geometry element mask from columns 149:182 repeated over x/y for channels 0:66, direction element mask from 182:215 repeated over x/y for 66:132, and geometry element-mask entries 0:17 for confidence 132:149. Samples/clocks use sample_offsets, analytic edges use edge_offsets, and traversal bounds use row v. No caller field participates."
+  }
+}

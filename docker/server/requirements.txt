@@ -1,0 +1,38 @@
+# Direct dependencies for the auditable Python 3.11 / CUDA 12.4 environment.
+# All versions are exact; transitive dependencies are frozen in constraints.txt.
+
+# Project runtime
+# The base image's 1.11.1.1 wheel has malformed tag metadata and fails
+# ``pip check``; 1.11.1.4 carries equivalent Ninja 1.11 with valid tags.
+ninja==1.11.1.4
+numpy==1.26.4
+pydantic==2.9.2
+PyYAML==6.0.2
+scikit-learn==1.5.2
+scipy==1.14.1
+torch==2.5.1
+torchaudio==2.5.1
+torchvision==0.20.1
+typer==0.12.5
+
+# Pose extraction.  Do not add opencv-python[-headless] or
+# opencv-contrib-python-headless: all OpenCV wheels share the cv2 namespace.
+jax==0.4.28
+jaxlib==0.4.28
+mediapipe==0.10.14
+opencv-contrib-python==4.10.0.84
+protobuf==4.25.3
+
+# CountLLM-Lite recipe support.  Installing these packages does not download
+# Vicuna, a video encoder, or any model weights.
+accelerate==1.1.1
+bitsandbytes==0.44.1
+peft==0.13.2
+sentencepiece==0.2.0
+transformers==4.46.2
+
+# Reproduction checks
+mypy==1.13.0
+pytest==8.3.3
+pytest-cov==5.0.0
+ruff==0.7.1

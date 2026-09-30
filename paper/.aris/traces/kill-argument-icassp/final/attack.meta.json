@@ -1,0 +1,120 @@
+{
+  "schema_version": "1.0",
+  "document_type": "aris_kill_argument_attack",
+  "stage": "attack",
+  "status": "provisional",
+  "verdict": "KILL",
+  "recommendation": "strong_reject",
+  "confidence": "very_high",
+  "final_adjudication": "pending_independent_defense",
+  "generated_at": "2026-08-14T22:59:05.5950870+08:00",
+  "reviewer": {
+    "agent": "/root/icassp_kill_attack",
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "ultra",
+    "fork_turns": "none",
+    "reviewer_family": "same-family",
+    "fresh_zero_context": true
+  },
+  "contamination_control": {
+    "prior_kill_history_read": false,
+    "prior_proof_history_read": false,
+    "prior_claim_history_read": false,
+    "prior_citation_history_read": false,
+    "prior_review_history_read": false,
+    "prior_logs_read": false
+  },
+  "inputs": [
+    {
+      "path": "paper/main.pdf",
+      "sha256": "873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45",
+      "role": "reviewed_pdf"
+    },
+    {
+      "path": "paper/main.tex",
+      "sha256": "a4fe29c47f200946c7d6f3522bd273f5895aabda2d7a959fdbf16397fe1cbe70",
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/preamble.tex",
+      "sha256": "763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2",
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/math_commands.tex",
+      "sha256": "e6dabb7ce789e0d78026e6bda287fe17faedb6d20c0df9b4f603cb3b6c123bee",
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/sections/0_abstract.tex",
+      "sha256": "fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef",
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/sections/1_introduction.tex",
+      "sha256": "6823651162f59e5f5263949f2d308f594b667cb3cba0044433c39031ae04db9d",
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/sections/3_method.tex",
+      "sha256": "7e92c00eb4a7956b059536fd47240cefbea960aee61d4f3fdef1a7e24930c50d",
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/sections/4_experiments.tex",
+      "sha256": "6052c816e94f7d7f50b560d397495a37863b05d240ed5e418e4b6ec4d3aa131b",
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/sections/5_conclusion.tex",
+      "sha256": "e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c",
+      "role": "active_tex"
+    },
+    {
+      "path": "paper/references.bib",
+      "sha256": "322a5d16b0078e8b3436608d4c6158b67c5c8922b0dcae94537ea456c9f6f646",
+      "role": "bibliography"
+    },
+    {
+      "path": "paper/figures/icassp_framework.pdf",
+      "sha256": "3afa9d1261e3a54b25c8da708dd7c4e036587d6d01d0d60fc704edcd2fd8eb81",
+      "role": "active_figure"
+    },
+    {
+      "path": "paper/evidence/method_manifest.yaml",
+      "sha256": "07823bb5bb11509e79556f87c9bbb19c9ce4f0ff1fdea1b5cb832e89ae8cd289",
+      "role": "method_evidence"
+    },
+    {
+      "path": "paper/evidence/results_manifest.json",
+      "sha256": "4df513a3f4427950d23267965192253446e6ee2b6968907855e0bae1a6a53159",
+      "role": "result_evidence"
+    }
+  ],
+  "evidence_binding": {
+    "generated_evidence_values_tex_present": false
+  },
+  "pdf_review": {
+    "page_count": 5,
+    "all_pages_text_read": true,
+    "all_pages_visually_inspected": true,
+    "render_dpi": 150,
+    "visual_defects_material_to_verdict": false,
+    "body_pages": "1-4",
+    "reference_only_page": 5
+  },
+  "severity_counts": {
+    "P1": 3,
+    "P2": 3,
+    "P3": 4,
+    "P4": 2,
+    "P5": 1,
+    "P6": 4
+  },
+  "outputs": {
+    "attack_prompt": "paper/.aris/traces/kill-argument-icassp/final/attack_prompt.md",
+    "attack": "paper/.aris/traces/kill-argument-icassp/final/attack.md",
+    "attack_meta": "paper/.aris/traces/kill-argument-icassp/final/attack.meta.json",
+    "kill_argument_json_generated": false
+  }
+}

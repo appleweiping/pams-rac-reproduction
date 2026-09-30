@@ -1,0 +1,31 @@
+{
+  "call_number": 1,
+  "purpose": "operator-v2-implementation-review",
+  "timestamp": "2026-08-16T06:28:43.742Z",
+  "agent_id": "/root/temporac_operator_v2_impl_review",
+  "model": "gpt-5.6-sol",
+  "reasoning_effort": "inherited_not_exposed",
+  "reviewer_family": "openai",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "deterministic_evidence_acceptance": "accepted",
+  "duration_ms": 1563540,
+  "duration_scope": "earliest retained replay-workspace evidence through review serialization; excludes unexposed pre-replay reading time",
+  "status": "ok",
+  "verdict": "PASS",
+  "candidate_disposition": "ACCEPTED_AS_IMMUTABLE_P2_INPUT_ONLY",
+  "authority": {
+    "candidate_only": true,
+    "eligible_input_to_future_separately_authorized_P2_fixture_gate": true,
+    "P2": false,
+    "P3": false,
+    "S0": false,
+    "gate": false,
+    "launch": false,
+    "server": false,
+    "data": false,
+    "training": false,
+    "git": false,
+    "paper_claim": false
+  }
+}

@@ -1,0 +1,11 @@
+schema_version: 1
+key: transrac
+paper_name: TransRAC
+status: blocked_unimplemented
+implementation: clean_room_pending
+protocol: ucfrep_526_fair
+modality: rgb
+eligible_for_comparison: false
+reason: Official checkpoint modern-compatibility dev sanity is complete; original-protocol parity, clean-room implementation, and sealed test evaluation remain incomplete.
+sources:
+  - https://github.com/SvipRepetitionCounting/TransRAC

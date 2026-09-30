@@ -1,0 +1,20 @@
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 12.4.1
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+WARNING: The NVIDIA Driver was not detected.  GPU functionality will not be available.
+   Use the NVIDIA Container Toolkit to start this container with GPU support; see
+   https://docs.nvidia.com/datacenter/cloud-native/ .
+
+{"evaluation": "/pams/runs/evaluation.json", "evaluation_sha256": "aeaeeb24a3c38cddad8198ae53a16d8617d4a9956f4fb44fad891cd92ec9a256", "metrics": {"exact": 0.10714285714285714, "mae": 7.2023809523809526, "nmae": 2.1337039881528796, "obo": 0.32142857142857145, "rmse": 22.89650628371062}, "sealed_test105_access": "none", "status": "supervised_upper_bound_probe_not_pams_result"}

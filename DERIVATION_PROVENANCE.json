@@ -1,0 +1,178 @@
+{
+  "schema_version": "1.1",
+  "artifact_id": "rac-icassp27-paper-derivation-20260814",
+  "created_at": "2026-08-14T20:38:01+08:00",
+  "last_revised_at": "2026-08-15T01:28:00+08:00",
+  "target": {
+    "venue": "ICASSP 2027",
+    "track": "regular conference paper",
+    "working_title": "TempoRAC: Identity-Indexed Local Tempo Routing for Multi-Person Repetition Counting",
+    "branch": "codex/paper-writing-icassp27",
+    "worktree": "D:/Project/rac-paper-writing-icassp27",
+    "paper_state": "provisional/data-pending",
+    "assurance": "submission"
+  },
+  "derivation": {
+    "repository_base_commit": "73cbc4bb9b581f24fbc90f2fe7421bc11e7c7454",
+    "cvpr_freeze_commit": "26e5b7176f1f7c678391163c3278b5c390d54115",
+    "cvpr_freeze_tree": "8e91783ee75f2a0fc0ed2b747b2708018e87aab9",
+    "cvpr_freeze_pdf": {
+      "path": "paper/main.pdf",
+      "sha256": "sha256:de951023634d5627f3c38cd7512da9fd7df20086781d24caf0a548b93b3d9522",
+      "role": "frozen CVPR pre-results source package; not an ICASSP submission PDF"
+    },
+    "cvpr_phase1_input_hashes": {
+      "NARRATIVE_REPORT.md": "sha256:92404f92f4e944c780634b4bc109aeaf777371afcbe044de944757119d9ee7c3",
+      "CLAIMS_EVIDENCE_MATRIX.md": "sha256:853d75f9164b23eeabfc617944eeff53cfc54f57a97fbce95e3966218eebb89f",
+      "CLAIMS_FROM_RESULTS.md": "sha256:e093d5234db55e726e2e0db7fe260b3d7cd4c46da2c8c4fd25f807c5c9377ea6",
+      "PAPER_PLAN.md": "sha256:f826cc68e84d37c50345dfb35202bc260264f2383a33dd2ba70eeb927a9c210b",
+      "IMPLEMENTATION_SYNC_REPORT_ZH.md": "sha256:c0e4e43cea93551990f9ebf6dfe16b5810ff815b41c53620a7069152a79f74d3"
+    }
+  },
+  "aris": {
+    "upstream": "https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep",
+    "branch": "main",
+    "locked_commit": "e12e07c7b85ee1a4dc07e5463089aa16836af2bf",
+    "commit_verified_locally": true,
+    "network_clean_clone": {
+      "status": "degraded",
+      "attempts": 2,
+      "reason": "Two fresh network clone attempts did not yield a usable clean worktree; the second was stopped after more than two minutes without output. No project tree or installed ARIS checkout was reset or cleaned.",
+      "fallback": "Use the locally verified e12e07c object set and project-local Codex skill links, recording all semantic review as provisional unless an independent reviewer responds."
+    },
+    "installed_manifest": ".aris/installed-skills-codex.txt",
+    "installed_packages": [
+      "skills-codex",
+      "skills-codex-claude-review"
+    ],
+    "resolved_repo_root": "C:/Users/admin/.aris/repos/auto-research-in-sleep-git",
+    "resolved_repo_worktree_clean": false,
+    "policy": "The pin is usable for the paper workflow, but the local ARIS checkout is not evidence of a clean upstream clone and must not be described as one."
+  },
+  "source_priority": [
+    "collaborator_final_code_and_frozen_results",
+    "tracked_code_and_audit_documents",
+    "committed_powerpoint_visual_references",
+    "untracked_prose_and_meeting_notes"
+  ],
+  "original_workspace": {
+    "path": "D:/Project/rac",
+    "branch": "agent/initial-reproduction",
+    "head_at_derivation": "73cbc4bb9b581f24fbc90f2fe7421bc11e7c7454",
+    "dirty_at_derivation": true,
+    "access_policy": "read-only",
+    "tracked_changes_observed": [
+      ".gitignore",
+      "pyproject.toml",
+      "scripts/server/run_pams_position_lag_velocity_fallback_predev_seed2026.sh",
+      "src/pams/diagnostics.py"
+    ],
+    "untracked_entries_observed": true,
+    "collapsed_status_entries_before_and_after": 96,
+    "head_after_delivery": "73cbc4bb9b581f24fbc90f2fe7421bc11e7c7454",
+    "restrictions": [
+      "do_not_edit",
+      "do_not_merge_experiment_branches",
+      "do_not_score_or_access_sealed_test105",
+      "do_not_push"
+    ]
+  },
+  "evidence_boundary": {
+    "collaborator_multi_person_artifact_present": false,
+    "multirep_results_present": false,
+    "current_local_results_table_eligible": false,
+    "method_components": "SYNC-REQUIRED",
+    "submission_ready": false
+  },
+  "icassp_output": {
+    "source_root": "paper/main.tex",
+    "pdf": {
+      "path": "paper/main.pdf",
+      "sha256": "sha256:2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
+      "bytes": 393452,
+      "pages": 5,
+      "technical_content_pages": 4,
+      "page_5": "references_only",
+      "visual_review": "PASS",
+      "fonts_embedded": true
+    },
+    "round_snapshots": [
+      {
+        "path": "paper/main_round0_original.pdf",
+        "sha256": "sha256:26eeb9e5b913fa8160276447e9c31b38c9fe147ef7f64666aed41144427ecd26"
+      },
+      {
+        "path": "paper/main_round1.pdf",
+        "sha256": "sha256:0e521ad303b21fbb98d7c3ea52cb2aec2c5376ea07400986bb1721b0ca3c9a17"
+      },
+      {
+        "path": "paper/main_round2.pdf",
+        "sha256": "sha256:873c83da0dbf4b24a6e1199f3dcd980e17d0b032580e0591f88a7c545ec67a45"
+      },
+      {
+        "path": "paper/main_round3.pdf",
+        "sha256": "sha256:2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
+        "role": "user-requested title, author, full-PPT-figure, formula-style, and reference revision"
+      }
+    ],
+    "active_figures": [
+      {
+        "id": "fig:task-motivation",
+        "source": "D:/Project/rac/recommend paper/Multi-Person-Tempo-Adaptive-Counting-Introduction-Rounded-TNR.pptx",
+        "source_sha256": "sha256:29c01239515b9e0a9870ba840de6c087b32a1d46c5687c13c9c88dfdb4383e17",
+        "paper_pdf": "paper/figures/introduction_source_full.pdf",
+        "paper_pdf_sha256": "sha256:216aabb2af9e022e487fbfe5022635d98c998f32a5e7e043289daa8d04ae0cd3",
+        "role": "full-canvas visual reference only"
+      },
+      {
+        "id": "fig:framework",
+        "source": "D:/Project/rac/recommend paper/Multi-Person-Tempo-Adaptive-Counting-Framework-Rounded-TNR.pptx",
+        "source_sha256": "sha256:dfa86571aa8348eda8fa22a456d49e67179e4effd95b1b3b46b3a3dce69b4593",
+        "paper_pdf": "paper/figures/framework_source_full.pdf",
+        "paper_pdf_sha256": "sha256:920c47ea13d050c8a2265467d9232db23872022b9ba27204bc98d624f403e7fe",
+        "role": "full-canvas visual reference only"
+      }
+    ],
+    "template": {
+      "scaffold": "official ICASSP 2026 spconf kit",
+      "official_2027_kit_bound": false,
+      "submission_gate": "BLOCKED"
+    },
+    "authors": {
+      "tracked_identity_present": true,
+      "approved_public_author": {
+        "name": "Weiping Yan",
+        "affiliation": "University of Minnesota Twin Cities",
+        "email": "yan00944@umn.edu"
+      },
+      "private_metadata_complete": false,
+      "submission_gate": "BLOCKED"
+    },
+    "result_evidence_schema": {
+      "path": "paper/evidence/results_manifest.schema.json",
+      "sha256": "sha256:9d5c07450cbda32be8223237cb2d764d896d0c9ec28e4c9f23ad7cad3d67e662",
+      "frozen_eligible_gate": "PASS/fail-closed"
+    }
+  },
+  "audit_state": {
+    "experiment_audit": "FAIL/data-pending",
+    "result_to_claim": "FAIL/pivot",
+    "proof_audit": "NOT_APPLICABLE",
+    "paper_claim_audit": "BLOCKED/data-pending",
+    "citation_audit": "PASS/16 cited entries, no missing or unused keys, same-family provisional",
+    "formula_style": "PASS/four display groups with no punctuation",
+    "figure_validation": "PASS/two full-canvas PPT-sourced figures",
+    "build_qa": "PASS/five pages/fonts embedded/no undefined references",
+    "page_4plus1": "PASS/page 5 references only",
+    "kill_argument": "FAIL/strongest_argument_survives_current_artifact",
+    "result_schema": "PASS/fail-closed frozen eligibility; data-pending and excluded cannot be table eligible",
+    "cross_family_review": "BLOCKED/no_cross_family_response; latest Claude probe job c723c415d212485c911bc066b674a673",
+    "final_verifier": {
+      "draft": "exit_0/provisional",
+      "submission": "exit_1/blocked",
+      "report_sha256": "sha256:dabaa9b6740b145eb5baae5998a3907c97e424fa1680d416361c4d0a6d0cd318",
+      "draft_report_sha256": "sha256:0b6ae5ccc4beb1cd0549991c0444d300d5e56673eb81c5a9d060d1b676d04d6b"
+    },
+    "submission_ready": false
+  }
+}

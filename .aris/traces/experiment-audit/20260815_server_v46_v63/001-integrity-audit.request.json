@@ -1,0 +1,18 @@
+{
+  "call_number": 1,
+  "purpose": "server-v46-v63-integrity-audit",
+  "timestamp": "2026-08-15T11:15:00+08:00",
+  "tool": "spawn_agent",
+  "model": "gpt-5.6-sol",
+  "reasoning_effort": "ultra",
+  "files_referenced": [
+    "D:/Project/rac-server-quarantine-20260815/v46/code/",
+    "D:/Project/rac-server-quarantine-20260815/v46/data-manifests/",
+    "D:/Project/rac-server-quarantine-20260815/v46/mpcounter_v46/",
+    "D:/Project/rac-server-quarantine-20260815/v63/",
+    "D:/Project/rac-paper-writing-icassp27/paper/evidence/results_manifest.json",
+    "D:/Project/rac-paper-writing-icassp27/paper/evidence/method_manifest.yaml",
+    "D:/Project/rac-paper-writing-icassp27/paper/sections/4_experiments.tex"
+  ],
+  "prompt": "Act as a fresh adversarial experiment-integrity auditor. Read the listed paths directly. Audit ground-truth provenance, score normalization, result existence and binding, dead code, scope, evaluation type, and whether v46 or v63 can be the canonical implementation of the proposed identity-indexed local-tempo-routing method. Work read-only; do not execute experiments, access sealed tests, or modify files. Return PASS/WARN/FAIL with exact file:line evidence."
+}

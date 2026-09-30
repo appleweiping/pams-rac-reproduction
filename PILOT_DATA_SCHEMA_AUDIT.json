@@ -1,0 +1,259 @@
+{
+  "schema_version": "rac.pilot_data_schema_audit.v1",
+  "generated_at": "2026-08-15T12:46:21+08:00",
+  "verdict": "CONDITIONAL_PILOT_ONLY",
+  "conclusion": {
+    "pilot_feasible": true,
+    "canonical_protocol_name": "GT-bbox-assisted AlphaPose supplied-track pilot",
+    "paper_main_result_eligible": false,
+    "reasons": [
+      "The converted train and development subsets are canonical-source-disjoint",
+      "Only a partial AlphaPose cache is available",
+      "Pose slots are associated with ground-truth bounding boxes",
+      "Model inputs and privileged targets are currently colocated in each pickle",
+      "The current data cannot support predicted-track or end-to-end metrics"
+    ]
+  },
+  "scope": {
+    "mode": "read_only_server_audit",
+    "inspected": [
+      "MultiRep train/development pickle schema and manifests",
+      "canonical-source mappings and connected components",
+      "PAMS-RAC label-free pose-cache interface",
+      "MotionBERT and official MultiCounter+ metric source"
+    ],
+    "no_test_attestation": {
+      "server_writes": false,
+      "training_started": false,
+      "official_or_sealed_test_ground_truth_opened": false,
+      "test_predictions_opened": false,
+      "heldout_reports_opened": false,
+      "connection_parameters_recorded": false
+    }
+  },
+  "git": {
+    "motionbert_head": "e9e8399957daf8c95fbfef21b2db91c7b4a8b279",
+    "pams_rac_head": "1fd8cc7b90bd23118d8dcf72792e9dfeb94293bb",
+    "multicounter_plus_head": "d15c767d82dac2f7a5df9fde1d7f6b5a4f491062",
+    "provenance_warning": "The canonical v44 converter and data artifacts are not tracked by the MotionBERT Git commit and require byte-level hash binding"
+  },
+  "source_hashes": {
+    "motionbert": {
+      "tools/convert_multirep_alphapose_to_counting_v44.py": "5a9b148f398e43ac11eac7b54468a0cb22ba2ea63622a962feaa9fdb3cd05e60",
+      "data/counting_multirep_skeleton_pose_expanded_v44_len320/conversion_manifest_v44.json": "f9c8dd91d70a8b91f15b47959d05f9ea234064bd3b99c81cfeeb3d74a1d61481",
+      "data/counting_multirep_skeleton_pose_expanded_v44_len320/train.pkl": "c96fc1dfa233ec4bf1af19e7480ee8c721f4cddee9f121185f4e494c7244e1eb",
+      "data/counting_multirep_skeleton_pose_expanded_v44_len320/val.pkl": "4064ef24dc2970e9b07de8adddf1ecd4932aecb90453a67b4f90d7bd35d10251",
+      "run_mpcounter_v44.py": "ec6b8ee58dd163b86be49f3e7a3461b449c65000184ad498b367e085e71261c6"
+    },
+    "multicounter_plus": {
+      "mmdet/datasets/multirep_eval_api.py": "c10a3a56704d8bdf1ba55a2681570dc77371089ecb73c71c56102d26eca1386c"
+    },
+    "pams_rac": {
+      "src/pams/data.py": "93dc27fb8bae9c7d2c0d185e883a8608d4ad0550344e7b01802925e11a612cc0",
+      "src/pams/metrics.py": "7fdfcd540f3cbe19e3f66d076096f093b9e1b4a817e71bb44bc0373a268adc62",
+      "assets/pams_v14_seed2026/protocol/train.inputs.json": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207",
+      "assets/pams_v14_seed2026/protocol/dev.inputs.json": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+      "training_pose_cache_snapshot": "b537dede4fa1b9ecd6559b9c795440a5b55351c444e58648349ebbd9ebee574c",
+      "dev_pose_cache_snapshot": "14c290d86097b572cd544853f9d9c8bde379a3e53d7b637b22b66c6fbe1bb417"
+    }
+  },
+  "data": {
+    "raw": {
+      "train": {
+        "video_directories": 794,
+        "canonical_sources": 174,
+        "source_connected_components": 23,
+        "largest_component_videos": 186
+      },
+      "val": {
+        "video_directories": 183,
+        "canonical_sources": 85,
+        "source_connected_components": 15,
+        "largest_component_videos": 37
+      },
+      "train_val_canonical_source_intersection": 0
+    },
+    "converted": {
+      "train": {
+        "videos": 110,
+        "valid_person_tracks": 268,
+        "canonical_sources": 111,
+        "source_connected_components": 18,
+        "largest_component_videos": 20,
+        "ambiguous_person_slots": 13,
+        "missing_person_slots": 0,
+        "source_videos_available": 794,
+        "missing_alphapose_inputs": 684,
+        "videos_shorter_than_320_frames": 45,
+        "maximum_adjacent_duplicate_sample_steps": 151
+      },
+      "val": {
+        "videos": 51,
+        "valid_person_tracks": 134,
+        "canonical_sources": 47,
+        "source_connected_components": 9,
+        "largest_component_videos": 14,
+        "ambiguous_person_slots": 8,
+        "missing_person_slots": 0,
+        "source_videos_available": 183,
+        "missing_alphapose_inputs": 132,
+        "videos_shorter_than_320_frames": 0,
+        "maximum_adjacent_duplicate_sample_steps": 0
+      },
+      "train_val_canonical_source_intersection": 0,
+      "all_counts_positive_integer": true,
+      "track_count_total": 402,
+      "density_sum_count_max_abs_difference": 0.00000762939453125,
+      "source_pickle_bytes": 27487004,
+      "feature_array_bytes": 26783762,
+      "privileged_target_array_bytes": 516168
+    }
+  },
+  "schema": {
+    "motion": {
+      "shape": "[N,320,17,3]",
+      "dtype": "float32",
+      "channels": [
+        "image-normalized x",
+        "image-normalized y",
+        "AlphaPose keypoint confidence"
+      ],
+      "third_channel_is_depth": false
+    },
+    "person_mask": {
+      "shape": "[N]",
+      "dtype": "bool"
+    },
+    "frame_mask": {
+      "shape": "[N,320]",
+      "dtype": "bool"
+    },
+    "sampled_frame_indices": {
+      "shape": "[320]",
+      "dtype": "int64"
+    },
+    "count_gt": {
+      "shape": "[N]",
+      "dtype": "float32",
+      "privileged": true
+    },
+    "density_gt": {
+      "shape": "[N,320]",
+      "dtype": "float32",
+      "privileged": true,
+      "leaks_count": true
+    },
+    "timestamps_available": false,
+    "fps_available": false,
+    "autonomous_track_id_sequence_available": false,
+    "association": {
+      "type": "per-frame greedy GT-bbox to AlphaPose IoU",
+      "min_iou": 0.1,
+      "evaluation_scope": "skeleton-track-conditioned; not end-to-end detection"
+    }
+  },
+  "field_access": {
+    "allowed_model_process": [
+      "motion",
+      "person_mask",
+      "frame_mask",
+      "sampled_frame_indices",
+      "source_length",
+      "opaque_sample_key",
+      "local_person_slot_index"
+    ],
+    "audit_only": [
+      "canonical_source_ids",
+      "canonical_video_id",
+      "video_name",
+      "source_split",
+      "source_json_sha256",
+      "source_alphapose_json_sha256",
+      "converter_schema_version"
+    ],
+    "evaluator_only": [
+      "count_gt",
+      "density_gt",
+      "source_json",
+      "raw_annotation.count",
+      "raw_annotation.period",
+      "raw_annotation.bbox",
+      "object_ids",
+      "person_object_ids",
+      "object_mapping",
+      "gt_object_pose_coverage",
+      "gt_bbox_assisted_pose_association",
+      "source_alphapose_json"
+    ],
+    "physical_separation_required": true,
+    "ignore_keys_in_shared_pickle_is_sufficient": false
+  },
+  "metric_verdict": {
+    "period_map_ap50_ap75": {
+      "official_implementation_available": true,
+      "implementation": "MultiCounterPlus mmdet/datasets/multirep_eval_api.py",
+      "official_faithful_for_current_supplied_track_pilot": false,
+      "reason": "The official protocol includes instance detection and matching; the current pickle supplies GT-bbox-assisted slots",
+      "allowed_label": "supplied-track Period-AP diagnostic",
+      "published_display_unit": "percent",
+      "official_kernel_unit": "0_to_1"
+    },
+    "avgmae_avgobo": {
+      "official_faithful_implementation_present": false,
+      "new_scorer_required": true,
+      "required_weighting": "mean over videos of the within-video mean over repetitive persons",
+      "motionbert_existing_weighting": "pooled mean over persons",
+      "motionbert_existing_scorer_official_faithful": false
+    },
+    "hota_idf1_idsw": {
+      "available": false,
+      "reason": "No predicted bbox track or autonomous temporal identity sequence is present"
+    },
+    "pams_metrics_multi_rep_compatible": false
+  },
+  "pams_rac_check": {
+    "multirep_pose_cache_present": false,
+    "multirep_evaluator_present": false,
+    "available_dataset": "single-person UCFRep",
+    "train_entries": 337,
+    "dev_entries": 84,
+    "pose_shape": "[256,33,3]",
+    "zero_valid_train_sequences": 16,
+    "zero_valid_dev_sequences": 6,
+    "usable_role": "separate single-person self-supervised pretraining or unit testing only"
+  },
+  "forbidden_paths": [
+    "data/test/**",
+    "data/counting_multirep_skeleton_pose_expanded_v44_len320/test.pkl",
+    "data/counting_multirep_skeleton_real_disjoint_v44_len320/**",
+    "data/counting_multirep_skeleton_real_disjoint_v46_len320/**",
+    "data/counting_multirep_skeleton_real_disjoint_v46_len320/val.pkl",
+    "data/counting_multirep_skeleton_official_complete_v46_len320/**",
+    "results/**",
+    "output/**",
+    "tools/convert_complete_multirep_test_v46.py",
+    "tools/select_complete_multirep_test_v46.py",
+    "tools/convert_selected_multirep_to_test_v45.py",
+    "tools/make_complete_test_queue_v46.py",
+    "tools/precommit_official_complete_v46.py"
+  ],
+  "next_gate": {
+    "status": "blocked_until_packaging_controls_pass",
+    "requirements": [
+      "Build feature-only train/dev shards",
+      "Build a separately permissioned evaluator-only label vault",
+      "Reject privileged keys before training deserialization",
+      "Freeze canonical-source connected components",
+      "Freeze per-file and per-sample SHA-256 receipts",
+      "Implement and test official equation-faithful AvgMAE and AvgOBO",
+      "Label every pilot artifact partial-cache, GT-bbox-assisted, and supplied-track"
+    ],
+    "main_paper_evidence_still_requires": [
+      "Complete train/val pose cache",
+      "Official MultiRep release and split identity",
+      "Independent seeds and frozen predictions",
+      "Official metric scorer",
+      "Untouched final evaluator"
+    ]
+  }
+}

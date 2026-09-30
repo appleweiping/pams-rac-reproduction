@@ -1,0 +1,418 @@
+{
+  "audit_class": "label-free-v2-v3-pose-cache-comparison",
+  "definitions": {
+    "all_invalid": "cached_valid_frames == 0",
+    "extremely_short": "1 <= v3 selected_source_frames <= 4",
+    "single_frame_converted_to_all_invalid": "v3 selected_source_frames == 1 and cached_valid_frames == 0",
+    "valid_frame_rate": "cached_valid_frames / 256"
+  },
+  "inputs": {
+    "combined_identity_sha256": "af5ac16f2ba3589d1bf38608305139706e9aca8714ddfa1decae9ce2f95a09e6",
+    "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "dev_sidecar_fingerprint": "d1349cff6913345899db288c11aa991419cdd2572a124f3dda6aa2aba35fb81d",
+    "dev_sidecar_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "pose_model": "mediapipe-pose-0.10.14",
+    "train_identity_sha256": "88367535e296213377c366ed69abbd1e808c38049d79bb948091688e4c5b7b3f",
+    "train_sidecar_fingerprint": "e3d6c979f5d160e37199726bff773a803cc77a0357079d046462b58da6454662",
+    "train_sidecar_sha256": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207"
+  },
+  "schema_version": 1,
+  "scope": {
+    "labels_or_targets_accessed": false,
+    "protocol": "ucfrep_526",
+    "sample_count": 421,
+    "source_videos_accessed": false,
+    "splits": [
+      "train337",
+      "dev84"
+    ],
+    "test105_accessed": false
+  },
+  "splits": {
+    "dev": {
+      "sample_count": 84,
+      "v2": {
+        "all_invalid_count": 5,
+        "cache_set_sha256": "2e14cb39a4112f7ee1d10b759d166bb472f41e317e55e773776394331690256c",
+        "cache_snapshot_sha256": "2c3322bb93e8dd48a1ce675dcf6f79161a7631c0620c9d790dd32a64d1213f77",
+        "entry_count": 84,
+        "pose_fingerprint": "8ecb6c1384e1d6a088762322ed90bb6aa631683318e0ab7ed21c19541e5f6656",
+        "valid_frame_rate_distribution": {
+          "count": 84,
+          "max": 1.0,
+          "mean": 0.7623697916666666,
+          "min": 0.0,
+          "p05": 0.0011718750000000028,
+          "p25": 0.53125,
+          "p50": 1.0,
+          "p75": 1.0,
+          "p95": 1.0,
+          "std_population": 0.34800815342074276
+        }
+      },
+      "v3": {
+        "all_invalid_count": 6,
+        "cache_set_sha256": "681b0390ff252df9cf5b1e7c41bfcb6ecb8a0c5b4ef341087cacddc1bf5a3de1",
+        "cache_snapshot_sha256": "bd509e472715e5e11b14a90fcfc4a796339f159d9e886076c9360afdb19f7d1f",
+        "entry_count": 84,
+        "pose_fingerprint": "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116",
+        "selected_source_frames_distribution": {
+          "count": 84,
+          "max": 548.0,
+          "mean": 127.35714285714286,
+          "min": 0.0,
+          "p05": 0.15000000000000036,
+          "p25": 34.75,
+          "p50": 109.5,
+          "p75": 189.0,
+          "p95": 298.65,
+          "std_population": 105.89579816039544
+        },
+        "single_frame_converted_to_all_invalid_count": 1,
+        "source_frames_distribution": {
+          "count": 84,
+          "max": 669.0,
+          "mean": 213.45238095238096,
+          "min": 67.0,
+          "p05": 93.45,
+          "p25": 132.0,
+          "p50": 198.5,
+          "p75": 251.0,
+          "p95": 396.94999999999993,
+          "std_population": 108.2740575666679
+        },
+        "source_valid_frames_distribution": {
+          "count": 84,
+          "max": 548.0,
+          "mean": 154.97619047619048,
+          "min": 0.0,
+          "p05": 0.3000000000000007,
+          "p25": 86.25,
+          "p50": 136.5,
+          "p75": 213.5,
+          "p95": 315.7,
+          "std_population": 105.40240082547096
+        },
+        "valid_frame_rate_distribution": {
+          "count": 84,
+          "max": 1.0,
+          "mean": 0.9285714285714286,
+          "min": 0.0,
+          "p05": 0.0,
+          "p25": 1.0,
+          "p50": 1.0,
+          "p75": 1.0,
+          "p95": 1.0,
+          "std_population": 0.25753937681885636
+        }
+      },
+      "video_ids": {
+        "v2_all_invalid": [
+          "v_Biking_g16_c02",
+          "v_BreastStroke_g01_c01",
+          "v_PlayingViolin_g08_c04",
+          "v_Rowing_g01_c03",
+          "v_Rowing_g14_c07"
+        ],
+        "v3_all_invalid": [
+          "v_Biking_g16_c02",
+          "v_BreastStroke_g01_c01",
+          "v_BreastStroke_g12_c02",
+          "v_PlayingViolin_g08_c04",
+          "v_Rowing_g01_c03",
+          "v_Rowing_g14_c07"
+        ],
+        "v3_extremely_short": [
+          "v_BreastStroke_g12_c02"
+        ],
+        "v3_single_frame_converted_to_all_invalid": [
+          "v_BreastStroke_g12_c02"
+        ]
+      }
+    },
+    "train": {
+      "sample_count": 337,
+      "v2": {
+        "all_invalid_count": 8,
+        "cache_set_sha256": "34123ac27334ab06852c12254c7e0c046f7d86f3a066c81f9b8751c362dd0cd0",
+        "cache_snapshot_sha256": "55576985ddecffaa66c71ae237209a88accb8b2eeb67c249d87941001375d2b8",
+        "entry_count": 337,
+        "pose_fingerprint": "8ecb6c1384e1d6a088762322ed90bb6aa631683318e0ab7ed21c19541e5f6656",
+        "valid_frame_rate_distribution": {
+          "count": 337,
+          "max": 1.0,
+          "mean": 0.7764048590504451,
+          "min": 0.0,
+          "p05": 0.065625,
+          "p25": 0.58984375,
+          "p50": 0.98046875,
+          "p75": 1.0,
+          "p95": 1.0,
+          "std_population": 0.318259893846002
+        }
+      },
+      "v3": {
+        "all_invalid_count": 16,
+        "cache_set_sha256": "f32d718ae922120778f535a6a4f467edba79cafeba90373b3a6a55bf11be6ee2",
+        "cache_snapshot_sha256": "530ad66101ab1abcb275951764acc76573ff9531d888d92d601de0fe1770c643",
+        "entry_count": 337,
+        "pose_fingerprint": "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116",
+        "selected_source_frames_distribution": {
+          "count": 337,
+          "max": 623.0,
+          "mean": 126.0979228486647,
+          "min": 0.0,
+          "p05": 2.0,
+          "p25": 29.0,
+          "p50": 101.0,
+          "p75": 176.0,
+          "p95": 383.79999999999995,
+          "std_population": 121.52407252639527
+        },
+        "single_frame_converted_to_all_invalid_count": 8,
+        "source_frames_distribution": {
+          "count": 337,
+          "max": 846.0,
+          "mean": 216.36498516320475,
+          "min": 53.0,
+          "p05": 86.8,
+          "p25": 129.0,
+          "p50": 183.0,
+          "p75": 252.0,
+          "p95": 504.59999999999997,
+          "std_population": 126.19019260100724
+        },
+        "source_valid_frames_distribution": {
+          "count": 337,
+          "max": 817.0,
+          "mean": 160.67062314540058,
+          "min": 0.0,
+          "p05": 5.0,
+          "p25": 79.0,
+          "p50": 130.0,
+          "p75": 211.0,
+          "p95": 426.3999999999993,
+          "std_population": 129.87262007677276
+        },
+        "valid_frame_rate_distribution": {
+          "count": 337,
+          "max": 1.0,
+          "mean": 0.9525222551928784,
+          "min": 0.0,
+          "p05": 1.0,
+          "p25": 1.0,
+          "p50": 1.0,
+          "p75": 1.0,
+          "p95": 1.0,
+          "std_population": 0.21265843165779127
+        }
+      },
+      "video_ids": {
+        "v2_all_invalid": [
+          "v_Biking_g02_c01",
+          "v_FrontCrawl_g13_c04",
+          "v_FrontCrawl_g16_c01",
+          "v_HammerThrow_g09_c04",
+          "v_Kayaking_g08_c01",
+          "v_Kayaking_g15_c01",
+          "v_Rowing_g04_c06",
+          "v_Rowing_g12_c07"
+        ],
+        "v3_all_invalid": [
+          "v_BenchPress_g18_c01",
+          "v_Biking_g02_c01",
+          "v_BreastStroke_g07_c01",
+          "v_BreastStroke_g17_c02",
+          "v_BreastStroke_g20_c01",
+          "v_CuttingInKitchen_g19_c04",
+          "v_FrontCrawl_g13_c04",
+          "v_FrontCrawl_g16_c01",
+          "v_HammerThrow_g09_c04",
+          "v_Kayaking_g02_c04",
+          "v_Kayaking_g04_c02",
+          "v_Kayaking_g06_c02",
+          "v_Kayaking_g08_c01",
+          "v_Kayaking_g15_c01",
+          "v_Rowing_g04_c06",
+          "v_Rowing_g12_c07"
+        ],
+        "v3_extremely_short": [
+          "v_BenchPress_g03_c01",
+          "v_BenchPress_g13_c01",
+          "v_BenchPress_g18_c01",
+          "v_Biking_g09_c01",
+          "v_BreastStroke_g04_c01",
+          "v_BreastStroke_g07_c01",
+          "v_BreastStroke_g13_c01",
+          "v_BreastStroke_g17_c02",
+          "v_BreastStroke_g20_c01",
+          "v_CuttingInKitchen_g19_c04",
+          "v_FrontCrawl_g01_c01",
+          "v_Kayaking_g02_c04",
+          "v_Kayaking_g04_c02",
+          "v_Kayaking_g06_c02",
+          "v_TrampolineJumping_g15_c05"
+        ],
+        "v3_single_frame_converted_to_all_invalid": [
+          "v_BenchPress_g18_c01",
+          "v_BreastStroke_g07_c01",
+          "v_BreastStroke_g17_c02",
+          "v_BreastStroke_g20_c01",
+          "v_CuttingInKitchen_g19_c04",
+          "v_Kayaking_g02_c04",
+          "v_Kayaking_g04_c02",
+          "v_Kayaking_g06_c02"
+        ]
+      }
+    }
+  },
+  "status": "passed",
+  "total": {
+    "sample_count": 421,
+    "v2": {
+      "all_invalid_count": 13,
+      "cache_set_sha256": "d248852c787204c4ce93c905629fdd5e7bd1bb640dd273f30811e4489e5e43dc",
+      "cache_snapshot_sha256": "07bd353dc3879acf671906a61df222f05f2f3551df04f30393d503ba4a948a38",
+      "entry_count": 421,
+      "pose_fingerprint": "8ecb6c1384e1d6a088762322ed90bb6aa631683318e0ab7ed21c19541e5f6656",
+      "valid_frame_rate_distribution": {
+        "count": 421,
+        "max": 1.0,
+        "mean": 0.773604513064133,
+        "min": 0.0,
+        "p05": 0.0546875,
+        "p25": 0.57421875,
+        "p50": 0.98828125,
+        "p75": 1.0,
+        "p95": 1.0,
+        "std_population": 0.32446181327640766
+      }
+    },
+    "v3": {
+      "all_invalid_count": 22,
+      "cache_set_sha256": "bdf9a89773a22c2e8f1e9cd1e9e07d6a18dc0ba3d98d87cb54480e54f61f18b8",
+      "cache_snapshot_sha256": "4a0cd353ebcb6e6e92bea41db89f37e3f7b4eb3c1bb5d762bf467ee737b2690e",
+      "entry_count": 421,
+      "pose_fingerprint": "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116",
+      "selected_source_frames_distribution": {
+        "count": 421,
+        "max": 623.0,
+        "mean": 126.34916864608076,
+        "min": 0.0,
+        "p05": 1.0,
+        "p25": 29.0,
+        "p50": 102.0,
+        "p75": 178.0,
+        "p95": 359.0,
+        "std_population": 118.57152218062508
+      },
+      "single_frame_converted_to_all_invalid_count": 9,
+      "source_frames_distribution": {
+        "count": 421,
+        "max": 846.0,
+        "mean": 215.78384798099762,
+        "min": 53.0,
+        "p05": 88.0,
+        "p25": 130.0,
+        "p50": 187.0,
+        "p75": 252.0,
+        "p95": 498.0,
+        "std_population": 122.82986833915609
+      },
+      "source_valid_frames_distribution": {
+        "count": 421,
+        "max": 817.0,
+        "mean": 159.53444180522564,
+        "min": 0.0,
+        "p05": 4.0,
+        "p25": 79.0,
+        "p50": 134.0,
+        "p75": 211.0,
+        "p95": 403.0,
+        "std_population": 125.39284350915226
+      },
+      "valid_frame_rate_distribution": {
+        "count": 421,
+        "max": 1.0,
+        "mean": 0.9477434679334917,
+        "min": 0.0,
+        "p05": 0.0,
+        "p25": 1.0,
+        "p50": 1.0,
+        "p75": 1.0,
+        "p95": 1.0,
+        "std_population": 0.2225438988669209
+      }
+    },
+    "video_ids": {
+      "v2_all_invalid": [
+        "v_Biking_g02_c01",
+        "v_Biking_g16_c02",
+        "v_BreastStroke_g01_c01",
+        "v_FrontCrawl_g13_c04",
+        "v_FrontCrawl_g16_c01",
+        "v_HammerThrow_g09_c04",
+        "v_Kayaking_g08_c01",
+        "v_Kayaking_g15_c01",
+        "v_PlayingViolin_g08_c04",
+        "v_Rowing_g01_c03",
+        "v_Rowing_g04_c06",
+        "v_Rowing_g12_c07",
+        "v_Rowing_g14_c07"
+      ],
+      "v3_all_invalid": [
+        "v_BenchPress_g18_c01",
+        "v_Biking_g02_c01",
+        "v_Biking_g16_c02",
+        "v_BreastStroke_g01_c01",
+        "v_BreastStroke_g07_c01",
+        "v_BreastStroke_g12_c02",
+        "v_BreastStroke_g17_c02",
+        "v_BreastStroke_g20_c01",
+        "v_CuttingInKitchen_g19_c04",
+        "v_FrontCrawl_g13_c04",
+        "v_FrontCrawl_g16_c01",
+        "v_HammerThrow_g09_c04",
+        "v_Kayaking_g02_c04",
+        "v_Kayaking_g04_c02",
+        "v_Kayaking_g06_c02",
+        "v_Kayaking_g08_c01",
+        "v_Kayaking_g15_c01",
+        "v_PlayingViolin_g08_c04",
+        "v_Rowing_g01_c03",
+        "v_Rowing_g04_c06",
+        "v_Rowing_g12_c07",
+        "v_Rowing_g14_c07"
+      ],
+      "v3_extremely_short": [
+        "v_BenchPress_g03_c01",
+        "v_BenchPress_g13_c01",
+        "v_BenchPress_g18_c01",
+        "v_Biking_g09_c01",
+        "v_BreastStroke_g04_c01",
+        "v_BreastStroke_g07_c01",
+        "v_BreastStroke_g12_c02",
+        "v_BreastStroke_g13_c01",
+        "v_BreastStroke_g17_c02",
+        "v_BreastStroke_g20_c01",
+        "v_CuttingInKitchen_g19_c04",
+        "v_FrontCrawl_g01_c01",
+        "v_Kayaking_g02_c04",
+        "v_Kayaking_g04_c02",
+        "v_Kayaking_g06_c02",
+        "v_TrampolineJumping_g15_c05"
+      ],
+      "v3_single_frame_converted_to_all_invalid": [
+        "v_BenchPress_g18_c01",
+        "v_BreastStroke_g07_c01",
+        "v_BreastStroke_g12_c02",
+        "v_BreastStroke_g17_c02",
+        "v_BreastStroke_g20_c01",
+        "v_CuttingInKitchen_g19_c04",
+        "v_Kayaking_g02_c04",
+        "v_Kayaking_g04_c02",
+        "v_Kayaking_g06_c02"
+      ]
+    }
+  }
+}

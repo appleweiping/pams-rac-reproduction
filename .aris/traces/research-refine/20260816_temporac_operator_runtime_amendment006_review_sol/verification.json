@@ -1,0 +1,185 @@
+{
+  "artifact_type": "deterministic_verification",
+  "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_006_OPERATOR_RUNTIME_WHEEL_PATH",
+  "verdict": "REVISE",
+  "blocker_ids": [
+    "A006-R1-B1"
+  ],
+  "canonical_preimages": {
+    "old_bootstrap": {
+      "framing": "UTF-8 LF join plus one LF",
+      "bytes": 409,
+      "sha256": "66fdf1cd03616759948e326e1714a997848c45f40d005240a4ebe170240bf323"
+    },
+    "corrected_bootstrap": {
+      "framing": "UTF-8 LF join plus one LF",
+      "bytes": 592,
+      "sha256": "c830092276818bcacf4a08eb8818481fe47b7d8f608229cac1fc672ad2947602"
+    },
+    "old_runtime_lock": {
+      "framing": "Amendment 004 canonical JSON",
+      "bytes": 3732,
+      "sha256": "8008df73cc9a807ac5e5262aebc170ae6e01c82b07658575f6207ec7cb0a14fd"
+    },
+    "corrected_runtime_lock_as_written": {
+      "framing": "Amendment 004 canonical JSON",
+      "bytes": 3976,
+      "sha256": "71fdf4bfe78b59aada9f2e207002eae3fcd10345ed1f47ee9969557d6649f5da"
+    }
+  },
+  "runtime_leaf_delta": {
+    "differing_leaf_count": 5,
+    "old_path_occurrences_old": 4,
+    "corrected_path_occurrences_corrected": 4,
+    "old_path_occurrences_corrected": 0,
+    "canonical_length_delta_bytes": 244,
+    "differing_paths": [
+      "/container_policy/bootstrap_script_sha256",
+      "/container_policy/bootstrap_steps/0",
+      "/container_policy/bootstrap_steps/1",
+      "/container_policy/bootstrap_steps/3",
+      "/container_policy/docker_argv_template/13"
+    ],
+    "every_other_literal_field_value_unchanged": true,
+    "semantic_isolation_claim_valid": false,
+    "reason": "pip-generated direct_url.json and its RECORD row are wheel-path-derived"
+  },
+  "pinned_runtime": {
+    "platform": "linux/amd64",
+    "network": "none",
+    "root_filesystem": "read-only",
+    "tmpfs": "/tmp:rw,exec,nosuid,nodev,size=512m",
+    "worktree_mount": "read-only",
+    "oci_index": {
+      "bytes": 9719,
+      "sha256": "e8be0ea148390d08bc077840cf87ac6a538d80b0ea1e8752b3e3982987cd0a53"
+    },
+    "linux_amd64_descriptor_count": 1,
+    "child_manifest": {
+      "bytes": 2516,
+      "sha256": "0c7cf9e198201da2e838fcb61c07717dfc96adb3d1200599f54dea0af1d153bf"
+    },
+    "image_config": {
+      "bytes": 7096,
+      "sha256": "c7ed3a18aaaa5a8b439cf84138ebcfe1e82e64d091781f3384ca38827824aefc"
+    },
+    "python_executable": {
+      "path": "/usr/local/bin/python3.12",
+      "bytes": 18208,
+      "sha256": "9a6988f011f466ae829f7945c54000a564e14a1a594cfb7079c02eda9b87620f"
+    },
+    "reported_kernel": "Linux",
+    "reported_machine": "x86_64",
+    "reported_python": "CPython 3.12.4"
+  },
+  "wheel": {
+    "source_path": "C:/Users/admin/AppData/Local/Temp/temporac-amendment004-v2-a83f4b1c/wheel/numpy.whl",
+    "file_type": "regular non-symlink",
+    "bytes": 16040181,
+    "sha256": "24003ba8ff22ea29a8c306e61d316ac74111cebf942afbf692df65509a05f111",
+    "corrected_basename": "numpy-2.1.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+  },
+  "exact_old_first_four_step_probe": {
+    "direct_execution": true,
+    "generator_step_present": false,
+    "generator_executed": false,
+    "exit_code": 1,
+    "stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stderr": {
+      "bytes": 48,
+      "sha256": "9218fcf778490e9a23c6865cbbdf10c000cd690375b16b4e4e5848d0b45371a4",
+      "utf8_escaped": "ERROR: numpy.whl is not a valid wheel filename.\\n"
+    },
+    "candidate_before": "absent",
+    "candidate_after": "absent",
+    "full_script_conclusion": "necessarily stops at step 4 under /bin/sh -ceu"
+  },
+  "exact_corrected_first_four_step_probe": {
+    "direct_execution": true,
+    "historical_witness_reliance": false,
+    "generator_step_present": false,
+    "generator_executed": false,
+    "exit_code": 0,
+    "stderr_bytes": 0,
+    "imported_numpy_version": "2.1.0",
+    "numpy_init": {
+      "bytes": 22007,
+      "sha256": "39c42db027548f958e096e8babe3fa0e3e773d24aa39eb6363fc0e3abbec34b1"
+    },
+    "candidate_before": "absent",
+    "candidate_after": "absent",
+    "fresh_container_repetitions_for_record": 2
+  },
+  "installed_metadata": {
+    "proposed_record_sha256": "65cfe9b7bbac44a46116b2b5f8282f32ec57e1aa9faeb64d523604c712b446d8",
+    "generator_preimage_expression": "importlib.metadata.distribution(\"numpy\").read_text(\"RECORD\").encode(\"utf-8\")",
+    "generator_normalized_record": {
+      "bytes": 100089,
+      "sha256": "76ae0d49a0d236c7d045e8394d649e1252a6ef2219ef2dac33f72ac01ea76cca"
+    },
+    "raw_record": {
+      "bytes": 101316,
+      "sha256": "b30c47e53bf16be292c392247bad8948f3fb2407ecd54fde388f74be007426e0",
+      "crlf_count": 1227
+    },
+    "direct_url_json": {
+      "bytes": 286,
+      "sha256": "3c36ea74fe65236c1dcd3bc80373860762a80217f52a6c41a7a390805ce27e98"
+    },
+    "prohibited_generator_step_predicted_result": "runtime-lock mismatch before candidate-directory creation"
+  },
+  "diagnostic_runtime_variants": {
+    "generator_normalized_record_digest": {
+      "bytes": 3976,
+      "sha256": "47c2227b74b627a03bf9b5e4930dd02484caaae5a695ae5c0129f04781115cd8"
+    },
+    "raw_record_digest": {
+      "bytes": 3976,
+      "sha256": "951fe94022c18ccbc5e377f155a3f577066d176e22aa2e0b482bd1421eac4d0f"
+    },
+    "normative": false
+  },
+  "receipt_v3": {
+    "top_level_key_count": 9,
+    "binding_key_count": 17,
+    "contract_read_path_count": 12,
+    "contract_read_binding_order_aligned": true,
+    "generation_snapshot_path_count": 28,
+    "generation_import_execute_path_count": 9,
+    "review_snapshot_candidate_member_count": 5,
+    "review_snapshot_contract_read_count": 13,
+    "review_snapshot_project_file_count": 15,
+    "review_snapshot_total_count": 33,
+    "unique_and_ascii_ordered_where_required": true,
+    "self_hash_present": false,
+    "circularity_found": false,
+    "future_accepted_review_hash_injectable": true,
+    "accepted_review_fixed_paths_feasible_without_self_lock": true
+  },
+  "scope_preservation": {
+    "manifest_schema_changed": false,
+    "algorithm_changed": false,
+    "row_count": 10368,
+    "row_order_changed": false,
+    "claims_changed": false,
+    "thresholds_changed": false,
+    "jobs_changed": false,
+    "seeds_changed": false,
+    "gpu_ledger_changed": false,
+    "data_boundary_changed": false,
+    "decoder_rule_changed": false,
+    "nola_rule_changed": false,
+    "fixture_population_changed": false,
+    "current_implementation_status": "pre-amendment"
+  },
+  "safety": {
+    "fifth_generator_step_run": false,
+    "network_download_or_access": false,
+    "candidate_generated": false,
+    "worktree_probe_temp_created": false,
+    "probe_temp_outside_worktree_deleted": true
+  }
+}

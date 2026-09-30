@@ -1,0 +1,1029 @@
+{
+  "schema_version": "aris.research_lit.pivot_landscape.v1",
+  "landscape_id": "20260815_pivot_landscape_sol",
+  "generated_at": "2026-08-15T21:00:00+08:00",
+  "reviewer": {
+    "model": "gpt-5.6-sol",
+    "reasoning": "ultra",
+    "fresh_context": false,
+    "nonfresh_reason": "agent_thread_lifetime_limit",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "role": "ARIS research-lit aggregation only"
+  },
+  "scope": {
+    "selected_directions_only": [
+      {
+        "dedup_key": "set-valued-counting-pose-missingness",
+        "label": "A",
+        "question": "What direct, adjacent, and foundational work bears on pose missingness, pose uncertainty or set prediction, partial identification or conformal task uncertainty, and RAC output uncertainty or abstention?"
+      },
+      {
+        "dedup_key": "fragment-boundary-count-mass-transport",
+        "label": "B",
+        "question": "What direct, adjacent, and foundational work bears on track fragmentation, re-entry and repair, count-density additivity, temporal crop or cycle consistency, and multi-instance identity continuity?"
+      }
+    ],
+    "landscape_not_verdict": true,
+    "novelty_confirmed": false,
+    "implementation_authorized": false,
+    "training_authorized": false,
+    "paper_claim_authorized": false,
+    "manifest_or_idea_report_modified": false,
+    "server_test_sealed_heldout_results_accessed": false,
+    "terminal_warp_phase_tuned_retried_or_resurrected": false
+  },
+  "input_sha256": {
+    ".agents/skills/research-lit/SKILL.md": "d6293c58a6d6319b7ae5075ee9a1587ae83368400fbe15ff89a338e52e549c61",
+    ".agents/skills/shared-references/fan-out-pattern.md": "550eb36f8b807001fdbe4c5357ea2927b5efb88bda74223747d5c45ab28edca4",
+    ".agents/skills/shared-references/integration-contract.md": "5d393c31b36e98ae99c17ab9cf5879853c0cb595bbd9f4973ffe7bcd6549f4e7",
+    "idea-stage/PIVOT_CANDIDATE_UNION.json": "8c1552da0166d02ab565e5b4072fda5cc2a36a1acb46f3d58ccdb418dc33e652",
+    "idea-stage/PIVOT_IDEA_JURY.json": "cac5b3d0217854d886223934724075f2cadd5a2b08f866bc1194ec4f5b09f800",
+    "idea-stage/IDEA_REPORT.md": "6105bcc49d1a4756b7927e87f02d3b38d23ed0d6115f344409d7d8a68c0d2610",
+    "idea-stage/NOVELTY_CHECK.json": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5",
+    "paper/references.bib": "c84cb6df17ac4133f7c3115e1aa4dcad82e9e850f1ebdc5e6979cbc1cfd917b3",
+    "CLAIMS_FROM_RESULTS_WARP_PHASE.json": "82b3cd6b687d7a4aee8ef3b9c5c6e8159c2a1ee68d75bf94b85bc7430676bb85",
+    "EXPERIMENT_AUDIT_WARP_PHASE.json": "457d09da6b4c7c7a9e7734e21bc3564f2d2a66dc610cc549fc70203b7fdfd7ed",
+    "AGENTS.md": "35eaf270a8f50c943577a7d00c4d5a78a22a02874489709db6ada5c850aa2251"
+  },
+  "local_library": {
+    "papers_directory_exists": false,
+    "literature_directory_exists": false,
+    "agents_md_paper_library_heading_exists": false,
+    "contribution": "none",
+    "warning": "WARN: local contributed nothing — no PDFs found in papers/, literature/, or a configured paper library. To include yours, add a \"## Paper Library\" heading to AGENTS.md followed by the directory path."
+  },
+  "source_status": [
+    {
+      "source": "publisher_proceedings_author_and_official_code_pages",
+      "status": "contributed",
+      "notes": "Preferred for venue, author, method-boundary, and canonical-URL checks."
+    },
+    {
+      "source": "arxiv_fetch.py",
+      "status": "contributed_with_warning",
+      "notes": "Six theme queries were run sequentially under the no-spawn constraint. One early invocation encountered a Windows console encoding failure and was rerun with PYTHONIOENCODING=utf-8; no paper conclusion depends on the failed invocation."
+    },
+    {
+      "source": "verify_papers.py",
+      "status": "pass",
+      "notes": "The no-cache arXiv existence gate verified all 15 submitted identifiers with high confidence and no warnings."
+    },
+    {
+      "source": "local_paper_library",
+      "status": "warn_no_contribution",
+      "notes": "Neither papers/ nor literature/ exists and AGENTS.md configures no Paper Library."
+    },
+    {
+      "source": "zotero_or_obsidian",
+      "status": "unavailable_not_used",
+      "notes": "No callable local Zotero or Obsidian source was available in this review context."
+    }
+  ],
+  "recency_protocol": {
+    "landscape_years": [
+      2024,
+      2025,
+      2026
+    ],
+    "recent_arxiv_window": {
+      "start_inclusive": "2026-02-15",
+      "end_inclusive": "2026-08-15"
+    },
+    "recent_window_hits": [
+      "MultiCounter+ (2026 publisher record)",
+      "PAMS (CVPR Findings 2026)",
+      "TWCRAC (SSRN preprint posted 2026-04-22)",
+      "Vision-Based Safe Human-Robot Collaboration with Uncertainty Guarantees (arXiv:2604.15221)",
+      "GOT-JEPA (arXiv:2602.14771, first submitted 2026-02-16)",
+      "SRITrack (2026 publisher/institutional record)"
+    ],
+    "interpretation": "Recent-window search produced relevant adjacent uncertainty and tracking work plus direct 2026 RAC work, but search coverage and access limits do not establish absence."
+  },
+  "query_log": [
+    {
+      "theme": "A",
+      "query_id": "A-Q1",
+      "query": "pose occlusion uncertainty conformal human motion",
+      "channels": [
+        "arXiv helper",
+        "primary-source web search"
+      ],
+      "result_summary": "Located multimodal and uncertainty-aware pose or motion work, including MotionMap, CHAMP, CUPS, and conformal motion-prediction records; these produce pose or motion hypotheses/distributions rather than repetition-count sets."
+    },
+    {
+      "theme": "A",
+      "query_id": "A-Q2",
+      "query": "repetition counting pose missing joints uncertainty",
+      "channels": [
+        "arXiv helper",
+        "publisher and proceedings search"
+      ],
+      "result_summary": "Located skeleton-based repetition segmentation/counting and SSTRAC's defective-skeleton reconstruction and occlusion evaluation. The checked sources emphasize repair or point prediction, not calibrated task-level count intervals."
+    },
+    {
+      "theme": "A",
+      "query_id": "A-Q3",
+      "query": "set-valued event count missing data uncertainty",
+      "channels": [
+        "arXiv helper",
+        "primary-source web search"
+      ],
+      "result_summary": "The raw arXiv query was low precision. Targeted primary-source follow-up located conformal pose and motion forecasting, but no mechanism-matched direct RAC source in the checked set. This is a search result, not an absence proof."
+    },
+    {
+      "theme": "B",
+      "query_id": "B-Q1",
+      "query": "multi object tracking tracklet fragmentation re-entry repair",
+      "channels": [
+        "arXiv helper",
+        "CVF, NeurIPS, publisher, and official-code search"
+      ],
+      "result_summary": "Located GTA, STAR, TrackTrack, Split and Connect, probabilistic tracklet inpainting, GTATrack, and SRITrack. Tracklet reconnection, re-entry handling, and long-occlusion repair are crowded adjacent mechanisms."
+    },
+    {
+      "theme": "B",
+      "query_id": "B-Q2",
+      "query": "repetition counting count density temporal additivity",
+      "channels": [
+        "arXiv helper",
+        "RAC proceedings and publisher search"
+      ],
+      "result_summary": "Located direct density/response RAC work including RepNet, TransRAC, MultiCounter, Motion Feature Learning, Rethinking TSSM, PAMS, and TWCRAC. Density integration and temporal consistency are established; explicit supplied-track fragment-boundary count-mass composition was not found in the checked accessible text."
+    },
+    {
+      "theme": "B",
+      "query_id": "B-Q3",
+      "query": "track fragment endpoint consistency count conservation",
+      "channels": [
+        "arXiv helper",
+        "primary-source web search"
+      ],
+      "result_summary": "The literal query was low precision. Targeted follow-up found generic tracklet splitting/linking, gap inpainting, and people-flow conservation, but no checked source that combines these as a repetition-count boundary transport law. This is unresolved rather than novelty clearance."
+    }
+  ],
+  "papers": [
+    {
+      "paper_id": "RAC-01",
+      "title": "Counting Out Time: Class Agnostic Video Repetition Counting in the Wild",
+      "authors_display": "Debidatta Dwibedi, Yusuf Aytar, Jonathan Tompson, Pierre Sermanet, Andrew Zisserman",
+      "year": 2020,
+      "venue": "CVPR",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "direct",
+      "themes": [
+        "A",
+        "B"
+      ],
+      "canonical_identifiers": {
+        "doi": "10.1109/CVPR42600.2020.01040"
+      },
+      "primary_urls": [
+        "https://openaccess.thecvf.com/content_CVPR_2020/html/Dwibedi_Counting_Out_Time_Class_Agnostic_Video_Repetition_Counting_in_the_CVPR_2020_paper.html"
+      ],
+      "evidence_basis": "official_full_text",
+      "core_contribution": "RepNet uses temporal self-similarity, synthetic repetitions, and per-frame period and periodicity predictions for class-agnostic point counting.",
+      "boundary_to_pivots": "Foundational direct boundary for synthetic repetition and response integration; it does not report calibrated count sets or a supplied-track fragment-boundary transport law."
+    },
+    {
+      "paper_id": "RAC-02",
+      "title": "TransRAC: Encoding Multi-scale Temporal Correlation with Transformers for Repetitive Action Counting",
+      "authors_display": "Huazhang Hu, Sixun Dong, Yiqun Zhao, Dongze Lian, Zhengxin Li, Shenghua Gao",
+      "year": 2022,
+      "venue": "CVPR",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "direct",
+      "themes": [
+        "B"
+      ],
+      "canonical_identifiers": {
+        "doi": "10.1109/CVPR52688.2022.01843"
+      },
+      "primary_urls": [
+        "https://openaccess.thecvf.com/content/CVPR2022/html/Hu_TransRAC_Encoding_Multi-Scale_Temporal_Correlation_With_Transformers_for_Repetitive_Action_CVPR_2022_paper.html"
+      ],
+      "evidence_basis": "official_full_text",
+      "core_contribution": "Multi-scale temporal correlation and density-map regression establish a direct count-density baseline.",
+      "boundary_to_pivots": "Global density integration is established; explicit correction or abstention at supplied-track fragment joins is not disclosed in the checked paper."
+    },
+    {
+      "paper_id": "RAC-03",
+      "title": "Repetitive Activity Counting by Sight and Sound",
+      "authors_display": "Yunhua Zhang, Ling Shao, Cees G. M. Snoek",
+      "year": 2021,
+      "venue": "CVPR",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "direct",
+      "themes": [
+        "A"
+      ],
+      "canonical_identifiers": {
+        "arxiv": "2103.13096"
+      },
+      "primary_urls": [
+        "https://openaccess.thecvf.com/content/CVPR2021/html/Zhang_Repetitive_Activity_Counting_by_Sight_and_Sound_CVPR_2021_paper.html",
+        "https://arxiv.org/abs/2103.13096",
+        "https://github.com/xiaobai1217/RepetitionCounting"
+      ],
+      "evidence_basis": "official_full_text",
+      "core_contribution": "Audiovisual fusion and reliability estimation improve point counting under poor visual conditions including occlusion.",
+      "boundary_to_pivots": "RAC reliability under occlusion is occupied, but the checked method switches or fuses modalities rather than producing calibrated count intervals or abstention guarantees."
+    },
+    {
+      "paper_id": "RAC-04",
+      "title": "MultiCounter: Multiple Action Agnostic Repetition Counting in Untrimmed Videos",
+      "authors_display": "Yin Tang, Wei Luo, Jinrui Zhang, Wei Huang, Ruihai Jing, Deyu Zhang",
+      "year": 2024,
+      "venue": "ECAI",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "direct",
+      "themes": [
+        "A",
+        "B"
+      ],
+      "canonical_identifiers": {
+        "doi": "10.3233/FAIA240494",
+        "arxiv": "2409.04035"
+      },
+      "primary_urls": [
+        "https://doi.org/10.3233/FAIA240494",
+        "https://arxiv.org/abs/2409.04035"
+      ],
+      "evidence_basis": "arxiv_full_text_and_publisher_metadata",
+      "core_contribution": "Joint multi-instance localization, tracking, period, and periodicity heads support per-instance count accumulation in untrimmed video.",
+      "boundary_to_pivots": "It is the closest direct identity-continuity boundary. Checked text treats severe occlusion or absence through an empty location state and sums per-frame periodic response, but does not expose calibrated count intervals or post-hoc count-mass transport across externally supplied fragments."
+    },
+    {
+      "paper_id": "RAC-05",
+      "title": "Repetitive Action Counting With Motion Feature Learning",
+      "authors_display": "Xinjie Li, Huijuan Xu",
+      "year": 2024,
+      "venue": "WACV",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "direct",
+      "themes": [
+        "B"
+      ],
+      "canonical_identifiers": {},
+      "primary_urls": [
+        "https://openaccess.thecvf.com/content/WACV2024/html/Li_Repetitive_Action_Counting_With_Motion_Feature_Learning_WACV_2024_paper.html"
+      ],
+      "evidence_basis": "official_full_text",
+      "core_contribution": "A motion branch, flow-guided attention, temporal self-similarity reconstruction, and density-map counting address background changes.",
+      "boundary_to_pivots": "Motion representation and TSSM reconstruction are occupied; fragment-specific composition and boundary uncertainty are not the stated contribution."
+    },
+    {
+      "paper_id": "RAC-06",
+      "title": "Rethinking Temporal Self-Similarity for Repetitive Action Counting",
+      "authors_display": "Yanan Luo, Jinhui Yi, Yazan Abu Farha, Moritz Wolter, Juergen Gall",
+      "year": 2024,
+      "venue": "ICIP",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "direct",
+      "themes": [
+        "B"
+      ],
+      "canonical_identifiers": {
+        "doi": "10.1109/ICIP51287.2024.10647309",
+        "arxiv": "2407.09431"
+      },
+      "primary_urls": [
+        "https://doi.org/10.1109/ICIP51287.2024.10647309",
+        "https://arxiv.org/abs/2407.09431"
+      ],
+      "evidence_basis": "arxiv_full_text_and_official_program",
+      "core_contribution": "Full-resolution embeddings, action-start probabilities, and a reference-TSM consistency loss replace direct TSM-to-count prediction.",
+      "boundary_to_pivots": "Temporal response consistency and start-response integration are occupied; explicit count-mass conservation over supplied fragment joins is not disclosed."
+    },
+    {
+      "paper_id": "RAC-07",
+      "title": "SSTRAC: Skeleton-Based Dual-Stream Spatio-Temporal Transformer for Repetitive Action Counting in Videos",
+      "authors_display": "Jungjun Lim, Donghoon Kang, Kanghyun Ryu, Je Hyeong Hong",
+      "year": 2025,
+      "venue": "IEEE Access",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "direct",
+      "themes": [
+        "A"
+      ],
+      "canonical_identifiers": {
+        "doi": "10.1109/ACCESS.2025.3624029"
+      },
+      "primary_urls": [
+        "https://doi.org/10.1109/ACCESS.2025.3624029",
+        "https://kimbabmoowoo.github.io/publication/Journal/sstrac-2025.pdf",
+        "https://github.com/imjjun/SSTRAC_public"
+      ],
+      "evidence_basis": "author_manuscript_full_text_and_official_metadata",
+      "core_contribution": "Defective skeletons are reconstructed before a dual-stream spatiotemporal transformer predicts a repetition density map; experiments include occlusion robustness.",
+      "boundary_to_pivots": "Pose repair and skeleton occlusion robustness are directly occupied. The checked source is a repair-plus-point-count method, not task-level set-valued counting."
+    },
+    {
+      "paper_id": "RAC-08",
+      "title": "MultiCounter+: Toward Efficient and Robust Multi-Instance Repetitive Action Counting",
+      "authors_display": "Yin Tang, Deyu Zhang, Wei Luo, Jinrui Zhang, Wei Huang, Ruihai Jing, Yaoxue Zhang",
+      "year": 2026,
+      "venue": "IEEE Transactions on Circuits and Systems for Video Technology",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "direct",
+      "themes": [
+        "A",
+        "B"
+      ],
+      "canonical_identifiers": {
+        "doi": "10.1109/TCSVT.2026.3670243"
+      },
+      "primary_urls": [
+        "https://doi.org/10.1109/TCSVT.2026.3670243",
+        "https://ieeexplore.ieee.org/document/11421441/"
+      ],
+      "evidence_basis": "publisher_abstract_and_bibliographic_record_only",
+      "core_contribution": "Publisher metadata describes efficient robust multi-instance counting with mixed spatiotemporal interaction, spatial-temporal consistency, long-short period awareness, and synthetic pretraining.",
+      "boundary_to_pivots": "This is a required mechanism-matched boundary for robust MRAC and identity consistency. Full text was not retrieved, so fragmentation/re-entry and uncertainty details remain unresolved."
+    },
+    {
+      "paper_id": "RAC-09",
+      "title": "Count What Repeats: Period-Adaptive Multi-Scale Consistency for Self-Supervised Repetitive Action Counting",
+      "authors_display": "Shizhao Gao, Jun Li, Qiming Li",
+      "year": 2026,
+      "venue": "CVPR Findings",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "direct",
+      "themes": [
+        "A",
+        "B"
+      ],
+      "canonical_identifiers": {},
+      "primary_urls": [
+        "https://openaccess.thecvf.com/content/CVPR2026F/html/Gao_Count_What_Repeats_Period-Adaptive_Multi-Scale_Consistency_for_Self-Supervised_Repetitive_Action_CVPRF_2026_paper.html",
+        "https://openaccess.thecvf.com/content/CVPR2026F/papers/Gao_Count_What_Repeats_Period-Adaptive_Multi-Scale_Consistency_for_Self-Supervised_Repetitive_Action_CVPRF_2026_paper.pdf"
+      ],
+      "evidence_basis": "official_full_text",
+      "core_contribution": "Period-adaptive multi-scale temporal cycle consistency supports self-supervised representation learning, while multi-expert peak consensus produces the final count.",
+      "boundary_to_pivots": "Local/multi-scale cycle consistency and dynamic peak aggregation are occupied. The checked method does not state calibrated count sets or supplied-track fragment-boundary count transport."
+    },
+    {
+      "paper_id": "RAC-10",
+      "title": "TWCRAC: Leveraging Temporal Cycle Consistency and Dynamic Thresholding for Robust Repetitive Action Counting",
+      "authors_display": "Jun Li, Shizhao Gao, Tianwen Hu, Yinhui Xie, Zhonghua Liu, Qiming Li",
+      "year": 2026,
+      "venue": "SSRN",
+      "publication_status": "preprint",
+      "relevance_class": "direct",
+      "themes": [
+        "A",
+        "B"
+      ],
+      "canonical_identifiers": {
+        "doi": "10.2139/ssrn.6630216"
+      },
+      "primary_urls": [
+        "https://doi.org/10.2139/ssrn.6630216",
+        "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6630216"
+      ],
+      "evidence_basis": "official_preprint_abstract_only",
+      "core_contribution": "The accessible abstract describes a time-window-cycle construction, intra-video temporal cycle consistency, and local-statistics dynamic thresholds for nonstationary repetition.",
+      "boundary_to_pivots": "Time-window/crop consistency and dynamic thresholds cannot be claimed. Full-text access is required to resolve whether any boundary or uncertainty mechanism is closer than the abstract indicates."
+    },
+    {
+      "paper_id": "FOUND-01",
+      "title": "DeepPhase: Periodic Autoencoders for Learning Motion Phase Manifolds",
+      "authors_display": "Sebastian Starke, Ian Mason, Taku Komura",
+      "year": 2022,
+      "venue": "ACM Transactions on Graphics / SIGGRAPH",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "foundational",
+      "themes": [
+        "A",
+        "B"
+      ],
+      "canonical_identifiers": {
+        "doi": "10.1145/3528223.3530178"
+      },
+      "primary_urls": [
+        "https://doi.org/10.1145/3528223.3530178",
+        "https://i.cs.hku.hk/~taku/deepphase.pdf"
+      ],
+      "evidence_basis": "author_full_text_and_doi_metadata",
+      "core_contribution": "Periodic autoencoders learn multi-channel motion phase manifolds without phase labels.",
+      "boundary_to_pivots": "Learned phase and motion-manifold components are occupied and are not count-uncertainty or fragment-transport contributions."
+    },
+    {
+      "paper_id": "A-01",
+      "title": "CHAMP: Conformalized 3D Human Multi-Hypothesis Pose Estimators",
+      "authors_display": "Harry Zhang, Luca Carlone",
+      "year": 2025,
+      "venue": "ICLR",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "adjacent",
+      "themes": [
+        "A"
+      ],
+      "canonical_identifiers": {
+        "arxiv": "2407.06141"
+      },
+      "primary_urls": [
+        "https://proceedings.iclr.cc/paper_files/paper/2025/hash/93bb6829b9a81c339d0b992372da2e95-Abstract-Conference.html",
+        "https://arxiv.org/abs/2407.06141"
+      ],
+      "evidence_basis": "official_abstract_and_arxiv_full_text",
+      "core_contribution": "A learned conformity score selects sets of 3D pose hypotheses from 2D keypoints for downstream aggregation.",
+      "boundary_to_pivots": "Generic conformal pose-set construction is occupied; a residual would need to be specifically about propagating pose ambiguity through a repetition-count functional and showing useful count-set behavior."
+    },
+    {
+      "paper_id": "A-02",
+      "title": "CUPS: Improving Human Pose-Shape Estimators with Conformalized Deep Uncertainty",
+      "authors_display": "Harry Zhang, Luca Carlone",
+      "year": 2025,
+      "venue": "ICML",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "adjacent",
+      "themes": [
+        "A"
+      ],
+      "canonical_identifiers": {
+        "arxiv": "2412.10431"
+      },
+      "primary_urls": [
+        "https://proceedings.mlr.press/v267/zhang25g.html",
+        "https://arxiv.org/abs/2412.10431"
+      ],
+      "evidence_basis": "official_full_text",
+      "core_contribution": "Multiple pose-shape hypotheses and conformalized deep uncertainty support calibrated sequence estimation, including nonexchangeability analysis.",
+      "boundary_to_pivots": "Pose/shape uncertainty calibration is strongly occupied; the checked paper does not target repetition counts."
+    },
+    {
+      "paper_id": "A-03",
+      "title": "Toward Reliable Human Pose Forecasting With Uncertainty",
+      "authors_display": "Saeed Saadatnejad et al.",
+      "year": 2024,
+      "venue": "IEEE Robotics and Automation Letters",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "adjacent",
+      "themes": [
+        "A"
+      ],
+      "canonical_identifiers": {
+        "doi": "10.1109/LRA.2024.3374188",
+        "arxiv": "2304.06707"
+      },
+      "primary_urls": [
+        "https://doi.org/10.1109/LRA.2024.3374188",
+        "https://arxiv.org/abs/2304.06707"
+      ],
+      "evidence_basis": "arxiv_full_text_and_doi_metadata",
+      "core_contribution": "Pose forecasting models aleatoric and epistemic uncertainty using learned motion priors and clustered forecasts.",
+      "boundary_to_pivots": "Uncertain future-pose prediction is occupied but is not calibrated repetition-count set prediction."
+    },
+    {
+      "paper_id": "A-04",
+      "title": "Uncertainty-aware calibrated 3D human motion forecasting with latent conformal prediction",
+      "authors_display": "Yue Ma, Frederick W. B. Li, Xiaohui Liang",
+      "year": 2026,
+      "venue": "Pattern Recognition",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "adjacent",
+      "themes": [
+        "A"
+      ],
+      "canonical_identifiers": {
+        "doi": "10.1016/j.patcog.2026.113144",
+        "related_preliminary_arxiv": "2507.14694"
+      },
+      "primary_urls": [
+        "https://doi.org/10.1016/j.patcog.2026.113144",
+        "https://durham-repository.worktribe.com/output/5079568/uncertainty-aware-calibrated-3d-human-motion-forecasting-with-latent-conformal-prediction",
+        "https://arxiv.org/abs/2507.14694"
+      ],
+      "evidence_basis": "publisher_and_author_repository_record; related_preliminary_arxiv_title_differs",
+      "core_contribution": "Latent conformal prediction calibrates probabilistic 3D human-motion forecasts.",
+      "boundary_to_pivots": "Task-adjacent calibrated motion uncertainty is occupied. The final full text was not fully inspected, and no repetition-count output is identified in the accessible record."
+    },
+    {
+      "paper_id": "A-05",
+      "title": "MotionMap: Representing Multimodality in Human Pose Forecasting",
+      "authors_display": "Reyhaneh Hosseininejad, Megh Shukla, Saeed Saadatnejad, Mathieu Salzmann, Alexandre Alahi",
+      "year": 2024,
+      "venue": "arXiv",
+      "publication_status": "preprint",
+      "relevance_class": "adjacent",
+      "themes": [
+        "A"
+      ],
+      "canonical_identifiers": {
+        "arxiv": "2412.18883"
+      },
+      "primary_urls": [
+        "https://arxiv.org/abs/2412.18883",
+        "https://vita-epfl.github.io/MotionMap"
+      ],
+      "evidence_basis": "arxiv_full_text_and_author_project",
+      "core_contribution": "A heatmap representation expresses a variable number of plausible future-motion modes and per-mode confidence.",
+      "boundary_to_pivots": "Multimodal pose confidence is occupied; it is not a coverage-guaranteed count interval."
+    },
+    {
+      "paper_id": "A-06",
+      "title": "Vision-Based Safe Human-Robot Collaboration with Uncertainty Guarantees",
+      "authors_display": "Jakob Thumm, Marian Frei, Tianle Ni, Matthias Althoff, Marco Pavone",
+      "year": 2026,
+      "venue": "arXiv",
+      "publication_status": "preprint",
+      "relevance_class": "adjacent",
+      "themes": [
+        "A"
+      ],
+      "canonical_identifiers": {
+        "arxiv": "2604.15221"
+      },
+      "primary_urls": [
+        "https://arxiv.org/abs/2604.15221"
+      ],
+      "evidence_basis": "arxiv_full_text",
+      "core_contribution": "Recent conformal sets are used around vision-based pose or motion estimates to support safety guarantees in human-robot collaboration.",
+      "boundary_to_pivots": "This recent-window source reinforces that conformal pose-to-downstream propagation is active adjacent territory, but the downstream target is safety rather than repetition count."
+    },
+    {
+      "paper_id": "A-07",
+      "title": "A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification",
+      "authors_display": "Anastasios N. Angelopoulos, Stephen Bates",
+      "year": 2021,
+      "venue": "arXiv",
+      "publication_status": "preprint_tutorial",
+      "relevance_class": "foundational",
+      "themes": [
+        "A"
+      ],
+      "canonical_identifiers": {
+        "arxiv": "2107.07511"
+      },
+      "primary_urls": [
+        "https://arxiv.org/abs/2107.07511"
+      ],
+      "evidence_basis": "arxiv_full_text",
+      "core_contribution": "Foundational distribution-free prediction-set framework and coverage concepts.",
+      "boundary_to_pivots": "Generic conformal methodology cannot be a candidate contribution. Any count-set claim must specify exchangeability or shift assumptions, task-level coverage, width, and non-vacuity."
+    },
+    {
+      "paper_id": "B-01",
+      "title": "GTA: Global Tracklet Association for Multi-Object Tracking in Sports",
+      "authors_display": "Jiacheng Sun, Hsiang-Wei Huang, Cheng-Yen Yang, Zhongyu Jiang, Jenq-Neng Hwang",
+      "year": 2024,
+      "venue": "ACCV Workshops",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "adjacent",
+      "themes": [
+        "B"
+      ],
+      "canonical_identifiers": {
+        "arxiv": "2411.08216"
+      },
+      "primary_urls": [
+        "https://openaccess.thecvf.com/content/ACCV2024W/MLCSA2024/papers/Sun_GTA_Global_Tracklet_Association_for_Multi-Object_Tracking_in_Sports_ACCVW_2024_paper.pdf",
+        "https://arxiv.org/abs/2411.08216",
+        "https://github.com/sjc042/gta-link"
+      ],
+      "evidence_basis": "official_full_text_and_official_code",
+      "core_contribution": "Appearance-based global tracklet association splits mixed-identity tracklets and reconnects same-identity tracklets, including exit/re-entry in sports.",
+      "boundary_to_pivots": "Generic fragment repair and re-entry linking are occupied. A supplied-track RAC study must not claim tracking or re-identification novelty."
+    },
+    {
+      "paper_id": "B-02",
+      "title": "STAR: Spatial-Temporal Tracklet Matching for Multi-Object Tracking",
+      "authors_display": "Xuewei Bai, Yongcai Wang, Deying Li, Haodi Ping, Chunxu Li",
+      "year": 2025,
+      "venue": "NeurIPS",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "adjacent",
+      "themes": [
+        "B"
+      ],
+      "canonical_identifiers": {},
+      "primary_urls": [
+        "https://proceedings.neurips.cc/paper_files/paper/2025/hash/62c599c5c2b365ba464a26ebad05b690-Abstract-Conference.html",
+        "https://proceedings.neurips.cc/paper_files/paper/2025/file/62c599c5c2b365ba464a26ebad05b690-Paper-Conference.pdf",
+        "https://github.com/baixuewei430-dotcom/STAR"
+      ],
+      "evidence_basis": "official_full_text_and_official_code",
+      "core_contribution": "Tracklet clips are associated through spatial-temporal graph matching for robust long-term identity association under viewpoint changes and occlusion.",
+      "boundary_to_pivots": "Long-term tracklet matching is occupied and narrows the candidate to a count-functional composition question, not identity association."
+    },
+    {
+      "paper_id": "B-03",
+      "title": "Focusing on Tracks for Online Multi-Object Tracking",
+      "authors_display": "Kyujin Shim et al.",
+      "year": 2025,
+      "venue": "CVPR",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "adjacent",
+      "themes": [
+        "B"
+      ],
+      "canonical_identifiers": {},
+      "primary_urls": [
+        "https://openaccess.thecvf.com/content/CVPR2025/html/Shim_Focusing_on_Tracks_for_Online_Multi-Object_Tracking_CVPR_2025_paper.html"
+      ],
+      "evidence_basis": "official_full_text",
+      "core_contribution": "Track-aware initialization and association emphasize the track perspective and low-confidence detections in online MOT.",
+      "boundary_to_pivots": "Track continuity and occlusion-aware association are adjacent occupied territory, without a repetition-count composition law."
+    },
+    {
+      "paper_id": "B-04",
+      "title": "Visual multi-object tracking with re-identification and occlusion handling using labeled random finite sets",
+      "authors_display": "Linh Van Ma et al.",
+      "year": 2024,
+      "venue": "Pattern Recognition",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "adjacent",
+      "themes": [
+        "B"
+      ],
+      "canonical_identifiers": {
+        "doi": "10.1016/j.patcog.2024.110785"
+      },
+      "primary_urls": [
+        "https://doi.org/10.1016/j.patcog.2024.110785",
+        "https://www.sciencedirect.com/science/article/pii/S0031320324005363"
+      ],
+      "evidence_basis": "publisher_record_and_abstract",
+      "core_contribution": "A labeled-random-finite-set formulation addresses disappearance, reappearance, re-identification, and occlusion.",
+      "boundary_to_pivots": "Probabilistic re-entry and identity continuity are occupied adjacent mechanisms; no count-density transport is identified in the accessible record."
+    },
+    {
+      "paper_id": "B-05",
+      "title": "GTATrack: Winner Solution to SoccerTrack 2025 with Deep-EIoU and Global Tracklet Association",
+      "authors_display": "Rong-Lin Jian et al.",
+      "year": 2026,
+      "venue": "arXiv",
+      "publication_status": "preprint",
+      "relevance_class": "adjacent",
+      "themes": [
+        "B"
+      ],
+      "canonical_identifiers": {
+        "arxiv": "2602.00484"
+      },
+      "primary_urls": [
+        "https://arxiv.org/abs/2602.00484",
+        "https://github.com/ron941/GTATrack-STC2025"
+      ],
+      "evidence_basis": "arxiv_full_text_and_official_code",
+      "core_contribution": "Sports MOT combines association improvements with global tracklet association.",
+      "boundary_to_pivots": "A current 2026 example of tracklet repair in the relevant sports setting; it reinforces that generic re-linking is not a count-method contribution. Its initial arXiv date precedes the strict recent-six-month cutoff."
+    },
+    {
+      "paper_id": "B-06",
+      "title": "SRITrack: Online multi-object tracking for sports broadcasting with re-entry identity enhancement",
+      "authors_display": "Yu Yung Kao, Po Yung Chou, Cheng Hung Lin",
+      "year": 2026,
+      "venue": "Expert Systems with Applications",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "adjacent",
+      "themes": [
+        "B"
+      ],
+      "canonical_identifiers": {
+        "doi": "10.1016/j.eswa.2026.132499"
+      },
+      "primary_urls": [
+        "https://doi.org/10.1016/j.eswa.2026.132499",
+        "https://scholar.lib.ntnu.edu.tw/en/publications/sritrack-online-multi-object-tracking-for-sports-broadcasting-wit/"
+      ],
+      "evidence_basis": "publisher_and_institutional_record_only",
+      "core_contribution": "The accessible record describes sports-broadcasting tracking with explicit re-entry identity enhancement.",
+      "boundary_to_pivots": "Recent re-entry handling is occupied adjacent territory; full text was not obtained and count composition is not described in the accessible record."
+    },
+    {
+      "paper_id": "B-07",
+      "title": "GOT-JEPA: Generic Object Tracking with Model Adaptation and Occlusion Handling using Joint-Embedding Predictive Architecture",
+      "authors_display": "Shih-Fang Chen et al.",
+      "year": 2026,
+      "venue": "arXiv",
+      "publication_status": "preprint",
+      "relevance_class": "adjacent",
+      "themes": [
+        "B"
+      ],
+      "canonical_identifiers": {
+        "arxiv": "2602.14771"
+      },
+      "primary_urls": [
+        "https://arxiv.org/abs/2602.14771"
+      ],
+      "evidence_basis": "arxiv_full_text",
+      "core_contribution": "Recent generic single-object tracking uses adaptation and explicit occlusion handling.",
+      "boundary_to_pivots": "This is a recent-window occlusion-handling signal, not multi-instance re-entry or repetition-count transport."
+    },
+    {
+      "paper_id": "B-08",
+      "title": "Split and Connect: A Universal Tracklet Booster for Multi-Object Tracking",
+      "authors_display": "Gaoang Wang, Yizhou Wang, Renshu Gu, Weijie Hu, Jenq-Neng Hwang",
+      "year": 2023,
+      "venue": "IEEE Transactions on Multimedia",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "foundational",
+      "themes": [
+        "B"
+      ],
+      "canonical_identifiers": {
+        "doi": "10.1109/TMM.2022.3140919",
+        "arxiv": "2105.02426"
+      },
+      "primary_urls": [
+        "https://doi.org/10.1109/TMM.2022.3140919",
+        "https://arxiv.org/abs/2105.02426"
+      ],
+      "evidence_basis": "arxiv_full_text_and_doi_metadata",
+      "core_contribution": "A tracker-agnostic booster learns likely ID-switch split points and reconnects tracklets through learned embeddings.",
+      "boundary_to_pivots": "The split/reconnect template is established and is a close objection to any generic endpoint-pairing claim."
+    },
+    {
+      "paper_id": "B-09",
+      "title": "Probabilistic Tracklet Scoring and Inpainting for Multiple Object Tracking",
+      "authors_display": "Fatemeh Saleh, Sadegh Aliakbarian, Hamid Rezatofighi, Mathieu Salzmann, Stephen Gould",
+      "year": 2021,
+      "venue": "CVPR",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "foundational",
+      "themes": [
+        "B"
+      ],
+      "canonical_identifiers": {
+        "arxiv": "2012.02337"
+      },
+      "primary_urls": [
+        "https://openaccess.thecvf.com/content/CVPR2021/html/Saleh_Probabilistic_Tracklet_Scoring_and_Inpainting_for_Multiple_Object_Tracking_CVPR_2021_paper.html",
+        "https://arxiv.org/abs/2012.02337"
+      ],
+      "evidence_basis": "official_full_text",
+      "core_contribution": "A stochastic autoregressive motion model scores tracklet proposals and inpaints gaps caused by long occlusion.",
+      "boundary_to_pivots": "Gap inference and tracklet repair are established; a candidate must separate count-mass correction from trajectory inpainting."
+    },
+    {
+      "paper_id": "B-10",
+      "title": "Estimating People Flows to Better Count Them in Crowded Scenes",
+      "authors_display": "Weizhe Liu, Mathieu Salzmann, Pascal Fua",
+      "year": 2020,
+      "venue": "ECCV",
+      "publication_status": "peer_reviewed",
+      "relevance_class": "foundational",
+      "themes": [
+        "B"
+      ],
+      "canonical_identifiers": {
+        "arxiv": "1911.10782"
+      },
+      "primary_urls": [
+        "https://arxiv.org/abs/1911.10782"
+      ],
+      "evidence_basis": "arxiv_full_text",
+      "core_contribution": "People counting is constrained through inter-frame flow and conservation of population mass.",
+      "boundary_to_pivots": "Conservation-based counting is established in an adjacent domain. It concerns objects moving across frames, not repetition events or count response across identity fragments."
+    }
+  ],
+  "baseline_crosscheck": [
+    {
+      "name": "MultiCounter",
+      "paper_ids": [
+        "RAC-04"
+      ],
+      "checked_boundary": "Multi-instance localization/tracking and summed periodic response are direct prior; no checked post-hoc supplied-fragment count transport or calibrated count set."
+    },
+    {
+      "name": "MultiCounter+",
+      "paper_ids": [
+        "RAC-08"
+      ],
+      "checked_boundary": "Robust MRAC, spatial-temporal consistency, and long-short period awareness are direct prior; full-text mechanism details remain unresolved."
+    },
+    {
+      "name": "PAMS",
+      "paper_ids": [
+        "RAC-09"
+      ],
+      "checked_boundary": "Period-adaptive multi-scale cycle consistency and peak consensus are direct prior; neither pivot may relabel these as new."
+    },
+    {
+      "name": "SSTRAC",
+      "paper_ids": [
+        "RAC-07"
+      ],
+      "checked_boundary": "Defective-skeleton reconstruction and occlusion robustness are direct prior; missing-pose repair is not the set-valued candidate's residual."
+    },
+    {
+      "name": "RepNet",
+      "paper_ids": [
+        "RAC-01"
+      ],
+      "checked_boundary": "Synthetic repetition, TSSM, period/periodicity, and response integration are direct prior."
+    },
+    {
+      "name": "Motion Feature Learning",
+      "paper_ids": [
+        "RAC-05"
+      ],
+      "checked_boundary": "Motion-guided representation and TSSM reconstruction are direct prior."
+    },
+    {
+      "name": "Rethinking TSSM",
+      "paper_ids": [
+        "RAC-06"
+      ],
+      "checked_boundary": "Full-resolution action-start response and reference-TSM consistency are direct prior."
+    },
+    {
+      "name": "DeepPhase",
+      "paper_ids": [
+        "FOUND-01"
+      ],
+      "checked_boundary": "Unsupervised periodic motion manifolds are foundational adjacent prior; phase learning is not a pivot contribution."
+    },
+    {
+      "name": "TWCRAC",
+      "paper_ids": [
+        "RAC-10"
+      ],
+      "checked_boundary": "Time-window cycle consistency and dynamic thresholds are direct preprint prior; full-text access remains a blocking literature limit."
+    }
+  ],
+  "theme_map": [
+    {
+      "theme_id": "A1",
+      "theme": "Pose repair and occlusion-robust point counting",
+      "direct_papers": [
+        "RAC-03",
+        "RAC-07",
+        "RAC-08"
+      ],
+      "adjacent_papers": [],
+      "occupied_ground": "Repairing defective skeletons, fusing a reliable modality, and robust point prediction under occlusion.",
+      "open_landscape_question": "Whether pose missingness can be propagated into a useful task-level repetition-count set without pretending self-containment is true-count coverage."
+    },
+    {
+      "theme_id": "A2",
+      "theme": "Pose and motion hypothesis sets and uncertainty calibration",
+      "direct_papers": [],
+      "adjacent_papers": [
+        "A-01",
+        "A-02",
+        "A-03",
+        "A-04",
+        "A-05",
+        "A-06",
+        "A-07"
+      ],
+      "occupied_ground": "Multi-hypothesis pose or motion prediction, learned uncertainty, conformal prediction sets, and distribution-free coverage concepts.",
+      "open_landscape_question": "Whether the count functional and non-vacuity evaluation create a defensible task-specific residual beyond applying generic conformal or set-prediction machinery."
+    },
+    {
+      "theme_id": "B1",
+      "theme": "Track fragmentation, re-entry, association, and gap repair",
+      "direct_papers": [
+        "RAC-04",
+        "RAC-08"
+      ],
+      "adjacent_papers": [
+        "B-01",
+        "B-02",
+        "B-03",
+        "B-04",
+        "B-05",
+        "B-06",
+        "B-07",
+        "B-08",
+        "B-09"
+      ],
+      "occupied_ground": "Tracklet splitting, linking, graph matching, re-entry identity enhancement, probabilistic gap inpainting, and robust association.",
+      "open_landscape_question": "Whether a count-functional correction across already supplied fragments remains separable from generic tracking or interpolation."
+    },
+    {
+      "theme_id": "B2",
+      "theme": "Count density, response integration, additivity, and temporal consistency",
+      "direct_papers": [
+        "RAC-01",
+        "RAC-02",
+        "RAC-04",
+        "RAC-05",
+        "RAC-06",
+        "RAC-09",
+        "RAC-10"
+      ],
+      "adjacent_papers": [
+        "B-10"
+      ],
+      "occupied_ground": "Density integration, action-start or periodic response accumulation, TSSM reconstruction, local or multi-scale cycle consistency, and conservation-based counting in adjacent domains.",
+      "open_landscape_question": "Whether an explicit boundary term yields a testable composition law for repetition-count response across fragments, rather than merely preserving a biased base response."
+    }
+  ],
+  "actual_gaps": [
+    {
+      "gap_id": "A-G1",
+      "status": "unconfirmed_landscape_gap",
+      "statement": "Across the checked direct RAC sources, occlusion is handled through repair, modality reliability, robustness, or point prediction; across the checked pose-UQ sources, uncertainty is attached to pose or future motion. No checked accessible primary source directly propagates missing-pose uncertainty to a calibrated, non-vacuous repetition-count interval.",
+      "qualification": "This does not confirm novelty. The search can have missed terminology, inaccessible text, or task-level uncertainty work outside the indexed set."
+    },
+    {
+      "gap_id": "A-G2",
+      "status": "methodological_requirement",
+      "statement": "The candidate's proposed containment of its own unmasked estimate is a deterministic self-consistency property, not empirical coverage of the true repetition count.",
+      "qualification": "Any later claim would need a declared target, exchangeability or shift assumptions, coverage evaluation against labels after freezing, interval width, abstention rate, and non-vacuity controls."
+    },
+    {
+      "gap_id": "B-G1",
+      "status": "unconfirmed_landscape_gap",
+      "statement": "The checked tracking literature strongly covers fragment splitting, re-linking, re-entry, and gap inpainting, while direct RAC covers response integration and temporal consistency. No checked accessible source explicitly learns an additive repetition-count-mass composition law with a boundary correction across supplied identity fragments and abstention when the join is unidentifiable.",
+      "qualification": "This does not confirm novelty; generic tracklet repair plus density conservation may absorb the idea after full-text adjudication."
+    },
+    {
+      "gap_id": "B-G2",
+      "status": "scientific_risk",
+      "statement": "A boundary law trained only to reproduce an intact frozen response can conserve the base method's bias and may become unidentifiable across long gaps or tempo changes.",
+      "qualification": "The literature landscape supports treating negative or abstaining outcomes as informative, but authorizes no experiment here."
+    },
+    {
+      "gap_id": "B-G3",
+      "status": "claim_boundary",
+      "statement": "In a supplied-track protocol, the residual cannot be framed as tracking, re-identification, generic endpoint matching, temporal consistency, or density integration.",
+      "qualification": "A later predicted-track study would separately require tracking metrics and is outside the current landscape."
+    }
+  ],
+  "unresolved_full_text_limits": [
+    {
+      "source": "MultiCounter+",
+      "limit": "IEEE publisher page was intermittently inaccessible and only publisher abstract/bibliographic evidence was available.",
+      "impact": "Fragmentation, re-entry, uncertainty, and exact consistency mechanisms cannot be ruled in or out."
+    },
+    {
+      "source": "TWCRAC",
+      "limit": "SSRN abstract was accessible but the full preprint download was not.",
+      "impact": "Possible overlap in crop/window consistency, boundary treatment, and dynamic-threshold behavior remains unresolved."
+    },
+    {
+      "source": "SRITrack",
+      "limit": "Publisher and institutional metadata/abstract were accessible, not the complete article.",
+      "impact": "Exact re-entry sanitizer and trajectory-aligner details remain unresolved."
+    },
+    {
+      "source": "Uncertainty-aware calibrated 3D human motion forecasting with latent conformal prediction",
+      "limit": "Final publisher/author record was checked, while the linked arXiv preliminary has a different title and the final full text was not fully adjudicated.",
+      "impact": "The exact evolution from preliminary probabilistic forecasting to final latent conformal method is not completely mapped."
+    },
+    {
+      "source": "local_library",
+      "limit": "No configured or conventional local PDF library contributed.",
+      "impact": "No user-supplied full text could close publisher-access gaps."
+    },
+    {
+      "source": "search_coverage",
+      "limit": "Keyword and index search cannot prove that a method or claim is absent.",
+      "impact": "All gap statements remain provisional landscape observations, not novelty verdicts."
+    }
+  ],
+  "arxiv_verification": {
+    "tool": "C:/Users/admin/.aris/repos/auto-research-in-sleep-e12e07c-full/tools/verify_papers.py",
+    "cache_scope": "none",
+    "verdict": "PASS",
+    "hallucination_rate": 0.0,
+    "pending_rate": 0.0,
+    "warnings": [],
+    "submitted_count": 15,
+    "verified_count": 15,
+    "confidence": "high",
+    "verified_ids": [
+      "2409.04035",
+      "2407.06141",
+      "2412.10431",
+      "2304.06707",
+      "2507.14694",
+      "2604.15221",
+      "2412.18883",
+      "2103.13096",
+      "2411.08216",
+      "2602.00484",
+      "2602.14771",
+      "1911.10782",
+      "2407.09431",
+      "2012.02337",
+      "2105.02426"
+    ]
+  },
+  "failure_boundary": {
+    "source": "WARP-PHASE terminal audit",
+    "status": "terminal",
+    "observed_gate2_vector": [
+      246,
+      55,
+      144,
+      50,
+      66
+    ],
+    "rule": "Do not tune, retry, reinterpret, or resurrect WARP-PHASE, its selector, fixture population, harmonic rules, or server route.",
+    "effect_on_landscape": "No paper was used to reopen the WARP-PHASE route, and neither selected direction is treated as a phase-integral repair."
+  },
+  "conclusion": {
+    "status": "LANDSCAPE_ONLY_NO_NOVELTY_VERDICT",
+    "direction_A": "The checked landscape leaves a narrowly stated and unconfirmed task-level question around non-vacuous count intervals under pose missingness, while generic pose repair, uncertainty, and conformal sets are clearly occupied.",
+    "direction_B": "The checked landscape leaves a narrowly stated and unconfirmed count-functional composition question, while fragment repair, re-entry, identity continuity, density integration, and temporal consistency are clearly occupied.",
+    "next_stage_if_authorized_elsewhere": "Primary-source full-text adjudication of MultiCounter+, TWCRAC, SRITrack, and mechanism-matched count-UQ/event-count literature would be required before any novelty verdict.",
+    "authorization": "No implementation, training, result production, novelty claim, or paper claim is authorized by this landscape."
+  }
+}

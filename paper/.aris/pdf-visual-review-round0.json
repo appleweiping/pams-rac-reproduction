@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "artifact": "paper/main_round0_original.pdf",
+  "source_pdf_sha256": "26eeb9e5b913fa8160276447e9c31b38c9fe147ef7f64666aed41144427ecd26",
+  "render": {
+    "directory": "paper/rendered/round0b",
+    "dpi": 160,
+    "pages_inspected": [1, 2, 3, 4, 5]
+  },
+  "checks": {
+    "clipping": "PASS",
+    "overlap": "PASS",
+    "formula_legibility": "PASS",
+    "figure_legibility": "PASS",
+    "table_legibility": "PASS",
+    "draft_markers_visible": "PASS",
+    "page_5_references_only": "PASS",
+    "font_embedding": "PASS"
+  },
+  "status": "PASS",
+  "submission_ready": false,
+  "note": "Visual PASS applies only to the pre-results draft layout; scientific and submission evidence remains blocked."
+}

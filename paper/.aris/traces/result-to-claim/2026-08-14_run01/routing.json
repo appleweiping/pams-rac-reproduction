@@ -1,0 +1,9 @@
+{
+  "route": "pivot",
+  "verdict": "FAIL",
+  "reason_code": "NO_MULTI_PERSON_REAL_GT_EVIDENCE",
+  "integrity_status": "fail",
+  "positive_empirical_claims_licensed": false,
+  "next_action": "complete a visibly data-pending method/protocol scaffold; rerun after a frozen synchronized MultiRep artifact family exists"
+}
+

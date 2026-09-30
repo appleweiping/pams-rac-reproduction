@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-14T17:20:10.942441Z",
+  "verdict": "PASS",
+  "pdf": {
+    "path": "main.pdf",
+    "sha256": "2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
+    "bytes": 393452
+  },
+  "source_bundle_sha256": "592c7d8263a669522f598defb8d7caf654b4890ba31c45d42b425c2048fa3b94",
+  "source_files": [
+    {
+      "path": "main.tex",
+      "sha256": "34e470772f06c281b70a8f60f82bb010e9a027cb289ebd9389005be703868175"
+    },
+    {
+      "path": "preamble.tex",
+      "sha256": "763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2"
+    },
+    {
+      "path": "math_commands.tex",
+      "sha256": "2f148f00d2542e89b78f18ea726f40e25afeef08c51357bcb642e95b9477a255"
+    },
+    {
+      "path": "author_public.tex",
+      "sha256": "044998350a801da4758d022d231508d103b5769f5884ae3de5b626591615ac5d"
+    },
+    {
+      "path": "references.bib",
+      "sha256": "c84cb6df17ac4133f7c3115e1aa4dcad82e9e850f1ebdc5e6979cbc1cfd917b3"
+    },
+    {
+      "path": "sections/0_abstract.tex",
+      "sha256": "fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef"
+    },
+    {
+      "path": "sections/1_introduction.tex",
+      "sha256": "7ce1329707dae209f745c200492253356e975448d9b32053b9f97d48bdcf3b3e"
+    },
+    {
+      "path": "sections/3_method.tex",
+      "sha256": "c4ab8008065bb8781e402921878f5b99c7fb841acdef24c6129b7d93c988dc84"
+    },
+    {
+      "path": "sections/4_experiments.tex",
+      "sha256": "cd6508a60e3e9cac767ccfcec53e019a52525f58cebc2b1559819139abe0ecb5"
+    },
+    {
+      "path": "sections/4_tables.tex",
+      "sha256": "9982f60311a96265c8140b7c2614349bb2ae4f407b8666756b0f2c91ab89513a"
+    },
+    {
+      "path": "sections/5_conclusion.tex",
+      "sha256": "e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c"
+    },
+    {
+      "path": "figures/introduction_source_full.pdf",
+      "sha256": "216aabb2af9e022e487fbfe5022635d98c998f32a5e7e043289daa8d04ae0cd3"
+    },
+    {
+      "path": "figures/framework_source_full.pdf",
+      "sha256": "920c47ea13d050c8a2265467d9232db23872022b9ba27204bc98d624f403e7fe"
+    }
+  ],
+  "checks": {
+    "final_log_warning_count": 0,
+    "page_count": 5,
+    "letter_page_size": true,
+    "conclusion_page": 4,
+    "conclusion_within_four_pages": true,
+    "font_count": 22,
+    "unembedded_font_count": 0,
+    "type3_font_count_advisory": 0,
+    "duplicate_labels": [],
+    "undefined_citation_keys": [],
+    "uncited_bib_keys": [],
+    "approved_author_fields_visible": true,
+    "draft_banner_visible": true,
+    "unresolved_question_marks": false
+  },
+  "final_log_warnings": [],
+  "unembedded_fonts": []
+}

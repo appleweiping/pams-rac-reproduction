@@ -1,0 +1,22 @@
+{
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "xhigh",
+  "fork_context": "none",
+  "review_ceiling": "same-family/provisional",
+  "files_edited": false,
+  "audited_hashes": {
+    "paper/main.tex": "a4fe29c47f200946c7d6f3522bd273f5895aabda2d7a959fdbf16397fe1cbe70",
+    "paper/preamble.tex": "763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2",
+    "paper/math_commands.tex": "e6dabb7ce789e0d78026e6bda287fe17faedb6d20c0df9b4f603cb3b6c123bee",
+    "paper/sections/0_abstract.tex": "9920f4ec88aa92908537b5160cf0f6fe6d459c00961248e58c09e9a7f0adee8c",
+    "paper/sections/1_introduction.tex": "d8744390b04f15755211b21ed295970f7900943879787392d8efa86a178b1c10",
+    "paper/sections/3_method.tex": "39d9314cee3265a206ee1b9da7967fc748ecd913ce37ec604ca44a46a2f1e7ca",
+    "paper/sections/4_experiments.tex": "e631af4ea6df22549fea30d1aef76e39e83bb09f1ec34033dba5c43c470662ac",
+    "paper/sections/5_conclusion.tex": "e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c",
+    "paper/references.bib": "6be235be72cbcf358d0b80d19a646bd7c3869d344bb0657072822a36df62d885",
+    "paper/figures/icassp_framework.pdf": "12d6d131843b7e5e766e5e1b2a3e4121ee62200cf11f6888ad6cd5f19cb470c7",
+    "paper/main.pdf": "26eeb9e5b913fa8160276447e9c31b38c9fe147ef7f64666aed41144427ecd26",
+    "paper/VENUE_COMPLIANCE.md": "d0db63bf5aa4c8fadcc65fafa311682800b1100d05fe96077a8a097552620c70",
+    "paper/TEMPLATE_PROVENANCE.md": "b2e1506fa1d82448306ede74d40ab813e8aa3d725150a8a9e7251981912fd354"
+  }
+}

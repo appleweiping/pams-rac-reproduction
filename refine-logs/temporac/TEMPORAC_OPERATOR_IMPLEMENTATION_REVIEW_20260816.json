@@ -1,0 +1,164 @@
+{
+  "acceptance_status": "provisional",
+  "agent_id": "/root/temporac_operator_impl_review",
+  "artifact_authority": {
+    "authority": 0,
+    "candidate_authoritative": false,
+    "canonical_manifest_allowed": false,
+    "gate_pass_allowed": false,
+    "manifest_schema_authoritative": false,
+    "p2_allowed": false,
+    "promotion_blocker": "canonical_manifest_schema_array_hash_preimages_and_aggregate_preimage_not_uniquely_frozen",
+    "s0_allowed": false,
+    "status": "BLOCKED_NON_AUTHORITATIVE"
+  },
+  "artifact_type": "temporac_operator_implementation_review",
+  "authoritative": false,
+  "authorizes": [],
+  "blocking_findings": [
+    {
+      "blocking": true,
+      "id": "AUTH-1",
+      "scope": "artifact_authority",
+      "summary": "The canonical contract does not uniquely freeze the candidate manifest row schema, per-array hash preimages, or aggregate manifest preimage; the candidate cannot be promoted to canonical, P2, or S0."
+    }
+  ],
+  "candidate_replay": {
+    "byte_equal_to_fresh_pinned_regeneration": true,
+    "candidate_manifest_bytes": 15039512,
+    "candidate_manifest_sha256": "1f39378d6f7a970b1f183558ed145bd97107f2aeda41902f4736e6778930e1bb",
+    "candidate_receipt_sha256": "2e457e01166c6151e4edc688e8fd6f981d1278231fcd8c2bc000179f7a825102",
+    "member_set_equal": true,
+    "regeneration_directory": "D:\\Temp\\temporac_operator_impl_review_c46e56f9afe04a3ebcb83f00b09fd92d\\regenerated"
+  },
+  "date": "2026-08-16",
+  "docker": {
+    "architecture": "x86_64",
+    "byteorder": "little",
+    "docker_engine_server": "29.4.1",
+    "image_digest": "sha256:e8be0ea148390d08bc077840cf87ac6a538d80b0ea1e8752b3e3982987cd0a53",
+    "image_tag": "python:3.12.4",
+    "numpy_version": "2.1.0",
+    "platform": "linux/amd64",
+    "python_implementation": "CPython",
+    "python_version": "3.12.4"
+  },
+  "executor_family": "OpenAI",
+  "executor_model": "gpt-5.6-sol",
+  "fail_closed": {
+    "existing_directory_exit_code": 2,
+    "existing_directory_preserved_without_new_candidate_members": true,
+    "existing_file_exclusive_create_raised": "FileExistsError",
+    "existing_file_sha256_after": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+    "existing_file_unchanged": true,
+    "o_excl_semantics": "PASS"
+  },
+  "fresh_zero_context": true,
+  "generated_at": "2026-08-16T09:05:27+08:00",
+  "implementation_semantics": {
+    "association_all_rows": "PASS",
+    "blocking_issue_count": 0,
+    "decoder_exactly_once_all_rows": "PASS",
+    "digest_byte": "D(e)[0]",
+    "exact_float32_inactive_cap": "PASS",
+    "flat_amplitude_one_plateaus": 6912,
+    "flat_amplitude_one_rows": 2304,
+    "inactive_b255_edges": 8945,
+    "inactive_b255_rows": 5665,
+    "key_bytes": 10,
+    "masks_all_rows": "PASS",
+    "maximum_nola_float64_deviation_before_f4": 1.1102230246251565e-16,
+    "minimum_positive_nola_denominator": 0.0011528184020849772,
+    "nola_all_rows": "PASS",
+    "plateau_lower_middle": "start+floor((width-1)/2)",
+    "preimage": "ASCII(temporac.operator.v4)||0x00||uint64_be(10)||K||uint32_be(e)",
+    "response_all_rows": "PASS",
+    "row_count": 10368,
+    "status": "PASS",
+    "unique_10_byte_key_count": 10368,
+    "worst_negative_margin": 0.10000002384185791,
+    "worst_positive_margin": 0.1499999761581421
+  },
+  "input_hashes": {
+    "data/temporac_p00_v4/operator_candidate_20260816/candidate_receipt.json": "2e457e01166c6151e4edc688e8fd6f981d1278231fcd8c2bc000179f7a825102",
+    "data/temporac_p00_v4/operator_candidate_20260816/candidate_schema.json": "9f4b2ced821e667f950c1f56bbf9adbdc14b2c387c1932953048caf3f747a8cd",
+    "data/temporac_p00_v4/operator_candidate_20260816/environment_lock.json": "709db0943752965524b507dd6340554a8d7d218be125317af0fc8b7748a5a947",
+    "data/temporac_p00_v4/operator_candidate_20260816/replay_witness.json": "36f60f41ac111a7b05e5f4846464cc774e09bb9faa44feed10be5a4f35418653",
+    "data/temporac_p00_v4/operator_candidate_20260816/temporac.operator-manifest.candidate-v1.json": "1f39378d6f7a970b1f183558ed145bd97107f2aeda41902f4736e6778930e1bb",
+    "refine-logs/temporac/FINAL_PROPOSAL.md": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.json": "d524556f292ec17a155cdcd962cf8a88bea26f32b810ffb7bd8e45744f1c54fc",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.md": "899d6f071c89f898bf3825adfb30a326904f9bc7fe44d44351da8a5d0d9ccb14",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND1.json": "41468e0c7a163040cefb035936a35025ad3910da96488e1582c02b83a15c5f65",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND1.md": "5e60841696333234213fa36675f11311d294e76adfd1b68d8ab74198a409f253",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.json": "3730d96eff1d3815499602eaf183774af032c514a588d4e92fe8a1cccf053e64",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.md": "a86da733f3ae048b867ec8b2366a9f0262ca2b390ef08687ca7d710654e8301f",
+    "scripts/experiments/generate_temporac_operator_manifest_v4.py": "ffc5b83025375b2c68376f093becb63905504e15be45237e965991c6f762f8c7",
+    "src/pams/temporac/fixtures.py": "979b8cee4fed117f5471cf399794f615c60eae52dbba2c946109ff836206b464",
+    "tests/temporac/test_gates_fixtures.py": "941856b6111cff8697f105bc30dc679069f73206bab3f9c2b930236675e13173",
+    "tests/temporac/test_operator_manifest.py": "a055247946580679d54204850bfe588a102a37d342da31e06eddba85c45f9dfe"
+  },
+  "input_rehash_status": "unchanged_initial_to_prepersistence",
+  "normative_roots": {
+    "edge0_digest_inventory": {
+      "bytes": 331776,
+      "sha256": "ba797f6ae59cbbb40f19a61199afaaa1ac5b2c001a3c9fc34f1dba8f79cf78e4"
+    },
+    "inactive_lookup": {
+      "bytes": 1024,
+      "sha256": "afa6eff0d744acfdf9cf78adc43aa8daf01633f3345d7567d642a7782885040d"
+    },
+    "key_inventory": {
+      "bytes": 186624,
+      "sha256": "18dfdafe237b77565de36bab6d4642efb314ec1cbbd76e852938ed5c4d424a55"
+    },
+    "semantic_inventory": {
+      "bytes": 746714,
+      "sha256": "0fe8b2619a3f33cc4a83485053888c04c567b015eea65f81bf6cd9ec715ee4f2"
+    }
+  },
+  "nonblocking_findings": [
+    {
+      "id": "STATIC-1",
+      "scope": "repository_wide_static_health_outside_reviewed_operator_inputs",
+      "summary": "Full TempoRAC Mypy reports one arg-type error at tests/temporac/test_x0.py:146; scoped operator and production-package Mypy checks pass."
+    }
+  ],
+  "output_hash_note": "Final hashes of this review and all trace outputs are computed after persistence and reported to the parent; self-hashes cannot be embedded without changing the files.",
+  "overall_verdict": "PASS_IMPLEMENTATION_SEMANTICS_BLOCKED_ARTIFACT_AUTHORITY",
+  "review_independence": "same-family",
+  "reviewer_family": "OpenAI",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "ultra",
+  "tests": {
+    "full_mypy": {
+      "checked_files": 44,
+      "error": "tests/temporac/test_x0.py:146 arg-type: floating[_64Bit] incompatible with float",
+      "status": "FAIL"
+    },
+    "full_pytest": {
+      "passed": 109,
+      "platform_skip": "tests/temporac/test_contract_hashio.py:153: symlink creation is not permitted",
+      "seconds": 143.2,
+      "skipped": 1,
+      "status": "PASS_WITH_PLATFORM_SKIP"
+    },
+    "mypy_production": {
+      "checked_files": 25,
+      "status": "PASS"
+    },
+    "mypy_scoped": {
+      "checked_files": 4,
+      "status": "PASS"
+    },
+    "ruff": {
+      "status": "PASS"
+    },
+    "targeted_pytest": {
+      "passed": 13,
+      "seconds": 45.07,
+      "status": "PASS"
+    }
+  },
+  "trace_path": ".aris/traces/experiment-audit/20260816_temporac_operator_impl_review_sol/",
+  "verdict": "PASS"
+}

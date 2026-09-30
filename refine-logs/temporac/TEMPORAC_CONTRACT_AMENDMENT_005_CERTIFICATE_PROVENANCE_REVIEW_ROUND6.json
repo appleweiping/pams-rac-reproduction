@@ -1,0 +1,250 @@
+{
+  "acceptance_status": "provisional",
+  "authoritative": false,
+  "authority": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P2-METRIC": 0,
+    "P3": 0,
+    "S0": 0,
+    "capability": 0,
+    "data": 0,
+    "evaluator": 0,
+    "gate": 0,
+    "git": 0,
+    "gpu": 0,
+    "launch": 0,
+    "paper_claim": 0,
+    "result": 0,
+    "server": 0,
+    "test": 0,
+    "training": 0
+  },
+  "authorizes": [
+    "later_separately_reviewed_implementation_amendment_only"
+  ],
+  "binding_verification": {
+    "all_declared_bindings_match": true,
+    "current_runtime_bootstrap_binding_count": 3,
+    "current_source_binding_count": 24,
+    "current_test_binding_count": 19,
+    "declared_binding_count": 57,
+    "final_mismatch_count": 0,
+    "initial_rehash_all_match": true,
+    "planning_and_review_binding_count": 11,
+    "terminal_rehash_all_match": true,
+    "timestamped_and_fixed_aliases_byte_identical": true
+  },
+  "blocking_issue_count": 0,
+  "blocking_issues": [],
+  "byte_validation": {
+    "archived_round5_pair_unchanged": true,
+    "current_json_appendix_byte_identical": true,
+    "current_json_bom": false,
+    "current_json_cr_count": 0,
+    "current_json_duplicate_keys": [],
+    "current_json_keys_recursively_sorted": true,
+    "current_json_nonfinite_or_negative_zero": [],
+    "current_json_terminal_lf_count": 1,
+    "current_json_utf8_strict": true,
+    "current_markdown_bom": false,
+    "current_markdown_cr_count": 0,
+    "current_markdown_terminal_lf_count": 1,
+    "current_markdown_utf8_strict": true,
+    "fixed_and_timestamped_pairs_byte_identical": true
+  },
+  "closure_assessment": {
+    "A005-R5-B1": {
+      "blocking_issue_ids": [],
+      "positive": "Writer remains open through seal and exact procfs O_RDONLY reopen; same inode and distinct OFD are proved, writer close is followed by EBADF, surviving reader is revalidated, and exact read-only child installation plus eight stage rows/fourteen failures is closed.",
+      "status": "CLOSED"
+    },
+    "A005-R5-B2": {
+      "blocking_issue_ids": [],
+      "positive": "Two sequential fresh execs use independent FD3 streams; each exact five-frame stream commits launch, three FD stages and output, and exact 23-key evidence plus 22-key attestation rows receive direct SHA/tagged root bindings in trusted index and environment.",
+      "status": "CLOSED"
+    },
+    "A005-R5-B3": {
+      "blocking_issue_ids": [],
+      "positive": "Trusted rows equal the common nonempty ordered discovery rows; every full runtime consumes each ordinal exactly once through an adjacent dedicated compile-to-exec pair before DISPATCH_BEGIN, with no generic or post-boundary alternative.",
+      "status": "CLOSED"
+    },
+    "A005-R5-B4": {
+      "blocking_issue_ids": [],
+      "positive": "trusted_row_sha256 hashes the exact standalone eleven-key canonical row including generated_source_hex plus LF; unique row lookup, sole class-to-kind mapping, direct generator digest and complete origin projection are fixed.",
+      "status": "CLOSED"
+    },
+    "DAG_AND_RECEIPTS": {
+      "blocking_issue_ids": [],
+      "positive": "Exact 54-owner inventory, 106 backward direct edges, run.upstream, ordered K1 G0/G1, NATP exact14/K6 and G5a roots remain complete, acyclic and substitution-closed.",
+      "status": "NO_REGRESSION"
+    },
+    "PREVIOUSLY_CLOSED_SEMANTICS": {
+      "blocking_issue_ids": [],
+      "positive": "Checkpoint/tune replay, normalized SmoothL1, one-run bounds, three-run order, CPU controls, K1/Cdev/population, prediction/target/K7, capability order, data firewall and F4 MappingProxy remain closed.",
+      "status": "NO_REGRESSION"
+    },
+    "REVIEW_SNAPSHOT": {
+      "blocking_issue_ids": [],
+      "positive": "The exact timestamped/fixed pair, archived Round-5 pair and all 57 declared current bindings match at start and terminal rehash.",
+      "status": "CLOSED"
+    },
+    "SCIENCE_JOBS_DATA_CLAIMS": {
+      "blocking_issue_ids": [],
+      "positive": "Algorithm, jobs, 93-hour resource ceiling, dataset scope, targets, thresholds, paper-visible blocks and claims are unchanged.",
+      "status": "NO_REGRESSION"
+    }
+  },
+  "current_implementation": {
+    "code_or_tests_modified_by_reviewer": false,
+    "current_source_implements_round6_runtime": false,
+    "gate_bearing_tests_executed": false,
+    "implementation_acceptance": false,
+    "mechanical_review_checks_only": true,
+    "runtime_bootstrap_and_source_file_count_read": 27,
+    "test_file_count_read": 19
+  },
+  "date": "2026-08-16",
+  "discovery_and_memfd_verification": {
+    "attestation_row_key_count": 22,
+    "construction_error_token_count": 14,
+    "construction_readback_row_key_count": 13,
+    "construction_stage_count": 8,
+    "discovery_evidence_index_direct_sha_bound": true,
+    "discovery_evidence_index_tagged_root_bound": true,
+    "discovery_evidence_row_key_count": 23,
+    "discovery_fresh_process_count": 2,
+    "discovery_stream_frame_count": 5,
+    "distinct_open_file_description_proved": true,
+    "generated_rows_common_nonempty_ordered": true,
+    "reader_revalidated_after_writer_ebadf": true,
+    "trusted_compile_exec_adjacent_exact_consumption": true,
+    "trusted_row_key_count": 11,
+    "trusted_row_terminal_lf_in_hash": true,
+    "writer_open_during_reader_reopen": true
+  },
+  "independence_verified": false,
+  "mechanical_dag_verification": {
+    "all_roster_edges_point_to_earlier_owner": true,
+    "class_counts": {
+      "g1-teacher-selection": 1,
+      "k1-certificate-outcome": 1,
+      "k3": 1,
+      "k4": 1,
+      "natural-prediction-completion": 3,
+      "pre-g5a-stage": 17,
+      "run": 27,
+      "x0-inference": 3
+    },
+    "declared_and_recomputed_direct_edge_count": 106,
+    "effective_contract_prospective_cycle": false,
+    "entrypoint_descriptor_count": 57,
+    "entrypoint_prefix_equals_owner_roster": true,
+    "k1_upstream_role_present": true,
+    "natp_exact_key_count": 14,
+    "natp_upstream_length_and_k6_equality_specified": true,
+    "owner_count": 54,
+    "owner_unique_count": 54,
+    "topological_roster_cycle": false
+  },
+  "non_expansion": {
+    "algorithm_changed": false,
+    "claim_changed": false,
+    "dataset_scope_changed": false,
+    "g5a_receipt_key_set_changed": false,
+    "jobs_changed": false,
+    "paper_visible_blocks_changed": false,
+    "resource_ceiling_changed": false,
+    "target_receipt_key_set_changed": false,
+    "thresholds_changed": false
+  },
+  "purpose": "temporac-certificate-amendment-005-round6-normative-review",
+  "receipt_and_runtime_verification": {
+    "checkpoint_receipt_key_count": 12,
+    "cpython_assignment_partition": {
+      "constructor_owned_config_init": 1,
+      "list": 5,
+      "scalar": 37,
+      "string": 21,
+      "total": 64
+    },
+    "discovery_fd_count": 4,
+    "full_runtime_fd_count": 7,
+    "g1_receipt_key_count": 10,
+    "preconfig_field_count": 10,
+    "pyconfig_field_count": 64,
+    "run_receipt_key_count": 15,
+    "selection_receipt_key_count": 11,
+    "tune_evaluation_receipt_key_count": 13,
+    "tune_input_receipt_key_count": 9,
+    "tune_score_row_key_count": 8
+  },
+  "review_round": 6,
+  "reviewed_inputs": {
+    "archived_rejected_round5_json": {
+      "bytes": 226592,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_184302.json",
+      "sha256": "94fc8e5db1031686ea0d5e5646c94606728c18cff19915a6deb231a3bf80cfcb"
+    },
+    "archived_rejected_round5_markdown": {
+      "bytes": 269255,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_184302.md",
+      "sha256": "dbf797e80156d627b14290dfe558222878fdec8ccefbf28a051093130e1349e4"
+    },
+    "canonical_proposal": {
+      "bytes": 79366,
+      "path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+      "sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"
+    },
+    "current_fixed_alias_json": {
+      "bytes": 261196,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.json",
+      "sha256": "638efc8708f74c8514247f4f4c5e2311595e90edc6744c9b371886f0789af164"
+    },
+    "current_fixed_alias_markdown": {
+      "bytes": 312728,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.md",
+      "sha256": "2eaa3cfb746804fdc5890fec4c252c877a031a4abedef7b9ef6eeac0a4839395"
+    },
+    "current_timestamped_json": {
+      "bytes": 261196,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_184303.json",
+      "sha256": "638efc8708f74c8514247f4f4c5e2311595e90edc6744c9b371886f0789af164"
+    },
+    "current_timestamped_markdown": {
+      "bytes": 312728,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_184303.md",
+      "sha256": "2eaa3cfb746804fdc5890fec4c252c877a031a4abedef7b9ef6eeac0a4839395"
+    },
+    "experiment_plan": {
+      "bytes": 34198,
+      "path": "refine-logs/EXPERIMENT_PLAN.md",
+      "sha256": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e"
+    },
+    "experiment_tracker": {
+      "bytes": 22360,
+      "path": "refine-logs/EXPERIMENT_TRACKER.md",
+      "sha256": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b"
+    },
+    "round5_review_json": {
+      "bytes": 17110,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND5.json",
+      "sha256": "8f2490fcfe8434e1d3f2adc3a2a5db7afb4166302f421fa06e45512b764cf2ff"
+    },
+    "round5_review_markdown": {
+      "bytes": 19671,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND5.md",
+      "sha256": "ca3807657ee4197996c49c270cabd73bb43e439422173ca780849f433113a6f7"
+    }
+  },
+  "reviewer": {
+    "agent_id": "/root/temporac_certificate_amendment005_review",
+    "executor_family": "openai",
+    "family_relation": "same",
+    "model": "gpt-5.6-sol",
+    "reviewer_family": "openai"
+  },
+  "schema": "temporac.contract-amendment-review.v1",
+  "verdict": "ACCEPT"
+}

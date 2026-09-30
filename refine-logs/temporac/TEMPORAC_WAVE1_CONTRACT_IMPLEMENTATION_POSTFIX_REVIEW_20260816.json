@@ -1,0 +1,316 @@
+{
+  "acceptance_status": "provisional",
+  "authority": {
+    "P0": false,
+    "P1": false,
+    "P2": false,
+    "P2-METRIC": false,
+    "P3": false,
+    "S0": false,
+    "data": false,
+    "evaluation": false,
+    "gate": false,
+    "git": false,
+    "gpu": false,
+    "launch": false,
+    "paper_claim": false,
+    "results": false,
+    "server": false,
+    "training": false
+  },
+  "authoritative": false,
+  "authorizes": [],
+  "blocker_closure": [
+    {
+      "evidence": [
+        "recursive serializer precheck rejects binary64 negative zero in top-level, mapping keys/values, nested objects, arrays and nested arrays",
+        "strict parser postcheck rejects the same shapes while positive zero remains canonical",
+        "integer lexical -0, nested -0 and -0e0 are rejected as noncanonical or negative-zero",
+        "duplicate, nonfinite, BOM and noncanonical transport attacks remain rejected",
+        "ResourceRecord, CheckpointRecord and run receipt resource layers reject negative zero"
+      ],
+      "id": "W1-B1",
+      "status": "CLOSED"
+    },
+    {
+      "evidence": [
+        "independent H framing recomputation matched and ambiguity attack stayed distinct",
+        "16 of 16 class KATs matched frozen values",
+        "A005 raw JSON 54-row roster exactly equals the code roster",
+        "54 of 54 independently calculated roster owner keys matched and all 54 were unique",
+        "caller freeform run job, wrong owner type and wrong schema were rejected",
+        "exact digest-to-immutable-canonical-receipt-byte evidence derives typed owners and closes schema, owner, seed, job, upstream and payload"
+      ],
+      "id": "W1-B2",
+      "status": "CLOSED"
+    },
+    {
+      "evidence": [
+        "baseline validated exact 54 nodes, 106 edges and 54 immutable receipt byte objects",
+        "missing, extra, substitute, wrong class/owner/role/ordinal, dangling and cycle attacks all failed",
+        "inventory None, evidence None, missing/extra/mutable/digest-mismatched evidence all failed",
+        "future full-DAG node attack failed and no generic/full-DAG mode exists"
+      ],
+      "id": "W1-B3",
+      "status": "CLOSED"
+    }
+  ],
+  "blocking_issue_count": 0,
+  "blocker_ids": [],
+  "candidate_status": {
+    "authority_true_bits": [],
+    "candidate_only": true,
+    "eligible_for_separate_p2": true,
+    "future_full_dag_implemented": false,
+    "operator_consumer": "conforming_candidate_only"
+  },
+  "effective_contract": {
+    "bytes": 665,
+    "independently_reconstructed": true,
+    "proposal_sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+    "roles": [
+      "canonical_proposal",
+      "amendment_markdown",
+      "amendment_json",
+      "accepted_review_markdown",
+      "accepted_review_json"
+    ],
+    "sha256": "c203f4aab00879acf041b90829f0124d0b1de231294f191b03f3166f728e3d5c"
+  },
+  "generated_at": "2026-08-16T23:20:22.6169800+08:00",
+  "git": {
+    "head": "238879a475e3bb1fde24da76a8b3258b7fe68dd3",
+    "preexisting_dirty_worktree": true,
+    "prohibited_files_modified_by_review": false
+  },
+  "independent_probes": {
+    "canonical_and_owner": {
+      "checks": 34,
+      "class_kats_matched": 16,
+      "negative_and_malformed_rejections": 29,
+      "result": "PASS",
+      "roster_owner_keys_matched": 54,
+      "unique_roster_owner_keys": 54
+    },
+    "dag_and_evidence": {
+      "baseline_edges": 106,
+      "baseline_evidence_objects": 54,
+      "baseline_nodes": 54,
+      "future_mode": "absent_fail_closed",
+      "rejection_count": 25,
+      "rejection_labels": [
+        "edge-cycle",
+        "edge-dangling",
+        "edge-extra",
+        "edge-missing",
+        "edge-substitute",
+        "edge-wrong-ordinal",
+        "edge-wrong-role",
+        "evidence-digest-mismatch",
+        "evidence-extra",
+        "evidence-missing",
+        "evidence-mutable",
+        "evidence-none",
+        "future-full-dag-node",
+        "inventory-none",
+        "node-extra",
+        "node-missing",
+        "node-substitute",
+        "node-wrong-class",
+        "node-wrong-owner",
+        "raw-job",
+        "raw-owner",
+        "raw-payload-extra",
+        "raw-schema",
+        "raw-seed",
+        "raw-upstream"
+      ],
+      "result": "PASS",
+      "role_counts": {
+        "g1.teacher-run": 3,
+        "k1.upstream": 2,
+        "natp.k6": 3,
+        "run.upstream": 30,
+        "stage.upstream": 68
+      }
+    },
+    "regression": {
+      "a006_historical_snapshot_file_count": 28,
+      "a006_snapshot_is_detached_foreign_key": true,
+      "forbidden_import_hits": [],
+      "live_source_snapshot_equality": false,
+      "operator_exact_members": 5,
+      "operator_validated_rows": 10368,
+      "result": "PASS",
+      "x0_historical_assertions_preserved": true
+    }
+  },
+  "input_terminal_rehash": {
+    "concurrent_bound_input_drift_detected": false,
+    "entry_snapshot_matches_terminal": true,
+    "reviewed_inputs": {
+      "data/temporac_p00_v4/operator_candidate_v2_20260816/candidate_receipt.json": {
+        "bytes": 6180,
+        "sha256": "d53fcc1138754eee90a255952606cd054aa04c72cb3f97d66bf4464d5de672cb"
+      },
+      "idea-stage/docs/research_contract.md": {
+        "bytes": 12060,
+        "sha256": "3e037a2f74c49dd62e596dc7b875d94216e45b7f693b80a7afb6a60f8244367b"
+      },
+      "refine-logs/EXPERIMENT_PLAN.md": {
+        "bytes": 34198,
+        "sha256": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e"
+      },
+      "refine-logs/EXPERIMENT_TRACKER.md": {
+        "bytes": 22360,
+        "sha256": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b"
+      },
+      "refine-logs/FINAL_PROPOSAL.md": {
+        "bytes": 79366,
+        "sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"
+      },
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.json": {
+        "bytes": 114825,
+        "sha256": "14d59552242965a717f1162208770cb8ded9ebce9f7e060f904ba327617a052a"
+      },
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.md": {
+        "bytes": 40558,
+        "sha256": "a6b644aaaa29cf6c0423cdd3b287b183a88a9f23cbee3a04afc6db932a4d9005"
+      },
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_REVIEW_ROUND4.json": {
+        "bytes": 9294,
+        "sha256": "d5cfb6c15ea12598dc8765087a91b8bc434c0e8a5dc6506a34e0b07d4e4dd108"
+      },
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_REVIEW_ROUND4.md": {
+        "bytes": 23690,
+        "sha256": "4fe4e173c98e5f84257af604a18001d6139d27cbcb7c508508828df408440467"
+      },
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.json": {
+        "bytes": 261196,
+        "sha256": "638efc8708f74c8514247f4f4c5e2311595e90edc6744c9b371886f0789af164"
+      },
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.md": {
+        "bytes": 312728,
+        "sha256": "2eaa3cfb746804fdc5890fec4c252c877a031a4abedef7b9ef6eeac0a4839395"
+      },
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND6.json": {
+        "bytes": 10036,
+        "sha256": "fcf8a9d4949f6b456f18bfb4591c512b6628c6ec7eb5a055873a995992f46ad6"
+      },
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW_ROUND6.md": {
+        "bytes": 15666,
+        "sha256": "4a3199c3ac18e3fd2a5bb7ecf6d66e10bc4a5cebb82363803c47867234b70e67"
+      },
+      "refine-logs/temporac/TEMPORAC_OPERATOR_IMPLEMENTATION_REVIEW_V2_20260816.json": {
+        "bytes": 14108,
+        "sha256": "25792a855e15769ec778276b5066052d15796eea18cad5d44a16f741cb8bd35f"
+      },
+      "refine-logs/temporac/TEMPORAC_OPERATOR_IMPLEMENTATION_REVIEW_V2_20260816.md": {
+        "bytes": 15244,
+        "sha256": "73c660079377683b2066e4e04e8b6400f3568e1b7473069303908f773d0caad1"
+      },
+      "refine-logs/temporac/TEMPORAC_WAVE1_CONTRACT_IMPLEMENTATION_REVIEW_20260816.json": {
+        "bytes": 9917,
+        "sha256": "04343f3f93ad0cb91a70621a26032ec16414182a5b1262aa9b8e19535cbd0698"
+      },
+      "refine-logs/temporac/TEMPORAC_WAVE1_CONTRACT_IMPLEMENTATION_REVIEW_20260816.md": {
+        "bytes": 15156,
+        "sha256": "0b160e9f88264769ea91e586708173c06468e56f22d7533121c233d830b05ef9"
+      },
+      "src/pams/temporac/contract.py": {
+        "bytes": 22199,
+        "sha256": "64a579d2e31f2b46baa1442794327f19096e15ad45a1443d4b958b35e649eb99"
+      },
+      "src/pams/temporac/hashio.py": {
+        "bytes": 37490,
+        "sha256": "dd8c3ac3115fbd4e602e76b6106b7d0afafe1c6847fc51a6d0143b94ee73d37e"
+      },
+      "src/pams/temporac/receipts.py": {
+        "bytes": 80371,
+        "sha256": "ab4b905d603aa7210e2953d4508d73cddefd60731d06d8315904f2a1a9267ab2"
+      },
+      "src/pams/temporac/types.py": {
+        "bytes": 46602,
+        "sha256": "6d575ff34ccdcadaada925e5d3b97fb59c76580cbe48ce119cec3d5ed50cf84b"
+      },
+      "tests/temporac/test_contract_hashio.py": {
+        "bytes": 13845,
+        "sha256": "64c724cf1f7c622bce633eeb5c3d25c0b546afb2adedaae648bcad50f0726c29"
+      },
+      "tests/temporac/test_operator_manifest.py": {
+        "bytes": 25738,
+        "sha256": "22072a0c6fd86889d1881b80bb41d48644c8b686c4199c934da073434b30f56a"
+      },
+      "tests/temporac/test_prediction_receipts.py": {
+        "bytes": 25791,
+        "sha256": "962baefc126a25203f2aec6de7257b57c1f7064cdac9283dd340046239746249"
+      },
+      "tests/temporac/test_x0_manifest.py": {
+        "bytes": 7139,
+        "sha256": "d64412237c2479129b0b2bae12bd5bcf7490a0e84ab765efd798acb63dc3b9aa"
+      }
+    }
+  },
+  "limitations": [
+    "same-family OpenAI review is provisional",
+    "PASS covers only the exact reviewed bytes and W1-B1/W1-B2/W1-B3 closure",
+    "future full receipt DAG is not implemented and remains fail-closed",
+    "no P2, P2-METRIC, S0, gate, server, data, GPU, training, evaluation, result, launch, Git or paper-claim authority is granted"
+  ],
+  "outputs": {
+    "markdown_bytes": 13229,
+    "markdown_path": "refine-logs/temporac/TEMPORAC_WAVE1_CONTRACT_IMPLEMENTATION_POSTFIX_REVIEW_20260816.md",
+    "markdown_sha256": "7cf1f1a013932a7f9317f094d28dc54af9ab0da7adb6caab4a5964941231fa3b",
+    "structured_path": "refine-logs/temporac/TEMPORAC_WAVE1_CONTRACT_IMPLEMENTATION_POSTFIX_REVIEW_20260816.json",
+    "trace_path": ".aris/traces/experiment-audit/20260816_temporac_wave1_contract_impl_postfix_review_sol/"
+  },
+  "review_independence": "same-family",
+  "reviewer": {
+    "agent_id": "/root/temporac_wave1_postfix_review",
+    "family": "OpenAI",
+    "fresh_zero_context": true,
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "ultra"
+  },
+  "schema": "temporac.wave1-contract-implementation-postfix-review.v1",
+  "tests": {
+    "full_mypy": {
+      "baseline": true,
+      "checked_files": 43,
+      "command": "python -m mypy --no-incremental src/pams/temporac tests/temporac",
+      "error": "tests/temporac/test_x0.py:146 arg-type: numpy floating[_64Bit] passed where float is annotated",
+      "new_blocker": false,
+      "result": "1 known out-of-scope error"
+    },
+    "full_pytest": {
+      "command": "python -m pytest -p no:cacheprovider tests/temporac -q",
+      "duration_seconds": 191.42,
+      "passed": 134,
+      "skipped": 1,
+      "skip_reason": "Windows symlink creation is not permitted"
+    },
+    "ruff": {
+      "command": "python -m ruff check src/pams/temporac tests/temporac",
+      "result": "PASS"
+    },
+    "scoped_mypy": {
+      "checked_files": 8,
+      "command": "python -m mypy --no-incremental <4 implementation files> <4 specified test files>",
+      "result": "PASS"
+    },
+    "targeted_pytest": {
+      "command": "python -m pytest -p no:cacheprovider tests/temporac/test_contract_hashio.py tests/temporac/test_prediction_receipts.py tests/temporac/test_operator_manifest.py tests/temporac/test_x0_manifest.py -q",
+      "duration_seconds": 64.07,
+      "passed": 38,
+      "skipped": 1,
+      "skip_reason": "Windows symlink creation is not permitted"
+    },
+    "versions": {
+      "mypy": "1.20.2",
+      "pytest": "8.4.2",
+      "python": "3.12.13",
+      "ruff": "0.16.3"
+    }
+  },
+  "verdict": "PASS"
+}

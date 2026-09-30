@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "agent_id": "/root/user_revision_claim_audit",
+  "model": "gpt-5.6-sol",
+  "reasoning": "xhigh",
+  "review_independence": "fresh_zero_context_same_family",
+  "paper_pdf_sha256": "2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
+  "result_to_claim_sha256": "5fa04e6ac29905a20ad870060b9e87b16ef9096e1c0b1bc88e7eaca45fe4f6f4",
+  "verdict": "BLOCKED",
+  "reason_code": "data_pending",
+  "generated_at": "2026-08-15T01:25:00+08:00"
+}

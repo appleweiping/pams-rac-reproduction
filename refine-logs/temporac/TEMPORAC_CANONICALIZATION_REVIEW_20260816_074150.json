@@ -1,0 +1,165 @@
+{
+  "acceptance_status": "provisional",
+  "artifact_type": "temporac_canonicalization_review",
+  "authoritative": false,
+  "authorizes": [],
+  "blocking_issue_count": 0,
+  "canonical_markdown": {
+    "path": "refine-logs/temporac/TEMPORAC_CANONICALIZATION_REVIEW_20260816_074150.md",
+    "sha256": "dac30ca53e2536b86ffb892eed7e694932598e4712a41e001a020b048cfa4014"
+  },
+  "canonicalization_timestamp": "20260816_074150",
+  "date": "2026-08-16",
+  "executor_family": "openai",
+  "fresh_zero_context": true,
+  "round": 2,
+  "round_1": {
+    "index_sha256": "790e889c5ce3b82a2335faa03d42479b90249fd3b8bfac8292c62eb2b9d87cd1",
+    "markdown_path": "refine-logs/temporac/TEMPORAC_CANONICALIZATION_REVIEW_20260816_074150_ROUND1.md",
+    "markdown_sha256": "e94382b434bb560fa59238ab1763381569f5b24a7cae0a6e7a5f7f59dcba42ec",
+    "structured_path": "refine-logs/temporac/TEMPORAC_CANONICALIZATION_REVIEW_20260816_074150_ROUND1.json",
+    "structured_sha256": "0f3de8ee5aca365cac3a7b65814f5c5cc3f4f4591c28d486d0842b7dc136be7b",
+    "verdict": "REVISE"
+  },
+  "round_1_resolution": {
+    "R1-B1": "resolved_by_binding_two_immutable_old_timestamped_proposal_paths",
+    "R1-B2": "resolved_by_binding_existing_p05m_round2_review_markdown_and_json",
+    "source_documents_changed": false
+  },
+  "index_audit": {
+    "all_bindings_match": true,
+    "binding_count": 24,
+    "binding_failure_count": 0,
+    "bytes": 5035,
+    "path": "refine-logs/temporac/TEMPORAC_CANONICALIZATION_INDEX_20260816_074150.json",
+    "self_hash_absent": true,
+    "sha256": "927b7e706030e954a5ba529f55d5c3805e1836726c00293a132d4c4694faef19"
+  },
+  "content_audit": {
+    "accepted_delta_scope_exact": true,
+    "f8_outer_scale_order_rms_fft": true,
+    "f9_through_f23_byte_equal": true,
+    "f9_through_f23_blocks_sha256": "ec84a22b575f45007dab7b5d7d654d16e1b0b1ee3c043a372bfbfae02b473dfb",
+    "operator_key_preimage_cap_plateau_flat_witness": true,
+    "p05m_delta_integrated": false,
+    "problem_anchor_byte_equal": true,
+    "problem_anchor_sha256": "79275ded0f062908343bb665801b30efef3ec8e0db90c166b9cc2253951f102a"
+  },
+  "independent_f8_check": {
+    "critical_strict_lower_boundary": 4.0298523185872455,
+    "original_all_fail_strict_threshold": true,
+    "original_rms_d2_to_d8": [
+      0.02930569107548506,
+      0.025692611664010472,
+      0.02135140166221357,
+      0.01815274401188693,
+      0.015758984365602184,
+      0.013896607758660431,
+      0.012407402566436633
+    ],
+    "scale": "25/6",
+    "scaled_all_pass_strict_threshold": true,
+    "scaled_rms_d2_to_d8": [
+      0.12210704614785443,
+      0.10705254860004364,
+      0.08896417359255655,
+      0.07563643338286222,
+      0.06566243485667578,
+      0.057902532327751804,
+      0.05169751069348598
+    ],
+    "threshold": 0.05
+  },
+  "independent_operator_check": {
+    "all_five_row_witnesses_match": true,
+    "edge0_digest_inventory_bytes": 331776,
+    "edge0_digest_inventory_sha256": "ba797f6ae59cbbb40f19a61199afaaa1ac5b2c001a3c9fc34f1dba8f79cf78e4",
+    "inactive_cap_bits": "3ecccccc",
+    "inactive_lookup_bytes": 1024,
+    "inactive_lookup_sha256": "afa6eff0d744acfdf9cf78adc43aa8daf01633f3345d7567d642a7782885040d",
+    "inactive_max_binary64": 0.3999999761581421,
+    "inactive_negative_margin_binary64": 0.10000002384185791,
+    "key_inventory_bytes": 186624,
+    "key_inventory_sha256": "18dfdafe237b77565de36bab6d4642efb314ec1cbbd76e852938ed5c4d424a55",
+    "plateau_bit_pairs_match": true,
+    "semantic_row_json_bytes": 746714,
+    "semantic_row_json_sha256": "0fe8b2619a3f33cc4a83485053888c04c567b015eea65f81bf6cd9ec715ee4f2"
+  },
+  "byte_identity": {
+    "canonical_proposal_four_way": true,
+    "experiment_plan_fixed_timestamped": true,
+    "experiment_tracker_fixed_timestamped": true,
+    "research_contract_fixed_timestamped": true
+  },
+  "encoding_validation": {
+    "all_25_inputs_lf_terminated": true,
+    "all_25_inputs_no_bom": true,
+    "all_25_inputs_strict_utf8": true,
+    "all_json_inputs_parse": true
+  },
+  "frozen_inventory": {
+    "allocated_a6000_hours": 93,
+    "baseline_families": 3,
+    "experiment_blocks": 4,
+    "primary_claims": 1,
+    "training_jobs": 27
+  },
+  "p05m": {
+    "execution_status": "BLOCKED",
+    "fresh_accept_receipt_present": false,
+    "review_artifact_present": true,
+    "review_disposition": "REVISE",
+    "review_json_sha256": "b8552d10bf8b9d9e6b3f9202127b1ea56f9b3ea9d43a9f9994e06166ce741fe2",
+    "review_markdown_sha256": "9f4dc98b3f2237dbd17381007105977639b13d60b478e13e162631666504296b",
+    "review_round": 2
+  },
+  "reviewed_inputs": {
+    "idea-stage/docs/research_contract.md": "3e037a2f74c49dd62e596dc7b875d94216e45b7f693b80a7afb6a60f8244367b",
+    "idea-stage/docs/research_contract_20260816_074150.md": "3e037a2f74c49dd62e596dc7b875d94216e45b7f693b80a7afb6a60f8244367b",
+    "refine-logs/EXPERIMENT_PLAN.md": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e",
+    "refine-logs/EXPERIMENT_PLAN_20260816_074150.md": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e",
+    "refine-logs/EXPERIMENT_TRACKER.md": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b",
+    "refine-logs/EXPERIMENT_TRACKER_20260816_074150.md": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b",
+    "refine-logs/FINAL_PROPOSAL.md": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+    "refine-logs/FINAL_PROPOSAL_20260816_041423.md": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c",
+    "refine-logs/FINAL_PROPOSAL_20260816_074150.md": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+    "refine-logs/temporac/FINAL_PROPOSAL.md": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+    "refine-logs/temporac/FINAL_PROPOSAL_20260816_034707.md": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c",
+    "refine-logs/temporac/FINAL_PROPOSAL_20260816_074150.md": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+    "refine-logs/temporac/TEMPORAC_CANONICALIZATION_INDEX_20260816_074150.json": "927b7e706030e954a5ba529f55d5c3805e1836726c00293a132d4c4694faef19",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE.json": "b1fb03f5cd5021ff6397f74b9b6a8cd074d0ed5fd2e72746fc40df44266a41cc",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE.md": "ca44173bd2bc2be3fa5eaf9dc362d88d981603d28328bf365efc68567f1ae5bb",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE_REVIEW.json": "8f38d6be24832a03ec8042062c80d5e6a2afbabcb8a78485ec21137b46581844",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_001_X0_SCALE_REVIEW.md": "ad14875c91faa184f156f86e9d559a9bb8927db8a2309dc4fbd963074e1a3a58",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.json": "d524556f292ec17a155cdcd962cf8a88bea26f32b810ffb7bd8e45744f1c54fc",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.md": "899d6f071c89f898bf3825adfb30a326904f9bc7fe44d44351da8a5d0d9ccb14",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.json": "3730d96eff1d3815499602eaf183774af032c514a588d4e92fe8a1cccf053e64",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.md": "a86da733f3ae048b867ec8b2366a9f0262ca2b390ef08687ca7d710654e8301f",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.json": "c73b85731ece838684f78c41b3dfcdb498af5cf9822f7ee84d2add4d09ffe1fc",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.md": "d615def9dc468b7e483488b87cb0524302f1c4c325df8bf092e741e21f6262d1",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_REVIEW_ROUND2.json": "b8552d10bf8b9d9e6b3f9202127b1ea56f9b3ea9d43a9f9994e06166ce741fe2",
+    "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_REVIEW_ROUND2.md": "9f4dc98b3f2237dbd17381007105977639b13d60b478e13e162631666504296b"
+  },
+  "review_independence": "same-family",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "status": "ACCEPT_SAME_FAMILY_PROVISIONAL_ZERO_AUTHORITY",
+  "verdict": "ACCEPT",
+  "authority": {
+    "canonical_edit": false,
+    "claims": false,
+    "data_access": false,
+    "evaluator_capability": false,
+    "gate_pass": false,
+    "git": false,
+    "implementation": false,
+    "launch": false,
+    "paper_promotion": false,
+    "p3_preflight": false,
+    "results": false,
+    "s0": false,
+    "server": false,
+    "test_execution": false,
+    "training": false
+  }
+}

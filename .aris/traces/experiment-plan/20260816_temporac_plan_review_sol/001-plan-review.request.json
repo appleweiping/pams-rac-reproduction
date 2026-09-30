@@ -1,0 +1,44 @@
+{
+  "acceptance_status": "provisional",
+  "audit_mode": "fresh_zero_context",
+  "forbidden_inputs": [
+    "prior experiment-plan review outputs",
+    "agent summaries"
+  ],
+  "input_paths": [
+    ".agents/skills/experiment-plan/SKILL.md",
+    "refine-logs/FINAL_PROPOSAL.md",
+    "refine-logs/EXPERIMENT_PLAN.md",
+    "refine-logs/EXPERIMENT_TRACKER.md",
+    "refine-logs/temporac/round-5-review.json",
+    "PILOT_DATA_SCHEMA_AUDIT.md",
+    "PILOT_DATA_SCHEMA_AUDIT.json",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.md",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.json",
+    "refine-logs/SERVER_PREFLIGHT.md",
+    "pyproject.toml"
+  ],
+  "requested_checks": [
+    "problem and graph fidelity",
+    "at most two claims, five blocks, and three baseline families",
+    "exactly 27 jobs, 93 A6000-hours, and 64 GiB",
+    "P0-P3 then S0 then F23 ordering",
+    "label and data firewall",
+    "train and validation only",
+    "no server launch authority",
+    "receipt and gate executability",
+    "tracker completeness",
+    "no WARP drift",
+    "no fabricated result"
+  ],
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "same_family": true,
+  "schema": "temporac.experiment_plan_review_request.v1",
+  "write_scope": [
+    "refine-logs/EXPERIMENT_PLAN_REVIEW.md",
+    "refine-logs/EXPERIMENT_PLAN_REVIEW.json",
+    ".aris/traces/experiment-plan/20260816_temporac_plan_review_sol/**",
+    "one append-only .aris/meta/events.jsonl event"
+  ]
+}

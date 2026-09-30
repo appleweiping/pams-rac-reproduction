@@ -1,0 +1,11 @@
+{
+  "phase": "refine",
+  "round": 4,
+  "agent_id": "/root/temporac_refine_reviewer",
+  "last_score": 7.92,
+  "last_verdict": "REVISE",
+  "status": "in_progress",
+  "timestamp": "2026-08-16T03:04:34+08:00",
+  "run_id": "rac-temporac-restoration-icassp27-20260815-sol",
+  "canonical_anchor": "original-temporac-seven-property-graph"
+}

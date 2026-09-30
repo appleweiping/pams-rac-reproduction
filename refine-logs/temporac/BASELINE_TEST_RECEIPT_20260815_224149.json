@@ -1,0 +1,30 @@
+{
+  "schema_version": "temporac.baseline_test_receipt.v1",
+  "timestamp": "2026-08-15T22:41:49+08:00",
+  "worktree": "D:\\Project\\rac-aris-fullrun-icassp27",
+  "git_head": "238879a475e3bb1fde24da76a8b3258b7fe68dd3",
+  "command": "uv run --extra dev pytest -q",
+  "exit_code": 0,
+  "duration_seconds": 268.08,
+  "python": "3.12.13",
+  "results": {
+    "passed": 1022,
+    "skipped": 6,
+    "warnings": 1,
+    "failed": 0
+  },
+  "skip_scope": [
+    "Windows symlink privilege unavailable",
+    "POSIX bash/flock unavailable on Windows",
+    "CUDA unavailable in the local desktop environment",
+    "case-insensitive filesystem cannot materialize both directory spellings"
+  ],
+  "input_hashes": {
+    "pyproject.toml": "14b3b35bbfa57fc982e24ef2f999df288893c0f0d12a53a9f82120babefead38",
+    "uv.lock": "5a964f1cd841948eae09ef253098b0b16eb5d2e6bd660e2d3496b389c4dc72a7"
+  },
+  "source_and_test_paths_dirty": false,
+  "temporac_package_present": false,
+  "verdict": "BASELINE_PASS_NO_TEMPORAC_EVIDENCE",
+  "claim_boundary": "This receipt establishes only the pre-TempoRAC local regression baseline. It is not implementation, gate, experiment, efficacy, server-readiness, or paper evidence for TempoRAC."
+}

@@ -1,0 +1,471 @@
+{
+  "schema_version": "temporac.research_refine_review.v3",
+  "skill": "research-refine",
+  "review_round": 3,
+  "review_date": "2026-08-16",
+  "proposal_under_review": "refine-logs/temporac/round-2-refinement.md",
+  "reviewer": {
+    "agent_id": "/root/temporac_refine_reviewer",
+    "reviewer_model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "reasoning_effort": "xhigh",
+    "continuation_of_prior_rounds_same_agent": true
+  },
+  "calibration": {
+    "status": "none",
+    "statement": "No curated known-good/known-bad local research-refine proposals were supplied; scoring uses only the stated top-venue method-first rubric."
+  },
+  "anchor": {
+    "status": "FULL_SECTION_VERBATIM_PRESERVED",
+    "immutable_field_count": 5,
+    "drift_guard_paragraph_present": true,
+    "revised_occurrences": 2,
+    "both_revised_sections_ordinally_match_round_0": true,
+    "section_body_extraction": "Text after the ## Problem Anchor heading through immediately before the next level-2 heading, with trailing whitespace removed.",
+    "section_body_sha256": "44dce8546f499acdede797055625657579685c0b75dc64c26d3f51003e956b71",
+    "substantive_drift": false,
+    "graph_matches_original_temporac": true,
+    "graph": [
+      "externally supplied person-indexed pose tracks",
+      "identity-private preprocessing, buffers, and reconstruction",
+      "one shared causal encoder",
+      "three shared matched slow/medium/fast response experts",
+      "one fixed cue-only irregular-clock NUDFT router with an identity-local relative-tempo reference",
+      "window-level sigmoid-probability response fusion",
+      "exact positive NOLA reconstruction",
+      "one threshold-0.5 connected-component decoder per supplied identity"
+    ],
+    "forbidden_replacements_absent": [
+      "WARP-PHASE selector",
+      "scene-level counter",
+      "per-person model copies",
+      "learned router",
+      "human count or period input",
+      "independent window decode",
+      "integral decision decoder"
+    ]
+  },
+  "scores": [
+    {
+      "dimension": "Problem Fidelity",
+      "weight": 0.15,
+      "score": 9.4,
+      "weighted_contribution": 1.41
+    },
+    {
+      "dimension": "Method Specificity",
+      "weight": 0.25,
+      "score": 6.4,
+      "weighted_contribution": 1.6
+    },
+    {
+      "dimension": "Contribution Quality",
+      "weight": 0.25,
+      "score": 7.8,
+      "weighted_contribution": 1.95
+    },
+    {
+      "dimension": "Frontier Leverage",
+      "weight": 0.15,
+      "score": 8.2,
+      "weighted_contribution": 1.23
+    },
+    {
+      "dimension": "Feasibility",
+      "weight": 0.1,
+      "score": 5.8,
+      "weighted_contribution": 0.58
+    },
+    {
+      "dimension": "Validation Focus",
+      "weight": 0.05,
+      "score": 7.0,
+      "weighted_contribution": 0.35
+    },
+    {
+      "dimension": "Venue Readiness",
+      "weight": 0.05,
+      "score": 6.5,
+      "weighted_contribution": 0.325
+    }
+  ],
+  "weighted_composite": {
+    "exact": 7.445,
+    "displayed": 7.445,
+    "calculation": "9.4*0.15 + 6.4*0.25 + 7.8*0.25 + 8.2*0.15 + 5.8*0.10 + 7.0*0.05 + 6.5*0.05 = 7.445",
+    "ready_threshold": 9.0
+  },
+  "gap": {
+    "exact_to_ready_threshold": 1.555,
+    "statement": "The proposal is 1.555 points below READY. The anchor and claim focus are closed, but the frozen data-clock, teacher statistic, training gradient, control measure, G4 source domain, segment reset, generator, and G5/K7 contracts do not yet define one executable program."
+  },
+  "round_2_resolution": [
+    {
+      "issue": "complete Problem Anchor omitted the drift-guard paragraph",
+      "status": "RESOLVED"
+    },
+    {
+      "issue": "population negative-edge tolerance could waive a target track",
+      "status": "RESOLVED"
+    },
+    {
+      "issue": "seam accumulation and tolerance were unspecified",
+      "status": "RESOLVED_EXCEPT_FRACTIONAL_LANDMARK_EDGE_OWNERSHIP"
+    },
+    {
+      "issue": "unsupported gaps could hide cycles",
+      "status": "FAIL_CLOSED_BUT_INCOMPATIBLE_WITH_CANONICAL_V44_POPULATION",
+      "remainder": "After duplicate collapse, q_gap=1 rejects every fixed-320 record with source_length greater than 320; unconditional validation eligibility is not established."
+    },
+    {
+      "issue": "local tangent was overclaimed as invariant",
+      "status": "RESOLVED_FOR_TANGENT_ONLY"
+    },
+    {
+      "issue": "static pooling is subdivision invariant",
+      "status": "NOT_RESOLVED",
+      "remainder": "F5's trapezoidal squared endpoint term changes under subdivision."
+    },
+    {
+      "issue": "G4 did not bind operator fixtures and trained outputs",
+      "status": "PARTLY_RESOLVED",
+      "remainder": "Both sources are named, but certified trained outputs cannot populate the required spacing-4 and spacing-129 strata under the frozen period domain [5,128]."
+    },
+    {
+      "issue": "capacity control fused logits before sigmoid",
+      "status": "RESOLVED_NONLINEARITY_ONLY",
+      "remainder": "F23 still uses v instead of the canonical v*chi physical-progress measure."
+    },
+    {
+      "issue": "contribution and evidence sprawl",
+      "status": "RESOLVED_AT_CLAIM_LEVEL"
+    }
+  ],
+  "dominant_claim": {
+    "status": "FOCUSED",
+    "claim": "Cue-only, identity-indexed, window-local relative-tempo routing selects useful shared response scales under within-track drift.",
+    "supporting_mechanism_only": "Diagonal slow/medium/fast expert specialization on unseen resamplers",
+    "paper_visible_evidence_block_count": 3,
+    "paper_visible_evidence_blocks": [
+      "response-unit and decoder admissibility",
+      "frozen-response local-routing advantage plus supporting specialization",
+      "supplied-track efficacy, stationarity, premise coverage, and redundancy"
+    ],
+    "correctness_plumbing_only": [
+      "degree-one teacher and certify_target prerequisite",
+      "feature-vault firewall",
+      "positive NOLA and one fixed peak decoder",
+      "identity isolation"
+    ]
+  },
+  "degree_one_teacher": {
+    "ruling": "DEGREE_AND_CROSSING_CERTIFICATE_CREDIBLE_COMPLETE_PREREQUISITE_NOT_SUFFICIENT_AS_WRITTEN",
+    "strengths": [
+      "clock-blind state and no-bypass decoder",
+      "strict pose-only landmarks and coherent pose-canonical origin",
+      "per-traversal winding +1, phase coverage, circular-gap, reconstruction, and collision tests",
+      "per-edge -1e-12 <= delta < 0.25 with no population waiver",
+      "Neumaier float64 accumulation, S_tau seam snapping, no backward crossing, one positive crossing per traversal, and three-tolerance pulse equality",
+      "full PCHIP and sinc matched-state phase and pulse equality",
+      "degree, harmonic, reversal, symmetry, collision, static-code, phase-corruption, and decoder-bypass attacks"
+    ],
+    "blockers": [
+      {
+        "id": "T1",
+        "issue": "F5's second moment is not invariant to subdivision.",
+        "counterexample": "For a unit scalar edge from 0 to 1, F5 gives 0.5 before midpoint subdivision and 0.375 after; the exact squared-linear line integral is 1/3.",
+        "fix": "Use lambda/3*(a^2+a*b+b^2) per scalar endpoint pair, or remove the invariance claim; the exact line integral is the minimal coherent repair."
+      },
+      {
+        "id": "T2",
+        "issue": "Sub-frame retained landmarks do not have one frozen traversal/sample/edge ownership convention.",
+        "fix": "Freeze half-open traversal intervals, start/end landmark voting, integer/fractional edge ownership, closing-edge participation, pulse placement, chi support, and resampler pullback."
+      },
+      {
+        "id": "T3",
+        "issue": "The q_gap=1 acquisition rule is fail-closed but rejects every v44 source_length greater than 320 after duplicate collapse.",
+        "fix": "Separate the no-hidden-cycle predicate d<P_min from the independent learned delta<0.25 certificate, then require a count-blind unconditional G0 population receipt under the fixed rule."
+      }
+    ]
+  },
+  "one_final_peak_pass": {
+    "ruling": "PRESERVE_CONDITIONALLY_DEFENSIBLE_NO_INTEGRAL_REPLACEMENT",
+    "decoder": "One threshold-0.5 connected-component pass per supplied valid identity after positive NOLA.",
+    "positive_closures": [
+      "fixed binary sigmoid pulse target",
+      "class-balanced positive and valley margins",
+      "strictly positive taper and exact nonzero NOLA denominator",
+      "two named G4 sources",
+      "explicit event-component association graph with miss, split, extra, and merge degrees",
+      "zero component errors and positive hard margins",
+      "independent-window failure versus NOLA success"
+    ],
+    "blockers": [
+      {
+        "id": "P1",
+        "issue": "Both G4 sources are required to cover spacings 4 and 129 although certified source-orbit inter-event durations are in [5,128].",
+        "fix": "Use source-specific domains: operator-only boundary attacks may use 4/129, while trained outputs cover realizable 5-128 strata."
+      },
+      {
+        "id": "P2",
+        "issue": "Segment-local window, causal-context, NOLA accumulator, and adjacency reset behavior is not fully specified.",
+        "fix": "Execute each maximal valid run independently and prove pre-gap perturbations cannot change post-gap bytes before the single final identity decoder."
+      }
+    ],
+    "failure_action": "Reject strict TempoRAC; response mass remains a non-decision diagnostic and cannot rescue the route."
+  },
+  "cue_only_routing_and_matched_experts": {
+    "ruling": "SAME_RESPONSE_CAUSAL_INTERVENTION_VALID_TRAINING_AND_CONTROL_CONTRACTS_OPEN",
+    "strengths": [
+      "one fixed irregular-clock NUDFT cue",
+      "cue excluded from encoder and response experts",
+      "three equal-shape matched causal TCN experts",
+      "one trained and frozen response bank per seed",
+      "local, global, uniform, blocked, and shuffled interventions on the same cached branch responses",
+      "blocked/uniform equality treated as path integrity rather than independent evidence",
+      "held-out expert-by-tempo diagonal matrix used only as supporting mechanism evidence"
+    ],
+    "blockers": [
+      {
+        "id": "R1",
+        "issue": "F19 uses v*chi*pi_k and v*chi, while F23 uses v for every control branch and fused response.",
+        "fix": "Use v*chi for every control branch and fused term, omit only pi_k, and retain sigmoid-before-uniform-probability fusion."
+      },
+      {
+        "id": "R2",
+        "issue": "F19 includes a fused P(R,...) term, then declares NOLA arithmetic stop-gradient.",
+        "consequence": "Read literally, the fused term has zero gradient to the encoder and branches.",
+        "fix": "Stop cue/gate/taper/mask/denominator auxiliaries but preserve gradients through branch sigmoid probabilities, the NOLA numerator, and division; bind a fused-only autograd receipt."
+      }
+    ]
+  },
+  "implementation_readiness": {
+    "status": "BLOCKED_BY_ONE_BOUNDED_EXECUTION_CONTRACT_REVISION",
+    "neural_module_shapes_status": "IMPLEMENTATION_GRADE",
+    "complete_graph_status": "NOT_IMPLEMENTATION_READY",
+    "blocking_issues": [
+      {
+        "id": "I1",
+        "issue": "Canonical fixed-320 v44 source centers and q_gap=1 are population-incompatible for every source_length greater than 320."
+      },
+      {
+        "id": "I2",
+        "issue": "F5's second moment contradicts its exact subdivision-invariance claim."
+      },
+      {
+        "id": "I3",
+        "issue": "F19/NOLA gradient semantics and per-segment reset semantics are not executable as one graph."
+      },
+      {
+        "id": "I4",
+        "issue": "The all-synthetic source-orbit generator X0 and deterministic population partitions are not defined."
+      },
+      {
+        "id": "I5",
+        "issue": "G4 requires empty trained-output strata at spacings 4/129."
+      },
+      {
+        "id": "I6",
+        "issue": "G5 requires K7 success although stage order places G5 before K7; feature eligibility and unconditional coverage are not fixed."
+      }
+    ],
+    "single_contract_fix": "Freeze one versioned acquisition/teacher/indexing/gradient/NOLA/control/generator/G4/gate-order contract in the proposal; add no route, module, seed, dataset, or evidence block."
+  },
+  "gate_executability": [
+    {
+      "gate": "G0/K0",
+      "status": "MISSING_UNCONDITIONAL_ACQUISITION_POPULATION_RECEIPT"
+    },
+    {
+      "gate": "G1/K1",
+      "status": "BLOCKED_BY_F5_CLOCK_AND_FRACTIONAL_OWNERSHIP"
+    },
+    {
+      "gate": "G2/K2",
+      "status": "BLOCKED_BY_GRADIENT_AND_SEGMENT_RESET_CONTRACT"
+    },
+    {
+      "gate": "G3/K3/K4",
+      "status": "SAME_RESPONSE_PATH_VALID_CONTROL_REQUIRES_WEIGHT_FIX"
+    },
+    {
+      "gate": "G4/K5/K6",
+      "status": "SOURCE_DOMAIN_QUANTIFIER_IMPOSSIBLE_AS_WRITTEN"
+    },
+    {
+      "gate": "G5/K7",
+      "status": "ORDER_CIRCULAR_AND_COVERAGE_DENOMINATOR_AMBIGUOUS"
+    }
+  ],
+  "staged_compute_and_validation": {
+    "gpu_budget_a6000_hours_max": 100,
+    "proposed_engineer_days": "20-30",
+    "outer_budget_status": "NUMERICALLY_WITHIN_CONSTRAINT",
+    "natural_population_feasibility": "NOT_ESTABLISHED",
+    "minimal_validation_status": "THREE_PAPER_VISIBLE_BLOCKS_WITH_INTERNAL_FAIL_CLOSED_RECEIPTS",
+    "allocation_status": "NOT_AUDITABLE",
+    "job_count_observation": "S3 assigns 12 A6000-hours to three canonical banks, three controls, and six independently trained shortcut arms across three seeds, totaling 24 response-family training jobs before fixture evaluation, while S4 reserves 60 hours for frozen prediction/evaluation.",
+    "bounded_fix": "Run a count-blind acquisition preflight first; if it passes, freeze generator sizes and a per-job step/runtime/memory ledger and rebalance inside the existing 100-hour cap."
+  },
+  "dimensions_below_7": [
+    {
+      "dimension": "Method Specificity",
+      "score": 6.4,
+      "weakness": "The data clock, F5 statistic, NOLA gradient, G4 source domain, and G5/K7 order are mutually inconsistent, while generator, reset, and ownership interfaces remain deferred.",
+      "concrete_fix": "Freeze one versioned execution contract covering count-blind clock admissibility, exact F5 integration, half-open ownership, segment reset, differentiable NOLA response path, v*chi control weighting, finite generator partitions, source-specific G4 strata, and acyclic gate order.",
+      "priority": "CRITICAL"
+    },
+    {
+      "dimension": "Feasibility",
+      "score": 5.8,
+      "weakness": "Every v44 record with source_length greater than 320 deterministically violates q_gap=1 after duplicate collapse; the validation audit has no receipt that an adequate L=320 population exists. The synthetic/job workload is also unbound.",
+      "concrete_fix": "Before training, require a label-blind G0 acquisition-eligible identity/component floor under the repaired gap rule; then bind generator size and a measured or conservative job ledger within 100 A6000-hours.",
+      "priority": "CRITICAL"
+    },
+    {
+      "dimension": "Venue Readiness",
+      "score": 6.5,
+      "weakness": "The graph would require consequential implementer choices and novelty/TWCRAC remains separately unresolved.",
+      "concrete_fix": "Complete one bounded proposal revision and re-review it without running data or adding components; keep novelty, title, execution, server, result, and paper authorization separate.",
+      "priority": "IMPORTANT"
+    }
+  ],
+  "simplification_opportunities": [
+    "Make G0-G5 artifact/provenance gates and K0-K7 scientific decisions; remove K7 success from G5.",
+    "Reuse the canonical P(.;v*chi) path for F23 and replace only branch responsibility with the full target.",
+    "Put acquisition gaps, exact F5 integration, landmark/seam ownership, segment reset, chi, resampler pullback, and source-specific G4 strata in one execution table; delete contradictory prose."
+  ],
+  "modernization_opportunities": {
+    "status": "NONE",
+    "reason": "LLM, VLM, diffusion, RL, distillation, or inference-time search does not resolve orbit degree, irregular sampling, response-scale selection, state isolation, NOLA, or one-event decoding and would add sprawl."
+  },
+  "drift": {
+    "warning": "NONE",
+    "anchor_fields_preserved": true,
+    "drift_guard_preserved": true,
+    "entire_problem_anchor_section_verbatim": true,
+    "graph_preserved": true,
+    "substantive_drift_detected": false,
+    "future_drift_triggers": [
+      "Replacing local three-expert routing with WARP-PHASE or a global selector",
+      "Using human evaluator fields to create, repair, or select targets or checkpoints",
+      "Permitting cross-identity state or per-person model copies",
+      "Decoding windows independently",
+      "Substituting integral mass after the fixed peak contract fails",
+      "Adding another paper claim or evidence block instead of closing the execution contract"
+    ]
+  },
+  "remaining_action_items": [
+    {
+      "rank": 1,
+      "priority": "CRITICAL",
+      "action": "Repair natural admissibility: separate d<P_min no-hidden-cycle support from delta<0.25 certification and require a pre-vault unconditional G0 population floor over all supplied valid identities/components."
+    },
+    {
+      "rank": 2,
+      "priority": "CRITICAL",
+      "action": "Correct F5's second moment and freeze one half-open fractional landmark/traversal/sample/edge ownership convention across certificate, topology, pulse, chi, and pullback."
+    },
+    {
+      "rank": 3,
+      "priority": "CRITICAL",
+      "action": "Preserve fused-response gradients through segment-local NOLA, bind resets and gap isolation, and use v*chi for every F23 branch/fused term while omitting only pi_k."
+    },
+    {
+      "rank": 4,
+      "priority": "CRITICAL",
+      "action": "Freeze the finite X0 population/splits, use source-specific G4 spacing domains, make G5 precede K7 without containing its result, define both unconditional and conditional coverage, and bind the job ledger inside 100 A6000-hours."
+    },
+    {
+      "rank": 5,
+      "priority": "IMPORTANT",
+      "action": "Treat ranks 1-4 as one bounded execution-contract revision; add no seeds, arms, modules, datasets, routes, or paper evidence blocks, and keep all authorization boundaries separate."
+    }
+  ],
+  "authorization": {
+    "method_refinement_verdict": "REVISE",
+    "local_contract_editing": "NEXT_REFINEMENT_STEP_NOT_STARTED",
+    "novelty_clearance": "NOT_GRANTED",
+    "closest_prior_twcrac_resolution": "UNRESOLVED",
+    "title_or_acronym_freeze": "NOT_AUTHORIZED",
+    "implementation_or_test_execution": "NOT_AUTHORIZED_BY_THIS_REVIEW",
+    "server_or_data_bearing_training": "NOT_AUTHORIZED",
+    "test_sealed_heldout_historical_result_access": "NOT_AUTHORIZED",
+    "positive_performance_claims": "NOT_AUTHORIZED",
+    "paper_drafting_submission_public_claim": "NOT_AUTHORIZED"
+  },
+  "verdict": {
+    "code": "REVISE",
+    "ready_rule_satisfied": false,
+    "weighted_score_at_least_9": false,
+    "no_substantive_drift": true,
+    "no_blocking_issue": false,
+    "rationale": "The complete anchor and original graph are preserved and the paper claim is focused, but the canonical data clock, F5 statistic, fused gradient, control measure, G4 source domain, segment reset, generator, ownership, and G5/K7 contracts do not yet define one executable program."
+  },
+  "input_resolution": {
+    "requested_missing_path": "idea-stage/RESEARCH_REVIEW.md",
+    "status": "MISSING",
+    "authorized_substitute": "idea-stage/RESEARCH_REVIEW.json",
+    "missing_input_is_blocker": false,
+    "audits_resolved_at_worktree_root": [
+      "EXPERIMENT_AUDIT_WARP_PHASE.md",
+      "EXPERIMENT_AUDIT_WARP_PHASE.json",
+      "PILOT_DATA_SCHEMA_AUDIT.md",
+      "PILOT_PERIOD_SCHEMA_ADDENDUM.md"
+    ],
+    "supplementary_structured_copies_read_for_exact_clock_counts": [
+      "PILOT_DATA_SCHEMA_AUDIT.json",
+      "PILOT_PERIOD_SCHEMA_ADDENDUM.json"
+    ]
+  },
+  "input_sha256": {
+    ".agents/skills/research-refine/SKILL.md": "bb489173329fec7a6551c74c319e2103d83f722ea11fc11462a7c4ccacd00b09",
+    ".agents/skills/shared-references/review-tracing.md": "4f4936984391da87464b8e8bf6f7c984f3f186e8fdc42890d0ac999b5e2024dc",
+    "refine-logs/temporac/round-2-refinement.md": "8427a7adfdb6537f320554f7919e0756a874363282b723df799b17668de6abc1",
+    "refine-logs/temporac/PHASE_ORIGIN_AUDIT.md": "83909c6b34757fc6d15502ff202c6e50d26c69b1d5763c4322857b160c242b1c",
+    "refine-logs/temporac/round-0-initial-proposal.md": "654fbbc0038a7c74ffd73295ccb5a0bca533ccbee3b527b2c7804b528abe6fb2",
+    "idea-stage/TEMPORAC_CANONICAL_REVIEW_BRIEF.md": "63b84447a6af9c4228bd5f93787b7cab0da4e9e96ac7258d7217e14ce915ba08",
+    "idea-stage/TEMPORAC_RESEARCH_REVIEW.md": "ebfbb5cb5ff3963daf70156082bfeefc3832aa4932d3699aa40f7cb2b52012a9",
+    "idea-stage/TEMPORAC_RESEARCH_REVIEW.json": "27cb7a828cefa4a1110f2ba70875a1654c4435d79cafdec40f83691f695a7864",
+    "idea-stage/NOVELTY_CHECK.json": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5",
+    "idea-stage/RESEARCH_REVIEW.json": "fbc2462303c3ddcb4b23ef4cbf4f81b01a863ff433c6a58dec3f8cd99790caa3",
+    "EXPERIMENT_AUDIT_WARP_PHASE.md": "770ea5d9c86fce3a88a1f859434edeec893eec2d1b326cf95ec33a6112ac8e7c",
+    "EXPERIMENT_AUDIT_WARP_PHASE.json": "457d09da6b4c7c7a9e7734e21bc3564f2d2a66dc610cc549fc70203b7fdfd7ed",
+    "PILOT_DATA_SCHEMA_AUDIT.md": "7058981e8eb37622c09f5808a4b1329bc7cd133f474101723f15e5e4273eab25",
+    "PILOT_DATA_SCHEMA_AUDIT.json": "ba1c376127d0304d7ee76f902c56dd753c351b71fc11655c45451b98fa0481b8",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.md": "49edcfe25c302c2b55b8e65bc18e1cb7febe25cc8b76698d631fa24150d4b0b5",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.json": "2c95af393fa73f3c581a327f9ee8a5e8a5a5c69c03a9fe6349d3b6531c48e914",
+    "refine-logs/temporac/round-2-review.md": "6f96f06bd55e4787ac37029adc43d8351748374755f458793ccae392ebfc7974",
+    "refine-logs/temporac/round-2-review.json": "45c63bffc8c2cf50280646e5f924355fc9feff142fa97e161489887f6c60fc36",
+    ".aris/traces/research-refine/20260815_temporac_round2_sol/001-round-2-review.response.md": "f2f3c62f6e2327a5fcda6fdaa55ea27541a9173beb343c93cd62229aea43d4ce"
+  },
+  "raw_review_binding": {
+    "trace_response_path": ".aris/traces/research-refine/20260815_temporac_round3_sol/001-round-3-review.response.md",
+    "trace_response_sha256": "a95d1e62c1f70d300acc1f40e82aee273364f397cbb1c92f21562748d84d6cf0",
+    "canonical_markdown_path": "refine-logs/temporac/round-3-review.md",
+    "canonical_markdown_sha256": "37b9ac78321e5d59b5b0858b8f389f18071bebe6680cf27080a065b80f336036",
+    "canonical_contains_complete_raw_review_verbatim": true
+  },
+  "output_status": {
+    "canonical_markdown": "WRITTEN_AND_VALIDATED",
+    "structured_json": "WRITTEN_AND_VALIDATED",
+    "trace": "FULL_TRACE_WRITTEN_AND_VALIDATED",
+    "review_trace_event": "APPENDED_EXACTLY_ONCE_AND_VALIDATED",
+    "utf8_no_bom": "VALIDATED",
+    "raw_response_binding": "VALIDATED",
+    "input_rehash": "VERIFIED_AT_FINALIZATION",
+    "output_scope": "VERIFIED_ALLOWED_PATHS_PLUS_REQUIRED_TRACE_EVENT_ONLY",
+    "manifest_modified": false,
+    "refine_state_modified": false,
+    "score_history_modified": false,
+    "proposal_modified": false,
+    "code_or_tests_modified": false,
+    "implementation_started": false,
+    "data_modified": false,
+    "server_accessed": false,
+    "paper_modified": false,
+    "git_command_or_index_modified": false
+  }
+}

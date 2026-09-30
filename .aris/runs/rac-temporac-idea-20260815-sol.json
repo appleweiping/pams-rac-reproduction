@@ -1,0 +1,78 @@
+{
+  "run_id": "rac-temporac-idea-20260815-sol",
+  "executor_model": "codex-gpt-5.6-sol",
+  "executor_family": "openai",
+  "policy": {
+    "provisional_advances": true
+  },
+  "created": "2026-08-15T03:42:52Z",
+  "updated": "2026-08-15T08:37:38Z",
+  "gates": {},
+  "phases": [
+    {
+      "phase": "research-lit",
+      "status": "accepted",
+      "artifact": "idea-stage/IDEA_REPORT.md#literature-landscape",
+      "verdict_id": "sha256:c606a74f95db99abb659c51d94a9c6ad57d092906e64cbf75ba55be9ad546bb4",
+      "reviewer": "deterministic",
+      "reviewer_family": "deterministic",
+      "review_independence": "deterministic",
+      "acceptance_status": "accepted",
+      "executor_model": "codex-gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T03:55:53Z"
+    },
+    {
+      "phase": "idea-creator",
+      "status": "provisional",
+      "artifact": "idea-stage/IDEA_CREATOR_JURY.json",
+      "verdict_id": "sha256:c0fdbd622af448b30e31be97cf6c6f05ae20ec88a7bedd31f04c211d92af8d60",
+      "reviewer": "gpt-5.6-sol",
+      "reviewer_family": "openai",
+      "review_independence": "same-family",
+      "acceptance_status": "provisional",
+      "executor_model": "gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T04:22:58Z"
+    },
+    {
+      "phase": "novelty-check",
+      "status": "provisional",
+      "artifact": "idea-stage/NOVELTY_CHECK.json",
+      "verdict_id": "sha256:79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5",
+      "reviewer": "gpt-5.6-sol",
+      "reviewer_family": "openai",
+      "review_independence": "same-family",
+      "acceptance_status": "provisional",
+      "executor_model": "gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T04:50:45Z"
+    },
+    {
+      "phase": "research-review",
+      "status": "provisional",
+      "artifact": "idea-stage/RESEARCH_REVIEW.json",
+      "verdict_id": "sha256:fbc2462303c3ddcb4b23ef4cbf4f81b01a863ff433c6a58dec3f8cd99790caa3",
+      "reviewer": "gpt-5.6-sol",
+      "reviewer_family": "openai",
+      "review_independence": "same-family",
+      "acceptance_status": "provisional",
+      "executor_model": "gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T05:06:43Z"
+    },
+    {
+      "phase": "research-refine-pipeline",
+      "status": "provisional",
+      "artifact": "refine-logs/FINAL_PROPOSAL.md",
+      "verdict_id": "sha256:81feba37b6618e4f19af3990440c1eb8c8afe3a2e5838e8c675d82f096129282",
+      "reviewer": "gpt-5.6-sol",
+      "reviewer_family": "openai",
+      "review_independence": "same-family",
+      "acceptance_status": "provisional",
+      "executor_model": "codex-gpt-5.6-sol",
+      "executor_family": "openai",
+      "updated": "2026-08-15T08:37:38Z"
+    }
+  ]
+}

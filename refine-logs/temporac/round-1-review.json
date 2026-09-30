@@ -1,0 +1,269 @@
+{
+  "schema_version": "aris.research_refine_review.v1",
+  "review_id": "20260815_temporac_round1_sol",
+  "review_type": "phase_2_method_first_review",
+  "round": 1,
+  "as_of_date": "2026-08-15",
+  "reviewer": {
+    "reviewer_model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "reasoning_effort": "xhigh",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "agent_id": "/root/temporac_refine_reviewer",
+    "fresh_zero_context": true
+  },
+  "calibration": {
+    "status": "none",
+    "reason": "No curated known-good or known-bad research-refine proposals were supplied."
+  },
+  "problem_anchor": {
+    "status": "verbatim_preserved_in_markdown",
+    "bottom_line_problem": "On externally supplied person-indexed pose tracks, determine whether identity-indexed, window-local soft routing over shared fast, medium, and slow response experts can count each person's repetitions under asynchronous and within-track pace changes without using human per-person count or period annotations in the counting objective, while reconstructing one continuous response and decoding exactly once per identity.",
+    "must_solve_bottleneck": "The system must identify one response event per primitive physical repetition, specialize the three shared experts by relative local tempo, prevent cross-person state leakage, and prevent overlap-window double counting without consulting evaluator labels.",
+    "non_goals": "This work does not introduce MRAC, person-wise output, pose counting, tracking, temporal windows, phase learning, mixture-of-experts, ACF/FFT, PAMS-TCC, NOLA, or peak detection. It does not claim first, annotation-free, label-free, end-to-end, constant-time, or state of the art.",
+    "constraints": "ICASSP 2027; four technical pages plus a references-only fifth page; two RTX A6000 GPUs; a partial GT-bbox-assisted supplied-track MultiRep train/development cache; no test, sealed, heldout, or historical result access; all human count, period, density, and cycle-boundary fields remain in an evaluator-only vault; all semantic review is same-family provisional GPT-5.6-Sol.",
+    "success_condition": "The method may advance only if a frozen synthetic topology gate establishes one primitive orbit per response winding, all seven architecture invariants pass, every expert demonstrates diagonal tempo specialization, and a three-seed supplied-track development pilot improves the strongest matched nonlocal/control model under piecewise tempo drift without materially degrading stationary counting."
+  },
+  "scores": {
+    "problem_fidelity": {
+      "score": 9.5,
+      "weight": 0.15,
+      "weighted_contribution": 1.425
+    },
+    "method_specificity": {
+      "score": 6.0,
+      "weight": 0.25,
+      "weighted_contribution": 1.5,
+      "weakness": "The degree-one teacher, local tempo cue, expert class, loss indexing, constants, and checkpoint precedence are not frozen to an executable interface.",
+      "fix": "Freeze exact tensor and mask contracts, one expert architecture, teacher/code architecture, complete-orbit winding evaluator, source-frequency grid, reliable-window rule, fully indexed losses, constants, and deterministic checkpoint precedence; remove positive-variation minimization.",
+      "priority": "CRITICAL"
+    },
+    "contribution_quality": {
+      "score": 5.5,
+      "weight": 0.25,
+      "weighted_contribution": 1.375,
+      "weakness": "A teacher, routing mechanism, and reconstruction-ordering story create three substantial contributions despite the stated one-claim budget.",
+      "fix": "Make cue-only local-tempo selection of specialized shared response scales the sole paper claim; treat the teacher as a passed supervision contract and NOLA/one-decode as fixed correctness plumbing.",
+      "priority": "CRITICAL"
+    },
+    "frontier_leverage": {
+      "score": 7.5,
+      "weight": 0.15,
+      "weighted_contribution": 1.125
+    },
+    "feasibility": {
+      "score": 5.5,
+      "weight": 0.10,
+      "weighted_contribution": 0.55,
+      "weakness": "No current tree implements TempoRAC; the label-mixed cache is ineligible for training; the nuisance K4 schema is open; and the one-week estimate undercounts the teacher, spectral cue, state instrumentation, decoder, and firewall work.",
+      "fix": "Stage specification, CPU synthetic gates, deterministic invariant tests, feature/vault receipts, a one-seed sanity run, and only then the bounded three-seed pilot; omit optional PAMS initialization and continuity loss initially.",
+      "priority": "CRITICAL"
+    },
+    "validation_focus": {
+      "score": 6.5,
+      "weight": 0.05,
+      "weighted_contribution": 0.325,
+      "weakness": "Retraining every router arm confounds routing with optimization, the one-head match is underspecified, and the handoff list is broader than the core causal proof.",
+      "fix": "Use same-frozen-response interventions over local, global, uniform, blocked, and shuffled gates; report a held-out expert-by-tempo matrix against a parameter/FLOP-matched one-head control; test NOLA ordering on the identical response tensor.",
+      "priority": "IMPORTANT"
+    },
+    "venue_readiness": {
+      "score": 5.5,
+      "weight": 0.05,
+      "weighted_contribution": 0.275,
+      "weakness": "The residual novelty is unproven, TWCRAC overlap is unresolved, there are zero eligible results, and the teacher/decoder contracts are open.",
+      "fix": "Close the response-unit and peak gates, obtain one non-additive routing result against matched controls, and keep literature/title, server, and paper authorization as separate later decisions.",
+      "priority": "IMPORTANT"
+    }
+  },
+  "weighted_composite": {
+    "exact": 6.575,
+    "display": 6.58,
+    "scale": 10,
+    "ready_threshold": 9.0
+  },
+  "gap": {
+    "to_ready_threshold": 2.425,
+    "summary": "The gap is caused by an operationally unclosed degree-one teacher, an undefended sparse-pulse threshold contract, a causally confounded router comparison, and paper-level component sprawl rather than by drift or missing trendy components."
+  },
+  "degree_one_teacher": {
+    "ruling": "CONDITIONALLY_PLAUSIBLE_NOT_IDENTIFIED",
+    "ideal_argument": "A true continuous left inverse on a complete primitive S1 orbit gives injectivity; orientation can then select degree +1.",
+    "blocking_issue": "Finite-sample approximate reconstruction, correspondence, orientation, and per-edge alias losses do not force circular coverage or a +1 closing-edge winding. Minimum positive phase variation rewards degree-zero arc compression, and a dense double winding can satisfy the per-edge alias bound.",
+    "minimal_fix": "Freeze learner-hidden synthetic primitive coordinates, include the closing edge, measure signed winding, coverage, collision, seam continuity, and reconstruction on held-out resamplers, attack degree 0, -1, +2, harmonic, symmetric, code-bypass, and decoder-bypass solutions, and remove minimum-positive-variation checkpoint selection.",
+    "failure_action": "Reject the no-human-count/period response route without label-based repair."
+  },
+  "one_final_peak_pass": {
+    "ruling": "PRESERVE_BUT_NOT_YET_DEFENDED",
+    "integral_decoder_substitution_allowed": false,
+    "blocking_issue": "Sparse impulse BCE plus soft expert mixing and NOLA does not guarantee one threshold-0.5 connected component per teacher event or a below-threshold valley between events.",
+    "minimal_fix": "Add a teacher-derived pulse/valley margin objective and held-out threshold-0.5 split/merge/NOLA gate with deterministic gap, plateau, spacing, duplicate-clock, padding, pause, and grid-shift semantics.",
+    "failure_action": "Reject the strict peak contract and TempoRAC route; do not silently replace it with an integral decoder."
+  },
+  "cue_only_routing_and_matched_experts": {
+    "ruling": "CAUSALLY_PROMISING_CURRENT_TEST_INSUFFICIENT",
+    "strength": "A nontrainable cue-only gate prevents latent bypass, and matched shared experts make specialization falsifiable.",
+    "blocking_issue": "The specialization and fusion losses can drive all experts toward the same target, the p-star-to-anchor mapping is not exact, and separately retrained router controls confound routing with optimization.",
+    "required_evidence": [
+      "Each expert is diagonal-best on an unseen-resampler expert-by-tempo matrix.",
+      "Local, global, uniform, blocked, and shuffled gates are intervened on the same frozen expert response tensor.",
+      "Cue shuffling removes the local-over-global advantage.",
+      "The three-expert system beats an exact total-parameter and FLOP-matched one-head control under drift without material stationary degradation."
+    ]
+  },
+  "gate_executability": {
+    "overall_status": "NOT_EXECUTABLE_AS_FROZEN_STACK",
+    "gates": [
+      {
+        "id": "G0",
+        "name": "feature_vault_firewall",
+        "status": "BLOCKED",
+        "closure": "Feature-only shards, separate vault, pre-deserialization forbidden-key rejection, source-component manifest, and hash receipts."
+      },
+      {
+        "id": "G1",
+        "name": "degree_one_teacher",
+        "status": "BLOCKED",
+        "closure": "Generator hashes, hidden primitive coordinates, complete-orbit closing-edge metrics, attacks, tolerances, architecture, and checkpoint precedence."
+      },
+      {
+        "id": "G2",
+        "name": "seven_invariants",
+        "status": "PARTIALLY_SPECIFIED",
+        "closure": "Instrumented object-ID, parameter/FLOP, private-buffer, local-cue, fusion-order, NOLA-coverage, and decoder-call assertions."
+      },
+      {
+        "id": "G3",
+        "name": "routing_specialization",
+        "status": "BLOCKED_AS_CAUSAL_TEST",
+        "closure": "Same-frozen-response interventions, exact stratum-anchor map, resampler bins, one-head match, paired unit, and decision rule."
+      },
+      {
+        "id": "G4",
+        "name": "pulse_nola_peak",
+        "status": "BLOCKED",
+        "closure": "Pulse margins, threshold gate, spacing domain, invalid-gap semantics, grid shifts, split/merge oracle, and exactly-once call trace."
+      },
+      {
+        "id": "G5",
+        "name": "supplied_track_pilot",
+        "status": "NOT_AUTHORIZED",
+        "closure": "All earlier gates plus the frozen three-seed source-component bootstrap evaluator."
+      }
+    ]
+  },
+  "simplification_opportunities": [
+    "Delete L_cont from the first implementation.",
+    "Keep PAMS-TCC initialization out of the canonical first run and use it only as a later control.",
+    "Use one predeclared irregular-clock routing distribution, preferably NUDFT, and retain ACF as a diagnostic unless a necessity gate justifies fusion.",
+    "Treat positive NOLA and one decode as fixed correctness operators rather than a supporting contribution."
+  ],
+  "modernization_opportunities": {
+    "status": "NONE",
+    "reason": "LLM, VLM, diffusion, RL, or inference-time search does not naturally resolve degree, pulse, or identity-state identifiability and would worsen contribution sprawl."
+  },
+  "drift": {
+    "warning": "NONE",
+    "anchor_preserved": true,
+    "future_drift_triggers": [
+      "Promoting the teacher into a separate primary contribution without a new review.",
+      "Replacing the required one-final-peak-pass with an integral count decoder under the same TempoRAC identity."
+    ]
+  },
+  "remaining_action_items": [
+    {
+      "rank": 1,
+      "priority": "CRITICAL",
+      "action": "Freeze the teacher topology contract and remove minimum-positive-variation selection."
+    },
+    {
+      "rank": 2,
+      "priority": "CRITICAL",
+      "action": "Close the threshold-0.5 peak contract with teacher-derived pulse/valley margins and held-out split/merge/NOLA gates."
+    },
+    {
+      "rank": 3,
+      "priority": "CRITICAL",
+      "action": "Write one executable interface sheet covering tensors, masks, clocks, expert class, frequency grid, reliability, losses, constants, checkpoint precedence, and call traces."
+    },
+    {
+      "rank": 4,
+      "priority": "CRITICAL",
+      "action": "Build and receipt the physical feature/vault boundary and close the nuisance-only K4 schema before data-bearing training."
+    },
+    {
+      "rank": 5,
+      "priority": "IMPORTANT",
+      "action": "Make routing causality a same-frozen-response intervention and define the exact matched one-head control."
+    },
+    {
+      "rank": 6,
+      "priority": "IMPORTANT",
+      "action": "Collapse the paper story to one routing claim; keep the teacher as prerequisite and NOLA/one-decode as correctness plumbing."
+    },
+    {
+      "rank": 7,
+      "priority": "IMPORTANT",
+      "action": "Keep novelty, title, server, and paper authorization separate and unresolved."
+    }
+  ],
+  "authorization": {
+    "method_refinement_verdict": "REVISE",
+    "novelty_clearance": "NOT_GRANTED",
+    "title_or_acronym_freeze": "NOT_AUTHORIZED",
+    "server_or_data_bearing_training": "NOT_AUTHORIZED",
+    "paper_or_submission": "NOT_AUTHORIZED",
+    "positive_performance_claims": "NOT_AUTHORIZED",
+    "local_specification_and_unit_work": "APPROPRIATE_BUT_NOT_A_SERVER_LAUNCH_RECEIPT",
+    "warp_phase": "TERMINAL_FAILED_ROUTE_NOT_REUSABLE_OR_SUBSTITUTABLE"
+  },
+  "verdict": {
+    "code": "REVISE",
+    "ready_rule_satisfied": false,
+    "rationale": "The direction is on-anchor and revisable, but the response unit, peak decoder, causal router proof, and gate stack are not yet executable as claimed."
+  },
+  "input_resolution": {
+    "requested_missing_path": "idea-stage/RESEARCH_REVIEW.md",
+    "status": "MISSING",
+    "authorized_substitute": "idea-stage/RESEARCH_REVIEW.json",
+    "four_root_resolutions": [
+      "EXPERIMENT_AUDIT_WARP_PHASE.md",
+      "EXPERIMENT_AUDIT_WARP_PHASE.json",
+      "PILOT_DATA_SCHEMA_AUDIT.md",
+      "PILOT_PERIOD_SCHEMA_ADDENDUM.md"
+    ]
+  },
+  "input_sha256": {
+    "refine-logs/temporac/round-0-initial-proposal.md": "654fbbc0038a7c74ffd73295ccb5a0bca533ccbee3b527b2c7804b528abe6fb2",
+    "idea-stage/TEMPORAC_CANONICAL_REVIEW_BRIEF.md": "63b84447a6af9c4228bd5f93787b7cab0da4e9e96ac7258d7217e14ce915ba08",
+    "idea-stage/TEMPORAC_RESEARCH_REVIEW.md": "ebfbb5cb5ff3963daf70156082bfeefc3832aa4932d3699aa40f7cb2b52012a9",
+    "idea-stage/TEMPORAC_RESEARCH_REVIEW.json": "27cb7a828cefa4a1110f2ba70875a1654c4435d79cafdec40f83691f695a7864",
+    "idea-stage/NOVELTY_CHECK.json": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5",
+    "idea-stage/RESEARCH_REVIEW.json": "fbc2462303c3ddcb4b23ef4cbf4f81b01a863ff433c6a58dec3f8cd99790caa3",
+    "EXPERIMENT_AUDIT_WARP_PHASE.md": "770ea5d9c86fce3a88a1f859434edeec893eec2d1b326cf95ec33a6112ac8e7c",
+    "EXPERIMENT_AUDIT_WARP_PHASE.json": "457d09da6b4c7c7a9e7734e21bc3564f2d2a66dc610cc549fc70203b7fdfd7ed",
+    "PILOT_DATA_SCHEMA_AUDIT.md": "7058981e8eb37622c09f5808a4b1329bc7cd133f474101723f15e5e4273eab25",
+    "PILOT_PERIOD_SCHEMA_ADDENDUM.md": "49edcfe25c302c2b55b8e65bc18e1cb7febe25cc8b76698d631fa24150d4b0b5"
+  },
+  "raw_review_binding": {
+    "trace_response_path": ".aris/traces/research-refine/20260815_temporac_round1_sol/001-round-1-review.response.md",
+    "trace_response_sha256": "48fc63c647396c7d067b21d645bb05720adbf19ea04ab59c6a64cf5684a06a97",
+    "canonical_markdown_path": "refine-logs/temporac/round-1-review.md",
+    "canonical_markdown_sha256": "09d7397e819052be4f20c99ddbc75c77fc5b5665448c008cc1ca6a1edc539bd7",
+    "canonical_contains_complete_raw_review_verbatim": true
+  },
+  "output_status": {
+    "canonical_markdown": "WRITTEN_AND_VALIDATED",
+    "structured_json": "WRITTEN_AND_VALIDATED",
+    "trace": "FULL_TRACE_WRITTEN_AND_VALIDATED",
+    "review_trace_event": "APPENDED_EXACTLY_ONCE_AND_VALIDATED",
+    "manifest_modified": false,
+    "refine_state_modified": false,
+    "score_history_modified": false,
+    "proposal_modified": false,
+    "code_or_tests_modified": false,
+    "server_accessed": false,
+    "git_modified": false
+  }
+}

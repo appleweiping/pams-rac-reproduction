@@ -1,0 +1,92 @@
+{
+  "schema": "aris.compute.provider-env.v1",
+  "snapshot_at": "2026-08-15T16:45:00+08:00",
+  "public_safe": true,
+  "evidence_scope": "desensitized_read_only_preflight",
+  "readiness": {
+    "state": "NOT_READY",
+    "reason": "precheck_only_missing_lock_and_tier3",
+    "launch_authorization_count": 0,
+    "fail_closed": true
+  },
+  "provider": {
+    "shape": "direct_ssh_host",
+    "connection_coordinates_recorded": false,
+    "operating_system": "Ubuntu 20.04.6",
+    "architecture": "x86_64"
+  },
+  "resources": {
+    "logical_cpu_count": 40,
+    "memory_total_gib": 125.4,
+    "memory_available_gib": 69.1,
+    "gpus": {
+      "count": 2,
+      "model": "NVIDIA RTX A6000",
+      "memory_mib_each": 49140,
+      "driver_version": "550.54.14",
+      "observed_idle": true
+    }
+  },
+  "software_environment": {
+    "alias": "cja_py310",
+    "state": "PREVALIDATED_NOT_READY",
+    "python": "3.10.15",
+    "numpy": "1.26.4",
+    "torch": "2.5.0+cu118",
+    "bounded_import_version_probe": "PASS",
+    "seeded_cuda_2x2_witness": "PASS",
+    "complete_tier1_against_frozen_spec": "NOT_RUN",
+    "tier3_agent_follows_doc": "NOT_RUN",
+    "weights_and_cache_validation": "NOT_ESTABLISHED"
+  },
+  "legacy_environment": {
+    "alias": "motionbert_legacy",
+    "state": "BLOCKED",
+    "fallback_allowed": false
+  },
+  "environment_lock": {
+    "algorithm": "sha256",
+    "value": null,
+    "state": "PENDING",
+    "required_before_authorization": true
+  },
+  "data_preflight": {
+    "training_source_sha256_matches_contract": true,
+    "validation_source_sha256_matches_contract": true,
+    "match_scope": "exact",
+    "gate0_passed": false,
+    "trusted_unpickle_authorized": false
+  },
+  "host_health": {
+    "output_mount_used_percent": 96,
+    "output_mount_free_gib_rounded": 171,
+    "inode_used_percent": 14,
+    "swap_state": "NEARLY_EXHAUSTED",
+    "historical_cpu_process_count": 29,
+    "busy_single_core_process_observed": true,
+    "historical_gpu_use_observed": false,
+    "fresh_monitor_required": true
+  },
+  "authorization_gate": {
+    "required": [
+      "fresh_agent_follows_doc_pass",
+      "isolated_run_directory_receipt",
+      "nonempty_matching_environment_lock_sha256",
+      "fresh_output_space_prelaunch_receipt",
+      "experiment_dependency_pass"
+    ],
+    "missing_or_mismatched_evidence_action": "DENY_LAUNCH"
+  },
+  "parallelism": {
+    "current_max_parallel": 0,
+    "first_sanity_max_parallel_after_all_gates": 1,
+    "later_max_parallel_after_sanity_and_health_monitor_pass": 2,
+    "gpu_count_does_not_imply_authorization": true
+  },
+  "policy_references": [
+    "refine-logs/EXPERIMENT_EXECUTION_CONTRACT.md",
+    "refine-logs/EXPERIMENT_PLAN.md",
+    "refine-logs/EXPERIMENT_TRACKER.md",
+    ".aris/compute/output-budget.json"
+  ]
+}

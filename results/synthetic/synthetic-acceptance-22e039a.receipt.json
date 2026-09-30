@@ -1,0 +1,42 @@
+{
+  "artifact_bytes": 594313,
+  "artifact_file": "synthetic-acceptance.json",
+  "artifact_sha256": "0b4b3734228fc2dd82f00db6b18449cc6342e3581606c1af38fa89aa3e01eb70",
+  "artifact_type": "pams_synthetic_acceptance_receipt",
+  "command": [
+    "/workspace/src/pams/__main__.py",
+    "synthetic",
+    "acceptance",
+    "/pams/runs/synthetic/synthetic-acceptance-22e039a-v1",
+    "--config",
+    "/workspace/configs/pams.yaml",
+    "--stress-config",
+    "/workspace/configs/stress.yaml"
+  ],
+  "config_file_sha256": "058c45443b81f6b9861d2896e33544727e8921b7052d61ef331e9ba819be70c8",
+  "config_fingerprint": "4aa9ea1b11e9ec92ff7c5e6c6b65396fab6f807e1cdd60fb7e0c42c5567225b4",
+  "hardware": {
+    "container": {
+      "environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+      "image_id": "sha256:6855e98177c8d9d8f1487c5472d77707f8b854f494c91c6b44ed525209592e3b",
+      "source_revision": "22e039aec6350fd8083c1f66a30283e2f5b92599"
+    },
+    "cuda_runtime": "12.4",
+    "cudnn": 90100,
+    "gpus": [],
+    "logical_cpu_count": 40,
+    "nvidia_driver": {
+      "status": "no_cuda_device",
+      "versions": []
+    },
+    "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.35",
+    "processor": "x86_64",
+    "python": "3.11.10",
+    "torch": "2.5.1+cu124"
+  },
+  "passed": false,
+  "schema_version": 1,
+  "source_code_sha256": "f0b3ecbe554df7d300112de9b83961fa2bccaabc8999956522f69b935ed9a291",
+  "source_git_sha": "22e039aec6350fd8083c1f66a30283e2f5b92599",
+  "stress_config_sha256": "3e87313ff43a1baffd3bb5daff136c495e391ab42390ba8512d610a106d12962"
+}

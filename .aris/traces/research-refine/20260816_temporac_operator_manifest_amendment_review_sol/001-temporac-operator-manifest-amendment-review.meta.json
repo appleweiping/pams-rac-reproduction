@@ -1,0 +1,23 @@
+{
+  "acceptance_status": "provisional",
+  "agent_id": "/root/temporac_operator_manifest_amendment_review",
+  "backend": "codex",
+  "blocking_issue_count": 5,
+  "call_number": 1,
+  "executor_family": "openai",
+  "executor_model": "gpt-5.6-sol",
+  "executor_model_source": "host-session-event",
+  "family_relation": "same",
+  "independence_verified": false,
+  "model": "gpt-5.6-sol",
+  "model_family": "openai",
+  "purpose": "temporac-operator-manifest-amendment-review",
+  "request_sha256": "12fc2584eeb46267787e69722a183894f39415e0e5c5b11ccd9b7c04a7dae171",
+  "response_sha256": "573b49150b4f7ca6f15ec656d0375131c3d8a14214da075ad4d138e4edd71dfd",
+  "reviewer_model_source": "host-session-event",
+  "status": "ok",
+  "structured_output_sha256": "918ac01d43e193b9204edff7cb5f5e7d148fa12b180157dea2192a2af76eb482",
+  "thread_id": "/root/temporac_operator_manifest_amendment_review",
+  "timestamp": "2026-08-16T09:17:20+08:00",
+  "verdict": "REVISE"
+}

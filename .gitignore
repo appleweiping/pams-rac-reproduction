@@ -1,0 +1,79 @@
+# Local papers and reference material
+*.pdf
+recommend paper/
+
+# Datasets, checkpoints, and generated artifacts
+data/*
+!data/splits/
+data/splits/*
+!data/splits/README.md
+!data/splits/ucfrep_526_*.txt
+artifacts/
+checkpoints/
+runs/
+!.aris/runs/
+!.aris/runs/*.json
+outputs/
+*.pt
+*.pth
+*.ckpt
+*.npz
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.ppk
+id_ed25519*
+id_rsa*
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Project-local ARIS installation and transient paper QA material
+.agents/
+AGENTS.md
+.aris/overlay-copy-backup-*/
+.aris/claude-health.*
+.aris/installed-skills-codex.txt*
+.aris/skills-declined-codex.txt
+.aris/tools/
+tmp/
+
+# Unconfirmed collaborator metadata remains local. The explicitly authorized
+# Weiping Yan identity is tracked in paper/author_public.tex.
+paper/private/
+
+# The paper package intentionally versions its compiled and vector PDFs.
+!paper/**/*.pdf
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.brf
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/*.synctex.gz
+paper/compile.log
+paper/rendered/
+paper/.aris/render-user-final/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

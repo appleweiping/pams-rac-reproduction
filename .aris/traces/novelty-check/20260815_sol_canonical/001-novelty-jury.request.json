@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_sol_canonical",
+  "task": "Create the canonical ARIS novelty audit directly, with no executor paraphrase.",
+  "reviewer_requirements": {
+    "reviewer_model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "independence": "same-family",
+    "acceptance_status": "provisional",
+    "fresh_zero_context": true,
+    "external_cutoff": "2026-08-15",
+    "sources": "primary or official only"
+  },
+  "workspace": "D:/Project/rac-aris-fullrun-icassp27",
+  "inputs": [
+    {
+      "path": "RESEARCH_BRIEF.md",
+      "sha256": "f5b9d75fc2415a03ba250279edf1e47af978341b7b9d7eef892f2d43a56b7c37"
+    },
+    {
+      "path": "idea-stage/IDEA_REPORT.md",
+      "sha256": "f7a03eb51f6ac429131fc0bde8f0d3bb6a684703a233bee3181a0836708113c3"
+    },
+    {
+      "path": "idea-stage/CANDIDATE_UNION.json",
+      "sha256": "4f3a85cc8773e63e0156acdd82befc9bad252f51980804ee418c49218132f22f"
+    },
+    {
+      "path": "EXPERIMENT_AUDIT.md",
+      "sha256": "2ac7fe4a1a8208287394a2ac4c1771aa0faf30e14319bef8144e509f876f0820"
+    },
+    {
+      "path": "SERVER_METHOD_INVENTORY.md",
+      "sha256": "0cda0704f64434296049d18c35e97fd267a0a7168300152e97b142d6ecc363a6"
+    }
+  ],
+  "candidates": [
+    "warp-equivariant-private-phase-flow",
+    "masked-geometric-tssm-ridge-completion",
+    "identity-private-state-isolation"
+  ],
+  "mandatory_literature_coverage": [
+    "MultiCounter",
+    "MultiCounter+",
+    "PAMS main paper",
+    "PAMS supplement",
+    "RepNet",
+    "TWCRAC",
+    "HTRM-Net",
+    "Repetitive Action Counting With Motion Feature Learning",
+    "Rethinking Temporal Self-Similarity",
+    "JTSPS-Net",
+    "SimPer",
+    "CycleCL",
+    "time-equivariant learning",
+    "skeleton masking",
+    "per-object tracking memory"
+  ],
+  "decision_constraints": [
+    "Missing results never prove novelty.",
+    "v46, v62, and v63 are not novelty evidence.",
+    "No 'first' claim may be licensed without exact evidence.",
+    "The response must include a query log, primary source ledger, per-candidate verdict/overlap/residual/forbidden claims/must-run experiments, synthesis, caveats, corrections, and overall actions.",
+    "The response must be byte-identical to idea-stage/NOVELTY_CHECK.json."
+  ],
+  "allowed_writes": [
+    "idea-stage/NOVELTY_CHECK.json",
+    ".aris/traces/novelty-check/20260815_sol_canonical/001-novelty-jury.response.md",
+    ".aris/traces/novelty-check/20260815_sol_canonical/001-novelty-jury.meta.json",
+    ".aris/traces/novelty-check/20260815_sol_canonical/001-novelty-jury.request.json",
+    ".aris/traces/novelty-check/20260815_sol_canonical/run.meta.json",
+    "one appended event in .aris/meta/events.jsonl"
+  ]
+}
+

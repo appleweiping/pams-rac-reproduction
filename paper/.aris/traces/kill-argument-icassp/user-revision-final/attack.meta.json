@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "agent_id": "/root/user_revision_kill_attack",
+  "exact_final_rebind_by": "/root/user_revision_kill_defense",
+  "note": "The final-state attack memo preserves only findings that survived the independent defense rebind; resolved preregistration, schema, and formula objections are excluded.",
+  "model": "gpt-5.6-sol",
+  "reasoning": "ultra",
+  "review_independence": "fresh_zero_context_same_family",
+  "paper_pdf_sha256": "2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
+  "verdict": "KILL_STRONG_REJECT",
+  "generated_at": "2026-08-15T01:20:00+08:00"
+}

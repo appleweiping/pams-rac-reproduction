@@ -1,0 +1,47 @@
+{
+  "all_metrics_exact": true,
+  "all_prediction_fields_exact": true,
+  "artifact_type": "pams_teacher_period_direct_formal_cli_equivalence",
+  "classification": "post-score recovery comparison; no inference or scoring rerun",
+  "compared_fields": [
+    "video_id",
+    "video_sha256",
+    "raw_count",
+    "rounded_count",
+    "period_frames",
+    "confidence",
+    "valid_frames"
+  ],
+  "field_mismatch_counts": {
+    "confidence": 0,
+    "period_frames": 0,
+    "raw_count": 0,
+    "rounded_count": 0,
+    "valid_frames": 0,
+    "video_id": 0,
+    "video_sha256": 0
+  },
+  "first_mismatches": [],
+  "formal_evaluation_sha256": "3f7048f3afaaf16d32a8574212c1e029d1b1969717ee05098292a303882eb0c6",
+  "formal_prediction_sha256": "3de2e518fa5221f2a9f019affdba327fabd40bdde6c361f9ca94995160272a19",
+  "max_absolute_difference": {
+    "confidence": 0.0,
+    "period_frames": 0.0,
+    "raw_count": 0.0
+  },
+  "metrics_exact_equal": {
+    "bootstrap_samples": true,
+    "bootstrap_seed": true,
+    "confidence_intervals": true,
+    "exact": true,
+    "mae": true,
+    "nmae": true,
+    "obo": true,
+    "rmse": true,
+    "sample_count": true
+  },
+  "one_off_evaluation_sha256": "1491ad51da7472244cee07afec775a7dcd2e4e3ba6bca908dec5f677205bd105",
+  "one_off_prediction_sha256": "501875b4234b01c80a6c712fd82174540a2856c625ab02f76411be386654853c",
+  "record_total": 84,
+  "schema_version": 1
+}

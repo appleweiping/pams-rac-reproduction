@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_round2_sol",
+  "step_id": "001-review",
+  "task": "Round 2 same-reviewer re-evaluation of the full WARP-PHASE Round-1 refinement",
+  "requested_at": "2026-08-15T13:55:34.6058855+08:00",
+  "reviewer_requirements": {
+    "model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "same_agent_continuation": true,
+    "verdict_enum": ["READY", "REVISE", "RETHINK"],
+    "ready_rule": "overall >= 9 and no blocking issue"
+  },
+  "rubric": [
+    {"dimension": "Problem Fidelity", "weight": 0.15},
+    {"dimension": "Method Specificity", "weight": 0.25},
+    {"dimension": "Contribution Quality", "weight": 0.25},
+    {"dimension": "Frontier Leverage", "weight": 0.15},
+    {"dimension": "Feasibility", "weight": 0.10},
+    {"dimension": "Validation Focus", "weight": 0.05},
+    {"dimension": "Venue Readiness", "weight": 0.05}
+  ],
+  "required_blocker_checks": [
+    "verbatim Problem Anchor",
+    "unique oriented integral",
+    "winding and fundamental identifiability",
+    "strictly positive interval NOLA",
+    "frozen numeric table",
+    "ambiguous-slot and duplicate-clock population",
+    "exact B=10000 bootstrap",
+    "53-job and 480-GPU-hour staged cap",
+    "one base learner",
+    "three visible validation blocks",
+    "TWCRAC K8"
+  ],
+  "raw_inputs": [
+    {"path": "refine-logs/round-1-refinement.md", "sha256": "6840a8e8cec3d8fa6d7c371e14a37a3ad3fdd1be120902bf67f911a247a47b75"},
+    {"path": "refine-logs/REFINE_STATE.json", "sha256": "caae0f416701b97f71a3ae6d46c9955df8ca92cecdfdb7149491737bc0f0c148"},
+    {"path": "refine-logs/score-history.md", "sha256": "529e9f23764abe119346d8b1d72bb5e2cd19a160903fd4c80b05bf3db9eb2b12"},
+    {"path": "refine-logs/round-1-review.md", "sha256": "e20dd1d041eaaefa286670ed6910c7d86b47bf73da30cd97158d5535fbc5b883"}
+  ],
+  "required_outputs": [
+    "same seven scores and weights",
+    "weighted composite",
+    "anchor and drift assessment",
+    "focus, simplicity, and frontier appropriateness",
+    "blocker closure audit",
+    "remaining action items",
+    "CALIBRATION and GAP",
+    "READY, REVISE, or RETHINK",
+    "no invented results",
+    "input SHA-256 ledger",
+    "raw review byte-identical to canonical round review"
+  ]
+}

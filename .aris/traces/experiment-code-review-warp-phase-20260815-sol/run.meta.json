@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "run_id": "experiment-code-review-warp-phase-20260815-sol",
+  "skill": "experiment-bridge",
+  "status": "completed",
+  "reviewer": {
+    "model": "gpt-5.6-sol",
+    "family": "openai",
+    "independence": "same-family",
+    "acceptance_status": "provisional",
+    "agent_id": "/root/warp_phase_code_review"
+  },
+  "started_at": "2026-08-15T17:54:51.4067553+08:00",
+  "completed_at": "2026-08-15T18:02:48.4858288+08:00",
+  "canonical_output_path": "refine-logs/EXPERIMENT_CODE_REVIEW.md",
+  "canonical_output_sha256": "90f63c438ea0d43a49ec513b0ffa15fb083b5228257861e26e630ef360b5f9b3",
+  "structured_output_path": "refine-logs/EXPERIMENT_CODE_REVIEW.json",
+  "structured_output_sha256": "f86bd6790eeab85a26ebe5d5d86fc2afd36fa4cebe37bab9ecf0a8e44a159f74",
+  "final_verdict": "BLOCKED",
+  "implementation_disposition": "REVISE",
+  "launch_authorized": false,
+  "steps": [
+    {
+      "step_id": "001-review",
+      "request_path": ".aris/traces/experiment-code-review-warp-phase-20260815-sol/001-review.request.json",
+      "response_path": ".aris/traces/experiment-code-review-warp-phase-20260815-sol/001-review.response.md",
+      "meta_path": ".aris/traces/experiment-code-review-warp-phase-20260815-sol/001-review.meta.json",
+      "request_sha256": "cf5836bb3748887b26db725a802ce4483dfb6c530639784c112234e8a036318e",
+      "response_sha256": "9af9c8ac41f5c0c4530fdd35d1668588e00f0bd0ac373042d6755b19f41f01b2",
+      "status": "completed"
+    }
+  ]
+}

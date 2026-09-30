@@ -1,0 +1,398 @@
+{
+  "schema_version": 1,
+  "status": "read_only_failure_diagnosis",
+  "classification": "development-only PAMS SSHead/readout diagnosis",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "sample_count": 84,
+  "table_eligible": false,
+  "new_hyperparameter_selection": false,
+  "training_or_prediction_performed_for_this_diagnosis": false,
+  "sealed_test_status": "untouched",
+  "target_access": {
+    "development_targets_used_for_post_hoc_diagnosis": true,
+    "development_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "test_targets_accessed": false,
+    "test_predictions_accessed_or_produced": false,
+    "test_metrics_accessed_or_produced": false
+  },
+  "shared_bindings": {
+    "development_pose_cache_set_sha256": "2e14cb39a4112f7ee1d10b759d166bb472f41e317e55e773776394331690256c",
+    "development_pose_cache_snapshot_sha256": "f36e34059c6d99878c31404a6a63b44d8cf3c5da901a8f6e13e009a25d819208",
+    "training_pose_cache_set_sha256": "34123ac27334ab06852c12254c7e0c046f7d86f3a066c81f9b8751c362dd0cd0",
+    "prediction_source_git_sha": "6c52288d6a227bc3040fd672c31039408e2d6696",
+    "prediction_code_sha256": "0a3f066d28af2b0c35796eff0dfedba71ad88982cf41c7dc3fe133b5d6b8dcb7",
+    "container_image_id": "sha256:022103f69a42ef3e88ee43ddcfbd706dabfdeec6247c257d1d01fda2c0ea2f91",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508"
+  },
+  "ground_truth_distribution": {
+    "minimum": 2,
+    "p10": 2.0,
+    "median": 5.0,
+    "mean": 5.940476190476191,
+    "p90": 11.700000000000003,
+    "maximum": 29,
+    "most_common": {
+      "2": 14,
+      "3": 10,
+      "4": 16,
+      "5": 9,
+      "6": 8,
+      "7": 9,
+      "8": 5
+    }
+  },
+  "pose_validity_distribution": {
+    "minimum_valid_frames": 0,
+    "p10_valid_frames": 29.700000000000006,
+    "median_valid_frames": 256.0,
+    "mean_valid_frames": 195.16666666666666,
+    "p90_valid_frames": 256.0,
+    "maximum_valid_frames": 256,
+    "fully_valid_256_frames": 43,
+    "partially_valid": 36,
+    "fully_invalid": 5
+  },
+  "seeds": {
+    "2026": {
+      "metrics": {
+        "nmae": 4.720313876394541,
+        "obo": 0.05952380952380952,
+        "mae": 18.011904761904763,
+        "rmse": 20.61928131397314,
+        "exact": 0.023809523809523808
+      },
+      "artifact_bindings": {
+        "config_file_sha256": "058c45443b81f6b9861d2896e33544727e8921b7052d61ef331e9ba819be70c8",
+        "config_fingerprint": "4aa9ea1b11e9ec92ff7c5e6c6b65396fab6f807e1cdd60fb7e0c42c5567225b4",
+        "sshead_checkpoint_sha256": "732c1b243c39aa250ef0cda411e1691b8bd8383f110fd95b42d191798c3c2242",
+        "sshead_progress_sha256": "40a9d057d1cbf29041e789885d125c5e6cdd3f9155d30361df946335a6558f54",
+        "sshead_completed_receipt_sha256": "cf3c4337186dfab2df48068075be3f917875b7c830b20d4e66d1e591b0265fec",
+        "prediction_sha256": "b1a298407ede3a31796c7db0dba13120da84759c17c33fe6f761911c73f7998f",
+        "prediction_receipt_sha256": "4066ce0e7ac788d2954ad12ff11481d1402731becfb5b023583648d235a325ee",
+        "evaluation_sha256": "dd442524d7f8777a2037ae7bfa81dd0916bada2be593ac43bb41bd9f3f772692",
+        "evaluation_receipt_sha256": "33ed1b718acf96e176a60183439b3d41156c03b094c9e19952be3ed56ea152d8"
+      },
+      "prediction_distribution": {
+        "minimum": 0,
+        "p10": 2.0,
+        "median": 31.0,
+        "mean": 22.761904761904763,
+        "p90": 31.0,
+        "maximum": 31,
+        "count_31": 44,
+        "count_0": 7,
+        "prediction_over_target": 70,
+        "prediction_target_ratio_median": 4.7976190476190474,
+        "prediction_target_ratio_mean": 5.49583954120592,
+        "prediction_target_correlation": 0.07304433028333743
+      },
+      "period_distribution": {
+        "minimum": 4.0,
+        "median": 8.0,
+        "mean": 7.723976305552891,
+        "maximum": 9.481481552124023,
+        "exact_8_frames": 72,
+        "exact_4_frames": 6,
+        "raw_stream_fft_bin_32": 50
+      },
+      "expert_and_vote_distribution": {
+        "mean_counts_fast_medium_slow": [
+          22.785714285714285,
+          22.547619047619047,
+          10.476190476190476
+        ],
+        "median_counts_fast_medium_slow": [
+          31,
+          31,
+          14
+        ],
+        "fast_equals_medium": 68,
+        "all_three_equal": 8,
+        "majority_vote": 70,
+        "fft_reference_fallback": 14,
+        "selected_fast_medium_slow": [
+          14,
+          70,
+          0
+        ]
+      },
+      "period_stream_distribution": {
+        "stream_mean_median": -0.07156131490046391,
+        "stream_standard_deviation_median": 0.00867210291596465,
+        "stream_standard_deviation_mean": 0.015640473778769683,
+        "stream_peak_to_peak_median": 0.034474216401576996
+      },
+      "validity_conditioned_behavior": {
+        "fully_valid_count": 43,
+        "fully_valid_period_8": 43,
+        "fully_valid_prediction_31": 43,
+        "fully_valid_stream_pairwise_centered_correlation_median": 0.9987119980190439,
+        "fully_valid_stream_pairwise_centered_correlation_mean": 0.9985333843395631,
+        "partially_valid_count": 36,
+        "partially_valid_period_8": 29,
+        "fully_invalid_count": 5,
+        "fully_invalid_prediction_0": 5,
+        "prediction_valid_frame_correlation": 0.992374349914736,
+        "mean_absolute_difference_prediction_vs_valid_frames_divided_by_8": 1.6339285714285714
+      },
+      "sshead_epoch_30": {
+        "total_loss": 0.34411743247898113,
+        "cycle_loss": 0.000008072114152055184,
+        "spectral_loss": 0.24488143017101005,
+        "variance_loss": 0.9922766351204597,
+        "smoothness_loss": 0.000025877954942205,
+        "training_stream_standard_deviation_mean": 0.0077233741430217506,
+        "training_stream_standard_deviation_median": 0.00856126006692648,
+        "period_confidence_mean": 0.5611481992002765,
+        "period_valid_fraction": 0.9584569732937686
+      }
+    },
+    "42": {
+      "metrics": {
+        "nmae": 4.741497223470747,
+        "obo": 0.03571428571428571,
+        "mae": 18.142857142857142,
+        "rmse": 20.648417441952855,
+        "exact": 0.0
+      },
+      "artifact_bindings": {
+        "config_file_sha256": "31139e88af20e43376d6d1e58c66b3806baf86dbb98dc5365b67497545ba2b7b",
+        "config_fingerprint": "7e82a51b715b60205c1773b421ad23ee3041dfc508e207e97e6c27cce119fb4e",
+        "sshead_checkpoint_sha256": "0c29a05651de63aaf4a64567ad03cd7786b506baed651f21f67b206e615b1aca",
+        "sshead_progress_sha256": "6e17e6854af485bd5d8838b036b6f3b36d1f1b0822ddc0b8937e664eb4b13f10",
+        "sshead_completed_receipt_sha256": "69a6f733d5d4d33f54b8b4558508c3ae37b5844fa81bf064b1a6536429bbbc94",
+        "prediction_sha256": "2b30a5e611f8a84bfa02ff4da8ff71977876ef4ea8e0329d3aafbc520c9e2aab",
+        "prediction_receipt_sha256": "ccb62779965adba7b2ceae9acbda3fe0c93e5ca19ff423b7ec51a3ecfd8e1666",
+        "evaluation_sha256": "6905670ac6261a4f8090bd3506c5bd88561030abc9fd65de01308d7a47a1a439",
+        "evaluation_receipt_sha256": "10a9b2baea43eb6a61d216416a8684a301dc14717d2920a143624b4a428a4ccb"
+      },
+      "prediction_distribution": {
+        "minimum": 0,
+        "p10": 0.6000000000000014,
+        "median": 31.0,
+        "mean": 22.726190476190474,
+        "p90": 31.0,
+        "maximum": 31,
+        "count_31": 44,
+        "count_0": 9,
+        "prediction_over_target": 71,
+        "prediction_target_ratio_median": 4.714285714285714,
+        "prediction_target_ratio_mean": 5.491785823759347,
+        "prediction_target_correlation": 0.06625972646027749
+      },
+      "period_distribution": {
+        "minimum": 4.0,
+        "median": 8.0,
+        "mean": 7.749039184479487,
+        "maximum": 11.1304349899292,
+        "exact_8_frames": 72,
+        "exact_4_frames": 6,
+        "raw_stream_fft_bin_32": 53
+      },
+      "expert_and_vote_distribution": {
+        "mean_counts_fast_medium_slow": [
+          22.75,
+          22.476190476190474,
+          10.476190476190476
+        ],
+        "median_counts_fast_medium_slow": [
+          31,
+          31,
+          14
+        ],
+        "fast_equals_medium": 65,
+        "all_three_equal": 9,
+        "majority_vote": 67,
+        "fft_reference_fallback": 17,
+        "selected_fast_medium_slow": [
+          17,
+          67,
+          0
+        ]
+      },
+      "period_stream_distribution": {
+        "stream_mean_median": -0.07001086817035684,
+        "stream_standard_deviation_median": 0.010946438533023444,
+        "stream_standard_deviation_mean": 0.016842383502557616,
+        "stream_peak_to_peak_median": 0.04465210810303688
+      },
+      "validity_conditioned_behavior": {
+        "fully_valid_count": 43,
+        "fully_valid_period_8": 43,
+        "fully_valid_prediction_31": 43,
+        "fully_valid_stream_pairwise_centered_correlation_median": 0.9989255233025063,
+        "fully_valid_stream_pairwise_centered_correlation_mean": 0.9987334872549986,
+        "partially_valid_count": 36,
+        "partially_valid_period_8": 29,
+        "fully_invalid_count": 5,
+        "fully_invalid_prediction_0": 5,
+        "prediction_valid_frame_correlation": 0.9895199432100044,
+        "mean_absolute_difference_prediction_vs_valid_frames_divided_by_8": 1.6696428571428572
+      },
+      "sshead_epoch_30": {
+        "total_loss": 0.337193604304458,
+        "cycle_loss": 0.000013310938493170062,
+        "spectral_loss": 0.23815965422536922,
+        "variance_loss": 0.990202339714288,
+        "smoothness_loss": 0.00004065391313607973,
+        "training_stream_standard_deviation_mean": 0.009797661033257268,
+        "training_stream_standard_deviation_median": 0.010820415802299976,
+        "period_confidence_mean": 0.5595059890067896,
+        "period_valid_fraction": 0.9584569732937686
+      }
+    }
+  },
+  "cross_seed_consistency": {
+    "exact_count_matches": 63,
+    "count_mean_absolute_difference": 0.34523809523809523,
+    "count_correlation": 0.9979047188439766,
+    "maximum_count_difference": 3,
+    "exact_period_matches": 78,
+    "period_correlation": 0.936031939665823,
+    "exact_expert_count_tuple_matches": 43,
+    "global_period_stream_correlation": 0.9317599247185531
+  },
+  "selected_action_groups_seed_2026": [
+    {
+      "action": "JumpingJack",
+      "videos": 4,
+      "target_mean": 2.5,
+      "prediction_mean": 31.0,
+      "nmae": 11.917,
+      "period_8_fraction": 1.0
+    },
+    {
+      "action": "BodyWeightSquats",
+      "videos": 4,
+      "target_mean": 2.75,
+      "prediction_mean": 31.0,
+      "nmae": 10.625,
+      "period_8_fraction": 1.0
+    },
+    {
+      "action": "HandStandPushups",
+      "videos": 4,
+      "target_mean": 3.0,
+      "prediction_mean": 30.25,
+      "nmae": 10.25,
+      "period_8_fraction": 1.0
+    },
+    {
+      "action": "HammerThrow",
+      "videos": 4,
+      "target_mean": 3.5,
+      "prediction_mean": 29.0,
+      "nmae": 9.479,
+      "period_8_fraction": 1.0
+    },
+    {
+      "action": "BabyCrawling",
+      "videos": 4,
+      "target_mean": 5.25,
+      "prediction_mean": 31.0,
+      "nmae": 5.932,
+      "period_8_fraction": 1.0
+    },
+    {
+      "action": "BreastStroke",
+      "videos": 4,
+      "target_mean": 4.5,
+      "prediction_mean": 2.0,
+      "nmae": 0.788,
+      "period_8_fraction": 0.25
+    },
+    {
+      "action": "Kayaking",
+      "videos": 3,
+      "target_mean": 4.0,
+      "prediction_mean": 4.333,
+      "nmae": 0.411,
+      "period_8_fraction": 0.0
+    }
+  ],
+  "prior_mechanism_evidence": {
+    "embedding_vs_pose_period_diagnostic_sha256": "d99edc6e9ed19773974940e688c45f30d76352b6342447f6181bf99a489c1053",
+    "embedding_period_6_736842_count": 63,
+    "embedding_valid_floor_nmae": 5.9042098825504,
+    "embedding_valid_floor_obo": 0.047619047619047616,
+    "pose_valid_floor_nmae": 0.6097415971184444,
+    "pose_valid_floor_obo": 0.3333333333333333,
+    "projected_vector_v3_evaluation_sha256": "d15c80cbe4be2004b439441cd863ac208fb5a131c675a7d85ce8f31e1d576fbe",
+    "projected_vector_v3_sshead_nmae": 2.0741897060246814,
+    "projected_vector_v3_sshead_obo": 0.20238095238095238,
+    "interpretation": "Removing post-position-encoding coordinates from period evidence materially improved an earlier diagnostic, but remained far outside the frozen gate."
+  },
+  "code_evidence": [
+    {
+      "file": "src/pams/model.py",
+      "lines": "170-177",
+      "finding": "Sinusoidal position encoding is added before the Transformer; returned embeddings contain absolute-position evidence."
+    },
+    {
+      "file": "src/pams/period.py",
+      "lines": "59-103",
+      "finding": "temporal_component selects the single highest-variance signed coordinate."
+    },
+    {
+      "file": "src/pams/training.py",
+      "lines": "341-355,2030-2071",
+      "finding": "Default SSHead training periods are estimated from post-position-encoding embedding velocity."
+    },
+    {
+      "file": "src/pams/training.py",
+      "lines": "2182-2225",
+      "finding": "Inference re-estimates period from the scalar SSHead stream and never consumes sequence fps."
+    },
+    {
+      "file": "src/pams/losses.py",
+      "lines": "496-528",
+      "finding": "The variance term is a soft weighted hinge rather than a hard unit-standard-deviation constraint."
+    },
+    {
+      "file": "src/pams/consensus.py",
+      "lines": "133-159,257-315",
+      "finding": "A two-expert majority wins before FFT-reference fallback; thresholds and prominence are relative to stream scale."
+    },
+    {
+      "file": "src/pams/data.py",
+      "lines": "1504-1541,1569-1588",
+      "finding": "Uniform resampling maps poses and masks into the same 256-frame domain and adjusts metadata fps."
+    },
+    {
+      "file": "src/pams/pose.py",
+      "lines": "221-251",
+      "finding": "Preprocessing trims first-to-last detection rather than a longest continuous valid track."
+    }
+  ],
+  "root_cause_ranking": [
+    {
+      "rank": 1,
+      "cause": "post-position-encoding period-source contamination",
+      "confidence": "high"
+    },
+    {
+      "rank": 2,
+      "cause": "underconstrained inferred SSHead objective and train/inference period-source mismatch",
+      "confidence": "high"
+    },
+    {
+      "rank": 3,
+      "cause": "detected-span and valid-mask behavior changes duration but is not the high-frequency multiplier source",
+      "confidence": "medium"
+    }
+  ],
+  "time_scale_conclusion": {
+    "systematic_original_fps_conversion_bug_supported": false,
+    "reason": "Period estimation, peak detection, masks, and the 256-frame stream share resampled-frame coordinates. Inference does not use fps. Period 8 yields approximately 256/8 cycles by construction; an fps round trip cannot change cycle count."
+  },
+  "frozen_next_experiment": {
+    "pretraining_gate": "Without labels, static pose must have near-zero period confidence, static/time-shuffled period histograms must not concentrate at 6-8 frames, and synthetic periodic poses with counts 2-40 must recover their known periods.",
+    "single_changed_configuration_field": "period.post_warmup_source",
+    "from": "embedding_velocity_coordinate",
+    "to": "projected_pose_velocity_vector_acf",
+    "all_other_conditions": "Keep strict 337-train/84-dev seed-2026 full multi-scale data, SSHead, consensus, and provenance settings fixed.",
+    "development_scoring": "Score once only after the label-free gate and configuration are frozen.",
+    "not_recommended": "Do not tune peak height, prominence, expert distance, or fps conversion on development targets."
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "blockers": [],
+  "checks": [
+    {
+      "detail": "pages=5",
+      "id": "page_count",
+      "status": "PASS"
+    },
+    {
+      "detail": "References heading found",
+      "id": "references_heading",
+      "status": "PASS"
+    },
+    {
+      "detail": "page 5 contains references only",
+      "id": "page5_restriction",
+      "status": "PASS"
+    }
+  ],
+  "gate": "pdf_4plus1",
+  "live_rule_source": "https://2027.ieeeicassp.org/publishing-and-paper-presentation-options/",
+  "mode": "draft",
+  "page5": {
+    "caption_count": 0,
+    "declaration_heading_count": 0,
+    "image_count": 0,
+    "non_page_number_text_before_references": false,
+    "policy": "references-only",
+    "present": true,
+    "reference_continuation": true,
+    "reference_entry_labels": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "reference_heading": false,
+    "significant_drawing_count": 0,
+    "technical_heading_count": 0
+  },
+  "page_count": 5,
+  "schema_version": "1.0",
+  "status": "PASS",
+  "submission_ready": false
+}

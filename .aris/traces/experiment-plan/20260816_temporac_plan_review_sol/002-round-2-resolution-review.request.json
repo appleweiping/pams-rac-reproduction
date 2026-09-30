@@ -1,0 +1,23 @@
+{
+  "acceptance_status": "provisional",
+  "continuation_of_run_id": "20260816_temporac_plan_review_sol",
+  "input_hashes": {
+    "refine-logs/EXPERIMENT_PLAN.md": "3fd1986871b32674d74b395fbfc9720712d9fba0c8583c24c1d5bddb87086eb6",
+    "refine-logs/EXPERIMENT_PLAN_REVIEW.json": "1e1ff5872bf00144cc2260d78cb6fd860894a0b889ebc9d7a77cf19d847d166c",
+    "refine-logs/EXPERIMENT_PLAN_REVIEW.md": "1b1707c0792cfc6861bdb87ce8c95fb8ce00a44bb86375f25463bb1ecf2ceb01",
+    "refine-logs/EXPERIMENT_TRACKER.md": "c7e2f32c3c81b66884abb13760a671ecc7cdd314fd6c994a4ed4c46cb754a63b",
+    "refine-logs/FINAL_PROPOSAL.md": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c"
+  },
+  "purpose": "round-2 resolution audit for P00 implementation release readiness",
+  "requested_checks": [
+    "B1 canonical protocol name, three labels, exact partial-cache population, appendix-only scope, and promotion gate across header/data/artifacts/NATP/K7",
+    "B2 finite desensitized metric normal and attack fixture with exact P2-to-S0-to-G5a-evaluator-code-to-K7 dependency and refusal",
+    "unchanged 1/4/3 compactness",
+    "unchanged exact 27 jobs, 93 A6000-hours, and 64 GiB",
+    "unchanged order, firewall, zero launch authority, and zero results"
+  ],
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "same_family": true,
+  "schema": "temporac.experiment_plan_resolution_review_request.v1"
+}

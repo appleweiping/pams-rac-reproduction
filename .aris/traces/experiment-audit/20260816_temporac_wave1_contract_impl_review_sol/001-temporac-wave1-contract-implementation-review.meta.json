@@ -1,0 +1,13 @@
+{
+  "acceptance_status": "provisional",
+  "agent_id": "/root/temporac_wave1_contract_impl_review",
+  "call_number": 1,
+  "duration_ms": 560019,
+  "model": "gpt-5.6-sol",
+  "purpose": "temporac-wave1-contract-implementation-review",
+  "review_independence": "same-family",
+  "reviewer_family": "OpenAI",
+  "status": "ok",
+  "substantive_verdict": "REVISE",
+  "timestamp": "2026-08-16T22:14:19.6759190+08:00"
+}

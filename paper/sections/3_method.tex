@@ -1,0 +1,149 @@
+\section{Identity-Indexed Local Tempo Routing}
+\label{sec:method}
+
+The counter begins after perception: it receives pose trajectories with supplied
+identity indices and validity masks. Oracle tracks, tracks from a frozen common
+frontend, and native method pipelines define different experimental protocols
+and are never ranked together. Parameters are shared, whereas buffers, periodic
+evidence, masks, and responses remain identity-indexed; no window combines
+people. Figure~\ref{fig:framework} summarizes the proposed specification, whose
+tensor layouts and learned modules remain \SyncRequired{collaborator source
+binding}. For predicted tracks, an index denotes a current tracklet, not a
+guaranteed person. Fragmentation, re-entry, switches, retirement, and any
+reconciliation belong to the \SyncRequired{track lifecycle contract}.
+
+\begin{figure*}[t]
+  \centering
+  \TempoRACFrameworkGraphic
+  \caption{Conceptual framework reproduced in full from the project's editable
+  framework deck. In the manuscript, $M_i$ denotes an identity-indexed counter
+  instance with shared learned parameters and separate state, not a separately
+  parameterized model. The training strip lists candidate objectives: tempo
+  routing and track-continuity terms remain \texttt{SYNC-REQUIRED} until they
+  are bound to frozen code. PAMS-TCC is attributed to PAMS
+  \cite{gao2026pams}. The diagram is not implementation or result evidence.}
+  \label{fig:framework}
+\end{figure*}
+
+\subsection{Masked identity-indexed representation}
+For person $i\in\{1,\ldots,N\}$, let \(\bX_i\) contain $J$ joints with $C$
+coordinates over $T_i$ frames, and let $m_i(t)$ mark a valid observation.
+Overlapping supports \(\cW_{i\ell}\) select local windows. A shared encoder
+\(\cE_\theta\) maps the masked samples to features, while the primary output
+remains a person-wise count vector:
+\begin{equation}
+\begin{aligned}
+ \bX_i &\in \Rset^{T_i\times J\times C}\qquad
+ m_i\in\Bset^{T_i}\qquad
+ \widehat{\bc}=[\hat c_i]_{i=1}^{N} \\
+ \bz_{i\ell}(t) &=
+ \cE_\theta\!\left(\bX_i[\cW_{i\ell}]\mid m_i[\cW_{i\ell}]\right)_t
+ \quad t\in\cW_{i\ell}
+\end{aligned}
+\label{eq:representation}
+\end{equation}
+\noindent Here $\Bset$ denotes the binary alphabet. The shared $\theta$ does
+not mix identity state. Window geometry, pose
+normalization, padding, short tracks, and buffer lifecycle are
+\SyncRequired{track tensor and lifecycle contract}. Masks accompany every
+transformation, and windows never cross identity timelines. A scene total
+$\sum_i\hat c_i$ is diagnostic. Permutation, isolated-mask, and short-track
+tests will check these invariants once the source interface exists.
+
+\subsection{Local masked periodic evidence}
+Tempo must vary with the window rather than being fixed for the whole track.
+Let $s_{i\ell}(t)$ denote the scalar evidence signal provisionally projected
+from \(\bz_{i\ell}(t)\), and $q_{i\ell}(t)$ its windowed validity mask. We
+define a mask-normalized non-circular autocorrelation and a normalized Fourier
+score, then map both to a period estimate and confidence:
+\begin{equation}
+\begin{aligned}
+ \bar s_{i\ell} &=
+ \frac{\sum_t q_{i\ell}(t)s_{i\ell}(t)}
+      {\sum_t q_{i\ell}(t)+\epsilon} \\
+ A_{i\ell}(\tau) &=
+ \frac{\sum_t q_{i\ell}(t)q_{i\ell}(t+\tau)
+ [s_{i\ell}(t)-\bar s_{i\ell}]
+ [s_{i\ell}(t+\tau)-\bar s_{i\ell}]}
+ {\sum_t q_{i\ell}(t)q_{i\ell}(t+\tau)+\epsilon} \\
+ F_{i\ell}(\omega) &=
+ \frac{\left|\sum_t q_{i\ell}(t)[s_{i\ell}(t)-\bar s_{i\ell}]
+ e^{-\mathrm{j}\omega t}\right|^2}
+ {\max_{\omega'}\left|\sum_t q_{i\ell}(t)[s_{i\ell}(t)-\bar s_{i\ell}]
+ e^{-\mathrm{j}\omega' t}\right|^2+\epsilon} \\
+ \begin{bmatrix}\hat p_{i\ell}\\\gamma_{i\ell}\end{bmatrix} &=
+ \Phi\!\left(\{A_{i\ell}(\tau)\}_{\tau\in\cT}\mathbin\Vert
+              \{F_{i\ell}(\omega)\}_{\omega\in\Omega}\right)
+\end{aligned}
+\label{eq:period}
+\end{equation}
+\noindent Indices $(i,\ell)$ expose within-track drift. Projection, centering,
+domains and units, interpolation, confidence, and fallback are
+\SyncRequired{period estimator}; Eq.~\ref{eq:period} fixes only the semantics of
+local masked evidence. Confidence must measure available evidence rather than a
+post-routing label, and low-support windows must be masked or use one frozen
+fallback in training and evaluation. Since periodic visibility can induce
+spectral peaks, the implementation must set out-of-range masks and minimum
+lag-pair support and pass periodic/nonperiodic missingness controls. It must also
+choose pair-dependent centering or another irregular-sample estimator
+\cite{lomb1976unequal}.
+
+\subsection{Soft routing over shared response experts}
+Let \(\cK=\{\mathrm{fast},\mathrm{medium},\mathrm{slow}\}\) index shared
+experts. A proposed router consumes the window representation, local period,
+and confidence, and returns simplex weights. Each expert emits a continuous
+local response rather than an independently rounded count:
+\begin{equation}
+\begin{aligned}
+ \bu_{i\ell} &=
+ \rho_\psi([\bz_{i\ell}\mathbin\Vert\hat p_{i\ell}\mathbin\Vert\gamma_{i\ell}]) \\
+ \bg_{i\ell} &= \softmax(\bu_{i\ell}/\tau_{\mathrm r}) \\
+ g_{i\ell k}&\geq0\qquad \sum_{k\in\cK}g_{i\ell k}=1 \\
+ \br^{(k)}_{i\ell} &=
+ \cH^{(k)}_{\phi_k}(\bz_{i\ell})\qquad k\in\cK
+\end{aligned}
+\label{eq:routing}
+\end{equation}
+\noindent Soft weights retain uncertainty at tempo transitions. Router inputs,
+temperature, expert architecture, gradients, sharing, and fallback remain
+\SyncRequired{router and expert implementation}. Fast/medium/slow are intended
+scales, not observed specializations: paired controls must test expert use,
+collapse, frozen tempo bands, and hard/uniform routing. Shared experts keep
+parameter count independent of the number of tracks, but no runtime or memory
+claim is enabled without profiling.
+
+\subsection{Response reconstruction and one track decode}
+The final stage mixes expert responses before merging overlapping windows. Let
+$a_{i\ell}(t)$ be a taper on window \(\ell\), and let
+$q_{i\ell}(t)$ exclude invalid samples. Normalized overlap-add forms a single
+track response $R_i$, after which one decoder extracts events:
+\begin{equation}
+\begin{aligned}
+ \widetilde{r}_{i\ell}(t) &=
+ \sum_{k\in\cK}g_{i\ell k}r^{(k)}_{i\ell}(t) \\
+ R_i(t) &=
+ \frac{\sum_{\substack{\ell\\t\in\cW_{i\ell}}}
+ a_{i\ell}(t)q_{i\ell}(t)\widetilde{r}_{i\ell}(t)}
+ {\sum_{\substack{\ell\\t\in\cW_{i\ell}}}
+ a_{i\ell}(t)q_{i\ell}(t)+\epsilon} \\
+ \widehat{\cE}_i &= \cD(R_i\mid m_i)\qquad
+ \hat c_i=|\widehat{\cE}_i|
+\end{aligned}
+\label{eq:reconstruction}
+\end{equation}
+\noindent This order avoids counting every window independently; it does not
+guarantee one peak. Decoded samples require aligned timestamps and coverage
+$\sum_\ell a_{i\ell}(t)q_{i\ell}(t)>0$. Taper, gaps, event confidence, peak
+parameters, and decoder semantics remain \SyncRequired{reconstruction and
+decoder}. PAMS-TCC is the documented starting objective \cite{gao2026pams};
+$\cL_{\mathrm{PAMS\text{-}TCC}}+\lambda_{\mathrm r}\cL_{\mathrm{route}}
++\lambda_{\mathrm t}\cL_{\mathrm{track}}$ is only a synchronization contract.
+The latter terms, their existence, formulas, weights, samples, supervision, and
+gradient paths must bind to code; absent terms will be deleted. Overlap-add
+preserves continuous evidence before one masked trajectory-level decode. A
+boundary test will place an event at several offsets and test one-time decoding.
+
+The supervision audit must inspect loaders, pseudo-targets, auxiliary losses,
+selection, stopping, calibration, and inference fallbacks at one commit. Until
+it passes, the paper states only the intended absence of person-wise count and
+period labels in the counting objective and discloses perception supervision.

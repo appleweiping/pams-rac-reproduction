@@ -1,0 +1,77 @@
+{
+  "schema_version": "aris.trace.request.v1",
+  "trace_id": "20260815_pivot_landscape_sol",
+  "stage": "research-lit",
+  "requested_at": "2026-08-15T21:00:00+08:00",
+  "request": {
+    "task": "Build an independent ARIS literature landscape for the two jury-selected pivot directions without issuing a candidate novelty verdict.",
+    "directions": [
+      {
+        "dedup_key": "set-valued-counting-pose-missingness",
+        "topics": [
+          "pose missingness and occlusion robustness",
+          "pose uncertainty and set prediction",
+          "partial identification and conformal task uncertainty",
+          "RAC output uncertainty and abstention"
+        ]
+      },
+      {
+        "dedup_key": "fragment-boundary-count-mass-transport",
+        "topics": [
+          "track fragmentation, re-entry, and repair",
+          "count-density and additivity",
+          "temporal crop and cycle consistency",
+          "multi-instance RAC identity continuity"
+        ]
+      }
+    ],
+    "required_checks": [
+      "Read research-lit skill and its required shared references in full.",
+      "Read pivot union, pivot jury, existing IDEA_REPORT and NOVELTY_CHECK, references.bib, and WARP-PHASE failure artifacts in full.",
+      "Check papers/, literature/, and AGENTS.md Paper Library configuration.",
+      "Search 2024-2026 and the recent arXiv window 2026-02-15 through 2026-08-15.",
+      "Prefer publisher, proceedings, author, arXiv, and official-code sources.",
+      "Cross-check MultiCounter, MultiCounter+, PAMS, SSTRAC, RepNet, TWCRAC, and tracking fragment repair.",
+      "Separate direct, adjacent, and foundational evidence.",
+      "Provide a paper table, theme map, actual gaps, unresolved full-text limits, at least three queries per theme, and canonical identifiers/URLs.",
+      "Do not claim novelty confirmed."
+    ],
+    "prohibitions": [
+      "No candidate verdict.",
+      "No implementation or training.",
+      "No server, test, sealed, heldout, or result access.",
+      "No WARP-PHASE tuning, retry, reinterpretation, or resurrection.",
+      "No MANIFEST or IDEA_REPORT edit.",
+      "No agent spawning."
+    ],
+    "requested_outputs": [
+      "idea-stage/PIVOT_LITERATURE_LANDSCAPE_20260815_210000.md",
+      "idea-stage/PIVOT_LITERATURE_LANDSCAPE.md",
+      "idea-stage/PIVOT_LITERATURE_LANDSCAPE_20260815_210000.json",
+      "idea-stage/PIVOT_LITERATURE_LANDSCAPE.json",
+      ".aris/traces/research-lit/20260815_pivot_landscape_sol/request.json",
+      ".aris/traces/research-lit/20260815_pivot_landscape_sol/response.md",
+      ".aris/traces/research-lit/20260815_pivot_landscape_sol/run.meta.json"
+    ],
+    "required_metadata": {
+      "model": "gpt-5.6-sol",
+      "fresh_context": false,
+      "nonfresh_reason": "agent_thread_lifetime_limit",
+      "review_independence": "same-family",
+      "acceptance_status": "provisional"
+    }
+  },
+  "input_sha256": {
+    ".agents/skills/research-lit/SKILL.md": "d6293c58a6d6319b7ae5075ee9a1587ae83368400fbe15ff89a338e52e549c61",
+    ".agents/skills/shared-references/fan-out-pattern.md": "550eb36f8b807001fdbe4c5357ea2927b5efb88bda74223747d5c45ab28edca4",
+    ".agents/skills/shared-references/integration-contract.md": "5d393c31b36e98ae99c17ab9cf5879853c0cb595bbd9f4973ffe7bcd6549f4e7",
+    "idea-stage/PIVOT_CANDIDATE_UNION.json": "8c1552da0166d02ab565e5b4072fda5cc2a36a1acb46f3d58ccdb418dc33e652",
+    "idea-stage/PIVOT_IDEA_JURY.json": "cac5b3d0217854d886223934724075f2cadd5a2b08f866bc1194ec4f5b09f800",
+    "idea-stage/IDEA_REPORT.md": "6105bcc49d1a4756b7927e87f02d3b38d23ed0d6115f344409d7d8a68c0d2610",
+    "idea-stage/NOVELTY_CHECK.json": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5",
+    "paper/references.bib": "c84cb6df17ac4133f7c3115e1aa4dcad82e9e850f1ebdc5e6979cbc1cfd917b3",
+    "CLAIMS_FROM_RESULTS_WARP_PHASE.json": "82b3cd6b687d7a4aee8ef3b9c5c6e8159c2a1ee68d75bf94b85bc7430676bb85",
+    "EXPERIMENT_AUDIT_WARP_PHASE.json": "457d09da6b4c7c7a9e7734e21bc3564f2d2a66dc610cc549fc70203b7fdfd7ed",
+    "AGENTS.md": "35eaf270a8f50c943577a7d00c4d5a78a22a02874489709db6ada5c850aa2251"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "schema_version": "aris.result_to_claim.request.v1",
+  "request_id": "20260815_warp_phase_sol",
+  "date": "2026-08-15",
+  "candidate": "warp_phase_pilot_v1",
+  "claims": [
+    "WARP-C1",
+    "WARP-C2",
+    "WARP-C3",
+    "WARP-C4"
+  ],
+  "required_claim_fields": [
+    "claim_supported",
+    "what_results_support",
+    "what_results_dont_support",
+    "missing_evidence",
+    "suggested_claim_revision",
+    "next_experiments_needed",
+    "confidence"
+  ],
+  "route_enum": [
+    "pivot",
+    "supplement",
+    "confirm"
+  ],
+  "constraints": [
+    "Apply K5 and all frozen stop rules.",
+    "Do not propose threshold tuning, fixture replacement, harmonic correction, or server training for a failed candidate.",
+    "Keep same-family positive verdicts provisional.",
+    "If the integrity audit is FAIL, set claim confidence to low and state the impact explicitly.",
+    "Do not access server, test, sealed, or held-out data.",
+    "Do not modify source, tests, receipts, paper, MANIFEST, or Git.",
+    "Do not invent results or read prior result-to-claim reviews/traces or prior experiment audits."
+  ],
+  "authorized_inputs": [
+    ".aris/claims.json",
+    ".aris/evidence_precheck.json",
+    "idea-stage/docs/research_contract.md",
+    "refine-logs/FINAL_PROPOSAL.md",
+    "refine-logs/EXPERIMENT_PLAN.md",
+    "refine-logs/EXPERIMENT_TRACKER.md",
+    "refine-logs/PIPELINE_SUMMARY.md",
+    "configs/experiments/warp_phase_pilot_v1.yaml",
+    "data/warp_phase_pilot_v1/audit/gate0/gate0-local-inputs.receipt.json",
+    "data/warp_phase_pilot_v1/audit/gate1/gate1-v2-unit-v1.receipt.json",
+    "data/warp_phase_pilot_v1/audit/gate1/selector_unit_fixture_pack_audit.md",
+    "data/warp_phase_pilot_v1/audit/gate1/selector_unit_fixture_pack_audit.json",
+    "data/warp_phase_pilot_v1/audit/gate2/gate2-stochastic-v2.receipt.json",
+    "data/warp_phase_pilot_v1/audit/gate3/gate3-cpu-sanity.receipt.json",
+    "EXPERIMENT_AUDIT_WARP_PHASE.md",
+    "EXPERIMENT_AUDIT_WARP_PHASE.json",
+    "refine-logs/EXPERIMENT_CODE_REVIEW_ROUND2.md",
+    "refine-logs/EXPERIMENT_CODE_REVIEW_ROUND2.json"
+  ],
+  "authorized_outputs": [
+    "CLAIMS_FROM_RESULTS_WARP_PHASE.md",
+    "CLAIMS_FROM_RESULTS_WARP_PHASE.json",
+    "findings.md dated WARP-PHASE section",
+    ".aris/traces/result-to-claim/20260815_warp_phase_sol/request.json",
+    ".aris/traces/result-to-claim/20260815_warp_phase_sol/response.md",
+    ".aris/traces/result-to-claim/20260815_warp_phase_sol/routing.json",
+    ".aris/traces/result-to-claim/20260815_warp_phase_sol/run.meta.json"
+  ],
+  "required_metadata": {
+    "reviewer_model": "gpt-5.6-sol",
+    "reviewer_reasoning": "ultra",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "exact_audited_hashes": true,
+    "verdict_id": true
+  }
+}

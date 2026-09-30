@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "classification": "partial reproduction; v15 encoder rejected before SSHead and development",
+  "candidate": "pams_projected_teacher_v15",
+  "protocol": "ucfrep_526",
+  "seed": 2026,
+  "eligible_for_paper_table": false,
+  "semantic_change_from_v14": {
+    "field": "period.post_warmup_source",
+    "v14": "embedding_velocity_vector_acf",
+    "v15": "projected_pose_velocity_vector_acf",
+    "all_other_config_fields_equal": true
+  },
+  "source": {
+    "training_algorithm_git_sha": "df2e7cdfcc91bb436eb99ee10852ddd66ee971e4",
+    "config_git_sha": "550a5ea01565d43503ce8d137dc92f82f4a9002b",
+    "terminal_gate_git_sha": "f4c53b4094049cf34f7c23c6978f051a1ce7493b",
+    "config_sha256": "3e9d641c0e8b4710c3f0542b823b4a51d319765f7e6c72f7f6195f8971fec688",
+    "config_fingerprint": "666f01ece7d179d4ac8c61f9d1dc63aee5e8575c0f79a01d5d3d7e20e9d6242b",
+    "pose_fingerprint": "3dd0388320095796f42aa82d904073b6478b073ed351394ef8d03c30798a0116"
+  },
+  "access_audit": {
+    "training_partition_videos": 337,
+    "training_count_or_action_targets_loaded": false,
+    "development_identity_sidecar_parsed_by_training": true,
+    "development_media_pose_or_targets_loaded": false,
+    "sealed_test_identity_sidecar_parsed_by_training": true,
+    "sealed_test_media_pose_or_targets_loaded": false,
+    "sshead_training_authorized": false,
+    "sshead_training_executed": false,
+    "dev84_prediction_authorized": false,
+    "dev84_scoring_authorized": false,
+    "test105_evaluation_authorized": false
+  },
+  "v14_terminal_teacher_readiness": {
+    "status": "projected_teacher_passed",
+    "artifact_sha256": "96da147df273c5cf82bcaefebd1b131bac21ae110837e80d2c892217c850e4c6",
+    "v15_encoder_training_authorized": true,
+    "projected_teacher_criteria": {
+      "boundary_share": {
+        "operator": "<",
+        "threshold": 0.25,
+        "value": 0.13649851632047477,
+        "pass": true
+      },
+      "mode_share": {
+        "operator": "<",
+        "threshold": 0.25,
+        "value": 0.08605341246290801,
+        "pass": true
+      },
+      "time_scale_eligible_fraction": {
+        "operator": ">=",
+        "threshold": 0.5,
+        "value": 0.8308605341246291,
+        "pass": true
+      },
+      "time_scale_median_relative_error": {
+        "operator": "<=",
+        "threshold": 0.15,
+        "value": 0.0,
+        "pass": true
+      }
+    }
+  },
+  "encoder150_training": {
+    "status": "completed",
+    "epochs": 150,
+    "epoch_records_contiguous": true,
+    "optimizer_steps_total": 1500,
+    "pose_energy_epochs": 10,
+    "projected_teacher_epochs": 140,
+    "first_loss": 6.3029602527618405,
+    "final_loss": 3.06671028137207,
+    "minimum_epoch_loss": 3.06671028137207,
+    "minimum_loss_epoch": 150,
+    "final_learning_rate": 0.0001,
+    "cross_cluster_shortfall_total": 0,
+    "checkpoint_sha256": "aa1750154e0ba36d41188cc023bb382db83db9f5c69b1867f310cdc636a48e19",
+    "progress_sha256": "70226a5f01a3d9e8b688fde53736c397a135c242d8e15ce429a36615552029c4",
+    "maximum_gpu_memory_mib": 5073,
+    "maximum_gpu_utilization_percent": 84
+  },
+  "v15_terminal_gate": {
+    "status": "sshead_training_rejected",
+    "operationally_completed": true,
+    "container_exit_code": 3,
+    "criteria_passed": 7,
+    "criteria_failed": 3,
+    "all_ten_diagnostic_criteria_pass": false,
+    "sshead_training_authorized": false,
+    "artifact_sha256": "0f318d67bc507a1147df469ff983740e3172f16c85326552c79d35d33f1ddae3",
+    "criteria": {
+      "projected_boundary_share": {
+        "operator": "<",
+        "threshold": 0.25,
+        "value": 0.1394658753709199,
+        "pass": true
+      },
+      "projected_mode_share": {
+        "operator": "<",
+        "threshold": 0.25,
+        "value": 0.08902077151335312,
+        "pass": true
+      },
+      "projected_time_scale_eligible_fraction": {
+        "operator": ">=",
+        "threshold": 0.5,
+        "value": 0.8293768545994066,
+        "pass": true
+      },
+      "projected_time_scale_median_relative_error": {
+        "operator": "<=",
+        "threshold": 0.15,
+        "value": 0.0,
+        "pass": true
+      },
+      "post_pe_boundary_share": {
+        "operator": "<",
+        "threshold": 0.25,
+        "value": 0.04747774480712166,
+        "pass": true
+      },
+      "post_pe_mode_share": {
+        "operator": "<",
+        "threshold": 0.25,
+        "value": 0.712166172106825,
+        "pass": false
+      },
+      "post_pe_time_scale_eligible_fraction": {
+        "operator": ">=",
+        "threshold": 0.5,
+        "value": 0.9391691394658753,
+        "pass": true
+      },
+      "post_pe_time_scale_median_relative_error": {
+        "operator": "<=",
+        "threshold": 0.15,
+        "value": 0.4999999441206484,
+        "pass": false
+      },
+      "cross_path_eligible_fraction": {
+        "operator": ">=",
+        "threshold": 0.5,
+        "value": 0.9525222551928784,
+        "pass": true
+      },
+      "cross_path_median_relative_error": {
+        "operator": "<=",
+        "threshold": 0.25,
+        "value": 0.6874999874271454,
+        "pass": false
+      }
+    },
+    "projected_period_unique_values": 56,
+    "post_pe_period_histogram": {
+      "4": 16,
+      "6.24390221": 9,
+      "8": 240,
+      "8.25806427": 63,
+      "8.53333378": 9
+    }
+  },
+  "runtime": {
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "container_image_id": "sha256:e35fde8ce2a2b40e53aa606a8304c9203ef183dd9c8cd1cc46a7a29f98bae30f",
+    "python": "3.11.10",
+    "torch": "2.5.1+cu124",
+    "cuda_runtime": "12.4",
+    "nvidia_driver": "550.54.14",
+    "gpu": "NVIDIA RTX A6000",
+    "network_mode": "none",
+    "read_only_root_filesystem": true
+  }
+}

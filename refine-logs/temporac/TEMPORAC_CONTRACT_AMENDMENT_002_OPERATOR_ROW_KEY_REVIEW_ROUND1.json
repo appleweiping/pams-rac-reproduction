@@ -1,0 +1,148 @@
+{
+  "acceptance_status": "provisional",
+  "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY",
+  "artifact_type": "temporac_contract_amendment_review",
+  "authoritative": false,
+  "authorizes": [],
+  "blocking_issue_count": 5,
+  "date": "2026-08-16",
+  "executor_family": "openai",
+  "fresh_zero_context": true,
+  "historical_record": true,
+  "historical_binding_note": "The superseded amendment bytes are no longer present at their paths; these are the exact hashes adjudicated in Round 1 and recorded by the same reviewer continuation.",
+  "input_rehash_status": "verified_during_original_round_superseded_at_persistence",
+  "bindings": {
+    "amendment_json": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.json",
+      "sha256": "d3096593d42b65aa1b2c58f7a30693d3a2880f6da22ffc69eb6dfacd70748655",
+      "state": "superseded_historical_bytes"
+    },
+    "amendment_markdown": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.md",
+      "sha256": "3b7d3719ebf51c92f8a25bb94b11c7f86d9d112476016c34f5a1f4602177aa08",
+      "state": "superseded_historical_bytes"
+    },
+    "canonical_review_markdown": {
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND1.md",
+      "sha256": "5e60841696333234213fa36675f11311d294e76adfd1b68d8ab74198a409f253"
+    },
+    "experiment_plan": {
+      "path": "refine-logs/EXPERIMENT_PLAN.md",
+      "sha256": "3fd1986871b32674d74b395fbfc9720712d9fba0c8583c24c1d5bddb87086eb6"
+    },
+    "experiment_tracker": {
+      "path": "refine-logs/EXPERIMENT_TRACKER.md",
+      "sha256": "c7e2f32c3c81b66884abb13760a671ecc7cdd314fd6c994a4ed4c46cb754a63b"
+    },
+    "proposal_primary": {
+      "path": "refine-logs/FINAL_PROPOSAL.md",
+      "sha256": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c"
+    },
+    "proposal_temporac": {
+      "path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+      "sha256": "562325dedab0637421f62dec5ad149b3c884f67b47c4b525c8fb54a57bb1233c"
+    },
+    "contract": {
+      "path": "src/pams/temporac/contract.py",
+      "sha256": "b71255a35cce1701d2741064064b53ba819b742873a348f1852f147149e36467"
+    },
+    "fixtures": {
+      "path": "src/pams/temporac/fixtures.py",
+      "sha256": "a8d10df7c8e3cbcb5684198192d3a553921da0f6aa92f03e54448ee182671406"
+    },
+    "hashio": {
+      "path": "src/pams/temporac/hashio.py",
+      "sha256": "3fcad105f5ddb1e5c2d2152b825727fec5ab73bd1c5fc51953143bf377ad44d6",
+      "state": "round_1_snapshot"
+    },
+    "test_probe": {
+      "path": "tests/temporac/test_gates_fixtures.py",
+      "sha256": "4c33a46d6dfe4119c3a82e1d8df5602d12bc1fd469664805be1a67be75ad6443"
+    }
+  },
+  "contradiction_adjudication": {
+    "digest_byte_index_defined": false,
+    "length_prefix_defined": false,
+    "production_fail_closed_is_correct": true,
+    "result": "BLOCKED_UNDEFINED_ROW_KEY_PREIMAGE",
+    "row_key_bytes_defined": false,
+    "semantic_population_defined": true
+  },
+  "serialization_adjudication": {
+    "categorical_indices_coherent": true,
+    "digest_byte_d0_coherent": true,
+    "fixed_key_bytes": 10,
+    "literal_minimum_byte_length_claim_allowed": false,
+    "normative_scope_minimal": true,
+    "one_uint64_length_prefix_coherent": true,
+    "raw_uint32_edge_coherent": true
+  },
+  "blocking_findings": [
+    {
+      "id": "R1-B1",
+      "finding": "The uncapped b=255 binary32 value is 0x3ecccccd and leaves only 0.09999999403953552 negative margin.",
+      "first_actual_witness": "row (4,1,aidx=0,o=0,lidx=1), edge 42",
+      "inactive_edges_affected": 8945,
+      "rows_affected": 5665
+    },
+    {
+      "id": "R1-B2",
+      "finding": "Amplitude 1.00 ordinary and boosted values are both 0x3f800000, so width-2 and width-4 plateaus are flat rather than uniquely maximized.",
+      "plateaus_affected": 6912,
+      "rows_affected": 2304
+    },
+    {
+      "id": "R1-B3",
+      "finding": "At e=32 the inactive function is hypothetical 1fecb83e; the actual response is boosted plateau 6666263f."
+    },
+    {
+      "id": "R1-B4",
+      "finding": "The inventory notation does not freeze raw digest bytes versus ASCII hex or forbid an outer wrapper."
+    },
+    {
+      "id": "R1-B5",
+      "finding": "Propagation must patch both byte-identical FINAL_PROPOSAL.md copies and rebind every dependent consumer under separate authority."
+    }
+  ],
+  "required_revision": {
+    "b255_cap_bits": "3ecccccc",
+    "b255_committed_f4_le_hex": "cccccc3e",
+    "b255_negative_margin_binary64": 0.10000002384185791,
+    "inactive_lookup_sha256": "afa6eff0d744acfdf9cf78adc43aa8daf01633f3345d7567d642a7782885040d",
+    "must_distinguish_e32_function_from_actual": true,
+    "must_define_raw_inventory_concatenations": true,
+    "must_preserve_flat_amplitude_1_plateaus": true,
+    "must_propagate_both_proposals": true
+  },
+  "preservation_required": {
+    "claims_and_evidence_ceiling": true,
+    "data_and_protocol": true,
+    "f23_and_gates": true,
+    "jobs_and_resources": true,
+    "scientific_population_and_order": true,
+    "thresholds": true
+  },
+  "authority_ceiling": {
+    "canonical_edit_authorized": false,
+    "claims_authorized": false,
+    "data_access_authorized": false,
+    "evaluator_capability_authorized": false,
+    "gate_pass_authorized": false,
+    "git_authorized": false,
+    "implementation_authorized": false,
+    "manifest_authorized": false,
+    "paper_promotion_authorized": false,
+    "result_authorized": false,
+    "s0_authorized": false,
+    "server_access_authorized": false,
+    "test_execution_authorized": false,
+    "training_authorized": false
+  },
+  "model": "gpt-5.6-sol",
+  "review_independence": "same-family",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "round": 1,
+  "status": "REVISE_SAME_FAMILY_PROVISIONAL_ZERO_AUTHORITY",
+  "verdict": "REVISE"
+}

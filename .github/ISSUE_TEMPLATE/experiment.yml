@@ -1,0 +1,44 @@
+name: Experiment record
+description: Track a reproducible training, evaluation, or parity run
+title: "[experiment] "
+labels: ["experiment"]
+body:
+  - type: dropdown
+    id: protocol
+    attributes:
+      label: Protocol
+      options:
+        - UCFRep-526 fair 421/105
+        - UCFRep-pose-110 fair 89/21
+        - source-faithful diagnostic
+        - synthetic stress
+    validations:
+      required: true
+  - type: input
+    id: config
+    attributes:
+      label: Configuration fingerprint
+    validations:
+      required: true
+  - type: input
+    id: dataset
+    attributes:
+      label: Dataset/split fingerprint
+    validations:
+      required: true
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: Artifact locations
+      description: Run manifest, predictions, logs, checkpoint hash, and commit.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safeguards
+    attributes:
+      label: Safeguards
+      options:
+        - label: Test labels were unavailable to training and model selection.
+          required: true
+        - label: Every eligible test video has a prediction or declared failure.
+          required: true

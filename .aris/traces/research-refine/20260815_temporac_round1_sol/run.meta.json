@@ -1,0 +1,15 @@
+{
+  "skill": "research-refine",
+  "run_id": "20260815_temporac_round1_sol",
+  "started_at": "2026-08-15T22:09:28.922+08:00",
+  "executor": "codex",
+  "executor_model": "gpt-5.6-sol",
+  "executor_family": "openai",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "project_dir": "D:\\Project\\rac-aris-fullrun-icassp27",
+  "trace_mode": "full",
+  "review_round": 1,
+  "canonical_output": "refine-logs/temporac/round-1-review.md",
+  "structured_output": "refine-logs/temporac/round-1-review.json"
+}

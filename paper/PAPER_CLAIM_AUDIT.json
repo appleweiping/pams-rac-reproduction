@@ -1,0 +1,234 @@
+{
+  "audit_skill": "paper-claim-audit",
+  "verdict": "BLOCKED",
+  "reason_code": "data_pending",
+  "summary": "The current PDF is an explicitly marked pre-results draft with no synchronized multi-person implementation, no frozen eligible MultiRep artifact, no raw result bindings, and no generated evidence file. All empirical result and protocol slots remain visibly pending. No unsupported performance claim is enabled.",
+  "audited_input_hashes": {
+    "main.pdf": "sha256:2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
+    "main.tex": "sha256:34e470772f06c281b70a8f60f82bb010e9a027cb289ebd9389005be703868175",
+    "preamble.tex": "sha256:763b456cb2e22585ca23160c2b12d641e764c70da94641247f6268af1a7306a2",
+    "math_commands.tex": "sha256:2f148f00d2542e89b78f18ea726f40e25afeef08c51357bcb642e95b9477a255",
+    "author_public.tex": "sha256:044998350a801da4758d022d231508d103b5769f5884ae3de5b626591615ac5d",
+    "figures/latex_includes.tex": "sha256:24f27f9df91002008648de01ea7bd0af5a216e9a97262ad0a05a077f8dd78421",
+    "sections/0_abstract.tex": "sha256:fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef",
+    "sections/1_introduction.tex": "sha256:7ce1329707dae209f745c200492253356e975448d9b32053b9f97d48bdcf3b3e",
+    "sections/3_method.tex": "sha256:c4ab8008065bb8781e402921878f5b99c7fb841acdef24c6129b7d93c988dc84",
+    "sections/4_tables.tex": "sha256:9982f60311a96265c8140b7c2614349bb2ae4f407b8666756b0f2c91ab89513a",
+    "sections/4_experiments.tex": "sha256:cd6508a60e3e9cac767ccfcec53e019a52525f58cebc2b1559819139abe0ecb5",
+    "sections/5_conclusion.tex": "sha256:e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c",
+    "figures/introduction_source_full.pdf": "sha256:216aabb2af9e022e487fbfe5022635d98c998f32a5e7e043289daa8d04ae0cd3",
+    "figures/framework_source_full.pdf": "sha256:920c47ea13d050c8a2265467d9232db23872022b9ba27204bc98d624f403e7fe",
+    "figures/figure_manifest.json": "sha256:26150301e048ab46d702de213966321661cd438982b187afc7bd15abcdb569bc",
+    "references.bib": "sha256:c84cb6df17ac4133f7c3115e1aa4dcad82e9e850f1ebdc5e6979cbc1cfd917b3",
+    "evidence/results_manifest.json": "sha256:4df513a3f4427950d23267965192253446e6ee2b6968907855e0bae1a6a53159",
+    "evidence/results_manifest.schema.json": "sha256:9d5c07450cbda32be8223237cb2d764d896d0c9ec28e4c9f23ad7cad3d67e662",
+    "evidence/method_manifest.yaml": "sha256:514d25ceb51d97930f02a14c70d96962ff7acdcb28c712fa80c1f03a9ea1d579",
+    "evidence/claim_evidence.csv": "sha256:b321e8320102b046b5ac35d720d5144862c4028855a726c45af564a01bead08a",
+    "generated/README.md": "sha256:2b1948df3bd63a9a3e46c1e19fc01d3fd584c104f5f78518816bc9da3a399805",
+    "../CLAIMS_FROM_RESULTS.md": "sha256:a9480a6208917e03890c67d7fd7bba2841fadf27ca3f0fba4d948f6c5cf9d1ef",
+    "../RESULT_TO_CLAIM.json": "sha256:5fa04e6ac29905a20ad870060b9e87b16ef9096e1c0b1bc88e7eaca45fe4f6f4"
+  },
+  "active_tex_dependency_closure": [
+    "paper/main.tex",
+    "paper/preamble.tex",
+    "paper/math_commands.tex",
+    "paper/author_public.tex",
+    "paper/figures/latex_includes.tex",
+    "paper/sections/0_abstract.tex",
+    "paper/sections/1_introduction.tex",
+    "paper/sections/3_method.tex",
+    "paper/sections/4_tables.tex",
+    "paper/sections/4_experiments.tex",
+    "paper/sections/5_conclusion.tex"
+  ],
+  "inactive_tex_excluded_from_claim_scope": [
+    "paper/submission_wrapper.tex",
+    "paper/appendix/a_experiment_contract.tex"
+  ],
+  "numeric_claim_count": 2,
+  "unbound_numeric_claim_count": 0,
+  "numeric_claim_scope": "Concrete numbers occupying result-table cells. Formula constants, dimensions, equation and citation numbering, metric names, planned protocol constants, layout values, and bibliography metadata are excluded.",
+  "numeric_claims": [
+    {
+      "location": "paper/sections/4_tables.tex:39",
+      "value": 0,
+      "metric": "delta_MAE",
+      "kind": "definitional_reference_delta",
+      "evidence_bound": true,
+      "empirical_performance_claim": false
+    },
+    {
+      "location": "paper/sections/4_tables.tex:39",
+      "value": 0,
+      "metric": "delta_OBO",
+      "kind": "definitional_reference_delta",
+      "evidence_bound": true,
+      "empirical_performance_claim": false
+    }
+  ],
+  "planned_numeric_protocol_constraints": [
+    {
+      "value": 3,
+      "meaning": "minimum named seeds for each reproduced learned method",
+      "observed_result": false
+    },
+    {
+      "value": 95,
+      "unit": "percent",
+      "meaning": "planned paired video-cluster bootstrap confidence interval",
+      "observed_result": false
+    }
+  ],
+  "binding_census": {
+    "result_macro_slot_count": 57,
+    "unique_result_key_count": 57,
+    "bound_result_slot_count": 0,
+    "unbound_result_slot_count": 57,
+    "protocol_macro_slot_count": 2,
+    "unique_protocol_key_count": 2,
+    "bound_protocol_slot_count": 0,
+    "unbound_protocol_slot_count": 2,
+    "controlled_abstract_result_call_count": 1,
+    "bound_controlled_abstract_result_count": 0,
+    "result_claim_macro_call_count": 0,
+    "generated_evidence_values_exists": false
+  },
+  "empirical_claim_status": {
+    "enabled_empirical_numeric_claim_count": 0,
+    "enabled_comparative_performance_claim_count": 0,
+    "enabled_unbound_performance_claim_count": 0,
+    "unsupported_enabled_performance_claim_exists": false,
+    "all_result_slots_visibly_pending": true,
+    "controlled_abstract_result_visibly_pending": true,
+    "diagnostic_visibly_data_pending": true
+  },
+  "evidence_state": {
+    "results_manifest_status": "data-pending",
+    "results_manifest_frozen": false,
+    "results_manifest_table_eligible": false,
+    "artifact_id_bound": false,
+    "artifact_family_bound": false,
+    "method_commit_bound": false,
+    "dataset_release_bound": false,
+    "protocol_bound": false,
+    "raw_logs_bound": false,
+    "predictions_bound": false,
+    "source_artifacts_bound": false,
+    "metrics_bound": false,
+    "paper_bindings_present": false,
+    "eligible_multirep_data_present": false,
+    "method_manifest_status": "SYNC-REQUIRED",
+    "proposed_method_source_bound": false,
+    "supervision_firewall_complete": false,
+    "submission_licensed_claim_count": 0,
+    "result_to_claim_verdict": "FAIL",
+    "result_to_claim_reason_code": "NO_MULTI_PERSON_REAL_GT_EVIDENCE"
+  },
+  "claim_groups": [
+    {
+      "id": "PC01",
+      "locations": ["title", "abstract", "introduction"],
+      "class": "method_framing",
+      "adjudication": "proposal_only",
+      "submission_licensed": false
+    },
+    {
+      "id": "PC02",
+      "locations": ["abstract", "introduction", "method", "conclusion"],
+      "class": "method_components",
+      "adjudication": "sync_required_specification",
+      "submission_licensed": false
+    },
+    {
+      "id": "PC03",
+      "locations": ["abstract", "introduction", "method", "conclusion"],
+      "class": "supervision",
+      "adjudication": "intended_but_unverified",
+      "submission_licensed": false
+    },
+    {
+      "id": "PC04",
+      "locations": ["abstract", "method"],
+      "class": "structural_boundary",
+      "adjudication": "non_empirical_design_property",
+      "submission_licensed": false
+    },
+    {
+      "id": "PC05",
+      "locations": ["introduction"],
+      "class": "robustness_hypothesis",
+      "adjudication": "explicitly_result_free_hypothesis",
+      "submission_licensed": false
+    },
+    {
+      "id": "PC06",
+      "locations": ["experiments"],
+      "class": "protocol_and_statistics",
+      "adjudication": "planned_unexecuted",
+      "submission_licensed": false
+    },
+    {
+      "id": "PC07",
+      "locations": ["experiments_main_table"],
+      "class": "empirical_performance",
+      "adjudication": "withheld_data_pending",
+      "submission_licensed": false
+    },
+    {
+      "id": "PC08",
+      "locations": ["experiments_ablation"],
+      "class": "empirical_mechanism",
+      "adjudication": "withheld_data_pending",
+      "submission_licensed": false
+    },
+    {
+      "id": "PC09",
+      "locations": ["experiments_diagnostic"],
+      "class": "robustness_diagnostic",
+      "adjudication": "planned_data_pending",
+      "submission_licensed": false
+    },
+    {
+      "id": "PC10",
+      "locations": ["conclusion"],
+      "class": "empirical_conclusion",
+      "adjudication": "none_enabled_and_absence_disclosed",
+      "submission_licensed": false
+    },
+    {
+      "id": "PC11",
+      "locations": ["introduction", "method", "experiments"],
+      "class": "citation_dependent_background",
+      "adjudication": "citation_audit_pass_same_family_provisional",
+      "submission_licensed": false
+    }
+  ],
+  "source_pdf_consistency": {
+    "status": "pass_for_audited_claim_controls",
+    "title_matches": true,
+    "draft_results_pending_banner_visible": true,
+    "pending_result_fallbacks_visible": true,
+    "sync_required_markers_visible": true,
+    "data_pending_diagnostic_visible": true,
+    "no_results_disclosure_visible": true,
+    "approved_public_author_visible": true,
+    "full_source_figures_visible": true,
+    "page_five_references_only": true,
+    "equation_punctuation_free": true
+  },
+  "trace_path": ".aris/traces/paper-claim-audit-icassp/user-revision-final/",
+  "agent_id": "/root/user_revision_claim_audit",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "xhigh",
+  "executor_model": "gpt-5.6-sol",
+  "executor_family": "openai",
+  "reviewer_family": "openai",
+  "model": "gpt-5.6-sol",
+  "reasoning": "xhigh",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "same_family": true,
+  "provisional": true,
+  "same_family_provisional": "same-family/provisional",
+  "generated_at": "2026-08-15T01:25:00+08:00"
+}

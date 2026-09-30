@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0",
+  "run_id": "experiment-code-review-warp-phase-20260815-sol",
+  "step_id": "001-review",
+  "task": "Fresh zero-context scientific and engineering review of the WARP-PHASE pilot v1 experiment implementation and exact current fixture candidate",
+  "requested_at": "2026-08-15T17:54:51.4067553+08:00",
+  "reviewer_requirements": {
+    "model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "verdict_enum": ["PASS", "REVISE", "BLOCKED", "FAIL"]
+  },
+  "required_checks": [
+    "contract fidelity",
+    "data leakage and import isolation",
+    "source hashes before unpickle",
+    "fixture semantics and deterministic receipts",
+    "model, loss, warp, and decode correctness",
+    "official evaluator parity boundary",
+    "parameter count",
+    "optimizer and backward accumulation",
+    "gate and authorization safety",
+    "CLI completeness",
+    "server execution feasibility"
+  ],
+  "constraints": {
+    "read_only_review": true,
+    "no_server_access": true,
+    "no_real_train_or_validation_access": true,
+    "no_test_or_sealed_or_heldout_access": true,
+    "no_results_access": true,
+    "no_experiment_execution": true,
+    "no_code_modification": true,
+    "authorized_outputs_only": true
+  },
+  "snapshot_bindings": {
+    "proposal_sha256": "e8ff129b3a67ac07be0e5ff1af09555bb26f000e7cde9315b13493733cda6418",
+    "contract_sha256": "70f80912e4b9693fae9e859eb12f90cc754b7d523b59af766879518770d69b2e",
+    "plan_sha256": "020626027a73939f3fd4dfa479e6592699d19f652da592682b90d9235724ce5c",
+    "config_sha256": "e59fb34599eaece41545c237b18871b5a206046e53fb1246795f9dcb3d681063",
+    "generator_sha256": "8a12a188c95d38f8958553e10ee06df6920c372e78eef2c2de575e7b8d6eb572",
+    "selector_sha256": "8a318f82ff9e739e3889940a575d8d3594a04349f2cd9881b9f1974ead25ceb2",
+    "gates_sha256": "be850809457dba85862b45631b89e068d23517699587ea13a0f2179fe44ac6c5",
+    "candidate_receipt_sha256": "f5e03b431f47f2ae0c1e52f40955fbcb70b97642e52969178ffcfa3140f6c5ce",
+    "candidate_pack_sha256": "b2c791f9aac1d86c0849fa74b00b4e605fe21120f9d188f4ec0b304d7052f173",
+    "complete_ledger_path": "refine-logs/EXPERIMENT_CODE_REVIEW.json"
+  },
+  "required_outputs": [
+    "refine-logs/EXPERIMENT_CODE_REVIEW.md",
+    "refine-logs/EXPERIMENT_CODE_REVIEW.json",
+    ".aris/traces/experiment-code-review-warp-phase-20260815-sol/"
+  ]
+}

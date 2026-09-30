@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "artifact_type": "ucfrep_dev84_paired_comparison_server_status",
+  "run_id": "paircmp-c573af3-20260731T001729Z",
+  "completed": true,
+  "git_sha": "c573af33876591f29aaab6f272b96b809256ca77",
+  "source_sha256": "f0c39328e33fd034b58babd1475f1d9ca78d3b857e5bc0d5f0a963248ba096f4",
+  "source_view_receipt_sha256": "f3215c5d11b5a6ea0bb14cb938828bd702da0d3b736ce73ffa2a4f6fef8f4379",
+  "container_image_id": "sha256:a6d10131c321c323c00bb85408cb8333503ecbc5d780d5059a73152d54df6005",
+  "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+  "network": "none",
+  "read_only_root": true,
+  "test105_mounted": false,
+  "test105_accessed": false,
+  "inputs_are_frozen_dev_evaluations_only": true,
+  "mounted_destinations": [
+    "/source",
+    "/inputs/candidate.json",
+    "/inputs/local-frequency-v1.json",
+    "/inputs/repnet-official.json",
+    "/inputs/escounts-official.json",
+    "/inputs/jtsps-seed42.json",
+    "/inputs/jtsps-seed2026.json",
+    "/inputs/jtsps-seed3407.json",
+    "/output"
+  ],
+  "input_sha256": {
+    "candidate": "f5d795b30efc4ae4c81f1da5d202e9f77979ada37f0f32db0468a5a3e678e739",
+    "local_frequency_v1": "be1b7444fa0e7fabf0ab85ac1298a77d376ee086d4b44744fecce060255b5512",
+    "repnet_official": "3b60ff34bb74e092758f4868ed0c19b9c4041b2721ef3ece3a03bb93c5d051dd",
+    "escounts_official": "531bd5ac8f42bec50773ec585374a9335717933511a2768dcde6edd986842beb",
+    "jtsps_seed42": "1ef34521978dad1861905cea1166388e5f37acf8a25781c775a89cc537b7417c",
+    "jtsps_seed2026": "0578d5d1d1243ae79ad1fc8bbbc68af6e8841f92b8a863f4e85d4bef8a933c00",
+    "jtsps_seed3407": "3c74408dcb32859f8b06df28c60a18e030072da17b738f79ce2e6af06a8ffa7d"
+  },
+  "comparison_sha256": "d17f45ef524e991a35d08727e2294e3e6d4d1077c251dda2462c0ded38db271a",
+  "replay_sha256": "d17f45ef524e991a35d08727e2294e3e6d4d1077c251dda2462c0ded38db271a",
+  "deterministic_replay_byte_identical": true
+}

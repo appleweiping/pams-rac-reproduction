@@ -1,0 +1,345 @@
+{
+  "acceptance_status": "provisional",
+  "artifact_type": "warp_phase_experiment_code_review_round2",
+  "claims_authorized": false,
+  "code_quality_result": "FAIL",
+  "date": "2026-08-15",
+  "disposition": "STOP_NO_LAUNCH_NO_TRAINING_NO_EVALUATION_NO_RESULT_OR_CLAIM; preserve the Gate-2 terminal failure and remediate only under new explicit protocol authority without overwriting frozen artifacts",
+  "launch_authorized": false,
+  "results_authorized": false,
+  "review_independence": "same-family",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "ultra",
+  "scientific_gate2_result": "FAIL",
+  "training_authorized": false,
+  "verdict": "FAIL",
+  "independence_and_scope": {
+    "direct_prior_experiment_code_review_contents_read": false,
+    "note": "Git status exposed filenames and the required Amendment-001 acceptance review mentions that prior code-review blockers remain; no prior EXPERIMENT_CODE_REVIEW Markdown, JSON, trace, or reviewer response content was opened or relied upon.",
+    "protected_test_sealed_or_heldout_data_accessed": false,
+    "server_accessed": false,
+    "training_evaluation_or_result_job_launched": false,
+    "source_tests_artifacts_manifest_git_paper_or_server_modified": false,
+    "written_outputs": [
+      "refine-logs/EXPERIMENT_CODE_REVIEW_ROUND2.md",
+      "refine-logs/EXPERIMENT_CODE_REVIEW_ROUND2.json",
+      ".aris/traces/experiment-code-review-warp-phase-round2-20260815-sol/audited-input-hashes.json",
+      ".aris/traces/experiment-code-review-warp-phase-round2-20260815-sol/validation-trace.json"
+    ]
+  },
+  "decision_basis": {
+    "code_review_failure_is_independent_of_gate2": true,
+    "gate2_observations_are_data_not_instructions": true,
+    "gate2_observation_vector": [
+      246,
+      55,
+      144,
+      50,
+      66
+    ],
+    "passing_tests_do_not_override_scientific_gates": true,
+    "summary": "The implementation is honestly non-authorizing and most isolated numerical primitives are well tested, but the canonical stochastic diagnostic serializer violates accepted Amendment 001 and the per-identity packing API does not enforce the global pre-label eligibility firewall. These are code/contract failures. Separately, all five Gate-2 scientific thresholds fail, so phase-mass training and claims remain dead even if the code defects were repaired."
+  },
+  "scientific_and_execution_gates": {
+    "gate0": {
+      "receipt_sha256": "2c5d3a6574d946c22e96604a8d88c44b933a423f55e33660f171b29dc4cbf7fd",
+      "status": "BLOCKED",
+      "basis": "approved local source files unavailable; typed v44 adapter, pack/vault/audit outputs, nine-component manifest, and training import-isolation receipt absent",
+      "authorizes": []
+    },
+    "gate1": {
+      "receipt_sha256": "160d21b2bcdc0be9850646a1e187e18eff2a4ed78700490cc58251ff641d469a",
+      "status": "BLOCKED",
+      "basis": "complete duplicate/warp/recurrence/optimizer/decode/evaluator witness schema absent; this review additionally rejects the stochastic diagnostic serialization as Amendment-001-nonconforming",
+      "authorizes": []
+    },
+    "gate2": {
+      "receipt_sha256": "609b2c57853d4dea661957eac810e7936611cac9d037ca9bca2eafe7ebceec03",
+      "status": "FAIL",
+      "observed": {
+        "canonical_weak_agreement": 246,
+        "half_overall": 55,
+        "double_overall": 144,
+        "half_symmetric": 50,
+        "double_symmetric": 66
+      },
+      "required": {
+        "canonical_weak_agreement_minimum": 950,
+        "half_overall_maximum": 20,
+        "double_overall_maximum": 20,
+        "half_symmetric_maximum": 12,
+        "double_symmetric_maximum": 12
+      },
+      "all_five_thresholds_pass": false,
+      "authorizes": []
+    },
+    "gate3_cpu": {
+      "receipt_sha256": "157c506f6573d4ddb1cd2e3c080534cda00fd869eb07597cd0d0da37c942e54e",
+      "status": "BLOCKED",
+      "basis": "prediction schema, three tiny-GPU receipts, and Gate0-2 pass chain absent; the CPU diagnostic was run out of contractual order",
+      "authorizes": []
+    },
+    "k8": {
+      "status": "BLOCKED_NOT_PASSED",
+      "claim_freeze": "BLOCKED"
+    },
+    "server_preflight": {
+      "status": "NOT_READY",
+      "launch_authorization_count": 0,
+      "training_environment_lock_on_server": "PENDING",
+      "fresh_output_receipt": "MISSING",
+      "fresh_agent_follows_doc": "NOT_RUN"
+    }
+  },
+  "findings": [
+    {
+      "id": "EC2-R2-F001",
+      "severity": "HIGH",
+      "category": "selector_fixture_semantics",
+      "title": "The frozen 1,000-pack erases computed finite diagnostics by conflating score validity with computation",
+      "status": "OPEN",
+      "evidence": [
+        "refine-logs/EXPERIMENT_EXECUTION_CONTRACT_AMENDMENT_001.md:99",
+        "refine-logs/EXPERIMENT_EXECUTION_CONTRACT_AMENDMENT_001.md:112",
+        "src/pams/warp_phase/selector.py:359",
+        "src/pams/warp_phase/selector.py:371",
+        "src/pams/warp_phase/selector.py:374",
+        "scripts/experiments/generate_warp_phase_fixture_pack.py:446",
+        "scripts/experiments/generate_warp_phase_fixture_pack.py:448",
+        "scripts/experiments/generate_warp_phase_fixture_pack.py:449",
+        "scripts/experiments/generate_warp_phase_fixture_pack.py:460",
+        "src/pams/warp_phase/gates.py:1551",
+        "src/pams/warp_phase/gates.py:1553",
+        "src/pams/warp_phase/gates.py:1554",
+        "tests/test_warp_phase_gates.py:139",
+        "tests/test_warp_phase_gates.py:145",
+        "tests/test_warp_phase_gates.py:180"
+      ],
+      "exact_observation": {
+        "canonical_rows_recomputed": 1000,
+        "hard_selector_errors": 0,
+        "selected_period_mismatches": 0,
+        "finite_computed_score_entries": 41605,
+        "finite_computed_but_R_below_0_25_entries": 34499,
+        "nonzero_scores_serialized_as_zero": 34499,
+        "nonzero_acf_values_serialized_as_zero": 34499,
+        "nonzero_harmonic_values_serialized_as_zero": 103497,
+        "rows_affected": 894
+      },
+      "impact": "Amendment 001 requires raw finite ACF/score diagnostics where computed and computed/valid masks that distinguish computation from eligibility, including the canonical stochastic rows. The serializer keeps values only where score_valid is true, the stochastic schema has no computed masks, and the ten-case verifier mirrors the same wrong oracle. Candidate-v2 is byte/hash-consistent and its decisions are stable, but its canonical diagnostic content is not compliant with the accepted contract.",
+      "required_disposition": "Do not overwrite or silently repair the frozen pack. Preserve K5/Gate2 failure. Any prospective correction requires explicit new protocol authority, a schema with computed masks or raw finite serialization, new immutable bytes, and genuinely independent validation."
+    },
+    {
+      "id": "EC2-R2-F002",
+      "severity": "HIGH",
+      "category": "label_firewall",
+      "title": "pack_identity can open evaluator labels before the complete count-blind population and nine-component table are frozen",
+      "status": "OPEN",
+      "evidence": [
+        "refine-logs/FINAL_PROPOSAL.md:60",
+        "refine-logs/FINAL_PROPOSAL.md:67",
+        "refine-logs/EXPERIMENT_EXECUTION_CONTRACT.md:270",
+        "src/pams/warp_phase/packing.py:1184",
+        "src/pams/warp_phase/packing.py:1213",
+        "src/pams/warp_phase/packing.py:1233",
+        "src/pams/warp_phase/packing.py:1261",
+        "src/pams/warp_phase/packing.py:1289",
+        "tests/test_warp_phase_packing.py:211",
+        "tests/test_warp_phase_packing.py:328"
+      ],
+      "impact": "The coverage helper is standalone and proves neither completeness nor a frozen population digest. pack_identity accepts one per-identity eligibility decision and invokes vault_factory for an eligible identity after only local checks and ACL evidence. A future adapter calling this public primitive can therefore read the first label before all identities are counted, checksum-frozen, deduplicated, and shown to preserve all nine components. Gate0 is currently blocked, so this unsafe transition is not CLI-reachable today.",
+      "required_disposition": "Require a two-phase batch transaction: freeze and hash the exact complete identity population and original component mapping; validate uniqueness, completeness, and all nine nonempty components; then issue a receipt-bound capability required by every vault-open operation."
+    },
+    {
+      "id": "EC2-R2-F003",
+      "severity": "MEDIUM",
+      "category": "hash_and_source_binding",
+      "title": "verify_fixture_pack does not bind the canonical receipt to live generator/selector/environment sources",
+      "status": "OPEN",
+      "evidence": [
+        "src/pams/warp_phase/gates.py:1395",
+        "src/pams/warp_phase/gates.py:1410",
+        "src/pams/warp_phase/gates.py:1422",
+        "src/pams/warp_phase/gates.py:1434",
+        "src/pams/warp_phase/gates.py:1445",
+        "src/pams/warp_phase/gates.py:1456",
+        "src/pams/warp_phase/gates.py:1459",
+        "src/pams/warp_phase/gates.py:1482",
+        "src/pams/warp_phase/gates.py:1659",
+        "src/pams/warp_phase/gates.py:1677"
+      ],
+      "observed_integrity": "The current candidate-v2 pack has 23 exact members, aggregate c6dbe56df7b4f7d427ce1f51d5d818ad0e46dcfbf6e1550e0d77116435760196, live generator hash 7af1dac0ce246979d608b3db8e9fcaef9fe18dbfe2a5ecc803616e30919bb4ce, live selector hash 73b31b7d6c58a67efa8542df754971a58926d783258c9776269ec06765dafa0e, and v2 fixture-lock hash c278c77b27467f5928fa37d2fc79580dc58ec5d55cf98eee89f7e69e77d947a0; all independently match.",
+      "impact": "The current bytes are not substituted, but the Gate1 verifier treats generator_source_sha256 as an arbitrary well-formed digest, parses metadata without validating its fields against live sources, validates the fixture lock separately, and recomputes only ten rows. A future self-consistent pack/receipt can pass without a live source/environment chain.",
+      "required_disposition": "Make the verifier repository-root-aware; bind the canonical receipt to exact live generator and selector hashes, metadata schema/content, the exact v2 fixture lock and detached receipt, and the external provenance adjudication."
+    },
+    {
+      "id": "EC2-R2-F004",
+      "severity": "MEDIUM",
+      "category": "candidate_review_authority",
+      "title": "Gate1 marks the selector-unit candidate verified while requiring its non-authorizing and fresh-review-required state",
+      "status": "OPEN",
+      "evidence": [
+        "refine-logs/EXPERIMENT_EXECUTION_CONTRACT_AMENDMENT_001_REVIEW.md:42",
+        "refine-logs/EXPERIMENT_EXECUTION_CONTRACT_AMENDMENT_001_REVIEW.md:46",
+        "data/warp_phase_pilot_v1/audit/gate1/selector-unit-fixtures-v1/selector-unit-fixtures-v1.receipt.json:1",
+        "src/pams/warp_phase/gates.py:1293",
+        "src/pams/warp_phase/gates.py:1297",
+        "src/pams/warp_phase/gates.py:1299",
+        "src/pams/warp_phase/gates.py:1302",
+        "src/pams/warp_phase/gates.py:1695",
+        "src/pams/warp_phase/gates.py:1708"
+      ],
+      "observed_integrity": "This round independently checked all 64 NPY members plus metadata, exact schemas, finite floats, member hashes, live source bindings, three selected periods, and aggregate 406fe3934dd307accbd735dd6f2e54890d6de643c7bfe1d05d9f2d1131a8efcf. No numerical discrepancy was found.",
+      "impact": "The implementation can report selector_unit_fixture_pack=true before any separately bound review artifact exists, because it explicitly accepts candidate_only=true, authoritative=false, fresh_review_required=true, authorizes=[], and CANDIDATE_NON_AUTHORIZING. This provisional code review does not rewrite those authority fields or pass Gate1.",
+      "required_disposition": "Add a separately immutable review/adjudication receipt input whose hash is bound into Gate1, or keep this check named and treated as candidate-integrity-only rather than a satisfied Gate1 fixture requirement."
+    },
+    {
+      "id": "EC2-R2-F005",
+      "severity": "MEDIUM",
+      "category": "gate_order",
+      "title": "Gate3 CPU execution does not require Gate0-2 pass receipts before running",
+      "status": "OPEN",
+      "evidence": [
+        "refine-logs/EXPERIMENT_EXECUTION_CONTRACT.md:282",
+        "src/pams/warp_phase/cli.py:185",
+        "src/pams/warp_phase/cli.py:193",
+        "src/pams/warp_phase/gates.py:1918",
+        "src/pams/warp_phase/gates.py:1944",
+        "src/pams/warp_phase/gates.py:1982",
+        "src/pams/warp_phase/gates.py:2031",
+        "data/warp_phase_pilot_v1/audit/gate3/gate3-cpu-sanity.receipt.json:1"
+      ],
+      "impact": "The contract allows the CPU smoke only after Gates0-2 pass, but gate3_cpu_sanity_receipt takes no dependency receipts, runs a model/optimizer update, and only afterward records the missing pass chain. The stored receipt is exactly reproducible and honestly BLOCKED; no GPU job or training campaign was launched, but the execution order is not enforced.",
+      "required_disposition": "Require and hash-verify Gate0, Gate1, and Gate2 PASS receipts before any Gate3 computation. Diagnostic development tests should not be persisted or labeled as an executed Gate3 receipt."
+    },
+    {
+      "id": "EC2-R2-F006",
+      "severity": "MEDIUM",
+      "category": "pipeline_completeness_and_reproducibility",
+      "title": "Training/evaluation/result production is deliberately unreachable and the WARP snapshot is not committed",
+      "status": "BLOCKING_INCOMPLETENESS",
+      "evidence": [
+        "src/pams/warp_phase/training.py:30",
+        "src/pams/warp_phase/training.py:75",
+        "src/pams/warp_phase/training.py:135",
+        "src/pams/warp_phase/cli.py:40",
+        "src/pams/warp_phase/cli.py:200",
+        "src/pams/warp_phase/cli.py:210",
+        "src/pams/warp_phase/gates.py:1713",
+        "src/pams/warp_phase/gates.py:2033",
+        "src/pams/warp_phase/evaluator.py:199",
+        "src/pams/warp_phase/evaluator.py:202"
+      ],
+      "impact": "The train command can only emit BLOCKED, no end-to-end fresh-step factory or prediction schema exists, and there is no WARP evaluator CLI/vault-reader/prediction-freeze transition. The bootstrap also derives component order by lexicographic sorting rather than consuming a frozen ordered table/hash, which can alter finite seeded draws. Git HEAD 236d4ad235c1cdd15398e7fdeac0d8c5b569570e does not contain the untracked WARP package/config/scripts/tests/artifacts; only the root CLI attachment and CLI tests are tracked modifications.",
+      "required_disposition": "Do not launch. If a future protocol authorizes continuation despite Gate2, freeze a committed source snapshot, implement the complete feature-only training path, receipt-bound predictions, evaluator-only vault reader, frozen ordered component table, and full witness chain before any result-bearing execution."
+    }
+  ],
+  "checks": [
+    {
+      "id": "scope_and_no_test_boundary",
+      "status": "PASS",
+      "evidence": "Only specified source/docs/dev fixtures/receipts and Git metadata were read; protected test/sealed/heldout and server data were not accessed."
+    },
+    {
+      "id": "selector_fft_core_math",
+      "status": "PASS_WITH_SERIALIZATION_FAILURE",
+      "evidence": "Support selection, endpoint local maxima, FFT interpolation, harmonic margin, parent rejection, and exact decisions pass tests and full 1,000-row decision replay; EC2-R2-F001 invalidates the stored raw diagnostic semantics."
+    },
+    {
+      "id": "warp_loss_model_optimizer_nola_decode_primitives",
+      "status": "PASS_PRIMITIVES_ONLY",
+      "evidence": "Shape/dtype/mask/alias/reversal/state-hold/parameter-count/four-fresh-backward/positive-NOLA/continuous-decode invariants are implemented and covered by the passing scoped suite; the end-to-end training and result pipeline remains absent."
+    },
+    {
+      "id": "pack_vault_acl_design",
+      "status": "BLOCKED_FAIL_CLOSED",
+      "evidence": "The POSIX distinct-principal/no-extended-ACL design and atomic no-replace publication are careful, and Windows correctly cannot prove effective separation. EC2-R2-F002 remains a global pre-label sequencing defect."
+    },
+    {
+      "id": "cli_reachability_and_exit_codes",
+      "status": "PASS_NON_AUTHORIZING",
+      "evidence": "src/pams/cli.py attaches warp-phase; static-preflight exits zero only as PASS_NON_AUTHORIZING; BLOCKED/FAIL gate and train receipts exit 1 after persistence. No WARP server-launch or evaluator/result command exists."
+    },
+    {
+      "id": "gate_receipt_replay",
+      "status": "PASS_BYTES_GATE_STATUSES_UNCHANGED",
+      "evidence": "Gate1, Gate2, and Gate3 CPU functions reproduced their saved canonical bytes exactly; statuses remain BLOCKED, FAIL, BLOCKED."
+    },
+    {
+      "id": "candidate_v2_provenance",
+      "status": "WARN_HASH_VALID_SEMANTICS_INVALID",
+      "evidence": "All pack/member/source/environment hashes match and the provenance repair is exact, but EC2-R2-F001 means the frozen diagnostic content does not satisfy accepted Amendment 001."
+    },
+    {
+      "id": "test_quality",
+      "status": "WARN",
+      "evidence": "Broad primitive and fail-closed coverage passes, but the stochastic diagnostic oracle mirrors the production masking, packing tests never require a complete frozen population token, and provenance tests do not exercise live canonical-pack source binding."
+    }
+  ],
+  "audited_input_hashes": {
+    "algorithm": "sha256",
+    "file_count": 143,
+    "canonical_file_map_sha256": "ad2b85e0d538c538bed408076ca71f56e98f0b4546d3da1921925a0a88c67ddd",
+    "manifest_path": ".aris/traces/experiment-code-review-warp-phase-round2-20260815-sol/audited-input-hashes.json",
+    "manifest_sha256": "acdea079c506f3b4bfee83dd9526f81c2b2f624446a8c26ad3792f20ccd654d5",
+    "core": {
+      "refine-logs/FINAL_PROPOSAL.md": "e8ff129b3a67ac07be0e5ff1af09555bb26f000e7cde9315b13493733cda6418",
+      "refine-logs/EXPERIMENT_EXECUTION_CONTRACT.md": "70f80912e4b9693fae9e859eb12f90cc754b7d523b59af766879518770d69b2e",
+      "refine-logs/EXPERIMENT_PLAN.md": "020626027a73939f3fd4dfa479e6592699d19f652da592682b90d9235724ce5c",
+      "refine-logs/EXPERIMENT_TRACKER.md": "2b30a873f3d0777eaf71bfd8e686efb1dedbf06a65da60a57bfe25c353ffef58",
+      "refine-logs/EXPERIMENT_EXECUTION_CONTRACT_AMENDMENT_001.md": "25fe82bbcad386b42e4c5a95a762d1f84e4c926796655f02ba5d2ab8ae7dc484",
+      "refine-logs/EXPERIMENT_EXECUTION_CONTRACT_AMENDMENT_001.json": "d5227f04af4452c2224d3a6b0a8342a7a02aa18edf6b5452e9e06290636bc1c9",
+      "refine-logs/EXPERIMENT_EXECUTION_CONTRACT_AMENDMENT_001_REVIEW.md": "a1fcd938fcb849cc820275ffb54d4b233314accbd7d1a21aa2ce3742e2dafa9c",
+      "refine-logs/EXPERIMENT_EXECUTION_CONTRACT_AMENDMENT_001_REVIEW.json": "8937446bbb9708e205f850e367c48fce70d42de9054c1066522865104352c8f6",
+      "configs/experiments/warp_phase_pilot_v1.yaml": "e59fb34599eaece41545c237b18871b5a206046e53fb1246795f9dcb3d681063",
+      "src/pams/warp_phase/gates.py": "3a91e77692ac54e1e85fd56d8f3bff2b3a3c517095554d30b92e9055e1426dfa",
+      "src/pams/warp_phase/packing.py": "b0bc5473ebc93380d5fca6949f6bae225abda69bb5a6e7d473f3b166dbbd52f5",
+      "src/pams/warp_phase/selector.py": "73b31b7d6c58a67efa8542df754971a58926d783258c9776269ec06765dafa0e",
+      "scripts/experiments/generate_warp_phase_fixture_pack.py": "7af1dac0ce246979d608b3db8e9fcaef9fe18dbfe2a5ecc803616e30919bb4ce",
+      "scripts/experiments/generate_warp_phase_selector_unit_fixtures.py": "2ae32f4133903691a757557425980eb553b3de4d749b4eca9a8f76719b41847f"
+    },
+    "artifact_aggregates": {
+      "candidate_v2_pack_sha256": "c6dbe56df7b4f7d427ce1f51d5d818ad0e46dcfbf6e1550e0d77116435760196",
+      "candidate_v2_canonical_receipt_sha256": "191a1689197f7e9a3eb965ee0dc0e52fa58e9d8485c097c9e601162fad24cd19",
+      "selector_unit_pack_sha256": "406fe3934dd307accbd735dd6f2e54890d6de643c7bfe1d05d9f2d1131a8efcf",
+      "selector_unit_receipt_sha256": "913e8946ee27392ab374a26887a5a9d8169e69afd951b98319019f3eb1cf2f5f"
+    }
+  },
+  "test_commands_and_results": [
+    {
+      "command": ".venv/Scripts/python.exe -m pytest -q -p no:cacheprovider tests/test_warp_phase_*.py",
+      "exit_code": 0,
+      "result": "96 passed in 11.51s"
+    },
+    {
+      "command": ".venv/Scripts/python.exe -m pytest -q -p no:cacheprovider tests/test_cli.py -k warp_phase",
+      "exit_code": 0,
+      "result": "7 passed, 38 deselected in 8.45s"
+    },
+    {
+      "command": ".venv/Scripts/python.exe -m ruff check --no-cache src/pams/warp_phase src/pams/cli.py scripts/experiments/generate_warp_phase_fixture_pack.py scripts/experiments/generate_warp_phase_selector_unit_fixtures.py tests/test_cli.py tests/test_warp_phase_*.py",
+      "exit_code": 0,
+      "result": "All checks passed!"
+    },
+    {
+      "command": ".venv/Scripts/python.exe -m mypy --no-incremental src/pams/warp_phase src/pams/cli.py scripts/experiments/generate_warp_phase_fixture_pack.py scripts/experiments/generate_warp_phase_selector_unit_fixtures.py",
+      "exit_code": 0,
+      "result": "Success: no issues found in 17 source files"
+    }
+  ],
+  "git_state": {
+    "branch": "codex/aris-fullrun-icassp27",
+    "head": "236d4ad235c1cdd15398e7fdeac0d8c5b569570e",
+    "head_subject": "chore(aris): freeze research and experiment plan",
+    "tracked_in_scope_diff": {
+      "src/pams/cli.py": "+2 lines attaching the warp-phase Typer group",
+      "tests/test_cli.py": "+123 lines of WARP CLI reachability and nonzero-exit tests"
+    },
+    "warp_phase_package_config_scripts_tests_and_audit_artifacts_committed": false,
+    "launch_reproducibility_from_head_alone": false
+  },
+  "trace": {
+    "validation_trace_path": ".aris/traces/experiment-code-review-warp-phase-round2-20260815-sol/validation-trace.json",
+    "validation_trace_sha256": "e30d8710a47d24e2ed6d690e702e696a8989e1b98438d11564c4303d0ad79bad"
+  }
+}

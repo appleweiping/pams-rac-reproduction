@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_fragment_transport_sol",
+  "task": "Strict ARIS novelty-check for fragment-boundary-count-mass-transport; read-only research only.",
+  "reviewer_requirements": {
+    "reviewer_model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "reasoning_effort": "xhigh",
+    "fresh_context": false,
+    "nonfresh_reason": "agent_thread_lifetime_limit",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "external_cutoff": "2026-08-15",
+    "technical_sources": "primary_or_official_only"
+  },
+  "workspace": "D:/Project/rac-aris-fullrun-icassp27",
+  "candidate_id": "fragment-boundary-count-mass-transport",
+  "required_inputs": [
+    "idea-stage/PIVOT_CANDIDATE_UNION.json#fragment-boundary-count-mass-transport",
+    "idea-stage/PIVOT_IDEA_JURY.json",
+    "idea-stage/IDEA_REPORT.md",
+    "idea-stage/NOVELTY_CHECK.json",
+    "idea-stage/RESEARCH_REVIEW.json",
+    "CLAIMS_FROM_RESULTS_WARP_PHASE.json",
+    "CLAIMS_FROM_RESULTS_WARP_PHASE.md",
+    "EXPERIMENT_AUDIT_WARP_PHASE.json",
+    "EXPERIMENT_AUDIT_WARP_PHASE.md",
+    "refine-logs/PIPELINE_SUMMARY.md"
+  ],
+  "mandatory_checks": [
+    "Extract three to five core claims and use at least three distinct query formulations for each.",
+    "Cover 2024 through 2026 and arXiv submissions from the most recent six months.",
+    "Read potential closest-neighbor abstract, method, and related-work evidence where primary text is available.",
+    "Check MultiCounter invisible-frame semantics and joint detection/tracking/counting.",
+    "Check MultiCounter+ DOI 10.1109/TCSVT.2026.3670243, spatial-temporal consistency, long-short-period awareness, and task-supplied Siamese-query/dynamic-update boundary.",
+    "Check RepNet per-frame p_i/l_i contributions and summation as additivity prior, not fragment transport.",
+    "Check PAMS and TWCRAC consistency boundaries.",
+    "Check Tekin et al. fragmented-track repair, OC-SORT observation-centric re-update, and tracklet/re-ID work.",
+    "Check temporal crop/cut consistency, wrong-ID negatives, and abstention.",
+    "Determine whether the exact five-part conjunction exists and whether the proposal is merely an obvious combination.",
+    "Do not package generic track repair or density additivity as novelty.",
+    "Return a brutally honest score, PROCEED/CAUTION/ABANDON, closest prior, precise delta, fatal risks, allowed/forbidden claims, and minimum next gate."
+  ],
+  "warp_failure_constraint": {
+    "status": "terminally_killed",
+    "immutable_gate2_vector": [246, 55, 144, 50, 66],
+    "rule": "Do not revive, tune, or use WARP-PHASE as positive evidence."
+  },
+  "prohibited_actions": [
+    "implementation",
+    "training",
+    "MANIFEST modification",
+    "next-stage launch",
+    "server access",
+    "test access",
+    "sealed access",
+    "heldout access",
+    "results access"
+  ],
+  "required_outputs": [
+    "idea-stage/NOVELTY_FRAGMENT_TRANSPORT_20260815_210000.md",
+    "idea-stage/NOVELTY_FRAGMENT_TRANSPORT_20260815_210000.json",
+    "idea-stage/NOVELTY_FRAGMENT_TRANSPORT.md",
+    "idea-stage/NOVELTY_FRAGMENT_TRANSPORT.json",
+    ".aris/traces/novelty-check/20260815_fragment_transport_sol/"
+  ],
+  "fixed_timestamped_requirement": "The fixed and timestamped files of each format must be byte-identical.",
+  "manifest_write_allowed": false
+}

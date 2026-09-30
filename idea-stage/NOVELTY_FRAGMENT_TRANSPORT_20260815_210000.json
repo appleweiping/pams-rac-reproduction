@@ -1,0 +1,405 @@
+{
+  "schema_version": "aris.novelty_check.fragment_transport.v1",
+  "run_id": "20260815_fragment_transport_sol",
+  "generated_at": "2026-08-15T21:00:00+08:00",
+  "cutoff_date": "2026-08-15",
+  "candidate_id": "fragment-boundary-count-mass-transport",
+  "candidate_title": "Fragment-Boundary Transport for Count-Mass Conservation",
+  "fresh_context": false,
+  "nonfresh_reason": "agent_thread_lifetime_limit",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_family": "openai",
+  "reasoning_effort": "xhigh",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "scope": {
+    "read_only_research": true,
+    "implementation_performed": false,
+    "training_performed": false,
+    "manifest_modified": false,
+    "next_stage_started": false,
+    "server_test_sealed_heldout_results_accessed": false,
+    "primary_or_official_sources_only_for_technical_conclusions": true,
+    "local_papers_directory": "missing",
+    "local_literature_directory": "missing"
+  },
+  "candidate_contract": {
+    "learner_inputs": "Pose-derived supplied-track features, deterministic synthetic cuts/gaps/re-entry, endpoint pose and velocity, and the supplied identity routing key.",
+    "forbidden_learner_labels": [
+      "count labels",
+      "period labels",
+      "density labels",
+      "boundary labels"
+    ],
+    "frozen_component": "The label-restricted supplied-track base response model is frozen; its architecture and periodic representation are not contributions.",
+    "proposed_object": "A small endpoint-conditioned operator whose explicit correction makes intact frozen-response mass agree with the sum of fragmented-response mass plus boundary transport, with wrong-ID pairs as negatives and residual-based abstention.",
+    "original_cheap_kill_gate": "On frozen feature-only train/validation cuts, kill if unseen-cut reconstruction exceeds 5% of intact response mass, wrong-ID transport weight exceeds 10%, effective rank collapses, or a one-person cut changes any byte-identical untouched-person output."
+  },
+  "warp_failure_memory": {
+    "status": "terminally_killed",
+    "immutable_gate2_vector": [246, 55, 144, 50, 66],
+    "constraint": "The fragment-transport candidate must not revive, soften, tune, or reinterpret the failed hard warp-phase selector, its stochastic pack, or its Gate2 thresholds.",
+    "evidentiary_effect": "WARP-PHASE supplies no positive efficacy or novelty evidence for this candidate."
+  },
+  "core_claims": [
+    {
+      "claim_id": "C1",
+      "claim": "Count response should obey a compositional mass law across intact and synthetically fragmented versions of the same supplied identity track.",
+      "queries": [
+        "repetition counting fragmented tracks count mass conservation endpoint correction 2024 2025 2026",
+        "event counting temporal fragments additive density boundary correction video 2024 2025 2026",
+        "video repetition count crop cut consistency density integral additivity fragments",
+        "site:arxiv.org/abs after:2026-02-15 repetition counting fragment gap count conservation endpoint"
+      ],
+      "finding": "Not novel as a principle. RepNet explicitly sums per-frame count contributions p_i/l_i, supervised RAC density methods sum density, and ICCV 2025 Video Individual Counting derives inflow/outflow density by subtracting shared from global density and sums inflow over time. No checked source applies the exact law to frozen supplied-track RAC fragments with an endpoint residual operator.",
+      "novelty_assessment": "low"
+    },
+    {
+      "claim_id": "C2",
+      "claim": "Endpoint pose and velocity can drive a learned transport correction over a cut or gap while preserving identity isolation.",
+      "queries": [
+        "Automated repair of fragmented tracks with 1D CNNs Tekin Image and Vision Computing 101 103982",
+        "tracklet association gap interpolation endpoint motion re-identification 2024 2025 2026",
+        "occlusion fragmented tracks re-entry wrong-ID negative endpoint velocity",
+        "site:arxiv.org/abs after:2026-02-15 tracklet gap filling re-entry endpoint state uncertainty"
+      ],
+      "finding": "Mechanistically crowded. Tekin et al. learn corrections over linear interpolation from left/right track fragments and the gap; OC-SORT's observation-centric re-update reconstructs a virtual trajectory across occlusion; TPTrack links fragments and interpolates gaps; Deep OC-SORT adds appearance association. These repair geometry or association rather than frozen repetition-response mass, but they make endpoint/gap correction itself non-novel.",
+      "novelty_assessment": "low"
+    },
+    {
+      "claim_id": "C3",
+      "claim": "Synthetic cuts/gaps, intact-versus-fragment consistency, and wrong-ID negatives provide label-free supervision for the transport operator.",
+      "queries": [
+        "self-supervised temporal cut consistency synthetic gaps intact fragment conservation",
+        "temporal crop consistency action counting sum fragment count",
+        "cut paste temporal consistency missing interval video repetition self supervision",
+        "site:arxiv.org/abs after:2026-02-15 temporal crop cut consistency repetition counting"
+      ],
+      "finding": "The exact construction was not found, but its ingredients are standard. PAMS already learns skeleton periodic representations through intra-video temporal cycle consistency and cross-video negatives; tracking/re-identification uses mismatched identities as negatives; synthetic crop/cut consistency is a common self-supervision pattern. The intact frozen response is a pseudo-target, not ground truth, and can preserve base bias.",
+      "novelty_assessment": "low_to_moderate_exact_conjunction_only"
+    },
+    {
+      "claim_id": "C4",
+      "claim": "A transport residual can trigger abstention or an interval when a gap is not identifiable.",
+      "queries": [
+        "selective prediction abstention tracklet association gap uncertainty 2024 2025 2026",
+        "uncertainty abstain fragmented trajectory repair endpoint states",
+        "repetition counting abstention uncertain period interval",
+        "site:arxiv.org/abs after:2026-02-15 selective prediction temporal partial observability abstention"
+      ],
+      "finding": "No checked RAC paper was found with this exact residual, but abstention and risk-coverage evaluation are mature generic mechanisms, including 2026 selective-prediction work under ambiguity and partial observation. Residual thresholding is a safety policy, not a standalone method novelty.",
+      "novelty_assessment": "low"
+    }
+  ],
+  "query_coverage": {
+    "core_claim_count": 4,
+    "queries_per_claim": 4,
+    "total_core_queries": 16,
+    "covers_2024_2026": true,
+    "covers_last_six_months_arxiv_from": "2026-02-15",
+    "additional_exact_source_queries": [
+      "MultiCounter L_t empty invisible frames joint detect track count",
+      "MultiCounter+ 10.1109/TCSVT.2026.3670243 spatial-temporal consistency long-short period",
+      "RepNet p_i l_i sum per frame count",
+      "OC-SORT observation-centric re-update virtual trajectory occlusion",
+      "PAMS PAMS-TCC method related work multi-expert consensus",
+      "TWCRAC time-window-cycle temporal consistency local periodic statistics",
+      "Video Individual Counting for Moving Drones shared density inflow outflow sum"
+    ],
+    "negative_search_result": "No exact isomorph containing all five elements—synthetic cut/gap, endpoint-state response transport, intact mass conservation, wrong-ID negative, and residual abstention—was found in the bounded searches. This is absence in the checked set, not proof of firstness."
+  },
+  "primary_source_ledger": [
+    {
+      "source_id": "S01",
+      "work": "Counting Out Time: Class Agnostic Video Repetition Counting in the Wild (RepNet)",
+      "year": 2020,
+      "primary_urls": [
+        "https://arxiv.org/abs/2006.15418",
+        "https://research.google/blog/repnet-counting-repetitions-in-videos/"
+      ],
+      "reviewed_scope": "Abstract and official method explanation, including per-frame period l_i, periodicity p_i, per-frame contribution p_i/l_i, and summation to a video count.",
+      "boundary": "Occupies count additivity and synthetic temporal training; it does not learn fragment-boundary transport."
+    },
+    {
+      "source_id": "S02",
+      "work": "MultiCounter: Multiple Action Agnostic Repetition Counting in Untrimmed Videos",
+      "year": 2024,
+      "primary_urls": [
+        "https://doi.org/10.3233/FAIA240494",
+        "https://arxiv.org/abs/2409.04035"
+      ],
+      "reviewed_scope": "Abstract, related work, and method/task definition. It jointly detects, tracks, localizes periodic boundaries, and counts per instance; L_t^k is empty when instance k is invisible due to occlusion or temporal absence.",
+      "boundary": "Occupies MRAC, per-identity outputs, and explicit invisible-frame semantics, not fragment-response repair."
+    },
+    {
+      "source_id": "S03",
+      "work": "MultiCounter+: Toward Efficient and Robust Multi-Instance Repetitive Action Counting",
+      "year": 2026,
+      "primary_urls": [
+        "https://ieeexplore.ieee.org/document/11421441/",
+        "https://doi.org/10.1109/TCSVT.2026.3670243"
+      ],
+      "reviewed_scope": "Official IEEE abstract and introduction: mixed spatiotemporal interaction, task-specific heads with spatial-temporal consistency and long-short period awareness, MultiRep supervision, and large-scale synthetic pretraining.",
+      "access_caveat": "The full IEEE method text was not independently retrievable. The task-supplied Siamese-query/dynamic-update characterization is therefore treated fail-closed as an occupied boundary, not represented as independently reverified detail.",
+      "boundary": "Blocks identity-consistency, robust multi-instance, synthetic-pretraining, and variable-period first claims."
+    },
+    {
+      "source_id": "S04",
+      "work": "Count What Repeats: Period-Adaptive Multi-Scale Consistency for Self-Supervised Repetitive Action Counting (PAMS)",
+      "year": 2026,
+      "primary_urls": [
+        "https://openaccess.thecvf.com/content/CVPR2026F/html/Gao_Count_What_Repeats_Period-Adaptive_Multi-Scale_Consistency_for_Self-Supervised_Repetitive_Action_CVPRF_2026_paper.html",
+        "https://openaccess.thecvf.com/content/CVPR2026F/papers/Gao_Count_What_Repeats_Period-Adaptive_Multi-Scale_Consistency_for_Self-Supervised_Repetitive_Action_CVPRF_2026_paper.pdf"
+      ],
+      "reviewed_scope": "Abstract, method summary, and related work: PAMS-TCC aligns phases within video at multiple temporal scales, uses temporal/cross-video discrimination, and uses parameterized inference experts for consensus.",
+      "boundary": "Occupies pose/skeleton self-supervision, temporal cycle consistency, cross-video negatives, and multi-scale tempo robustness; not fragment transport."
+    },
+    {
+      "source_id": "S05",
+      "work": "TWCRAC",
+      "year": 2026,
+      "primary_urls": [
+        "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6630216"
+      ],
+      "reviewed_scope": "Accessible primary abstract/record: time-window-cycle framing, intra-video temporal cycle consistency, local periodic statistics, dynamic thresholds, pose, and non-stationary motion.",
+      "access_caveat": "Full-method and related-work text remained unavailable; exact overlap cannot be cleared.",
+      "boundary": "Fail-closed against broad temporal-window consistency or local-periodicity claims."
+    },
+    {
+      "source_id": "S06",
+      "work": "Automated repair of fragmented tracks with 1D CNNs",
+      "year": 2020,
+      "primary_urls": [
+        "https://doi.org/10.1016/j.imavis.2020.103982"
+      ],
+      "reviewed_scope": "Publisher abstract and method excerpts: encode the left fragment, untracked gap, and right fragment; learn correction deltas over linear interpolation using 1D CNN/GRU features; evaluate geometric gap repair.",
+      "boundary": "The closest mechanism prior for learned fragment-boundary correction. It repairs boxes/trajectory geometry, not repetition-response mass."
+    },
+    {
+      "source_id": "S07",
+      "work": "Observation-Centric SORT: Rethinking SORT for Robust Multi-Object Tracking",
+      "year": 2023,
+      "primary_urls": [
+        "https://openaccess.thecvf.com/content/CVPR2023/html/Cao_Observation-Centric_SORT_Rethinking_SORT_for_Robust_Multi-Object_Tracking_CVPR_2023_paper.html",
+        "https://arxiv.org/abs/2203.14360"
+      ],
+      "reviewed_scope": "Abstract and method description of observation-centric re-update: a virtual trajectory between the last observation and reappearance repairs accumulated Kalman state error across occlusion.",
+      "boundary": "Occupies observation-endpoint re-update over gaps, but not counting mass."
+    },
+    {
+      "source_id": "S08",
+      "work": "TPTrack: Global trajectory optimization for fragmented tracks",
+      "year": 2024,
+      "primary_urls": [
+        "https://doi.org/10.1016/j.compeleceng.2024.109078"
+      ],
+      "reviewed_scope": "Publisher abstract: global fragment linking plus Gaussian-process interpolation for missing detections.",
+      "boundary": "Occupies fragment association and gap interpolation, not response-mass conservation."
+    },
+    {
+      "source_id": "S09",
+      "work": "Deep OC-SORT: Multi-Pedestrian Tracking by Adaptive Re-Identification",
+      "year": 2023,
+      "primary_urls": [
+        "https://arxiv.org/abs/2302.11813"
+      ],
+      "reviewed_scope": "Abstract/method boundary: adaptive appearance association and re-identification extend observation-centric tracking.",
+      "boundary": "Makes identity mismatch rejection and re-entry association established tracking components."
+    },
+    {
+      "source_id": "S10",
+      "work": "Video Individual Counting for Moving Drones",
+      "year": 2025,
+      "primary_urls": [
+        "https://openaccess.thecvf.com/content/ICCV2025/html/Fan_Video_Individual_Counting_for_Moving_Drones_ICCV_2025_paper.html",
+        "https://arxiv.org/abs/2503.10701"
+      ],
+      "reviewed_scope": "Abstract, related work, and method: SDNet estimates shared density maps between consecutive frames, subtracts them from global density maps to derive inflow/outflow maps, then sums inflow across frames for unique-person count.",
+      "boundary": "The strongest adjacent conservation prior: learned temporal density decomposition and count accumulation are already explicit, though the task is unique-person counting rather than repetition fragments."
+    },
+    {
+      "source_id": "S11",
+      "work": "Density-Based Flow Mask Integration via Deformable Convolution for Video People Flux Estimation",
+      "year": 2024,
+      "primary_urls": [
+        "https://openaccess.thecvf.com/content/WACV2024/html/Wan_Density-Based_Flow_Mask_Integration_via_Deformable_Convolution_for_Video_People_WACV_2024_paper.html"
+      ],
+      "reviewed_scope": "Abstract, introduction, and related-work boundary: density-based inflow/outflow estimation for unique video people flux without relying on stable MOT identities.",
+      "boundary": "Further weakens any broad claim to count-flow conservation or count repair under occlusion."
+    },
+    {
+      "source_id": "S12",
+      "work": "Distribution-Free Sequential Prediction with Abstentions",
+      "year": 2026,
+      "primary_urls": [
+        "https://proceedings.mlr.press/v336/yu26a.html"
+      ],
+      "reviewed_scope": "Official PMLR abstract and method statement for abstaining prediction with explicit error/abstention tradeoffs.",
+      "boundary": "Abstention and error-coverage tradeoffs are generic established machinery, not a RAC novelty."
+    },
+    {
+      "source_id": "S13",
+      "work": "CHASE: Competing Hypotheses for Ambiguity-Aware Selective Prediction",
+      "year": 2026,
+      "primary_urls": [
+        "https://arxiv.org/abs/2605.01346"
+      ],
+      "reviewed_scope": "Primary arXiv abstract/method: structured temporal hypothesis margins drive abstention under partial observability and are evaluated with coverage-constrained risk.",
+      "boundary": "Makes residual/margin-based abstention under temporal ambiguity an occupied generic design pattern."
+    },
+    {
+      "source_id": "S14",
+      "work": "Recent-six-month arXiv sweep",
+      "year": 2026,
+      "primary_urls": [
+        "https://arxiv.org/abs/2603.12703",
+        "https://arxiv.org/abs/2605.09904"
+      ],
+      "reviewed_scope": "VCBench and TOC-Bench abstracts for streaming count state and identity consistency across occlusion/reappearance.",
+      "boundary": "They are diagnostic benchmarks, not isomorphic methods; they confirm that identity-sensitive counting and temporal state maintenance are active 2026 topics."
+    }
+  ],
+  "closest_prior_analysis": [
+    {
+      "rank": 1,
+      "prior": "Tekin et al. 2020 fragmented-track repair",
+      "collision": "Left/right endpoint fragments plus a gap are encoded to learn a correction over interpolation.",
+      "remaining_delta": "Correct a frozen RAC response measure rather than missing box coordinates."
+    },
+    {
+      "rank": 2,
+      "prior": "Video Individual Counting for Moving Drones, ICCV 2025",
+      "collision": "Learns a temporal shared/global density decomposition and sums a conserved count flow.",
+      "remaining_delta": "Same-identity synthetic track fragments and endpoint-conditioned boundary residual rather than adjacent-frame pedestrian inflow/outflow."
+    },
+    {
+      "rank": 3,
+      "prior": "RepNet and density-based RAC",
+      "collision": "A per-frame count measure is summed; additivity is already inherent in the representation.",
+      "remaining_delta": "Explicitly diagnose and correct non-additivity introduced by fragment boundaries in a frozen model."
+    },
+    {
+      "rank": 4,
+      "prior": "OC-SORT, TPTrack, Deep OC-SORT, and tracklet/re-ID work",
+      "collision": "Gap bridging, observation re-update, interpolation, re-entry, and identity association are established.",
+      "remaining_delta": "No geometry reconstruction or tracker replacement; only response-space correction under supplied identities."
+    },
+    {
+      "rank": 5,
+      "prior": "PAMS and TWCRAC",
+      "collision": "Pose-driven temporal/cycle consistency and local non-stationary periodic structure are occupied.",
+      "remaining_delta": "Fragment-boundary conservation of a frozen response rather than representation learning or phase alignment."
+    }
+  ],
+  "exact_isomorph_check": {
+    "synthetic_cut_or_gap": true,
+    "endpoint_state_transport_correction": true,
+    "intact_response_mass_conservation": true,
+    "wrong_identity_negative": true,
+    "residual_abstention": true,
+    "all_five_in_one_checked_primary_method_found": false,
+    "confidence": "moderate",
+    "caveat": "The IEEE MultiCounter+ full method and TWCRAC full method were not retrievable. Their occupied boundaries were handled conservatively; the negative search cannot license a first claim."
+  },
+  "obvious_combination_assessment": {
+    "is_obvious_combination_risk_high": true,
+    "judgment": "Yes. As currently specified, the method is a straightforward composition of learned gap repair, additive/density count conservation, intact-versus-augmentation self-consistency, mismatched-identity negatives, and selective abstention. The exact conjunction appears unreported in the checked set, but novelty is not established by checklist conjunction.",
+    "what_would_change_the_judgment": "A nontrivial conservation identity or identifiability result, and evidence that endpoint transport beats matched reconstruct-then-count, gap-length/cut-position, generic residual-MLP, and crop-consistency baselines on source-disjoint unseen cut families while improving hidden-label count error rather than merely reproducing the frozen model's bias."
+  },
+  "precise_delta": "The only defensible residual is a failure-aware diagnostic/correction for a frozen per-track RAC response: on the same supplied identity, learn from intact-versus-synthetically cut pose features an endpoint-conditioned response-space boundary term; reject mismatched identities and abstain when the residual is unidentifiable. It is not a new tracker, re-ID method, count-additivity principle, density law, temporal-consistency principle, or abstention method.",
+  "fatal_risks": [
+    "Pseudo-target tautology: the operator can simply learn the frozen base model's intact-minus-fragments residual, preserving or amplifying a biased counter.",
+    "Shortcut leakage: gap length, cut position, padding, fragment length, or boundary preprocessing may predict the residual without learning motion transport.",
+    "Non-identifiability: endpoint pose and velocity do not determine how many cycles occurred in a long or phase-ambiguous missing interval.",
+    "Trivial identity gate: because supplied identity is already the routing key, wrong-ID negatives may only teach an explicit key mismatch rather than meaningful identity isolation.",
+    "Composition rejection: reviewers can reasonably characterize the method as Tekin/OC-SORT-style gap correction plus RepNet/density additivity plus PAMS-style consistency plus a generic reject option.",
+    "Synthetic-to-real gap: success on artificial feature cuts does not establish robustness to detector failures, ID switches, or predicted-track fragmentation.",
+    "Measure degeneracy: if the frozen response is already nearly additive, the learned term reduces to window-edge calibration; if it is not additive, conservation may force agreement with a defective measure.",
+    "Unresolved primary access: full MultiCounter+ and TWCRAC methods were not available, so even the narrow residual cannot receive novelty clearance."
+  ],
+  "allowed_claims": [
+    "We study a label-restricted diagnostic for compositional failure of a frozen per-track repetition response under deterministic synthetic fragmentation of supplied identity tracks.",
+    "The learner uses no count, period, density, or boundary labels; this statement must not be shortened to annotation-free because pose/tracks and source datasets may carry supervision.",
+    "If a predeclared gate passes, an endpoint-conditioned response correction reduced intact-versus-fragment discrepancy beyond matched simple baselines on source-disjoint unseen cut families.",
+    "If separately demonstrated, residual-based rejection improved a predeclared risk-coverage metric under synthetic gap ambiguity.",
+    "The contribution, if any, is a bounded failure diagnostic/correction for supplied tracks, not a tracker or base counter."
+  ],
+  "forbidden_claims": [
+    "first fragmentation-robust repetitive action counter",
+    "first multi-person or per-identity repetitive action counter",
+    "first use of count additivity, density integration, mass conservation, temporal flow, or crop consistency",
+    "first track repair, gap interpolation, occlusion recovery, re-entry handling, or re-identification method",
+    "first wrong-ID contrastive negative or first abstaining/selective predictor",
+    "novel endpoint-state transport without direct separation from Tekin, OC-SORT, TPTrack, and reconstruct-then-count baselines",
+    "annotation-free, supervision-free, label-free system, or end-to-end MRAC",
+    "robustness to real tracker fragmentation, ID switches, or predicted tracks",
+    "state of the art, improved counting accuracy, real-world efficacy, or any result claim before a clean evaluator-only gate",
+    "novelty inferred from the absence of an exact five-term phrase or from the failed WARP-PHASE experiment"
+  ],
+  "minimum_next_gate": {
+    "authorization": "NOT_AUTHORIZED_BY_THIS_REVIEW; use only if the project owner explicitly reopens the idea as a diagnostic rather than a primary novelty claim.",
+    "data_boundary": "Frozen feature-only train/validation tracks with source-disjoint split and predeclared deterministic cut/gap families; learner cannot see count, period, density, boundary, evaluator labels, or WARP artifacts.",
+    "comparators": [
+      "raw sum of fragment responses",
+      "gap-length and cut-position only regressor",
+      "linear endpoint correction",
+      "parameter-matched endpoint MLP",
+      "pose interpolation then frozen-base recount",
+      "generic crop/cut consistency objective",
+      "residual-threshold abstention without learned transport"
+    ],
+    "shortcut_and_collapse_controls": [
+      "shuffle endpoint pose/velocity while preserving gap length and cut position",
+      "remove or permute supplied identity keys",
+      "swap left/right endpoints and reverse time where valid",
+      "hold out entire cut families, gap-length ranges, actions, and source videos",
+      "measure effective rank and constant/zero correction collapse",
+      "audit whether gap/cut metadata alone recovers the gain"
+    ],
+    "hard_kill_rules": [
+      "Kill if unseen-cut reconstruction error exceeds 5% of intact frozen-response mass.",
+      "Kill if wrong-ID endpoint pairs receive more than 10% transport weight.",
+      "Kill on effective-rank collapse or constant/gap-only solution.",
+      "Kill if cutting one person changes any byte-identical output for untouched people.",
+      "Kill unless the proposed operator beats the best matched simple comparator on every predeclared unseen-cut family, not just the mean.",
+      "Kill if evaluator-only hidden count labels show no improvement over raw fragments and interpolate-then-count, or if matching the intact frozen response worsens true count error.",
+      "Kill if abstention does not improve the predeclared risk-coverage curve over residual-threshold and confidence baselines at the same coverage."
+    ],
+    "novelty_exit_rule": "Even a pass only supports a diagnostic contribution. Reconsider method novelty only if the gain survives all shortcut controls and the learned correction cannot be reduced empirically or mathematically to tracking reconstruction, scalar residual calibration, or ordinary crop consistency."
+  },
+  "scorecard": {
+    "scale": 10,
+    "exact_conjunction_unreported": 1.1,
+    "conceptual_non_obviousness": 0.4,
+    "separation_from_closest_priors": 0.5,
+    "primary_evidence_completeness": 0.6,
+    "claim_defensibility": 0.7,
+    "falsifiability_and_gate_quality": 0.6,
+    "total": 3.9
+  },
+  "verdict": {
+    "recommendation": "ABANDON",
+    "code": "ABANDON_AS_PRIMARY_METHOD_NOVELTY_RETAIN_ONLY_AS_BOUNDED_DIAGNOSTIC",
+    "score_10": 3.9,
+    "confidence": "high_for_obvious_combination_risk_moderate_for_exact_absence",
+    "rationale": "No exact five-part isomorph was found, but each substantive ingredient and the two central bridges—fragment endpoint repair and count/density conservation—already have strong primary priors. Their combination is an evident task transfer, full access to two 2026 near neighbors is incomplete, and the frozen-response target is scientifically vulnerable to tautology. This is not sufficient ICASSP method novelty."
+  },
+  "input_hashes": [
+    {"path": "idea-stage/PIVOT_CANDIDATE_UNION.json", "sha256": "8c1552da0166d02ab565e5b4072fda5cc2a36a1acb46f3d58ccdb418dc33e652", "bytes": 41523},
+    {"path": "idea-stage/PIVOT_IDEA_JURY.json", "sha256": "cac5b3d0217854d886223934724075f2cadd5a2b08f866bc1194ec4f5b09f800", "bytes": 26717},
+    {"path": "idea-stage/IDEA_REPORT.md", "sha256": "6105bcc49d1a4756b7927e87f02d3b38d23ed0d6115f344409d7d8a68c0d2610", "bytes": 14168},
+    {"path": "idea-stage/NOVELTY_CHECK.json", "sha256": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5", "bytes": 56102},
+    {"path": "idea-stage/RESEARCH_REVIEW.json", "sha256": "fbc2462303c3ddcb4b23ef4cbf4f81b01a863ff433c6a58dec3f8cd99790caa3", "bytes": 20305},
+    {"path": "CLAIMS_FROM_RESULTS_WARP_PHASE.json", "sha256": "82b3cd6b687d7a4aee8ef3b9c5c6e8159c2a1ee68d75bf94b85bc7430676bb85", "bytes": 14247},
+    {"path": "CLAIMS_FROM_RESULTS_WARP_PHASE.md", "sha256": "f2786fc8adc1a688a1973dfc78e5526b0efd0ad961220cf662713baa83731b3b", "bytes": 10744},
+    {"path": "EXPERIMENT_AUDIT_WARP_PHASE.json", "sha256": "457d09da6b4c7c7a9e7734e21bc3564f2d2a66dc610cc549fc70203b7fdfd7ed", "bytes": 17314},
+    {"path": "EXPERIMENT_AUDIT_WARP_PHASE.md", "sha256": "770ea5d9c86fce3a88a1f859434edeec893eec2d1b326cf95ec33a6112ac8e7c", "bytes": 15212},
+    {"path": "refine-logs/PIPELINE_SUMMARY.md", "sha256": "111972fc1b6a3e6cffdd1600f5772071510346207e9a65409ff319ed3e9e3caa", "bytes": 5864}
+  ],
+  "limitations": [
+    "This continuation is not fresh independent review; same-family output is provisional.",
+    "The bounded search cannot prove universal absence.",
+    "The MultiCounter+ and TWCRAC full method texts were inaccessible, so the review fails closed rather than clearing overlap.",
+    "No implementation, training, artifact evaluation, or empirical result was performed."
+  ]
+}

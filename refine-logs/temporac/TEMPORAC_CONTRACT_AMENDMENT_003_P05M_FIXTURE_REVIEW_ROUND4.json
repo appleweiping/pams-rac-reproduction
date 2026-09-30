@@ -1,0 +1,192 @@
+{
+  "acceptance_status": "provisional",
+  "agent_id": "/root/temporac_p05m_amendment_review",
+  "amendment": {
+    "fixed_alias_byte_identical": true,
+    "fixed_json_path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.json",
+    "fixed_markdown_path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE.md",
+    "json_bytes": 114825,
+    "json_sha256": "14d59552242965a717f1162208770cb8ded9ebce9f7e060f904ba327617a052a",
+    "markdown_bytes": 40558,
+    "markdown_sha256": "a6b644aaaa29cf6c0423cdd3b287b183a88a9f23cbee3a04afc6db932a4d9005",
+    "timestamped_json_path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_20260816_164801.json",
+    "timestamped_markdown_path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_20260816_164801.md"
+  },
+  "authoritative": false,
+  "authority": {
+    "capability": false,
+    "claims": false,
+    "data_access": false,
+    "evaluator": false,
+    "g5a": false,
+    "gate": false,
+    "git": false,
+    "gpu": false,
+    "implementation": false,
+    "k7": false,
+    "launch": false,
+    "manifest": false,
+    "p0": false,
+    "p1": false,
+    "p2": false,
+    "p2_metric": false,
+    "p3": false,
+    "paper_claim": false,
+    "results": false,
+    "s0": false,
+    "server": false,
+    "test": false,
+    "training": false
+  },
+  "authorizes": [],
+  "blockers": [],
+  "blocking_issue_count": 0,
+  "canonical_markdown": {
+    "bytes": 23690,
+    "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_003_P05M_FIXTURE_REVIEW_ROUND4.md",
+    "sha256": "4fe4e173c98e5f84257af604a18001d6139d27cbcb7c508508828df408440467"
+  },
+  "checks": [
+    {
+      "check": "R3-B1 FD-3 process attestation and work isolation",
+      "result": "PASS",
+      "witness": "Four role-specific anonymous channels bind complete actual post-scoring module/native/sandbox state and exact stdout through parent-observed EOF; four distinct read-only empty mounts bind initial/final identity and eliminate the former side channel."
+    },
+    {
+      "check": "R3-B2 P2 verifier executable identity",
+      "result": "PASS",
+      "witness": "The only legal P2 closure is the exact candidate-snapshot 18-member preimage; members are elementwise equal and both roots are recomputed equal. PASS and capture entry points are in member 18."
+    },
+    {
+      "check": "noncircular outer capture",
+      "result": "PASS",
+      "witness": "Nested gate PASS is inert alone; only the external post-exit six-key CAPTURED_COMPLETE bundle can transition P2, and the capture implementation is in the reviewed runner closure."
+    },
+    {
+      "check": "plan/tracker and inner receipt semantics",
+      "result": "PASS",
+      "witness": "The hash-bound v2 overlay makes p05m-gate-capture-bundle.v1 the sole named-stage input. The legacy six-key receipt is mandatory subordinate evidence and never sufficient."
+    },
+    {
+      "check": "K7 prestart ordering",
+      "result": "PASS",
+      "witness": "All bundle, review, snapshot, closure, DAG, runtime, command, process, mount, observation, S0/G5a/grant equalities are validated before evaluator construction or consumption; only successful OS creation consumes."
+    },
+    {
+      "check": "historical/fresh separation and no self-lock",
+      "result": "PASS",
+      "witness": "Historical hashes are provenance only; current aliases are absent from their own basis; the future candidate index has no self hash and requires a separate fresh review."
+    },
+    {
+      "check": "science and non-expansion",
+      "result": "PASS",
+      "witness": "F20/F21 signs and hierarchy, 288 rows, component order, ordered seeds, 10000 paired draws, 17 attacks, thresholds, resources, jobs, blocks and claim count are unchanged."
+    }
+  ],
+  "closure_witness": {
+    "ast_dynamic_import_or_exec_calls": 0,
+    "attestation_transport_contract_sha256": "f01223582fe6ac29112ead3cf172f6ea04664a84a202b30668a92774a238ba47",
+    "dag_acyclic": true,
+    "dag_edge_count": 34,
+    "dag_edges_match_declared": true,
+    "evaluator_dependency_contract_sha256": "1f1747012f047d8db69944391f3a63e11ada17edc163697608d3aed6f2758f6c",
+    "gate_capture_bundle_contract_sha256": "46bb12eba46483b4846db41bcd67f437cc4965e74a94890f132b4aa14a8d9bcf",
+    "historical_audit_basis_sha256": "9f2c09addedd942e5781a0823c2b359ce3872bdcb12df62c84d2325316f2fb03",
+    "historical_production_closure_preimage_bytes": 316199,
+    "historical_production_closure_sha256": "dfcf258b13aa571d3636101f09e66c9d7889a0f09dd88515f4c332ae2d662943",
+    "module_origin_count": 17,
+    "p2_verifier_candidate_state": "NOT_MATERIALIZED_PENDING_IMPLEMENTATION_AND_FRESH_REVIEW",
+    "p2_verifier_closure_contract_sha256": "d297372d44e60e7c2443c6295f99ef6cfed3afe7e21b4d993ad81e9cdd7396d9",
+    "p2_verifier_member_count_when_materialized": 18,
+    "plan_tracker_semantic_rebinding_sha256": "48770609fe6ecbbe8ee456b9c046ab5fb5e8f87e06d1fbe00fc1771b3f7c7e90",
+    "production_dependency_dag_sha256": "e3a6170a5d54a3bd9373939351caabeb70cbaeef5695c5aa26b3de94bb261073",
+    "reference_runtime_contract_sha256": "3343fdcf99eba48c3c21ad2b65008855cd398cdfa04ed66d7a9ee634e9a32a3d",
+    "reference_source_bytes": 11571,
+    "reference_source_sha256": "b23bf344a10f84a583c38e2326efd5ca70d4c4462fbf76715cd32b9afd20922f",
+    "runtime_lock_contract_sha256": "bff68eb3db94c4bf5e56e5ba8e2d6f1e961305f5752e6ce748d295f70eb2ba0a",
+    "sandbox_profile_contract_sha256": "1c6be7154c6b8a5727fc1bc22e83b6796855614990a1c778819d9e6c17be5c2a"
+  },
+  "date": "2026-08-16",
+  "executor_family": "openai",
+  "executor_model": "gpt-5.6-sol",
+  "family_relation": "same",
+  "final_verdict": "ACCEPT",
+  "fresh_reread": true,
+  "independence_verified": false,
+  "input_integrity": {
+    "amendment_fixed_timestamped_byte_identical": true,
+    "amendment_json_strict_utf8_no_bom_no_cr_one_lf": true,
+    "applicable_protocol_mirror_count": 6,
+    "declared_contract_commitments_match": 16,
+    "extra_current_source_context_count": 9,
+    "filesystem_historical_members_checked": 60,
+    "filesystem_historical_members_mismatched": 0,
+    "historical_virtual_provenance_members": 5,
+    "plan_sha256": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e",
+    "proposal_aliases_byte_identical": true,
+    "proposal_sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391",
+    "research_contract_sha256": "3e037a2f74c49dd62e596dc7b875d94216e45b7f693b80a7afb6a60f8244367b",
+    "round3_review_json_sha256": "35d8640283a75efef7c0b4fe6a53f7cba803ceb3d49dc58dd7f680e0102700be",
+    "round3_review_markdown_sha256": "7055c41896a728d7612e352b390d8e8a02c040a1bfe086a8a51dc162a3e734b7",
+    "source_closure_members_checked": 17,
+    "temporac_tests_checked": 19,
+    "tracker_sha256": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b"
+  },
+  "model": "gpt-5.6-sol",
+  "no_actions_taken": {
+    "amendment_modified": false,
+    "canonical_docs_modified": false,
+    "code_modified": false,
+    "data_accessed": false,
+    "experiments_started": false,
+    "git_modified": false,
+    "manifest_modified": false,
+    "server_accessed": false,
+    "tests_modified": false,
+    "training_started": false
+  },
+  "numeric_witness": {
+    "attack_expected_sha256": "2e62a7b830f453e0505cdeabb766f8a46c0ab2523321d3b1f933bf7fd2cc5f30",
+    "attack_global_fail_count": 17,
+    "clean_draws_raw_f64le_sha256": "91d1fa29d36ad2e4e41733141d841a756c986b3670617f651315026a7157bdae",
+    "comparator_draw_counts": {
+      "capacity-control": 2300,
+      "global": 3567,
+      "uniform": 4133
+    },
+    "component_order_sha256": "8583d714619e7b1bddc755bac95b91a801a8c97951e382fbfd7f875a70f066f2",
+    "draw_count": 10000,
+    "draw_pair_root_sha256": "49b83785c436d2abd5cbcda617d142922f27ee21a4e17a39f730135add15cf3e",
+    "fixture_input_sha256": "1264779925401d8efeecddefbe7245eca892543e923ec7c19ade08286fa062c9",
+    "materialized_rows_sha256": "759b344fbc7db6ea78b041c84e23ff0fc59733985775be18f6d5c235e8408dbf",
+    "normal_expected_sha256": "50f8376d0ee1e245a8521c7831d6d23635ac8cc74694ceeef1f028c8c48e6622",
+    "raw_index_stream_sha256": "bcfccfc96c2781162e3c973dea8f88478b1912553acc730aa52772947ed8aef1",
+    "route_draws_raw_f64le_sha256": "8a325a51517a7a7669f4f8d4bdfa4d103204383b5d769e19cad409aba5f9e132",
+    "row_count": 288,
+    "stream_seed_u64": 3783362605739069799,
+    "strongest_comparator": "uniform"
+  },
+  "review_independence": "same-family",
+  "review_type": "same-reviewer Round 4 fresh-reread normative continuation",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "same_family_provisional_ceiling": "accepted_specification_for_later_separately_reviewed_implementation_only",
+  "same_reviewer_continuation": true,
+  "scope": [
+    "R3-B1",
+    "R3-B2",
+    "FD3-attestation",
+    "four-role-mount-isolation",
+    "18-member-P2-closure",
+    "gate-capture-noncircularity",
+    "P2-S0-G5a-K7-order",
+    "fixture-science-regression"
+  ],
+  "status": "ACCEPTED_SPECIFICATION_PENDING_IMPLEMENTATION",
+  "summary": {
+    "current_implementation_conforming": false,
+    "future_candidate_fresh_review_required": true,
+    "round3_blockers_closed": 2
+  },
+  "trace_path": ".aris/traces/research-refine/20260816_temporac_p05m_amendment_review_sol/turn-004.response.md"
+}

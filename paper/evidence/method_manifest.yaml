@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0",
+  "document_type": "icassp_method_manifest",
+  "paper_title": "TempoRAC: Identity-Indexed Local Tempo Routing for Multi-Person Repetition Counting",
+  "status": "SYNC-REQUIRED",
+  "submission_eligible": false,
+  "evidence_policy": {
+    "implementation_authority": "collaborator_frozen_commit",
+    "slides_are_method_evidence": false,
+    "current_checkout_is_proposed_method_evidence": false,
+    "unbound_components_must_remain_visible_in_draft": true
+  },
+  "visual_reference_figures": [
+    {
+      "source": "recommend paper/Multi-Person-Tempo-Adaptive-Counting-Introduction-Rounded-TNR.pptx",
+      "sha256": "sha256:29c01239515b9e0a9870ba840de6c087b32a1d46c5687c13c9c88dfdb4383e17",
+      "authority": "visual_reference_only",
+      "implementation_binding": false
+    },
+    {
+      "source": "recommend paper/Multi-Person-Tempo-Adaptive-Counting-Framework-Rounded-TNR.pptx",
+      "sha256": "sha256:dfa86571aa8348eda8fa22a456d49e67179e4effd95b1b3b46b3a3dce69b4593",
+      "authority": "visual_reference_only",
+      "implementation_binding": false,
+      "notation_reconciliation": "M_i is interpreted as a shared-parameter identity-indexed instance with separate state",
+      "candidate_training_terms": "SYNC-REQUIRED"
+    }
+  ],
+  "tracked_implementation_truth": {
+    "checkout_commit": "73cbc4bb9b581f24fbc90f2fe7421bc11e7c7454",
+    "classification": "single_person_dominant_pose_counter",
+    "person_selection": "one dominant pose trajectory",
+    "input_contract": "PoseSequence[T,33,3]",
+    "output_contract": "one scalar CountResult",
+    "multi_person_identity_state": false,
+    "learned_soft_tempo_router": false,
+    "normalized_overlap_add": false,
+    "expert_implementation": "fixed smoothing/peak configurations with hard voting",
+    "claim_ceiling": "cannot evidence the proposed multi-person method"
+  },
+  "proposed_submission_method": {
+    "status": "SYNC-REQUIRED",
+    "implementation_commit": null,
+    "task_contract": {
+      "status": "SYNC-REQUIRED",
+      "input": "identity-indexed pose tracks X_i and validity masks m_i",
+      "primary_output": "person-wise count vector c_hat",
+      "scene_total_role": "derived diagnostic only",
+      "source_anchor": null,
+      "tests": []
+    },
+    "components": [
+      {
+        "id": "shared_pose_encoder",
+        "status": "SYNC-REQUIRED",
+        "intended_role": "shared representation over supplied identity-indexed pose tracks",
+        "source_anchor": null,
+        "tests": []
+      },
+      {
+        "id": "per_identity_state",
+        "status": "SYNC-REQUIRED",
+        "intended_role": "independent temporal state for each supplied identity",
+        "source_anchor": null,
+        "tests": []
+      },
+      {
+        "id": "local_masked_period_estimator",
+        "status": "SYNC-REQUIRED",
+        "intended_role": "window-level masked ACF/FFT period evidence and confidence",
+        "source_anchor": null,
+        "tests": []
+      },
+      {
+        "id": "soft_tempo_router",
+        "status": "SYNC-REQUIRED",
+        "intended_role": "soft routing among shared fast, medium, and slow experts",
+        "source_anchor": null,
+        "tests": []
+      },
+      {
+        "id": "shared_tempo_experts",
+        "status": "SYNC-REQUIRED",
+        "intended_role": "shared experts that emit local count responses",
+        "source_anchor": null,
+        "tests": []
+      },
+      {
+        "id": "response_fusion",
+        "status": "SYNC-REQUIRED",
+        "intended_role": "router-weighted local response fusion",
+        "source_anchor": null,
+        "tests": []
+      },
+      {
+        "id": "normalized_overlap_add",
+        "status": "SYNC-REQUIRED",
+        "intended_role": "boundary-safe reconstruction of one response per identity track",
+        "source_anchor": null,
+        "tests": []
+      },
+      {
+        "id": "single_decode_per_track",
+        "status": "SYNC-REQUIRED",
+        "intended_role": "one final peak decoding pass per identity trajectory",
+        "source_anchor": null,
+        "tests": []
+      }
+    ],
+    "training_objective": {
+      "status": "SYNC-REQUIRED",
+      "declared_terms": [],
+      "weights": {},
+      "gradient_paths": null,
+      "source_anchor": null,
+      "tests": [],
+      "rule": "write only the collaborator-frozen implementation; do not infer routing, continuity, or fallback losses"
+    },
+    "fallback_behavior": {
+      "status": "SYNC-REQUIRED",
+      "definition": null,
+      "source_anchor": null,
+      "tests": []
+    }
+  },
+  "supervision_firewall": {
+    "status": "SYNC-REQUIRED",
+    "permitted_claim_if_complete": "the intended counting objective uses no person-wise count or period annotations",
+    "external_pose_or_tracker_supervision_must_be_disclosed": true,
+    "scopes": {
+      "data_loaders": "SYNC-REQUIRED",
+      "pseudo_labels_and_router_targets": "SYNC-REQUIRED",
+      "auxiliary_losses": "SYNC-REQUIRED",
+      "hyperparameter_tuning": "SYNC-REQUIRED",
+      "checkpoint_selection": "SYNC-REQUIRED",
+      "early_stopping": "SYNC-REQUIRED",
+      "calibration": "SYNC-REQUIRED",
+      "inference": "SYNC-REQUIRED",
+      "pose_estimation": "SYNC-REQUIRED",
+      "detection": "SYNC-REQUIRED",
+      "tracking": "SYNC-REQUIRED",
+      "evaluation": "SYNC-REQUIRED"
+    },
+    "external_supervision_sources": []
+  },
+  "required_submission_evidence": {
+    "collaborator_commit": null,
+    "source_anchors_complete": false,
+    "tests_complete": false,
+    "training_configuration": null,
+    "supervision_disclosure_complete": false,
+    "author_verified_sync_report": null
+  }
+}

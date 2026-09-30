@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "agent_id": "/root/user_revision_citation_audit",
+  "model": "gpt-5.6-sol",
+  "reasoning": "xhigh",
+  "review_independence": "fresh_zero_context_same_family",
+  "acceptance_status": "provisional",
+  "paper_pdf_sha256": "2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
+  "references_bib_sha256": "c84cb6df17ac4133f7c3115e1aa4dcad82e9e850f1ebdc5e6979cbc1cfd917b3",
+  "verdict": "PASS",
+  "generated_at": "2026-08-15T01:30:00+08:00"
+}

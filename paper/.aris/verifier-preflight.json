@@ -1,0 +1,73 @@
+{
+  "verifier_version": "2",
+  "paper_dir": "D:/Project/rac-paper-writing-icassp27/paper",
+  "assurance": "draft",
+  "generated_at": "2026-08-14T14:56:14Z",
+  "any_problem": true,
+  "submission_blocking": false,
+  "overall_assurance": "provisional",
+  "audits": [
+    {
+      "audit": "proof-checker",
+      "status": "STALE",
+      "verdict": "NOT_APPLICABLE",
+      "stale": true,
+      "review_independence": "same-family",
+      "issues": [
+        "trace_path_missing:paper/.aris/traces/proof-audit-icassp/final",
+        "stale:paper/main.pdf:file_gone",
+        "stale:paper/main.tex:file_gone",
+        "stale:paper/preamble.tex:file_gone",
+        "stale:paper/math_commands.tex:file_gone",
+        "stale:paper/sections/0_abstract.tex:file_gone",
+        "stale:paper/sections/1_introduction.tex:file_gone",
+        "stale:paper/sections/3_method.tex:file_gone",
+        "stale:paper/sections/4_experiments.tex:file_gone",
+        "stale:paper/sections/5_conclusion.tex:file_gone"
+      ]
+    },
+    {
+      "audit": "paper-claim-audit",
+      "status": "STALE",
+      "verdict": "BLOCKED",
+      "stale": true,
+      "review_independence": "same-family",
+      "issues": [
+        "trace_path_missing:paper/.aris/traces/paper-claim-audit-icassp/final/",
+        "stale:paper/main.pdf:file_gone",
+        "stale:paper/main.tex:file_gone",
+        "stale:paper/preamble.tex:file_gone",
+        "stale:paper/math_commands.tex:file_gone",
+        "stale:paper/sections/0_abstract.tex:file_gone",
+        "stale:paper/sections/1_introduction.tex:file_gone",
+        "stale:paper/sections/3_method.tex:file_gone",
+        "stale:paper/sections/4_experiments.tex:file_gone",
+        "stale:paper/sections/5_conclusion.tex:file_gone",
+        "stale:paper/figures/icassp_framework.pdf:file_gone",
+        "stale:paper/references.bib:file_gone",
+        "stale:paper/evidence/results_manifest.json:file_gone",
+        "stale:paper/evidence/method_manifest.yaml:file_gone",
+        "stale:paper/evidence/claim_evidence.csv:file_gone",
+        "stale:paper/generated/README.md:file_gone",
+        "stale:CLAIMS_FROM_RESULTS.md:file_gone",
+        "stale:RESULT_TO_CLAIM.json:file_gone"
+      ]
+    },
+    {
+      "audit": "citation-audit",
+      "status": "MISSING_DRAFT_OK",
+      "verdict": "",
+      "stale": false,
+      "review_independence": "unavailable",
+      "issues": []
+    },
+    {
+      "audit": "kill-argument",
+      "status": "MISSING_DRAFT_OK",
+      "verdict": "",
+      "stale": false,
+      "review_independence": "unavailable",
+      "issues": []
+    }
+  ]
+}

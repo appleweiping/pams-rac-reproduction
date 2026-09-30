@@ -1,0 +1,65 @@
+{
+  "audit_skill": "experiment-audit",
+  "venue": "ICASSP 2027",
+  "generated_at": "2026-08-14T21:00:56.8906401+08:00",
+  "verdict": "FAIL",
+  "overall_verdict": "fail",
+  "integrity_status": "fail",
+  "reason_code": "NO_MULTI_PERSON_REAL_GT_EVIDENCE",
+  "summary": "Formal UCFRep dev84 metrics use official real ground truth and recompute correctly, but no MultiRep result bundle or tracked multi-person router/overlap-add implementation exists; no local artifact is eligible for the ICASSP main table.",
+  "evidence_freeze": "26e5b7176f1f7c678391163c3278b5c390d54115",
+  "review_independence": "same-family/provisional",
+  "acceptance_status": "provisional",
+  "agent_id": "/root/icassp_experiment_audit",
+  "verdict_id": "exp-audit-20260814T210056+0800",
+  "checks": {
+    "gt_provenance": {"status": "warn", "details": "Formal dev84 uses digest-bound official UCFRep targets; the core evaluator and some historical artifacts have weaker provenance."},
+    "score_normalization": {"status": "pass", "details": "NMAE uses target denominators; no reported metric self-normalizes by predictions."},
+    "result_existence": {"status": "warn", "details": "All 17 saved evaluations recompute and 47 focused tests pass, but no MultiRep result-manifest instance exists."},
+    "dead_metrics": {"status": "pass", "details": "All five implemented count metrics are called and emitted."},
+    "scope": {"status": "warn", "details": "Evidence is single-person UCFRep dev84; no MultiRep or test105 result exists."},
+    "evaluation_type": {"status": "fail", "details": "No real-GT evaluation exists for the proposed multi-person system."}
+  },
+  "sealed_test105": {
+    "scored": false,
+    "predictions_exist": false,
+    "evaluation_exists": false,
+    "metrics_exist": false,
+    "historical_full_manifest_deserialized": true,
+    "safe_wording": "unscored, not historically untouched"
+  },
+  "main_table_eligibility": {
+    "eligible_local_artifact_count": 0,
+    "multirep_result_bundle_exists": false,
+    "proposed_method_result_exists": false,
+    "eligible": false
+  },
+  "implementation": {
+    "multi_person_person_axis": false,
+    "persistent_identity_state": false,
+    "window_local_soft_router": false,
+    "response_level_expert_fusion": false,
+    "normalized_overlap_add": false,
+    "one_decoder_per_identity": false,
+    "tracked_system": "single-person PAMS reproduction with deterministic hard expert voting"
+  },
+  "claims": [
+    {"id": "R1", "impact": "unsupported"},
+    {"id": "R2", "impact": "needs_qualifier"},
+    {"id": "R3", "impact": "unsupported"},
+    {"id": "R4", "impact": "unsupported"},
+    {"id": "R5", "impact": "unsupported"},
+    {"id": "R6", "impact": "unsupported_for_icassp_table"}
+  ],
+  "audited_input_hashes": {
+    "src/pams/evaluation.py": "sha256:5a0f25f3892a05472014ea402c5baa4b9d2c7d383844c488b8709bdfddb63141",
+    "src/pams/metrics.py": "sha256:7fdfcd540f3cbe19e3f66d076096f093b9e1b4a817e71bb44bc0373a268adc62",
+    "src/pams/training.py": "sha256:dc02986346d581ac20bf4cccdfedc77d9185dd09985285b02210a398aa7d05f2",
+    "src/pams/pose.py": "sha256:e79e9d628685b8703e4dbe68adbe8721e55efb9665b64550c2239d397b9f5c80",
+    "src/pams/types.py": "sha256:78c2ad53e98856425492a1711faa62fc2bb7764767dc48a22f7c4d5e043a3e31",
+    "results/README.md": "sha256:0aeacbb1596448ecc7c8532ee0704f8e0dd0253753c7f2d707896829cbf7535f",
+    "results/dev-negative/summary.json": "sha256:2051ca2712a5e54a6516ceba341ea7db8c1555c27bec54ec386f68f69ae60b9f",
+    "configs/protocols/ucfrep_526.yaml": "sha256:6343cc67b36f33f4303e7d4204d3dbd34a0d35396e148e30450740aa9fe5ef65"
+  }
+}
+

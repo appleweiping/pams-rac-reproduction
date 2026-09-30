@@ -1,0 +1,835 @@
+{
+  "amendment_id": "TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA",
+  "artifact_scope": {
+    "candidate_members": [
+      "temporac.operator-manifest.v4.json",
+      "operator_manifest_schema.json",
+      "environment_lock.json",
+      "replay_witness.json",
+      "candidate_receipt.json"
+    ],
+    "manifest_container": "top-level JSON array",
+    "manifest_row_count": 10368,
+    "purpose": "freeze operator manifest serialization and non-authorizing candidate evidence"
+  },
+  "authority": {
+    "P2": false,
+    "S0": false,
+    "data": false,
+    "gate": false,
+    "git": false,
+    "launch": false,
+    "paper_claim": false,
+    "server": false,
+    "training": false
+  },
+  "canonical_json": {
+    "allow_nan": false,
+    "bom_allowed": false,
+    "duplicate_keys_allowed": false,
+    "encoding": "UTF-8",
+    "ensure_ascii": false,
+    "manifest_top_level": "array",
+    "object_key_order": "lexicographically sorted",
+    "separators": [
+      ",",
+      ":"
+    ],
+    "terminal_lf_count": 1
+  },
+  "candidate_receipt": {
+    "authority_keys": [
+      "P2",
+      "S0",
+      "data",
+      "gate",
+      "git",
+      "launch",
+      "paper_claim",
+      "server",
+      "training"
+    ],
+    "closed_keys": [
+      "authority",
+      "bindings",
+      "blockers",
+      "candidate_status",
+      "members",
+      "p2_status",
+      "s0_status",
+      "schema",
+      "validated_row_count"
+    ],
+    "bindings_closed_keys": [
+      "amendment_002_json_sha256",
+      "amendment_002_md_sha256",
+      "amendment_002_review_json_sha256",
+      "amendment_002_review_md_sha256",
+      "amendment_004_json_sha256",
+      "amendment_004_md_sha256",
+      "amendment_004_review_json_sha256",
+      "amendment_004_review_md_sha256",
+      "generation_project_files",
+      "proposal_sha256",
+      "review_project_files",
+      "runtime_lock_sha256",
+      "source_snapshot_sha256"
+    ],
+    "candidate_status": "FROZEN_CANDIDATE_PENDING_FRESH_IMPLEMENTATION_REVIEW",
+    "generation_additional_read_path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+    "generation_contract_read_paths": [
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.json",
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.md",
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.json",
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.md",
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA.json",
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA.md",
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA_REVIEW_ROUND2.json",
+      "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA_REVIEW_ROUND2.md"
+    ],
+    "generation_project_paths": [
+      "scripts/experiments/generate_temporac_operator_manifest_v4.py",
+      "src/pams/__init__.py",
+      "src/pams/types.py",
+      "src/pams/temporac/__init__.py",
+      "src/pams/temporac/contract.py",
+      "src/pams/temporac/decode.py",
+      "src/pams/temporac/fixtures.py",
+      "src/pams/temporac/hashio.py",
+      "src/pams/temporac/types.py"
+    ],
+    "generation_project_roles": [
+      ["generation-entrypoint"],
+      ["generation-bootstrap"],
+      ["generation-bootstrap"],
+      ["generation-bootstrap"],
+      ["generation-module"],
+      ["generation-module"],
+      ["generation-module"],
+      ["generation-module"],
+      ["generation-module"]
+    ],
+    "generation_repository_read_policy": "read exactly review_project_paths plus generation_additional_read_path plus generation_contract_read_paths; import/execute exactly generation_project_paths; root proposal duplicate, cue.py, preprocess.py, quadrature.py, and all other repository files forbidden",
+    "members_closed_keys": [
+      "environment_lock.json",
+      "operator_manifest_schema.json",
+      "replay_witness.json",
+      "temporac.operator-manifest.v4.json"
+    ],
+    "no_self_hash": true,
+    "ordered_blockers": [
+      "fresh_implementation_review_required",
+      "P2_not_claimed",
+      "S0_not_claimed",
+      "launch_authorization_zero"
+    ],
+    "p2_status": "NOT_CLAIMED",
+    "project_file_record_keys": [
+      "bytes",
+      "path",
+      "roles",
+      "sha256"
+    ],
+    "project_file_role_values": [
+      "generation-bootstrap",
+      "generation-entrypoint",
+      "generation-module",
+      "review-entrypoint",
+      "review-module",
+      "review-read-input"
+    ],
+    "receipt_write_order": "last after all four non-receipt members",
+    "s0_status": "NOT_CLAIMED",
+    "schema": "temporac.operator-manifest-candidate-receipt.v2",
+    "validated_row_count": 10368,
+    "review_project_paths": [
+      "scripts/experiments/generate_temporac_operator_manifest_v4.py",
+      "src/pams/__init__.py",
+      "src/pams/types.py",
+      "src/pams/temporac/__init__.py",
+      "src/pams/temporac/contract.py",
+      "src/pams/temporac/decode.py",
+      "src/pams/temporac/fixtures.py",
+      "src/pams/temporac/hashio.py",
+      "src/pams/temporac/types.py",
+      "src/pams/temporac/gates.py",
+      "src/pams/temporac/nola.py",
+      "tests/__init__.py",
+      "tests/temporac/__init__.py",
+      "tests/temporac/test_gates_fixtures.py",
+      "tests/temporac/test_operator_manifest.py"
+    ],
+    "review_project_roles": [
+      ["review-read-input"],
+      ["review-module"],
+      ["review-module"],
+      ["review-module"],
+      ["review-module"],
+      ["review-module"],
+      ["review-module"],
+      ["review-module"],
+      ["review-module"],
+      ["review-module"],
+      ["review-module"],
+      ["review-module"],
+      ["review-module"],
+      ["review-entrypoint"],
+      ["review-entrypoint"]
+    ]
+  },
+  "current_candidate_evidence": {
+    "candidate_receipt_sha256": "2e457e01166c6151e4edc688e8fd6f981d1278231fcd8c2bc000179f7a825102",
+    "candidate_schema_sha256": "9f4b2ced821e667f950c1f56bbf9adbdc14b2c387c1932953048caf3f747a8cd",
+    "environment_lock_sha256": "709db0943752965524b507dd6340554a8d7d218be125317af0fc8b7748a5a947",
+    "historical_only": true,
+    "manifest_bytes": 15039512,
+    "manifest_sha256": "1f39378d6f7a970b1f183558ed145bd97107f2aeda41902f4736e6778930e1bb",
+    "replay_witness_sha256": "36f60f41ac111a7b05e5f4846464cc774e09bb9faa44feed10be5a4f35418653"
+  },
+  "derived_member_commitments": {
+    "environment_lock.json": {"bytes": 3732, "sha256": "8008df73cc9a807ac5e5262aebc170ae6e01c82b07658575f6207ec7cb0a14fd"},
+    "operator_manifest_schema.json": {"bytes": 3607, "sha256": "3b29937c641274e73d10afd19bea943f28288b3d2851e8a5bf2313d7ea3e0fc3"},
+    "replay_witness.json": {"bytes": 2896, "sha256": "348254cfe64cea35d6e29861755489721ebbbd4031f3ec1c044d7fa24fe38010"},
+    "temporac.operator-manifest.v4.json": {"bytes": 15039512, "sha256": "1f39378d6f7a970b1f183558ed145bd97107f2aeda41902f4736e6778930e1bb"}
+  },
+  "frozen_population": {
+    "amplitudes": [
+      0.6,
+      0.75,
+      1.0
+    ],
+    "cartesian_order": [
+      "gaps",
+      "widths",
+      "amplitudes",
+      "offsets",
+      "layouts"
+    ],
+    "gaps": [
+      4,
+      5,
+      8,
+      16,
+      32,
+      64,
+      127,
+      128,
+      129
+    ],
+    "layouts": [
+      "interior",
+      "left-boundary",
+      "right-boundary",
+      "run-reset"
+    ],
+    "offsets": {
+      "inclusive_max": 31,
+      "inclusive_min": 0
+    },
+    "row_count": 10368,
+    "widths": [
+      1,
+      2,
+      4
+    ]
+  },
+  "implementation_review_protocol": {
+    "fresh_process_identities_must_differ": true,
+    "generation_argv": [
+      "/tmp/venv/bin/python",
+      "scripts/experiments/generate_temporac_operator_manifest_v4.py",
+      "--output",
+      "/out/operator_candidate_v2_20260816"
+    ],
+    "generation_environment_source": "runtime_lock.container_policy.environment",
+    "generation_import_execute_paths_source": "candidate_receipt.generation_project_paths",
+    "generation_read_paths_source": "candidate_receipt.review_project_paths plus generation_additional_read_path plus generation_contract_read_paths",
+    "generation_runtime_lock_sha256": "8008df73cc9a807ac5e5262aebc170ae6e01c82b07658575f6207ec7cb0a14fd",
+    "generation_snapshot_schema": "temporac.operator-generation-snapshot.v1",
+    "distribution_name_normalization": "PEP 503: ASCII lowercase and replace every maximal run matching [-_.]+ with one hyphen",
+    "module_origin_kinds": [
+      "repo-source",
+      "stdlib-source",
+      "stdlib-extension",
+      "distribution-source",
+      "distribution-extension",
+      "builtin",
+      "frozen"
+    ],
+    "module_origin_coverage": "for each phase, exactly every distinct module actually imported from interpreter startup through process exit; no missing, extra, duplicate, empty, or subset inventory",
+    "module_origin_record_keys": ["module_name", "origin_kind", "origin_token", "sha256"],
+    "module_origin_sort": "UTF-8 module-name bytes",
+    "origin_token_rules": {
+      "builtin": "literal builtin token with SHA256(empty bytes)",
+      "distribution-extension": "{DIST:<ASCII normalized name>}/<UTF-8 relative path> with direct raw-file SHA-256",
+      "distribution-source": "{DIST:<ASCII normalized name>}/<UTF-8 relative path> with direct raw-file SHA-256",
+      "forbidden": ["namespace-package", "cache-origin"],
+      "frozen": "literal frozen token with SHA256(empty bytes)",
+      "repo-source": "/work/<ASCII repository path> with direct raw-file SHA-256",
+      "stdlib-extension": "{PYTHON_STDLIB}/<UTF-8 relative path> with direct raw-file SHA-256",
+      "stdlib-source": "{PYTHON_STDLIB}/<UTF-8 relative path> with direct raw-file SHA-256"
+    },
+    "process_argv_preimage": "ASCII(temporac.operator-process-argv.v1)||NUL||concat_in_argv_order(uint64_be(token_utf8_bytes)||token_utf8)",
+    "process_environment_preimage": "ASCII(temporac.operator-process-environment.v1)||NUL||concat_ascii_key_order(uint64_be(key_ascii_bytes)||key_ascii||uint64_be(value_utf8_bytes)||value_utf8)",
+    "process_fresh_identity_preimage": "ASCII(temporac.operator-process-identity.v1)||NUL||uint64_be(boot_id_utf8_bytes)||boot_id_utf8||uint64_be(pid)||uint64_be(process_start_ticks)||launcher_nonce_raw32",
+    "process_keys": ["argv_sha256", "environment_sha256", "exit_code", "fresh_process_identity_sha256", "stderr_sha256", "stdout_sha256"],
+    "process_raw_stream_hash_rule": "stdout_sha256 and stderr_sha256 are direct SHA-256 of captured raw bytes",
+    "project_open_access_order": ["READ", "IMPORT", "EXECUTE"],
+    "project_open_record_keys": ["access", "path", "sha256"],
+    "project_open_sort": "ASCII path first, then fixed READ IMPORT EXECUTE access order; duplicate identical events collapse and conflicting hashes fail",
+    "pytest_keys": ["collected_nodeids_sha256", "failed", "passed", "skipped", "xfailed"],
+    "pytest_nodeid_preimage": "direct SHA-256 of each collected nodeid encoded UTF-8 in pytest collection order followed by LF, with exactly one terminal LF and no prefix",
+    "review_argv": [
+      "/opt/temporac-review/bin/python",
+      "-B",
+      "-P",
+      "-m",
+      "pytest",
+      "-c",
+      "/dev/null",
+      "--rootdir=/work",
+      "-p",
+      "no:cacheprovider",
+      "-q",
+      "tests/temporac/test_gates_fixtures.py",
+      "tests/temporac/test_operator_manifest.py"
+    ],
+    "review_environment": {
+      "CUDA_VISIBLE_DEVICES": "",
+      "HOME": "/nonexistent",
+      "LANG": "C.UTF-8",
+      "LC_ALL": "C.UTF-8",
+      "MKL_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONHASHSEED": "0",
+      "PYTHONNOUSERSITE": "1",
+      "PYTHONPATH": "/work/src",
+      "TZ": "UTC"
+    },
+    "review_environment_forbidden": ["PYTEST_ADDOPTS", "every unlisted host variable"],
+    "review_import_execute_paths_source": "candidate_receipt.review_project_paths positions 2 through 15; position 1 is read-only",
+    "review_runtime_distribution_record_keys": ["bytes", "filename", "installed_tree_sha256", "name", "sha256", "source_url", "version"],
+    "review_runtime_distribution_tree_preimage": "ASCII(temporac.operator-review-distribution-tree.v1)||NUL||concat_global_utf8_path_byte_order(uint64_be(relative_path_bytes)||relative_path_utf8||uint64_be(file_bytes)||raw_file_bytes)",
+    "review_runtime_keys": ["architecture", "base_image", "byteorder", "distribution_records", "platform_system", "python"],
+    "review_runtime_python_executable": "/opt/temporac-review/bin/python and its raw-file SHA-256 must equal review_runtime.python.executable_sha256",
+    "review_runtime_sha256_rule": "SHA-256 of Section 3 canonical bytes of the exact review_runtime object",
+    "review_snapshot_forbidden": ["missing-file", "extra-file", "symlink", "hard-link-alias", "duplicate-normalized-path", ".pyc", "__pycache__", ".pth", "sitecustomize.py", "usercustomize.py", "conftest.py", "pytest-config", "unlisted-file"],
+    "review_snapshot_keys": ["candidate_members", "contract_reads", "project_files", "schema", "tree_sha256"],
+    "review_snapshot_preimage": "ASCII(temporac.operator-review-snapshot.v1)||NUL||concat_global_ascii_path_order(uint64_be(path_bytes)||path_ascii||uint64_be(file_bytes)||raw_file_bytes)",
+    "review_snapshot_schema": "temporac.operator-review-snapshot.v1",
+    "schema": "temporac.operator-implementation-review-evidence.v2",
+    "status_pass_rule": "both generation and review phases conform; exit codes zero; pytest passed positive and failed skipped xfailed all zero; pinned generation replay byte-identical",
+    "top_level_keys": ["candidate_receipt_sha256", "generation_argv", "generation_environment", "generation_module_origins", "generation_process", "generation_project_open_trace", "generation_runtime_lock_sha256", "generation_snapshot_sha256", "pytest", "review_argv", "review_environment", "review_module_origins", "review_process", "review_project_open_trace", "review_runtime", "review_runtime_sha256", "review_snapshot", "schema", "status"],
+    "zero_authority_without_external_review_binding": true
+  },
+  "input_bindings": [
+    {
+      "bytes": 79366,
+      "path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+      "role": "canonical scientific contract",
+      "sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"
+    },
+    {
+      "bytes": 10622,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.md",
+      "role": "accepted operator byte contract",
+      "sha256": "899d6f071c89f898bf3825adfb30a326904f9bc7fe44d44351da8a5d0d9ccb14"
+    },
+    {
+      "bytes": 8963,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY.json",
+      "role": "accepted operator byte contract structured form",
+      "sha256": "d524556f292ec17a155cdcd962cf8a88bea26f32b810ffb7bd8e45744f1c54fc"
+    },
+    {
+      "bytes": 11229,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.md",
+      "role": "same-family provisional normative acceptance",
+      "sha256": "a86da733f3ae048b867ec8b2366a9f0262ca2b390ef08687ca7d710654e8301f"
+    },
+    {
+      "bytes": 9363,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_002_OPERATOR_ROW_KEY_REVIEW_ROUND2.json",
+      "role": "same-family provisional normative acceptance structured form",
+      "sha256": "3730d96eff1d3815499602eaf183774af032c514a588d4e92fe8a1cccf053e64"
+    },
+    {
+      "bytes": 15851,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA_REVIEW_ROUND1.md",
+      "role": "same-thread normative review round 1 revise record",
+      "sha256": "573b49150b4f7ca6f15ec656d0375131c3d8a14214da075ad4d138e4edd71dfd"
+    },
+    {
+      "bytes": 10555,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA_REVIEW_ROUND1.json",
+      "role": "same-thread normative review round 1 revise record structured form",
+      "sha256": "918ac01d43e193b9204edff7cb5f5e7d148fa12b180157dea2192a2af76eb482"
+    },
+    {
+      "bytes": 35619,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_004_OPERATOR_MANIFEST_SCHEMA.md",
+      "role": "amendment markdown",
+      "sha256": "ece0025f4844dc04f838b5ec7f629a7fb3b10bd92e6f0bb3d5fe941cbcc83c82"
+    },
+    {
+      "bytes": 17717,
+      "path": "scripts/experiments/generate_temporac_operator_manifest_v4.py",
+      "role": "generation entrypoint",
+      "sha256": "ffc5b83025375b2c68376f093becb63905504e15be45237e965991c6f762f8c7"
+    },
+    {
+      "bytes": 160,
+      "path": "src/pams/__init__.py",
+      "role": "generation package bootstrap",
+      "sha256": "8b6ffbf3ac8ed7e43f1f40ef5793baa087f73b303eff342d891380bc9a5d67ce"
+    },
+    {
+      "bytes": 6210,
+      "path": "src/pams/types.py",
+      "role": "generation package bootstrap dependency",
+      "sha256": "78c2ad53e98856425492a1711faa62fc2bb7764767dc48a22f7c4d5e043a3e31"
+    },
+    {
+      "bytes": 280,
+      "path": "src/pams/temporac/__init__.py",
+      "role": "generation package bootstrap",
+      "sha256": "e3f71c2d85974ac3f635f76ee61f8e1f793b9bc251b25ff4336563d4da52c2a3"
+    },
+    {
+      "bytes": 9079,
+      "path": "src/pams/temporac/contract.py",
+      "role": "generation module",
+      "sha256": "5ab8fb62dc558ba78e95fc07e52c1f1a1afbff5b1c5003834079eea6143d745f"
+    },
+    {
+      "bytes": 8843,
+      "path": "src/pams/temporac/decode.py",
+      "role": "generation module",
+      "sha256": "766cd6ca4b9e133041bd602f50fde840ec7caadd376bd6851799583d44f31f5e"
+    },
+    {
+      "bytes": 36365,
+      "path": "src/pams/temporac/fixtures.py",
+      "role": "generation module",
+      "sha256": "979b8cee4fed117f5471cf399794f615c60eae52dbba2c946109ff836206b464"
+    },
+    {
+      "bytes": 27198,
+      "path": "src/pams/temporac/hashio.py",
+      "role": "generation module",
+      "sha256": "aa460d5de51f107b2fc6b2ad171747e0da38a87cf30f82a869a335c268f1d613"
+    },
+    {
+      "bytes": 25746,
+      "path": "src/pams/temporac/types.py",
+      "role": "generation module",
+      "sha256": "4249eac2738f5b2edf53f38cbb681dffae609c151d493dd03b625fe10ad4c3ca"
+    },
+    {
+      "bytes": 5929,
+      "path": "src/pams/temporac/gates.py",
+      "role": "detached implementation-review module",
+      "sha256": "b6c9d7432443d7ad36738a81700746709fd571d475514aa6f1bbcd39be744b4a"
+    },
+    {
+      "bytes": 14395,
+      "path": "src/pams/temporac/nola.py",
+      "role": "detached implementation-review module",
+      "sha256": "ad6a13203f09c13a37a854333d4458ca8ce5a03bb186c0946f014a4e8cb9a637"
+    },
+    {
+      "bytes": 44,
+      "path": "tests/__init__.py",
+      "role": "detached implementation-review package initializer",
+      "sha256": "27cbdeb3feb2dc3649c384cc5b913fa0f82018d65be0a07a76421b8965049282"
+    },
+    {
+      "bytes": 55,
+      "path": "tests/temporac/__init__.py",
+      "role": "detached implementation-review package initializer",
+      "sha256": "dd07192e3b73d582dfb5f0325cfafd7462040c76574ad8241a661fdc4713a24e"
+    },
+    {
+      "bytes": 5973,
+      "path": "tests/temporac/test_gates_fixtures.py",
+      "role": "detached implementation-review entrypoint",
+      "sha256": "941856b6111cff8697f105bc30dc679069f73206bab3f9c2b930236675e13173"
+    },
+    {
+      "bytes": 12749,
+      "path": "tests/temporac/test_operator_manifest.py",
+      "role": "detached implementation-review entrypoint",
+      "sha256": "a055247946580679d54204850bfe588a102a37d342da31e06eddba85c45f9dfe"
+    }
+  ],
+  "manifest_row_schema": {
+    "closed_keys": [
+      "amplitude",
+      "association_sha256",
+      "component_location_sha256",
+      "component_score_sha256",
+      "decoded_components_sha256",
+      "decoder_mask_sha256",
+      "edge_count",
+      "edge_mask_sha256",
+      "expected_components_sha256",
+      "gap",
+      "generated_response_sha256",
+      "key_hex",
+      "layout",
+      "nola_quantized_response_sha256",
+      "offset",
+      "reset_edge",
+      "run_bounds_sha256",
+      "target_mask_sha256",
+      "truth_negative_components",
+      "truth_plateau_mask_sha256",
+      "truth_plateaus_sha256",
+      "width",
+      "windows_sha256"
+    ],
+    "key_hex_bytes": 10,
+    "per_array_preimage": "raw C-order bytes only after exact dtype, shape, finiteness, and C-contiguity validation; no header, framing, shape, row key, or LF",
+    "row_array_axes": {
+      "association": "[K,C]; row=truth index; column=decoded-component index",
+      "component_location": "[C]",
+      "component_score": "[C]",
+      "decoded_components": "[C,2] half-open [start,stop)",
+      "decoder_mask": "[E] edge axis",
+      "edge_mask": "[E] edge axis",
+      "expected_components": "[K,2] half-open [start,stop)",
+      "generated_response": "[E] edge axis",
+      "nola_quantized_response": "[E] edge axis",
+      "run_bounds": "[R,2] ordered half-open edge runs",
+      "target_mask": "[E] edge axis",
+      "truth_plateau_mask": "[E] edge axis",
+      "truth_plateaus": "[K,2] truth half-open [start,stop)",
+      "windows": "[W,2] ordered half-open NOLA windows"
+    },
+    "row_array_dtypes": {
+      "association": "|u1",
+      "component_location": "<i4",
+      "component_score": "<f4",
+      "decoded_components": "<i4",
+      "decoder_mask": "|u1",
+      "edge_mask": "|u1",
+      "expected_components": "<i4",
+      "generated_response": "<f4",
+      "nola_quantized_response": "<f4",
+      "run_bounds": "<i4",
+      "target_mask": "|u1",
+      "truth_plateau_mask": "|u1",
+      "truth_plateaus": "<i4",
+      "windows": "<i4"
+    },
+    "row_array_shapes": {
+      "association": "[3,3]",
+      "component_location": "[3]",
+      "component_score": "[3]",
+      "decoded_components": "[3,2]",
+      "decoder_mask": "[E]",
+      "edge_mask": "[E]",
+      "expected_components": "[3,2]",
+      "generated_response": "[E]",
+      "nola_quantized_response": "[E]",
+      "run_bounds": "[R,2] where R=2 iff layout=run-reset else 1",
+      "target_mask": "[E]",
+      "truth_plateau_mask": "[E]",
+      "truth_plateaus": "[3,2]",
+      "windows": "[W,2]"
+    },
+    "shape_symbols": {
+      "C": 3,
+      "E": "edge_count",
+      "K": 3,
+      "R": "2 iff layout=run-reset else 1",
+      "W": "sum over runs of 1+ceil(max(L_r-127,0)/32)",
+      "window_count_formula": "W_r=1+ceil(max(L_r-127,0)/32); W=sum_r W_r"
+    },
+    "schema": "temporac.operator-manifest-schema.v2"
+  },
+  "manifest_schema_artifact": {
+    "array_spec_item_keys": [
+      "axis_semantics",
+      "dtype",
+      "field",
+      "shape"
+    ],
+    "closed_keys": [
+      "array_specs",
+      "canonical_json",
+      "cartesian_order",
+      "manifest_filename",
+      "manifest_row_count",
+      "manifest_row_keys",
+      "normative_roots",
+      "per_array_preimage",
+      "schema",
+      "shape_symbols"
+    ],
+    "expected_object": {
+      "array_specs": [
+        {"axis_semantics": "row axis is truth index; column axis is decoded-component index", "dtype": "|u1", "field": "association_sha256", "shape": "[K,C]=[3,3]"},
+        {"axis_semantics": "one lower-middle edge location per decoded component", "dtype": "<i4", "field": "component_location_sha256", "shape": "[C]=[3]"},
+        {"axis_semantics": "one maximum response per decoded component", "dtype": "<f4", "field": "component_score_sha256", "shape": "[C]=[3]"},
+        {"axis_semantics": "rows are decoded half-open [start,stop) components", "dtype": "<i4", "field": "decoded_components_sha256", "shape": "[C,2]=[3,2]"},
+        {"axis_semantics": "edge axis", "dtype": "|u1", "field": "decoder_mask_sha256", "shape": "[E]"},
+        {"axis_semantics": "edge axis", "dtype": "|u1", "field": "edge_mask_sha256", "shape": "[E]"},
+        {"axis_semantics": "rows are reference half-open [start,stop) components", "dtype": "<i4", "field": "expected_components_sha256", "shape": "[K,2]=[3,2]"},
+        {"axis_semantics": "edge axis", "dtype": "<f4", "field": "generated_response_sha256", "shape": "[E]"},
+        {"axis_semantics": "edge axis", "dtype": "<f4", "field": "nola_quantized_response_sha256", "shape": "[E]"},
+        {"axis_semantics": "rows are ordered half-open edge runs", "dtype": "<i4", "field": "run_bounds_sha256", "shape": "[R,2]"},
+        {"axis_semantics": "edge axis", "dtype": "|u1", "field": "target_mask_sha256", "shape": "[E]"},
+        {"axis_semantics": "edge axis", "dtype": "|u1", "field": "truth_plateau_mask_sha256", "shape": "[E]"},
+        {"axis_semantics": "rows are truth half-open [start,stop) plateaus", "dtype": "<i4", "field": "truth_plateaus_sha256", "shape": "[K,2]=[3,2]"},
+        {"axis_semantics": "rows are ordered half-open NOLA windows", "dtype": "<i4", "field": "windows_sha256", "shape": "[W,2]"}
+      ],
+      "canonical_json": {
+        "allow_nan": false,
+        "bom_allowed": false,
+        "duplicate_keys_allowed": false,
+        "encoding": "UTF-8",
+        "ensure_ascii": false,
+        "manifest_top_level": "array",
+        "object_key_order": "lexicographically sorted",
+        "separators": [",", ":"],
+        "terminal_lf_count": 1
+      },
+      "cartesian_order": [
+        {"field": "gap", "values": [4, 5, 8, 16, 32, 64, 127, 128, 129]},
+        {"field": "width", "values": [1, 2, 4]},
+        {"field": "amplitude", "values": [0.6, 0.75, 1.0]},
+        {"field": "offset", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]},
+        {"field": "layout", "values": ["interior", "left-boundary", "right-boundary", "run-reset"]}
+      ],
+      "manifest_filename": "temporac.operator-manifest.v4.json",
+      "manifest_row_count": 10368,
+      "manifest_row_keys": [
+        "amplitude", "association_sha256", "component_location_sha256", "component_score_sha256", "decoded_components_sha256", "decoder_mask_sha256", "edge_count", "edge_mask_sha256", "expected_components_sha256", "gap", "generated_response_sha256", "key_hex", "layout", "nola_quantized_response_sha256", "offset", "reset_edge", "run_bounds_sha256", "target_mask_sha256", "truth_negative_components", "truth_plateau_mask_sha256", "truth_plateaus_sha256", "width", "windows_sha256"
+      ],
+      "normative_roots": {
+        "edge0_digest_inventory_sha256": "ba797f6ae59cbbb40f19a61199afaaa1ac5b2c001a3c9fc34f1dba8f79cf78e4",
+        "inactive_lookup_sha256": "afa6eff0d744acfdf9cf78adc43aa8daf01633f3345d7567d642a7782885040d",
+        "key_inventory_sha256": "18dfdafe237b77565de36bab6d4642efb314ec1cbbd76e852938ed5c4d424a55",
+        "semantic_rows_sha256": "0fe8b2619a3f33cc4a83485053888c04c567b015eea65f81bf6cd9ec715ee4f2"
+      },
+      "per_array_preimage": "raw C-order bytes only after exact dtype, shape, finiteness, and C-contiguity validation; no header, framing, shape, row key, or LF",
+      "schema": "temporac.operator-manifest-schema.v2",
+      "shape_symbols": {
+        "C": 3,
+        "E": "edge_count",
+        "K": 3,
+        "R": "2 iff layout=run-reset else 1",
+        "W": "sum over runs of 1+ceil(max(L_r-127,0)/32)",
+        "window_count_formula": "W_r=1+ceil(max(L_r-127,0)/32); W=sum_r W_r"
+      }
+    },
+    "schema": "temporac.operator-manifest-schema.v2"
+  },
+  "non_changes": {
+    "allocated_a6000_hours": 93,
+    "audit_fixture_becomes_fourth_paper_block": false,
+    "fixture_mathematics": "unchanged proposal plus accepted Amendment 002",
+    "paper_visible_evidence_blocks": 3,
+    "primary_claims": 1,
+    "scientific_thresholds_changed": false,
+    "seeds": [
+      20260815,
+      20260816,
+      20260817
+    ],
+    "training_jobs": 27
+  },
+  "normative_roots": {
+    "edge0_digest_inventory_sha256": "ba797f6ae59cbbb40f19a61199afaaa1ac5b2c001a3c9fc34f1dba8f79cf78e4",
+    "inactive_lookup_sha256": "afa6eff0d744acfdf9cf78adc43aa8daf01633f3345d7567d642a7782885040d",
+    "key_inventory_sha256": "18dfdafe237b77565de36bab6d4642efb314ec1cbbd76e852938ed5c4d424a55",
+    "semantic_rows_sha256": "0fe8b2619a3f33cc4a83485053888c04c567b015eea65f81bf6cd9ec715ee4f2"
+  },
+  "replay_witness": {
+    "aggregate_names": [
+      "association",
+      "decoded_components",
+      "decoder_masks",
+      "edge_masks",
+      "nola_responses",
+      "responses",
+      "target_masks",
+      "truth_masks",
+      "truth_plateaus"
+    ],
+    "aggregate_preimage": "direct raw named per-row array bytes concatenated in frozen Cartesian order; no separator, length, key, or digest framing",
+    "closed_keys": [
+      "actual_inactive_b255",
+      "aggregate_roots",
+      "candidate_manifest_bytes",
+      "candidate_manifest_sha256",
+      "candidate_status",
+      "normative_roots",
+      "row_witnesses",
+      "schema",
+      "validated_row_count"
+    ],
+    "digest_record_keys": [
+      "bytes",
+      "sha256"
+    ],
+    "expected_actual_inactive_b255": {
+      "edge_count": 8945,
+      "first": {
+        "edge": 42,
+        "key_hex": "00040001000000000001",
+        "response_f4_le_hex": "cccccc3e"
+      },
+      "row_count": 5665
+    },
+    "expected_aggregate_roots": {
+      "association": {"bytes": 93312, "sha256": "856710a129ad0e85fa46e2adb287b964163e0cd49d12f302ccfd8b63948712e6"},
+      "decoded_components": {"bytes": 248832, "sha256": "6c6e6240e577c16a4a58150102f4dfe3af2d28a914e8ceefce6e25a673411481"},
+      "decoder_masks": {"bytes": 2345760, "sha256": "6cf03b8331b9c7f9021ae778dac8931e8c8cb3c5375cc0e2018de02cc77eb37a"},
+      "edge_masks": {"bytes": 2345760, "sha256": "6cf03b8331b9c7f9021ae778dac8931e8c8cb3c5375cc0e2018de02cc77eb37a"},
+      "nola_responses": {"bytes": 9383040, "sha256": "72a958eb3224e4585b7ef7cec9f1729c5c6c68ca8412a6f196cc28eb4fb9c5c2"},
+      "responses": {"bytes": 9383040, "sha256": "72a958eb3224e4585b7ef7cec9f1729c5c6c68ca8412a6f196cc28eb4fb9c5c2"},
+      "target_masks": {"bytes": 2345760, "sha256": "6cf03b8331b9c7f9021ae778dac8931e8c8cb3c5375cc0e2018de02cc77eb37a"},
+      "truth_masks": {"bytes": 2345760, "sha256": "45266d339f54a2a59f977a770d3f1bb71c9319b798b08d8b1b04de7aece8de21"},
+      "truth_plateaus": {"bytes": 248832, "sha256": "6c6e6240e577c16a4a58150102f4dfe3af2d28a914e8ceefce6e25a673411481"}
+    },
+    "expected_manifest": {
+      "bytes": 15039512,
+      "sha256": "1f39378d6f7a970b1f183558ed145bd97107f2aeda41902f4736e6778930e1bb"
+    },
+    "expected_normative_roots": {
+      "edge0_digest_inventory": {"bytes": 331776, "sha256": "ba797f6ae59cbbb40f19a61199afaaa1ac5b2c001a3c9fc34f1dba8f79cf78e4"},
+      "inactive_lookup": {"bytes": 1024, "sha256": "afa6eff0d744acfdf9cf78adc43aa8daf01633f3345d7567d642a7782885040d"},
+      "key_inventory": {"bytes": 186624, "sha256": "18dfdafe237b77565de36bab6d4642efb314ec1cbbd76e852938ed5c4d424a55"},
+      "semantic_inventory": {"bytes": 746714, "sha256": "0fe8b2619a3f33cc4a83485053888c04c567b015eea65f81bf6cd9ec715ee4f2"}
+    },
+    "expected_row_witnesses": [
+      {"actual_f4_le_hex": "65984b3e", "digest_hex": "54ac35705b42e8296cf324b893e5450c123b8b48c45e912cba928a6c432f60c4", "edge": 0, "inactive_function_f4_le_hex": "65984b3e", "key_hex": "00040001000000000000"},
+      {"actual_f4_le_hex": "6666263f", "digest_hex": "dee0ad937ac053341db0c0b1dc6a179c6684e9a6108b76336070f4cb910e1170", "edge": 32, "inactive_function_f4_le_hex": "1fecb83e", "key_hex": "00040001000000000000"},
+      {"actual_f4_le_hex": "26598c3e", "digest_hex": "9406bcc666d0a8487362b65700a5daebd6d3f4496c54c5b2da1f849ba52d3ee1", "edge": 17, "inactive_function_f4_le_hex": "26598c3e", "key_hex": "00050002000100070002"},
+      {"actual_f4_le_hex": "fe63ca3e", "digest_hex": "fb06baef760aaeb7ab2a4aeaad5d13dc457afc989fb75db931e1535c4213c215", "edge": 319, "inactive_function_f4_le_hex": "fe63ca3e", "key_hex": "008100040002001f0003"},
+      {"actual_f4_le_hex": "cccccc3e", "digest_hex": "ff78168a29882190e18b1fd5957cf1eb549c721c227344c8fbfc20ec8d9f4fb3", "edge": 42, "inactive_function_f4_le_hex": "cccccc3e", "key_hex": "00040001000000000001"}
+    ],
+    "row_witness_count": 5,
+    "row_witness_keys": [
+      "actual_f4_le_hex",
+      "digest_hex",
+      "edge",
+      "inactive_function_f4_le_hex",
+      "key_hex"
+    ],
+    "schema": "temporac.operator-replay-witness.v2",
+    "status": "FROZEN_CANDIDATE_PENDING_FRESH_IMPLEMENTATION_REVIEW"
+  },
+  "review": {
+    "acceptance_status_ceiling": "provisional",
+    "required_model": "gpt-5.6-sol",
+    "review_independence": "same-family",
+    "required_next_actions": [
+      "same-thread Round-2 normative review of the complete revised Amendment 004 MD and JSON",
+      "regenerate v2 candidate only after normative acceptance",
+      "fresh independent pinned-runtime implementation review",
+      "use accepted candidate only as an input to a separately specified P2 fixture gate"
+    ]
+  },
+  "runtime_lock": {
+    "architecture": "x86_64",
+    "base_image": {
+      "config_bytes": 7096,
+      "config_digest": "sha256:c7ed3a18aaaa5a8b439cf84138ebcfe1e82e64d091781f3384ca38827824aefc",
+      "index_digest": "sha256:e8be0ea148390d08bc077840cf87ac6a538d80b0ea1e8752b3e3982987cd0a53",
+      "linux_amd64_manifest_bytes": 2516,
+      "linux_amd64_manifest_digest": "sha256:0c7cf9e198201da2e838fcb61c07717dfc96adb3d1200599f54dea0af1d153bf",
+      "pull_reference": "docker.io/library/python@sha256:e8be0ea148390d08bc077840cf87ac6a538d80b0ea1e8752b3e3982987cd0a53"
+    },
+    "byteorder": "little",
+    "container_policy": {
+      "bootstrap_script_sha256": "66fdf1cd03616759948e326e1714a997848c45f40d005240a4ebe170240bf323",
+      "bootstrap_steps": [
+        "test $(stat -c %s /wheel/numpy.whl) = 16040181",
+        "test $(sha256sum /wheel/numpy.whl | cut -d ' ' -f 1) = 24003ba8ff22ea29a8c306e61d316ac74111cebf942afbf692df65509a05f111",
+        "/usr/local/bin/python -m venv /tmp/venv",
+        "/tmp/venv/bin/python -m pip install --no-index --no-deps /wheel/numpy.whl",
+        "/tmp/venv/bin/python scripts/experiments/generate_temporac_operator_manifest_v4.py --output /out/operator_candidate_v2_20260816"
+      ],
+      "docker_argv_template": [
+        "docker",
+        "run",
+        "--rm",
+        "--platform",
+        "linux/amd64",
+        "--network",
+        "none",
+        "--read-only",
+        "--tmpfs",
+        "/tmp:rw,exec,nosuid,nodev,size=512m",
+        "--mount",
+        "type=bind,src={REPO_SNAPSHOT},dst=/work,readonly",
+        "--mount",
+        "type=bind,src={WHEEL_FILE},dst=/wheel/numpy.whl,readonly",
+        "--mount",
+        "type=bind,src={OUTPUT_PARENT},dst=/out",
+        "--workdir",
+        "/work",
+        "-e",
+        "HOME=/nonexistent",
+        "-e",
+        "PYTHONDONTWRITEBYTECODE=1",
+        "-e",
+        "PYTHONHASHSEED=0",
+        "-e",
+        "PYTHONNOUSERSITE=1",
+        "-e",
+        "PYTHONPATH=/work/src",
+        "-e",
+        "TEMPORAC_OPERATOR_DOCKER_IMAGE=docker.io/library/python@sha256:e8be0ea148390d08bc077840cf87ac6a538d80b0ea1e8752b3e3982987cd0a53",
+        "docker.io/library/python@sha256:e8be0ea148390d08bc077840cf87ac6a538d80b0ea1e8752b3e3982987cd0a53",
+        "/bin/sh",
+        "-ceu",
+        "{BOOTSTRAP_SCRIPT}"
+      ],
+      "environment": {
+        "HOME": "/nonexistent",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONHASHSEED": "0",
+        "PYTHONNOUSERSITE": "1",
+        "PYTHONPATH": "/work/src",
+        "TEMPORAC_OPERATOR_DOCKER_IMAGE": "docker.io/library/python@sha256:e8be0ea148390d08bc077840cf87ac6a538d80b0ea1e8752b3e3982987cd0a53"
+      },
+      "mounts": "24-file allowlist-only repository snapshot read-only; verified wheel read-only; one new absent output directory writable; fresh executable tmpfs for venv",
+      "network": "none",
+      "output_rule": "four non-receipt members first; receipt last; exclusive create; no overwrite",
+      "root_filesystem": "read-only",
+      "source_snapshot_policy": {
+        "allowed_path_count": 24,
+        "allowed_path_sets": ["review_project_paths", "generation_additional_read_path", "generation_contract_read_paths"],
+        "forbidden": ["missing-path", "extra-path", "symlink", "hard-link-alias", "normalized-path-collision", ".pyc", "__pycache__", ".pth", "sitecustomize.py", "usercustomize.py"],
+        "preimage_tag": "temporac.operator-generation-snapshot.v1"
+      },
+      "user_site": "disabled",
+      "wheel_install": "python -m pip install --no-index --no-deps into fresh tmpfs venv after wheel byte-count and sha256 verification"
+    },
+    "numpy": {
+      "filename": "numpy-2.1.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "files_url": "https://files.pythonhosted.org/packages/48/3e/bf807eb050abc23adc556f34fcf931ca2d67ad8dfc9c17fcd9332c01347f/numpy-2.1.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "init_sha256": "39c42db027548f958e096e8babe3fa0e3e773d24aa39eb6363fc0e3abbec34b1",
+      "record_sha256": "65cfe9b7bbac44a46116b2b5f8282f32ec57e1aa9faeb64d523604c712b446d8",
+      "version": "2.1.0",
+      "wheel_bytes": 16040181,
+      "wheel_sha256": "24003ba8ff22ea29a8c306e61d316ac74111cebf942afbf692df65509a05f111"
+    },
+    "platform_system": "Linux",
+    "python": {
+      "executable_sha256": "9a6988f011f466ae829f7945c54000a564e14a1a594cfb7079c02eda9b87620f",
+      "implementation": "CPython",
+      "version": "3.12.4"
+    },
+    "schema": "temporac.operator-runtime-lock.v3"
+  },
+  "schema": "temporac.contract-amendment.operator-manifest-schema.v2",
+  "status": "PROPOSED_PENDING_FRESH_REVIEW"
+}

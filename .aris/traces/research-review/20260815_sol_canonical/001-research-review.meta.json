@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_sol_canonical",
+  "step_id": "001-research-review",
+  "skill": "research-review",
+  "purpose": "canonical ICASSP 2027 research review for entry into research-refine",
+  "agent_id": "/root/research_review_canonical",
+  "model": "gpt-5.6-sol",
+  "reviewer_family": "openai",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "started_at": "2026-08-15T12:55:54.8254313+08:00",
+  "completed_at": "2026-08-15T13:04:23.5954511+08:00",
+  "request_path": ".aris/traces/research-review/20260815_sol_canonical/001-research-review.request.json",
+  "request_sha256": "064db00ce9cfe69eca6d1c74e32b875ff1f47c64c366a1e2fef368feb52c8a16",
+  "response_path": ".aris/traces/research-review/20260815_sol_canonical/001-research-review.response.md",
+  "canonical_output_path": "idea-stage/RESEARCH_REVIEW.json",
+  "response_sha256": "fbc2462303c3ddcb4b23ef4cbf4f81b01a863ff433c6a58dec3f8cd99790caa3",
+  "canonical_output_sha256": "fbc2462303c3ddcb4b23ef4cbf4f81b01a863ff433c6a58dec3f8cd99790caa3",
+  "byte_identical_response_and_canonical": true,
+  "verdict": "REVISE",
+  "overall_score_10": 5.7,
+  "proceed_to_research_refine": true,
+  "status": "completed",
+  "validation": {
+    "canonical_json": "passed",
+    "request_json": "passed",
+    "meta_json": "passed",
+    "run_meta_json": "passed",
+    "events_jsonl": "passed",
+    "input_hashes": "passed"
+  }
+}

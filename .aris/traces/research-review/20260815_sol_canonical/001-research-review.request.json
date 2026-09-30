@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_sol_canonical",
+  "step_id": "001-research-review",
+  "task": "canonical ARIS research review for entry into research-refine",
+  "requested_at": "2026-08-15T12:55:54.8254313+08:00",
+  "reviewer_requirements": {
+    "model": "gpt-5.6-sol",
+    "fresh_zero_context": true,
+    "same_family_status": "provisional",
+    "verdict_enum": [
+      "READY",
+      "REVISE",
+      "RETHINK"
+    ]
+  },
+  "decision_under_review": {
+    "primary": "warp-equivariant-private-phase-flow",
+    "masked_geometric_tssm_role": "control only",
+    "identity_private_state_role": "causal diagnostic only"
+  },
+  "raw_inputs": [
+    "RESEARCH_BRIEF.md",
+    "idea-stage/IDEA_REPORT.md",
+    "idea-stage/IDEA_CANDIDATES.md",
+    "idea-stage/IDEA_CREATOR_JURY.json",
+    "idea-stage/NOVELTY_CHECK.json",
+    "EXPERIMENT_AUDIT.md",
+    "SERVER_METHOD_INVENTORY.md",
+    "PILOT_DATA_SCHEMA_AUDIT.md"
+  ],
+  "required_outputs": [
+    "Eight 1-10 scores",
+    "Verdict for entering research-refine",
+    "Mandatory revisions",
+    "Kill conditions",
+    "Exact problem anchor",
+    "Contribution cap",
+    "Proceed decision",
+    "Input SHA-256 ledger",
+    "No invented results"
+  ]
+}
+

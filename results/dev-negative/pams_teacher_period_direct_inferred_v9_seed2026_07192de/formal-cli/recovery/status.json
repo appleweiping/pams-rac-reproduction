@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "inference_rerun": false,
+  "schema_version": 1,
+  "scoring_rerun": false,
+  "stage": "post-score-recovery",
+  "status": "completed"
+}

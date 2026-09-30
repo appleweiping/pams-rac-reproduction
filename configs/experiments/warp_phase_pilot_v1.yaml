@@ -1,0 +1,96 @@
+schema_version: 1
+pilot_id: warp_phase_pilot_v1
+protocol: multirep_v44_partial_gt_bbox_supplied_track
+evidence_status: zero_eligible_results
+training_authorized: false
+
+source:
+  train_path: data/counting_multirep_skeleton_pose_expanded_v44_len320/train.pkl
+  train_sha256: c96fc1dfa233ec4bf1af19e7480ee8c721f4cddee9f121185f4e494c7244e1eb
+  val_path: data/counting_multirep_skeleton_pose_expanded_v44_len320/val.pkl
+  val_sha256: 4064ef24dc2970e9b07de8adddf1ecd4932aecb90453a67b4f90d7bd35d10251
+  allowed_splits: [train, val]
+
+storage:
+  run_root: data/warp_phase_pilot_v1
+  features_root: features
+  vault_root: vault
+  audit_root: audit
+
+data:
+  source_samples: 320
+  joints: 17
+  pose_channels: 3
+  confidence_threshold: 0.2
+  minimum_pose_coverage: 0.8
+  minimum_distinct_clocks: 64
+  minimum_valid_adjacent_cells: 63
+  minimum_feature_frame_coverage: 0.6
+  minimum_valid_joints_per_frame: 8
+  duplicate_xy_tolerance: 1.0e-5
+  duplicate_confidence_tolerance: 1.0e-6
+  ambiguous_train_slots: 13
+  ambiguous_val_slots: 8
+
+selector:
+  rng_seed: 20270815
+  parent_clocks: 128
+  parent_stride: 64
+  rejection_clocks: 64
+  fft_samples: 256
+  minimum_period: 4
+  maximum_period: 128
+  minimum_acf_samples: 16
+  minimum_acf: 0.25
+  weak_jitter_std: 0.01
+  weak_jitter_clip: 0.03
+  weak_dropout: 0.1
+  rejection_relative_tolerance: 0.1
+  harmonic_margin: 0.1
+
+warp:
+  segments: 3
+  first_breakpoint_range: [0.2, 0.4]
+  second_breakpoint_range: [0.6, 0.8]
+  raw_slope_range: [0.5, 1.5]
+  accepted_slope_range: [0.4, 2.0]
+  pause_probability: 0.2
+  maximum_schedule_attempts: 128
+  alias_margin_pi: 0.05
+  minimum_valid_intervals_per_window: 32
+  minimum_track_interval_coverage: 0.8
+
+model:
+  input_channels: 68
+  convolution_channels: 128
+  recurrent_size: 128
+  phase_dimensions: 2
+  trainable_parameters: 225026
+
+training:
+  seeds: [20270815, 20270816, 20270817]
+  identities_per_step: 8
+  accumulation_steps: 4
+  updates: 20000
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  gradient_clip: 1.0
+  window_samples: 64
+  window_stride: 32
+
+decode:
+  window_samples: 64
+  stride: 32
+  minimum_interval_weight: 0.001
+  rounding: half_even
+
+gates:
+  schema_fixture_bytes: 617
+  schema_fixture_sha256: 31f81549f9c5dbedc6ddb278e868793246826a234de90c06c169c71387428275
+  fixture_count: 1000
+  symmetric_fixture_count: 250
+  minimum_fixture_agreement: 0.95
+  maximum_half_selections: 20
+  maximum_double_selections: 20
+  maximum_symmetric_half_selections: 12
+  maximum_symmetric_double_selections: 12

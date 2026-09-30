@@ -1,0 +1,464 @@
+{
+  "schema_version": 1,
+  "status": "failed_three_seed_representation_diagnostic",
+  "classification": "strict PAMS full multi-scale three-seed dev diagnostics",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "source_git_sha": "6c52288d6a227bc3040fd672c31039408e2d6696",
+  "seeds": [
+    42,
+    2026,
+    3407
+  ],
+  "sample_count_per_seed": 84,
+  "table2_eligible": false,
+  "verified_reproduction": false,
+  "sealed_test_status": "untouched",
+  "claim_boundary": {
+    "status": "partial_reproduction",
+    "reason": "Neither disclosed-but-untrained PAMS-Literal nor the independently inferred SSHead completion passes the frozen three-seed development gate. These are development representation diagnostics, not test or paper-table results.",
+    "literal_period_head": "random and untrained, matching the absence of a disclosed Period Head loss or gradient path",
+    "sshead_period_head": "independently inferred non-author completion trained for 30 epochs after freezing each encoder",
+    "sshead_comparison": "SSHead NMAE is worse than Literal for every seed. OBO is worse for seeds 2026 and 42 and improves by only 1/84 for seed 3407, so OBO is not uniformly worse.",
+    "literal_variance": "Literal is highly seed-sensitive: seed 3407 NMAE is more than four times seed 42 NMAE."
+  },
+  "training_scope": {
+    "train_videos": 337,
+    "development_videos": 84,
+    "test_identity_videos": 105,
+    "encoder_epochs": 150,
+    "sshead_epochs": 30,
+    "scales": [
+      0.5,
+      1.0,
+      1.5
+    ],
+    "development_labels_loaded_during_training": false,
+    "development_targets_available_to_prediction_process": false,
+    "test_targets_loaded": false,
+    "test_predictions_produced": false,
+    "test_evaluation_produced": false
+  },
+  "label_firewall": {
+    "train_inputs_sha256": "e238d307b4ed37b2f6c19eefdf7fa8812ec3d231cd2a7091be38e1c279f04207",
+    "train_commitment_sha256": "ce39b1c9038bb1506354de010e46a23053b307b852222332f13df3f79d799044",
+    "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "dev_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "test_identity_inputs_sha256": "9eb2a057246b77fc7a1121ba4c9d27bf55177ad2fcd5dbb87237396a4a6015ca",
+    "test_identity_commitment_sha256": "232d3db7ce09018716594a1f1b332eec47b37410a8d3068e662b026ee2dc9c66",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "prediction_process_target_mount": false,
+    "scoring_process_separate": true,
+    "scorer_first_opened_targets_after_prediction_and_receipt_validation": true
+  },
+  "shared_bindings": {
+    "protocol_identity_sha256": "7aaaea4fdd0620cc7abb4f307cf63a9506448540e3d3d920acf70957f6b8b97f",
+    "training_identity_sha256": "177e3a70e6fb272bac7c976e9700f70355bc30adb3990dc1276485c3e0cbddd6",
+    "dev_identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "training_pose_cache_set_sha256": "34123ac27334ab06852c12254c7e0c046f7d86f3a066c81f9b8751c362dd0cd0",
+    "dev_pose_cache_set_sha256": "2e14cb39a4112f7ee1d10b759d166bb472f41e317e55e773776394331690256c",
+    "dev_pose_cache_snapshot_sha256": "f36e34059c6d99878c31404a6a63b44d8cf3c5da901a8f6e13e009a25d819208",
+    "prediction_code_sha256": "0a3f066d28af2b0c35796eff0dfedba71ad88982cf41c7dc3fe133b5d6b8dcb7",
+    "container_image_id": "sha256:022103f69a42ef3e88ee43ddcfbd706dabfdeec6247c257d1d01fda2c0ea2f91",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508"
+  },
+  "bootstrap": {
+    "samples": 10000,
+    "seed": 2026,
+    "confidence_level": 0.95,
+    "pairing": "paired_prediction_target_rows"
+  },
+  "diagnostic_gate": {
+    "maximum_nmae": 0.228,
+    "minimum_obo": 0.666,
+    "required_individual_seed_passes": 2,
+    "literal_individual_seed_passes": 0,
+    "sshead_individual_seed_passes": 0,
+    "literal_mean_pass": false,
+    "sshead_mean_pass": false
+  },
+  "variants": {
+    "pams_literal": {
+      "method_id": "pams-literal-untrained-period-head",
+      "period_head_training": "none",
+      "seed_results": [
+        {
+          "seed": 42,
+          "configuration": {
+            "config_file_sha256": "31139e88af20e43376d6d1e58c66b3806baf86dbb98dc5365b67497545ba2b7b",
+            "config_fingerprint": "7e82a51b715b60205c1773b421ad23ee3041dfc508e207e97e6c27cce119fb4e"
+          },
+          "metrics": {
+            "nmae": 0.6278058968945668,
+            "obo": 0.30952380952380953,
+            "mae": 3.738095238095238,
+            "rmse": 5.490251100164468,
+            "exact": 0.15476190476190477
+          },
+          "bootstrap_10000_paired_95ci": {
+            "nmae": {
+              "low": 0.534554853956024,
+              "high": 0.7277838132379388
+            },
+            "obo": {
+              "low": 0.21428571428571427,
+              "high": 0.40476190476190477
+            },
+            "mae": {
+              "low": 2.9285714285714284,
+              "high": 4.642857142857143
+            },
+            "rmse": {
+              "low": 4.098489849642067,
+              "high": 6.988085097745543
+            },
+            "exact": {
+              "low": 0.08333333333333333,
+              "high": 0.23809523809523808
+            }
+          },
+          "artifact_bindings": {
+            "encoder_checkpoint_sha256": "c4c5b6dd71504a767a8211442c1417fbf79c7c27d924d0e423e72d0f76b28e0d",
+            "encoder_progress_sha256": "d09de90cbeab849e20c7dfa004d6f5defc825137b3cc90a803536843f7aec50a",
+            "encoder_completed_receipt_sha256": "f7fe6c27060bfcccc51d1d6b8114bbac6b0b012d831afbc93c6e34f0fe258246",
+            "head_checkpoint_sha256": null,
+            "head_progress_sha256": null,
+            "head_completed_receipt_sha256": null,
+            "prediction_sha256": "8665177bd22ddf3c8eb51113514a4f22706d3b98c94b990e9b40b79cb982db76",
+            "prediction_receipt_sha256": "3c58b50a34f0472f54192cd4bdd489b4e5379f0b7e219fd3b885293a420a5330",
+            "evaluation_sha256": "db53d37b00cd3e235ca2ce6bb8a03eb4a43d882d796f7bbdd7279ef8e2d80c80",
+            "evaluation_receipt_sha256": "c8626f006ab78485f567dbae629b4eb344cb364b6549a50f208c44daa621b8cd"
+          },
+          "gate_pass": false
+        },
+        {
+          "seed": 2026,
+          "configuration": {
+            "config_file_sha256": "058c45443b81f6b9861d2896e33544727e8921b7052d61ef331e9ba819be70c8",
+            "config_fingerprint": "4aa9ea1b11e9ec92ff7c5e6c6b65396fab6f807e1cdd60fb7e0c42c5567225b4"
+          },
+          "metrics": {
+            "nmae": 0.6896952407882211,
+            "obo": 0.32142857142857145,
+            "mae": 3.8095238095238093,
+            "rmse": 5.629429472910749,
+            "exact": 0.09523809523809523
+          },
+          "bootstrap_10000_paired_95ci": {
+            "nmae": {
+              "low": 0.5424716466284354,
+              "high": 0.8905259472100605
+            },
+            "obo": {
+              "low": 0.2261904761904762,
+              "high": 0.4166666666666667
+            },
+            "mae": {
+              "low": 2.9761904761904763,
+              "high": 4.75
+            },
+            "rmse": {
+              "low": 4.232773204342587,
+              "high": 7.078681941315915
+            },
+            "exact": {
+              "low": 0.03571428571428571,
+              "high": 0.16666666666666666
+            }
+          },
+          "artifact_bindings": {
+            "encoder_checkpoint_sha256": "ecaf3c2bd54ffc12c396f9da0044b2799917fb8a6f3811547ba9bcab6fe9d45e",
+            "encoder_progress_sha256": "4884a3d2740eadad375248e872cb5a1d554f2a23dabb418c4380b8e6eb6536a0",
+            "encoder_completed_receipt_sha256": "9dc667fa940576c8ea0da6e683d1db63a64e6614b9b42f60d6f2a8e19188bcbc",
+            "head_checkpoint_sha256": null,
+            "head_progress_sha256": null,
+            "head_completed_receipt_sha256": null,
+            "prediction_sha256": "f112e2694c401dd706a701af11d93b5c2903d9fcf05aeedc32d4b9aac073c706",
+            "prediction_receipt_sha256": "a6b1e35c5b9daf211f14455ffe95fdbc630770067327431c389688a89693da82",
+            "evaluation_sha256": "646deae32ad3a25a0c076c7779609bb981863e4a458f30ecaf686b4f203d2338",
+            "evaluation_receipt_sha256": "65f0a2b4168186e33b7c1acb3e68fa5f0cb1e826390344d271aab79e23af5ac9"
+          },
+          "gate_pass": false
+        },
+        {
+          "seed": 3407,
+          "configuration": {
+            "config_file_sha256": "40f7979109b65feda65dd3b591210fcf0676d75b32cd97afa9e7de460f113e71",
+            "config_fingerprint": "305c9b44f329ce14f8c965aad2836c6cd80355116c7fea84a6f9759219a80405"
+          },
+          "metrics": {
+            "nmae": 3.1513971227641173,
+            "obo": 0.047619047619047616,
+            "mae": 12.071428571428571,
+            "rmse": 13.828025372926017,
+            "exact": 0.011904761904761904
+          },
+          "bootstrap_10000_paired_95ci": {
+            "nmae": {
+              "low": 2.529907380409228,
+              "high": 3.8173980867130495
+            },
+            "obo": {
+              "low": 0.011904761904761904,
+              "high": 0.09523809523809523
+            },
+            "mae": {
+              "low": 10.654761904761905,
+              "high": 13.5
+            },
+            "rmse": {
+              "low": 12.61554925057377,
+              "high": 14.968240186150691
+            },
+            "exact": {
+              "low": 0.0,
+              "high": 0.03571428571428571
+            }
+          },
+          "artifact_bindings": {
+            "encoder_checkpoint_sha256": "2e43be20ccee315b513a8002c7c2be7dcfc5a14d4d9e7a1406966d50fc04f597",
+            "encoder_progress_sha256": "a78ac1d4a668d6544f95725ff1ab113ee084c072e7ac9945aa9475e6c489e2f9",
+            "encoder_completed_receipt_sha256": "66bdb8771b9a15336f9fcc3d6a3046194f04e7d0bb47dcd55f25eb3e93cccffe",
+            "head_checkpoint_sha256": null,
+            "head_progress_sha256": null,
+            "head_completed_receipt_sha256": null,
+            "prediction_sha256": "f11cc8e9c6f85691887760f4c14a52c3ff6757cedc13971bbb2d33d73380087c",
+            "prediction_receipt_sha256": "a41ab6ec271f9671c0b176303a5bdfe4ccac806f42963af1f0031c3d591bdda4",
+            "evaluation_sha256": "b30c5b752d4982a4a64171a56df5696f3df3992f206aa10ac4166c6240edc9d6",
+            "evaluation_receipt_sha256": "809bbab13b56828de1795ba3740ec922727f02ee5fb7cb851df1ea841ad3233c"
+          },
+          "gate_pass": false
+        }
+      ],
+      "aggregate": {
+        "standard_deviation_definitions": {
+          "population_std": "sqrt(sum((x-mean)^2)/N), N=3",
+          "sample_std": "sqrt(sum((x-mean)^2)/(N-1)), N=3"
+        },
+        "nmae": {
+          "mean": 1.4896327534823017,
+          "population_std": 1.175316464328605,
+          "sample_std": 1.4394628119485544
+        },
+        "obo": {
+          "mean": 0.2261904761904762,
+          "population_std": 0.1263625660959576,
+          "sample_std": 0.15476190476190477
+        },
+        "mae": {
+          "mean": 6.5396825396825395,
+          "population_std": 3.9116438258109643,
+          "sample_std": 4.790765714372553
+        },
+        "rmse": {
+          "mean": 8.315901982000412,
+          "population_std": 3.8980739570931675,
+          "sample_std": 4.774146087254974
+        },
+        "exact": {
+          "mean": 0.0873015873015873,
+          "population_std": 0.058590567699338895,
+          "sample_std": 0.071758497301687
+        }
+      }
+    },
+    "pams_sshead_inferred": {
+      "method_id": "pams-sshead-inferred",
+      "period_head_training": "30-epoch independently inferred completion after freezing encoder",
+      "seed_results": [
+        {
+          "seed": 42,
+          "configuration": {
+            "config_file_sha256": "31139e88af20e43376d6d1e58c66b3806baf86dbb98dc5365b67497545ba2b7b",
+            "config_fingerprint": "7e82a51b715b60205c1773b421ad23ee3041dfc508e207e97e6c27cce119fb4e"
+          },
+          "metrics": {
+            "nmae": 4.741497223470747,
+            "obo": 0.03571428571428571,
+            "mae": 18.142857142857142,
+            "rmse": 20.648417441952855,
+            "exact": 0.0
+          },
+          "bootstrap_10000_paired_95ci": {
+            "nmae": {
+              "low": 3.8737545506457147,
+              "high": 5.654598470284276
+            },
+            "obo": {
+              "low": 0.0,
+              "high": 0.08333333333333333
+            },
+            "mae": {
+              "low": 16.02351190476191,
+              "high": 20.226190476190474
+            },
+            "rmse": {
+              "low": 18.96702966200251,
+              "high": 22.185104666101182
+            },
+            "exact": {
+              "low": 0.0,
+              "high": 0.0
+            }
+          },
+          "artifact_bindings": {
+            "encoder_checkpoint_sha256": "c4c5b6dd71504a767a8211442c1417fbf79c7c27d924d0e423e72d0f76b28e0d",
+            "encoder_progress_sha256": "d09de90cbeab849e20c7dfa004d6f5defc825137b3cc90a803536843f7aec50a",
+            "encoder_completed_receipt_sha256": "f7fe6c27060bfcccc51d1d6b8114bbac6b0b012d831afbc93c6e34f0fe258246",
+            "head_checkpoint_sha256": "0c29a05651de63aaf4a64567ad03cd7786b506baed651f21f67b206e615b1aca",
+            "head_progress_sha256": "6e17e6854af485bd5d8838b036b6f3b36d1f1b0822ddc0b8937e664eb4b13f10",
+            "head_completed_receipt_sha256": "69a6f733d5d4d33f54b8b4558508c3ae37b5844fa81bf064b1a6536429bbbc94",
+            "prediction_sha256": "2b30a5e611f8a84bfa02ff4da8ff71977876ef4ea8e0329d3aafbc520c9e2aab",
+            "prediction_receipt_sha256": "ccb62779965adba7b2ceae9acbda3fe0c93e5ca19ff423b7ec51a3ecfd8e1666",
+            "evaluation_sha256": "6905670ac6261a4f8090bd3506c5bd88561030abc9fd65de01308d7a47a1a439",
+            "evaluation_receipt_sha256": "10a9b2baea43eb6a61d216416a8684a301dc14717d2920a143624b4a428a4ccb"
+          },
+          "gate_pass": false
+        },
+        {
+          "seed": 2026,
+          "configuration": {
+            "config_file_sha256": "058c45443b81f6b9861d2896e33544727e8921b7052d61ef331e9ba819be70c8",
+            "config_fingerprint": "4aa9ea1b11e9ec92ff7c5e6c6b65396fab6f807e1cdd60fb7e0c42c5567225b4"
+          },
+          "metrics": {
+            "nmae": 4.720313876394541,
+            "obo": 0.05952380952380952,
+            "mae": 18.011904761904763,
+            "rmse": 20.61928131397314,
+            "exact": 0.023809523809523808
+          },
+          "bootstrap_10000_paired_95ci": {
+            "nmae": {
+              "low": 3.8473751945207457,
+              "high": 5.635771202590399
+            },
+            "obo": {
+              "low": 0.011904761904761904,
+              "high": 0.11904761904761904
+            },
+            "mae": {
+              "low": 15.857142857142858,
+              "high": 20.13095238095238
+            },
+            "rmse": {
+              "low": 18.939981952877048,
+              "high": 22.165241182195803
+            },
+            "exact": {
+              "low": 0.0,
+              "high": 0.05952380952380952
+            }
+          },
+          "artifact_bindings": {
+            "encoder_checkpoint_sha256": "ecaf3c2bd54ffc12c396f9da0044b2799917fb8a6f3811547ba9bcab6fe9d45e",
+            "encoder_progress_sha256": "4884a3d2740eadad375248e872cb5a1d554f2a23dabb418c4380b8e6eb6536a0",
+            "encoder_completed_receipt_sha256": "9dc667fa940576c8ea0da6e683d1db63a64e6614b9b42f60d6f2a8e19188bcbc",
+            "head_checkpoint_sha256": "732c1b243c39aa250ef0cda411e1691b8bd8383f110fd95b42d191798c3c2242",
+            "head_progress_sha256": "40a9d057d1cbf29041e789885d125c5e6cdd3f9155d30361df946335a6558f54",
+            "head_completed_receipt_sha256": "cf3c4337186dfab2df48068075be3f917875b7c830b20d4e66d1e591b0265fec",
+            "prediction_sha256": "b1a298407ede3a31796c7db0dba13120da84759c17c33fe6f761911c73f7998f",
+            "prediction_receipt_sha256": "4066ce0e7ac788d2954ad12ff11481d1402731becfb5b023583648d235a325ee",
+            "evaluation_sha256": "dd442524d7f8777a2037ae7bfa81dd0916bada2be593ac43bb41bd9f3f772692",
+            "evaluation_receipt_sha256": "33ed1b718acf96e176a60183439b3d41156c03b094c9e19952be3ed56ea152d8"
+          },
+          "gate_pass": false
+        },
+        {
+          "seed": 3407,
+          "configuration": {
+            "config_file_sha256": "40f7979109b65feda65dd3b591210fcf0676d75b32cd97afa9e7de460f113e71",
+            "config_fingerprint": "305c9b44f329ce14f8c965aad2836c6cd80355116c7fea84a6f9759219a80405"
+          },
+          "metrics": {
+            "nmae": 5.605601952553923,
+            "obo": 0.05952380952380952,
+            "mae": 21.63095238095238,
+            "rmse": 24.651137325254822,
+            "exact": 0.023809523809523808
+          },
+          "bootstrap_10000_paired_95ci": {
+            "nmae": {
+              "low": 4.582860558269271,
+              "high": 6.677849492176771
+            },
+            "obo": {
+              "low": 0.011904761904761904,
+              "high": 0.11904761904761904
+            },
+            "mae": {
+              "low": 19.095238095238095,
+              "high": 24.131249999999994
+            },
+            "rmse": {
+              "low": 22.71527962062813,
+              "high": 26.4440109341551
+            },
+            "exact": {
+              "low": 0.0,
+              "high": 0.05952380952380952
+            }
+          },
+          "artifact_bindings": {
+            "encoder_checkpoint_sha256": "2e43be20ccee315b513a8002c7c2be7dcfc5a14d4d9e7a1406966d50fc04f597",
+            "encoder_progress_sha256": "a78ac1d4a668d6544f95725ff1ab113ee084c072e7ac9945aa9475e6c489e2f9",
+            "encoder_completed_receipt_sha256": "66bdb8771b9a15336f9fcc3d6a3046194f04e7d0bb47dcd55f25eb3e93cccffe",
+            "head_checkpoint_sha256": "e7e3cc50dbc3166587aa5091b2e9c7b38441a4d49b19c36ec5580e04ac703ee7",
+            "head_progress_sha256": "39c2f06653a193f7c0ad7d4dbb0a884bf1d140e1108a88ec89cc0f44caa6d3e1",
+            "head_completed_receipt_sha256": "5876dab3a0ef0fcf0989e3667af9ab88f35f285594139588ac564a2bca652918",
+            "prediction_sha256": "a8c8014b817bd63e21e9e39f13ceb23f752aeb5840648a388c5a2f2f10fe54ed",
+            "prediction_receipt_sha256": "461cc5fd0cba083592f12d254b5be315a7b6080c8fb7a52478c3d7465c031647",
+            "evaluation_sha256": "7e42df36eb1b603651f838eb0c899772afa4a2cc9b90a879b3a7635aab929480",
+            "evaluation_receipt_sha256": "86357e6aa19379462574b5208a2ee7554fc30f71b5edce9c672c8870e6d5265e"
+          },
+          "gate_pass": false
+        }
+      ],
+      "aggregate": {
+        "standard_deviation_definitions": {
+          "population_std": "sqrt(sum((x-mean)^2)/N), N=3",
+          "sample_std": "sqrt(sum((x-mean)^2)/(N-1)), N=3"
+        },
+        "nmae": {
+          "mean": 5.0224710174730705,
+          "population_std": 0.4124265180081902,
+          "sample_std": 0.5051172627564218
+        },
+        "obo": {
+          "mean": 0.051587301587301584,
+          "population_std": 0.01122391716169123,
+          "sample_std": 0.013746434980705375
+        },
+        "mae": {
+          "mean": 19.261904761904763,
+          "population_std": 1.6760224933863836,
+          "sample_std": 2.0526999531119166
+        },
+        "rmse": {
+          "mean": 21.972945360393606,
+          "population_std": 1.8938050549046843,
+          "sample_std": 2.3194280284099786
+        },
+        "exact": {
+          "mean": 0.015873015873015872,
+          "population_std": 0.01122391716169123,
+          "sample_std": 0.013746434980705375
+        }
+      }
+    }
+  },
+  "paired_same_seed_summary": {
+    "nmae_difference_sshead_minus_literal": {
+      "seed_42": 4.11369132657618,
+      "seed_2026": 4.03061863560632,
+      "seed_3407": 2.4542048297898055,
+      "worse_seed_count": 3
+    },
+    "obo_difference_sshead_minus_literal": {
+      "seed_42": -0.27380952380952384,
+      "seed_2026": -0.2619047619047619,
+      "seed_3407": 0.011904761904761904,
+      "worse_seed_count": 2
+    }
+  }
+}

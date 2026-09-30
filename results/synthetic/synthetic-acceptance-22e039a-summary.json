@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "status": "failed_strict_synthetic_pose_gate",
+  "classification": "synthetic component acceptance diagnostic",
+  "diagnostic_only": true,
+  "eligible_for_paper_table": false,
+  "sealed_test_accessed": false,
+  "execution": {
+    "location": "server_cpu",
+    "container_exit_code": 1,
+    "source_git_sha": "22e039aec6350fd8083c1f66a30283e2f5b92599",
+    "source_code_sha256": "f0b3ecbe554df7d300112de9b83961fa2bccaabc8999956522f69b935ed9a291",
+    "container_image_id": "sha256:6855e98177c8d9d8f1487c5472d77707f8b854f494c91c6b44ed525209592e3b",
+    "container_environment_sha256": "1ccfd265d829e5160b8af39156193f63622ac73eaefec00b0f9dab40106c3508",
+    "config_file_sha256": "058c45443b81f6b9861d2896e33544727e8921b7052d61ef331e9ba819be70c8",
+    "config_fingerprint": "4aa9ea1b11e9ec92ff7c5e6c6b65396fab6f807e1cdd60fb7e0c42c5567225b4",
+    "stress_config_sha256": "3e87313ff43a1baffd3bb5daff136c495e391ab42390ba8512d610a106d12962"
+  },
+  "case_counts": {
+    "total": 1207,
+    "counter_exact_period": 576,
+    "period_counter_estimated_period": 576,
+    "pose_spectral_proxy": 55
+  },
+  "checks": {
+    "counter_576_passed": true,
+    "period_counter_576_passed": true,
+    "pose_suite_passed": false,
+    "overall_passed": false
+  },
+  "counter_576": {
+    "nmae": 0.0642650462962963,
+    "obo": 1.0,
+    "passed": true
+  },
+  "period_counter_576": {
+    "nmae": 0.0642650462962963,
+    "obo": 1.0,
+    "maximum_period_relative_error": 0.0,
+    "passed": true
+  },
+  "pose_suite": {
+    "sample_count": 55,
+    "nmae": 0.03921370609188828,
+    "mae": 0.6,
+    "rmse": 1.1832159566199232,
+    "obo": 0.8909090909090909,
+    "exact": 0.6,
+    "maximum_absolute_error": 6,
+    "thresholds": {
+      "maximum_absolute_error": 1.0,
+      "obo": 1.0,
+      "nmae": 0.08
+    },
+    "confidence_intervals_95": {
+      "nmae": {
+        "low": 0.01811517677551489,
+        "high": 0.07222728051840398
+      },
+      "obo": {
+        "low": 0.8,
+        "high": 0.9636363636363636
+      }
+    },
+    "failed_beyond_one": [
+      {
+        "case_id": "count-30",
+        "target": 30,
+        "prediction": 28,
+        "absolute_error": 2
+      },
+      {
+        "case_id": "count-34",
+        "target": 34,
+        "prediction": 32,
+        "absolute_error": 2
+      },
+      {
+        "case_id": "count-38",
+        "target": 38,
+        "prediction": 36,
+        "absolute_error": 2
+      },
+      {
+        "case_id": "count-39",
+        "target": 39,
+        "prediction": 36,
+        "absolute_error": 3
+      },
+      {
+        "case_id": "count-40",
+        "target": 40,
+        "prediction": 42,
+        "absolute_error": 2
+      },
+      {
+        "case_id": "missing-joints-pos0p2xpos0p3",
+        "target": 8,
+        "prediction": 2,
+        "absolute_error": 6
+      }
+    ],
+    "category_metrics": {
+      "count_sweep": {
+        "sample_count": 39,
+        "nmae": 0.029660354744970648,
+        "obo": 0.8717948717948718,
+        "mae": 0.6410256410256411,
+        "rmse": 1.0
+      },
+      "constant_speed": {
+        "sample_count": 3,
+        "nmae": 0.0,
+        "obo": 1.0,
+        "mae": 0.0,
+        "rmse": 0.0
+      },
+      "linear_speed": {
+        "sample_count": 2,
+        "nmae": 0.0,
+        "obo": 1.0,
+        "mae": 0.0,
+        "rmse": 0.0
+      },
+      "pause": {
+        "sample_count": 2,
+        "nmae": 0.125,
+        "obo": 1.0,
+        "mae": 1.0,
+        "rmse": 1.0
+      },
+      "gaussian_noise": {
+        "sample_count": 4,
+        "nmae": 0.0,
+        "obo": 1.0,
+        "mae": 0.0,
+        "rmse": 0.0
+      },
+      "missing_joints": {
+        "sample_count": 1,
+        "nmae": 0.75,
+        "obo": 0.0,
+        "mae": 6.0,
+        "rmse": 6.0
+      },
+      "second_harmonic": {
+        "sample_count": 4,
+        "nmae": 0.0,
+        "obo": 1.0,
+        "mae": 0.0,
+        "rmse": 0.0
+      }
+    }
+  },
+  "artifacts": {
+    "full_artifact": {
+      "path": "results/synthetic/synthetic-acceptance-22e039a.json",
+      "sha256": "0b4b3734228fc2dd82f00db6b18449cc6342e3581606c1af38fa89aa3e01eb70",
+      "bytes": 594313
+    },
+    "receipt": {
+      "path": "results/synthetic/synthetic-acceptance-22e039a.receipt.json",
+      "sha256": "650287982fa1cb93edf53cfcb5d8a748697fec17d68b806b4a4c7e1057709961",
+      "bytes": 1593
+    }
+  }
+}

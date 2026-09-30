@@ -1,0 +1,19 @@
+{
+  "acceptance_status": "provisional",
+  "agent_id": "/root/temporac_x0_impl_review",
+  "call_number": 1,
+  "canonical_output_sha256": "25990dcf9cf9a257fa0ae151ba190882d6c6d110fca3b7bdd5a8e4594f6997df",
+  "duration_ms": null,
+  "executor_family": "openai",
+  "model": "gpt-5.6-sol",
+  "purpose": "temporac-x0-implementation-candidate-review",
+  "request_sha256": "523333a6459058ed9cabf737b5459316a18a99c790189bf5ac344209312a3ae0",
+  "response_sha256": "25990dcf9cf9a257fa0ae151ba190882d6c6d110fca3b7bdd5a8e4594f6997df",
+  "review_independence": "same-family",
+  "reviewer_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "status": "ok",
+  "structured_output_sha256": "6b2e85b66962184f2094fc75d3f224abf25c3af32a8916708c4ff9b27c950e9e",
+  "timestamp": "2026-08-16T08:56:00+08:00",
+  "verdict": "PASS"
+}

@@ -1,0 +1,11 @@
+schema_version: 1
+key: jtsps-count-only
+paper_name: JTSPS-count-only
+status: blocked_protocol
+implementation: not_implemented
+protocol: ucfrep_526_fair
+modality: pose
+eligible_for_comparison: false
+reason: Public material does not uniquely determine a source-faithful protocol.
+sources:
+  - https://doi.org/10.1109/TCSVT.2024.3402728

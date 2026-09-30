@@ -1,0 +1,35 @@
+{
+  "artifact_type": "label_data_free_source_view_receipt",
+  "file_total": 5,
+  "files": [
+    {
+      "bytes": 58656,
+      "path": "scripts/server/run_local_frequency_v2_dev.py",
+      "sha256": "f3c531d9ee33909b98a3307ddcab45bd1a58aced133eb249f9936aefc11f9577"
+    },
+    {
+      "bytes": 160,
+      "path": "src/pams/__init__.py",
+      "sha256": "8b6ffbf3ac8ed7e43f1f40ef5793baa087f73b303eff342d891380bc9a5d67ce"
+    },
+    {
+      "bytes": 76527,
+      "path": "src/pams/data.py",
+      "sha256": "93dc27fb8bae9c7d2c0d185e883a8608d4ad0550344e7b01802925e11a612cc0"
+    },
+    {
+      "bytes": 12857,
+      "path": "src/pams/metrics.py",
+      "sha256": "7fdfcd540f3cbe19e3f66d076096f093b9e1b4a817e71bb44bc0373a268adc62"
+    },
+    {
+      "bytes": 6210,
+      "path": "src/pams/types.py",
+      "sha256": "78c2ad53e98856425492a1711faa62fc2bb7764767dc48a22f7c4d5e043a3e31"
+    }
+  ],
+  "git_sha": "2310d093603ffc031e74ca6a5fbc582471f0a78e",
+  "prohibited_directories_absent": true,
+  "schema_version": 1,
+  "scope": "local-frequency-v2-dev-score"
+}

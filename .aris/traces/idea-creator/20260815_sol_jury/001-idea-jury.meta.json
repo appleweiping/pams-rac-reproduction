@@ -1,0 +1,9 @@
+{
+  "agent_id": "/root/idea_creator_jury",
+  "model": "gpt-5.6-sol",
+  "reviewer_family": "openai",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "status": "ok",
+  "verdict": "ADVANCE_BOUNDED_PILOTS"
+}

@@ -1,0 +1,94 @@
+{
+  "artifact_type": "warp_phase_experiment_code_review_round2_validation_trace",
+  "date": "2026-08-15",
+  "runtime": {
+    "numpy": "1.26.4",
+    "python": "3.12.13",
+    "torch": "2.13.0+cpu"
+  },
+  "git": {
+    "branch": "codex/aris-fullrun-icassp27",
+    "head": "236d4ad235c1cdd15398e7fdeac0d8c5b569570e",
+    "tracked_diff_files_in_scope": [
+      "src/pams/cli.py",
+      "tests/test_cli.py"
+    ],
+    "warp_phase_package_state": "untracked"
+  },
+  "commands": [
+    {
+      "command": ".venv/Scripts/python.exe -m pytest -q -p no:cacheprovider tests/test_warp_phase_*.py",
+      "exit_code": 0,
+      "result": "96 passed in 11.51s"
+    },
+    {
+      "command": ".venv/Scripts/python.exe -m pytest -q -p no:cacheprovider tests/test_cli.py -k warp_phase",
+      "exit_code": 0,
+      "result": "7 passed, 38 deselected in 8.45s"
+    },
+    {
+      "command": ".venv/Scripts/python.exe -m ruff check --no-cache src/pams/warp_phase src/pams/cli.py scripts/experiments/generate_warp_phase_fixture_pack.py scripts/experiments/generate_warp_phase_selector_unit_fixtures.py tests/test_cli.py tests/test_warp_phase_*.py",
+      "exit_code": 0,
+      "result": "All checks passed!"
+    },
+    {
+      "command": ".venv/Scripts/python.exe -m mypy --no-incremental src/pams/warp_phase src/pams/cli.py scripts/experiments/generate_warp_phase_fixture_pack.py scripts/experiments/generate_warp_phase_selector_unit_fixtures.py",
+      "exit_code": 0,
+      "result": "Success: no issues found in 17 source files"
+    }
+  ],
+  "artifact_replay": {
+    "candidate_v2": {
+      "member_count": 23,
+      "all_member_hashes_and_schemas_match": true,
+      "all_float_members_finite": true,
+      "pack_sha256": "c6dbe56df7b4f7d427ce1f51d5d818ad0e46dcfbf6e1550e0d77116435760196",
+      "live_generator_hash_matches": true,
+      "live_selector_hash_matches": true,
+      "v2_fixture_lock_hash_matches": true
+    },
+    "selector_unit_pack": {
+      "npy_member_count": 64,
+      "pack_member_count": 65,
+      "all_member_hashes_and_schemas_match": true,
+      "all_float_members_finite": true,
+      "pack_sha256": "406fe3934dd307accbd735dd6f2e54890d6de643c7bfe1d05d9f2d1131a8efcf"
+    },
+    "canonical_diagnostic_replay": {
+      "rows": 1000,
+      "hard_errors": 0,
+      "selected_period_mismatches": 0,
+      "finite_computed_score_entries": 41605,
+      "finite_computed_but_score_invalid_entries": 34499,
+      "nonzero_finite_scores_zeroed_in_pack": 34499,
+      "nonzero_finite_acf_values_zeroed_in_pack": 34499,
+      "nonzero_harmonic_values_zeroed_in_pack": 103497,
+      "rows_affected": 894
+    },
+    "receipt_byte_replay": {
+      "gate1": {
+        "status": "BLOCKED",
+        "sha256": "160d21b2bcdc0be9850646a1e187e18eff2a4ed78700490cc58251ff641d469a",
+        "exact_saved_bytes": true
+      },
+      "gate2": {
+        "status": "FAIL",
+        "sha256": "609b2c57853d4dea661957eac810e7936611cac9d037ca9bca2eafe7ebceec03",
+        "exact_saved_bytes": true,
+        "observation_vector": [246, 55, 144, 50, 66]
+      },
+      "gate3_cpu": {
+        "status": "BLOCKED",
+        "sha256": "157c506f6573d4ddb1cd2e3c080534cda00fd869eb07597cd0d0da37c942e54e",
+        "exact_saved_bytes": true
+      }
+    }
+  },
+  "scope_guards": {
+    "prior_experiment_code_review_contents_read": false,
+    "protected_test_sealed_or_heldout_data_accessed": false,
+    "server_accessed": false,
+    "training_or_evaluation_launched": false,
+    "source_test_artifact_manifest_git_or_paper_modified": false
+  }
+}

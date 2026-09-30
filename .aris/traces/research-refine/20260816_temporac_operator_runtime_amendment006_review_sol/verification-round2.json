@@ -1,0 +1,211 @@
+{
+  "schema": "temporac.amendment-006-round2-review-verification.v1",
+  "verdict": "ACCEPT",
+  "blocking_issue_count": 0,
+  "fresh_context": true,
+  "model": "gpt-5.6-sol",
+  "reasoning_effort": "ultra",
+  "reviewer_family": "openai",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "amendment": {
+    "fixed_alias_json": {
+      "bytes": 21582,
+      "sha256": "e443453b93c96dfda4c6daf68332c0f667429cbf2a036e16e0e6c43c89d9fa61"
+    },
+    "fixed_alias_markdown": {
+      "bytes": 16965,
+      "sha256": "9b1e3a9c36c360e8d9011145d120f7cff8e6922f4620c60445d8194809070517"
+    },
+    "fixed_aliases_byte_identical_to_20260816_123444": true,
+    "ordered_input_binding_count": 21,
+    "all_input_bindings_match_at_start": true,
+    "all_input_bindings_match_at_end": true
+  },
+  "runtime_projection": {
+    "accepted_amendment_004": {
+      "bytes": 3732,
+      "sha256": "8008df73cc9a807ac5e5262aebc170ae6e01c82b07658575f6207ec7cb0a14fd"
+    },
+    "rejected_amendment_006_round1": {
+      "bytes": 3976,
+      "sha256": "71fdf4bfe78b59aada9f2e207002eae3fcd10345ed1f47ee9969557d6649f5da"
+    },
+    "revised_amendment_006": {
+      "bytes": 3976,
+      "sha256": "47c2227b74b627a03bf9b5e4930dd02484caaae5a695ae5c0129f04781115cd8"
+    },
+    "bootstrap_accepted_amendment_004": {
+      "bytes": 409,
+      "sha256": "66fdf1cd03616759948e326e1714a997848c45f40d005240a4ebe170240bf323"
+    },
+    "bootstrap_revised_amendment_006": {
+      "bytes": 592,
+      "sha256": "c830092276818bcacf4a08eb8818481fe47b7d8f608229cac1fc672ad2947602"
+    },
+    "leaf_diff_vs_accepted_amendment_004": [
+      "/container_policy/bootstrap_script_sha256",
+      "/container_policy/bootstrap_steps/0",
+      "/container_policy/bootstrap_steps/1",
+      "/container_policy/bootstrap_steps/3",
+      "/container_policy/docker_argv_template/13",
+      "/numpy/record_sha256"
+    ],
+    "leaf_diff_vs_rejected_amendment_006_round1": [
+      "/numpy/record_sha256"
+    ],
+    "old_path_occurrences_in_accepted_amendment_004": 4,
+    "corrected_path_occurrences_in_revised_amendment_006": 4,
+    "old_path_occurrences_in_revised_amendment_006": 0,
+    "mount_argv_bootstrap_filename_consistent": true,
+    "dependent_revised_runtime_digest_locations": [
+      "/candidate_provenance_override/candidate_receipt/members/environment_lock.json",
+      "/candidate_provenance_override/candidate_receipt/runtime_lock_sha256",
+      "/corrected_runtime_commitment/sha256"
+    ]
+  },
+  "old_path_probe": {
+    "execution": "fresh_round2_direct_docker_probe",
+    "platform": "linux/amd64",
+    "network": "none",
+    "read_only_root": true,
+    "tmpfs": "/tmp:rw,exec,nosuid,nodev,size=512m",
+    "exit_code": 1,
+    "stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stderr": {
+      "bytes": 48,
+      "sha256": "9218fcf778490e9a23c6865cbbdf10c000cd690375b16b4e4e5848d0b45371a4",
+      "utf8_escaped": "ERROR: numpy.whl is not a valid wheel filename.\\n"
+    },
+    "candidate_absent_before": true,
+    "candidate_absent_after": true,
+    "full_five_step_script_generator_unreachable_by_sh_ceu": true
+  },
+  "corrected_path_probes": {
+    "execution": "two_fresh_round2_direct_docker_probes",
+    "platform": "linux/amd64",
+    "network": "none",
+    "read_only_root": true,
+    "tmpfs": "/tmp:rw,exec,nosuid,nodev,size=512m",
+    "exit_codes": [0, 0],
+    "numpy_versions": ["2.1.0", "2.1.0"],
+    "candidate_absent_before_each": true,
+    "candidate_absent_after_each": true,
+    "generator_step_included": false,
+    "generator_step_executed": false,
+    "authoritative_record_preimage": "importlib.metadata.distribution(\"numpy\").read_text(\"RECORD\").encode(\"utf-8\")",
+    "authoritative_record_results": [
+      {"bytes": 100089, "sha256": "76ae0d49a0d236c7d045e8394d649e1252a6ef2219ef2dac33f72ac01ea76cca"},
+      {"bytes": 100089, "sha256": "76ae0d49a0d236c7d045e8394d649e1252a6ef2219ef2dac33f72ac01ea76cca"}
+    ],
+    "diagnostic_raw_record_results": [
+      {"bytes": 101316, "crlf_count": 1227, "sha256": "b30c47e53bf16be292c392247bad8948f3fb2407ecd54fde388f74be007426e0"},
+      {"bytes": 101316, "crlf_count": 1227, "sha256": "b30c47e53bf16be292c392247bad8948f3fb2407ecd54fde388f74be007426e0"}
+    ],
+    "diagnostic_direct_url_results": [
+      {"bytes": 286, "sha256": "3c36ea74fe65236c1dcd3bc80373860762a80217f52a6c41a7a390805ce27e98"},
+      {"bytes": 286, "sha256": "3c36ea74fe65236c1dcd3bc80373860762a80217f52a6c41a7a390805ce27e98"}
+    ],
+    "numpy_init_results": [
+      {"bytes": 22007, "sha256": "39c42db027548f958e096e8babe3fa0e3e773d24aa39eb6363fc0e3abbec34b1"},
+      {"bytes": 22007, "sha256": "39c42db027548f958e096e8babe3fa0e3e773d24aa39eb6363fc0e3abbec34b1"}
+    ],
+    "python_executable_results": [
+      {"bytes": 18208, "sha256": "9a6988f011f466ae829f7945c54000a564e14a1a594cfb7079c02eda9b87620f"},
+      {"bytes": 18208, "sha256": "9a6988f011f466ae829f7945c54000a564e14a1a594cfb7079c02eda9b87620f"}
+    ]
+  },
+  "runtime_inputs": {
+    "wheel": {
+      "bytes": 16040181,
+      "sha256": "24003ba8ff22ea29a8c306e61d316ac74111cebf942afbf692df65509a05f111",
+      "regular_non_symlink": true
+    },
+    "oci_index": {
+      "bytes": 9719,
+      "sha256": "e8be0ea148390d08bc077840cf87ac6a538d80b0ea1e8752b3e3982987cd0a53",
+      "freshly_inspected": true
+    },
+    "linux_amd64_child": {
+      "bytes": 2516,
+      "sha256": "0c7cf9e198201da2e838fcb61c07717dfc96adb3d1200599f54dea0af1d153bf",
+      "freshly_selected_with_pull_never": true
+    },
+    "config": {
+      "bytes": 7096,
+      "sha256": "c7ed3a18aaaa5a8b439cf84138ebcfe1e82e64d091781f3384ca38827824aefc",
+      "evidence_classification": "unchanged_reviewer_owned_byte_evidence_in_hash_bound_round1_trace"
+    }
+  },
+  "receipt_and_snapshots": {
+    "receipt_top_level_keys": 9,
+    "binding_keys": 17,
+    "contract_read_paths": 12,
+    "contract_reads_in_binding_key_order": true,
+    "generation_snapshot_unique_paths": 28,
+    "generation_import_execute_paths": 9,
+    "review_snapshot_candidate_members": 5,
+    "review_snapshot_contract_reads": 13,
+    "review_snapshot_project_files": 15,
+    "review_snapshot_total_unique_records": 33,
+    "historical_runtime_literal": 24,
+    "receipt_v3_override": 28,
+    "override_precedence_explicit": true,
+    "receipt_self_hash": false,
+    "accepted_review_self_hash": false,
+    "future_accepted_review_hash_injectable": true,
+    "future_dag_acyclic": true
+  },
+  "science_scope": {
+    "manifest_schema_changed": false,
+    "algorithm_changed": false,
+    "manifest_rows_changed": false,
+    "row_count": 10368,
+    "row_order_changed": false,
+    "claims_changed": false,
+    "thresholds_changed": false,
+    "jobs": 27,
+    "seeds": [20260815, 20260816, 20260817],
+    "allocated_a6000_hours": 93,
+    "decoder_changed": false,
+    "nola_changed": false,
+    "fixture_population_changed": false,
+    "current_generator_and_tests_are_pre_amendment": true
+  },
+  "output_validation_before_event_append": {
+    "canonical_markdown": {"bytes": 18454, "sha256": "ef84a0a3fde4a0269b34ba37fb2a4d41f7164a5382f8f3efaf4dc5948716388f"},
+    "structured_review": {"bytes": 20286, "sha256": "b59d381b5e515b7657861f636d2a50647faae7b18b2c73341550547109b57353"},
+    "turn_002_request": {"bytes": 6182, "sha256": "23e4f14c816cd50e0b5b2f184f6a88814d5cc732c3bbcf276e8341747524d38e"},
+    "turn_002_response": {"bytes": 18454, "sha256": "ef84a0a3fde4a0269b34ba37fb2a4d41f7164a5382f8f3efaf4dc5948716388f"},
+    "turn_002_meta": {"bytes": 1659, "sha256": "2ab39fe6a2f9abed2469a128a49c6fdbc146da643f5044d2c182f0053e279ce1"},
+    "run_meta": {"bytes": 1193, "sha256": "08d941c5e5934528eaab3f00228c14e5a6ee814b4daac3afd1a533324b02b735"},
+    "canonical_markdown_byte_identical_to_turn_002_response": true,
+    "all_json_duplicate_key_rejecting_parse": true,
+    "all_outputs_utf8_no_bom": true,
+    "all_outputs_exactly_one_terminal_lf": true,
+    "round2_negative_alias_absent": true,
+    "manifest_file_modified_by_this_review": false
+  },
+  "temporary_material": {
+    "outside_worktree": true,
+    "deleted": true
+  },
+  "authority": {
+    "authoritative": false,
+    "P2": false,
+    "P3": false,
+    "S0": false,
+    "launch": false,
+    "server": false,
+    "data": false,
+    "training": false,
+    "gate": false,
+    "git": false,
+    "paper": false,
+    "claim": false,
+    "bounded_next_sequence_only": true
+  }
+}

@@ -1,0 +1,57 @@
+\section{Planned Experiments and Analysis}
+\label{sec:experiments}
+
+The protocol is prospectively specified here but not yet executed for the proposed system.
+Existing single-person development artifacts neither implement the method nor
+use the target benchmark and are excluded. Result prose is enabled only after a
+frozen collaborator bundle passes experiment and claim audits.
+
+\subsection{Protocol and metrics}
+The manifest must bind the MultiRep release, official split, media and annotation
+checksums, evaluator revision, preprocessing, supervision path, hardware,
+configurations, seeds, and raw logs. We report three noninterchangeable
+protocols: supplied oracle tracks, one frozen common predicted-track frontend,
+and each method's native pipeline. Native rows provide context and are not
+ranked against common-track rows. Predicted-track runs retain HOTA
+\cite{luiten2021hota}, IDF1, and identity switches \cite{ristani2016idmetrics}
+as frontend diagnostics, separate from counting. Their proposed-method values
+remain \R{ours-hota}, \R{ours-idf1}, and \R{ours-idsw}.
+
+The principal release-native metrics are Period-mAP, Period-AP50, Period-AP75,
+AvgMAE, and AvgOBO \cite{tang2024multicounter,tang2026multicounterplus}. The
+manifest freezes the evaluation unit, assignment and unmatched-track rules,
+aggregation, empty-support handling, and evaluator hash. Reproduced learned
+methods use at least three predeclared seeds; we report mean, sample standard
+deviation, and a paired video-cluster bootstrap 95\% confidence interval. The
+dataset and evaluator remain \Protocol{multirep-release} and
+\Protocol{evaluator-revision} until their hashes are available.
+
+\subsection{Matched comparisons and ablations}
+Table~\ref{tab:main} separates native MultiCounter variants from matched oracle-
+and common-track families. Oracle tracks isolate counting; the common frontend
+exposes tracking errors. Track-PAMS tests per-track adaptation, a global-tempo
+control tests locality, and TempoRAC tests the full hypothesis. RepNet,
+TransRAC \cite{dwibedi2020repnet,hu2022transrac}, PoseRAC
+\cite{yao2025poserac}, DeTRC \cite{ma2026detrc}, and D$^2$-STX
+\cite{wang2026d2stx} enter a matched block only when input, output, supervision,
+and evaluation parity can be established; otherwise they remain contextual.
+
+Table~\ref{tab:ablation} isolates local versus global tempo, ACF and Fourier
+evidence, uniform/hard/soft or single-expert routing, and boundary fusion. The
+window variant decodes each window before one frozen reconciliation rule. Every
+row must match parameters, context, frontend, training budget, videos, and
+seeds, and must bind one commit and configuration. Auxiliary-loss removals are
+added only for terms present in the frozen graph. Primary contrasts, bootstrap
+replicates, multiplicity, and exclusion rules are fixed before inspection.
+
+\subsection{Nonstationary-tempo diagnostic}
+A frozen piecewise time-warp changes one person's pace while preserving paired
+identity and event count. The result-bound diagnostic aligns local period,
+routing probability or entropy, reconstructed response, and clean-to-corrupt
+change, using either a frozen selection rule or a predeclared aggregate. Source
+data, generator hash, warp schedule, frame/mask/event mapping, and selection
+rule are recorded. Separate controls hold motion fixed under periodic and
+nonperiodic missingness, then hold the mask fixed while changing tempo, testing
+whether routing reads motion rather than visibility. Occlusion and identity
+switches are stressed separately so that perception failures are not presented
+as tempo effects.

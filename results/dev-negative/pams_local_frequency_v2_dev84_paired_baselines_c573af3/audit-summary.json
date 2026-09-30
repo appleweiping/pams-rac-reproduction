@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "artifact_type": "ucfrep_dev84_paired_method_comparison_public_audit",
+  "status": "partial_reproduction",
+  "classification": "development-only frozen-prediction comparison",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "candidate": "pams-local-frequency-v2-target-free-selected-v1",
+  "source": {
+    "git_sha": "c573af33876591f29aaab6f272b96b809256ca77",
+    "path": "scripts/compare_dev84_evaluations.py",
+    "sha256": "f0c39328e33fd034b58babd1475f1d9ca78d3b857e5bc0d5f0a963248ba096f4"
+  },
+  "formal_run": {
+    "run_id": "paircmp-c573af3-20260731T001729Z",
+    "comparison_sha256": "d17f45ef524e991a35d08727e2294e3e6d4d1077c251dda2462c0ded38db271a",
+    "formal_status_sha256": "c619499b0f436b1da4918c1f2d2f41d5476b851dabde8b70dc2d1d7698c82bad",
+    "source_view_receipt_sha256": "f3215c5d11b5a6ea0bb14cb938828bd702da0d3b736ce73ffa2a4f6fef8f4379",
+    "deterministic_replay_byte_identical": true,
+    "network": "none",
+    "read_only_root": true,
+    "inputs_are_frozen_dev_evaluations_only": true
+  },
+  "paired_identity": {
+    "sample_count": 84,
+    "video_id_sha256": "2199294a1d22da6c67d2fdaaafb4bebaa11e92a5bb3accd4670975815001f2c6",
+    "target_rows_sha256": "850541977de481223b2376c33aff2ccae3c872df848798d5de7b4c631f722a27",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6"
+  },
+  "bootstrap": {
+    "resampling_unit": "paired video",
+    "samples": 10000,
+    "seed": 2026,
+    "confidence_level": 0.95,
+    "difference_direction": "candidate_minus_baseline",
+    "multi_seed_policy": "metric per seed, then arithmetic mean across seeds"
+  },
+  "candidate_metrics": {
+    "nmae": 0.4538043818524114,
+    "mae": 3.2738095238095237,
+    "rmse": 5.029673851018478,
+    "obo": 0.36904761904761907,
+    "exact": 0.27380952380952384
+  },
+  "key_findings": {
+    "nmae_gain_over_local_frequency_v1_statistically_resolved": false,
+    "exact_gain_over_local_frequency_v1_statistically_resolved": true,
+    "obo_deficit_to_repnet_statistically_resolved": true,
+    "obo_deficit_to_escounts_statistically_resolved": true,
+    "any_metric_difference_to_jtsps_three_seed_mean_statistically_resolved": false
+  },
+  "acceptance_gate": {
+    "required_nmae_at_most": 0.228,
+    "required_obo_at_least": 0.666,
+    "joint_pass": false,
+    "verified_reproduction": false
+  },
+  "claim_boundary": {
+    "paper_table_eligible": false,
+    "test105_mounted": false,
+    "test105_accessed": false,
+    "test105_prediction_authorized": false,
+    "test105_evaluation_authorized": false
+  }
+}

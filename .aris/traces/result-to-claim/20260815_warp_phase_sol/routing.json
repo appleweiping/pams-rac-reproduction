@@ -1,0 +1,39 @@
+{
+  "schema_version": "aris.result_to_claim.routing.v1",
+  "verdict_id": "WARP-PHASE-R2C-20260815-SOL-001",
+  "date": "2026-08-15",
+  "route": "pivot",
+  "acceptance_status": "provisional",
+  "review_independence": "same-family",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_reasoning": "ultra",
+  "decision_rule": "Frozen global K5 failure stops the current candidate; missing efficacy evidence cannot be supplemented after the stop.",
+  "alternatives": {
+    "confirm": {
+      "selected": false,
+      "reason": "There is no positive efficacy result to confirm."
+    },
+    "supplement": {
+      "selected": false,
+      "reason": "The route is terminally stopped by K5 rather than missing an admissible auxiliary analysis."
+    },
+    "pivot": {
+      "selected": true,
+      "reason": "Gate 2 fails every frozen selector-stability threshold and authorizes nothing."
+    }
+  },
+  "current_candidate_actions": {
+    "preserve_receipts": true,
+    "record_zero_eligible_efficacy_results": true,
+    "threshold_tuning": false,
+    "fixture_replacement": false,
+    "harmonic_correction": false,
+    "gate2_retry": false,
+    "real_track_evaluation": false,
+    "local_training": false,
+    "server_training_or_launch": false
+  },
+  "future_route_boundary": "A future effort must be a scientifically distinct, newly preregistered candidate with a new evidence and authorization chain; it may not overwrite or reinterpret WARP-PHASE artifacts.",
+  "confidence": "low",
+  "confidence_reason": "The bound experiment-integrity audit is FAIL."
+}

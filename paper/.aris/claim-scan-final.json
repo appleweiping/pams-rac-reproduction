@@ -1,0 +1,280 @@
+{
+  "blockers": [
+    "PENDING, SYNC-REQUIRED, [VERIFY], TBD, or TODO remains in submission prose",
+    "claim ledger has unlicensed submission-facing claims",
+    "evidence macros are used but generated/evidence_values.tex is absent"
+  ],
+  "checks": [
+    {
+      "detail": "8 active TeX files",
+      "id": "active_source_graph",
+      "status": "PASS"
+    },
+    {
+      "detail": "0 unallowlisted hits",
+      "id": "forbidden_claims",
+      "status": "PASS"
+    },
+    {
+      "detail": "33 hits",
+      "id": "placeholders",
+      "status": "BLOCKED"
+    },
+    {
+      "detail": "0 suspect tables",
+      "id": "empty_tables",
+      "status": "PASS"
+    },
+    {
+      "detail": "evidence macros are used but generated/evidence_values.tex is absent",
+      "id": "evidence_macro_bindings",
+      "status": "BLOCKED"
+    },
+    {
+      "detail": "exactly 16 claims",
+      "id": "claim_ledger_schema",
+      "status": "PASS"
+    },
+    {
+      "detail": "mapped=0, unlicensed_core=11",
+      "id": "claim_mapping",
+      "status": "BLOCKED"
+    }
+  ],
+  "claim_mapping": {
+    "mapped_ids": [],
+    "unknown_ids": [],
+    "unlicensed_ids": [
+      "AC01",
+      "AC02",
+      "AC03",
+      "AC04",
+      "AC05",
+      "AC06",
+      "AC07",
+      "AC08",
+      "AC09",
+      "AC10",
+      "AC13"
+    ]
+  },
+  "gate": "submission_prose",
+  "mode": "draft",
+  "schema_version": "1.0",
+  "sources": [
+    "main.tex",
+    "math_commands.tex",
+    "preamble.tex",
+    "sections/0_abstract.tex",
+    "sections/1_introduction.tex",
+    "sections/3_method.tex",
+    "sections/4_experiments.tex",
+    "sections/5_conclusion.tex"
+  ],
+  "status": "PROVISIONAL",
+  "submission_ready": false,
+  "violations": {
+    "empty_tables": 0,
+    "forbidden": [],
+    "placeholders": [
+      {
+        "context": "\\name{AUTHOR ROSTER PENDING}",
+        "line": 23,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\address{AFFILIATIONS PENDING}",
+        "line": 24,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\name{AUTHOR ROSTER PENDING}",
+        "line": 27,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\address{Affiliations pending collaborator confirmation}",
+        "line": 28,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "Funding and conflict-of-interest declarations are \\Pending{author-declarations}.",
+        "line": 53,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "The final ethical-compliance statement is \\Pending{ethical-compliance} and will",
+        "line": 54,
+        "source": "main.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "\\color{DraftRed}\\bfseries DATA-PENDING DIAGNOSTIC SHELL\\\\[2pt]",
+        "line": 161,
+        "source": "sections/4_experiments.tex",
+        "token": "PENDING"
+      },
+      {
+        "context": "AUTHOR ROSTER PENDING",
+        "line": 4,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Affiliations pending collaborator confirmation",
+        "line": 6,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "DRAFT – RESULTS PENDING that track, then reconstructing one response before count decoding.",
+        "line": 9,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "double-counting. Experimental evidence is pending synchronization supervised training data. The exact supervision path, including model",
+        "line": 28,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "PROPOSED • SYNC-REQUIRED",
+        "line": 137,
+        "source": "PDF_BODY",
+        "token": "SYNC-REQUIRED"
+      },
+      {
+        "context": "CONTRACT START SYNC-REQUIRED • DELETE IF ABSENT",
+        "line": 158,
+        "source": "PDF_BODY",
+        "token": "SYNC-REQUIRED"
+      },
+      {
+        "context": "remain PENDING, PENDING, and PENDING, respectively, until the same baseline enters the common-track block only if its temporal input and",
+        "line": 179,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "evaluator fields remain PENDING and PENDING. The frozen bundle becoming a simulated ablation. Each contrast will report the paired",
+        "line": 198,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "MultiCounter [7] native/contextual PENDING PENDING PENDING PENDING PENDING",
+        "line": 208,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "MultiCounter+ [8] native/contextual PENDING PENDING PENDING PENDING PENDING",
+        "line": 209,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Track-PAMS [6] supplied oracle tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 211,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Track-global tempo supplied oracle tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 212,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Identity-indexed local routing supplied oracle tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 213,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Track-PAMS [6] common predicted tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 215,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Track-global tempo common predicted tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 216,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "Identity-indexed local routing common predicted tracks PENDING PENDING PENDING PENDING PENDING",
+        "line": 217,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "global ACF+FFT uniform NOLA→decode PENDING PENDING",
+        "line": 228,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local ACF only soft NOLA→decode PENDING PENDING",
+        "line": 230,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local FFT only soft NOLA→decode PENDING PENDING masked, identity-indexed pose signals whose tempo can change",
+        "line": 231,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local ACF+FFT single NOLA→decode PENDING PENDING within a track. The proposed specification estimates local periodic",
+        "line": 232,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local ACF+FFT hard NOLA→decode PENDING PENDING",
+        "line": 233,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local ACF+FFT soft boxcar→decode PENDING PENDING",
+        "line": 234,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "local ACF+FFT soft decode→aggregate PENDING PENDING identity response with normalized overlap-add, and decodes that",
+        "line": 236,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "and conflict-of-interest declarations are PENDING. The final ethical-",
+        "line": 250,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "compliance statement is PENDING and will be bound to the dataset",
+        "line": 252,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      },
+      {
+        "context": "DATA-PENDING DIAGNOSTIC SHELL tion counting,” in Proceedings of the IEEE/CVF Conference on",
+        "line": 280,
+        "source": "PDF_BODY",
+        "token": "PENDING"
+      }
+    ]
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "schema_version": "2.0",
+  "generated_at": "2026-08-15T00:08:40+08:00",
+  "venue_target": "ICASSP 2027 regular paper",
+  "evidence_policy": "The committed PPTX files are editable visual references, not implementation or result evidence.",
+  "active_figures": [
+    {
+      "id": "fig:task-motivation",
+      "role": "task motivation and output distinction",
+      "empirical": false,
+      "source": {
+        "file": "recommend paper/Multi-Person-Tempo-Adaptive-Counting-Introduction-Rounded-TNR.pptx",
+        "sha256": "29c01239515b9e0a9870ba840de6c087b32a1d46c5687c13c9c88dfdb4383e17",
+        "slide": 1,
+        "editable": true,
+        "authority": "visual_reference_only"
+      },
+      "output": {
+        "file": "paper/figures/introduction_source_full.pdf",
+        "sha256": "216aabb2af9e022e487fbfe5022635d98c998f32a5e7e043289daa8d04ae0cd3",
+        "page_size_pt": [720, 405],
+        "full_canvas": true,
+        "cropped": false,
+        "fonts_embedded": true
+      },
+      "caption_contract": [
+        "reproduced in full",
+        "naive scene-level adaptation",
+        "schematic",
+        "not measurements"
+      ],
+      "media_provenance": "SYNC-REQUIRED: confirm the origin and publication permission of the embedded people montage before submission"
+    },
+    {
+      "id": "fig:framework",
+      "role": "conceptual method overview",
+      "empirical": false,
+      "source": {
+        "file": "recommend paper/Multi-Person-Tempo-Adaptive-Counting-Framework-Rounded-TNR.pptx",
+        "sha256": "dfa86571aa8348eda8fa22a456d49e67179e4effd95b1b3b46b3a3dce69b4593",
+        "slide": 1,
+        "editable": true,
+        "authority": "visual_reference_only"
+      },
+      "output": {
+        "file": "paper/figures/framework_source_full.pdf",
+        "sha256": "920c47ea13d050c8a2265467d9232db23872022b9ba27204bc98d624f403e7fe",
+        "page_size_pt": [720, 405],
+        "full_canvas": true,
+        "cropped": false,
+        "fonts_embedded": true
+      },
+      "caption_contract": [
+        "reproduced in full",
+        "shared learned parameters",
+        "SYNC-REQUIRED",
+        "PAMS-TCC",
+        "not implementation or result evidence"
+      ],
+      "scientific_reconciliation": "M_i denotes a per-identity instance with shared learned parameters and separate state; candidate routing and continuity objectives remain source-unbound",
+      "media_provenance": "SYNC-REQUIRED: confirm the origin and publication permission of the embedded people montage before submission"
+    }
+  ],
+  "export": {
+    "backend": "Microsoft PowerPoint for Microsoft 365 SaveAs PDF",
+    "source_slides": 2,
+    "output_pages": 2,
+    "vector_text_and_shapes": true,
+    "intentional_raster_subassets": "one embedded people montage per slide",
+    "visual_inspection": "PASS"
+  },
+  "retired_from_active_manuscript": [
+    "paper/figures/icassp_framework.drawio",
+    "paper/figures/icassp_framework.svg",
+    "paper/figures/icassp_framework.pdf",
+    "paper/figures/icassp_framework.png",
+    "paper/figures/framework.*",
+    "paper/figures/task_comparison.*"
+  ]
+}

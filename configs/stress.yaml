@@ -1,0 +1,48 @@
+schema_version: 1
+key: pams_stress_v1
+protocol: synthetic_then_ucfrep
+seed: 2026
+metric_policy:
+  report_clean_and_each_perturbation_separately: true
+  tune_on_stress_results: false
+synthetic:
+  count_values: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]
+  frames: 256
+  speed:
+    constant_multipliers: [0.5, 1.0, 2.0]
+    linear_ramps:
+      - {start: 0.5, stop: 2.0}
+      - {start: 2.0, stop: 0.5}
+  pauses:
+    - {fraction_of_sequence: 0.10, location: middle}
+    - {fraction_of_sequence: 0.20, location: middle}
+  gaussian_noise_standard_deviations: [0.0, 0.01, 0.03, 0.05]
+  missing_joints:
+    - {time_fraction: 0.20, joint_fraction: 0.30}
+  harmonics:
+    second_harmonic_amplitudes: [0.0, 0.25, 0.5, 1.0]
+ucfrep_perturbations:
+  - key: clean
+    parameters: {}
+  - key: temporal_speed
+    parameters:
+      speed_multipliers: [0.5, 2.0]
+  - key: temporal_pause
+    parameters:
+      fraction_of_sequence: 0.20
+      location: middle
+  - key: pose_occlusion
+    parameters:
+      time_fraction: 0.20
+      joint_fraction: 0.30
+      fill_value: 0.0
+      mark_invalid: true
+  - key: rotation
+    parameters:
+      degrees: [-15.0, 15.0]
+  - key: isotropic_scale
+    parameters:
+      multipliers: [0.85, 1.15]
+  - key: translation
+    parameters:
+      coordinate_range_fraction: [-0.10, 0.10]

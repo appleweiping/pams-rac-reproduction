@@ -1,0 +1,373 @@
+{
+  "acceptance_status": "provisional",
+  "authoritative": false,
+  "authority": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P2-METRIC": 0,
+    "P3": 0,
+    "S0": 0,
+    "capability": 0,
+    "data": 0,
+    "evaluator": 0,
+    "gate": 0,
+    "git": 0,
+    "gpu": 0,
+    "launch": 0,
+    "paper_claim": 0,
+    "result": 0,
+    "server": 0,
+    "training": 0
+  },
+  "authorizes": [],
+  "binding_verification": {
+    "all_declared_bindings_match": false,
+    "current_binding_mismatches": {
+      "tests/temporac/test_gates_fixtures.py": {
+        "actual_bytes": 6691,
+        "actual_sha256": "d6d91a7dd606c42f672bb015d77c5c10406c2c6de69ed3a8bff76a0ce4f713d3",
+        "expected_sha256": "69690aba7eb366471a28bb7406fd1411964d271ecd250834151243bb8a7c299f"
+      },
+      "tests/temporac/test_operator_manifest.py": {
+        "actual_bytes": 24090,
+        "actual_sha256": "7f2c90c320d7378a74fcc64f6c808eb6e426cdcfbd73cab0fb1242f690db9db0",
+        "expected_sha256": "627e58cbb65be96de7d17cd56e8c12c179c2d1c3e11612f0aea5cf79eecdb5de"
+      }
+    },
+    "declared_binding_count": 48,
+    "final_mismatch_count": 2,
+    "initial_rehash_all_match": true,
+    "planning_and_review_binding_count": 5,
+    "source_binding_count": 24,
+    "test_binding_count": 19,
+    "timestamped_and_fixed_aliases_byte_identical": true,
+    "zero_binding_mismatches": false
+  },
+  "blocking_issue_count": 8,
+  "blocking_issues": [
+    {
+      "attack": "Choose normalized SmoothL1 or standard Huber under the same phrase, or supply the ten traversal rows as CertificateTrack.run_bounds instead of one [[0,N_v]] run; score bits, abstentions, and checkpoint selection can change while all declared artifacts remain syntactically valid.",
+      "closure": [
+        "R2-F1"
+      ],
+      "evidence": [
+        "Final Amendment MD 88-98 names only Huber(delta=0.05)",
+        "Final Amendment JSON 1507-1526 omits the piecewise Huber formula and exact operations",
+        "Final Amendment JSON 1372-1377 and 1550 do not define CertificateTrack.run_bounds",
+        "src/pams/temporac/teacher.py 115-133 uses normalized SmoothL1 form",
+        "src/pams/temporac/certify.py 707-793 uses one <i4 [[0,N_v]] X0 run"
+      ],
+      "id": "A005-R2-B1",
+      "required_revision": "Freeze the exact piecewise loss, boundary comparison, casts, and binary64 operation order; define each tune run_bounds as C-order <i4 [[0,N_v]] from sample_offsets and state that traversal_bounds are rederived validation evidence, never run_bounds.",
+      "severity": "blocking",
+      "title": "Tune score bytes are not mathematically unique"
+    },
+    {
+      "attack": "Change process rounding or FTZ/DAZ/flush-denormal/backend state without changing any currently closed environment field; bytewise float32 forward and binary64 reduction output may change.",
+      "closure": [
+        "R2-F1",
+        "R2-F3"
+      ],
+      "evidence": [
+        "Final Amendment MD 50-52",
+        "Final Amendment JSON 293-507, especially 361-372, 449-467, and 471-490",
+        "Read-only witness: float32 1e-38*0.5 is 4.999999675228202e-39 with Torch flush-denormal false and 0.0 with it true under otherwise identical listed fields"
+      ],
+      "id": "A005-R2-B2",
+      "required_revision": "Add a closed floating-point-control record; set and read back FE_TONEAREST and FTZ/DAZ/flush-denormal plus applicable deterministic CPU backend/fpmath switches immediately before replay in a fresh subprocess; fail on unsupported or unreadable state.",
+      "severity": "blocking",
+      "title": "The CPU replay lock omits active floating-point control"
+    },
+    {
+      "attack": "Under the literal open/mmap trace, G5a or K7 opens an environment, receipt, index, prediction, or target whose bytes already contain code_index_sha256; because trace_sha256 is inside that code index, the required hash dependency is cyclic.",
+      "closure": [
+        "R2-F1",
+        "R2-F2",
+        "R2-F3"
+      ],
+      "evidence": [
+        "Final Amendment MD 46-48",
+        "Final Amendment JSON 564-576 and 633-646 puts trace_sha256 in the code index and includes open/mmap events",
+        "Final Amendment JSON 469-490 puts code_index_sha256 in the environment used by downstream artifacts"
+      ],
+      "id": "A005-R2-B3",
+      "required_revision": "Limit the discovery trace to executable/interpreted origins, explicitly exclude ordinary artifact/data/receipt I/O, freeze operation tokens, entry points, arguments, normalization, subprocess propagation, and capture timing, and finalize it before downstream objects bind the code index.",
+      "severity": "blocking",
+      "title": "The executed-code trace is circular under its literal scope"
+    },
+    {
+      "attack": "Build the declared exact DAG without X0I, K3, or K4. G4 must point to K4 under F23, but K4 is not an admitted node; using the generic gate bucket cannot resolve numeric multiplicity, owner aliases, or receipt schemas.",
+      "closure": [
+        "R2-F2"
+      ],
+      "evidence": [
+        "Final Amendment JSON 912-924 omits X0I x3, K3, and K4",
+        "Final Amendment JSON 956-974 leaves gate owner/schema selection and plan upstreams prose-only",
+        "EXPERIMENT_TRACKER MD 46-51 requires X0I x3 -> K3 -> K4 -> G4",
+        "EXPERIMENT_PLAN MD 143 and 153-155 and FINAL_PROPOSAL MD 1400-1404 freeze the same order"
+      ],
+      "id": "A005-R2-B4",
+      "required_revision": "Add a canonical per-owner receipt inventory with exact token, schema/closed keys, numeric count or closed derivation, payload-owner equality, and ordered upstreams; include X0I x3, K3, and K4 before G4 and an exact P0/P00-style alias decision.",
+      "severity": "blocking",
+      "title": "The pre-G5a receipt inventory is incomplete and underdetermined"
+    },
+    {
+      "attack": "Omit ordered run-receipt foreign-key edges because run.upstream is not an allowed role, and encode the three teacher run digests in multiple inequivalent values under the singular G1/evidence key.",
+      "closure": [
+        "R2-F1",
+        "R2-F2"
+      ],
+      "evidence": [
+        "FINAL_PROPOSAL MD 1232-1239 makes upstream_receipt_sha256 an ordered array in every run receipt",
+        "Final Amendment JSON 903-905 requires payload foreign-key completeness but 965-994 has no run.upstream role",
+        "Final Amendment JSON 1073-1088 and 1138-1158 uses singular teacher_run_receipt_sha256 while requiring all three runs"
+      ],
+      "id": "A005-R2-B5",
+      "required_revision": "Add run.upstream and exact ordered edges for all 27 validated run payloads; freeze every job's upstream sources/order; define the G1/evidence value as an exact length-three digest array in seed order or one explicitly tagged aggregate preimage.",
+      "severity": "blocking",
+      "title": "Receipt dependencies and the three-run G1 binding are undertyped"
+    },
+    {
+      "attack": "Replace or omit future NATP surrounding-scope bytes, or submit predictions with no committed dependency on K6; the nine-row G5a root index and typed receipt DAG still validate.",
+      "closure": [
+        "R2-F2",
+        "R2-F3"
+      ],
+      "evidence": [
+        "Final Amendment JSON 181-207 has no scope/freeze index class",
+        "EXPERIMENT_TRACKER MD 73-76 requires NATP scope indexes and a scope manifest at G5a",
+        "EXPERIMENT_PLAN MD 143, 155, and 168 freezes K6 -> natural artifacts -> G5a",
+        "Final Amendment JSON 965-994 has no prediction/NATP-to-K6 edge"
+      ],
+      "id": "A005-R2-B6",
+      "required_revision": "Define and G5a-root-bind an exact scope/freeze index or three NATP completion receipts that bind the pilot-scope manifest, per-seed clean/drift prediction roots, and exact K6 receipt; add exact typed count/owner/edges without adding work or claims.",
+      "severity": "blocking",
+      "title": "NATP scope and post-K6 freeze lineage are outside G5a"
+    },
+    {
+      "attack": "Choose embedded-row bytes, standalone row bytes plus LF, or a tagged preimage for k1_outcome_row_sha256; each yields a different digest for the same logical K1 row and the Cdev foreign key is not uniquely checkable.",
+      "closure": [
+        "R2-F2",
+        "R2-F3"
+      ],
+      "evidence": [
+        "Final Amendment JSON 103-130 includes k1_outcome_row_sha256 without a preimage rule",
+        "Final Amendment JSON 734-765 defines the 13-key K1 rows but only line 752 defines population_row_sha256 bytes"
+      ],
+      "id": "A005-R2-B7",
+      "required_revision": "Define k1_outcome_row_sha256 over one exact preimage, preferably the complete standalone canonical 13-key K1 row bytes with one LF, and require Cdev equality to that exact projected row; or use one exact ordinal-plus-byte-equality construction instead.",
+      "severity": "blocking",
+      "title": "The Cdev K1-row foreign-key hash has no byte preimage"
+    },
+    {
+      "attack": "Mix the amendment-bound historical test bytes with two newer current test files during one review; the final amendment still claims a complete current test snapshot, but no single stable 48-file byte set was reviewed through persistence.",
+      "closure": [
+        "REVIEW-SNAPSHOT"
+      ],
+      "evidence": [
+        "tests/temporac/test_gates_fixtures.py changed from bound 69690aba7eb366471a28bb7406fd1411964d271ecd250834151243bb8a7c299f to current d6d91a7dd606c42f672bb015d77c5c10406c2c6de69ed3a8bff76a0ce4f713d3 (6691 bytes)",
+        "tests/temporac/test_operator_manifest.py changed from bound 627e58cbb65be96de7d17cd56e8c12c179c2d1c3e11612f0aea5cf79eecdb5de to current 7f2c90c320d7378a74fcc64f6c808eb6e426cdcfbd73cab0fb1242f690db9db0 (24090 bytes)",
+        "Final Amendment MD 24 and JSON bindings/current_test_snapshot_non_authorizing describe a complete current reviewed snapshot"
+      ],
+      "id": "A005-R2-B8",
+      "required_revision": "After the workspace is quiescent, issue a newly versioned pair whose non-authorizing source/test bindings match the intended current review snapshot and keep every bound byte stable through fresh review; alternatively define an exact historical-snapshot policy rather than calling the bytes current.",
+      "severity": "blocking",
+      "title": "The declared review snapshot drifted before persistence"
+    }
+  ],
+  "byte_validation": {
+    "archived_rejected_pair_unchanged": true,
+    "final_json_appendix_byte_identical": true,
+    "final_json_bom": false,
+    "final_json_cr_count": 0,
+    "final_json_duplicate_keys": [],
+    "final_json_keys_recursively_sorted": true,
+    "final_json_nonfinite_constants": [],
+    "final_json_terminal_lf_count": 1,
+    "final_json_utf8_strict": true,
+    "final_markdown_bom": false,
+    "final_markdown_cr_count": 0,
+    "final_markdown_terminal_lf_count": 1,
+    "final_markdown_utf8_strict": true,
+    "fixed_and_timestamped_pairs_byte_identical": true
+  },
+  "closure_assessment": {
+    "R2-F1": {
+      "blocking_issue_ids": [
+        "A005-R2-B1",
+        "A005-R2-B2",
+        "A005-R2-B3",
+        "A005-R2-B5"
+      ],
+      "positive": "Exact 16-member checkpoints, 120 retained artifacts, shared 56-view tune input, 120 raw outputs/evaluation receipts, strict member replay, geometry-only per-run landmarks before Neumaier F5 and one CPU forward, score/evidence indexes, and global replay eliminate free scores, caller teacher outputs, and winner-only authority.",
+      "status": "REVISE"
+    },
+    "R2-F2": {
+      "blocking_issue_ids": [
+        "A005-R2-B3",
+        "A005-R2-B4",
+        "A005-R2-B5",
+        "A005-R2-B6",
+        "A005-R2-B7"
+      ],
+      "positive": "The unchanged seven-member target and ten-key receipt are bytewise rederived at K7; G5a root construction and future-receipt exclusions are noncircular.",
+      "status": "REVISE"
+    },
+    "R2-F3": {
+      "blocking_issue_ids": [
+        "A005-R2-B2",
+        "A005-R2-B3",
+        "A005-R2-B6",
+        "A005-R2-B7"
+      ],
+      "positive": "P402 is exactly 268 train plus 134 development; 9648 is 402*4*3*2; Cdev is exactly the val/CERTIFIED K1 projection with 108/8 floors, not all 402; components are manifest-derived; capability order is preconsume non-vault, atomic consume, G5b, then K7.",
+      "status": "REVISE"
+    },
+    "R2-F4": {
+      "blocking_issue_ids": [],
+      "positive": "The consumer snapshots the Mapping to a plain dict before validation, stability-probes it, never rereads it, and canonicalizes the same snapshot; direct MappingProxyType composition is specified.",
+      "status": "SPECIFICATION_CLOSURE_PRESENT"
+    },
+    "REVIEW-SNAPSHOT": {
+      "blocking_issue_ids": [
+        "A005-R2-B8"
+      ],
+      "positive": "The timestamped/fixed amendment pair itself and 46 of 48 declared bindings remained exact.",
+      "status": "REVISE"
+    }
+  },
+  "current_implementation": {
+    "archive_feasibility_probes": {
+      "checkpoint_archive_bytes": 1012518,
+      "checkpoint_cap_bytes": 2097152,
+      "checkpoint_raw_payload_bytes": 1008348,
+      "non_authorizing": true,
+      "tune_input_archive_bytes": 22594258,
+      "tune_input_cap_bytes": 33554432,
+      "tune_input_raw_payload_bytes": 22592544,
+      "tune_output_archive_bytes": 15511204,
+      "tune_output_cap_bytes": 16777216,
+      "tune_output_raw_payload_bytes": 15510720
+    },
+    "code_or_tests_modified_by_reviewer": false,
+    "concurrent_bound_test_drift_detected": true,
+    "current_bound_test_mismatch_count": 2,
+    "gate_bearing_tests_executed": false,
+    "implementation_acceptance": false,
+    "receipt_key_counts_checked": {
+      "score_row": 8,
+      "selection_receipt": 11,
+      "tune_evaluation_receipt": 13,
+      "tune_input_receipt": 9
+    },
+    "state_dict_member_count": 16
+  },
+  "date": "2026-08-16",
+  "independence_verified": false,
+  "non_expansion": {
+    "algorithm_changed": false,
+    "claim_changed": false,
+    "dataset_scope_changed": false,
+    "g5a_receipt_key_set_changed": false,
+    "jobs_changed": false,
+    "paper_visible_blocks_changed": false,
+    "resource_ceiling_changed": false,
+    "target_receipt_key_set_changed": false,
+    "thresholds_changed": false
+  },
+  "prior_blocker_disposition": {
+    "A005-B1": "PARTIAL_REVISE",
+    "A005-B2": "SPECIFICATION_CLOSED",
+    "A005-B3": "PARTIAL_REVISE",
+    "A005-B4": "REVISE",
+    "A005-B5": "PARTIAL_REVISE",
+    "A005-B6": "SPECIFICATION_CLOSED",
+    "A005-B7": "SPECIFICATION_CLOSED"
+  },
+  "purpose": "temporac-certificate-amendment-005-round2-normative-review",
+  "review_class": "same-family provisional",
+  "review_round": 2,
+  "review_snapshot_drift": {
+    "detected_at_final_rehash": true,
+    "mismatch_count": 2,
+    "other_binding_match_count": 46,
+    "reviewer_modified_drifted_files": false
+  },
+  "reviewed_inputs": {
+    "archived_rejected_json": {
+      "bytes": 24383,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_110212.json",
+      "sha256": "5ea02ae5ccb7ea0f1771222f254ded74318fdb4bc96a5655d5de58a66d7878a2"
+    },
+    "archived_rejected_markdown": {
+      "bytes": 25001,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_110212.md",
+      "sha256": "fa5ef054de0e243a030905b7a9d0e302aa442cb61b4d39012eaae6dca05a6869"
+    },
+    "canonical_proposal": {
+      "bytes": 79366,
+      "path": "refine-logs/temporac/FINAL_PROPOSAL.md",
+      "sha256": "3b265bbac15433301a1c47307e439d4e23fd8102ec8a39b5163d4ac475dd9391"
+    },
+    "certificate_postfix_round2_json": {
+      "bytes": 14527,
+      "path": "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_ROUND2_20260816.json",
+      "sha256": "144d2f22f4f75166b8cbefe54157d08690408979dd7cb34ef8c97e1738432872"
+    },
+    "certificate_postfix_round2_markdown": {
+      "bytes": 12283,
+      "path": "refine-logs/temporac/TEMPORAC_CERTIFICATE_IMPLEMENTATION_REVIEW_POSTFIX_ROUND2_20260816.md",
+      "sha256": "93a9cae771b34c185b9057286794b894d615aec5424011df145aaf8900f008d8"
+    },
+    "experiment_plan": {
+      "bytes": 34198,
+      "path": "refine-logs/EXPERIMENT_PLAN.md",
+      "sha256": "4e9b2ba43f10fae2239bfbb2e0bc1d7c2dbf857302d6f457b4326f5140dea08e"
+    },
+    "experiment_tracker": {
+      "bytes": 22360,
+      "path": "refine-logs/EXPERIMENT_TRACKER.md",
+      "sha256": "714c6b690d2c2318d2e18223efa617e55fe746a7f72279e820bf5e799a9b525b"
+    },
+    "final_fixed_alias_json": {
+      "bytes": 74712,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.json",
+      "sha256": "53f3409112550b79b6c11860cf1822e207a8bd600dd9708574ae977548282cd0"
+    },
+    "final_fixed_alias_markdown": {
+      "bytes": 99017,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE.md",
+      "sha256": "bd2c0772eb2f8ca70d23c6217b094d58ad69e1167486dbc811b7a4cec9d6e97c"
+    },
+    "final_timestamped_json": {
+      "bytes": 74712,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_121046.json",
+      "sha256": "53f3409112550b79b6c11860cf1822e207a8bd600dd9708574ae977548282cd0"
+    },
+    "final_timestamped_markdown": {
+      "bytes": 99017,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_20260816_121046.md",
+      "sha256": "bd2c0772eb2f8ca70d23c6217b094d58ad69e1167486dbc811b7a4cec9d6e97c"
+    },
+    "round1_review_json": {
+      "bytes": 13286,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW.json",
+      "sha256": "5ccd5c66c93f0791c74f5159d9daeaf2b7314c691dd2f25705b4888da565fa2c"
+    },
+    "round1_review_markdown": {
+      "bytes": 17993,
+      "path": "refine-logs/temporac/TEMPORAC_CONTRACT_AMENDMENT_005_CERTIFICATE_PROVENANCE_REVIEW.md",
+      "sha256": "35e7f3814759911da256605597a787e86ee5e199ecfded7cc1770a112ccea13d"
+    }
+  },
+  "reviewer": {
+    "agent_id": "/root/temporac_certificate_amendment005_review",
+    "executor_family": "openai",
+    "family_relation": "same",
+    "model": "gpt-5.6-sol",
+    "reviewer_family": "openai"
+  },
+  "schema": "temporac.contract-amendment-review.v1",
+  "verdict": "REVISE"
+}

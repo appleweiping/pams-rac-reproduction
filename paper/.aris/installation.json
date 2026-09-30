@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-14T20:35:49+08:00",
+  "upstream": "https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep",
+  "locked_commit": "e12e07c7b85ee1a4dc07e5463089aa16836af2bf",
+  "upstream_main_identical_at_check": "2026-08-14",
+  "repo_root": "C:/Users/admin/.aris/repos/auto-research-in-sleep-git",
+  "packages": ["skills-codex", "skills-codex-claude-review"],
+  "install_method": "official install_aris_codex.sh after dry-run",
+  "windows_link_mode": "materialized-copy",
+  "link_verifier_status": "WARN",
+  "link_verifier_detail": "Git Bash materialized directories rather than links; installed SKILL.md files are byte-identical to the locked upstream sources.",
+  "clean_clone_attempt": "network_transfer_stalled_twice; incomplete directories retained outside the project as recoverable diagnostics",
+  "assurance": "submission"
+}

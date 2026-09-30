@@ -1,0 +1,31 @@
+{
+  "skill": "experiment-audit",
+  "run_id": "2026-08-16_run_temporac_operator_v2_impl_review_01",
+  "started_at": "2026-08-16T06:02:40.2029540Z",
+  "started_at_basis": "earliest retained external replay-workspace creation time; orchestrator did not expose reviewer-call start",
+  "executor": "codex",
+  "executor_model": "gpt-5.6-sol",
+  "executor_family": "openai",
+  "reviewer_model": "gpt-5.6-sol",
+  "reviewer_family": "openai",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
+  "deterministic_evidence_acceptance": "accepted",
+  "project_dir": "D:\\Project\\rac-aris-fullrun-icassp27",
+  "task": "TempoRAC operator v2 final-candidate implementation review",
+  "trace_mode": "full",
+  "authority": {
+    "candidate_only": true,
+    "eligible_input_to_future_separately_authorized_P2_fixture_gate": true,
+    "P2": false,
+    "P3": false,
+    "S0": false,
+    "gate": false,
+    "launch": false,
+    "server": false,
+    "data": false,
+    "training": false,
+    "git": false,
+    "paper_claim": false
+  }
+}

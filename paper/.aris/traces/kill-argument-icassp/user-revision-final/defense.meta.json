@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "agent_id": "/root/user_revision_kill_defense",
+  "model": "gpt-5.6-sol",
+  "reasoning": "ultra",
+  "review_independence": "fresh_zero_context_same_family",
+  "paper_pdf_sha256": "2976344081abbceb84c4114068bd7b37100ae7aa8438d3112b5227bee442731e",
+  "method_tex_sha256": "c4ab8008065bb8781e402921878f5b99c7fb841acdef24c6129b7d93c988dc84",
+  "experiments_tex_sha256": "cd6508a60e3e9cac767ccfcec53e019a52525f58cebc2b1559819139abe0ecb5",
+  "result_schema_sha256": "9d5c07450cbda32be8223237cb2d764d896d0c9ec28e4c9f23ad7cad3d67e662",
+  "verdict": "KILL_SURVIVES",
+  "generated_at": "2026-08-15T01:29:00+08:00"
+}

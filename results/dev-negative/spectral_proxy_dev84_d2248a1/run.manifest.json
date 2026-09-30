@@ -1,0 +1,43 @@
+{
+  "artifact_type": "spectral_proxy_dev_run_manifest",
+  "classification": "reference_only",
+  "created_at_utc": "2026-07-29T20:33:01Z",
+  "deterministic": true,
+  "device": "cpu",
+  "inputs": {
+    "dev_commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "dev_inputs_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "identity_receipt_sha256": "16fef8581a03a7746df0a3fc2d98c133803edd679e63f3c21eff856179370a7f",
+    "pose_cache_snapshot_sha256": "2e14cb39a4112f7ee1d10b759d166bb472f41e317e55e773776394331690256c"
+  },
+  "method_id": "spectral-proxy",
+  "network": "disabled",
+  "outputs": {
+    "prediction_receipt_sha256": "0c583ca68852940f7865a5b145f4dafcd61b07ab264ab6ca4880e7f4cd207417",
+    "predictions_sha256": "7efeec8c44e36786cd95b8f005357ad5a596f8a508c8290ee4b74f8a1dcf7261"
+  },
+  "runtime": {
+    "container_image_id": "sha256:38f65dc9aa0c825d3051ec6a515b934aa5a55421581eb957523759e68e0b67af",
+    "cuda_visible_devices": null,
+    "inference_device": "cpu",
+    "machine": "x86_64",
+    "network_required": false,
+    "numpy": "1.26.4",
+    "nvidia_visible_devices": "all",
+    "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.35",
+    "python": "3.11.10",
+    "visible_cpu_count": 40
+  },
+  "schema_version": 1,
+  "seed": null,
+  "source_files": {
+    "scripts/server/run_spectral_proxy_dev_reference.py": "705fff2028f5a26aad09db3cde6f152a803b6dd2c75cb45dc214b25db3ceb911",
+    "src/pams/baselines/base.py": "1247a06599c07009247d475a7de5f6395eff313faaba0ec9cef9e51db11d66f2",
+    "src/pams/baselines/proxy.py": "6f9bce3488a8efea8b33c5266cb39c18abd3086e2f288b56ad3acac90e3aeb1b",
+    "src/pams/data.py": "93dc27fb8bae9c7d2c0d185e883a8608d4ad0550344e7b01802925e11a612cc0",
+    "src/pams/metrics.py": "7fdfcd540f3cbe19e3f66d076096f093b9e1b4a817e71bb44bc0373a268adc62",
+    "src/pams/types.py": "78c2ad53e98856425492a1711faa62fc2bb7764767dc48a22f7c4d5e043a3e31"
+  },
+  "source_git_sha": "d2248a17c0ec25c4b0a3d3db8104a713dff9aad0",
+  "test105_status": "identity_only_in_preflight; no predictions and no targets"
+}

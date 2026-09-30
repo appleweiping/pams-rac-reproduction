@@ -1,0 +1,64 @@
+schema_version: 1
+key: pams_table2
+protocol: ucfrep_526
+seeds: [42, 2026, 3407]
+selection:
+  tune_on_sealed_test: false
+  aggregate_across_seeds: arithmetic_mean
+rows:
+  - key: baseline
+    label: Baseline
+    family: representation
+    period_adaptive_tcc: false
+    executable_proxy: configs/ablations/pams_fixed_period16_inferred.yaml
+    fixed_period_frames: 16
+    evidence: inferred_not_uniquely_recoverable
+    table2_value_claim_eligible: false
+    tcc_scales: [1.0]
+    multi_expert_consensus: false
+    sshead: false
+  - key: pams_no_multi_scale
+    label: PAMS without multi-scale
+    family: representation
+    period_adaptive_tcc: true
+    tcc_scales: [1.0]
+    multi_expert_consensus: false
+    sshead: false
+  - key: pams_multi_scale
+    label: PAMS with multi-scale
+    family: representation
+    period_adaptive_tcc: true
+    tcc_scales: [0.5, 1.0, 1.5]
+    multi_expert_consensus: false
+    sshead: false
+  - key: multi_expert_no_multi_expert
+    label: Counting algorithm without multi-expert
+    family: consensus
+    period_adaptive_tcc: false
+    tcc_scales: [1.0]
+    multi_expert_consensus: false
+    sshead: false
+  - key: multi_expert
+    label: Counting algorithm with multi-expert
+    family: consensus
+    period_adaptive_tcc: false
+    tcc_scales: [1.0]
+    multi_expert_consensus: true
+    sshead: false
+  - key: full
+    label: Full PAMS-SSHead reproduction
+    family: full
+    period_adaptive_tcc: true
+    tcc_scales: [0.5, 1.0, 1.5]
+    multi_expert_consensus: true
+    sshead: true
+verification:
+  maximum_mean_nmae: 0.228
+  minimum_mean_obo: 0.666
+  minimum_individual_seed_passes: 2
+  strict_comparisons:
+    - {better: pams_multi_scale, worse: pams_no_multi_scale}
+    - {better: multi_expert, worse: multi_expert_no_multi_expert}
+  full_must_be_strictly_best:
+    lower_nmae: true
+    higher_obo: true

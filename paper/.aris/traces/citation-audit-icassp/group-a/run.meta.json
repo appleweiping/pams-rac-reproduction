@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "audit": "citation-audit-icassp/group-a",
+  "agent_id": "/root/icassp_citation_audit_a",
+  "model": "gpt-5 (exact runtime variant not exposed to the agent)",
+  "reasoning": "not exposed to the agent",
+  "fork": "none",
+  "same_family": true,
+  "provisional": false,
+  "fresh_zero_context": true,
+  "network_browsing_used": true,
+  "timestamp_local": "2026-08-14T22:32:28.3293969+08:00",
+  "timestamp_utc": "2026-08-14T14:32:28.3353184+00:00",
+  "overall_verdict": "FAIL",
+  "verdict_counts": {
+    "keys_total": 8,
+    "key_pass": 5,
+    "key_fail": 3,
+    "key_blocked": 0,
+    "bib_entries_missing": 0,
+    "metadata_fail": 0,
+    "context_fail": 3
+  },
+  "input_hashes_sha256": {
+    "paper/main.tex": "a4fe29c47f200946c7d6f3522bd273f5895aabda2d7a959fdbf16397fe1cbe70",
+    "paper/sections/0_abstract.tex": "fd69c7936952bffc8e70d7d0ccd35140ab7dbaac82d6ff953e60f4f6461eebef",
+    "paper/sections/1_introduction.tex": "6b9a712638ab71e48c712f79a3eec5b2931fb0aa98ea405fb686ead0c8c0e539",
+    "paper/sections/3_method.tex": "7e92c00eb4a7956b059536fd47240cefbea960aee61d4f3fdef1a7e24930c50d",
+    "paper/sections/4_experiments.tex": "6013d1a197e8557b97ea08f6dc70978b4d900e14a0c9487036f343781a572b62",
+    "paper/sections/5_conclusion.tex": "e5c656a98343f10b367c175273d572f3a42d5436539429f28ba87764452e7b3c",
+    "paper/references.bib": "322a5d16b0078e8b3436608d4c6158b67c5c8922b0dcae94537ea456c9f6f646"
+  },
+  "context_hashes_sha256_utf8_exact_payload": {
+    "paper/sections/1_introduction.tex:15-38": "3579c90d9e1ebebb80a1ab7a48b93ee964b03b76ea1484fb27381cf63d3f66b4",
+    "paper/sections/3_method.tex:115-144": "8bbcef81e15da09fbafbe13bcbd58c1118f6683c636023b1d7bf47d487674cd7",
+    "paper/sections/4_experiments.tex:26-41": "be45451b23b2aa122dc474dce7e1e0fc1a7c9251240e38a669745786497aee7b",
+    "paper/sections/4_experiments.tex:43-84": "8f89f315218849ce10d27bd8ee4f68450ac132270a324ef25352211e0fc99d6a",
+    "paper/sections/4_experiments.tex:86-101": "fff9ed007881150db8654f27cd7a33a78fb3481cdde4946bcb1ae182d670cf49"
+  },
+  "citation_occurrences": {
+    "levy2015live": ["paper/sections/1_introduction.tex:16"],
+    "runia2018realworld": ["paper/sections/1_introduction.tex:16"],
+    "dwibedi2020repnet": ["paper/sections/1_introduction.tex:18", "paper/sections/4_experiments.tex:92"],
+    "hu2022transrac": ["paper/sections/1_introduction.tex:18", "paper/sections/4_experiments.tex:92"],
+    "yao2025poserac": ["paper/sections/1_introduction.tex:19", "paper/sections/4_experiments.tex:93"],
+    "gao2026pams": ["paper/sections/1_introduction.tex:21", "paper/sections/3_method.tex:138", "paper/sections/4_experiments.tex:63", "paper/sections/4_experiments.tex:73"],
+    "tang2024multicounter": ["paper/sections/1_introduction.tex:22", "paper/sections/4_experiments.tex:27", "paper/sections/4_experiments.tex:56"],
+    "tang2026multicounterplus": ["paper/sections/1_introduction.tex:24", "paper/sections/4_experiments.tex:28", "paper/sections/4_experiments.tex:59"]
+  },
+  "bib_entry_hashes_sha256_utf8_exact_payload": {
+    "levy2015live": "58976da59f5e0890b53319cd636f116ff1b5ccf01f49c3d72ec2dc97daa03da5",
+    "runia2018realworld": "5c11a79e21b8885fa9febd6d2a06de99c1f1909960878e13913e425d55cd0f87",
+    "dwibedi2020repnet": "84acc71e0713766c36b0b46e38adf48b9a95ef3d8c97d7694368070b5a2bdcab",
+    "hu2022transrac": "1cb9cc0607b843b989a82c1e318a95aeddda87c8bc6008204003e9d226c41142",
+    "yao2025poserac": "191d675ad71f0345133c2f93269ea2b268f457f0a828bfa24b7fbc38c1b21b82",
+    "gao2026pams": "0a1ddfc8761b834a311f21dcc6e5ef75abaf68b5096e38e3de2267752622be98",
+    "tang2024multicounter": "6f6238de4f6e0aa79edb5d128b49d4d9752f2fadda7a33e494c447bf0e402950",
+    "tang2026multicounterplus": "7901027b6b434637c5a263712f2459d3320a945f10c88706b290ed8382918017"
+  },
+  "per_key_verdict": {
+    "levy2015live": { "existence": "PASS", "metadata": "PASS", "context": "FAIL", "overall": "FAIL" },
+    "runia2018realworld": { "existence": "PASS", "metadata": "PASS", "context": "PASS", "overall": "PASS" },
+    "dwibedi2020repnet": { "existence": "PASS", "metadata": "PASS", "context": "PASS", "overall": "PASS" },
+    "hu2022transrac": { "existence": "PASS", "metadata": "PASS", "context": "PASS", "overall": "PASS" },
+    "yao2025poserac": { "existence": "PASS", "metadata": "PASS", "context": "PASS", "overall": "PASS" },
+    "gao2026pams": { "existence": "PASS", "metadata": "PASS", "context": "PASS", "overall": "PASS" },
+    "tang2024multicounter": { "existence": "PASS", "metadata": "PASS", "context": "FAIL", "overall": "FAIL" },
+    "tang2026multicounterplus": { "existence": "PASS", "metadata": "PASS", "context": "FAIL", "overall": "FAIL" }
+  },
+  "mutations": {
+    "paper_bib_or_tex_modified": false,
+    "trace_files_created": [
+      "paper/.aris/traces/citation-audit-icassp/group-a/prompt.md",
+      "paper/.aris/traces/citation-audit-icassp/group-a/reviewer.md",
+      "paper/.aris/traces/citation-audit-icassp/group-a/run.meta.json"
+    ]
+  }
+}

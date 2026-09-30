@@ -1,0 +1,15 @@
+{
+  "artifact_type": "local_frequency_synthetic_freeze_replay_receipt",
+  "code_sha256": "a034fdbaef3a431f73c14b7385e00d95e631eaad4330a1055ebbe4de1487ff51",
+  "config_file_sha256": "52f007b51f1edb6aca7047556e615b2912138fc51b51b71465427fa68a0db719",
+  "config_fingerprint": "65272c8a9d969d27b1a5248670ac98645eecaabd070661b9ad83f217d74ed8ea",
+  "expected_replay_match": true,
+  "method_key": "pams-local-frequency-synthetic-v1",
+  "replay_bytes": 5147,
+  "replay_file": "synthetic-freeze-replay.json",
+  "replay_sha256": "a50cb3d220e4cd3d11590d1354e37994055b02c1de8b070d73809f610d7ba6d8",
+  "schema_version": 1,
+  "selection_scope_sha256": "3e87313ff43a1baffd3bb5daff136c495e391ab42390ba8512d610a106d12962",
+  "source_git_sha": "07192debb7f5748c53a1c6d4f0c0d3f16228e229",
+  "status": "verified"
+}

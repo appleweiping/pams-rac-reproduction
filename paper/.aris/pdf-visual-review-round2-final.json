@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "artifact": "paper/main.pdf",
+  "sha256": "905d3982a8ec2d5c38e05e6344fb0ffe5889a6fe2c3c7e83ad3b0944b510236a",
+  "page_count": 5,
+  "render_dpi": 150,
+  "reviewer": "/root",
+  "verdict": "PASS",
+  "scope": "draft-only visual quality and 4+1 layout",
+  "pages": [
+    {"page": 1, "sha256": "bf7728b65f57caba5c517c06e3eef84172256f6b0e15da537a5c10c609a09668", "verdict": "PASS"},
+    {"page": 2, "sha256": "bc8ded669bcdd79ecbd341825cbb6e498734f17f0deaedcee5092118bb64b403", "verdict": "PASS"},
+    {"page": 3, "sha256": "ab2cbae785f4fb45ff07ca37ea6d6b9723654dc615e7961544676d59cfecfe8e", "verdict": "PASS"},
+    {"page": 4, "sha256": "996dfd39f3ad861e3906dfca19fc92b9f33e7961a5919864d5a68922dae48e2b", "verdict": "PASS"},
+    {"page": 5, "sha256": "348bd4ab0bd9b724526021e6ea4e91c5fc6dad2535eca0ca8088f12b75d52153", "verdict": "PASS", "references_only": true}
+  ],
+  "blocking_findings": [],
+  "submission_ready": false,
+  "status": "provisional/data-pending"
+}

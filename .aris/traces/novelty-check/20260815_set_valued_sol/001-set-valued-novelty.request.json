@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260815_set_valued_sol",
+  "task": "Strict ARIS novelty-check for set-valued-counting-pose-missingness; research only, no implementation, training, MANIFEST edit, or server/test/sealed/heldout/result access.",
+  "reviewer_requirements": {
+    "reviewer_model": "gpt-5.6-sol",
+    "reviewer_family": "openai",
+    "review_independence": "same-family",
+    "acceptance_status": "provisional",
+    "fresh_context": false,
+    "nonfresh_reason": "agent_thread_lifetime_limit",
+    "sources": "primary or official only",
+    "external_cutoff": "2026-08-15"
+  },
+  "workspace": "D:/Project/rac-aris-fullrun-icassp27",
+  "candidate": "set-valued-counting-pose-missingness",
+  "inputs": [
+    {"path": ".agents/skills/novelty-check/SKILL.md", "sha256": "998e801ab4d5dedabf643364680befe05023f4b819f44734db6ad67c2128b801"},
+    {"path": ".agents/skills/research-lit/SKILL.md", "sha256": "d6293c58a6d6319b7ae5075ee9a1587ae83368400fbe15ff89a338e52e549c61"},
+    {"path": ".agents/skills/shared-references/review-tracing.md", "sha256": "4f4936984391da87464b8e8bf6f7c984f3f186e8fdc42890d0ac999b5e2024dc"},
+    {"path": "idea-stage/PIVOT_CANDIDATE_UNION.json", "sha256": "8c1552da0166d02ab565e5b4072fda5cc2a36a1acb46f3d58ccdb418dc33e652"},
+    {"path": "idea-stage/PIVOT_IDEA_JURY.json", "sha256": "cac5b3d0217854d886223934724075f2cadd5a2b08f866bc1194ec4f5b09f800"},
+    {"path": "idea-stage/IDEA_REPORT.md", "sha256": "6105bcc49d1a4756b7927e87f02d3b38d23ed0d6115f344409d7d8a68c0d2610"},
+    {"path": "idea-stage/NOVELTY_CHECK.json", "sha256": "79749893547c834d876801c287bfa2f048b4797c838f7f6d46155318258ed3e5"},
+    {"path": "idea-stage/RESEARCH_REVIEW.json", "sha256": "fbc2462303c3ddcb4b23ef4cbf4f81b01a863ff433c6a58dec3f8cd99790caa3"},
+    {"path": "EXPERIMENT_AUDIT_WARP_PHASE.md", "sha256": "770ea5d9c86fce3a88a1f859434edeec893eec2d1b326cf95ec33a6112ac8e7c"},
+    {"path": "refine-logs/EXPERIMENT_CODE_REVIEW_ROUND2.md", "sha256": "4d45ec10bfd4b65dc187b7ce137203c1031c7a628e9375e3a20a99626bac47d5"},
+    {"path": "refine-logs/PIPELINE_SUMMARY.md", "sha256": "111972fc1b6a3e6cffdd1600f5772071510346207e9a65409ff319ed3e9e3caa"},
+    {"path": ".aris/claims.json", "sha256": "7f5cdfdf409cde494a65787a836fab9b0321a7dec6e5a09afb0fc89e11bd848e"}
+  ],
+  "mandatory_checks": [
+    "Extract 3-5 core claims and run at least 3 query formulations per claim.",
+    "Cover 2024-2026 and the latest six months of arXiv.",
+    "Inspect abstract plus method/related-work boundaries of close primary neighbors.",
+    "Check SSTRAC, PAMS, MultiCounter/+, predictive count intervals, missing-pose UQ, missing-covariate conformal prediction, nested masks and partial identification.",
+    "Distinguish nested-mask set inclusion, full-observation self-containment, empirical true-count coverage and calibrated coverage.",
+    "Return a brutally honest score, PROCEED/CAUTION/ABANDON verdict, closest prior, precise delta, fatal risks, allowed/forbidden claims and minimum next gate.",
+    "Preserve all existing forbidden-claim and external-supervision boundaries.",
+    "Do not resurrect WARP-PHASE; immutable Gate-2 counts are 246/55/144/50/66."
+  ],
+  "allowed_writes": [
+    "idea-stage/NOVELTY_SET_VALUED_20260815_210000.md",
+    "idea-stage/NOVELTY_SET_VALUED_20260815_210000.json",
+    "idea-stage/NOVELTY_SET_VALUED.md",
+    "idea-stage/NOVELTY_SET_VALUED.json",
+    ".aris/traces/novelty-check/20260815_set_valued_sol/",
+    "one appended review_trace event in .aris/meta/events.jsonl"
+  ],
+  "forbidden_writes": ["MANIFEST", "implementation", "training outputs", "server/test/sealed/heldout/results"]
+}

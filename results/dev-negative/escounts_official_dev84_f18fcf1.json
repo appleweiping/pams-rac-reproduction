@@ -1,0 +1,357 @@
+{
+  "schema_version": 1,
+  "artifact_type": "sanitized_retrospective_baseline_result",
+  "status": "complete_current_runner_verified",
+  "method_id": "escounts-official-f18fcf1-zeroshot",
+  "classification": "official-f18fcf1 RepCount-checkpoint zero-shot / independent sealed UCFRep dev evaluation",
+  "protocol": "ucfrep_526",
+  "split": "dev",
+  "record_total": 84,
+  "created_at_utc": "2026-07-29T00:12:48.737790+00:00",
+  "claim_boundary": {
+    "eligible_for_original_pams_escounts_cell": false,
+    "verifies_pams": false,
+    "paper_level_reproduction_claim": false,
+    "description": "This is an official ESCounts zero-shot baseline diagnostic. It neither verifies PAMS nor occupies the original paper's ESCounts cell."
+  },
+  "current_code_compatibility": {
+    "historical_merged_artifact_sha256": "8765835417f24f650d47177c16e2a596fdbb334b6c9e27dec6129ce35158fab6",
+    "tested_with_current_loader": true,
+    "compatible": true,
+    "failure_class": null,
+    "missing_current_bindings": [],
+    "current_runner_source_git_sha": "bbaa7a1ee59bab022f8cc24f41a2a399bbd550e5",
+    "current_merged_artifact_sha256": "854e5292b88447425141f7b4705d6472ab3aac9d94199e5248a8d2884a3b403a",
+    "raw_prediction_comparison": {
+      "comparison_count": 84,
+      "video_ids_and_order_identical": true,
+      "raw_values_exactly_identical": true,
+      "raw_mismatch_count": 0,
+      "rounded_values_exactly_identical": true,
+      "rounded_mismatch_count": 0,
+      "comparison_ledger_format": "ordered compact JSON objects with video_id, legacy/current raw_count, and legacy/current rounded_count",
+      "comparison_ledger_sha256": "7ccd0b750e795cd1e116911a1cb86701594563362d38a9370f1958f6b27cebcd",
+      "resource_tier_difference_count": 1,
+      "resource_tier_difference": {
+        "video_id": "v_JumpRope_g15_c01",
+        "legacy": "allocator_12g_retry",
+        "current": "allocator_8g_primary"
+      }
+    },
+    "interpretation": "A clean current runner-to-scorer execution reproduced all 84 legacy raw and rounded values exactly. Artifact bytes differ because the current schema adds source, code, input, frame, resource, merge, and scoring lineage.",
+    "requires_current_runner_rerun": false
+  },
+  "source": {
+    "repository": "https://github.com/sinhasaptarshi/EveryShotCounts",
+    "commit": "f18fcf1933abb3d4f199fd12ee3cafc53581576a",
+    "tree": "3bedc8d117c4c86954fb58d891326e7c9c6a1a3d",
+    "clean_checkout": true,
+    "license": "MIT",
+    "critical_files": [
+      {
+        "path": "demo.py",
+        "bytes": 7368,
+        "sha256": "bce255b1274d6f3feedd42cf671125e844354f158c6865590e302fd704216f38"
+      },
+      {
+        "path": "video_mae_cross_full_attention.py",
+        "bytes": 21511,
+        "sha256": "e1597a0ec2fcf5f76deb7b1396a9059de8b0edcca7ff8a64ba25762b5f498ace"
+      },
+      {
+        "path": "configs/pretrain_config.yaml",
+        "bytes": 1876,
+        "sha256": "38960518be9cd640573c58a5aaf3e850f721dc92d445d5b8e787ddbbfed0bf67"
+      },
+      {
+        "path": "LICENSE",
+        "bytes": 1072,
+        "sha256": "8b2845569ad2b93013c3f71f0153713c6845a5ca79ff46151786491ebe740da7"
+      }
+    ],
+    "pytorchvideo_repository": "https://github.com/facebookresearch/pytorchvideo",
+    "pytorchvideo_commit": "fae0d89a194a2c1ca99e59eab6eedd40bde38726",
+    "pytorchvideo_tree": "bd12d614191c96f3625f111284dec2b0a56a178a"
+  },
+  "external_assets": {
+    "bundled": false,
+    "license_caveat": "The MIT source license does not by itself establish checkpoint or training-data redistribution rights. No checkpoint bytes are included.",
+    "files": [
+      {
+        "role": "videomae_encoder",
+        "source_url": "https://dl.fbaipublicfiles.com/pyslowfast/masked_models/VIT_B_16x4_MAE_PT.pyth",
+        "bytes": 1207498009,
+        "sha256": "b6d1d0b539dbdc992c3a3544a9bc5bbb0591179b615dc728f951285875d824e8"
+      },
+      {
+        "role": "repcount_trained_decoder",
+        "source_url": "https://drive.google.com/uc?id=1cwUtgUM0XotOx5fM4v4ZU29hlKUxze48",
+        "bytes": 239106669,
+        "sha256": "297fc53000417ac6ffa4e08d6876e033df89800c97632fa09d2f3945ba225559"
+      }
+    ]
+  },
+  "input_firewall": {
+    "target_or_test_labels_mounted_during_prediction": false,
+    "sidecar_sha256": "f21c49569805e4aea326977f6d7ce2964f503fad129a17e95214594364ca4ae7",
+    "commitment_sha256": "a2bb2db86abef64e16a8fe1ac196857ac8e77cc9cd461c568b2193401a8cd169",
+    "sidecar_fingerprint": "d1349cff6913345899db288c11aa991419cdd2572a124f3dda6aa2aba35fb81d",
+    "identity_sha256": "bdf944d2aa13e22c07383163794e8edc3198f0c8fd8355b6a6d0255566b3cb5b",
+    "staging_tree_sha256": "a42e5ea887dea1e425e3b4dd98c4618cb3c7e20f31136ab9afdee98f21d8576e",
+    "dev_targets_sha256": "1ab3bc010ccb5d869af7662586594c973e53841838643e1e9b8cc1787b0efab6",
+    "source_annotation_sha256": "d371f9f4609730d6484efc337413b444ed73752ad5e994366d02fb79a9960452"
+  },
+  "execution": {
+    "primary": {
+      "resource_tier": "allocator_8g_primary",
+      "memory_limit_bytes": 8589934592,
+      "artifact_sha256": "b68e463ad537907af94e5041b07311224d34e9d67f479d4d61a257aa41c9920b",
+      "success_total": 81,
+      "failure_total": 3,
+      "failure_status": "resource_exhausted",
+      "failure_video_ids": [
+        "v_JumpRope_g02_c07",
+        "v_JumpRope_g15_c01",
+        "v_PommelHorse_g07_c06"
+      ],
+      "canonical_success_rows_sha256": "ada7640e9e027b4fe6f8b0b68c15a7b798d8284a4e9d35a31e23ee8c2561843f"
+    },
+    "retry": {
+      "resource_tier": "allocator_12g_retry",
+      "memory_limit_bytes": 12884901888,
+      "request_sha256": "68e65eff6968539814d345645b0fefc98bc80385f8a379a24705c652bd55fe67",
+      "artifact_sha256": "7208a4b2c847c9053854181ec5bfa3ad9d90b9a20fb592da5d53a4027f7f4729",
+      "attempts": 1,
+      "success_total": 3,
+      "failure_total": 0,
+      "video_ids": [
+        "v_JumpRope_g02_c07",
+        "v_JumpRope_g15_c01",
+        "v_PommelHorse_g07_c06"
+      ],
+      "raw_counts": [
+        21.26,
+        24.22,
+        18.93
+      ],
+      "rounded_counts": [
+        21,
+        24,
+        19
+      ]
+    },
+    "merge": {
+      "artifact_sha256": "8765835417f24f650d47177c16e2a596fdbb334b6c9e27dec6129ce35158fab6",
+      "receipt_sha256": "389883dbf025594b58c8eaa07c24e797b2e27db42b4b297e931aa6ec094af058",
+      "success_total": 84,
+      "failure_total": 0,
+      "primary_rows_canonical_value_identical": true
+    }
+  },
+  "current_runner_execution": {
+    "run_identifier": "escounts-official-current-bbaa7a1-20260729",
+    "runner_source_git_sha": "bbaa7a1ee59bab022f8cc24f41a2a399bbd550e5",
+    "runner_code_sha256": "d6d1826eccdb5918edd533e25f4bc8ec1df5267a1f4a86b1713730d4e4a6b36b",
+    "worker_code_sha256": "94b8c28bbf2df44babe519f3cb450e07bfff4e1b86a4bd6844eaa8740a6c1cfd",
+    "scoring_code_sha256": "91acadc9daeac138e844ccec60de0dfd0fff377778896c5078f4a8434b586dc0",
+    "worker_command_file_sha256": "c5b77d499c02b3ca89a1f87ce44253887bf88f0d4a842baabfa3dd8a3a72497a",
+    "worker_command_canonical_sha256": "309e66f9c9921e55c40f2baf6d52d73e7f548b6bc69e25b6f71588e316a6c333",
+    "clean_checkout": true,
+    "prediction_target_access": false,
+    "test_access": false,
+    "gpu_disclosure": "single isolated GPU; physical device index intentionally omitted",
+    "primary": {
+      "resource_tier": "allocator_8g_primary",
+      "memory_limit_bytes": 8589934592,
+      "artifact_sha256": "39b634b8606d166595e49bc0e60638905831ffa122c037e3917c9cf3861282f6",
+      "success_total": 82,
+      "failure_total": 2,
+      "failure_status": "resource_exhausted",
+      "failure_video_ids": [
+        "v_JumpRope_g02_c07",
+        "v_PommelHorse_g07_c06"
+      ],
+      "primary_success_rows_sha256": "fb04165b29850d3dcc3185b0c796771f4da289bcc304a700d20d20d0fc449032"
+    },
+    "retry": {
+      "resource_tier": "allocator_12g_retry",
+      "memory_limit_bytes": 12884901888,
+      "request_sha256": "54939cf1338b88e2e5d63f54315295bcf600444e447d1f80425fe721989111d3",
+      "artifact_sha256": "62385ac0813f74f0c000c18cfd35a96244dfe338be94b494c6f2dce5eb413e57",
+      "selected_count": 2,
+      "success_total": 2,
+      "failure_total": 0,
+      "video_ids": [
+        "v_JumpRope_g02_c07",
+        "v_PommelHorse_g07_c06"
+      ]
+    },
+    "merge": {
+      "artifact_sha256": "854e5292b88447425141f7b4705d6472ab3aac9d94199e5248a8d2884a3b403a",
+      "receipt_sha256": "220098aeba7f1d4b5f05478bde13cc0734e1726ffc7bc2efdc0ab1a817d3cc2d",
+      "record_total": 84,
+      "success_total": 84,
+      "failure_total": 0,
+      "merged_primary_rows_sha256": "fb04165b29850d3dcc3185b0c796771f4da289bcc304a700d20d20d0fc449032",
+      "primary_rows_canonical_value_identical": true
+    },
+    "score": {
+      "evaluation_sha256": "531bd5ac8f42bec50773ec585374a9335717933511a2768dcde6edd986842beb",
+      "receipt_sha256": "ff3bfb813919ca12520e15c2c0f5e3fe3a7521efa3825bf8a3f21a50c8cc93c0",
+      "separate_process": true,
+      "targets_mounted_only_in_scorer": true
+    },
+    "frame_audit": {
+      "reported_equals_decoded_count": 83,
+      "accepted_tail_shortfall_one_count": 1,
+      "maximum_accepted_tail_shortfall": 1,
+      "tail_shortfall_one": {
+        "video_id": "v_PommelHorse_g07_c06",
+        "reported_frame_count": 670,
+        "decoded_frames": 669,
+        "tail_shortfall": 1
+      },
+      "primary_resource_failures": [
+        {
+          "video_id": "v_JumpRope_g02_c07",
+          "reported_frame_count": 510,
+          "decoded_frames": 510,
+          "tail_shortfall": 0
+        },
+        {
+          "video_id": "v_PommelHorse_g07_c06",
+          "reported_frame_count": 670,
+          "decoded_frames": 669,
+          "tail_shortfall": 1
+        }
+      ]
+    },
+    "metrics": {
+      "rounding": "nearest_integer_half_up",
+      "nmae_rounded": 0.3524188620401675,
+      "mae_raw": 2.158616071428572,
+      "rmse_raw": 3.6410025402034334,
+      "mae_rounded": 2.1547619047619047,
+      "rmse_rounded": 3.653113479655141,
+      "obo_rounded": 0.5952380952380952,
+      "exact_rounded": 0.2976190476190476
+    },
+    "paired_bootstrap_95_percent": {
+      "samples": 10000,
+      "seed": 2026,
+      "resampling_unit": "paired_video",
+      "confidence_intervals": {
+        "nmae_rounded": {
+          "low": 0.25790924390447184,
+          "high": 0.4604548558908934
+        },
+        "mae_raw": {
+          "low": 1.580774181547619,
+          "high": 2.8036034226190476
+        },
+        "rmse_raw": {
+          "low": 2.5237138993960864,
+          "high": 4.735897906352041
+        },
+        "mae_rounded": {
+          "low": 1.5714285714285714,
+          "high": 2.7976190476190474
+        },
+        "rmse_rounded": {
+          "low": 2.554174920362645,
+          "high": 4.727106480252666
+        },
+        "obo_rounded": {
+          "low": 0.4880952380952381,
+          "high": 0.7023809523809523
+        },
+        "exact_rounded": {
+          "low": 0.20238095238095238,
+          "high": 0.39285714285714285
+        }
+      }
+    },
+    "repair_audit_not_used_for_metrics": [
+      {
+        "source_git_sha": "e776890ba195485e3364426c3703f476a3de9652",
+        "stage": "startup_smoke",
+        "outcome": "rejected before prediction",
+        "reason": "minimum-privilege source traversal and four official just_encode-unused encoder parameters required explicit audited compatibility handling"
+      },
+      {
+        "source_git_sha": "237ae2ab467fde10615d6c1718b8401823fd42a8",
+        "stage": "primary_prediction",
+        "outcome": "rejected before retry or scoring",
+        "reason": "strict decoder rejected the official one-frame PyAV tail shortfall; finite retry correctly refused the non-resource failure"
+      }
+    ]
+  },
+  "metrics": {
+    "rounding": "python_ties_to_even_legacy",
+    "rounding_compatibility": "No raw prediction was a half-integer; all 84 rounded predictions and rounded metrics are identical under nearest-integer half-up.",
+    "nmae_rounded": 0.3524188620401675,
+    "mae_raw": 2.158616071428572,
+    "rmse_raw": 3.6410025402034334,
+    "mae_rounded": 2.1547619047619047,
+    "rmse_rounded": 3.653113479655141,
+    "obo_rounded": 0.5952380952380952
+  },
+  "paired_bootstrap_95_percent": {
+    "samples": 10000,
+    "seed": 2026,
+    "resampling_unit": "paired_video",
+    "quantile_method": "linear",
+    "confidence_intervals": {
+      "nmae_rounded": {
+        "low": 0.25790924390447173,
+        "high": 0.4604548558908934
+      },
+      "mae_raw": {
+        "low": 1.580774181547619,
+        "high": 2.8036034226190476
+      },
+      "rmse_raw": {
+        "low": 2.5237138993960864,
+        "high": 4.735897906352041
+      },
+      "mae_rounded": {
+        "low": 1.5714285714285714,
+        "high": 2.7976190476190474
+      },
+      "rmse_rounded": {
+        "low": 2.554174920362645,
+        "high": 4.727106480252666
+      },
+      "obo_rounded": {
+        "low": 0.4880952380952381,
+        "high": 0.7023809523809523
+      }
+    },
+    "samples_sha256": "27acf848dc44582605f4380c19d0acf7034ec0dc5e164fc1e32a6970a2e91ef9"
+  },
+  "environment": {
+    "docker_image_id": "sha256:760d74488cf96dd120e8b796a63f8081b78bef029000727b4176f7db2fb5f5f0",
+    "python": "3.8.13",
+    "torch": "1.10.0",
+    "torchvision": "0.11.0",
+    "cuda": "11.3",
+    "primary_peak_allocated_bytes": 7901620224,
+    "primary_peak_reserved_bytes": 8552185856,
+    "retry_peak_allocated_bytes": 9454231552,
+    "retry_peak_reserved_bytes": 12178161664
+  },
+  "audit_artifacts": {
+    "score_sha256": "701eac1826a7f9b3ecb74ee4462562cbf16d64fad24b099f6b36bd387c825631",
+    "scoring_receipt_file_sha256": "6d6f6b7990035aa57593f3bc8d2c200d2252d3fc72290e8d8f12c2930b9a0c54",
+    "final_manifest_sha256": "772ac184188cc1dd2d973a9c2b8a024acc85cc6eeb157cf893621eadba8cbd6b",
+    "artifact_inventory_sha256": "7340b622278c49f61d166f638d8ee64ad2a46b0a5f00dd7a256633492b469ac5",
+    "final_receipt_sha256": "30ec0d0f1a3edad761c46052aac7064ba9ac38ed6cfe2b026243293ed20af38d"
+  },
+  "sanitization": {
+    "videos_included": false,
+    "weights_included": false,
+    "credentials_included": false,
+    "host_address_included": false,
+    "absolute_server_paths_included": false
+  }
+}
